@@ -1,0 +1,24 @@
+Die Funktion §Schreibe_Zahl mit den Parametern p1 vom Typ Zahl, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Schreibe die Zahl *p1" oder
+	"Gib die Zahl *p1 aus"
+
+Die Funktion §Schreibe_Kommazahl mit den Parametern p1 vom Typ Kommazahl, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Schreibe die Kommazahl *p1" oder
+	"Gib die Kommazahl *p1 aus"
+
+Die Funktion §Schreibe_Boolean mit den Parametern p1 vom Typ Boolean, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Schreibe den Boolean *p1" oder
+	"Gib den Boolean *p1 aus"
+
+Die Funktion §Schreibe_Buchstabe mit den Parametern p1 vom Typ Buchstabe, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Schreibe den Buchstaben *p1" oder
+	"Gib den Buchstaben *p1 aus"
+
+Die Funktion §Schreibe_Text mit den Parametern p1 vom Typ Text, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Schreibe den Text *p1" oder
+	"Gib den Text *p1 aus"
