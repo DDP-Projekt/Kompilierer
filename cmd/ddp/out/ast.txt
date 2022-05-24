@@ -43,11 +43,11 @@
    )
 )
 (DeclStmt
-   (FuncDecl[inbuilt_ddpmain: [], [], ZAHL]
+   (FuncDecl[string_test: [s1 s2], [TEXT TEXT], TEXT]
       (BlockStmt
          (ExprStmt
-            (FuncCall(§Schreibe_Zahl)
-               (IntLit(69))
+            (FuncCall(§Schreibe_Text)
+               (Ident[s1])
             )
          )
 
@@ -57,60 +57,42 @@
             )
          )
 
-         (DeclStmt
-            (VarDecl[z]
-               (FloatLit(420.690000))
-            )
-         )
-
          (ExprStmt
-            (FuncCall(§Schreibe_Kommazahl)
-               (Ident[z])
+            (FuncCall(§Schreibe_Text)
+               (Ident[s2])
             )
          )
 
          (ExprStmt
             (FuncCall(§Schreibe_Buchstabe)
                (CharLit(10))
-            )
-         )
-
-         (DeclStmt
-            (VarDecl[t]
-               (StringLit["Hallo Welt"])
-            )
-         )
-
-         (ExprStmt
-            (FuncCall(§Schreibe_Text)
-               (Ident[t])
-            )
-         )
-
-         (AssignStmt[t]
-            (StringLit["\nTschüss Welt"])
-         )
-
-         (ExprStmt
-            (FuncCall(§Schreibe_Text)
-               (Ident[t])
             )
          )
 
          (ReturnStmt
-            (IntLit(0))
+            (StringLit["Erfolg!"])
          )
       )
    )
 )
-(ExprStmt
-   (FuncCall(inbuilt_ddpmain))
-)
-(DeclStmt
-   (FuncDecl[tue_nichts: [], [], NICHTS]
-      (BlockStmt)
+(ForStmt
+   (VarDecl[i]
+      (IntLit(0))
    )
-)
-(ExprStmt
-   (FuncCall(tue_nichts))
+
+   (IntLit(10000))
+
+   (IntLit(1))
+
+   (BlockStmt
+      (DeclStmt
+         (VarDecl[t]
+            (FuncCall(string_test)
+               (StringLit["Nachricht2"])
+
+               (StringLit["Nachricht1"])
+            )
+         )
+      )
+   )
 )
