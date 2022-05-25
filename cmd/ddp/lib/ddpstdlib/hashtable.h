@@ -4,9 +4,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef enum {
+	VK_STRING
+} ValueKind;
+
+typedef struct {
+	int reference_count;
+	uint8_t kind;
+} Value;
+
 typedef struct {
 	void* key;
-	int value;
+	Value value;
 } Entry;
 
 typedef struct {
@@ -17,8 +26,8 @@ typedef struct {
 
 void initTable(Table* table);
 void freeTable(Table* table);
-bool tableSet(Table* table, void* key, int value);
-bool tableGet(Table* table, void* key, int* value);
+bool tableSet(Table* table, void* key, Value value);
+bool tableGet(Table* table, void* key, Value* value);
 bool tableDelete(Table* table, void* key);
 
 

@@ -9,7 +9,7 @@ void initTable(Table* table) {
 }
 
 void freeTable(Table* table) {
-	reallocate(table->entries, sizeof(Entry) * table->capacity, 0); // free the array
+	FREE_ARRAY(Entry, table->entries, table->capacity);
 	initTable(table); // reset the table
 }
 
@@ -20,7 +20,7 @@ static Entry* findEntry(Entry* entries, int capacity, void* key) {
 	for (;;) {
 		Entry* entry = &entries[index];
 		if (entry->key == NULL) {
-			if (entry->value == -1) {
+			if (entry->value.reference_count == -1) {
 				// Empty entry.
 				return tombstone != NULL ? tombstone : entry;
 			} else {
@@ -37,10 +37,10 @@ static Entry* findEntry(Entry* entries, int capacity, void* key) {
 }
 
 static void adjustCapacity(Table* table, int capacity) {
-	Entry* entries = (Entry*)reallocate(NULL, 0, sizeof(Entry) * (capacity));
+	Entry* entries = ALLOCATE(Entry, capacity);
 	for (int i = 0; i < capacity; i++) {
 		entries[i].key = NULL;
-		entries[i].value = -1;
+		entries[i].value.reference_count = -1;
 	}
 
 	table->count = 0;
@@ -54,27 +54,27 @@ static void adjustCapacity(Table* table, int capacity) {
 		table->count++;
 	}
 
-	reallocate(table->entries, sizeof(Entry) * (table->capacity), 0);
+	FREE_ARRAY(Entry, table->entries, table->capacity);
 	table->entries = entries;
 	table->capacity = capacity;
 }
 
-bool tableSet(Table* table, void* key, int value) {
+bool tableSet(Table* table, void* key, Value value) {
 	if (table->count + 1 > table->capacity * 0.75) {
-		int capacity = ((table->capacity) < 8 ? 8 : (table->capacity) * 2);
+		int capacity = GROW_CAPACITY(table->capacity);
 		adjustCapacity(table, capacity);
 	}
 
 	Entry* entry = findEntry(table->entries, table->capacity, key);
 	bool isNewKey = entry->key == NULL;
-	if (isNewKey && entry->value == -1) table->count++;
+	if (isNewKey && entry->value.reference_count == -1) table->count++;
 
 	entry->key = key;
 	entry->value = value;
 	return isNewKey;
 }
 
-bool tableGet(Table* table, void* key, int* value) {
+bool tableGet(Table* table, void* key, Value* value) {
 	if (table->count == 0) return false;
 
 	Entry* entry = findEntry(table->entries, table->capacity, key);
@@ -93,7 +93,7 @@ bool tableDelete(Table* table, void* key) {
 
 	// Place a tombstone in the entry.
 	entry->key = NULL;
-	entry->value = 0;
+	entry->value.reference_count = 0;
 	return true;
 }
 
