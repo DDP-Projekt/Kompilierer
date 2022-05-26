@@ -1,8 +1,7 @@
 #ifndef DDPTYPES_H
 #define DDPTYPES_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <stddef.h>
 #include "hashtable.h"
 
 typedef unsigned char byte;
