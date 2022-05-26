@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 void* reallocate(void* pointer, size_t oldSize, size_t newSize);
-size_t get_allocated_bytes();
 
 #define ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))

@@ -102,16 +102,9 @@ func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 
 // declare some internal string functions
 func (c *Compiler) setupStringType() {
-	garbage_collected.Fields = make([]types.Type, 3)
-	garbage_collected.Fields[0] = ptr(garbage_collected)
-	garbage_collected.Fields[1] = ddpbool
-	garbage_collected.Fields[2] = i8
-	c.mod.NewTypeDef("garbage_collected", garbage_collected)
-
-	ddpstring.Fields = make([]types.Type, 3)
-	ddpstring.Fields[0] = garbage_collected
-	ddpstring.Fields[1] = ptr(ddpchar)
-	ddpstring.Fields[2] = ddpint
+	ddpstring.Fields = make([]types.Type, 2)
+	ddpstring.Fields[0] = ptr(ddpchar)
+	ddpstring.Fields[1] = ddpint
 	c.mod.NewTypeDef("ddpstring", ddpstring)
 
 	/*sfcret := ir.NewParam("", ddpstrptr)
@@ -130,20 +123,38 @@ func (c *Compiler) setupStringType() {
 	dcs.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_deep_copy_string", nil, dcs)
 
-	markgc := c.mod.NewFunc("mark_gc", void, ir.NewParam("gc", ptr(garbage_collected)))
-	markgc.CallingConv = enum.CallingConvC
-	markgc.Linkage = enum.LinkageExternal
-	c.insertFunction("mark_gc", nil, markgc)
+	drc := c.mod.NewFunc("inbuilt_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
+	drc.CallingConv = enum.CallingConvC
+	drc.Linkage = enum.LinkageExternal
+	c.insertFunction("inbuilt_decrement_ref_count", nil, drc)
+
+	irc := c.mod.NewFunc("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
+	irc.CallingConv = enum.CallingConvC
+	irc.Linkage = enum.LinkageExternal
+	c.insertFunction("inbuilt_increment_ref_count", nil, irc)
 }
 
-func (c *Compiler) markString(strptr value.Value) {
+/*func (c *Compiler) markString(strptr value.Value) {
 	c.cbb.NewCall(c.functions["mark_gc"].irFunc, c.cbb.NewBitCast(strptr, ptr(garbage_collected)))
+}*/
+
+func (c *Compiler) incrementRC(key value.Value, kind *constant.Int) {
+	c.cbb.NewCall(c.functions["inbuilt_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
+}
+
+func (c *Compiler) decrementRC(key value.Value) {
+	c.cbb.NewCall(c.functions["inbuilt_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
+}
+
+func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
+	return c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, strptr)
 }
 
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
 		if v.t == ddpstrptr {
-			c.markString(c.cbb.NewLoad(ddpstrptr, v.v))
+			//c.markString(c.cbb.NewLoad(ddpstrptr, v.v))
+			c.decrementRC(c.cbb.NewLoad(ddpstrptr, v.v))
 		}
 	}
 	return scp.enclosing
@@ -159,7 +170,11 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 		t = ddpstrptr
 	}
 	v := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(t), t) // allocate the variable on the function call frame
-	c.cbb.NewStore(c.evaluate(d.InitVal), v)                          // store the init value
+	initVal := c.evaluate(d.InitVal)
+	c.cbb.NewStore(initVal, v) // store the init value
+	if t == ddpstrptr {
+		c.incrementRC(initVal, VK_STRING)
+	}
 	return c
 }
 func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
@@ -198,10 +213,12 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		for i := range params {
 			if d.ParamTypes[i].Type == token.TEXT {
+				c.incrementRC(params[i], VK_STRING)
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(ddpstrptr), ddpstrptr)
-				strptr := c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, params[i]) // deep copy the passed pointer to string
+				strptr := c.deepCopyStr(params[i]) // deep copy the passed pointer to string
 				c.cbb.NewStore(strptr, v)
-				c.markString(params[i])
+				//c.markString(params[i])
+				c.decrementRC(params[i])
 			} else {
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
 				c.cbb.NewStore(params[i], v)
@@ -223,7 +240,7 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 }
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	v := c.scp.lookupVar(e.Literal.Literal)
-	c.latestReturn = c.cbb.NewLoad(v.t, v.v)
+	c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(v.t, v.v))
 	return c
 }
 func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
@@ -597,7 +614,7 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames))
 
 	for _, param := range fun.funcDecl.ParamNames {
-		args = append(args, c.evaluate(e.Args[param.Literal]))
+		args = append(args, c.evaluate(e.Args[param.Literal])) // possible string ref count is incremented by funcDecl
 	}
 
 	c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
@@ -613,26 +630,30 @@ func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
 }
 func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	expr := c.evaluate(s.Expr)
+	// TODO: fix memory error
 	if expr.Type() == ddpstrptr { // maybe works?
-		c.markString(expr)
+		//c.markString(expr)
+		c.incrementRC(expr, VK_STRING) // add it to the table (will be made better later)
+		c.decrementRC(expr)
 	}
 	return c
 }
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	c.cbb.NewStore(c.evaluate(s.Rhs), c.scp.lookupVar(s.Name.Literal).v)
+	val := c.evaluate(s.Rhs)
+	if val.Type() == ddpstrptr {
+		c.incrementRC(val, VK_STRING)
+	}
+	vr := c.scp.lookupVar(s.Name.Literal)
+	if vr.t == ddpstrptr {
+		c.decrementRC(vr.v)
+	}
+	c.cbb.NewStore(val, vr.v)
 	return c
 }
 func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	c.scp = newScope(c.scp)
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
-	}
-
-	// test free for local variables
-	for _, v := range c.scp.variables {
-		if v.t == ddpstrptr {
-			c.markString(c.cbb.NewLoad(ddpstrptr, v.v))
-		}
 	}
 
 	c.scp = c.exitScope(c.scp)
@@ -774,8 +795,10 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 	ret := c.evaluate(s.Value)
 	if ret.Type() == ddpstrptr {
 		oldRet := ret
-		ret = c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, oldRet)
-		c.markString(oldRet)
+		c.incrementRC(oldRet, VK_STRING)
+		ret = c.deepCopyStr(oldRet)
+		//c.markString(oldRet)
+		c.decrementRC(oldRet)
 	}
 	c.cbb.NewRet(ret)
 	return c

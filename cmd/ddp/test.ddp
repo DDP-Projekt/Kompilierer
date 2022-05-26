@@ -1,26 +1,3 @@
-[Die Funktion inbuilt_ddpmain gibt eine Zahl zurück, macht:
-	Schreibe die Zahl 69.
-	Schreibe den Buchstaben '\n'.
-	Die Kommazahl z ist 420,69.
-	Schreibe die Kommazahl z.
-	Schreibe den Buchstaben '\n'.
-	Der Text t ist "Hallo Welt".
-	Schreibe den Text t.
-	t ist "\nTschüss Welt".
-	Schreibe den Text t.
-	Gib 0 zurück.
-Und kann so benutzt werden:
-	"ddpmain"
-
-ddpmain.
-
-Die Funktion tue_nichts gibt nichts zurück, macht:
-Und kann so benutzt werden:
-	"tue nichts"
-
-tue nichts.]
-
-
 Die Funktion string_test mit den Parametern s1, s2 vom Typ Text, Text, gibt einen Text zurück, macht:
 	Schreibe den Text s1.
 	Schreibe den Buchstaben '\n'.
@@ -37,4 +14,5 @@ Und kann so benutzt werden:
 
 Schreibe den Text (string_test mit "Nachricht1" und (string_test mit "Nachricht2" und string)).]
 
+Schreibe den Text (string_test mit "test1" und "test1").
 Für jede Zahl i von 0 bis 10000, Der Text t ist string_test mit "Nachricht1" und "Nachricht2".

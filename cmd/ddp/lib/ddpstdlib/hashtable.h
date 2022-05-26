@@ -31,6 +31,6 @@ bool tableGet(Table* table, void* key, Value* value);
 bool tableDelete(Table* table, void* key);
 
 
-uint32_t hashPointer(const char* key);
+uint32_t hashPointer(const char* key, int length);
 
 #endif

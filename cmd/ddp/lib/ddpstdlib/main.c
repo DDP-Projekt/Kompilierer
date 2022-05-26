@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include "gc.h"
+#include "ddptypes.h"
 
 static void SegfaultHandler(int signal) {
 	printf("Segmentation fault");
@@ -16,6 +16,8 @@ static void init() {
 	setlocale(LC_NUMERIC, "French_Canada.1252"); // somehow the above did not work
 
 	signal(SIGSEGV, SegfaultHandler);
+
+	initTable(get_ref_table());
 }
 
 extern int inbuilt_ddpmain(); // implicitly defined by the ddp code
@@ -23,6 +25,6 @@ extern int inbuilt_ddpmain(); // implicitly defined by the ddp code
 int main() {
 	init(); // initialize
 	int ret = inbuilt_ddpmain(); // run the ddp code
-	GC(); // collect garbage
+	freeTable(get_ref_table());
 	return ret;
 }

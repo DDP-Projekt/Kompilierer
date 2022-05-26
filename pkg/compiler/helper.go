@@ -21,19 +21,20 @@ var (
 
 	cstr = ptr(ddpchar)
 
-	ddpint            = i64
-	ddpfloat          = types.Double
-	ddpbool           = types.I1
-	ddpchar           = i16
-	garbage_collected = types.NewStruct()
-	ddpstring         = types.NewStruct()
-	ddpstrptr         = types.NewPointer(ddpstring)
+	ddpint    = i64
+	ddpfloat  = types.Double
+	ddpbool   = types.I1
+	ddpchar   = i16
+	ddpstring = types.NewStruct()
+	ddpstrptr = types.NewPointer(ddpstring)
 
 	ptr = types.NewPointer
 
 	zero  = constant.NewInt(ddpint, 0)
 	fzero = newFloat(0)
 	one   = constant.NewInt(ddpint, 1)
+
+	VK_STRING = constant.NewInt(i8, 0)
 )
 
 func newInt(value int64) *constant.Int {

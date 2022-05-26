@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "ddpstring.h"
+#include "ddptypes.h"
 
 void inbuilt_Schreibe_Zahl(ddpint p1) {
 	printf("%d", p1);
