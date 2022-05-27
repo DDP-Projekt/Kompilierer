@@ -1,0 +1,10 @@
+/build
+/mslib
+/lib
+*.exe
+*.o
+*.obj
+*.s
+*.asm
+*.lib
+*.a

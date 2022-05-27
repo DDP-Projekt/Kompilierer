@@ -1,8 +1,1 @@
 .vscode
-*.exe
-*.o
-*.obj
-*.s
-*.asm
-*.lib
-*.a

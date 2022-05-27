@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -15,16 +14,13 @@ func resetTimer() time.Duration {
 	return elapsed
 }
 
-var DDPPATH = ""
-
 func main() {
-	if DDPPATH = os.Getenv("DDPPATH"); DDPPATH == "" {
-		DDPPATH, _ = filepath.Abs(filepath.Dir(os.Args[0]) + "../")
-	}
+	resetTimer()
 	if err := runCommands(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	fmt.Printf("Took %dms\n", resetTimer().Milliseconds())
 }
 
 func runCommands() error {
