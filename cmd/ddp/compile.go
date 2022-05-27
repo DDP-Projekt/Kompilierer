@@ -67,7 +67,5 @@ func compileToObject(inputFile, outputFile string) error {
 	}
 	defer memBuffer.Dispose()
 
-	os.WriteFile(inputFile+".ll", []byte(mod.String()), os.ModePerm)
-
 	return os.WriteFile(outputFile, memBuffer.Bytes(), os.ModePerm)
 }

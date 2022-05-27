@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 type Command interface {
@@ -194,8 +195,15 @@ func (cmd *BuildCommand) Run() error {
 		case ".exe":
 			extension = ext
 			cmd.targetEXE = true
+		case "":
+			extension = ext
+			cmd.targetEXE = true
 		default:
-			extension = ".exe"
+			if runtime.GOOS == "windows" {
+				extension = ".exe"
+			} else if runtime.GOOS == "linux" {
+				extension = ""
+			}
 			cmd.targetEXE = true
 		}
 	}
@@ -279,9 +287,9 @@ func (cmd *BuildCommand) Run() error {
 	}
 
 	// the target is an executable so we link the produced object file
-	print("invoking lld on %s", objPath)
-	if err := invokeLLD(objPath, cmd.outPath, cmdOut); err != nil {
-		print("failed to invoke lld: %s", err.Error())
+	print("invoking gcc on %s", objPath)
+	if err := invokeGCC(objPath, cmd.outPath, cmdOut); err != nil {
+		print("failed to invoke gcc: %s", err.Error())
 		return err
 	}
 
@@ -344,9 +352,9 @@ func (cmd *LinkCommand) Run() error {
 	}
 
 	// the target is an executable so we link the produced object file
-	print("invoking lld on %s", cmd.filePath)
-	if err := invokeLLD(cmd.filePath, cmd.outPath, cmdOut); err != nil {
-		print("failed to invoke lld: %s", err.Error())
+	print("invoking gcc on %s", cmd.filePath)
+	if err := invokeGCC(cmd.filePath, cmd.outPath, cmdOut); err != nil {
+		print("failed to invoke gcc: %s", err.Error())
 		return err
 	}
 
