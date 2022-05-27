@@ -3,10 +3,15 @@ package main
 import (
 	"io"
 	"os/exec"
+	"runtime"
 )
 
 func invokeGCC(inputFile, outputFile string, out io.Writer) error {
-	cmd := exec.Command("gcc", "-o", outputFile, inputFile, "ddpstdlib.lib")
+	libdir := "ddpstdlib.lib"
+	if runtime.GOOS == "linux" {
+		libdir = "ddpstdlib.a"
+	}
+	cmd := exec.Command("gcc", "-o", outputFile, inputFile, libdir)
 	if out != nil {
 		cmd.Stdout = out
 		cmd.Stderr = out
