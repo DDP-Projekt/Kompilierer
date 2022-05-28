@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define DBGLOG(...) \
-	{ printf("\n\t\t"); \
+	{ printf("\n\t"); \
 		printf(__VA_ARGS__); \
 		printf("\n"); \
 	}

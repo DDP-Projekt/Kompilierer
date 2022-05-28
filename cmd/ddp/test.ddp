@@ -3,16 +3,51 @@ Die Funktion string_test mit den Parametern s1, s2 vom Typ Text, Text, gibt eine
 	Schreibe den Buchstaben '\n'.
 	Schreibe den Text s2.
 	Schreibe den Buchstaben '\n'.
-	Gib "Erfolg!" zurück.
+	Gib "Nachricht1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" zurück.
 Und kann so benutzt werden:
 	"string_test mit *s1 und *s2"
 
-[Die Funktion string gibt einen Text zurück, macht:
-	Gib "String" zurück.
+Die Funktion gib_string gibt einen Text zurück, macht:
+	Gib "Nachricht1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" zurück.
 Und kann so benutzt werden:
-	"string"
+	"gib_string"
 
-Schreibe den Text (string_test mit "Nachricht1" und (string_test mit "Nachricht2" und string)).]
+Die Funktion Fibonacci mit den Parametern n vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Wenn n kleiner als, oder 1 ist, dann:
+		Schreibe den Text "n ist 1 oder kleiner!".
+        Gib n zurück.
 
-Schreibe den Text (string_test mit "test1" und "test1").
-Für jede Zahl i von 0 bis 10000, Der Text t ist string_test mit "Nachricht1" und "Nachricht2".
+	Der Text t ist "\neinen lokale Variable\n".
+	Die Zahl erstesZwischenergebnis ist die (n minus 2). Fibonacci nummer.
+	Schreibe den Text t.
+	Schreibe den Text "erstes Zwischenergebnis: ".
+	Schreibe die Zahl erstesZwischenergebnis.
+	Die Zahl zweitesZwischenergebnis ist die (n minus 1). Fibonacci nummer.
+	Schreibe den Text t.
+	Schreibe den Text "zweites Zwischenergebnis: ".
+	Schreibe die Zahl zweitesZwischenergebnis.
+
+	Schreibe den Text "\nRückgabe".
+	Gib erstesZwischenergebnis plus zweitesZwischenergebnis zurück.
+Und kann so benutzt werden:
+	"Fibonacci von *n" oder
+	"die *n. Fibonacci nummer"
+
+Die Funktion Fibonacci_fast mit den Parametern n vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Wenn n kleiner als, oder 1 ist, dann:
+        Gib n zurück.
+
+	Gib fib_fast (n minus 2) plus fib_fast (n minus 1) zurück.
+Und kann so benutzt werden:
+	"fib_fast *n"
+
+[Schreibe den Text (string_test mit "test1" und "test1").]
+[Für jede Zahl i von 0 bis 10000, mache:
+	Der Text t ist string_test mit gib_string und "Nachricht1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".
+	string_test mit "Nachricht1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" und "Nachricht1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".
+	Schreibe den Text t.]
+
+[Für jede Zahl i von 0 bis 10000, Schreibe den Text "Hallo\n".]
+
+Schreibe die Zahl (fib_fast 20).
+Schreibe die Zahl (Fibonacci von 20).
