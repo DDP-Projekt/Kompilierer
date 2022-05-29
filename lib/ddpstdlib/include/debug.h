@@ -3,11 +3,16 @@
 
 #include <stdio.h>
 
+#define DEBUG // undef to remove logs and similar debug stuff
+
+#ifdef DEBUG
 #define DBGLOG(...) \
 	{ printf("\n\t"); \
 		printf(__VA_ARGS__); \
 		printf("\n"); \
 	}
-//#define DBGLOG(...)
+#else
+#define DBGLOG(...)
+#endif // DEBUG
 
 #endif // DEBUG_H
