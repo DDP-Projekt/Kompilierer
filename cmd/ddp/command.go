@@ -219,7 +219,7 @@ func (cmd *BuildCommand) Run() error {
 	// make the output file directory
 	if err := os.MkdirAll(filepath.Dir(cmd.outPath), os.ModePerm); err != nil {
 		print("failed to create output directory: %s", err.Error())
-		return err
+		return nil
 	}
 
 	// temp paths (might not need them)
@@ -229,7 +229,7 @@ func (cmd *BuildCommand) Run() error {
 	print("creating .ll output directory: %s", llPath)
 	if file, err := os.OpenFile(llPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm); err != nil {
 		print("failed to create .ll output directory: %s", err.Error())
-		return err
+		return nil
 	} else {
 		if !cmd.targetIR && !cmd.nodeletes { // if the target is not llvm ir we remove the temp file
 			defer func() {
@@ -243,13 +243,13 @@ func (cmd *BuildCommand) Run() error {
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
 		if ir, err := compiler.CompileFile(cmd.filePath, func(msg string) { fmt.Println(msg) }); err != nil {
 			print("failed to compile the source code: %s", err.Error())
-			return err
+			return nil
 		} else {
 			print("writing llvm ir to %s", llPath)
 			_, err = file.WriteString(ir)
 			if err != nil {
 				print("failed to write llvm ir: %s", err.Error())
-				return err
+				return nil
 			}
 		}
 		if cmd.targetIR { // if the target is llvm ir we are finished
@@ -262,7 +262,7 @@ func (cmd *BuildCommand) Run() error {
 		print("compiling llir from %s to %s", llPath, objPath)
 		if err := compileToObject(llPath, objPath); err != nil {
 			print("failed to compile llir: %s", err.Error())
-			return err
+			return nil
 		}
 		if !cmd.nodeletes {
 			defer func() {
@@ -276,7 +276,7 @@ func (cmd *BuildCommand) Run() error {
 		print("compiling llir from %s to %s", llPath, cmd.outPath)
 		if err := compileToObject(llPath, cmd.outPath); err != nil {
 			print("failed to compile llir: %s", err.Error())
-			return err
+			return nil
 		}
 		return nil
 	}
@@ -290,7 +290,7 @@ func (cmd *BuildCommand) Run() error {
 	print("invoking gcc on %s", objPath)
 	if err := invokeGCC(objPath, cmd.outPath, cmdOut); err != nil {
 		print("failed to invoke gcc: %s", err.Error())
-		return err
+		return nil
 	}
 
 	return nil
@@ -355,7 +355,7 @@ func (cmd *LinkCommand) Run() error {
 	print("invoking gcc on %s", cmd.filePath)
 	if err := invokeGCC(cmd.filePath, cmd.outPath, cmdOut); err != nil {
 		print("failed to invoke gcc: %s", err.Error())
-		return err
+		return nil
 	}
 
 	return nil

@@ -20,11 +20,15 @@ static void init() {
 	initTable(get_ref_table());
 }
 
+static void end() {
+	freeTable(get_ref_table());
+}
+
 extern int inbuilt_ddpmain(); // implicitly defined by the ddp code
 
 int main() {
 	init(); // initialize
 	int ret = inbuilt_ddpmain(); // run the ddp code
-	freeTable(get_ref_table());
+	end();
 	return ret;
 }

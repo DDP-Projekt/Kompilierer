@@ -11,25 +11,25 @@ Table* get_ref_table() {
 }
 
 ddpstring* inbuilt_string_from_constant(ddpchar* str, ddpint len) {
-	DBGLOG("inbuilt_string_from_constant");
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress
+	DBGLOG("inbuilt_string_from_constant: %p", dstr);
 	ddpchar* string = ALLOCATE(ddpchar, len);
 	for (int i = 0; i < len; i++) {
 		string[i] = str[i];
 	}
-	ddpstring* dstr = ALLOCATE(ddpstring, 1);
 	dstr->str = string;
 	dstr->len = len;
 	return dstr;
 }
 
 void inbuilt_free_string(ddpstring* str) {
-	DBGLOG("inbuilt_free_string");
+	DBGLOG("inbuilt_free_string: %p", str);
 	FREE_ARRAY(ddpchar, str->str, str->len);
 	FREE(ddpstring, str);
 }
 
 ddpstring* inbuilt_deep_copy_string(ddpstring* str) {
-	DBGLOG("inbuilt_deep_copy_string");
+	DBGLOG("inbuilt_deep_copy_string: %p", str);
 	ddpchar* cpy = ALLOCATE(ddpchar, str->len);
 	memcpy(cpy, str->str, sizeof(ddpchar) * str->len);
 	ddpstring* cpystr = ALLOCATE(ddpstring, 1);
@@ -39,7 +39,7 @@ ddpstring* inbuilt_deep_copy_string(ddpstring* str) {
 }
 
 static void free_value(void* key, Value* val) {
-	DBGLOG("free_value");
+	DBGLOG("free_value: %p", key);
 	switch (val->kind)
 	{
 	case VK_STRING:
