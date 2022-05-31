@@ -1,10 +1,11 @@
 package resolver
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/scanner"
-	"KDDP/pkg/token"
 	"fmt"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 // TODO: more testing

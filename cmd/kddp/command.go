@@ -1,15 +1,16 @@
 package main
 
 import (
-	"KDDP/pkg/compiler"
-	"KDDP/pkg/interpreter"
-	"KDDP/pkg/parser"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/compiler"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/interpreter"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/parser"
 )
 
 type Command interface {

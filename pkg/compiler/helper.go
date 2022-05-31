@@ -1,10 +1,11 @@
 package compiler
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/token"
 	"fmt"
 	"strings"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"

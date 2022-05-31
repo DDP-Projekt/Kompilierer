@@ -1,14 +1,15 @@
 package compiler
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/scanner"
-	"KDDP/pkg/token"
 	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"

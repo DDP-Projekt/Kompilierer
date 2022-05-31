@@ -1,6 +1,6 @@
 package ast
 
-import "KDDP/pkg/token"
+import "github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 
 // represents an Abstract Syntax Tree for a DDP program
 type Ast struct {

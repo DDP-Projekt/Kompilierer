@@ -1,9 +1,9 @@
 package compiler
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/parser"
-	"KDDP/pkg/scanner"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/parser"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
 )
 
 // compile the given ddp file into llvm ir

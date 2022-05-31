@@ -1,13 +1,14 @@
 package scanner
 
 import (
-	"KDDP/pkg/token"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 type Mode uint32

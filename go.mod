@@ -1,4 +1,4 @@
-module KDDP
+module github.com/Die-Deutsche-Programmiersprache/KDDP
 
 go 1.18
 

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"KDDP/pkg/token"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 // stores symbols for one scope of an ast

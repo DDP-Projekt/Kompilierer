@@ -1,15 +1,16 @@
 package interpreter
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/scanner"
-	"KDDP/pkg/token"
 	"fmt"
 	"io"
 	"math"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 type Interpreter struct {

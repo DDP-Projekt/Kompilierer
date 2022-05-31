@@ -1,11 +1,6 @@
 package parser
 
 import (
-	"KDDP/pkg/ast"
-	"KDDP/pkg/ast/resolver"
-	"KDDP/pkg/ast/typechecker"
-	"KDDP/pkg/scanner"
-	"KDDP/pkg/token"
 	"embed"
 	"errors"
 	"fmt"
@@ -14,6 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast/resolver"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast/typechecker"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 //go:embed inbuilt

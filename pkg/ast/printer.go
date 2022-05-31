@@ -1,8 +1,9 @@
 package ast
 
 import (
-	"KDDP/pkg/token"
 	"fmt"
+
+	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
 )
 
 type printer struct {
