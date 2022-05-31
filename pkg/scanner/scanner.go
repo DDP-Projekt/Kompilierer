@@ -1,3 +1,4 @@
+// much of this code was inspired (meaning copied) from craftinginterpreters
 package scanner
 
 import (
@@ -16,7 +17,7 @@ type Mode uint32
 const (
 	ModeNone                 = 0           // nothing special
 	ModeStrictCapitalization = (1 << iota) // report capitalization errors
-	ModeAlias                              // interpret the tokens as alias (enables [x] syntax)
+	ModeAlias                              // interpret the tokens as alias (enables *arg syntax)
 	ModeInitializing                       // allow special characters for inbuilt functions
 )
 
@@ -26,7 +27,7 @@ type Scanner struct {
 	file         string // Path to the file
 	src          []rune
 	errorHandler ErrorHandler // this function is called for all error messages
-	mode         Mode
+	mode         Mode         // scanner mode (alias, initializing, ...)
 
 	include       *Scanner            // include directives
 	includedFiles map[string]struct{} // files already included are in here
@@ -43,6 +44,7 @@ type Scanner struct {
 // returns a new scanner, or error if one could not be created
 // prefers src, but if src is nil it attempts to read the source-code from filePath
 func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Scanner, error) {
+	// default errorHandler does nothing
 	if errorHandler == nil {
 		errorHandler = func(string) {} // to avoid nil pointer dereference
 	}
@@ -63,7 +65,7 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 		shouldCapitalize: true,
 	}
 
-	// if src is nil filePath is used to load the src
+	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
 			scan.errorHandler("Der angegebene Pfad ist keine .ddp Datei")

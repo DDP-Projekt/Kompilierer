@@ -26,22 +26,23 @@ type (
 
 	Expression interface {
 		Node
-		expressionNode()
+		expressionNode() // dummy function for the interface
 	}
 
 	Statement interface {
 		Node
-		statementNode()
+		statementNode() // dummy function for the interface
 	}
 
 	Declaration interface {
 		Node
-		declarationNode()
+		declarationNode() // dummy function for the interface
 	}
 )
 
 // Declarations
 type (
+	// an invalid Declaration
 	BadDecl struct {
 		Tok token.Token
 	}

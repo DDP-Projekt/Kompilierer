@@ -1,3 +1,5 @@
+// file command.go defines the sub-commands
+// of kddp like build, help, etc.
 package main
 
 import (
@@ -13,11 +15,12 @@ import (
 	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/parser"
 )
 
+// interface for a sub-command
 type Command interface {
-	Init([]string) error
-	Run() error
-	Name() string
-	Usage() string
+	Init([]string) error // initialize the command and parse it's flags
+	Run() error          // run the command
+	Name() string        // every command must specify a name
+	Usage() string       // and a usage
 }
 
 var commands = []Command{
@@ -28,10 +31,12 @@ var commands = []Command{
 	NewLinkCommand(),
 }
 
+// $kddp interpret walks the parsed ast and executes it
+// it is meant mainly for testing
 type InterpretCommand struct {
-	fs       *flag.FlagSet
-	filePath string
-	outPath  string // may be empty
+	fs       *flag.FlagSet // FlagSet for the arguments
+	filePath string        // path to the input file
+	outPath  string        // path to the output file for stdout/stderr, may be empty
 }
 
 func NewInterpretCommand() *InterpretCommand {
@@ -45,11 +50,13 @@ func (cmd *InterpretCommand) Init(args []string) error {
 		return fmt.Errorf("interpret requires a file name")
 	}
 
+	// first argument must be the input file
 	cmd.filePath = args[0]
 	if filepath.Ext(cmd.filePath) != ".ddp" {
 		return fmt.Errorf("the provided file is not a .ddp file")
 	}
 
+	// parse command flags
 	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
 	return cmd.fs.Parse(args[1:])
 }
@@ -57,22 +64,26 @@ func (cmd *InterpretCommand) Init(args []string) error {
 func (cmd *InterpretCommand) Run() error {
 	errHndl := func(msg string) { fmt.Println(msg) }
 
+	// parse the input file into a ast
 	ast, err := parser.ParseFile(cmd.filePath, errHndl)
 	if err != nil {
 		return err
 	}
 
-	interpreter := interpreter.New(ast, errHndl)
+	interpreter := interpreter.New(ast, errHndl) // create the interpreter with the parsed ast
 
+	// if a output file was specified, we set the interpreters stdout and stderr
 	if cmd.outPath != "" {
 		file, err := os.OpenFile(cmd.outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("unable to open the output file")
 		}
+		defer file.Close()
 		interpreter.Stdout = file
+		interpreter.Stderr = file
 	}
 
-	return interpreter.Interpret()
+	return interpreter.Interpret() // interpret the ast
 }
 
 func (cmd *InterpretCommand) Name() string {
@@ -85,9 +96,10 @@ options:
 	-o <filepath>: writes the programs stdout to the given file`
 }
 
+// $kddp help prints some help information
 type HelpCommand struct {
-	fs  *flag.FlagSet
-	cmd string
+	fs  *flag.FlagSet // FlagSet for the arguments
+	cmd string        // command to print information about, may be empty
 }
 
 func NewHelpCommand() *HelpCommand {
@@ -97,6 +109,7 @@ func NewHelpCommand() *HelpCommand {
 }
 
 func (cmd *HelpCommand) Init(args []string) error {
+	// maybe a sub-command was specified
 	if len(args) > 0 {
 		cmd.cmd = args[0]
 	}
@@ -104,6 +117,7 @@ func (cmd *HelpCommand) Init(args []string) error {
 }
 
 func (cmd *HelpCommand) Run() error {
+	// if a sub-command was specified print only its usage
 	if cmd.cmd != "" {
 		for _, command := range commands {
 			if command.Name() == cmd.cmd {
@@ -113,6 +127,7 @@ func (cmd *HelpCommand) Run() error {
 		}
 	}
 
+	// otherwise, print the usage of every command
 	fmt.Println("available commands:")
 	for _, cmd := range commands {
 		fmt.Println(cmd.Usage())
@@ -129,13 +144,15 @@ func (cmd *HelpCommand) Usage() string {
 	return `help <command>: displays usage information`
 }
 
+// $kddp build is the main command which compiles a .ddp file into a executable
 type BuildCommand struct {
-	fs        *flag.FlagSet
-	filePath  string // input file, neccessery
-	outPath   string // path for the output file, may be empty
-	nodeletes bool   // should temp files be deleted
-	verbose   bool   // print verbose output
-	targetIR  bool   // only compile to llvm ir
+	fs *flag.FlagSet // FlagSet for the arguments
+	// arguments
+	filePath  string // input file (.ddp), neccessery, first argument
+	outPath   string // path for the output file, specified by the -o flag, may be empty
+	nodeletes bool   // should temp files be deleted, specified by the --nodeletes flag
+	verbose   bool   // print verbose output, specified by the --verbose flag
+	targetIR  bool   // only compile to llvm ir, specified by the -c flag
 	// some flags not specified in the commandline
 	targetASM bool
 	targetOBJ bool
@@ -157,15 +174,18 @@ func NewBuildCommand() *BuildCommand {
 }
 
 func (cmd *BuildCommand) Init(args []string) error {
+	// a input .ddp file is necessary
 	if len(args) < 1 {
 		return fmt.Errorf("build requires a file name")
 	}
 
+	// the first argument must be the input file (.ddp)
 	cmd.filePath = args[0]
 	if filepath.Ext(cmd.filePath) != ".ddp" {
 		return fmt.Errorf("the provided file is not a .ddp file")
 	}
 
+	// set all the flags
 	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
 	cmd.fs.BoolVar(&cmd.nodeletes, "nodeletes", false, "don't delete temporary files such as .ll or .obj files")
 	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose build output")
@@ -173,16 +193,18 @@ func (cmd *BuildCommand) Init(args []string) error {
 	return cmd.fs.Parse(args[1:])
 }
 
+// invokes the main behaviour of kddp
 func (cmd *BuildCommand) Run() error {
+	// helper function to print verbose output if the flag was set
 	print := func(format string, args ...any) {
 		if cmd.verbose {
 			fmt.Printf(format+"\n", args...)
 		}
 	}
 
-	// determine the final output
-	extension := ".ll"
-	if !cmd.targetIR {
+	// determine the final output type (by file extension)
+	extension := ".ll" // assume the -c flag
+	if !cmd.targetIR { // -c was not set
 		cmd.targetEXE = false
 		switch ext := filepath.Ext(cmd.outPath); ext {
 		case ".ll":
@@ -199,7 +221,7 @@ func (cmd *BuildCommand) Run() error {
 		case "":
 			extension = ext
 			cmd.targetEXE = true
-		default:
+		default: // by default we create a executable
 			if runtime.GOOS == "windows" {
 				extension = ".exe"
 			} else if runtime.GOOS == "linux" {
@@ -210,9 +232,9 @@ func (cmd *BuildCommand) Run() error {
 	}
 
 	// create the path to the output file
-	if cmd.outPath == "" {
+	if cmd.outPath == "" { // if no output file was specified, we use the name of the input .ddp file
 		cmd.outPath = changeExtension(cmd.filePath, extension)
-	} else {
+	} else { // otherwise we use the provided name
 		cmd.outPath = changeExtension(cmd.outPath, extension)
 	}
 
@@ -225,7 +247,7 @@ func (cmd *BuildCommand) Run() error {
 
 	// temp paths (might not need them)
 	llPath := changeExtension(cmd.outPath, ".ll")
-	objPath := changeExtension(cmd.outPath, ".obj")
+	objPath := changeExtension(cmd.outPath, ".o")
 
 	print("creating .ll output directory: %s", llPath)
 	if file, err := os.OpenFile(llPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm); err != nil {
@@ -233,7 +255,7 @@ func (cmd *BuildCommand) Run() error {
 		return nil
 	} else {
 		if !cmd.targetIR && !cmd.nodeletes { // if the target is not llvm ir we remove the temp file
-			defer func() {
+			defer func() { // defer, to remove the file after it has been used
 				print("removing temporary .ll file: %s", llPath)
 				if err := os.Remove(llPath); err != nil {
 					print("failed to remove temporary .ll file: %s", err.Error())
@@ -242,6 +264,7 @@ func (cmd *BuildCommand) Run() error {
 		}
 		defer file.Close()
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
+		// compile the input file to llvm ir
 		if ir, err := compiler.CompileFile(cmd.filePath, func(msg string) { fmt.Println(msg) }); err != nil {
 			print("failed to compile the source code: %s", err.Error())
 			return nil
@@ -258,22 +281,22 @@ func (cmd *BuildCommand) Run() error {
 		}
 	}
 
-	// the target was not llvm ir, so we invoke llc
-	if cmd.targetEXE {
+	// the target was not llvm ir, so we compile it to an object-, assembly-, or executable file
+	if cmd.targetEXE { // compile to object-file and continue after that
 		print("compiling llir from %s to %s", llPath, objPath)
-		if err := compileToObject(llPath, objPath); err != nil {
+		if err := compileToObject(llPath, objPath); err != nil { // compile the object file
 			print("failed to compile llir: %s", err.Error())
 			return nil
 		}
 		if !cmd.nodeletes {
-			defer func() {
+			defer func() { // defer, to remove the temp file only after it has been used
 				print("removing temporary .obj file: %s", objPath)
 				if err := os.Remove(objPath); err != nil {
 					print("failed to remove temporary .obj file: %s", err.Error())
 				}
 			}()
 		}
-	} else if cmd.targetASM || cmd.targetOBJ {
+	} else if cmd.targetASM || cmd.targetOBJ { // compile to assembly or object, and return
 		print("compiling llir from %s to %s", llPath, cmd.outPath)
 		if err := compileToObject(llPath, cmd.outPath); err != nil {
 			print("failed to compile llir: %s", err.Error())
@@ -282,6 +305,7 @@ func (cmd *BuildCommand) Run() error {
 		return nil
 	}
 
+	// if --verbose was specified, print gccs output
 	var cmdOut io.Writer = nil
 	if cmd.verbose {
 		cmdOut = os.Stdout
@@ -309,11 +333,13 @@ options:
 		-c: compile to llvm ir but don't assemble or link`
 }
 
+// $kddp link links the specified object files with the ddpstdlib
+// mainly for testing
 type LinkCommand struct {
-	fs       *flag.FlagSet
-	filePath string // input file, neccessery
-	outPath  string // path for the output file, may be empty
-	verbose  bool   // print verbose output
+	fs       *flag.FlagSet // FlagSet for the arguments
+	filePath string        // input file, neccessery
+	outPath  string        // path for the output file, specified by the -o flag, may be empty
+	verbose  bool          // print verbose output, specified by the --verbose flag
 }
 
 func NewLinkCommand() *LinkCommand {
@@ -373,10 +399,14 @@ options:
 		-verbose: print verbose output`
 }
 
+// helper function
+// returns path with the specified extension
 func changeExtension(path, ext string) string {
 	return path[:len(path)-len(filepath.Ext(path))] + ext
 }
 
+// $kddp parse parses the given .ddp file and outputs the resulting ast
+// mainly for testing
 type ParseCommand struct {
 	fs       *flag.FlagSet
 	filePath string

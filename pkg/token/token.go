@@ -4,13 +4,14 @@ import "fmt"
 
 type TokenType int
 
+// a single ddp token
 type Token struct {
-	Type    TokenType
-	Literal string
-	Indent  int
-	File    string
-	Line    int
-	Column  int
+	Type    TokenType // type of the token
+	Literal string    // the literal from which it was scanned
+	Indent  int       // how many levels it is indented
+	File    string    // the file from which it was scanned
+	Line    int       // the line on which it appeared
+	Column  int       // the column it started
 }
 
 func (t Token) String() string {

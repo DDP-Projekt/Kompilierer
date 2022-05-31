@@ -8,7 +8,7 @@ endif
 .PHONY = all build clean debug
 
 CC = gcc
-DEBUGFLAGS := -D DEBUG 
+DEBUGFLAGS := -D DEBUG
 INC := -I./include/ # set on the debug phony
 
 SRCS := $(wildcard source/*.c)

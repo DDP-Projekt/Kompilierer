@@ -17,11 +17,15 @@ STD_DIR = ./lib/ddpstdlib
 
 MAKE = make
 
-.PHONY = all make_out_dir make_sub_dirs
+.PHONY = all debug make_out_dir make_sub_dirs
 
 all: make_out_dir make_sub_dirs
 	cp $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
 	cp $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
+
+debug: make_out_dir
+	$(MAKE) -C $(DDP_DIR)
+	$(MAKE) -C $(STD_DIR) debug
 
 make_sub_dirs:
 	$(MAKE) -C $(DDP_DIR)

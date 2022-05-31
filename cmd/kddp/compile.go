@@ -8,6 +8,7 @@ import (
 )
 
 // takes a .ll file and compiles it into a .o .obj .s or .asm file depending on the outputFile extension
+// mainly copied from the llvm documentation
 func compileToObject(inputFile, outputFile string) error {
 	fileExtension := filepath.Ext(outputFile)
 

@@ -6,6 +6,7 @@ import (
 	"runtime"
 )
 
+// invokes gcc on the input file and links it with the ddpstdlib
 func invokeGCC(inputFile, outputFile string, out io.Writer) error {
 	libdir := "ddpstdlib.lib"
 	if runtime.GOOS == "linux" {
