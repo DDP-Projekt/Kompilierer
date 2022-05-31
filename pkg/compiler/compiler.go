@@ -692,7 +692,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	}
 	vr := c.scp.lookupVar(s.Name.Literal)
 	if vr.t == ddpstrptr {
-		c.decrementRC(vr.v)
+		c.decrementRC(c.cbb.NewLoad(vr.t, vr.v))
 	}
 	c.cbb.NewStore(val, vr.v)
 	return c
