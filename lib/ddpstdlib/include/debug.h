@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define DEBUG // undef to remove logs and similar debug stuff
+//#define DEBUG // undef to remove logs and similar debug stuff
 
 #ifdef DEBUG
 #define DBGLOG(...) \
