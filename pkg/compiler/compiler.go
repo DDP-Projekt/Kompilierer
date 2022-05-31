@@ -108,17 +108,11 @@ func (c *Compiler) setupStringType() {
 	ddpstring.Fields[1] = ddpint
 	c.mod.NewTypeDef("ddpstring", ddpstring)
 
-	/*sfcret := ir.NewParam("", ddpstrptr)
-	sfcret.Attrs = append(sfcret.Attrs, enum.ParamAttrNoAlias)
-	sfcret.Attrs = append(sfcret.Attrs, ir.SRet{Typ: ddpstring})*/
 	sfc := c.mod.NewFunc("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
 	sfc.CallingConv = enum.CallingConvC
 	sfc.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_string_from_constant", nil, sfc)
 
-	/*dcsret := ir.NewParam("", ddpstrptr)
-	dcsret.Attrs = append(dcsret.Attrs, enum.ParamAttrNoAlias)
-	dcsret.Attrs = append(dcsret.Attrs, ir.SRet{Typ: ddpstring})*/
 	dcs := c.mod.NewFunc("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
 	dcs.CallingConv = enum.CallingConvC
 	dcs.Linkage = enum.LinkageExternal
@@ -135,10 +129,6 @@ func (c *Compiler) setupStringType() {
 	c.insertFunction("inbuilt_increment_ref_count", nil, irc)
 }
 
-/*func (c *Compiler) markString(strptr value.Value) {
-	c.cbb.NewCall(c.functions["mark_gc"].irFunc, c.cbb.NewBitCast(strptr, ptr(garbage_collected)))
-}*/
-
 func (c *Compiler) incrementRC(key value.Value, kind *constant.Int) {
 	c.cbb.NewCall(c.functions["inbuilt_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
 }
@@ -154,7 +144,6 @@ func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
 		if v.t == ddpstrptr {
-			//c.markString(c.cbb.NewLoad(ddpstrptr, v.v))
 			c.decrementRC(c.cbb.NewLoad(ddpstrptr, v.v))
 		}
 	}
@@ -167,9 +156,6 @@ func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 }
 func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	t := toDDPType(d.Type.Type)
-	if t == ddpstring {
-		t = ddpstrptr
-	}
 	v := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(t), t) // allocate the variable on the function call frame
 	initVal := c.evaluate(d.InitVal)
 	c.cbb.NewStore(initVal, v) // store the init value
@@ -181,16 +167,10 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	retType := toDDPType(d.Type.Type)
 	params := make([]*ir.Param, 0, len(d.ParamTypes))
-	if retType == ddpstring {
-		retType = ddpstrptr
-	}
 
 	// append all the other parameters
 	for i, tok := range d.ParamTypes {
 		ty := toDDPType(tok.Type)
-		if ty == ddpstring {
-			ty = ddpstrptr // strings are passed as pointers
-		}
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty))
 	}
 
@@ -219,7 +199,6 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 				strptr := c.deepCopyStr(params[i]) // deep copy the passed pointer to string
 				c.incrementRC(strptr, VK_STRING)
 				c.cbb.NewStore(strptr, v)
-				//c.markString(params[i])
 				c.decrementRC(params[i])
 			} else {
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
@@ -701,7 +680,6 @@ func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	expr := c.evaluate(s.Expr)
 	// TODO: fix memory error
 	if expr.Type() == ddpstrptr { // maybe works?
-		//c.markString(expr)
 		c.incrementRC(expr, VK_STRING) // add it to the table (will be made better later)
 		c.decrementRC(expr)
 	}
@@ -866,7 +844,6 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 		oldRet := ret
 		c.incrementRC(oldRet, VK_STRING)
 		ret = c.deepCopyStr(oldRet)
-		//c.markString(oldRet)
 		c.decrementRC(oldRet)
 	}
 	c.cbb.NewRet(ret)
@@ -880,10 +857,10 @@ func notimplemented() {
 	panic(fmt.Errorf("%s, %d, %s: this function or a part of it is not implemented", filepath.Base(file), line, function))
 }
 
-func (c *Compiler) currentlyskipped() {
+/*func (c *Compiler) currentlyskipped() {
 	file, line, function := getTraceInfo(2)
 	c.errorHandler(fmt.Sprintf("%s, %d, %s: this function or a part of it is currently being ignored", filepath.Base(file), line, function))
-}
+}*/
 
 func getTraceInfo(skip int) (file string, line int, function string) {
 	pc := make([]uintptr, 15)

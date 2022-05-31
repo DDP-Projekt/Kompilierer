@@ -17,12 +17,14 @@ Die Funktion Fibonacci mit den Parametern n vom Typ Zahl, gibt eine Zahl zurück
 		Schreibe den Text "n ist 1 oder kleiner!".
         Gib n zurück.
 
-	Der Text t ist "\neinen lokale Variable\n".
+	Der Text t ist "\neine lokale Variable\n".
 	Die Zahl erstesZwischenergebnis ist die (n minus 2). Fibonacci nummer.
 	Schreibe den Text t.
-	Schreibe den Text "erstes Zwischenergebnis: ".
+	t ist "erstes Zwischenergebnis: ".
+	Schreibe den Text t.
 	Schreibe die Zahl erstesZwischenergebnis.
 	Die Zahl zweitesZwischenergebnis ist die (n minus 1). Fibonacci nummer.
+	t ist "\neine lokale Variable\n".
 	Schreibe den Text t.
 	Schreibe den Text "zweites Zwischenergebnis: ".
 	Schreibe die Zahl zweitesZwischenergebnis.
@@ -49,5 +51,10 @@ Und kann so benutzt werden:
 
 [Für jede Zahl i von 0 bis 10000, Schreibe den Text "Hallo\n".]
 
+Wenn 1 kleiner als 2 ist, dann:
+	Der Text t ist "Hallo Welt".
+	Schreibe den Text t.
+
 Schreibe die Zahl (fib_fast 20).
-Schreibe die Zahl (Fibonacci von 20).
+[Schreibe die Zahl (Fibonacci von 20).]
+Für jede Zahl z von 0 bis 15, Schreibe die Zahl (Fibonacci von 20).

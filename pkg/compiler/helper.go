@@ -16,10 +16,7 @@ var (
 
 	i8  = types.I8
 	i16 = types.I16
-	i32 = types.I32
 	i64 = types.I64
-
-	cstr = ptr(ddpchar)
 
 	ddpint    = i64
 	ddpfloat  = types.Double
@@ -30,19 +27,13 @@ var (
 
 	ptr = types.NewPointer
 
-	zero  = constant.NewInt(ddpint, 0)
-	fzero = newFloat(0)
-	one   = constant.NewInt(ddpint, 1)
+	zero = constant.NewInt(ddpint, 0)
 
 	VK_STRING = constant.NewInt(i8, 0)
 )
 
 func newInt(value int64) *constant.Int {
 	return constant.NewInt(ddpint, value)
-}
-
-func newFloat(value float64) *constant.Float {
-	return constant.NewFloat(ddpfloat, value)
 }
 
 // turn a tokenType into the corresponding llvm type
@@ -59,7 +50,7 @@ func toDDPType(t token.TokenType) types.Type {
 	case token.BUCHSTABE:
 		return ddpchar
 	case token.TEXT:
-		return ddpstring
+		return ddpstrptr
 	}
 	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
 }
