@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	"DDP/pkg/token"
+	"KDDP/pkg/token"
 	"errors"
 	"fmt"
 	"os"

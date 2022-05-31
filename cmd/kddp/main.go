@@ -26,8 +26,8 @@ func main() {
 func runCommands() error {
 	if len(os.Args) < 2 {
 		return fmt.Errorf(
-			`usage: ddp <command> <options>
-for more information try: ddp help
+			`usage: kddp <command> <options>
+for more information try: kddp help
 `)
 	}
 

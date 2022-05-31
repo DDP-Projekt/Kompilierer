@@ -1,4 +1,4 @@
-module DDP
+module KDDP
 
 go 1.18
 

@@ -1,6 +1,6 @@
 package interpreter
 
-import "DDP/pkg/ast"
+import "KDDP/pkg/ast"
 
 // saves variable states
 type environment struct {

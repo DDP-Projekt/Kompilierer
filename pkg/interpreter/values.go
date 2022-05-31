@@ -1,7 +1,7 @@
 package interpreter
 
 import (
-	"DDP/pkg/token"
+	"KDDP/pkg/token"
 )
 
 type value interface {

@@ -1,10 +1,10 @@
 OUT_FILE_NAME = ""
 LLVM_CONFIG = ""
 ifeq ($(OS),Windows_NT)
-	OUT_FILE_NAME := ddp.exe
+	OUT_FILE_NAME := kddp.exe
 	LLVM_CONFIG := "llvm-config"
 else
-	OUT_FILE_NAME := ddp
+	OUT_FILE_NAME := kddp
 	LLVM_CONFIG := "llvm-config-12"
 endif
 

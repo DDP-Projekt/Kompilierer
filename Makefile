@@ -1,10 +1,10 @@
 DDP_BIN = ""
 STD_BIN = ""
 ifeq ($(OS),Windows_NT)
-	DDP_BIN := ddp.exe
+	DDP_BIN := kddp.exe
 	STD_BIN := ddpstdlib.lib
 else
-	DDP_BIN := ddp
+	DDP_BIN := kddp
 	STD_BIN := ddpstdlib.a
 endif
 
@@ -12,7 +12,7 @@ OUT_DIR := build/
 
 .DEFAULT_GOAL = all
 
-DDP_DIR = ./cmd/ddp
+DDP_DIR = ./cmd/kddp
 STD_DIR = ./lib/ddpstdlib
 
 MAKE = make

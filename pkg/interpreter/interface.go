@@ -1,9 +1,9 @@
 package interpreter
 
 import (
-	"DDP/pkg/ast"
-	"DDP/pkg/parser"
-	"DDP/pkg/scanner"
+	"KDDP/pkg/ast"
+	"KDDP/pkg/parser"
+	"KDDP/pkg/scanner"
 )
 
 // interpret the given ddp file

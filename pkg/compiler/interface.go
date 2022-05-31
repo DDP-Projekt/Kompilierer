@@ -1,9 +1,9 @@
 package compiler
 
 import (
-	"DDP/pkg/ast"
-	"DDP/pkg/parser"
-	"DDP/pkg/scanner"
+	"KDDP/pkg/ast"
+	"KDDP/pkg/parser"
+	"KDDP/pkg/scanner"
 )
 
 // compile the given ddp file into llvm ir

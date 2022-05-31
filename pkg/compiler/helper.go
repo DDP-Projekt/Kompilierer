@@ -1,8 +1,8 @@
 package compiler
 
 import (
-	"DDP/pkg/ast"
-	"DDP/pkg/token"
+	"KDDP/pkg/ast"
+	"KDDP/pkg/token"
 	"fmt"
 	"strings"
 

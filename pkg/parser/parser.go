@@ -1,11 +1,11 @@
 package parser
 
 import (
-	"DDP/pkg/ast"
-	"DDP/pkg/ast/resolver"
-	"DDP/pkg/ast/typechecker"
-	"DDP/pkg/scanner"
-	"DDP/pkg/token"
+	"KDDP/pkg/ast"
+	"KDDP/pkg/ast/resolver"
+	"KDDP/pkg/ast/typechecker"
+	"KDDP/pkg/scanner"
+	"KDDP/pkg/token"
 	"embed"
 	"errors"
 	"fmt"

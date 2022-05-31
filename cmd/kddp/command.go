@@ -1,9 +1,9 @@
 package main
 
 import (
-	"DDP/pkg/compiler"
-	"DDP/pkg/interpreter"
-	"DDP/pkg/parser"
+	"KDDP/pkg/compiler"
+	"KDDP/pkg/interpreter"
+	"KDDP/pkg/parser"
 	"flag"
 	"fmt"
 	"io"

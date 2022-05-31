@@ -1,9 +1,9 @@
 package typechecker
 
 import (
-	"DDP/pkg/ast"
-	"DDP/pkg/scanner"
-	"DDP/pkg/token"
+	"KDDP/pkg/ast"
+	"KDDP/pkg/scanner"
+	"KDDP/pkg/token"
 	"fmt"
 )
 

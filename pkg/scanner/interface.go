@@ -1,6 +1,6 @@
 package scanner
 
-import "DDP/pkg/token"
+import "KDDP/pkg/token"
 
 // scans the provided file
 func ScanFile(path string, errorHandler ErrorHandler, mode Mode) ([]token.Token, error) {

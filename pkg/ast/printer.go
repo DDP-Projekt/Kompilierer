@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"DDP/pkg/token"
+	"KDDP/pkg/token"
 	"fmt"
 )
 
