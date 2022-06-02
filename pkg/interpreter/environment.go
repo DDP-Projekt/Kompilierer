@@ -1,6 +1,6 @@
 package interpreter
 
-import "github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
+import "github.com/DDP-Projekt/Kompilierer/pkg/ast"
 
 // saves variable states
 type environment struct {

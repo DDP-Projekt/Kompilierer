@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 type Interpreter struct {

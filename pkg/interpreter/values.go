@@ -1,7 +1,7 @@
 package interpreter
 
 import (
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 type value interface {

@@ -3,20 +3,21 @@ package typechecker
 import (
 	"fmt"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/scanner"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
+// holds state to check if the types of an AST are valid
 type Typechecker struct {
-	errorHandler       scanner.ErrorHandler
-	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
-	errored            bool
+	errorHandler       scanner.ErrorHandler                  // function to which errors are passed
+	CurrentTable       *ast.SymbolTable                      // SymbolTable of the current scope (needed for name type-checking)
+	errored            bool                                  // wether the typechecker found an error
 	latestReturnedType token.TokenType                       // type of the last visited expression
 	funcArgs           map[string]map[string]token.TokenType // for function parameter types
 }
 
-func NewTypechecker(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
+func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
 	return &Typechecker{
 		errorHandler:       errorHandler,
 		CurrentTable:       symbols,
@@ -28,7 +29,7 @@ func NewTypechecker(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler)
 
 // checks that all ast nodes fulfill type requirements
 func TypecheckAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
-	t := NewTypechecker(Ast.Symbols, errorHandler)
+	t := New(Ast.Symbols, errorHandler)
 
 	for i, l := 0, len(Ast.Statements); i < l; i++ {
 		Ast.Statements[i].Accept(t)
@@ -39,16 +40,25 @@ func TypecheckAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
 	}
 }
 
+// typecheck a single node
 func (t *Typechecker) TypecheckNode(node ast.Node) *Typechecker {
 	return node.Accept(t).(*Typechecker)
 }
 
+// getter
 func (t *Typechecker) Errored() bool {
 	return t.errored
 }
 
+// helper to visit a node
 func (t *Typechecker) visit(node ast.Node) {
 	t = node.Accept(t).(*Typechecker)
+}
+
+// helper that returns the evaluated type of the node
+func (t *Typechecker) evaluate(node ast.Node) token.TokenType {
+	t.visit(node)
+	return t.latestReturnedType
 }
 
 // helper for errors
@@ -57,10 +67,12 @@ func (t *Typechecker) err(tok token.Token, msg string) {
 	t.errorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line, tok.Column, msg))
 }
 
+// helper for commmon error message
 func (t *Typechecker) errMismatch(tok token.Token, typ1, typ2 token.TokenType) {
 	t.err(tok, fmt.Sprintf("Der Typ '%s' stimmt nicht mit dem Typ '%s' überein", typ1.String(), typ2.String()))
 }
 
+// helper for commmon error message
 func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected ...token.TokenType) {
 	msg := "Es wurde ein Ausdruck vom Typ "
 	if len(expected) == 1 {
@@ -77,6 +89,7 @@ func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected
 	t.err(tok, msg)
 }
 
+// helper for commmon error message
 func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2, op token.TokenType) {
 	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, op))
 }
@@ -87,9 +100,9 @@ func (t *Typechecker) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	t.visit(d.InitVal)
-	if t.latestReturnedType != d.Type.Type {
-		t.errMismatch(d.InitVal.Token(), d.Type.Type, t.latestReturnedType)
+	ty := t.evaluate(d.InitVal)
+	if ty != d.Type.Type {
+		t.errMismatch(d.InitVal.Token(), d.Type.Type, ty)
 	}
 	return t
 }
@@ -131,55 +144,54 @@ func (t *Typechecker) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	t.visit(e.Rhs)
+	// evaluate the rhs expression and check if the operator fits it
+	rhs := t.evaluate(e.Rhs)
 	switch e.Operator.Type {
 	case token.BETRAG, token.NEGATE:
-		if !isType(t.latestReturnedType, token.ZAHL, token.KOMMAZAHL) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.ZAHL, token.KOMMAZAHL)
+		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
 		}
 	case token.NICHT:
-		if !isType(t.latestReturnedType, token.BOOLEAN) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.BOOLEAN)
+		if !isType(rhs, token.BOOLEAN) {
+			t.errExpected(e.Operator, rhs, token.BOOLEAN)
 		}
-		t.latestReturnedType = token.BOOLEAN
 	case token.LÄNGE:
-		if !isType(t.latestReturnedType, token.TEXT) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.TEXT)
+		if !isType(rhs, token.TEXT) {
+			t.errExpected(e.Operator, rhs, token.TEXT)
 		}
-		t.latestReturnedType = token.ZAHL
+		t.latestReturnedType = token.ZAHL // some operators change the type of the rhs expression, so we set that
 	case token.GRÖßE:
 		t.latestReturnedType = token.ZAHL
 	case token.ZAHL:
 		t.latestReturnedType = token.ZAHL
 	case token.KOMMAZAHL:
-		if !isType(t.latestReturnedType, token.TEXT, token.ZAHL, token.KOMMAZAHL) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.ZAHL, token.TEXT, token.KOMMAZAHL)
+		if !isType(rhs, token.TEXT, token.ZAHL, token.KOMMAZAHL) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.TEXT, token.KOMMAZAHL)
 		}
 		t.latestReturnedType = token.KOMMAZAHL
 	case token.BOOLEAN:
-		if !isType(t.latestReturnedType, token.ZAHL, token.BOOLEAN) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.ZAHL, token.BOOLEAN)
+		if !isType(rhs, token.ZAHL, token.BOOLEAN) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.BOOLEAN)
 		}
 		t.latestReturnedType = token.BOOLEAN
 	case token.BUCHSTABE:
-		if !isType(t.latestReturnedType, token.ZAHL, token.BUCHSTABE) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.ZAHL, token.BUCHSTABE)
+		if !isType(rhs, token.ZAHL, token.BUCHSTABE) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.BUCHSTABE)
 		}
 	case token.TEXT:
-		if !isType(t.latestReturnedType, token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.TEXT) {
-			t.errExpected(e.Operator, t.latestReturnedType, token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.TEXT)
+		if !isType(rhs, token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.TEXT) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.TEXT)
 		}
 		t.latestReturnedType = token.TEXT
 	}
 	return t
 }
 func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
-	t.visit(e.Lhs)
-	lhs := t.latestReturnedType
-	t.visit(e.Rhs)
-	rhs := t.latestReturnedType
+	lhs := t.evaluate(e.Lhs)
+	rhs := t.evaluate(e.Rhs)
 
-	validate := func(tok token.Token, op token.TokenType, valid ...token.TokenType) {
+	// helper to validate if types match
+	validate := func(op token.TokenType, valid ...token.TokenType) {
 		if !isTypeBin(lhs, rhs, valid...) {
 			t.errExpectedBin(e.Token(), lhs, rhs, op)
 		}
@@ -187,49 +199,49 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 
 	switch op := e.Operator.Type; op {
 	case token.VERKETTET:
-		validate(e.Token(), op, token.TEXT, token.BUCHSTABE)
-		t.latestReturnedType = token.TEXT
+		validate(op, token.TEXT, token.BUCHSTABE)
+		t.latestReturnedType = token.TEXT // some operators change the type of the expression, so we set that here
 	case token.PLUS:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		if lhs == token.ZAHL && rhs == token.ZAHL {
 			t.latestReturnedType = token.ZAHL
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
 	case token.MINUS:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		if lhs == token.ZAHL && rhs == token.ZAHL {
 			t.latestReturnedType = token.ZAHL
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
 	case token.MAL:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		if lhs == token.ZAHL && rhs == token.ZAHL {
 			t.latestReturnedType = token.ZAHL
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
 	case token.DURCH:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		t.latestReturnedType = token.KOMMAZAHL
 	case token.MODULO:
-		validate(e.Token(), op, token.ZAHL)
+		validate(op, token.ZAHL)
 	case token.HOCH:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		if lhs == token.ZAHL && rhs == token.ZAHL {
 			t.latestReturnedType = token.ZAHL
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
 	case token.UND:
-		validate(e.Token(), op, token.BOOLEAN)
+		validate(op, token.BOOLEAN)
 	case token.ODER:
-		validate(e.Token(), op, token.BOOLEAN)
+		validate(op, token.BOOLEAN)
 	case token.LINKS:
-		validate(e.Token(), op, token.ZAHL)
+		validate(op, token.ZAHL)
 	case token.RECHTS:
-		validate(e.Token(), op, token.ZAHL)
+		validate(op, token.ZAHL)
 	case token.GLEICH:
 		if lhs != rhs {
 			t.errExpectedBin(e.Token(), lhs, rhs, op)
@@ -247,7 +259,7 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.GRÖßER:
 		fallthrough
 	case token.GRÖßERODER:
-		validate(e.Token(), op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.ZAHL, token.KOMMAZAHL)
 		t.latestReturnedType = token.BOOLEAN
 	}
 	return t
@@ -257,9 +269,9 @@ func (t *Typechecker) VisitGrouping(e *ast.Grouping) ast.Visitor {
 }
 func (t *Typechecker) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	for k, v := range e.Args {
-		t.visit(v)
-		if t.latestReturnedType != t.funcArgs[e.Name][k] {
-			t.errExpected(v.Token(), t.latestReturnedType, t.funcArgs[e.Name][k])
+		ty := t.evaluate(v)
+		if ty != t.funcArgs[e.Name][k] {
+			t.errExpected(v.Token(), ty, t.funcArgs[e.Name][k])
 		}
 	}
 	fun, _ := t.CurrentTable.LookupFunc(e.Name)
@@ -279,9 +291,9 @@ func (t *Typechecker) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *Typechecker) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	t.visit(s.Rhs)
-	if typ, exists := t.CurrentTable.LookupVar(s.Name.Literal); exists && typ != t.latestReturnedType {
-		t.errMismatch(s.Token(), typ, t.latestReturnedType)
+	ty := t.evaluate(s.Rhs)
+	if vartyp, exists := t.CurrentTable.LookupVar(s.Name.Literal); exists && vartyp != ty {
+		t.errMismatch(s.Token(), vartyp, ty)
 	}
 	return t
 }
@@ -294,9 +306,9 @@ func (t *Typechecker) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	t.visit(s.Condition)
-	if t.latestReturnedType != token.BOOLEAN {
-		t.errMismatch(s.Condition.Token(), token.BOOLEAN, t.latestReturnedType)
+	condty := t.evaluate(s.Condition)
+	if condty != token.BOOLEAN {
+		t.errMismatch(s.Condition.Token(), token.BOOLEAN, condty)
 	}
 	t.visit(s.Then)
 	if s.Else != nil {
@@ -305,22 +317,22 @@ func (t *Typechecker) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	t.visit(s.Condition)
-	if t.latestReturnedType != token.BOOLEAN {
-		t.errMismatch(s.Condition.Token(), token.BOOLEAN, t.latestReturnedType)
+	condty := t.evaluate(s.Condition)
+	if condty != token.BOOLEAN {
+		t.errMismatch(s.Condition.Token(), token.BOOLEAN, condty)
 	}
 	return s.Body.Accept(t)
 }
 func (t *Typechecker) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	t.visit(s.Initializer)
-	t.visit(s.To)
-	if t.latestReturnedType != token.ZAHL {
-		t.errMismatch(s.To.Token(), token.ZAHL, t.latestReturnedType)
+	toty := t.evaluate(s.To)
+	if toty != token.ZAHL {
+		t.errMismatch(s.To.Token(), token.ZAHL, toty)
 	}
 	if s.StepSize != nil {
-		t.visit(s.StepSize)
-		if t.latestReturnedType != token.ZAHL {
-			t.errMismatch(s.StepSize.Token(), token.ZAHL, t.latestReturnedType)
+		stepty := t.evaluate(s.StepSize)
+		if stepty != token.ZAHL {
+			t.errMismatch(s.StepSize.Token(), token.ZAHL, stepty)
 		}
 	}
 	return s.Body.Accept(t)
@@ -329,13 +341,14 @@ func (t *Typechecker) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(t)
 }
 func (t *Typechecker) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	t.visit(s.Value)
-	if fun, exists := t.CurrentTable.LookupFunc(s.Func); exists && fun.Type.Type != t.latestReturnedType {
-		t.errMismatch(s.Token(), fun.Type.Type, t.latestReturnedType)
+	ty := t.evaluate(s.Value)
+	if fun, exists := t.CurrentTable.LookupFunc(s.Func); exists && fun.Type.Type != ty {
+		t.errMismatch(s.Token(), fun.Type.Type, ty)
 	}
 	return t
 }
 
+// checks if t is contained in types
 func isType(t token.TokenType, types ...token.TokenType) bool {
 	for _, v := range types {
 		if t == v {
@@ -345,6 +358,7 @@ func isType(t token.TokenType, types ...token.TokenType) bool {
 	return false
 }
 
+// checks if t1 and t2 are both contained in types
 func isTypeBin(t1, t2 token.TokenType, types ...token.TokenType) bool {
 	return isType(t1, types...) && isType(t2, types...)
 }

@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+import "github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 // represents an Abstract Syntax Tree for a DDP program
 type Ast struct {
@@ -59,7 +59,7 @@ type (
 		ParamNames []token.Token // x, y und z
 		ParamTypes []token.Token // Zahl, Text und Boolean
 		Type       token.Token   // Zahl Kommazahl nichts ...
-		Body       Statement
+		Body       *BlockStmt
 	}
 )
 

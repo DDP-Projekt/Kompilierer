@@ -1,4 +1,4 @@
-module github.com/Die-Deutsche-Programmiersprache/KDDP
+module github.com/DDP-Projekt/Kompilierer
 
 go 1.18
 

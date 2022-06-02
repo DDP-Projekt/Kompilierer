@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/compiler"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/interpreter"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/parser"
+	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
+	"github.com/DDP-Projekt/Kompilierer/pkg/interpreter"
+	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
 )
 
 // interface for a sub-command

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 // stores symbols for one scope of an ast
@@ -22,6 +22,7 @@ func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
 // returns the type of the variable name and if it exists in the table or it's enclosing scopes
 func (s *SymbolTable) LookupVar(name string) (token.TokenType, bool) {
 	if v, ok := s.variables[name]; !ok {
+		// if the variable was not found here we recursively check the enclosing scopes
 		if s.Enclosing != nil {
 			return s.Enclosing.LookupVar(name)
 		}
@@ -34,6 +35,7 @@ func (s *SymbolTable) LookupVar(name string) (token.TokenType, bool) {
 // returns the type of the variable name and if it exists in the table or it's enclosing scopes
 func (s *SymbolTable) LookupFunc(name string) (*FuncDecl, bool) {
 	if v, ok := s.functions[name]; !ok {
+		// if the function was not found here we recursively check the enclosing scopes
 		if s.Enclosing != nil {
 			return s.Enclosing.LookupFunc(name)
 		}
@@ -73,6 +75,7 @@ func (s *SymbolTable) InsertFunc(name string, fun *FuncDecl) bool {
 	return false
 }
 
+// merge other into s, replacing already existing symbols
 func (s *SymbolTable) Merge(other *SymbolTable) {
 	for k, v := range other.functions {
 		s.functions[k] = v
@@ -82,6 +85,8 @@ func (s *SymbolTable) Merge(other *SymbolTable) {
 	}
 }
 
+// return a copy of s
+// not a deep copy, FuncDecl pointers stay the same
 func (s *SymbolTable) Copy() *SymbolTable {
 	table := &SymbolTable{
 		Enclosing: s.Enclosing,

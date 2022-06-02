@@ -3,14 +3,16 @@ package ast
 import (
 	"fmt"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
+// simple visitor to print an AST
 type printer struct {
 	currentIdent int
 	returned     string
 }
 
+// print the AST to stdout
 func (ast *Ast) Print() {
 	p := &printer{}
 	WalkAst(ast, p)

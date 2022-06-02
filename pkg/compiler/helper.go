@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/ast"
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"

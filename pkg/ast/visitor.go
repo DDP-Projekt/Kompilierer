@@ -1,6 +1,7 @@
 package ast
 
 // interface for visiting DDP expressions, statements and declarations
+// see the Visitor pattern
 type Visitor interface {
 	VisitBadDecl(*BadDecl) Visitor
 	VisitVarDecl(*VarDecl) Visitor

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Die-Deutsche-Programmiersprache/KDDP/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 type Mode uint32
@@ -300,6 +300,7 @@ func (s *Scanner) identifierType() token.TokenType {
 	return v
 }
 
+// helper to scan the *argname in aliases
 func (s *Scanner) aliasParameter() token.Token {
 	for isAlphaNumeric(s.peek(), s.initMode()) {
 		s.advance()
