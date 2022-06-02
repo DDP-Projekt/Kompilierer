@@ -26,6 +26,8 @@ all: make_out_dir make_sub_dirs
 debug: make_out_dir
 	$(MAKE) -C $(DDP_DIR)
 	$(MAKE) -C $(STD_DIR) debug
+	cp $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
+	cp $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 make_sub_dirs:
 	$(MAKE) -C $(DDP_DIR)
