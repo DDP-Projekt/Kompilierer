@@ -18,25 +18,28 @@ import (
 	"github.com/llir/llvm/ir/value"
 )
 
+// small wrapper for a ast.FuncDecl and the corresponding ir function
 type funcWrapper struct {
-	irFunc   *ir.Func
-	funcDecl *ast.FuncDecl
+	irFunc   *ir.Func      // the function in the llvm ir
+	funcDecl *ast.FuncDecl // the ast.FuncDecl
 }
 
+// holds state to compile a DDP AST into llvm ir
 type Compiler struct {
 	ast          *ast.Ast
-	mod          *ir.Module
-	errorHandler scanner.ErrorHandler
+	mod          *ir.Module           // the ir module (basically the ir file)
+	errorHandler scanner.ErrorHandler // errors are passed to this function
 
-	cbb          *ir.Block // current basic block
-	cf           *ir.Func  // current function
-	scp          *scope
-	functions    map[string]*funcWrapper
-	latestReturn value.Value
+	cbb          *ir.Block               // current basic block in the ir
+	cf           *ir.Func                // current function
+	scp          *scope                  // current scope in the ast (not in the ir)
+	functions    map[string]*funcWrapper // all the global functions
+	latestReturn value.Value             // return of the latest evaluated expression (in the ir)
 }
 
+// create a new Compiler to compile the passed AST
 func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
-	if errorHandler == nil {
+	if errorHandler == nil { // default error handler does nothing
 		errorHandler = func(string) {}
 	}
 	return &Compiler{
@@ -45,13 +48,15 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 		errorHandler: errorHandler,
 		cbb:          nil,
 		cf:           nil,
-		scp:          newScope(nil),
+		scp:          newScope(nil), // global scope
 		functions:    map[string]*funcWrapper{},
 		latestReturn: nil,
 	}
 }
 
+// compile the AST contained in c
 func (c *Compiler) Compile() (result string, rerr error) {
+	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
 			rerr = err.(error)
@@ -59,41 +64,54 @@ func (c *Compiler) Compile() (result string, rerr error) {
 		}
 	}()
 
+	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
 		return "", fmt.Errorf("Fehlerhafter Syntax Baum")
 	}
 
-	c.mod.SourceFilename = c.ast.File
-	c.setupStringType()                                                                        // setup some internal functions to work with strings; might be removed later
-	main := c.insertFunction("inbuilt_ddpmain", nil, c.mod.NewFunc("inbuilt_ddpmain", ddpint)) // called from the ddp-c-runtime after initialization
-	c.cf = main
-	c.cbb = main.NewBlock("")
+	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
+	c.setupStringType()               // setup some internal functions to work with strings
+	// called from the ddp-c-runtime after initialization
+	ddpmain := c.insertFunction(
+		"inbuilt_ddpmain",
+		nil,
+		c.mod.NewFunc("inbuilt_ddpmain", ddpint),
+	)
+	c.cf = ddpmain               // first function is ddpmain
+	c.cbb = ddpmain.NewBlock("") // first block
 
+	// visit every statement in the AST and compile it
 	for _, stmt := range c.ast.Statements {
 		c.visitNode(stmt)
 	}
 
+	// on success ddpmain returns 0
 	c.cbb.NewRet(newInt(0))
-	return c.mod.String(), nil
+	return c.mod.String(), nil // return the module as string
 }
 
 // helper that might be extended later
+// it is not intended for the end user to see these errors, as they are compiler bugs
+// the errors in the ddp-code were already reported by the parser/typechecker/resolver
 func err(msg string) {
+	// retreive the file and line on which the error occured
 	_, file, line, _ := runtime.Caller(1)
 	panic(fmt.Errorf("%s, %d: %s", filepath.Base(file), line, msg))
 }
 
-// convenience functions
-
+// helper to visit a single node
 func (c *Compiler) visitNode(node ast.Node) {
 	c = node.Accept(c).(*Compiler)
 }
 
+// helper to evalueate an expression and return its ir value
 func (c *Compiler) evaluate(expr ast.Expression) value.Value {
 	c.visitNode(expr)
 	return c.latestReturn
 }
 
+// helper to insert a function into the global function map
+// returns the ir function
 func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *ir.Func) *ir.Func {
 	c.functions[name] = &funcWrapper{
 		funcDecl: funcDecl,
@@ -102,46 +120,65 @@ func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 	return irFunc
 }
 
-// declare some internal string functions
+// declares some internal string functions
+// and completes the ddpstring struct
 func (c *Compiler) setupStringType() {
+	// complete the ddpstring definition to interact with the c ddp runtime
 	ddpstring.Fields = make([]types.Type, 2)
 	ddpstring.Fields[0] = ptr(ddpchar)
 	ddpstring.Fields[1] = ddpint
 	c.mod.NewTypeDef("ddpstring", ddpstring)
 
+	// declare all the external functions to work with strings
+
+	// creates a ddpstring from a string literal
 	sfc := c.mod.NewFunc("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
 	sfc.CallingConv = enum.CallingConvC
 	sfc.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_string_from_constant", nil, sfc)
 
+	// returns a copy of the passed string as a new pointer
 	dcs := c.mod.NewFunc("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
 	dcs.CallingConv = enum.CallingConvC
 	dcs.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_deep_copy_string", nil, dcs)
 
+	// decrement the ref-count on a pointer and
+	// free the pointer if the ref-count becomes 0
+	// takes the pointer and the type to which it points
+	// (currently only string, but later lists and structs too)
 	drc := c.mod.NewFunc("inbuilt_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
 	drc.CallingConv = enum.CallingConvC
 	drc.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_decrement_ref_count", nil, drc)
 
+	// increment the ref-count on a pointer
+	// takes the pointer and the type to which it points
+	// (currently only string, but later lists and structs too)
 	irc := c.mod.NewFunc("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
 	irc.CallingConv = enum.CallingConvC
 	irc.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_increment_ref_count", nil, irc)
 }
 
+// helper to call increment_ref_count
 func (c *Compiler) incrementRC(key value.Value, kind *constant.Int) {
 	c.cbb.NewCall(c.functions["inbuilt_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
 }
 
+// helper to call decrement_ref_count
 func (c *Compiler) decrementRC(key value.Value) {
 	c.cbb.NewCall(c.functions["inbuilt_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
 }
 
+// helper to call deep_copy_string
 func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
 	return c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, strptr)
 }
 
+// helper to exit a scope
+// decrements the ref-count on all local variables
+// returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
 		if v.t == ddpstrptr {
@@ -151,39 +188,44 @@ func (c *Compiler) exitScope(scp *scope) *scope {
 	return scp.enclosing
 }
 
+// should have been filtered by the resolver/typechecker, so err
 func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	err("Es wurde eine invalide Deklaration gefunden")
 	return c
 }
 func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	t := toDDPType(d.Type.Type)
-	v := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(t), t) // allocate the variable on the function call frame
-	initVal := c.evaluate(d.InitVal)
-	c.cbb.NewStore(initVal, v) // store the init value
-	if t == ddpstrptr {
-		c.incrementRC(initVal, VK_STRING)
+	t := toDDPType(d.Type.Type) // get the llvm type
+	// allocate the variable on the function call frame
+	// all local variables are allocated in the first basic block of the function they are within
+	// in the ir a local variable is a alloca instruction (a stack allocation)
+	// global variables are allocated in the ddpmain function
+	v := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(t), t)
+	initVal := c.evaluate(d.InitVal) // evaluate the initial value
+	c.cbb.NewStore(initVal, v)       // store the initial value
+	if t == ddpstrptr {              // strings must be added to the ref-table
+		c.incrementRC(initVal, VK_STRING) // ref_count becomes 1
 	}
 	return c
 }
 func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
-	retType := toDDPType(d.Type.Type)
-	params := make([]*ir.Param, 0, len(d.ParamTypes))
+	retType := toDDPType(d.Type.Type)                 // get the llvm type
+	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
 
 	// append all the other parameters
 	for i, tok := range d.ParamTypes {
-		ty := toDDPType(tok.Type)
-		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty))
+		ty := toDDPType(tok.Type)                                         // convert the type of the parameter
+		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
 	// append a prefix to every ir function to make it impossible for the user to break internal stuff
 	name := d.Name.Literal
-	if isInbuiltFunc(d) {
+	if isInbuiltFunc(d) { // inbuilt/runtime functions are prefixed with inbuilt_
 		name = "inbuilt_" + strings.TrimLeft(name, "§")
-	} else {
+	} else { // user-defined functions are prefixed with ddpfunc_
 		name = "ddpfunc_" + name
 	}
-	irFunc := c.mod.NewFunc(name, retType, params...)
-	irFunc.CallingConv = enum.CallingConvC // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(name, retType, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC            // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 
 	c.insertFunction(d.Name.Literal, d, irFunc)
 
@@ -194,19 +236,21 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		for i := range params {
-			if d.ParamTypes[i].Type == token.TEXT {
-				c.incrementRC(params[i], VK_STRING)
+			if d.ParamTypes[i].Type == token.TEXT { // strings (and later other garbage collected types) need special handling
+				c.incrementRC(params[i], VK_STRING) // do we need that?
+				// add the local variable for the parameter
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(ddpstrptr), ddpstrptr)
 				strptr := c.deepCopyStr(params[i]) // deep copy the passed pointer to string
-				c.incrementRC(strptr, VK_STRING)
-				c.cbb.NewStore(strptr, v)
-				c.decrementRC(params[i])
+				c.incrementRC(strptr, VK_STRING)   // increment-ref-count on the new local variable
+				c.cbb.NewStore(strptr, v)          // store the copy in the local variable
+				c.decrementRC(params[i])           // do we need that?
 			} else {
+				// non garbage-collected types are just declared as their ir type
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
 				c.cbb.NewStore(params[i], v)
 			}
 		}
-		c.visitNode(d.Body)
+		c.visitNode(d.Body) // compile the function body
 		if c.cbb.Term == nil {
 			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
 		}
@@ -216,19 +260,22 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	return c
 }
 
+// should have been filtered by the resolver/typechecker, so err
 func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 	err("Es wurde ein invalider Ausdruck gefunden")
 	return c
 }
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
-	v := c.scp.lookupVar(e.Literal.Literal)
-	if v.t == ddpstrptr {
+	v := c.scp.lookupVar(e.Literal.Literal) // get the alloa in the ir
+	if v.t == ddpstrptr {                   // strings must be copied in case the user of the expression modifies them
 		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(v.t, v.v))
-	} else {
+	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(v.t, v.v)
 	}
 	return c
 }
+
+// literals are simple ir constants
 func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	c.latestReturn = constant.NewInt(ddpint, e.Value)
 	return c

@@ -23,7 +23,7 @@ var (
 	ddpfloat  = types.Double
 	ddpbool   = types.I1
 	ddpchar   = i16
-	ddpstring = types.NewStruct()
+	ddpstring = types.NewStruct() // defined in setupStringType
 	ddpstrptr = types.NewPointer(ddpstring)
 
 	ptr = types.NewPointer
