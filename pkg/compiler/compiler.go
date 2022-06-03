@@ -85,6 +85,8 @@ func (c *Compiler) Compile() (result string, rerr error) {
 		c.visitNode(stmt)
 	}
 
+	c.scp = c.exitScope(c.scp) // exit the main scope
+
 	// on success ddpmain returns 0
 	c.cbb.NewRet(newInt(0))
 	return c.mod.String(), nil // return the module as string
@@ -131,13 +133,15 @@ func (c *Compiler) setupStringType() {
 
 	// declare all the external functions to work with strings
 
-	// creates a ddpstring from a string literal
+	// creates a ddpstring from a string literal and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	sfc := c.mod.NewFunc("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
 	sfc.CallingConv = enum.CallingConvC
 	sfc.Linkage = enum.LinkageExternal
 	c.insertFunction("inbuilt_string_from_constant", nil, sfc)
 
 	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	dcs := c.mod.NewFunc("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
 	dcs.CallingConv = enum.CallingConvC
 	dcs.Linkage = enum.LinkageExternal
@@ -181,8 +185,8 @@ func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
 // returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
-		if v.t == ddpstrptr {
-			c.decrementRC(c.cbb.NewLoad(ddpstrptr, v.v))
+		if v.typ == ddpstrptr {
+			c.decrementRC(c.cbb.NewLoad(ddpstrptr, v.val))
 		}
 	}
 	return scp.enclosing
@@ -194,15 +198,15 @@ func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	t := toDDPType(d.Type.Type) // get the llvm type
+	Typ := toDDPType(d.Type.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 	// global variables are allocated in the ddpmain function
-	v := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(t), t)
+	Var := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(Typ), Typ)
 	initVal := c.evaluate(d.InitVal) // evaluate the initial value
-	c.cbb.NewStore(initVal, v)       // store the initial value
-	if t == ddpstrptr {              // strings must be added to the ref-table
+	c.cbb.NewStore(initVal, Var)     // store the initial value
+	if Typ == ddpstrptr {            // strings must be added to the ref-table
 		c.incrementRC(initVal, VK_STRING) // ref_count becomes 1
 	}
 	return c
@@ -235,15 +239,16 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
+		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
 			if d.ParamTypes[i].Type == token.TEXT { // strings (and later other garbage collected types) need special handling
-				c.incrementRC(params[i], VK_STRING) // do we need that?
 				// add the local variable for the parameter
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(ddpstrptr), ddpstrptr)
-				strptr := c.deepCopyStr(params[i]) // deep copy the passed pointer to string
-				c.incrementRC(strptr, VK_STRING)   // increment-ref-count on the new local variable
-				c.cbb.NewStore(strptr, v)          // store the copy in the local variable
-				c.decrementRC(params[i])           // do we need that?
+				// we need to deep copy the passed string because the caller
+				// must call increment/decrement_ref_count on it
+				strptr := c.deepCopyStr(params[i])
+				c.incrementRC(strptr, VK_STRING) // increment-ref-count on the new local variable
+				c.cbb.NewStore(strptr, v)        // store the copy in the local variable
 			} else {
 				// non garbage-collected types are just declared as their ir type
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
@@ -266,11 +271,11 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
-	v := c.scp.lookupVar(e.Literal.Literal) // get the alloa in the ir
-	if v.t == ddpstrptr {                   // strings must be copied in case the user of the expression modifies them
-		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(v.t, v.v))
+	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
+	if Var.typ == ddpstrptr {                 // strings must be copied in case the user of the expression modifies them
+		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(Var.typ, Var.val))
 	} else { // other variables are simply copied
-		c.latestReturn = c.cbb.NewLoad(v.t, v.v)
+		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
 	}
 	return c
 }
@@ -292,22 +297,31 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 	c.latestReturn = constant.NewInt(ddpchar, int64(e.Value))
 	return c
 }
+
+// string literals are created by the ddp-c-runtime
+// so we need to do some work here
+// currently a ddpstring is an array of wchar_t (aka 16bit)
+// but that will change later
 func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	strlen := utf8.RuneCountInString(e.Value)
+	strlen := utf8.RuneCountInString(e.Value) // length in utf-8 characters
 	str := make([]constant.Constant, 0, strlen)
+	// make an array of 16bit chars
 	for _, v := range e.Value {
 		str = append(str, constant.NewInt(ddpchar, int64(v)))
 	}
+	// add the array as constant into the ir
 	arrType := types.NewArray(uint64(strlen), ddpchar)
 	arr := c.mod.NewGlobalDef("", constant.NewArray(arrType, str...))
 
-	strptr := c.cbb.NewBitCast(arr, ptr(ddpchar))
+	strptr := c.cbb.NewBitCast(arr, ptr(ddpchar)) // cast to c-array
 
+	// call the ddp-runtime function to create the ddpstring
 	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, strptr, newInt(int64(strlen)))
 	return c
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	rhs := c.evaluate(e.Rhs)
+	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
+	// big switches for the different type combinations
 	switch e.Operator.Type {
 	case token.BETRAG:
 		err("Der BETRAG Operator ist noch nicht implementiert")
@@ -411,8 +425,10 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+	// compile the two expressions onto which the operator is applied
 	lhs := c.evaluate(e.Lhs)
 	rhs := c.evaluate(e.Rhs)
+	// big switches on the different type combinations
 	switch e.Operator.Type {
 	case token.VERKETTET:
 		notimplemented()
@@ -694,29 +710,37 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitGrouping(e *ast.Grouping) ast.Visitor {
-	return e.Expr.Accept(c)
+	return e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
 }
 func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
-	fun := c.functions[e.Name]
+	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames))
 
+	// the caller of a function is responsible for managing the ref-count
+	// of passed garbage collected values, so we call increment_ref_count on any
+	// passed garbage collected argument
 	toBeFreed := make([]*value.Value, 0)
 	for _, param := range fun.funcDecl.ParamNames {
-		val := c.evaluate(e.Args[param.Literal])
+		val := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+		// strings ref-count is managed by the caller, so increment it
+		// and mark it toBeFreed for after the function returns
 		if val.Type() == ddpstrptr {
 			c.incrementRC(val, VK_STRING)
 			toBeFreed = append(toBeFreed, &val)
 		}
-		args = append(args, val) // possible string ref count is incremented by funcDecl
+		args = append(args, val) // add the value to the arguments
 	}
 
-	c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
+	c.latestReturn = c.cbb.NewCall(fun.irFunc, args...) // compile the actual function call
+	// after the function returns, we decrement the ref-count on
+	// all passed arguments
 	for i := range toBeFreed {
 		c.decrementRC(*toBeFreed[i])
 	}
 	return c
 }
 
+// should have been filtered by the resolver/typechecker, so err
 func (c *Compiler) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
 	err("Es wurde eine invalide Aussage gefunden")
 	return c
@@ -726,67 +750,67 @@ func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
 }
 func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	expr := c.evaluate(s.Expr)
-	// TODO: fix memory error
-	if expr.Type() == ddpstrptr { // maybe works?
+	// free garbage collected returns
+	if expr.Type() == ddpstrptr {
 		c.incrementRC(expr, VK_STRING) // add it to the table (will be made better later)
 		c.decrementRC(expr)
 	}
 	return c
 }
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	val := c.evaluate(s.Rhs)
+	val := c.evaluate(s.Rhs) // compile the expression
+	// intermediate values ref-counts must be incremented/decremented
 	if val.Type() == ddpstrptr {
 		c.incrementRC(val, VK_STRING)
 	}
-	vr := c.scp.lookupVar(s.Name.Literal)
-	if vr.t == ddpstrptr {
-		c.decrementRC(c.cbb.NewLoad(vr.t, vr.v))
+	Var := c.scp.lookupVar(s.Name.Literal) // get the variable
+	// free the value which was previously contained in the variable
+	if Var.typ == ddpstrptr {
+		c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
 	}
-	c.cbb.NewStore(val, vr.v)
+	c.cbb.NewStore(val, Var.val) // store the new value
 	return c
 }
 func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
-	c.scp = newScope(c.scp)
+	c.scp = newScope(c.scp) // a block gets its own scope
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
 	}
 
-	c.scp = c.exitScope(c.scp)
+	c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
 	return c
 }
 
 // TODO: test ifs, they may be buggy as hell
-// TODO: probably leaks memory as soon as strings/local variables are involved
+// for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
 func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	var handleIf func(*ast.IfStmt, *ir.Block) // declaration to use it recursively
+	var handleIf func(*ast.IfStmt, *ir.Block) // declaration to use it recursively for nested else-ifs
 	// inner function to handle if-else blocks (we need to pass the leaveBlock down the chain)
 	handleIf = func(s *ast.IfStmt, leaveBlock *ir.Block) {
-		cbb, scp := c.cbb, c.scp // to restore them later
+		cbb := c.cbb // saved for later
 
-		// handle the then Block
-		thenScope := newScope(c.scp)
+		// compile the thenBlock
+		// we compile it first and safe it to jump to it later
 		thenBlock := c.cf.NewBlock("")
-		c.cbb, c.scp = thenBlock, thenScope
+		c.cbb, c.scp = thenBlock, newScope(c.scp) // with its own scope
 		c.visitNode(s.Then)
-
-		c.cbb, c.scp = cbb, scp
+		c.cbb, c.scp = cbb, c.exitScope(c.scp) // revert the scope and block
 
 		if s.Else != nil { // handle else and possible else-ifs
-			elseScope := newScope(c.scp)
 			elseBlock := c.cf.NewBlock("")
-			if leaveBlock == nil { // if we don't have a leaveBlock yet, make one
+			if leaveBlock == nil { // if we don't have a leaveBlock, make one
 				leaveBlock = c.cf.NewBlock("")
 			}
-			c.cbb, c.scp = elseBlock, elseScope
+			c.cbb, c.scp = elseBlock, newScope(c.scp) // the else block has its own scope as well
 			// either execute the else statement or handle the else-if with our leaveBlock
 			if elseIf, ok := s.Else.(*ast.IfStmt); ok {
-				handleIf(elseIf, leaveBlock)
+				handleIf(elseIf, leaveBlock) // recursively handle if-else statements (wenn aber)
 			} else {
-				c.visitNode(s.Else)
+				c.visitNode(s.Else) // handle only the else
 			}
 
-			c.cbb, c.scp = cbb, scp
-			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, elseBlock)
+			c.cbb, c.scp = cbb, c.exitScope(c.scp)                         // exit the else scope and restore the block before the if
+			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, elseBlock) // jump with the condition
 
 			// add a terminator
 			if thenBlock.Term == nil {
@@ -796,27 +820,26 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 				elseBlock.NewBr(leaveBlock)
 			}
 
-			c.cbb = leaveBlock
+			c.cbb = leaveBlock // continue compilation in the leave block
 		} else { // if there is no else we just conditionally execute the then block
-			if leaveBlock == nil {
+			if leaveBlock == nil { // if we don't already have a leaveBlock make one
 				leaveBlock = c.cf.NewBlock("")
 			}
-
-			c.cbb, c.scp = cbb, scp
+			// no else, so jump to then or leave
 			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, leaveBlock)
-
 			// we need a terminator (simply jump after the then block)
 			if thenBlock.Term == nil {
 				thenBlock.NewBr(leaveBlock)
 			}
-
-			c.cbb = leaveBlock
+			c.cbb = leaveBlock // continue compilation in the leave block
 		}
 	}
 
-	handleIf(s, nil)
+	handleIf(s, nil) // begin the recursive compilation of the if statement
 	return c
 }
+
+// for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 	scp := c.scp // to restore it later
 
@@ -837,41 +860,50 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 	c.cbb, c.scp = leaveBlock, scp
 	return c
 }
+
+// for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
+// for loops are still a bit broken, because if one changes the counter variable there might be issues like an infinite loop
+// TODO: fix the counter variable when users change it
 func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	scp := c.scp // to restore it at the end
 
-	c.scp = newScope(c.scp) // scope for the for body
-	c.visitNode(s.Initializer)
+	c.scp = newScope(c.scp)    // scope for the for body
+	c.visitNode(s.Initializer) // compile the counter variable declaration
 
 	condBlock := c.cf.NewBlock("")
 	incrementBlock := c.cf.NewBlock("")
 	forBody := c.cf.NewBlock("")
 
-	c.cbb.NewBr(condBlock)
+	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
+	// compile the for-body
 	c.cbb = forBody
 	c.visitNode(s.Body)
-	if c.cbb.Term == nil {
+	if c.cbb.Term == nil { // if there is no return at the end we jump to the incrementBlock
 		c.cbb.NewBr(incrementBlock)
 	}
 
 	// compile the incrementBlock
-	v := c.scp.lookupVar(s.Initializer.Name.Literal)
-	indexVar := incrementBlock.NewLoad(v.t, v.v)
-	var incrementer value.Value
+	Var := c.scp.lookupVar(s.Initializer.Name.Literal)
+	indexVar := incrementBlock.NewLoad(Var.typ, Var.val)
+	var incrementer value.Value // Schrittgröße
+	// if no stepsize was present it is 1
 	if s.StepSize == nil {
 		incrementer = constant.NewInt(ddpint, 1)
-	} else {
+	} else { // stepsize was present, so compile it
 		c.cbb = incrementBlock
 		incrementer = c.evaluate(s.StepSize)
 	}
+	// add the incrementer to the counter variable
 	add := incrementBlock.NewAdd(indexVar, incrementer)
-	incrementBlock.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).v)
-	incrementBlock.NewBr(condBlock)
+	incrementBlock.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	incrementBlock.NewBr(condBlock) // check the condition (loop)
 
+	// after the condition is false we jump to the leaveBlock
 	leaveBlock := c.cf.NewBlock("")
+	// finally compile the condition block
 	c.cbb = condBlock
-	cond := condBlock.NewICmp(enum.IPredEQ, condBlock.NewLoad(v.t, v.v), c.evaluate(s.To))
-	condBlock.NewCondBr(cond, leaveBlock, forBody)
+	cond := condBlock.NewICmp(enum.IPredEQ, condBlock.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	condBlock.NewCondBr(cond, leaveBlock, forBody) // loop or exit the loop
 
 	leaveBlock2 := c.cf.NewBlock("")
 	c.cbb = leaveBlock
@@ -887,8 +919,8 @@ func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(c)
 }
 func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	ret := c.evaluate(s.Value)
-	if ret.Type() == ddpstrptr {
+	ret := c.evaluate(s.Value)   // compile the return value
+	if ret.Type() == ddpstrptr { // strings need to be copied and memory-managed
 		oldRet := ret
 		c.incrementRC(oldRet, VK_STRING)
 		ret = c.deepCopyStr(oldRet)

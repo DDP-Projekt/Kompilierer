@@ -20,14 +20,14 @@ MAKE = make
 .PHONY = all debug make_out_dir make_sub_dirs
 
 all: make_out_dir make_sub_dirs
-	cp $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
-	cp $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
+	mv $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
+	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 debug: make_out_dir
 	$(MAKE) -C $(DDP_DIR)
 	$(MAKE) -C $(STD_DIR) debug
-	cp $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
-	cp $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
+	mv $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
+	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 make_sub_dirs:
 	$(MAKE) -C $(DDP_DIR)

@@ -17,13 +17,13 @@ func resetTimer() time.Duration {
 }
 
 func main() {
-	resetTimer()
+	//resetTimer()
 	// run sub-commands like build or help
 	if err := runCommands(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Printf("Took %dms\n", resetTimer().Milliseconds())
+	//fmt.Printf("Took %dms\n", resetTimer().Milliseconds())
 }
 
 func runCommands() error {
