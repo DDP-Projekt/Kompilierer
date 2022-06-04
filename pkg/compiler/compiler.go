@@ -190,6 +190,9 @@ func (c *Compiler) setupOperators() {
 
 	//ddpbool to string cast
 	c.declareInbuiltFunction("inbuilt_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
+
+	//ddpstring equality
+	c.declareInbuiltFunction("inbuilt_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
 }
 
 // helper to call increment_ref_count
@@ -632,8 +635,8 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
 		case ddpchar:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
-		case ddpstring:
-			notimplemented()
+		case ddpstrptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for GLEICH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
 		}
@@ -647,8 +650,9 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, rhs)
 		case ddpchar:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, rhs)
-		case ddpstring:
-			notimplemented()
+		case ddpstrptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for UNGLEICH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
 		}

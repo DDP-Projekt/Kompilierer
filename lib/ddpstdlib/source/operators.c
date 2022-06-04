@@ -128,3 +128,14 @@ ddpstring* inbuilt_bool_to_string(ddpbool b) {
 	dstr->str = string;
 	return dstr;
 }
+
+ddpbool inbuilt_string_equal(ddpstring* str1, ddpstring* str2) {
+	if (str1->len != str2->len) return false; // if the length is different, it's a quick false return
+
+	// compare each character
+	for (ddpint i = 0; i < str1->len; i++) {
+		if (str1->str[i] != str2->str[i]) return false;
+	}
+	
+	return true;
+}
