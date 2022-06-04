@@ -348,6 +348,9 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
+	if rhs.Type() == ddpstrptr {
+		c.incrementRC(rhs, VK_STRING)
+	}
 	// big switches for the different type combinations
 	switch e.Operator.Type {
 	case token.BETRAG:
@@ -454,12 +457,21 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	default:
 		err(fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
 	}
+	if rhs.Type() == ddpstrptr {
+		c.decrementRC(rhs)
+	}
 	return c
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	// compile the two expressions onto which the operator is applied
 	lhs := c.evaluate(e.Lhs)
 	rhs := c.evaluate(e.Rhs)
+	if lhs.Type() == ddpstrptr {
+		c.incrementRC(lhs, VK_STRING)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.incrementRC(rhs, VK_STRING)
+	}
 	// big switches on the different type combinations
 	switch e.Operator.Type {
 	case token.VERKETTET:
@@ -738,6 +750,12 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
 		}
+	}
+	if lhs.Type() == ddpstrptr {
+		c.decrementRC(lhs)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.decrementRC(rhs)
 	}
 	return c
 }
