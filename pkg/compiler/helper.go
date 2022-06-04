@@ -17,6 +17,7 @@ var (
 
 	i8  = types.I8
 	i16 = types.I16
+	i32 = types.I32
 	i64 = types.I64
 
 	ddpint    = i64

@@ -70,7 +70,7 @@ func (c *Compiler) Compile() (result string, rerr error) {
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
-	c.setupStringType()               // setup some internal functions to work with strings
+	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
 		"inbuilt_ddpmain",
@@ -122,6 +122,22 @@ func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 	return irFunc
 }
 
+// helper to declare a inbuilt function
+// sets the linkage to external, callingconvention to ccc
+// and inserts the function into the compiler
+func (c *Compiler) declareInbuiltFunction(name string, retType types.Type, params ...*ir.Param) {
+	fun := c.mod.NewFunc(name, retType, params...)
+	fun.CallingConv = enum.CallingConvC
+	fun.Linkage = enum.LinkageExternal
+	c.insertFunction(name, nil, fun)
+}
+
+// declares functions defined in the ddp-c-runtime
+func (c *Compiler) setupRuntimeFunctions() {
+	c.setupStringType()
+	c.setupOperators()
+}
+
 // declares some internal string functions
 // and completes the ddpstring struct
 func (c *Compiler) setupStringType() {
@@ -135,34 +151,45 @@ func (c *Compiler) setupStringType() {
 
 	// creates a ddpstring from a string literal and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	sfc := c.mod.NewFunc("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
-	sfc.CallingConv = enum.CallingConvC
-	sfc.Linkage = enum.LinkageExternal
-	c.insertFunction("inbuilt_string_from_constant", nil, sfc)
+	c.declareInbuiltFunction("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	dcs := c.mod.NewFunc("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
-	dcs.CallingConv = enum.CallingConvC
-	dcs.Linkage = enum.LinkageExternal
-	c.insertFunction("inbuilt_deep_copy_string", nil, dcs)
+	c.declareInbuiltFunction("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
 
 	// decrement the ref-count on a pointer and
 	// free the pointer if the ref-count becomes 0
 	// takes the pointer and the type to which it points
 	// (currently only string, but later lists and structs too)
-	drc := c.mod.NewFunc("inbuilt_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
-	drc.CallingConv = enum.CallingConvC
-	drc.Linkage = enum.LinkageExternal
-	c.insertFunction("inbuilt_decrement_ref_count", nil, drc)
+	c.declareInbuiltFunction("inbuilt_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
 
 	// increment the ref-count on a pointer
 	// takes the pointer and the type to which it points
 	// (currently only string, but later lists and structs too)
-	irc := c.mod.NewFunc("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
-	irc.CallingConv = enum.CallingConvC
-	irc.Linkage = enum.LinkageExternal
-	c.insertFunction("inbuilt_increment_ref_count", nil, irc)
+	c.declareInbuiltFunction("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
+}
+
+func (c *Compiler) setupOperators() {
+	// betrag operator für ints
+	c.declareInbuiltFunction("inbuilt_int_betrag", ddpint, ir.NewParam("i", ddpint))
+
+	// betrag operator für floats
+	c.declareInbuiltFunction("inbuilt_float_betrag", ddpfloat, ir.NewParam("f", ddpfloat))
+
+	// ddpstring to ddpint cast
+	c.declareInbuiltFunction("inbuilt_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
+
+	// ddpstring to ddpfloat cast
+	c.declareInbuiltFunction("inbuilt_string_to_float", ddpfloat, ir.NewParam("str", ddpstrptr))
+
+	// ddpint to ddpstring cast
+	c.declareInbuiltFunction("inbuilt_int_to_string", ddpstrptr, ir.NewParam("i", ddpint))
+
+	//ddpfloat to ddpstring cast
+	c.declareInbuiltFunction("inbuilt_float_to_string", ddpstrptr, ir.NewParam("f", ddpfloat))
+
+	//ddpbool to string cast
+	c.declareInbuiltFunction("inbuilt_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
 }
 
 // helper to call increment_ref_count
@@ -324,7 +351,14 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	// big switches for the different type combinations
 	switch e.Operator.Type {
 	case token.BETRAG:
-		err("Der BETRAG Operator ist noch nicht implementiert")
+		switch rhs.Type() {
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_betrag"].irFunc, rhs)
+		case ddpint:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_int_betrag"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for BETRAG: %s", rhs.Type()))
+		}
 	case token.NEGATE:
 		switch rhs.Type() {
 		case ddpfloat:
@@ -332,12 +366,18 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpint:
 			c.latestReturn = c.cbb.NewSub(zero, rhs)
 		default:
-			err("invalid Parameter Type for NEGATE")
+			err(fmt.Sprintf("invalid Parameter Type for NEGATE: %s", rhs.Type()))
 		}
 	case token.NICHT:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
 	case token.LÄNGE:
-		notimplemented()
+		switch rhs.Type() {
+		case ddpstrptr:
+			strlenptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			c.latestReturn = c.cbb.NewLoad(ddpint, strlenptr)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for LÄNGE: %s", rhs.Type()))
+		}
 	case token.GRÖßE:
 		switch rhs.Type() {
 		case ddpint, ddpfloat:
@@ -346,79 +386,71 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			c.latestReturn = newInt(1)
 		case ddpchar:
 			c.latestReturn = newInt(2)
-		case ddpstring:
-			notimplemented()
+		case ddpstrptr:
+			strlenptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			strlen := c.cbb.NewLoad(ddpint, strlenptr)
+			c.latestReturn = c.cbb.NewMul(strlen, newInt(2))
 		default:
-			err("invalid Parameter Type for GRÖßE")
+			err(fmt.Sprintf("invalid Parameter Type for GRÖßE: %s", rhs.Type()))
 		}
 	case token.ZAHL:
-		notimplemented()
-		/*switch v := rhs.(type) {
+		switch rhs.Type() {
 		case ddpint:
-			i.lastReturn = v
+			c.latestReturn = rhs
 		case ddpfloat:
-			i.lastReturn = ddpint(v)
+			c.latestReturn = c.cbb.NewFPToSI(rhs, ddpint)
 		case ddpbool:
-			if v {
-				i.lastReturn = ddpint(1)
-			} else {
-				i.lastReturn = ddpint(0)
-			}
+			cond := c.cbb.NewICmp(enum.IPredNE, rhs, zero)
+			c.latestReturn = c.cbb.NewZExt(cond, ddpint)
 		case ddpchar:
-			i.lastReturn = ddpint(v)
-		case ddpstring:
-			if result, Err := strconv.ParseInt(string(v), 10, 64); Err != nil {
-				err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Zahl umgewandelt werden", string(v)))
-			} else {
-				i.lastReturn = ddpint(result)
-			}
-		}*/
+			c.latestReturn = c.cbb.NewSExt(rhs, ddpint)
+		case ddpstrptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_int"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for ZAHL: %s", rhs.Type()))
+		}
 	case token.KOMMAZAHL:
-		notimplemented()
-		/*switch v := rhs.(type) {
+		switch rhs.Type() {
 		case ddpint:
-			i.lastReturn = ddpfloat(v)
+			c.latestReturn = c.cbb.NewSIToFP(rhs, ddpfloat)
 		case ddpfloat:
-			i.lastReturn = v
-		case ddpstring:
-			if result, Err := strconv.ParseFloat(string(v), 64); Err != nil {
-				err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Kommazahl umgewandelt werden", string(v)))
-			} else {
-				i.lastReturn = ddpfloat(result)
-			}
-		}*/
+			c.latestReturn = rhs
+		case ddpstrptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_float"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for KOMMAZAHL: %s", rhs.Type()))
+		}
 	case token.BOOLEAN:
-		notimplemented()
-		/*switch v := rhs.(type) {
+		switch rhs.Type() {
 		case ddpint:
-			if v == 0 {
-				i.lastReturn = ddpbool(false)
-			} else {
-				i.lastReturn = ddpbool(true)
-			}
+			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, rhs, zero)
 		case ddpbool:
-			i.lastReturn = v
-		}*/
+			c.latestReturn = rhs
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for BOOLEAN: %s", rhs.Type()))
+		}
 	case token.BUCHSTABE:
-		notimplemented()
-		/*switch v := rhs.(type) {
+		switch rhs.Type() {
 		case ddpint:
-			i.lastReturn = ddpchar(v)
+			c.latestReturn = c.cbb.NewTrunc(rhs, ddpchar)
 		case ddpchar:
-			i.lastReturn = v
-		}*/
+			c.latestReturn = rhs
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for BUCHSTABE: %s", rhs.Type()))
+		}
 	case token.TEXT:
-		notimplemented()
-		/*switch v := rhs.(type) {
+		switch rhs.Type() {
 		case ddpint:
-			i.lastReturn = ddpstring(strconv.FormatInt(int64(v), 64))
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_int_to_string"].irFunc, rhs)
 		case ddpfloat:
-			i.lastReturn = ddpstring(strconv.FormatFloat(float64(v), 'f', -1, 64))
-		case ddpchar:
-			i.lastReturn = ddpstring(v)
-		case ddpstring:
-			i.lastReturn = v
-		}*/
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_to_string"].irFunc, rhs)
+		case ddpbool:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_bool_to_string"].irFunc, rhs)
+		case ddpstrptr:
+			c.latestReturn = rhs
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for TEXT: %s", rhs.Type()))
+		}
 	default:
 		err(fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
 	}
@@ -937,11 +969,6 @@ func notimplemented() {
 	file, line, function := getTraceInfo(2)
 	panic(fmt.Errorf("%s, %d, %s: this function or a part of it is not implemented", filepath.Base(file), line, function))
 }
-
-/*func (c *Compiler) currentlyskipped() {
-	file, line, function := getTraceInfo(2)
-	c.errorHandler(fmt.Sprintf("%s, %d, %s: this function or a part of it is currently being ignored", filepath.Base(file), line, function))
-}*/
 
 func getTraceInfo(skip int) (file string, line int, function string) {
 	pc := make([]uintptr, 15)
