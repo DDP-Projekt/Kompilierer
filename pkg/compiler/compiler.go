@@ -865,10 +865,9 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 // for loops are still a bit broken, because if one changes the counter variable there might be issues like an infinite loop
 // TODO: fix the counter variable when users change it
 func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
-	scp := c.scp // to restore it at the end
-
-	c.scp = newScope(c.scp)    // scope for the for body
-	c.visitNode(s.Initializer) // compile the counter variable declaration
+	c.scp = newScope(c.scp)     // scope for the for body
+	c.visitNode(s.Initializer)  // compile the counter variable declaration
+	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
 
 	condBlock := c.cf.NewBlock("")
 	incrementBlock := c.cf.NewBlock("")
@@ -898,21 +897,25 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	incrementBlock.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
 	incrementBlock.NewBr(condBlock) // check the condition (loop)
 
-	// after the condition is false we jump to the leaveBlock
-	leaveBlock := c.cf.NewBlock("")
-	// finally compile the condition block
+	// finally compile the condition block(s)
+	initGreaterTo := c.cf.NewBlock("")
+	initLessthenTo := c.cf.NewBlock("")
+	leaveBlock := c.cf.NewBlock("") // after the condition is false we jump to the leaveBlock
+
 	c.cbb = condBlock
-	cond := condBlock.NewICmp(enum.IPredEQ, condBlock.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
-	condBlock.NewCondBr(cond, leaveBlock, forBody) // loop or exit the loop
+	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
+	cond := condBlock.NewICmp(enum.IPredSLT, initValue, c.evaluate(s.To))
+	condBlock.NewCondBr(cond, initLessthenTo, initGreaterTo)
 
-	leaveBlock2 := c.cf.NewBlock("")
-	c.cbb = leaveBlock
-	c.visitNode(s.Body)
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(leaveBlock2)
-	}
+	// we are counting up, so compare less-or-equal
+	cond = initLessthenTo.NewICmp(enum.IPredSLE, initLessthenTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	initLessthenTo.NewCondBr(cond, forBody, leaveBlock)
 
-	c.cbb, c.scp = leaveBlock2, scp
+	// we are counting down, so compare greater-or-equal
+	cond = initGreaterTo.NewICmp(enum.IPredSGE, initGreaterTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	initGreaterTo.NewCondBr(cond, forBody, leaveBlock)
+
+	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
 	return c
 }
 func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
