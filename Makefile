@@ -20,14 +20,8 @@ MAKE = make
 .PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug
 
 all: make_out_dir kddp ddpstdlib
-	mv $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
-	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 debug: make_out_dir kddp ddpstdlib-debug
-	$(MAKE) -C $(DDP_DIR)
-	$(MAKE) -C $(STD_DIR) debug
-	mv $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
-	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 kddp:
 	$(MAKE) -C $(DDP_DIR)
