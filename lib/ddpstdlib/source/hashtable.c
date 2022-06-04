@@ -1,3 +1,7 @@
+/*
+	inspired (stolen) from craftinginterpreters:
+	https://craftinginterpreters.com/hash-tables.html
+*/
 #include "hashtable.h"
 
 #include "memory.h"

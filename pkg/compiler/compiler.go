@@ -862,8 +862,6 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-// for loops are still a bit broken, because if one changes the counter variable there might be issues like an infinite loop
-// TODO: fix the counter variable when users change it
 func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
@@ -904,7 +902,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := condBlock.NewICmp(enum.IPredSLT, initValue, c.evaluate(s.To))
+	cond := condBlock.NewICmp(enum.IPredSLE, initValue, c.evaluate(s.To))
 	condBlock.NewCondBr(cond, initLessthenTo, initGreaterTo)
 
 	// we are counting up, so compare less-or-equal

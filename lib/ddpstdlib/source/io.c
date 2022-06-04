@@ -1,3 +1,6 @@
+/*
+	defines inbuilt ddp functions to work with io
+*/
 #include <stdio.h>
 #include "ddptypes.h"
 
@@ -17,6 +20,7 @@ void inbuilt_Schreibe_Buchstabe(ddpchar p1) {
 	printf("%lc", p1);
 }
 
+// TODO: fix on linux
 void inbuilt_Schreibe_Text(ddpstring* p1) {
 	printf("%.*ls", p1->len, p1->str);
 }
