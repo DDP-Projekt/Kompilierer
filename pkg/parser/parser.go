@@ -784,7 +784,7 @@ func (p *Parser) term() ast.Expression {
 
 func (p *Parser) factor() ast.Expression {
 	expr := p.unary()
-	for p.match(token.MAL, token.DURCH, token.MODULO, token.HOCH) {
+	for p.match(token.MAL, token.DURCH, token.MODULO) {
 		operator := p.previous()
 		rhs := p.unary()
 		expr = &ast.BinaryExpr{

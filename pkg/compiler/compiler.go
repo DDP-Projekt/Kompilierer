@@ -505,7 +505,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -515,10 +515,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFAdd(lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.MINUS:
 		switch lhs.Type() {
@@ -530,7 +530,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFSub(fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -540,10 +540,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFSub(lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.MAL:
 		switch lhs.Type() {
@@ -555,7 +555,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFMul(fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -565,10 +565,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFMul(lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.DURCH:
 		switch lhs.Type() {
@@ -582,7 +582,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -592,31 +592,13 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.MODULO:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
-	case token.HOCH:
-		notimplemented()
-		/*switch lhs.Type() {
-		case ddpint:
-			switch rhs.Type() {
-			case ddpint:
-				i.lastReturn = ddpint(math.Pow(float64(left), float64(right)))
-			case ddpfloat:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			}
-		case ddpfloat:
-			switch rhs.Type() {
-			case ddpint:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			case ddpfloat:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			}
-		}*/
 	case token.UND:
 		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
 	case token.ODER:
@@ -638,7 +620,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		case ddpstrptr:
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for GLEICH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for GLEICH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.UNGLEICH:
 		switch lhs.Type() {
@@ -654,7 +636,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			equal := c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for UNGLEICH (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for UNGLEICH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.KLEINER:
 		switch lhs.Type() {
@@ -666,7 +648,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for KLEINER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for KLEINER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -676,7 +658,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for KLEINER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for KLEINER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		}
 	case token.KLEINERODER:
@@ -689,7 +671,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -699,10 +681,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for KLEINERODER (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.GRÖßER:
 		switch lhs.Type() {
@@ -714,7 +696,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -724,10 +706,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for GRÖßER (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.GRÖßERODER:
 		switch lhs.Type() {
@@ -739,7 +721,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpfloat:
 			switch rhs.Type() {
@@ -749,10 +731,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, rhs)
 			default:
-				err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+				err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type().String(), rhs.Type().String()))
+			err(fmt.Sprintf("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	}
 	if lhs.Type() == ddpstrptr {

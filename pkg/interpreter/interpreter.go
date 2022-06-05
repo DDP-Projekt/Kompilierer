@@ -329,23 +329,6 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		}
 	case token.MODULO:
 		i.lastReturn = ddpint(lhs.(ddpint) % rhs.(ddpint))
-	case token.HOCH:
-		switch left := lhs.(type) {
-		case ddpint:
-			switch right := rhs.(type) {
-			case ddpint:
-				i.lastReturn = ddpint(math.Pow(float64(left), float64(right)))
-			case ddpfloat:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			}
-		case ddpfloat:
-			switch right := rhs.(type) {
-			case ddpint:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			case ddpfloat:
-				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
-			}
-		}
 	case token.UND:
 		i.lastReturn = lhs.(ddpbool) && rhs.(ddpbool)
 	case token.ODER:

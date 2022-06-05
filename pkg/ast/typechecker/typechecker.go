@@ -231,13 +231,6 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		t.latestReturnedType = token.KOMMAZAHL
 	case token.MODULO:
 		validate(op, token.ZAHL)
-	case token.HOCH:
-		validate(op, token.ZAHL, token.KOMMAZAHL)
-		if lhs == token.ZAHL && rhs == token.ZAHL {
-			t.latestReturnedType = token.ZAHL
-		} else {
-			t.latestReturnedType = token.KOMMAZAHL
-		}
 	case token.UND:
 		validate(op, token.BOOLEAN)
 	case token.ODER:
