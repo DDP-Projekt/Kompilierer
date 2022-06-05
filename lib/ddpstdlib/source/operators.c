@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "debug.h"
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <float.h>
 
@@ -14,6 +15,58 @@ ddpint inbuilt_int_betrag(ddpint i) {
 
 ddpfloat inbuilt_float_betrag(ddpfloat f) {
 	return fabs(f);
+}
+
+ddpstring* inbuilt_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_string_string_verkettet: %p", dstr);
+
+	ddpchar* string = ALLOCATE(ddpchar, str1->len + str2->len);
+	memcpy(string, str1->str, sizeof(ddpchar) * str1->len);
+	memcpy(&string[str1->len], str2->str, sizeof(ddpchar) * str2->len);
+
+	dstr->len = str1->len + str2->len;
+	dstr->str = string;
+	return dstr;
+}
+
+ddpstring* inbuilt_char_string_verkettet(ddpchar c, ddpstring* str) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_char_string_verkettet: %p", dstr);
+
+	ddpchar* string = ALLOCATE(ddpchar, str->len + 1);
+	memcpy(&string[1], str->str, sizeof(ddpchar) * str->len);
+	string[0] = c;
+
+	dstr->len = str->len + 1;
+	dstr->str = string;
+	return dstr;
+}
+
+ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_string_char_verkettet: %p", dstr);
+
+	ddpchar* string = ALLOCATE(ddpchar, str->len + 1);
+	memcpy(string, str->str, sizeof(ddpchar) * str->len);
+	string[str->len] = c;
+
+	dstr->len = str->len + 1;
+	dstr->str = string;
+	return dstr;
+}
+
+ddpstring* inbuilt_char_char_verkettet(ddpchar c1, ddpchar c2) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_char_char_verkettet: %p", dstr);
+
+	ddpchar* string = ALLOCATE(ddpchar, 2);
+	string[0] = c1;
+	string[1] = c2;
+
+	dstr->len = 2;
+	dstr->str = string;
+	return dstr;
 }
 
 // helper for inbuilt_string_to_int and inbuilt_string_to_float

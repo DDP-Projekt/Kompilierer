@@ -170,29 +170,31 @@ func (c *Compiler) setupStringType() {
 }
 
 func (c *Compiler) setupOperators() {
-	// betrag operator für ints
+	// betrag operator for different types
 	c.declareInbuiltFunction("inbuilt_int_betrag", ddpint, ir.NewParam("i", ddpint))
-
-	// betrag operator für floats
 	c.declareInbuiltFunction("inbuilt_float_betrag", ddpfloat, ir.NewParam("f", ddpfloat))
 
-	// ddpstring to ddpint cast
+	// ddpstring to type cast
 	c.declareInbuiltFunction("inbuilt_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
-
-	// ddpstring to ddpfloat cast
 	c.declareInbuiltFunction("inbuilt_string_to_float", ddpfloat, ir.NewParam("str", ddpstrptr))
 
 	// ddpint to ddpstring cast
 	c.declareInbuiltFunction("inbuilt_int_to_string", ddpstrptr, ir.NewParam("i", ddpint))
 
-	//ddpfloat to ddpstring cast
+	// ddpfloat to ddpstring cast
 	c.declareInbuiltFunction("inbuilt_float_to_string", ddpstrptr, ir.NewParam("f", ddpfloat))
 
-	//ddpbool to string cast
+	// ddpbool to string cast
 	c.declareInbuiltFunction("inbuilt_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
 
-	//ddpstring equality
+	// ddpstring equality
 	c.declareInbuiltFunction("inbuilt_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
+
+	// ddpstring concatenation for different types
+	c.declareInbuiltFunction("inbuilt_string_string_verkettet", ddpstrptr, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
+	c.declareInbuiltFunction("inbuilt_char_string_verkettet", ddpstrptr, ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("inbuilt_string_char_verkettet", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("c", ddpchar))
+	c.declareInbuiltFunction("inbuilt_char_char_verkettet", ddpstrptr, ir.NewParam("c1", ddpchar), ir.NewParam("c2", ddpchar))
 }
 
 // helper to call increment_ref_count
@@ -478,23 +480,28 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	// big switches on the different type combinations
 	switch e.Operator.Type {
 	case token.VERKETTET:
-		notimplemented()
-		/*switch lhs.Type() {
-		case ddpstring:
+		switch lhs.Type() {
+		case ddpstrptr:
 			switch rhs.Type() {
-			case ddpstring:
-				c.lastReturn = left + right
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_string_verkettet"].irFunc, lhs, rhs)
 			case ddpchar:
-				c.lastReturn = left + ddpstring(rune(right))
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_char_verkettet"].irFunc, lhs, rhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type()))
 			}
 		case ddpchar:
 			switch rhs.Type() {
-			case ddpstring:
-				i.lastReturn = ddpstring(rune(left)) + right
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_string_verkettet"].irFunc, lhs, rhs)
 			case ddpchar:
-				i.lastReturn = ddpstring(rune(left)) + ddpstring(rune(right))
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_char_verkettet"].irFunc, lhs, rhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type()))
 			}
-		}*/
+		default:
+			err(fmt.Sprintf("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type()))
+		}
 	case token.PLUS:
 		switch lhs.Type() {
 		case ddpint:
