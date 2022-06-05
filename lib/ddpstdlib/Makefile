@@ -11,8 +11,8 @@ CC = gcc
 DEBUGFLAGS := -D DEBUG
 INC := -I./include/ # set on the debug phony
 
-SRCS := $(wildcard source/*.c)
-OBJS := $(patsubst source/%.c, %.o, $(SRCS))
+SRCS := $(shell find source -name '*.c')
+OBJS := $(SRCS:%.c=%.o)
 
 all: build clean
 
