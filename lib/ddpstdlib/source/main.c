@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <Windows.h>
 #include "gc.h"
 
 // should not be needed in production
@@ -17,8 +18,14 @@ static void SegfaultHandler(int signal) {
 
 // initialize runtime stuff
 static void init_runtime() {
-	//setlocale(LC_ALL, "en_US.UTF-8"); // enable utf8 printing
+	setlocale(LC_ALL, "de_DE"); // enable utf8 printing
 	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
+#ifdef _WIN32
+	// enable utf-8 printing on windows
+	// both of the functioncalls below are needed
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+#endif // _WIN32
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
 
