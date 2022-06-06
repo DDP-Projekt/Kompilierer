@@ -183,8 +183,8 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		}
 		t.latestReturnedType = token.BUCHSTABE
 	case token.TEXT:
-		if !isType(rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT) {
-			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT)
+		if !isType(rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE)
 		}
 		t.latestReturnedType = token.TEXT
 	}

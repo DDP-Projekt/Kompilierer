@@ -182,14 +182,11 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("inbuilt_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
 	c.declareInbuiltFunction("inbuilt_string_to_float", ddpfloat, ir.NewParam("str", ddpstrptr))
 
-	// ddpint to ddpstring cast
+	// casts to ddpstring
 	c.declareInbuiltFunction("inbuilt_int_to_string", ddpstrptr, ir.NewParam("i", ddpint))
-
-	// ddpfloat to ddpstring cast
 	c.declareInbuiltFunction("inbuilt_float_to_string", ddpstrptr, ir.NewParam("f", ddpfloat))
-
-	// ddpbool to string cast
 	c.declareInbuiltFunction("inbuilt_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
+	c.declareInbuiltFunction("inbuilt_char_to_string", ddpstrptr, ir.NewParam("c", ddpchar))
 
 	// ddpstring equality
 	c.declareInbuiltFunction("inbuilt_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
@@ -336,8 +333,6 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 
 // string literals are created by the ddp-c-runtime
 // so we need to do some work here
-// currently a ddpstring is an array of wchar_t (aka 16bit)
-// but that will change later
 func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
@@ -445,8 +440,10 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_to_string"].irFunc, rhs)
 		case ddpbool:
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_bool_to_string"].irFunc, rhs)
+		case ddpchar:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_to_string"].irFunc, rhs)
 		case ddpstrptr:
-			c.latestReturn = rhs
+			c.latestReturn = c.deepCopyStr(rhs)
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for TEXT: %s", rhs.Type()))
 		}

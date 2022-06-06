@@ -165,6 +165,25 @@ ddpstring* inbuilt_bool_to_string(ddpbool b) {
 	return dstr;
 }
 
+ddpstring* inbuilt_char_to_string(ddpchar c) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_bool_to_string: %p", dstr);
+
+	char temp[5];
+	int num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == -1) { // invalid utf8, string will be empty
+		num_bytes = 0;
+	}	
+
+	char* string = ALLOCATE(char, num_bytes + 1);
+	memcpy(string, temp, num_bytes);
+	string[num_bytes] = '\0';
+
+	dstr->cap = num_bytes + 1;
+	dstr->str = string;
+	return dstr;
+}
+
 ddpbool inbuilt_string_equal(ddpstring* str1, ddpstring* str2) {
 	if (strlen(str1->str) != strlen(str2->str)) return false; // if the length is different, it's a quick false return
 	return memcmp(str1->str, str2->str, str1->cap) == 0;

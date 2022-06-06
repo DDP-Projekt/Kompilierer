@@ -17,7 +17,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 		free(pointer);
 #ifdef DEBUG
 		allocatedBytes -= oldSize;
-		DBGLOG("freed %llu bytes, now at %llu bytesAllocated", oldSize, allocatedBytes);
+		DBGLOG("freed %lu bytes, now at %llu bytesAllocated", oldSize, allocatedBytes);
 #endif // DEBUG
 		return NULL;
 	}
@@ -28,7 +28,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 	void* result = realloc(pointer, newSize);
 #ifdef DEBUG
 		allocatedBytes += newSize - oldSize;
-		DBGLOG("allocated %llu bytes, now at %llu bytesAllocated", newSize - oldSize, allocatedBytes);
+		DBGLOG("allocated %lu bytes, now at %llu bytesAllocated", newSize - oldSize, allocatedBytes);
 #endif // DEBUG
 	if (result == NULL) { // out of memory
 		printf("out of memory");

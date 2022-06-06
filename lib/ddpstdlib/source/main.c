@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#ifdef _WIN32
 #include <Windows.h>
+#endif // _WIN32
 #include "gc.h"
 
 // should not be needed in production
@@ -18,7 +20,7 @@ static void SegfaultHandler(int signal) {
 
 // initialize runtime stuff
 static void init_runtime() {
-	setlocale(LC_ALL, "de_DE"); // enable utf8 printing
+	setlocale(LC_ALL, "de_DE");
 	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
 #ifdef _WIN32
 	// enable utf-8 printing on windows
@@ -34,7 +36,7 @@ static void init_runtime() {
 
 // end the runtime
 static void end_runtime() {
-	freeTable(get_ref_table()); // free the reference talbe (not the remaining entries, it should be empty)
+	freeTable(get_ref_table()); // free the reference table (not the remaining entries, it should be empty)
 }
 
 extern int inbuilt_ddpmain(); // implicitly defined by the ddp code
