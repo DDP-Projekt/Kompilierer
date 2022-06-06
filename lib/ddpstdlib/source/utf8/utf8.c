@@ -95,4 +95,5 @@ int utf8_char_to_string(char* s, int32_t c) {
 		s[3] = 128 | ((char)c)&63;
 	}
 	s[num_bytes] = '\0';
+    return num_bytes;
 }

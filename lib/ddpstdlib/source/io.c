@@ -3,6 +3,7 @@
 */
 #include <stdio.h>
 #include "ddptypes.h"
+#include "utf8/utf8.h"
 
 void inbuilt_Schreibe_Zahl(ddpint p1) {
 	printf("%ld", p1);
@@ -17,10 +18,11 @@ void inbuilt_Schreibe_Boolean(ddpbool p1) {
 }
 
 void inbuilt_Schreibe_Buchstabe(ddpchar p1) {
-	printf("%s", (char*)&p1);
+	char temp[5];
+	utf8_char_to_string(temp, p1);
+	printf("%s", temp);
 }
 
-// TODO: fix on linux
 void inbuilt_Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
