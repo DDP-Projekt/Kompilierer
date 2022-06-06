@@ -5,14 +5,16 @@ else
 	OUT_FILE_NAME := ddpstdlib.a
 endif
 
-.PHONY = all build clean debug
+.PHONY = all build clean debug var
 
 CC = gcc
 DEBUGFLAGS := -D DEBUG
 INC := -I./include/ # set on the debug phony
 
 SRCS := $(shell find source -name '*.c')
-OBJS := $(SRCS:%.c=%.o)
+OBJS := $(notdir $(SRCS))
+OBJS := $(OBJS:%.c=%.o)
+
 
 all: build clean
 
@@ -27,3 +29,7 @@ debug:
 	$(CC) -c $(INC) $(DEBUGFLAGS) $(CCFLAGS) $(SRCS)
 	ar cr $(OUT_FILE_NAME) $(OBJS)
 	rm -rf $(OBJS)
+
+var:
+	@echo $(SRCS)
+	@echo $(OBJS)
