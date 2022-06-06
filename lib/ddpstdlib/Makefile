@@ -5,7 +5,7 @@ else
 	OUT_FILE_NAME := ddpstdlib.a
 endif
 
-.PHONY = all build clean debug var
+.PHONY = all build clean debug
 
 CC = gcc
 DEBUGFLAGS := -D DEBUG
@@ -29,7 +29,3 @@ debug:
 	$(CC) -c $(INC) $(DEBUGFLAGS) $(CCFLAGS) $(SRCS)
 	ar cr $(OUT_FILE_NAME) $(OBJS)
 	rm -rf $(OBJS)
-
-var:
-	@echo $(SRCS)
-	@echo $(OBJS)

@@ -10,31 +10,6 @@
 #include <math.h>
 #include <float.h>
 
-#define MAKE_BYTE_ARRAY_FROM_CHAR(name, c, num_bytes, ch) \
-	ch = (uint32_t)c; \
-	if (ch <= 127) { \
-		name[0] = (char)c; \
-		num_bytes = 1; \
-	} else if (ch <= 2047) { \
-		name[0] = 192 | (char)(c >> 6); \
-		name[1] = 128 | ((char)c)&63; \
-		num_bytes = 2; \
-	} else if (ch > 1114111 || (55296 <= ch && ch <= 57343)) { \
-		printf("invalid utf in ddpchar"); \
-		exit(1); \
-	} else if (ch <= 65535) { \
-		name[0] = 224 | (char)(c >> 12); \
-		name[1] = 128 | ((char)c >> 6)&63; \
-		name[2] = 128 | ((char)c)&63; \
-		num_bytes = 3; \
-	} else { \
-		name[0] = 240 | (char)(c>>18); \
-		name[1] = 128 | (char)(c >> 12); \
-		name[2] = 128 | ((char)c >> 6)&63; \
-		name[3] = 128 | ((char)c)&63; \
-	} \
-	name[num_bytes] = '\0';
-
 ddpint inbuilt_int_betrag(ddpint i) {
 	return llabs(i);
 }
@@ -65,9 +40,10 @@ ddpstring* inbuilt_char_string_verkettet(ddpchar c, ddpstring* str) {
 	DBGLOG("inbuilt_char_string_verkettet: %p", dstr);
 
 	char temp[5];
-	size_t num_bytes = 0;
-	uint32_t ch;
-	MAKE_BYTE_ARRAY_FROM_CHAR(temp, c, num_bytes, ch);
+	int num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == -1) { // if c is invalid utf8, we return simply a copy of str
+		num_bytes = 0;
+	}
 	
 	char* string = ALLOCATE(char, str->cap + num_bytes);
 	memcpy(&string[num_bytes], str->str, str->cap);
@@ -83,9 +59,10 @@ ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
 	DBGLOG("inbuilt_string_char_verkettet: %p", dstr);
 
 	char temp[5];
-	size_t num_bytes = 0;
-	uint32_t ch;
-	MAKE_BYTE_ARRAY_FROM_CHAR(temp, c, num_bytes, ch);
+	int num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == -1) { // if c is invalid utf8, we return simply a copy of str
+		num_bytes = 0;
+	}
 
 	char* string = ALLOCATE(char, str->cap + num_bytes);
 	memcpy(string, str->str, str->cap - 1); // don't copy the null-terminator
@@ -102,13 +79,16 @@ ddpstring* inbuilt_char_char_verkettet(ddpchar c1, ddpchar c2) {
 	DBGLOG("inbuilt_char_char_verkettet: %p", dstr);
 
 	char temp1[5];
-	size_t num_bytes1 = 0;
-	uint32_t ch;
-	MAKE_BYTE_ARRAY_FROM_CHAR(temp1, c1, num_bytes1, ch);
+	int num_bytes1 = utf8_char_to_string(temp1, c1);
+	if (num_bytes1 == -1) { // if c is invalid utf8, we return simply a copy of str
+		num_bytes1 = 0;
+	}
 
 	char temp2[5];
-	size_t num_bytes2 = 0;
-	MAKE_BYTE_ARRAY_FROM_CHAR(temp2, c2, num_bytes2, ch);
+	int num_bytes2 = utf8_char_to_string(temp2, c2);
+	if (num_bytes2 == -1) { // if c is invalid utf8, we return simply a copy of str
+		num_bytes2 = 0;
+	}
 
 	char* string = ALLOCATE(char, num_bytes1 + num_bytes2 + 1);
 	memcpy(string, temp1, num_bytes1);
@@ -189,5 +169,3 @@ ddpbool inbuilt_string_equal(ddpstring* str1, ddpstring* str2) {
 	if (strlen(str1->str) != strlen(str2->str)) return false; // if the length is different, it's a quick false return
 	return memcmp(str1->str, str2->str, str1->cap) == 0;
 }
-
-#undef MAKE_BYTE_ARRAY_FROM_CHAR
