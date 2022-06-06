@@ -16,14 +16,13 @@ var (
 	void = types.Void
 
 	i8  = types.I8
-	i16 = types.I16
 	i32 = types.I32
 	i64 = types.I64
 
 	ddpint    = i64
 	ddpfloat  = types.Double
 	ddpbool   = types.I1
-	ddpchar   = i16
+	ddpchar   = i32
 	ddpstring = types.NewStruct() // defined in setupStringType
 	ddpstrptr = types.NewPointer(ddpstring)
 

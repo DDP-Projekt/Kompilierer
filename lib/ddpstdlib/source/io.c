@@ -17,10 +17,10 @@ void inbuilt_Schreibe_Boolean(ddpbool p1) {
 }
 
 void inbuilt_Schreibe_Buchstabe(ddpchar p1) {
-	printf("%lc", p1);
+	printf("%s", (char*)&p1);
 }
 
 // TODO: fix on linux
 void inbuilt_Schreibe_Text(ddpstring* p1) {
-	printf("%.*ls", p1->len, p1->str);
+	printf("%s", p1->str);
 }

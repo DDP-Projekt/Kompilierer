@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
@@ -16,6 +15,8 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+
+	"github.com/llir/irutil"
 )
 
 // small wrapper for a ast.FuncDecl and the corresponding ir function
@@ -143,7 +144,7 @@ func (c *Compiler) setupRuntimeFunctions() {
 func (c *Compiler) setupStringType() {
 	// complete the ddpstring definition to interact with the c ddp runtime
 	ddpstring.Fields = make([]types.Type, 2)
-	ddpstring.Fields[0] = ptr(ddpchar)
+	ddpstring.Fields[0] = ptr(i8)
 	ddpstring.Fields[1] = ddpint
 	c.mod.NewTypeDef("ddpstring", ddpstring)
 
@@ -151,7 +152,7 @@ func (c *Compiler) setupStringType() {
 
 	// creates a ddpstring from a string literal and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(ddpchar)), ir.NewParam("len", ddpint))
+	c.declareInbuiltFunction("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(i8)))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -173,6 +174,9 @@ func (c *Compiler) setupOperators() {
 	// betrag operator for different types
 	c.declareInbuiltFunction("inbuilt_int_betrag", ddpint, ir.NewParam("i", ddpint))
 	c.declareInbuiltFunction("inbuilt_float_betrag", ddpfloat, ir.NewParam("f", ddpfloat))
+
+	// ddpstring length
+	c.declareInbuiltFunction("inbuilt_string_length", ddpint, ir.NewParam("str", ddpstrptr))
 
 	// ddpstring to type cast
 	c.declareInbuiltFunction("inbuilt_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
@@ -335,20 +339,9 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 // currently a ddpstring is an array of wchar_t (aka 16bit)
 // but that will change later
 func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	strlen := utf8.RuneCountInString(e.Value) // length in utf-8 characters
-	str := make([]constant.Constant, 0, strlen)
-	// make an array of 16bit chars
-	for _, v := range e.Value {
-		str = append(str, constant.NewInt(ddpchar, int64(v)))
-	}
-	// add the array as constant into the ir
-	arrType := types.NewArray(uint64(strlen), ddpchar)
-	arr := c.mod.NewGlobalDef("", constant.NewArray(arrType, str...))
-
-	strptr := c.cbb.NewBitCast(arr, ptr(ddpchar)) // cast to c-array
-
+	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
-	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, strptr, newInt(int64(strlen)))
+	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
 	return c
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
@@ -381,8 +374,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	case token.LÄNGE:
 		switch rhs.Type() {
 		case ddpstrptr:
-			strlenptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
-			c.latestReturn = c.cbb.NewLoad(ddpint, strlenptr)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, rhs)
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for LÄNGE: %s", rhs.Type()))
 		}
@@ -395,9 +387,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpchar:
 			c.latestReturn = newInt(2)
 		case ddpstrptr:
-			strlenptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
-			strlen := c.cbb.NewLoad(ddpint, strlenptr)
-			c.latestReturn = c.cbb.NewMul(strlen, newInt(2))
+			strcapptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			c.latestReturn = c.cbb.NewLoad(ddpint, strcapptr)
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for GRÖßE: %s", rhs.Type()))
 		}

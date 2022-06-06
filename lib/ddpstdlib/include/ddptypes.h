@@ -12,20 +12,15 @@
 typedef int64_t ddpint;
 typedef double ddpfloat;
 typedef bool ddpbool;
-typedef wchar_t ddpchar;
+typedef int32_t ddpchar; // needs to be 32 bit to hold every possible unicode character
 
-// a ddp string is basically a ddpchar array
+// a ddp string is a null-terminated utf8-encoded byte array
 typedef struct {
-	ddpchar* str; // the ddpchar array
-	ddpint len; // number of characters in the string and the array
-	//ddpint cap; // added later
+	char* str; // the byte array
+	ddpint cap; // the capacity of the array
 } ddpstring;
 
-// allocate and create a ddpstring from a constant ddpchar array
-ddpstring* inbuilt_string_from_constant(ddpchar* str, ddpint len);
 // free a ddpstring
 void free_string(ddpstring* str);
-// allocate a new ddpstring as copy of str
-ddpstring* inbuilt_deep_copy_string(ddpstring* str);
 
 #endif // DDP_TYPES_H

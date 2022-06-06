@@ -17,7 +17,7 @@ static void SegfaultHandler(int signal) {
 
 // initialize runtime stuff
 static void init_runtime() {
-	setlocale(LC_ALL, "en_US.UTF-8"); // enable utf8 printing
+	//setlocale(LC_ALL, "en_US.UTF-8"); // enable utf8 printing
 	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
