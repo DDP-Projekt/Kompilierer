@@ -310,7 +310,7 @@ func (s *Scanner) aliasParameter() token.Token {
 		s.err("Es wurde ein Name als Alias-Parameter erwartet")
 	}
 
-	return s.newToken(token.ALIAS_EXPRESSION)
+	return s.newToken(token.ALIAS_PARAMETER)
 }
 
 func (s *Scanner) skipWhitespace() {
@@ -371,23 +371,25 @@ func (s *Scanner) newToken(t token.TokenType) token.Token {
 	}
 
 	return token.Token{
-		Type:    t,
-		Literal: string(s.src[s.start:s.cur]),
-		Indent:  s.indent,
-		File:    s.file,
-		Line:    s.line,
-		Column:  s.column - (s.cur - s.start),
+		Type:      t,
+		Literal:   string(s.src[s.start:s.cur]),
+		Indent:    s.indent,
+		File:      s.file,
+		Line:      s.line,
+		Column:    s.column - (s.cur - s.start),
+		AliasInfo: nil,
 	}
 }
 
 func (s *Scanner) errorToken(msg string) token.Token {
 	s.err(msg)
 	return token.Token{
-		Type:    token.ILLEGAL,
-		Literal: msg,
-		File:    s.file,
-		Line:    s.line,
-		Column:  s.column,
+		Type:      token.ILLEGAL,
+		Literal:   msg,
+		File:      s.file,
+		Line:      s.line,
+		Column:    s.column,
+		AliasInfo: nil,
 	}
 }
 

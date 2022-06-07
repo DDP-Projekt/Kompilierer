@@ -360,7 +360,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				p.err(v, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if validateAlias(alias, paramNames) { // check that the alias fits the function
+			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					p.err(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
@@ -419,22 +419,28 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token) bool {
-	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_EXPRESSION } // helper to check for parameters
-	if countElements(alias, isAliasExpr) != len(paramNames) {                           // validate that the alias contains as many parameters as the function
+func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.Token) bool {
+	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
+	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
 	}
-	nameSet := map[string]bool{} // set that holds the parameter names contained in the alias
-	for _, v := range paramNames {
-		nameSet[v.Literal] = true
+	nameSet := map[string]token.TokenType{} // set that holds the parameter names contained in the alias and their corresponding type
+	for i, v := range paramNames {
+		nameSet[v.Literal] = paramTypes[i].Type
 	}
 	// validate that each parameter is contained in the alias exactly once
-	for _, v := range selectElements(alias, isAliasExpr) {
-		k := v.Literal[1:] // remove the * from *argname
-		if _, ok := nameSet[k]; ok {
-			delete(nameSet, k)
-		} else {
-			return false
+	// and fill in the AliasInfo
+	for i, v := range alias {
+		if isAliasExpr(v) {
+			k := v.Literal[1:] // remove the * from *argname
+			if typ, ok := nameSet[k]; ok {
+				alias[i].AliasInfo = &token.AliasInfo{ // fill in the corresponding parameter type
+					Type: typ,
+				}
+				delete(nameSet, k)
+			} else {
+				return false
+			}
 		}
 	}
 	return true
@@ -906,7 +912,7 @@ func (p *Parser) funcCall() ast.Expression {
 	// stores an alias with the actual length of all tokens (expanded token.ALIAS_EXPRESSIONs)
 	type matchedAlias struct {
 		alias        *funcAlias // original alias
-		actualLength int        // length of this occurence in the code
+		actualLength int        // length of this occurence in the code (considers the token length of the passed arguments)
 	}
 
 	start := p.cur                            // save start position to restore the state if no alias was recognized
@@ -922,7 +928,7 @@ outer:
 			tok := &alias.Tokens[ii]
 
 			// expand arguments
-			if tok.Type == token.ALIAS_EXPRESSION {
+			if tok.Type == token.ALIAS_PARAMETER {
 				switch p.peek().Type {
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
 					p.advance() // single-token so skip it
@@ -976,7 +982,7 @@ outer:
 		for i, l := 0, len(finalAlias.alias.Tokens); i < l && finalAlias.alias.Tokens[i].Type != token.EOF; i++ {
 			tok := &finalAlias.alias.Tokens[i]
 
-			if tok.Type == token.ALIAS_EXPRESSION {
+			if tok.Type == token.ALIAS_PARAMETER {
 				exprStart := p.cur
 				switch p.peek().Type {
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
@@ -996,7 +1002,7 @@ outer:
 				tokens := make([]token.Token, p.cur-exprStart)
 				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 				// append the EOF needed for the parser
-				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column})
+				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
 				parser := New(tokens, p.errorHandler) // create a new parser for this expression
 				parser.funcAliases = p.funcAliases    // it needs the functions aliases
 				arg := parser.expression()            // parse the argument
@@ -1201,6 +1207,9 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	if t1.Type == token.IDENTIFIER {
 		return t1.Literal == t2.Literal
 	}
+	if t1.Type == token.ALIAS_PARAMETER {
+		return t1.AliasInfo.Type == t2.AliasInfo.Type
+	}
 	return true
 }
 
@@ -1212,16 +1221,6 @@ func countElements[T any](elements []T, test func(T) bool) (count int) {
 		}
 	}
 	return count
-}
-
-// selects all elements in the slice which fulfill the provided test function
-func selectElements[T any](elements []T, test func(T) bool) (result []T) {
-	for _, v := range elements {
-		if test(v) {
-			result = append(result, v)
-		}
-	}
-	return result
 }
 
 // checks wether two slices are equal using the provided comparison function

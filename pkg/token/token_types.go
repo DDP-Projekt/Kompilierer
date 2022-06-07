@@ -4,7 +4,7 @@ const (
 	ILLEGAL TokenType = iota
 	EOF
 	IDENTIFIER
-	ALIAS_EXPRESSION // [x] only found in function aliases
+	ALIAS_PARAMETER // *x only found in function aliases
 
 	literal_begin
 	INT    // 1 2
@@ -108,10 +108,10 @@ const (
 )
 
 var tokenStrings = [...]string{
-	ILLEGAL:          "ILLEGAL",
-	EOF:              "EOF",
-	IDENTIFIER:       "IDENTIFIER",
-	ALIAS_EXPRESSION: "ALIAS_EXPRESSION",
+	ILLEGAL:         "ILLEGAL",
+	EOF:             "EOF",
+	IDENTIFIER:      "IDENTIFIER",
+	ALIAS_PARAMETER: "ALIAS_PARAMETER",
 
 	//literal_begin
 	INT:    "INT LIT",
