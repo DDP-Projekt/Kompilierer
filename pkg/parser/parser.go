@@ -929,8 +929,12 @@ outer:
 
 			// expand arguments
 			if tok.Type == token.ALIAS_PARAMETER {
-				switch p.peek().Type {
+				switch t := p.peek(); t.Type {
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+					if p.literalTypeToType(t) != tok.AliasInfo.Type { // type does not match the alias
+						p.cur = start
+						continue outer
+					}
 					p.advance() // single-token so skip it
 					continue
 				case token.LPAREN:
@@ -963,64 +967,65 @@ outer:
 		// alias was matched so append it to the list of possible aliases
 		matchedAliases = append(matchedAliases, matchedAlias{alias: alias, actualLength: p.cur - start})
 	}
-	if len(matchedAliases) != 0 { // check if any alias was matched
-		var finalAlias *matchedAlias = nil // stores the resulting alias
-		// use the longest possible alias
-		// if some are of the same length use the one defined first
-		length := 0
-		for i, v := range matchedAliases {
-			if len(v.alias.Tokens) > length {
-				length = len(v.alias.Tokens)
-				finalAlias = &matchedAliases[i]
-			}
-		}
 
-		// parse the call arguments
-		p.cur = start
-		args := map[string]ast.Expression{}
-		// go through the whole alias again, applying nearly the same algorithm as above (can I get this into a separate function?)
-		for i, l := 0, len(finalAlias.alias.Tokens); i < l && finalAlias.alias.Tokens[i].Type != token.EOF; i++ {
-			tok := &finalAlias.alias.Tokens[i]
+	if len(matchedAliases) == 0 { // check if any alias was matched
+		return nil // no alias -> no function call
+	}
 
-			if tok.Type == token.ALIAS_PARAMETER {
-				exprStart := p.cur
-				switch p.peek().Type {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
-					p.advance() // single-token argument
-				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
-					p.advance()
-					numLparens := 1
-					for numLparens > 0 && !p.atEnd() {
-						switch p.advance().Type {
-						case token.LPAREN:
-							numLparens++
-						case token.RPAREN:
-							numLparens--
-						}
-					}
-				}
-				tokens := make([]token.Token, p.cur-exprStart)
-				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
-				// append the EOF needed for the parser
-				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
-				parser := New(tokens, p.errorHandler) // create a new parser for this expression
-				parser.funcAliases = p.funcAliases    // it needs the functions aliases
-				arg := parser.expression()            // parse the argument
-				args[tok.Literal[1:]] = arg
-				p.decrease() // to not skip a token
-			}
-			p.advance() // ignore non-argument tokens
-		}
-
-		p.cur = start + finalAlias.actualLength
-		return &ast.FuncCall{
-			Tok:  p.tokens[start],
-			Name: finalAlias.alias.Func,
-			Args: args,
+	var finalAlias *matchedAlias = nil // stores the resulting alias
+	// use the longest possible alias
+	// if some are of the same length use the one defined first
+	length := 0
+	for i, v := range matchedAliases {
+		if len(v.alias.Tokens) > length {
+			length = len(v.alias.Tokens)
+			finalAlias = &matchedAliases[i]
 		}
 	}
 
-	return nil // no alias was matched -> we are not in a function call
+	// parse the call arguments
+	p.cur = start
+	args := map[string]ast.Expression{}
+	// go through the whole alias again, applying nearly the same algorithm as above (can I get this into a separate function?)
+	for i, l := 0, len(finalAlias.alias.Tokens); i < l && finalAlias.alias.Tokens[i].Type != token.EOF; i++ {
+		tok := &finalAlias.alias.Tokens[i]
+
+		if tok.Type == token.ALIAS_PARAMETER {
+			exprStart := p.cur
+			switch p.peek().Type {
+			case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+				p.advance() // single-token argument
+			case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
+				p.advance()
+				numLparens := 1
+				for numLparens > 0 && !p.atEnd() {
+					switch p.advance().Type {
+					case token.LPAREN:
+						numLparens++
+					case token.RPAREN:
+						numLparens--
+					}
+				}
+			}
+			tokens := make([]token.Token, p.cur-exprStart)
+			copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
+			// append the EOF needed for the parser
+			tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
+			argParser := New(tokens, p.errorHandler) // create a new parser for this expression
+			argParser.funcAliases = p.funcAliases    // it needs the functions aliases
+			arg := argParser.expression()            // parse the argument
+			args[tok.Literal[1:]] = arg
+			p.decrease() // to not skip a token
+		}
+		p.advance() // ignore non-argument tokens
+	}
+
+	p.cur = start + finalAlias.actualLength
+	return &ast.FuncCall{
+		Tok:  p.tokens[start],
+		Name: finalAlias.alias.Func,
+		Args: args,
+	}
 }
 
 /*** Helper functions ***/
@@ -1187,6 +1192,28 @@ func (p *Parser) decrease() {
 	if p.cur > 0 {
 		p.cur--
 	}
+}
+
+// takes a Literal Type (INT, CHAR, etc.) and returns
+// a actual Type (ZAHL, BUCHSTABE, etc.)
+func (p *Parser) literalTypeToType(tok token.Token) token.TokenType {
+	switch tok.Type {
+	case token.INT:
+		return token.ZAHL
+	case token.FLOAT:
+		return token.KOMMAZAHL
+	case token.TRUE, token.FALSE:
+		return token.BOOLEAN
+	case token.CHAR:
+		return token.BUCHSTABE
+	case token.STRING:
+		return token.TEXT
+	case token.IDENTIFIER:
+		if ty, exists := p.typechecker.CurrentTable.LookupVar(tok.Literal); exists {
+			return ty
+		}
+	}
+	return token.ILLEGAL
 }
 
 // check if a slice of tokens contains a literal
