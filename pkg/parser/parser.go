@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -86,8 +87,9 @@ func init() {
 
 // wrapper for an alias
 type funcAlias struct {
-	Tokens []token.Token // tokens of the alias
-	Func   string        // the function it refers to
+	Tokens []token.Token              // tokens of the alias
+	Func   string                     // the function it refers to
+	Args   map[string]token.TokenType // types of the arguments (used for funcCall parsing)
 }
 
 // holds state when parsing a .ddp file into an AST
@@ -99,7 +101,7 @@ type Parser struct {
 	funcAliases     []funcAlias              // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
 	panicMode       bool                     // flag to not report following errors
-	errored         bool                     // wether the parser found an error
+	Errored         bool                     // wether the parser found an error
 	resolver        *resolver.Resolver       // used to resolve every node directly after it has been parsed
 	typechecker     *typechecker.Typechecker // used to typecheck every node directly after it has been parsed
 }
@@ -125,7 +127,7 @@ func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 		errorHandler: errorHandler,
 		funcAliases:  aliases,
 		panicMode:    false,
-		errored:      false,
+		Errored:      false,
 		resolver:     &resolver.Resolver{},
 		typechecker:  &typechecker.Typechecker{},
 	}
@@ -149,6 +151,7 @@ func (p *Parser) Parse() *ast.Ast {
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	p.resolver = resolver.New(Ast, p.errorHandler)
 	*p.typechecker = *inbuiltTypechecker // the typechecker needs the funcArgs field from the inbuilt SymbolTable
+	p.typechecker.ErrorHandler = p.errorHandler
 	p.typechecker.CurrentTable = Ast.Symbols
 
 	// main parsing loop
@@ -163,7 +166,7 @@ func (p *Parser) Parse() *ast.Ast {
 	}
 
 	// if any error occured, the AST is faulty
-	if p.errored || p.resolver.Errored() || p.typechecker.Errored() {
+	if p.Errored || p.resolver.Errored || p.typechecker.Errored {
 		Ast.Faulty = true
 	}
 
@@ -173,7 +176,7 @@ func (p *Parser) Parse() *ast.Ast {
 // if an error was encountered we synchronize to a point where correct parsing is possible again
 func (p *Parser) synchronize() {
 	p.panicMode = false
-	p.errored = true
+	p.Errored = true
 
 	p.advance()
 	for !p.atEnd() {
@@ -351,6 +354,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 	}
 
+	// map function parameters to their type (given to the alias if it is valid)
+	argTypes := map[string]token.TokenType{}
+	for i, v := range paramNames {
+		argTypes[v.Literal] = paramTypes[i].Type
+	}
+
 	// scan the raw aliases into tokens
 	funcAliases := make([]funcAlias, 0)
 	for _, v := range aliases {
@@ -364,7 +373,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					p.err(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, funcAlias{Tokens: alias, Func: name.Literal})
+					funcAliases = append(funcAliases, funcAlias{Tokens: alias, Func: name.Literal, Args: argTypes})
 				}
 			} else {
 				valid = false
@@ -381,7 +390,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	if !valid {
-		p.errored = true
+		p.Errored = true
 		return &ast.BadDecl{Tok: Funktion}
 	}
 
@@ -922,6 +931,7 @@ func (p *Parser) funcCall() ast.Expression {
 outer:
 	for i, l := 0, len(p.funcAliases); i < l; i++ {
 		alias := &p.funcAliases[i]
+		p.cur = start
 
 		// loop through all the tokens in the alias
 		for ii, ll := 0, len(alias.Tokens); ii < ll && alias.Tokens[ii].Type != token.EOF; ii++ {
@@ -931,10 +941,6 @@ outer:
 			if tok.Type == token.ALIAS_PARAMETER {
 				switch t := p.peek(); t.Type {
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
-					if p.literalTypeToType(t) != tok.AliasInfo.Type { // type does not match the alias
-						p.cur = start
-						continue outer
-					}
 					p.advance() // single-token so skip it
 					continue
 				case token.LPAREN:
@@ -972,58 +978,91 @@ outer:
 		return nil // no alias -> no function call
 	}
 
-	var finalAlias *matchedAlias = nil // stores the resulting alias
-	// use the longest possible alias
-	// if some are of the same length use the one defined first
-	length := 0
-	for i, v := range matchedAliases {
-		if len(v.alias.Tokens) > length {
-			length = len(v.alias.Tokens)
-			finalAlias = &matchedAliases[i]
-		}
-	}
+	// attempts to evaluate the arguments for the passed alias and checks if types match
+	// returns nil if argument and parameter types don't match
+	// similar to the alogrithm above
+	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) map[string]ast.Expression {
+		p.cur = start
+		args := map[string]ast.Expression{}
+		for i, l := 0, len(mAlias.alias.Tokens); i < l && mAlias.alias.Tokens[i].Type != token.EOF; i++ {
+			tok := &mAlias.alias.Tokens[i]
 
-	// parse the call arguments
-	p.cur = start
-	args := map[string]ast.Expression{}
-	// go through the whole alias again, applying nearly the same algorithm as above (can I get this into a separate function?)
-	for i, l := 0, len(finalAlias.alias.Tokens); i < l && finalAlias.alias.Tokens[i].Type != token.EOF; i++ {
-		tok := &finalAlias.alias.Tokens[i]
-
-		if tok.Type == token.ALIAS_PARAMETER {
-			exprStart := p.cur
-			switch p.peek().Type {
-			case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
-				p.advance() // single-token argument
-			case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
-				p.advance()
-				numLparens := 1
-				for numLparens > 0 && !p.atEnd() {
-					switch p.advance().Type {
-					case token.LPAREN:
-						numLparens++
-					case token.RPAREN:
-						numLparens--
+			if tok.Type == token.ALIAS_PARAMETER {
+				exprStart := p.cur
+				switch p.peek().Type {
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+					p.advance() // single-token argument
+				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
+					p.advance()
+					numLparens := 1
+					for numLparens > 0 && !p.atEnd() {
+						switch p.advance().Type {
+						case token.LPAREN:
+							numLparens++
+						case token.RPAREN:
+							numLparens--
+						}
 					}
 				}
+				tokens := make([]token.Token, p.cur-exprStart)
+				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
+				// append the EOF needed for the parser
+				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
+				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
+				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
+				arg := argParser.expression()            // parse the argument
+
+				// check if the argument type matches the prameter type
+				argName := tok.Literal[1:]
+				// we are in the for loop below, so the types must match
+				// otherwise it doesn't matter
+				if typeSensitive {
+					typecheckErrored := p.typechecker.Errored
+					p.typechecker.ErrorHandler = func(string) {} // silence errors
+					typ := p.typechecker.Evaluate(arg)
+					p.typechecker.ErrorHandler = p.errorHandler // turn errors on again
+					p.typechecker.Errored = typecheckErrored
+					if typ != mAlias.alias.Args[argName] {
+						return nil // arg and param types don't match
+					}
+				}
+
+				args[argName] = arg
+				p.decrease() // to not skip a token
 			}
-			tokens := make([]token.Token, p.cur-exprStart)
-			copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
-			// append the EOF needed for the parser
-			tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
-			argParser := New(tokens, p.errorHandler) // create a new parser for this expression
-			argParser.funcAliases = p.funcAliases    // it needs the functions aliases
-			arg := argParser.expression()            // parse the argument
-			args[tok.Literal[1:]] = arg
-			p.decrease() // to not skip a token
+			p.advance() // ignore non-argument tokens
 		}
-		p.advance() // ignore non-argument tokens
+		p.cur = start + mAlias.actualLength
+		return args
 	}
 
-	p.cur = start + finalAlias.actualLength
+	// sort the aliases in descending order
+	// Stable so equal aliases stay in the order they were defined
+	sort.SliceStable(matchedAliases, func(i, j int) bool {
+		return len(matchedAliases[i].alias.Tokens) > len(matchedAliases[j].alias.Tokens)
+	})
+
+	// search for the longest possible alias whose parameter types match
+	for i := range matchedAliases {
+		if args := checkAlias(&matchedAliases[i], true); args != nil {
+			return &ast.FuncCall{
+				Tok:  p.tokens[start],
+				Name: matchedAliases[i].alias.Func,
+				Args: args,
+			}
+		}
+	}
+
+	// no alias matched the type requirements
+	// so we take the longest one (most likely to be wanted)
+	// and "call" it so that the typechecker will report
+	// errors for the arguments
+	mostFitting := &matchedAliases[0]
+	args := checkAlias(mostFitting, false)
+
 	return &ast.FuncCall{
 		Tok:  p.tokens[start],
-		Name: finalAlias.alias.Func,
+		Name: mostFitting.alias.Func,
 		Args: args,
 	}
 }

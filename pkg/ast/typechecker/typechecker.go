@@ -10,18 +10,18 @@ import (
 
 // holds state to check if the types of an AST are valid
 type Typechecker struct {
-	errorHandler       scanner.ErrorHandler                  // function to which errors are passed
+	ErrorHandler       scanner.ErrorHandler                  // function to which errors are passed
 	CurrentTable       *ast.SymbolTable                      // SymbolTable of the current scope (needed for name type-checking)
-	errored            bool                                  // wether the typechecker found an error
+	Errored            bool                                  // wether the typechecker found an error
 	latestReturnedType token.TokenType                       // type of the last visited expression
 	funcArgs           map[string]map[string]token.TokenType // for function parameter types
 }
 
 func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
 	return &Typechecker{
-		errorHandler:       errorHandler,
+		ErrorHandler:       errorHandler,
 		CurrentTable:       symbols,
-		errored:            false,
+		Errored:            false,
 		latestReturnedType: token.NICHTS,
 		funcArgs:           make(map[string]map[string]token.TokenType),
 	}
@@ -35,7 +35,7 @@ func TypecheckAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
 		Ast.Statements[i].Accept(t)
 	}
 
-	if t.errored {
+	if t.Errored {
 		Ast.Faulty = true
 	}
 }
@@ -45,38 +45,28 @@ func (t *Typechecker) TypecheckNode(node ast.Node) *Typechecker {
 	return node.Accept(t).(*Typechecker)
 }
 
-// getter
-func (t *Typechecker) Errored() bool {
-	return t.errored
-}
-
 // helper to visit a node
 func (t *Typechecker) visit(node ast.Node) {
 	t = node.Accept(t).(*Typechecker)
 }
 
-// helper that returns the evaluated type of the node
-func (t *Typechecker) evaluate(node ast.Node) token.TokenType {
-	t.visit(node)
+// Evaluates the type of an expression
+func (t *Typechecker) Evaluate(expr ast.Expression) token.TokenType {
+	t.visit(expr)
 	return t.latestReturnedType
 }
 
 // helper for errors
 func (t *Typechecker) err(tok token.Token, msg string) {
-	t.errored = true
-	t.errorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line, tok.Column, msg))
-}
-
-// helper for commmon error message
-func (t *Typechecker) errMismatch(tok token.Token, typ1, typ2 token.TokenType) {
-	t.err(tok, fmt.Sprintf("Der Typ '%s' stimmt nicht mit dem Typ '%s' überein", typ1.String(), typ2.String()))
+	t.Errored = true
+	t.ErrorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line, tok.Column, msg))
 }
 
 // helper for commmon error message
 func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected ...token.TokenType) {
-	msg := "Es wurde ein Ausdruck vom Typ "
+	msg := "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ "
 	if len(expected) == 1 {
-		msg = "Es wurde ein Ausdruck vom Typ " + expected[0].String() + " erwartet aber '" + got.String() + "' gefunden"
+		msg = "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ " + expected[0].String() + " aber hat '" + got.String() + "' bekommen"
 	} else {
 		for i, v := range expected {
 			if i >= len(expected)-1 {
@@ -84,7 +74,7 @@ func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected
 			}
 			msg += "'" + v.String() + "', "
 		}
-		msg += "oder '" + expected[len(expected)-1].String() + "' erwartet aber '" + got.String() + "' gefunden"
+		msg += "oder '" + expected[len(expected)-1].String() + "' aber hat '" + got.String() + "' bekommen"
 	}
 	t.err(tok, msg)
 }
@@ -95,14 +85,18 @@ func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2, op token.TokenType
 }
 
 func (t *Typechecker) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
-	t.errored = true
+	t.Errored = true
 	t.latestReturnedType = token.NICHTS
 	return t
 }
 func (t *Typechecker) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	ty := t.evaluate(d.InitVal)
+	ty := t.Evaluate(d.InitVal)
 	if ty != d.Type.Type {
-		t.errMismatch(d.InitVal.Token(), d.Type.Type, ty)
+		t.err(d.InitVal.Token(), fmt.Sprintf(
+			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+			ty,
+			d.Type.Type,
+		))
 	}
 	return t
 }
@@ -115,7 +109,7 @@ func (t *Typechecker) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 }
 
 func (t *Typechecker) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	t.errored = true
+	t.Errored = true
 	t.latestReturnedType = token.NICHTS
 	return t
 }
@@ -144,8 +138,8 @@ func (t *Typechecker) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	// evaluate the rhs expression and check if the operator fits it
-	rhs := t.evaluate(e.Rhs)
+	// Evaluate the rhs expression and check if the operator fits it
+	rhs := t.Evaluate(e.Rhs)
 	switch e.Operator.Type {
 	case token.BETRAG, token.NEGATE:
 		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
@@ -191,8 +185,8 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
-	lhs := t.evaluate(e.Lhs)
-	rhs := t.evaluate(e.Rhs)
+	lhs := t.Evaluate(e.Lhs)
+	rhs := t.Evaluate(e.Rhs)
 
 	// helper to validate if types match
 	validate := func(op token.TokenType, valid ...token.TokenType) {
@@ -266,9 +260,15 @@ func (t *Typechecker) VisitGrouping(e *ast.Grouping) ast.Visitor {
 }
 func (t *Typechecker) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	for k, v := range e.Args {
-		ty := t.evaluate(v)
+		ty := t.Evaluate(v)
 		if ty != t.funcArgs[e.Name][k] {
-			t.errExpected(v.Token(), ty, t.funcArgs[e.Name][k])
+			t.err(v.Token(), fmt.Sprintf(
+				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
+				e.Name,
+				t.funcArgs[e.Name][k],
+				k,
+				ty,
+			))
 		}
 	}
 	fun, _ := t.CurrentTable.LookupFunc(e.Name)
@@ -277,7 +277,7 @@ func (t *Typechecker) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 }
 
 func (t *Typechecker) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	t.errored = true
+	t.Errored = true
 	t.latestReturnedType = token.NICHTS
 	return t
 }
@@ -288,9 +288,13 @@ func (t *Typechecker) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *Typechecker) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	ty := t.evaluate(s.Rhs)
+	ty := t.Evaluate(s.Rhs)
 	if vartyp, exists := t.CurrentTable.LookupVar(s.Name.Literal); exists && vartyp != ty {
-		t.errMismatch(s.Token(), vartyp, ty)
+		t.err(s.Rhs.Token(), fmt.Sprintf(
+			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+			ty,
+			vartyp,
+		))
 	}
 	return t
 }
@@ -303,9 +307,12 @@ func (t *Typechecker) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	condty := t.evaluate(s.Condition)
+	condty := t.Evaluate(s.Condition)
 	if condty != token.BOOLEAN {
-		t.errMismatch(s.Condition.Token(), token.BOOLEAN, condty)
+		t.err(s.Condition.Token(), fmt.Sprintf(
+			"Die Bedingung einer WENN Anweisung muss vom Typ Boolean sein, war aber vom Typ %s",
+			condty,
+		))
 	}
 	t.visit(s.Then)
 	if s.Else != nil {
@@ -314,22 +321,31 @@ func (t *Typechecker) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	condty := t.evaluate(s.Condition)
+	condty := t.Evaluate(s.Condition)
 	if condty != token.BOOLEAN {
-		t.errMismatch(s.Condition.Token(), token.BOOLEAN, condty)
+		t.err(s.Condition.Token(), fmt.Sprintf(
+			"Die Bedingung einer SOLANGE Anweisung muss vom Typ BOOLEAN sein, war aber vom Typ %s",
+			condty,
+		))
 	}
 	return s.Body.Accept(t)
 }
 func (t *Typechecker) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	t.visit(s.Initializer)
-	toty := t.evaluate(s.To)
+	toty := t.Evaluate(s.To)
 	if toty != token.ZAHL {
-		t.errMismatch(s.To.Token(), token.ZAHL, toty)
+		t.err(s.To.Token(), fmt.Sprintf(
+			"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
+			toty,
+		))
 	}
 	if s.StepSize != nil {
-		stepty := t.evaluate(s.StepSize)
+		stepty := t.Evaluate(s.StepSize)
 		if stepty != token.ZAHL {
-			t.errMismatch(s.StepSize.Token(), token.ZAHL, stepty)
+			t.err(s.To.Token(), fmt.Sprintf(
+				"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
+				stepty,
+			))
 		}
 	}
 	return s.Body.Accept(t)
@@ -338,9 +354,13 @@ func (t *Typechecker) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(t)
 }
 func (t *Typechecker) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	ty := t.evaluate(s.Value)
+	ty := t.Evaluate(s.Value)
 	if fun, exists := t.CurrentTable.LookupFunc(s.Func); exists && fun.Type.Type != ty {
-		t.errMismatch(s.Token(), fun.Type.Type, ty)
+		t.err(s.Token(), fmt.Sprintf(
+			"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
+			fun.Type.Type,
+			ty,
+		))
 	}
 	return t
 }

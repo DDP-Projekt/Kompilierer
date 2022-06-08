@@ -12,17 +12,17 @@ import (
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
 type Resolver struct {
-	errorHandler scanner.ErrorHandler // function to which errors are passed
+	ErrorHandler scanner.ErrorHandler // function to which errors are passed
 	CurrentTable *ast.SymbolTable     // needed state, public for the parser
-	errored      bool                 // wether the resolver errored
+	Errored      bool                 // wether the resolver errored
 }
 
 // create a new resolver to resolve the passed AST
 func New(ast *ast.Ast, errorHandler scanner.ErrorHandler) *Resolver {
 	return &Resolver{
-		errorHandler: errorHandler,
+		ErrorHandler: errorHandler,
 		CurrentTable: ast.Symbols,
-		errored:      false,
+		Errored:      false,
 	}
 }
 
@@ -38,7 +38,7 @@ func ResolveAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
 	}
 
 	// if the resolver errored, the AST is not valid DDP code
-	if r.errored {
+	if r.Errored {
 		Ast.Faulty = true
 	}
 }
@@ -48,11 +48,6 @@ func (r *Resolver) ResolveNode(node ast.Node) *Resolver {
 	return node.Accept(r).(*Resolver)
 }
 
-// getter
-func (r *Resolver) Errored() bool {
-	return r.errored
-}
-
 // helper to visit a node
 func (r *Resolver) visit(node ast.Node) {
 	r = node.Accept(r).(*Resolver)
@@ -60,13 +55,13 @@ func (r *Resolver) visit(node ast.Node) {
 
 // helper for errors
 func (r *Resolver) err(t token.Token, msg string) {
-	r.errored = true
-	r.errorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", t.File, t.Line, t.Column, msg))
+	r.Errored = true
+	r.ErrorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", t.File, t.Line, t.Column, msg))
 }
 
 // if a BadDecl exists the AST is faulty
 func (r *Resolver) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
-	r.errored = true
+	r.Errored = true
 	return r
 }
 func (r *Resolver) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
@@ -91,7 +86,7 @@ func (r *Resolver) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 // if a BadExpr exists the AST is faulty
 func (r *Resolver) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	r.errored = true
+	r.Errored = true
 	return r
 }
 func (r *Resolver) VisitIdent(e *ast.Ident) ast.Visitor {
@@ -137,7 +132,7 @@ func (r *Resolver) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 
 // if a BadStmt exists the AST is faulty
 func (r *Resolver) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	r.errored = true
+	r.Errored = true
 	return r
 }
 func (r *Resolver) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
