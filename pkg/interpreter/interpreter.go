@@ -259,7 +259,7 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = ddpstring(rune(left)) + ddpstring(rune(right))
 			}
 		}
-	case token.PLUS:
+	case token.PLUS, token.ADDIERE, token.ERHÖHE:
 		switch left := lhs.(type) {
 		case ddpint:
 			switch right := rhs.(type) {
@@ -276,7 +276,7 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = left + right
 			}
 		}
-	case token.MINUS:
+	case token.MINUS, token.SUBTRAHIERE, token.VERRINGERE:
 		switch left := lhs.(type) {
 		case ddpint:
 			switch right := rhs.(type) {
@@ -293,7 +293,7 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = left - right
 			}
 		}
-	case token.MAL:
+	case token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
 		switch left := lhs.(type) {
 		case ddpint:
 			switch right := rhs.(type) {
@@ -310,7 +310,7 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = left * right
 			}
 		}
-	case token.DURCH:
+	case token.DURCH, token.DIVIDIERE, token.TEILE:
 		switch left := lhs.(type) {
 		case ddpint:
 			switch right := rhs.(type) {

@@ -252,7 +252,13 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 	// global variables are allocated in the ddpmain function
 	c.commentNode(c.cbb, d, d.Name.Literal)
-	Var := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(Typ), Typ)
+	var varLocation value.Value
+	if c.scp.enclosing == nil { // global scope
+		varLocation = c.mod.NewGlobalDef("", getDefaultValue(d.Type.Type))
+	} else {
+		varLocation = c.cf.Blocks[0].NewAlloca(Typ)
+	}
+	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ)
 	initVal := c.evaluate(d.InitVal) // evaluate the initial value
 	c.cbb.NewStore(initVal, Var)     // store the initial value
 	if Typ == ddpstrptr {            // strings must be added to the ref-table
@@ -514,7 +520,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type()))
 		}
-	case token.PLUS:
+	case token.PLUS, token.ADDIERE, token.ERHÖHE:
 		switch lhs.Type() {
 		case ddpint:
 			switch rhs.Type() {
@@ -539,7 +545,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for PLUS (%s, %s)", lhs.Type(), rhs.Type()))
 		}
-	case token.MINUS:
+	case token.MINUS, token.SUBTRAHIERE, token.VERRINGERE:
 		switch lhs.Type() {
 		case ddpint:
 			switch rhs.Type() {
@@ -564,7 +570,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for MINUS (%s, %s)", lhs.Type(), rhs.Type()))
 		}
-	case token.MAL:
+	case token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
 		switch lhs.Type() {
 		case ddpint:
 			switch rhs.Type() {
@@ -589,7 +595,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for MAL (%s, %s)", lhs.Type(), rhs.Type()))
 		}
-	case token.DURCH:
+	case token.DURCH, token.DIVIDIERE, token.TEILE:
 		switch lhs.Type() {
 		case ddpint:
 			switch rhs.Type() {

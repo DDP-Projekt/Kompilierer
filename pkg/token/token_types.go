@@ -6,16 +6,13 @@ const (
 	IDENTIFIER
 	ALIAS_PARAMETER // *x only found in function aliases
 
-	literal_begin
 	INT    // 1 2
 	FLOAT  // 2,2 3,4
 	STRING // "hallo" "hi\n"
 	CHAR
 	TRUE  // wahr
 	FALSE // falsch
-	literal_end
 
-	operator_begin
 	PLUS     // plus
 	MINUS    // minus
 	MAL      // mal
@@ -47,9 +44,15 @@ const (
 	LOGISCHUND
 	LOGISCHNICHT
 	VERKETTET // verkettet mit
-	operator_end
+	ADDIERE
+	ERHÖHE
+	SUBTRAHIERE
+	VERRINGERE
+	MULTIPLIZIERE
+	VERVIELFACHE
+	DIVIDIERE
+	TEILE
 
-	keyword_begin
 	DER
 	DIE
 	VON
@@ -97,15 +100,12 @@ const (
 	DAS
 	ERGEBNIS
 	IN
-	keyword_end
 
-	symbols_begin
 	DOT    // .
 	COMMA  // ,
 	COLON  // :
 	LPAREN // (
 	RPAREN // )
-	symbols_end
 )
 
 var tokenStrings = [...]string{
@@ -114,50 +114,53 @@ var tokenStrings = [...]string{
 	IDENTIFIER:      "IDENTIFIER",
 	ALIAS_PARAMETER: "ALIAS_PARAMETER",
 
-	//literal_begin
 	INT:    "INT LIT",
 	FLOAT:  "FLOAT LIT",
 	STRING: "STRING LIT",
 	CHAR:   "CHAR LIT",
 	TRUE:   "TRUE",
 	FALSE:  "FALSE",
-	//literal_end
 
-	//operator_begin
-	PLUS:         "PLUS",
-	MINUS:        "MINUS",
-	MAL:          "MAL",
-	DURCH:        "DURCH",
-	MODULO:       "MODULO",
-	HOCH:         "HOCH",
-	WURZEL:       "WURZEL",
-	BETRAG:       "BETRAG",
-	SINUS:        "SINUS",
-	KOSINUS:      "KOSINUS",
-	TANGENS:      "TANGENS",
-	UND:          "UND",
-	ODER:         "ODER",
-	NICHT:        "NICHT",
-	GLEICH:       "GLEICH",
-	UNGLEICH:     "UNGLEICH",
-	KLEINER:      "KLEINER",
-	GRÖßER:       "GRÖßER",
-	KLEINERODER:  "KLEINER ODER",
-	GRÖßERODER:   "GRÖßER ODER",
-	NEGATE:       "NEGATE",
-	IST:          "IST",
-	LINKS:        "LINKS",
-	RECHTS:       "RECHTS",
-	GRÖßE:        "GRÖßE",
-	LÄNGE:        "LÄNGE",
-	KONTRA:       "KONTRA",
-	LOGISCHUND:   "LOGISCHUND",
-	LOGISCHNICHT: "LOGISCHNICHT",
-	LOGISCHODER:  "LOGISCHODER",
-	VERKETTET:    "VERKETTET",
-	//operator_end
+	PLUS:          "PLUS",
+	MINUS:         "MINUS",
+	MAL:           "MAL",
+	DURCH:         "DURCH",
+	MODULO:        "MODULO",
+	HOCH:          "HOCH",
+	WURZEL:        "WURZEL",
+	BETRAG:        "BETRAG",
+	SINUS:         "SINUS",
+	KOSINUS:       "KOSINUS",
+	TANGENS:       "TANGENS",
+	UND:           "UND",
+	ODER:          "ODER",
+	NICHT:         "NICHT",
+	GLEICH:        "GLEICH",
+	UNGLEICH:      "UNGLEICH",
+	KLEINER:       "KLEINER",
+	GRÖßER:        "GRÖßER",
+	KLEINERODER:   "KLEINER ODER",
+	GRÖßERODER:    "GRÖßER ODER",
+	NEGATE:        "NEGATE",
+	IST:           "IST",
+	LINKS:         "LINKS",
+	RECHTS:        "RECHTS",
+	GRÖßE:         "GRÖßE",
+	LÄNGE:         "LÄNGE",
+	KONTRA:        "KONTRA",
+	LOGISCHUND:    "LOGISCHUND",
+	LOGISCHNICHT:  "LOGISCHNICHT",
+	LOGISCHODER:   "LOGISCHODER",
+	VERKETTET:     "VERKETTET",
+	ADDIERE:       "ADDIERE",
+	ERHÖHE:        "ERHÖHE",
+	SUBTRAHIERE:   "SUBTRAHIERE",
+	VERRINGERE:    "VERRINGERE",
+	MULTIPLIZIERE: "MULTIPLIZIERE",
+	VERVIELFACHE:  "VERVIELFACHE",
+	DIVIDIERE:     "DIVIDIERE",
+	TEILE:         "TEILE",
 
-	//keyword_begin
 	DER:          "DER",
 	DIE:          "DIE",
 	VON:          "VON",
@@ -205,15 +208,12 @@ var tokenStrings = [...]string{
 	DAS:          "DAS",
 	ERGEBNIS:     "ERGEBNIS",
 	IN:           "IN",
-	//keyword_end
 
-	//symbols_begin
 	DOT:    "DOT",
 	COMMA:  "COMMA",
 	COLON:  "COLON",
 	LPAREN: "LPAREN",
 	RPAREN: "RPAREN",
-	//symbols_end
 }
 
 func (t TokenType) String() string {
@@ -298,6 +298,14 @@ var keywordMap = map[string]TokenType{
 	"Ergebnis":       ERGEBNIS,
 	"in":             IN,
 	"verkettet":      VERKETTET,
+	"Addiere":        ADDIERE,
+	"Erhöhe":         ERHÖHE,
+	"Subtrahiere":    SUBTRAHIERE,
+	"Verringere":     VERRINGERE,
+	"Multipliziere":  MULTIPLIZIERE,
+	"Vervielfache":   VERVIELFACHE,
+	"Dividiere":      DIVIDIERE,
+	"Teile":          TEILE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

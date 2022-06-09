@@ -480,6 +480,10 @@ func (p *Parser) statement() ast.Statement {
 
 	// parse all possible statements
 	switch p.peek().Type {
+	case token.ADDIERE, token.ERHÖHE, token.SUBTRAHIERE, token.VERRINGERE,
+		token.MULTIPLIZIERE, token.VERVIELFACHE, token.DIVIDIERE, token.TEILE:
+		p.advance()
+		return p.compoundAssignement()
 	case token.SPEICHERE:
 		p.consume(token.SPEICHERE)
 		return p.assignNoLiteral() // Speichere ... in x, where non-literal expressions are allowed
@@ -502,6 +506,62 @@ func (p *Parser) statement() ast.Statement {
 
 	// no other statement was found, so interpret it as expression statement, whose result will be discarded
 	return p.expressionStatement()
+}
+
+func (p *Parser) compoundAssignement() ast.Statement {
+	operator := p.previous()
+	p.consume(token.IDENTIFIER)
+	varName := p.previous()
+	switch operator.Type {
+	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
+		p.consume(token.MIT)
+	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE:
+		p.consume(token.UM)
+	case token.TEILE:
+		p.consume(token.DURCH)
+	}
+	operand := p.primary()
+	switch operand.(type) {
+	case *ast.IntLit, *ast.FloatLit, *ast.Ident:
+	default:
+		p.decrease()
+		p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
+		p.advance()
+	}
+	switch operator.Type {
+	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
+		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)
+		targetName := p.previous()
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  operator,
+			Name: targetName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
+				},
+				Operator: operator,
+				Rhs:      operand,
+			},
+		}
+	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.TEILE:
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  operator,
+			Name: varName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
+				},
+				Operator: operator,
+				Rhs:      operand,
+			},
+		}
+	default:
+		return &ast.BadStmt{
+			Tok: operator,
+		}
+	}
 }
 
 // helper to parse assignements which may only be literals

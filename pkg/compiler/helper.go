@@ -7,6 +7,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
+	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 )
@@ -52,6 +53,23 @@ func toDDPType(t token.TokenType) types.Type {
 		return ddpchar
 	case token.TEXT:
 		return ddpstrptr
+	}
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
+}
+
+// returns the default constant for global variables
+func getDefaultValue(t token.TokenType) constant.Constant {
+	switch t {
+	case token.ZAHL:
+		return constant.NewInt(ddpint, 0)
+	case token.KOMMAZAHL:
+		return constant.NewFloat(ddpfloat, 0.0)
+	case token.BOOLEAN:
+		return constant.NewInt(ddpbool, 0)
+	case token.BUCHSTABE:
+		return constant.NewInt(ddpchar, 0)
+	case token.TEXT:
+		return irutil.NewCString("")
 	}
 	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
 }
