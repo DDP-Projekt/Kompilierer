@@ -816,16 +816,16 @@ func (p *Parser) unary() ast.Expression {
 		return expr
 	}
 	// match the correct unary operator
-	if p.match(token.NICHT, token.BETRAG, token.NEGATE, token.DIE, token.GRÖßE, token.LÄNGE, token.DER) {
+	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER) {
 		if p.previous().Type == token.DIE {
 			if !p.match(token.GRÖßE, token.LÄNGE) {
 				p.decrease() // DIE does not belong to a operator, so maybe it is a function call
-				return p.primary()
+				return p.negate()
 			}
 		} else if p.previous().Type == token.DER {
 			if !p.match(token.BETRAG) {
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
-				return p.primary()
+				return p.negate()
 			}
 
 		} else { // error handling
@@ -846,7 +846,7 @@ func (p *Parser) unary() ast.Expression {
 			Rhs:      p.unary(),
 		}
 	}
-	expr := p.primary()
+	expr := p.negate()
 
 	// type-casting
 	if p.match(token.ALS) {
@@ -857,6 +857,30 @@ func (p *Parser) unary() ast.Expression {
 		}
 	}
 
+	return expr
+}
+
+func (p *Parser) negate() ast.Expression {
+	if p.match(token.NEGATE) {
+		return &ast.UnaryExpr{
+			Operator: p.previous(),
+			Rhs:      p.unary(),
+		}
+	}
+	return p.power()
+}
+
+func (p *Parser) power() ast.Expression {
+	expr := p.primary()
+	for p.match(token.HOCH) {
+		operator := p.previous()
+		rhs := p.unary() // maybe primary, but not sure
+		expr = &ast.BinaryExpr{
+			Lhs:      expr,
+			Operator: operator,
+			Rhs:      rhs,
+		}
+	}
 	return expr
 }
 

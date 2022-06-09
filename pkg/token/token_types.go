@@ -21,6 +21,7 @@ const (
 	MAL      // mal
 	DURCH    // durch
 	MODULO   // modulo
+	HOCH     // hoch
 	WURZEL   // (n.) Wurzel (von)
 	BETRAG   // Betrag (von)
 	SINUS    // Sinus (von)
@@ -128,6 +129,7 @@ var tokenStrings = [...]string{
 	MAL:          "MAL",
 	DURCH:        "DURCH",
 	MODULO:       "MODULO",
+	HOCH:         "HOCH",
 	WURZEL:       "WURZEL",
 	BETRAG:       "BETRAG",
 	SINUS:        "SINUS",
@@ -226,6 +228,7 @@ var keywordMap = map[string]TokenType{
 	"mal":            MAL,
 	"durch":          DURCH,
 	"modulo":         MODULO,
+	"hoch":           HOCH,
 	"Wurzel":         WURZEL,
 	"Betrag":         BETRAG,
 	"Sinus":          SINUS,

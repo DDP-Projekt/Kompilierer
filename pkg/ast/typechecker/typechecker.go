@@ -199,27 +199,16 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.VERKETTET:
 		validate(op, token.TEXT, token.BUCHSTABE)
 		t.latestReturnedType = token.TEXT // some operators change the type of the expression, so we set that here
-	case token.PLUS:
+	case token.PLUS, token.MINUS, token.MAL:
 		validate(op, token.ZAHL, token.KOMMAZAHL)
 		if lhs == token.ZAHL && rhs == token.ZAHL {
 			t.latestReturnedType = token.ZAHL
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
-	case token.MINUS:
+	case token.HOCH:
 		validate(op, token.ZAHL, token.KOMMAZAHL)
-		if lhs == token.ZAHL && rhs == token.ZAHL {
-			t.latestReturnedType = token.ZAHL
-		} else {
-			t.latestReturnedType = token.KOMMAZAHL
-		}
-	case token.MAL:
-		validate(op, token.ZAHL, token.KOMMAZAHL)
-		if lhs == token.ZAHL && rhs == token.ZAHL {
-			t.latestReturnedType = token.ZAHL
-		} else {
-			t.latestReturnedType = token.KOMMAZAHL
-		}
+		t.latestReturnedType = token.KOMMAZAHL
 	case token.DURCH:
 		validate(op, token.ZAHL, token.KOMMAZAHL)
 		t.latestReturnedType = token.KOMMAZAHL

@@ -592,6 +592,8 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
+	case token.HOCH:
+		notimplemented()
 	case token.MODULO:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
 	case token.UND:
