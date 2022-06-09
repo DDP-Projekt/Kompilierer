@@ -20,6 +20,7 @@ func WalkAst(ast *Ast, v Visitor) {
 // basic Node interfaces
 type (
 	Node interface {
+		String() string
 		Token() token.Token
 		Accept(Visitor) Visitor
 	}
@@ -62,6 +63,10 @@ type (
 		Body       *BlockStmt
 	}
 )
+
+func (d *BadDecl) String() string  { return "BadDecl" }
+func (d *VarDecl) String() string  { return "VarDecl" }
+func (d *FuncDecl) String() string { return "FuncDecl" }
 
 func (d *BadDecl) Token() token.Token  { return d.Tok }
 func (d *VarDecl) Token() token.Token  { return d.Type }
@@ -132,6 +137,18 @@ type (
 		Args map[string]Expression
 	}
 )
+
+func (e *BadExpr) String() string    { return "BadExpr" }
+func (e *Ident) String() string      { return "Ident" }
+func (e *IntLit) String() string     { return "IntLit" }
+func (e *FloatLit) String() string   { return "FloatLit" }
+func (e *BoolLit) String() string    { return "BoolLit" }
+func (e *CharLit) String() string    { return "CharLit" }
+func (e *StringLit) String() string  { return "StringLit" }
+func (e *UnaryExpr) String() string  { return "UnaryExpr" }
+func (e *BinaryExpr) String() string { return "BinaryExpr" }
+func (e *Grouping) String() string   { return "Grouping" }
+func (e *FuncCall) String() string   { return "FuncCall" }
 
 func (e *BadExpr) Token() token.Token    { return e.Tok }
 func (e *Ident) Token() token.Token      { return e.Literal }
@@ -226,6 +243,17 @@ type (
 		Value  Expression
 	}
 )
+
+func (s *BadStmt) String() string      { return "BadStmt" }
+func (s *DeclStmt) String() string     { return "DeclStmt" }
+func (s *ExprStmt) String() string     { return "ExprStmt" }
+func (s *AssignStmt) String() string   { return "AssignStmt" }
+func (s *BlockStmt) String() string    { return "BlockStmt" }
+func (s *IfStmt) String() string       { return "IfStmt" }
+func (s *WhileStmt) String() string    { return "WhileStmt" }
+func (s *ForStmt) String() string      { return "ForStmt" }
+func (s *FuncCallStmt) String() string { return "FuncCallStmt" }
+func (s *ReturnStmt) String() string   { return "ReturnStmt" }
 
 func (s *BadStmt) Token() token.Token      { return s.Tok }
 func (s *DeclStmt) Token() token.Token     { return s.Decl.Token() }

@@ -60,7 +60,7 @@ func (c *Compiler) Compile() (result string, rerr error) {
 	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
-			rerr = err.(error)
+			rerr = fmt.Errorf("%v", err)
 			result = ""
 		}
 	}()
@@ -100,6 +100,18 @@ func err(msg string) {
 	// retreive the file and line on which the error occured
 	_, file, line, _ := runtime.Caller(1)
 	panic(fmt.Errorf("%s, %d: %s", filepath.Base(file), line, msg))
+}
+
+func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
+	comment := fmt.Sprintf("File %s, Line %d, Column %d: %s", node.Token().File, node.Token().Line, node.Token().Column, node.String())
+	if details != "" {
+		comment += " (" + details + ")"
+	}
+	block.Insts = append(block.Insts, irutil.NewComment(comment))
+}
+
+func (c *Compiler) comment(comment string, block *ir.Block) {
+	block.Insts = append(block.Insts, irutil.NewComment(comment))
 }
 
 // helper to visit a single node
@@ -239,6 +251,7 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 	// global variables are allocated in the ddpmain function
+	c.commentNode(c.cbb, d, d.Name.Literal)
 	Var := c.scp.addVar(d.Name.Literal, c.cf.Blocks[0].NewAlloca(Typ), Typ)
 	initVal := c.evaluate(d.InitVal) // evaluate the initial value
 	c.cbb.NewStore(initVal, Var)     // store the initial value
@@ -308,7 +321,8 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 }
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
-	if Var.typ == ddpstrptr {                 // strings must be copied in case the user of the expression modifies them
+	c.commentNode(c.cbb, e, e.Literal.Literal)
+	if Var.typ == ddpstrptr { // strings must be copied in case the user of the expression modifies them
 		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(Var.typ, Var.val))
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
@@ -318,18 +332,22 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 
 // literals are simple ir constants
 func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
+	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewInt(ddpint, e.Value)
 	return c
 }
 func (c *Compiler) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	return c
 }
 func (c *Compiler) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
+	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
 	return c
 }
 func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
+	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewInt(ddpchar, int64(e.Value))
 	return c
 }
@@ -339,6 +357,7 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
+	c.commentNode(c.cbb, e, constStr.Name())
 	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
 	return c
 }
@@ -348,6 +367,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		c.incrementRC(rhs, VK_STRING)
 	}
 	// big switches for the different type combinations
+	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator.Type {
 	case token.BETRAG:
 		switch rhs.Type() {
@@ -469,6 +489,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		c.incrementRC(rhs, VK_STRING)
 	}
 	// big switches on the different type combinations
+	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator.Type {
 	case token.VERKETTET:
 		switch lhs.Type() {
@@ -788,6 +809,7 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 		args = append(args, val) // add the value to the arguments
 	}
 
+	c.commentNode(c.cbb, e, "")
 	c.latestReturn = c.cbb.NewCall(fun.irFunc, args...) // compile the actual function call
 	// after the function returns, we decrement the ref-count on
 	// all passed arguments
@@ -825,6 +847,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	if Var.typ == ddpstrptr {
 		c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
 	}
+	c.commentNode(c.cbb, s, s.Name.Literal)
 	c.cbb.NewStore(val, Var.val) // store the new value
 	return c
 }
@@ -849,14 +872,17 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 		// compile the thenBlock
 		// we compile it first and safe it to jump to it later
 		thenBlock := c.cf.NewBlock("")
+		c.comment("thenBlock", thenBlock)
 		c.cbb, c.scp = thenBlock, newScope(c.scp) // with its own scope
 		c.visitNode(s.Then)
 		c.cbb, c.scp = cbb, c.exitScope(c.scp) // revert the scope and block
 
 		if s.Else != nil { // handle else and possible else-ifs
 			elseBlock := c.cf.NewBlock("")
+			c.comment("elseBlock", elseBlock)
 			if leaveBlock == nil { // if we don't have a leaveBlock, make one
 				leaveBlock = c.cf.NewBlock("")
+				c.comment("leaveBlock", leaveBlock)
 			}
 			c.cbb, c.scp = elseBlock, newScope(c.scp) // the else block has its own scope as well
 			// either execute the else statement or handle the else-if with our leaveBlock
@@ -866,14 +892,21 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 				c.visitNode(s.Else) // handle only the else
 			}
 
-			c.cbb, c.scp = cbb, c.exitScope(c.scp)                         // exit the else scope and restore the block before the if
+			if c.cbb != leaveBlock && c.cbb.Term == nil { // I don't understand this, maybe you do
+				c.commentNode(c.cbb, s, "")
+				c.cbb.NewBr(leaveBlock)
+			}
+			c.cbb, c.scp = cbb, c.exitScope(c.scp) // exit the else scope and restore the block before the if
+			c.commentNode(c.cbb, s, "")
 			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, elseBlock) // jump with the condition
 
 			// add a terminator
 			if thenBlock.Term == nil {
+				c.commentNode(c.cbb, s, "")
 				thenBlock.NewBr(leaveBlock)
 			}
 			if elseBlock.Term == nil {
+				c.commentNode(c.cbb, s, "")
 				elseBlock.NewBr(leaveBlock)
 			}
 
@@ -881,11 +914,14 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 		} else { // if there is no else we just conditionally execute the then block
 			if leaveBlock == nil { // if we don't already have a leaveBlock make one
 				leaveBlock = c.cf.NewBlock("")
+				c.comment("leaveBlock", leaveBlock)
 			}
 			// no else, so jump to then or leave
+			c.commentNode(c.cbb, s, "")
 			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, leaveBlock)
 			// we need a terminator (simply jump after the then block)
 			if thenBlock.Term == nil {
+				c.commentNode(c.cbb, s, "")
 				thenBlock.NewBr(leaveBlock)
 			}
 			c.cbb = leaveBlock // continue compilation in the leave block
@@ -903,6 +939,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 	condBlock := c.cf.NewBlock("")
 	body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
 
+	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock)
 	c.cbb, c.scp = body, bodyScope
 	c.visitNode(s.Body)
@@ -912,6 +949,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 
 	leaveBlock := c.cf.NewBlock("")
 	c.cbb = condBlock
+	c.commentNode(c.cbb, s, "")
 	condBlock.NewCondBr(c.evaluate(s.Condition), body, leaveBlock)
 
 	c.cbb, c.scp = leaveBlock, scp
@@ -925,14 +963,19 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
 
 	condBlock := c.cf.NewBlock("")
+	c.comment("condBlock", condBlock)
 	incrementBlock := c.cf.NewBlock("")
+	c.comment("incrementBlock", incrementBlock)
 	forBody := c.cf.NewBlock("")
+	c.comment("forBody", forBody)
 
+	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
 	// compile the for-body
 	c.cbb = forBody
 	c.visitNode(s.Body)
 	if c.cbb.Term == nil { // if there is no return at the end we jump to the incrementBlock
+		c.commentNode(c.cbb, s, "")
 		c.cbb.NewBr(incrementBlock)
 	}
 
@@ -950,24 +993,31 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	// add the incrementer to the counter variable
 	add := incrementBlock.NewAdd(indexVar, incrementer)
 	incrementBlock.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	c.commentNode(incrementBlock, s, "")
 	incrementBlock.NewBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
 	initGreaterTo := c.cf.NewBlock("")
+	c.comment("initGreaterTo", initGreaterTo)
 	initLessthenTo := c.cf.NewBlock("")
+	c.comment("initLessthenTo", initLessthenTo)
 	leaveBlock := c.cf.NewBlock("") // after the condition is false we jump to the leaveBlock
+	c.comment("forLeaveBlock", leaveBlock)
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
 	cond := condBlock.NewICmp(enum.IPredSLE, initValue, c.evaluate(s.To))
+	c.commentNode(condBlock, s, "")
 	condBlock.NewCondBr(cond, initLessthenTo, initGreaterTo)
 
 	// we are counting up, so compare less-or-equal
 	cond = initLessthenTo.NewICmp(enum.IPredSLE, initLessthenTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	c.commentNode(initLessthenTo, s, "")
 	initLessthenTo.NewCondBr(cond, forBody, leaveBlock)
 
 	// we are counting down, so compare greater-or-equal
 	cond = initGreaterTo.NewICmp(enum.IPredSGE, initGreaterTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	c.commentNode(initGreaterTo, s, "")
 	initGreaterTo.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
@@ -984,6 +1034,7 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 		ret = c.deepCopyStr(oldRet)
 		c.decrementRC(oldRet)
 	}
+	c.commentNode(c.cbb, s, "")
 	c.cbb.NewRet(ret)
 	return c
 }
