@@ -18,6 +18,10 @@ ddpfloat inbuilt_float_betrag(ddpfloat f) {
 	return fabs(f);
 }
 
+ddpfloat inbuilt_hoch(ddpfloat f1, ddpfloat f2) {
+	return pow(f1, f2);
+}
+
 ddpint inbuilt_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
 }

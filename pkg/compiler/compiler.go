@@ -175,6 +175,9 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("inbuilt_int_betrag", ddpint, ir.NewParam("i", ddpint))
 	c.declareInbuiltFunction("inbuilt_float_betrag", ddpfloat, ir.NewParam("f", ddpfloat))
 
+	// hoch operator for different type combinations
+	c.declareInbuiltFunction("inbuilt_hoch", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
+
 	// ddpstring length
 	c.declareInbuiltFunction("inbuilt_string_length", ddpint, ir.NewParam("str", ddpstrptr))
 
@@ -593,7 +596,28 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.HOCH:
-		notimplemented()
+		switch lhs.Type() {
+		case ddpint:
+			switch rhs.Type() {
+			case ddpint:
+				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			case ddpfloat:
+				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for HOCH (%s, %s)", lhs.Type(), rhs.Type()))
+			}
+		case ddpfloat:
+			switch rhs.Type() {
+			case ddpint:
+				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for HOCH (%s, %s)", lhs.Type(), rhs.Type()))
+			}
+		default:
+			err(fmt.Sprintf("invalid Parameter Types for HOCH (%s, %s)", lhs.Type(), rhs.Type()))
+		}
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_hoch"].irFunc, lhs, rhs)
 	case token.MODULO:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
 	case token.UND:
