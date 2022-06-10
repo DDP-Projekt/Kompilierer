@@ -393,7 +393,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for NEGATE: %s", rhs.Type()))
 		}
-	case token.NICHT:
+	case token.NICHT, token.NEGIERE:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
 	case token.LÄNGE:
 		switch rhs.Type() {

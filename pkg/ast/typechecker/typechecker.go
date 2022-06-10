@@ -140,12 +140,16 @@ func (t *Typechecker) VisitStringLit(e *ast.StringLit) ast.Visitor {
 func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(e.Rhs)
+	// boolean vs bitwise negate (compound assignement)
+	/*if e.Operator.Type == token.NEGIERE && rhs == token.ZAHL {
+		e.Operator.Type == token.LOGISCHNICHT
+	}*/
 	switch e.Operator.Type {
 	case token.BETRAG, token.NEGATE:
 		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
 			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
 		}
-	case token.NICHT:
+	case token.NICHT, token.NEGIERE:
 		if !isType(rhs, token.BOOLEAN) {
 			t.errExpected(e.Operator, rhs, token.BOOLEAN)
 		}

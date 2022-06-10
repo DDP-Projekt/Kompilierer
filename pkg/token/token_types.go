@@ -43,15 +43,17 @@ const (
 	LOGISCHODER
 	LOGISCHUND
 	LOGISCHNICHT
-	VERKETTET // verkettet mit
-	ADDIERE
-	ERHÖHE
-	SUBTRAHIERE
-	VERRINGERE
-	MULTIPLIZIERE
-	VERVIELFACHE
-	DIVIDIERE
-	TEILE
+	VERKETTET     // verkettet mit
+	ADDIERE       // +=
+	ERHÖHE        // +=
+	SUBTRAHIERE   // -=
+	VERRINGERE    // -=
+	MULTIPLIZIERE // *=
+	VERVIELFACHE  // *=
+	DIVIDIERE     // /=
+	TEILE         // /=
+	VERSCHIEBE    // >>= <<=
+	NEGIERE       // x = !x ~=
 
 	DER
 	DIE
@@ -160,6 +162,8 @@ var tokenStrings = [...]string{
 	VERVIELFACHE:  "VERVIELFACHE",
 	DIVIDIERE:     "DIVIDIERE",
 	TEILE:         "TEILE",
+	VERSCHIEBE:    "VERSCHIEBE",
+	NEGIERE:       "NEGIERE",
 
 	DER:          "DER",
 	DIE:          "DIE",
@@ -306,6 +310,8 @@ var keywordMap = map[string]TokenType{
 	"Vervielfache":   VERVIELFACHE,
 	"Dividiere":      DIVIDIERE,
 	"Teile":          TEILE,
+	"Verschiebe":     VERSCHIEBE,
+	"Negiere":        NEGIERE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

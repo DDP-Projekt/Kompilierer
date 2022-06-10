@@ -481,7 +481,8 @@ func (p *Parser) statement() ast.Statement {
 	// parse all possible statements
 	switch p.peek().Type {
 	case token.ADDIERE, token.ERHÖHE, token.SUBTRAHIERE, token.VERRINGERE,
-		token.MULTIPLIZIERE, token.VERVIELFACHE, token.DIVIDIERE, token.TEILE:
+		token.MULTIPLIZIERE, token.VERVIELFACHE, token.DIVIDIERE, token.TEILE,
+		token.VERSCHIEBE, token.NEGIERE:
 		p.advance()
 		return p.compoundAssignement()
 	case token.SPEICHERE:
@@ -508,27 +509,42 @@ func (p *Parser) statement() ast.Statement {
 	return p.expressionStatement()
 }
 
+// += -= *= /=
 func (p *Parser) compoundAssignement() ast.Statement {
+	// the many branches are here mostly because of different prepositons
 	operator := p.previous()
 	var operand ast.Expression
 	var varName token.Token
 	if operator.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
 		operand = p.primary()
-		switch operand.(type) {
+		/*switch operand.(type) {
 		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
 		default:
 			p.decrease()
 			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
 			p.advance()
-		}
+		}*/
 	} else {
 		p.consume(token.IDENTIFIER)
 		varName = p.previous()
+		if operator.Type == token.NEGIERE {
+			p.consume(token.DOT)
+			return &ast.AssignStmt{
+				Tok:  operator,
+				Name: varName,
+				Rhs: &ast.UnaryExpr{
+					Operator: operator,
+					Rhs: &ast.Ident{
+						Literal: varName,
+					},
+				},
+			}
+		}
 	}
 	switch operator.Type {
 	case token.ADDIERE, token.MULTIPLIZIERE:
 		p.consume(token.MIT)
-	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE:
+	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.VERSCHIEBE:
 		p.consume(token.UM)
 	case token.SUBTRAHIERE:
 		p.consume(token.VON)
@@ -540,13 +556,13 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		varName = p.previous()
 	} else {
 		operand = p.primary()
-		switch operand.(type) {
+		/*switch operand.(type) {
 		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
 		default:
 			p.decrease()
 			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
 			p.advance()
-		}
+		}*/
 	}
 
 	switch operator.Type {
@@ -569,6 +585,23 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Tok:  operator,
+			Name: varName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
+				},
+				Operator: operator,
+				Rhs:      operand,
+			},
+		}
+	case token.VERSCHIEBE:
+		p.consumeN(token.BIT, token.NACH)
+		p.consumeAny(token.LINKS, token.RECHTS)
+		tok := operator
+		operator = p.previous()
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  tok,
 			Name: varName,
 			Rhs: &ast.BinaryExpr{
 				Lhs: &ast.Ident{
