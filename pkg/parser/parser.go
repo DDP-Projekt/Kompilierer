@@ -510,24 +510,45 @@ func (p *Parser) statement() ast.Statement {
 
 func (p *Parser) compoundAssignement() ast.Statement {
 	operator := p.previous()
-	p.consume(token.IDENTIFIER)
-	varName := p.previous()
+	var operand ast.Expression
+	var varName token.Token
+	if operator.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
+		operand = p.primary()
+		switch operand.(type) {
+		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
+		default:
+			p.decrease()
+			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
+			p.advance()
+		}
+	} else {
+		p.consume(token.IDENTIFIER)
+		varName = p.previous()
+	}
 	switch operator.Type {
-	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
+	case token.ADDIERE, token.MULTIPLIZIERE:
 		p.consume(token.MIT)
 	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE:
 		p.consume(token.UM)
-	case token.TEILE:
+	case token.SUBTRAHIERE:
+		p.consume(token.VON)
+	case token.DIVIDIERE, token.TEILE:
 		p.consume(token.DURCH)
 	}
-	operand := p.primary()
-	switch operand.(type) {
-	case *ast.IntLit, *ast.FloatLit, *ast.Ident:
-	default:
-		p.decrease()
-		p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
-		p.advance()
+	if operator.Type == token.SUBTRAHIERE { // order of operands is reversed
+		p.consume(token.IDENTIFIER)
+		varName = p.previous()
+	} else {
+		operand = p.primary()
+		switch operand.(type) {
+		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
+		default:
+			p.decrease()
+			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
+			p.advance()
+		}
 	}
+
 	switch operator.Type {
 	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
 		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)

@@ -86,13 +86,13 @@ Mathematische Zuweisungen:
 - Addiere (var vom Typ Zahl|Kommazahl) mit (var|Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
 - Erhöhe (var vom Typ Zahl|Kommazahl) um (var|Lit. Zahl|Kommazahl).
 
-- Subtrahiere (var vom Typ Zahl|Kommazahl) mit (var|Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
+- Subtrahiere (var vom Typ Zahl|Kommazahl) von (var|Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
 - Verringere (var vom Typ Zahl|Kommazahl) um (var|Lit. Zahl|Kommazahl).
 
 - Multipliziere (var vom Typ Zahl|Kommazahl) mit (var|Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
 - Vervielfache (var vom Typ Zahl|Kommazahl) um (var|Lit. Zahl|Kommazahl).
 
-- Dividiere (var vom Typ Zahl|Kommazahl) mit (Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
+- Dividiere (var vom Typ Zahl|Kommazahl) durch (Lit. Zahl|Kommazahl) und speichere das Ergebnis in (var|anderervar). 
 - Teile (var vom Typ Zahl|Kommazahl) durch (Lit. Zahl|Kommazahl).
 
 
