@@ -327,6 +327,8 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = left / right
 			}
 		}
+	case token.STELLE:
+		i.lastReturn = ddpchar(([]rune(lhs.(ddpstring)))[rhs.(ddpint)-1])
 	case token.HOCH:
 		switch left := lhs.(type) {
 		case ddpint:

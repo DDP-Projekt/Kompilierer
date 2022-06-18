@@ -1038,6 +1038,16 @@ func (p *Parser) primary() ast.Expression {
 		}
 	}
 
+	// indexing
+	if p.match(token.AN) {
+		p.consumeN(token.DER, token.STELLE)
+		expr = &ast.BinaryExpr{
+			Lhs:      expr,
+			Operator: p.previous(),
+			Rhs:      p.expression(),
+		}
+	}
+
 	// type-casting
 	if p.match(token.ALS) {
 		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)

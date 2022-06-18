@@ -212,6 +212,14 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		} else {
 			t.latestReturnedType = token.KOMMAZAHL
 		}
+	case token.STELLE:
+		if lhs != token.TEXT {
+			t.err(e.Lhs.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
+		}
+		if rhs != token.ZAHL {
+			t.err(e.Lhs.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+		}
+		t.latestReturnedType = token.BUCHSTABE // later on the list element type
 	case token.HOCH:
 		validate(op, token.ZAHL, token.KOMMAZAHL)
 		t.latestReturnedType = token.KOMMAZAHL

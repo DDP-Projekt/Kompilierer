@@ -26,6 +26,25 @@ ddpint inbuilt_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
 }
 
+ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
+	if (index > str->cap || index < 1 || str->cap <= 1) {
+		printf("string index out of range");
+		exit(1);
+	}
+	size_t i = 0;
+	while (str->str[i] != 0 && index > 1) {
+		i += utf8_num_bytes(str->str + i);
+		index--;
+	}
+
+	if (str->str[i] == 0) {
+		printf("string index out of range");
+		exit(1);
+	}
+
+	return utf8_string_to_char(str->str + i);
+}
+
 ddpstring* inbuilt_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
 	DBGLOG("inbuilt_string_string_verkettet: %p", dstr);

@@ -211,6 +211,9 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("inbuilt_char_string_verkettet", ddpstrptr, ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstrptr))
 	c.declareInbuiltFunction("inbuilt_string_char_verkettet", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("c", ddpchar))
 	c.declareInbuiltFunction("inbuilt_char_char_verkettet", ddpstrptr, ir.NewParam("c1", ddpchar), ir.NewParam("c2", ddpchar))
+
+	// string indexing
+	c.declareInbuiltFunction("inbuilt_string_index", ddpchar, ir.NewParam("str", ddpstrptr), ir.NewParam("index", ddpint))
 }
 
 // helper to call increment_ref_count
@@ -621,6 +624,18 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			}
 		default:
 			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
+		}
+	case token.STELLE:
+		switch lhs.Type() {
+		case ddpstrptr:
+			switch rhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
+			}
+		default:
+			err(fmt.Sprintf("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 	case token.HOCH:
 		switch lhs.Type() {

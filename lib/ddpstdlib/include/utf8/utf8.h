@@ -32,4 +32,8 @@ size_t utf8_num_bytes(char* s);
 // returns the number of bytes in c (the resulting strlen of s)
 int utf8_char_to_string(char* s, int32_t c);
 
+// decode the first codepoint in str
+// str must be null-terminated
+int32_t utf8_string_to_char(char* str);
+
 #endif // DDP_UTF8_H

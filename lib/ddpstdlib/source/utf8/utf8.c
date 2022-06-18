@@ -97,3 +97,39 @@ int utf8_char_to_string(char* s, int32_t c) {
 	s[num_bytes] = '\0';
     return num_bytes;
 }
+
+// copied from https://rosettacode.org/wiki/UTF-8_encode_and_decode#C
+
+typedef struct {
+	char mask;    // char data will be bitwise AND with this
+	char lead;    // start bytes of current char in utf-8 encoded character
+	uint32_t beg; // beginning of codepoint range
+	uint32_t end; // end of codepoint range
+	int bits_stored; // the number of bits from the codepint that fits in char
+}utf_t;
+ 
+const utf_t* utf[] = {
+	/*             mask        lead        beg      end       bits */
+	[0] = &(utf_t){0b00111111, 0b10000000, 0,       0,        6    },
+	[1] = &(utf_t){0b01111111, 0b00000000, 0000,    0177,     7    },
+	[2] = &(utf_t){0b00011111, 0b11000000, 0200,    03777,    5    },
+	[3] = &(utf_t){0b00001111, 0b11100000, 04000,   0177777,  4    },
+	[4] = &(utf_t){0b00000111, 0b11110000, 0200000, 04177777, 3    },
+	      &(utf_t){0},
+};
+
+// decode the first codepoint in str
+// str must be null-terminated
+int32_t utf8_string_to_char(char* str)
+{
+    int num_bytes = utf8_num_bytes(str);
+	int shift = utf[0]->bits_stored * (num_bytes - 1);
+	int32_t codep = (*str++ & utf[num_bytes]->mask) << shift;
+ 
+	for(int i = 1; i < num_bytes; ++i, ++str) {
+		shift -= utf[0]->bits_stored;
+		codep |= ((char)*str & utf[0]->mask) << shift;
+	}
+ 
+	return codep;
+}

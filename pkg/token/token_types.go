@@ -102,6 +102,8 @@ const (
 	DAS
 	ERGEBNIS
 	IN
+	AN
+	STELLE
 
 	DOT    // .
 	COMMA  // ,
@@ -212,6 +214,8 @@ var tokenStrings = [...]string{
 	DAS:          "DAS",
 	ERGEBNIS:     "ERGEBNIS",
 	IN:           "IN",
+	AN:           "AN",
+	STELLE:       "STELLE",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -312,6 +316,8 @@ var keywordMap = map[string]TokenType{
 	"Teile":          TEILE,
 	"Verschiebe":     VERSCHIEBE,
 	"Negiere":        NEGIERE,
+	"an":             AN,
+	"Stelle":         STELLE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
