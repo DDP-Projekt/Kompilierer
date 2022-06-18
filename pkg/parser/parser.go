@@ -926,6 +926,7 @@ func (p *Parser) factor() ast.Expression {
 }
 
 func (p *Parser) unary() ast.Expression {
+	// TODO: check if we can return here (type-casting, hoch etc. are ignored)
 	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
 		return expr
 	}
@@ -960,18 +961,7 @@ func (p *Parser) unary() ast.Expression {
 			Rhs:      p.unary(),
 		}
 	}
-	expr := p.negate()
-
-	// type-casting
-	if p.match(token.ALS) {
-		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)
-		return &ast.UnaryExpr{
-			Operator: p.previous(),
-			Rhs:      expr,
-		}
-	}
-
-	return expr
+	return p.negate()
 }
 
 func (p *Parser) negate() ast.Expression {
@@ -999,60 +989,65 @@ func (p *Parser) power() ast.Expression {
 }
 
 func (p *Parser) primary() ast.Expression {
-	if expr := p.funcCall(); expr != nil { // funccall has the highest precedence (aliases + operator overloading)
-		return expr
-	}
-	// literals
-	if p.match(token.FALSE) {
-		return &ast.BoolLit{Literal: p.previous(), Value: false}
-	}
-	if p.match(token.TRUE) {
-		return &ast.BoolLit{Literal: p.previous(), Value: true}
-	}
-	if p.match(token.INT) {
-		lit := p.previous()
-		if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
-			return &ast.IntLit{Literal: lit, Value: val}
-		} else {
-			p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-			return &ast.IntLit{Literal: lit, Value: 0}
+	var expr ast.Expression = nil
+	if expr = p.funcCall(); expr == nil { // funccall has the highest precedence (aliases + operator overloading)
+		switch p.advance().Type {
+		case token.FALSE:
+			expr = &ast.BoolLit{Literal: p.previous(), Value: false}
+		case token.TRUE:
+			expr = &ast.BoolLit{Literal: p.previous(), Value: true}
+		case token.INT:
+			lit := p.previous()
+			if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
+				expr = &ast.IntLit{Literal: lit, Value: val}
+			} else {
+				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+				expr = &ast.IntLit{Literal: lit, Value: 0}
+			}
+		case token.FLOAT:
+			lit := p.previous()
+			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
+				expr = &ast.FloatLit{Literal: lit, Value: val}
+			} else {
+				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+				expr = &ast.FloatLit{Literal: lit, Value: 0}
+			}
+		case token.CHAR:
+			lit := p.previous()
+			expr = &ast.CharLit{Literal: lit, Value: p.parseChar(lit.Literal)}
+		case token.STRING:
+			lit := p.previous()
+			expr = &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
+		case token.LPAREN:
+			lParen := p.previous()
+			innerExpr := p.expression()
+			p.consume(token.RPAREN)
+			expr = &ast.Grouping{
+				LParen: lParen,
+				Expr:   innerExpr,
+			}
+		case token.IDENTIFIER:
+			expr = &ast.Ident{
+				Literal: p.previous(),
+			}
+		default:
+			p.err(p.previous(), fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal))
+			expr = &ast.BadExpr{
+				Tok: p.previous(),
+			}
 		}
 	}
-	if p.match(token.FLOAT) {
-		lit := p.previous()
-		if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
-			return &ast.FloatLit{Literal: lit, Value: val}
-		} else {
-			p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-			return &ast.FloatLit{Literal: lit, Value: 0}
+
+	// type-casting
+	if p.match(token.ALS) {
+		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)
+		return &ast.UnaryExpr{
+			Operator: p.previous(),
+			Rhs:      expr,
 		}
 	}
-	if p.match(token.CHAR) {
-		lit := p.previous()
-		return &ast.CharLit{Literal: lit, Value: p.parseChar(lit.Literal)}
-	}
-	if p.match(token.STRING) {
-		lit := p.previous()
-		return &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
-	}
-	if p.match(token.LPAREN) {
-		lParen := p.previous()
-		expr := p.expression()
-		p.consume(token.RPAREN)
-		return &ast.Grouping{
-			LParen: lParen,
-			Expr:   expr,
-		}
-	}
-	if p.match(token.IDENTIFIER) {
-		return &ast.Ident{
-			Literal: p.previous(),
-		}
-	}
-	p.err(p.peek(), fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.peek().Literal))
-	return &ast.BadExpr{
-		Tok: p.peek(),
-	}
+
+	return expr
 }
 
 func (p *Parser) funcCall() ast.Expression {
