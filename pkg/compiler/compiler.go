@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -56,7 +57,9 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 }
 
 // compile the AST contained in c
-func (c *Compiler) Compile() (result string, rerr error) {
+// if w is not nil, the resulting llir is written to w
+// otherwise a string representation is returned
+func (c *Compiler) Compile(w io.Writer) (result string, rerr error) {
 	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
@@ -90,7 +93,12 @@ func (c *Compiler) Compile() (result string, rerr error) {
 
 	// on success ddpmain returns 0
 	c.cbb.NewRet(newInt(0))
-	return c.mod.String(), nil // return the module as string
+	if w != nil {
+		_, err := c.mod.WriteTo(w)
+		return "", err
+	} else {
+		return c.mod.String(), nil // return the module as string
+	}
 }
 
 // helper that might be extended later

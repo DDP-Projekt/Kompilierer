@@ -265,16 +265,9 @@ func (cmd *BuildCommand) Run() error {
 		defer file.Close()
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
 		// compile the input file to llvm ir
-		if ir, err := compiler.CompileFile(cmd.filePath, func(msg string) { fmt.Println(msg) }); err != nil {
+		if err := compiler.CompileTo(cmd.filePath, nil, func(msg string) { fmt.Println(msg) }, file); err != nil {
 			print("failed to compile the source code: %s", err.Error())
 			return nil
-		} else {
-			print("writing llvm ir to %s", llPath)
-			_, err = file.WriteString(ir)
-			if err != nil {
-				print("failed to write llvm ir: %s", err.Error())
-				return nil
-			}
 		}
 		if cmd.targetIR { // if the target is llvm ir we are finished
 			return nil

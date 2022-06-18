@@ -16,6 +16,7 @@ func ParseFile(path string, errorHandler scanner.ErrorHandler) (*ast.Ast, error)
 }
 
 // parse the provided source into an Ast
+// an optional file name can be provided for better error messages
 func ParseSource(name string, src []byte, errorHandler scanner.ErrorHandler) (*ast.Ast, error) {
 	file, err := scanner.ScanSource(name, src, errorHandler, scanner.ModeStrictCapitalization)
 	if err != nil {
