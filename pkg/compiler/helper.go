@@ -7,7 +7,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
-	"github.com/llir/irutil"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 )
@@ -69,7 +68,7 @@ func getDefaultValue(t token.TokenType) constant.Constant {
 	case token.BUCHSTABE:
 		return constant.NewInt(ddpchar, 0)
 	case token.TEXT:
-		return irutil.NewCString("")
+		return constant.NewNull(ddpstrptr)
 	}
 	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
 }

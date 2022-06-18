@@ -28,9 +28,10 @@ ddpint inbuilt_string_length(ddpstring* str) {
 
 ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		printf("string index out of range");
+		printf("Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)", index, utf8_strlen(str->str));
 		exit(1);
 	}
+	
 	size_t i = 0;
 	while (str->str[i] != 0 && index > 1) {
 		i += utf8_num_bytes(str->str + i);
@@ -38,7 +39,7 @@ ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	}
 
 	if (str->str[i] == 0) {
-		printf("string index out of range");
+		printf("Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)", index, utf8_strlen(str->str));
 		exit(1);
 	}
 

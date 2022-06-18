@@ -106,7 +106,7 @@ typedef struct {
 	uint32_t beg; // beginning of codepoint range
 	uint32_t end; // end of codepoint range
 	int bits_stored; // the number of bits from the codepint that fits in char
-}utf_t;
+} utf_t;
  
 const utf_t* utf[] = {
 	/*             mask        lead        beg      end       bits */

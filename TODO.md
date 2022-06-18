@@ -5,7 +5,7 @@
 - [ ] Wurzel Operator
 - [ ] Logarithmus Operator
 - [ ] Sinus/Kosinus/Tangens/... Operatoren
-- [ ] Index Operator (an der Stelle)
+- [x] Index Operator (an der Stelle)
 - [ ] Slice Operator (von bis)
 - [ ] String/Listen Operatoren (basic + stdlib)
 
