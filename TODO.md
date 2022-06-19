@@ -3,7 +3,7 @@
 ## Operatoren
 - [x] Bitweise Operatoren
 - [x] Wurzel Operator
-- [ ] Logarithmus Operator
+- [x] Logarithmus Operator
 - [x] Sinus/Kosinus/Tangens/... Operatoren
 - [x] Index Operator (an der Stelle)
 - [ ] Slice Operator (von bis)

@@ -209,6 +209,9 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("inbuilt_cosh", ddpfloat, ir.NewParam("f", ddpfloat))
 	c.declareInbuiltFunction("inbuilt_tanh", ddpfloat, ir.NewParam("f", ddpfloat))
 
+	// logarithm
+	c.declareInbuiltFunction("inbuilt_log", ddpfloat, ir.NewParam("numerus", ddpfloat), ir.NewParam("base", ddpfloat))
+
 	// ddpstring length
 	c.declareInbuiltFunction("inbuilt_string_length", ddpint, ir.NewParam("str", ddpstrptr))
 
@@ -778,6 +781,29 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			err(fmt.Sprintf("invalid Parameter Types for HOCH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_hoch"].irFunc, lhs, rhs)
+	case token.LOGARITHMUS:
+		switch lhs.Type() {
+		case ddpint:
+			switch rhs.Type() {
+			case ddpint:
+				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			case ddpfloat:
+				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhs.Type(), rhs.Type()))
+			}
+		case ddpfloat:
+			switch rhs.Type() {
+			case ddpint:
+				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			default:
+				err(fmt.Sprintf("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhs.Type(), rhs.Type()))
+			}
+		default:
+			err(fmt.Sprintf("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhs.Type(), rhs.Type()))
+		}
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_log"].irFunc, lhs, rhs)
 	case token.LOGISCHUND:
 		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
 	case token.LOGISCHODER:

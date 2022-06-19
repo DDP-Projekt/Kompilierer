@@ -1053,8 +1053,9 @@ func (p *Parser) power() ast.Expression {
 		op2 := operator
 		op2.Type = token.DURCH
 		p.consume(token.VON)
+		// root is implemented as pow(degree, 1/radicant)
 		return &ast.BinaryExpr{
-			Lhs:      p.unary(),
+			Lhs:      p.unary(), // TODO: check if this should be primary or negate
 			Operator: operator,
 			Rhs: &ast.BinaryExpr{
 				Lhs: &ast.IntLit{
@@ -1066,10 +1067,21 @@ func (p *Parser) power() ast.Expression {
 			},
 		}
 	}
+	if p.matchN(token.DER, token.LOGARITHMUS) {
+		operator := p.previous()
+		p.consume(token.VON)
+		numerus := p.expression()
+		p.consumeN(token.ZUR, token.BASIS)
+		return &ast.BinaryExpr{
+			Lhs:      numerus,
+			Operator: operator,
+			Rhs:      p.unary(),
+		}
+	}
 	expr := p.primary()
 	for p.match(token.HOCH) {
 		operator := p.previous()
-		rhs := p.unary() // maybe primary, but not sure
+		rhs := p.unary() // TODO: check if this should be primary or negate
 		expr = &ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,

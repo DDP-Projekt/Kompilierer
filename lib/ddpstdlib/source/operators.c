@@ -22,6 +22,10 @@ ddpfloat inbuilt_hoch(ddpfloat f1, ddpfloat f2) {
 	return pow(f1, f2);
 }
 
+ddpfloat inbuilt_log(ddpfloat numerus, ddpfloat base) {
+	return log10(numerus) / log10(base);
+}
+
 ddpfloat inbuilt_sin(ddpfloat f) {
 	return sin(f);
 }

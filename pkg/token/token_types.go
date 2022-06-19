@@ -60,6 +60,9 @@ const (
 	TEILE         // /=
 	VERSCHIEBE    // >>= <<=
 	NEGIERE       // x = !x ~=
+	LOGARITHMUS
+	ZUR
+	BASIS
 
 	DER
 	DIE
@@ -178,6 +181,9 @@ var tokenStrings = [...]string{
 	TEILE:         "TEILE",
 	VERSCHIEBE:    "VERSCHIEBE",
 	NEGIERE:       "NEGIERE",
+	LOGARITHMUS:   "LOGARITHMUS",
+	ZUR:           "ZUR",
+	BASIS:         "BASIS",
 
 	DER:          "DER",
 	DIE:          "DIE",
@@ -336,6 +342,9 @@ var keywordMap = map[string]TokenType{
 	"Negiere":         NEGIERE,
 	"an":              AN,
 	"Stelle":          STELLE,
+	"Logarithmus":     LOGARITHMUS,
+	"zur":             ZUR,
+	"Basis":           BASIS,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

@@ -419,6 +419,23 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
 			}
 		}
+	case token.LOGARITHMUS:
+		switch left := lhs.(type) {
+		case ddpint:
+			switch right := rhs.(type) {
+			case ddpint:
+				i.lastReturn = ddpfloat(math.Log10(float64(left)) / math.Log10(float64(right)))
+			case ddpfloat:
+				i.lastReturn = ddpfloat(math.Log10(float64(left)) / math.Log10(float64(right)))
+			}
+		case ddpfloat:
+			switch right := rhs.(type) {
+			case ddpint:
+				i.lastReturn = ddpfloat(math.Log10(float64(left)) / math.Log10(float64(right)))
+			case ddpfloat:
+				i.lastReturn = ddpfloat(math.Log10(float64(left)) / math.Log10(float64(right)))
+			}
+		}
 	case token.LOGISCHUND:
 		i.lastReturn = ddpint(lhs.(ddpint) & rhs.(ddpint))
 	case token.LOGISCHODER:
