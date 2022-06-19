@@ -33,6 +33,10 @@ var (
 	VK_STRING = constant.NewInt(i8, 0)
 )
 
+const (
+	all_ones = ^0
+)
+
 func newInt(value int64) *constant.Int {
 	return constant.NewInt(ddpint, value)
 }

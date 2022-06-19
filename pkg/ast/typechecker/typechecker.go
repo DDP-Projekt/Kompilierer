@@ -153,6 +153,12 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		if !isType(rhs, token.BOOLEAN) {
 			t.errExpected(e.Operator, rhs, token.BOOLEAN)
 		}
+		t.latestReturnedType = token.BOOLEAN
+	case token.LOGISCHNICHT:
+		if !isType(rhs, token.ZAHL) {
+			t.errExpected(e.Operator, rhs, token.ZAHL)
+		}
+		t.latestReturnedType = token.ZAHL
 	case token.LÄNGE:
 		if !isType(rhs, token.TEXT) {
 			t.errExpected(e.Operator, rhs, token.TEXT)
@@ -228,14 +234,19 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		t.latestReturnedType = token.KOMMAZAHL
 	case token.MODULO:
 		validate(op, token.ZAHL)
+		t.latestReturnedType = token.ZAHL
 	case token.UND:
 		validate(op, token.BOOLEAN)
+		t.latestReturnedType = token.BOOLEAN
 	case token.ODER:
 		validate(op, token.BOOLEAN)
+		t.latestReturnedType = token.BOOLEAN
 	case token.LINKS:
 		validate(op, token.ZAHL)
+		t.latestReturnedType = token.ZAHL
 	case token.RECHTS:
 		validate(op, token.ZAHL)
+		t.latestReturnedType = token.ZAHL
 	case token.GLEICH:
 		if lhs != rhs {
 			t.errExpectedBin(e.Token(), lhs, rhs, op)
@@ -246,15 +257,12 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			t.errExpectedBin(e.Token(), lhs, rhs, op)
 		}
 		t.latestReturnedType = token.BOOLEAN
-	case token.KLEINER:
-		fallthrough
-	case token.KLEINERODER:
-		fallthrough
-	case token.GRÖßER:
-		fallthrough
-	case token.GRÖßERODER:
+	case token.GRÖßERODER, token.KLEINER, token.KLEINERODER, token.GRÖßER:
 		validate(op, token.ZAHL, token.KOMMAZAHL)
 		t.latestReturnedType = token.BOOLEAN
+	case token.LOGISCHODER, token.LOGISCHUND, token.KONTRA:
+		validate(op, token.ZAHL)
+		t.latestReturnedType = token.ZAHL
 	}
 	return t
 }

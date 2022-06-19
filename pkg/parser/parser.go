@@ -823,9 +823,53 @@ func (p *Parser) boolOR() ast.Expression {
 }
 
 func (p *Parser) boolAND() ast.Expression {
-	expr := p.equality()
+	expr := p.bitwiseOR()
 	for p.match(token.UND) {
 		operator := p.previous()
+		rhs := p.bitwiseOR()
+		expr = &ast.BinaryExpr{
+			Lhs:      expr,
+			Operator: operator,
+			Rhs:      rhs,
+		}
+	}
+	return expr
+}
+
+func (p *Parser) bitwiseOR() ast.Expression {
+	expr := p.bitwiseXOR()
+	for p.matchN(token.LOGISCH, token.ODER) {
+		operator := p.previous()
+		operator.Type = token.LOGISCHODER
+		rhs := p.bitwiseXOR()
+		expr = &ast.BinaryExpr{
+			Lhs:      expr,
+			Operator: operator,
+			Rhs:      rhs,
+		}
+	}
+	return expr
+}
+
+func (p *Parser) bitwiseXOR() ast.Expression {
+	expr := p.bitwiseAND()
+	for p.matchN(token.LOGISCH, token.KONTRA) {
+		operator := p.previous()
+		rhs := p.bitwiseAND()
+		expr = &ast.BinaryExpr{
+			Lhs:      expr,
+			Operator: operator,
+			Rhs:      rhs,
+		}
+	}
+	return expr
+}
+
+func (p *Parser) bitwiseAND() ast.Expression {
+	expr := p.equality()
+	for p.matchN(token.LOGISCH, token.UND) {
+		operator := p.previous()
+		operator.Type = token.LOGISCHUND
 		rhs := p.equality()
 		expr = &ast.BinaryExpr{
 			Lhs:      expr,
@@ -931,7 +975,7 @@ func (p *Parser) unary() ast.Expression {
 		return expr
 	}
 	// match the correct unary operator
-	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER) {
+	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER, token.LOGISCH) {
 		if p.previous().Type == token.DIE {
 			if !p.match(token.GRÖßE, token.LÄNGE) {
 				p.decrease() // DIE does not belong to a operator, so maybe it is a function call
@@ -942,7 +986,11 @@ func (p *Parser) unary() ast.Expression {
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
-
+		} else if p.previous().Type == token.LOGISCH {
+			if !p.match(token.NICHT) {
+				p.decrease() // LOGISCH does not belong to a operator, so maybe it is a function call
+				return p.negate()
+			}
 		} else { // error handling
 			switch p.previous().Type {
 			case token.GRÖßE, token.LÄNGE:
@@ -955,6 +1003,10 @@ func (p *Parser) unary() ast.Expression {
 		switch operator.Type {
 		case token.BETRAG, token.GRÖßE, token.LÄNGE:
 			p.consume(token.VON)
+		case token.NICHT:
+			if p.peekN(-2).Type == token.LOGISCH {
+				operator.Type = token.LOGISCHNICHT
+			}
 		}
 		return &ast.UnaryExpr{
 			Operator: operator,
@@ -1287,6 +1339,21 @@ func (p *Parser) match(types ...token.TokenType) bool {
 	return false
 }
 
+// if the given sequence of tokens is matched, advance
+// returns wether we advance or not
+func (p *Parser) matchN(types ...token.TokenType) bool {
+	for i, t := range types {
+		if p.peekN(i).Type != t {
+			return false
+		}
+	}
+	for i := range types {
+		_ = i
+		p.advance()
+	}
+	return true
+}
+
 // if the current token is of type t advance, otherwise error
 func (p *Parser) consume(t token.TokenType) bool {
 	if p.check(t) {
@@ -1359,6 +1426,14 @@ func (p *Parser) advance() token.Token {
 // returns the current token without advancing
 func (p *Parser) peek() token.Token {
 	return p.tokens[p.cur]
+}
+
+// returns the n'th token starting from current without advancing
+func (p *Parser) peekN(n int) token.Token {
+	if p.cur+n >= len(p.tokens) || p.cur+n < 0 {
+		return p.tokens[len(p.tokens)-1] // EOF
+	}
+	return p.tokens[p.cur+n]
 }
 
 // returns the token before peek()

@@ -406,6 +406,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		}
 	case token.NICHT, token.NEGIERE:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
+	case token.LOGISCHNICHT:
+		c.latestReturn = c.cbb.NewXor(rhs, newInt(all_ones))
 	case token.LÄNGE:
 		switch rhs.Type() {
 		case ddpstrptr:
@@ -668,6 +670,12 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			err(fmt.Sprintf("invalid Parameter Types for HOCH (%s, %s)", lhs.Type(), rhs.Type()))
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_hoch"].irFunc, lhs, rhs)
+	case token.LOGISCHUND:
+		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
+	case token.LOGISCHODER:
+		c.latestReturn = c.cbb.NewOr(lhs, rhs)
+	case token.KONTRA:
+		c.latestReturn = c.cbb.NewXor(lhs, rhs)
 	case token.MODULO:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
 	case token.UND:

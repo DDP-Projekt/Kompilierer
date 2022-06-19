@@ -156,6 +156,9 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	case token.NICHT, token.NEGIERE:
 		v := rhs.(ddpbool)
 		i.lastReturn = !v
+	case token.LOGISCHNICHT:
+		v := rhs.(ddpint)
+		i.lastReturn = ^v
 	case token.LÄNGE:
 		v := rhs.(ddpstring)
 		i.lastReturn = ddpint(len(v))
@@ -346,6 +349,12 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 				i.lastReturn = ddpfloat(math.Pow(float64(left), float64(right)))
 			}
 		}
+	case token.LOGISCHUND:
+		i.lastReturn = ddpint(lhs.(ddpint) & rhs.(ddpint))
+	case token.LOGISCHODER:
+		i.lastReturn = ddpint(lhs.(ddpint) | rhs.(ddpint))
+	case token.KONTRA:
+		i.lastReturn = ddpint(lhs.(ddpint) ^ rhs.(ddpint))
 	case token.MODULO:
 		i.lastReturn = ddpint(lhs.(ddpint) % rhs.(ddpint))
 	case token.UND:
