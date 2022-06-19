@@ -1045,6 +1045,27 @@ func (p *Parser) negate() ast.Expression {
 }
 
 func (p *Parser) power() ast.Expression {
+	if p.match(token.DIE) {
+		lhs := p.primary()
+		p.consumeN(token.DOT, token.WURZEL)
+		operator := p.previous()
+		operator.Type = token.HOCH
+		op2 := operator
+		op2.Type = token.DURCH
+		p.consume(token.VON)
+		return &ast.BinaryExpr{
+			Lhs:      p.unary(),
+			Operator: operator,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.IntLit{
+					Literal: lhs.Token(),
+					Value:   1,
+				},
+				Operator: op2,
+				Rhs:      lhs,
+			},
+		}
+	}
 	expr := p.primary()
 	for p.match(token.HOCH) {
 		operator := p.previous()
