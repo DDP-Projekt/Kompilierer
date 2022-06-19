@@ -1,10 +1,10 @@
 # TODOs
 
 ## Operatoren
-- [ ] Bitweise Operatoren
+- [x] Bitweise Operatoren
 - [ ] Wurzel Operator
 - [ ] Logarithmus Operator
-- [ ] Sinus/Kosinus/Tangens/... Operatoren
+- [x] Sinus/Kosinus/Tangens/... Operatoren
 - [x] Index Operator (an der Stelle)
 - [ ] Slice Operator (von bis)
 - [ ] String/Listen Operatoren (basic + stdlib)

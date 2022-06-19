@@ -198,6 +198,17 @@ func (c *Compiler) setupOperators() {
 	// hoch operator for different type combinations
 	c.declareInbuiltFunction("inbuilt_hoch", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
+	// trigonometric functions
+	c.declareInbuiltFunction("inbuilt_sin", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_cos", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_tan", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_asin", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_acos", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_atan", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_sinh", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_cosh", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_tanh", ddpfloat, ir.NewParam("f", ddpfloat))
+
 	// ddpstring length
 	c.declareInbuiltFunction("inbuilt_string_length", ddpint, ir.NewParam("str", ddpstrptr))
 
@@ -429,12 +440,102 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpbool:
 			c.latestReturn = newInt(1)
 		case ddpchar:
-			c.latestReturn = newInt(2)
+			c.latestReturn = newInt(4)
 		case ddpstrptr:
 			strcapptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
 			c.latestReturn = c.cbb.NewLoad(ddpint, strcapptr)
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for GRÖßE: %s", rhs.Type()))
+		}
+	case token.SINUS:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_sin"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_sin"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for SINUS: %s", rhs.Type()))
+		}
+	case token.KOSINUS:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_cos"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_cos"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for KOSINUS: %s", rhs.Type()))
+		}
+	case token.TANGENS:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_tan"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_tan"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for TANGENS: %s", rhs.Type()))
+		}
+	case token.ARKSIN:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_asin"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_asin"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for ARKUSSINUS: %s", rhs.Type()))
+		}
+	case token.ARKKOS:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_acos"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_acos"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for ARKUSKOSINUS: %s", rhs.Type()))
+		}
+	case token.ARKTAN:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_atan"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_atan"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for ARKUSTANGENS: %s", rhs.Type()))
+		}
+	case token.HYPSIN:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_sinh"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_sinh"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for HYPERBELSINUS: %s", rhs.Type()))
+		}
+	case token.HYPKOS:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_cosh"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_cosh"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for HYPERBELKOSINUS: %s", rhs.Type()))
+		}
+	case token.HYPTAN:
+		switch rhs.Type() {
+		case ddpint:
+			fp := c.cbb.NewSIToFP(rhs, ddpfloat)
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_tanh"].irFunc, fp)
+		case ddpfloat:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_tanh"].irFunc, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Type for HYPERBELTANGENS: %s", rhs.Type()))
 		}
 	case token.ZAHL:
 		switch rhs.Type() {

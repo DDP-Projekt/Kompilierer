@@ -170,15 +170,78 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		v := rhs.(ddpstring)
 		i.lastReturn = ddpint(len(v))
 	case token.GRÖßE:
-		switch rhs.(type) {
+		switch rhs := rhs.(type) {
 		case ddpint, ddpfloat:
-			i.lastReturn = ddpint(4)
+			i.lastReturn = ddpint(8)
 		case ddpbool:
 			i.lastReturn = ddpint(1)
 		case ddpchar:
-			i.lastReturn = ddpint(2)
+			i.lastReturn = ddpint(4)
 		case ddpstring:
-			i.lastReturn = ddpint(2 * len(rhs.(ddpstring)))
+			i.lastReturn = ddpint(len(rhs))
+		}
+	case token.SINUS:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Sin(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Sin(float64(v)))
+		}
+	case token.KOSINUS:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Cos(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Cos(float64(v)))
+		}
+	case token.TANGENS:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Tan(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Tan(float64(v)))
+		}
+	case token.ARKSIN:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Asin(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Asin(float64(v)))
+		}
+	case token.ARKKOS:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Acos(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Acos(float64(v)))
+		}
+	case token.ARKTAN:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Atan(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Atan(float64(v)))
+		}
+	case token.HYPSIN:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Sinh(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Sinh(float64(v)))
+		}
+	case token.HYPKOS:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Cosh(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Cosh(float64(v)))
+		}
+	case token.HYPTAN:
+		switch v := rhs.(type) {
+		case ddpint:
+			i.lastReturn = ddpfloat(math.Tanh(float64(v)))
+		case ddpfloat:
+			i.lastReturn = ddpfloat(math.Tanh(float64(v)))
 		}
 	case token.ZAHL:
 		switch v := rhs.(type) {

@@ -823,10 +823,10 @@ func (p *Parser) boolOR() ast.Expression {
 }
 
 func (p *Parser) boolAND() ast.Expression {
-	expr := p.bitwiseOR()
+	expr := p.trigo()
 	for p.match(token.UND) {
 		operator := p.previous()
-		rhs := p.bitwiseOR()
+		rhs := p.trigo()
 		expr = &ast.BinaryExpr{
 			Lhs:      expr,
 			Operator: operator,
@@ -834,6 +834,24 @@ func (p *Parser) boolAND() ast.Expression {
 		}
 	}
 	return expr
+}
+
+func (p *Parser) trigo() ast.Expression {
+	if p.match(token.DER) {
+		if p.match(token.SINUS, token.KOSINUS, token.TANGENS,
+			token.ARKSIN, token.ARKKOS, token.ARKTAN,
+			token.HYPSIN, token.HYPKOS, token.HYPTAN) {
+			operator := p.previous()
+			p.consume(token.VON)
+			return &ast.UnaryExpr{
+				Operator: operator,
+				Rhs:      p.bitwiseOR(),
+			}
+		} else {
+			p.decrease()
+		}
+	}
+	return p.bitwiseOR()
 }
 
 func (p *Parser) bitwiseOR() ast.Expression {
@@ -1449,28 +1467,6 @@ func (p *Parser) decrease() {
 	if p.cur > 0 {
 		p.cur--
 	}
-}
-
-// takes a Literal Type (INT, CHAR, etc.) and returns
-// a actual Type (ZAHL, BUCHSTABE, etc.)
-func (p *Parser) literalTypeToType(tok token.Token) token.TokenType {
-	switch tok.Type {
-	case token.INT:
-		return token.ZAHL
-	case token.FLOAT:
-		return token.KOMMAZAHL
-	case token.TRUE, token.FALSE:
-		return token.BOOLEAN
-	case token.CHAR:
-		return token.BUCHSTABE
-	case token.STRING:
-		return token.TEXT
-	case token.IDENTIFIER:
-		if ty, exists := p.typechecker.CurrentTable.LookupVar(tok.Literal); exists {
-			return ty
-		}
-	}
-	return token.ILLEGAL
 }
 
 // check if a slice of tokens contains a literal

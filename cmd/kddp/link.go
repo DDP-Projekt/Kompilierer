@@ -12,7 +12,7 @@ func invokeGCC(inputFile, outputFile string, out io.Writer) error {
 	if runtime.GOOS == "linux" {
 		libdir = "ddpstdlib.a"
 	}
-	cmd := exec.Command("gcc", "-o", outputFile, inputFile, libdir)
+	cmd := exec.Command("gcc", "-o", outputFile, inputFile, libdir, "-lm") // -lm needed for math.h (don't know why I need this on linux)
 	if out != nil {
 		cmd.Stdout = out
 		cmd.Stderr = out

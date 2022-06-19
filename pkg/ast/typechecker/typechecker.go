@@ -170,6 +170,13 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		t.latestReturnedType = token.ZAHL // some operators change the type of the rhs expression, so we set that
 	case token.GRÖßE:
 		t.latestReturnedType = token.ZAHL
+	case token.SINUS, token.KOSINUS, token.TANGENS,
+		token.ARKSIN, token.ARKKOS, token.ARKTAN,
+		token.HYPSIN, token.HYPKOS, token.HYPTAN:
+		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
+			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
+		}
+		t.latestReturnedType = token.KOMMAZAHL
 	case token.ZAHL:
 		if !isType(rhs, token.KOMMAZAHL, token.ZAHL, token.TEXT, token.BOOLEAN, token.BUCHSTABE) {
 			t.errExpected(e.Operator, rhs, token.KOMMAZAHL, token.ZAHL, token.TEXT, token.BOOLEAN, token.BUCHSTABE)
