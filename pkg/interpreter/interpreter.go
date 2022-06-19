@@ -153,9 +153,16 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpint:
 			i.lastReturn = -v
 		}
-	case token.NICHT, token.NEGIERE:
+	case token.NICHT:
 		v := rhs.(ddpbool)
 		i.lastReturn = !v
+	case token.NEGIERE:
+		switch rhs := rhs.(type) {
+		case ddpbool:
+			i.lastReturn = !rhs
+		case ddpint:
+			i.lastReturn = ^rhs
+		}
 	case token.LOGISCHNICHT:
 		v := rhs.(ddpint)
 		i.lastReturn = ^v

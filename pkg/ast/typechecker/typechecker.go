@@ -149,11 +149,15 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
 			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
 		}
-	case token.NICHT, token.NEGIERE:
+	case token.NICHT:
 		if !isType(rhs, token.BOOLEAN) {
 			t.errExpected(e.Operator, rhs, token.BOOLEAN)
 		}
 		t.latestReturnedType = token.BOOLEAN
+	case token.NEGIERE:
+		if !isType(rhs, token.BOOLEAN, token.ZAHL) {
+			t.errExpected(e.Operator, rhs, token.BOOLEAN, token.ZAHL)
+		}
 	case token.LOGISCHNICHT:
 		if !isType(rhs, token.ZAHL) {
 			t.errExpected(e.Operator, rhs, token.ZAHL)

@@ -34,7 +34,7 @@ var (
 )
 
 const (
-	all_ones = ^0
+	all_ones = ^0 // int with all bits set to 1
 )
 
 func newInt(value int64) *constant.Int {
