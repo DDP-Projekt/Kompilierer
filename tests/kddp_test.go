@@ -12,7 +12,7 @@ import (
 func TestKDDP(t *testing.T) {
 	err := filepath.WalkDir("./testdata", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			t.Logf("Error walking %s: %s", path, err)
+			t.Logf("Error walking %s: %s\nskipping this directory", path, err)
 			return fs.SkipDir
 		}
 		if !d.IsDir() {
@@ -23,18 +23,19 @@ func TestKDDP(t *testing.T) {
 		}
 
 		t.Run(d.Name(), func(t *testing.T) {
+			t.Parallel()
 			expected, err := os.ReadFile(filepath.Join(path, "expected.txt"))
 			if err != nil {
 				t.Errorf("Could not read expected output: %s", err.Error())
 				return
 			}
 			filename := filepath.Join(path, filepath.Base(path))
-			cmd := exec.Command("../build/kddp", "build", filename+".ddp", "-o", filename)
+			cmd := exec.Command("../build/kddp", "build", filename+".ddp", "-o", filename, "--verbose")
 			if runtime.GOOS == "windows" {
 				filename += ".exe"
 			}
-			if _, err := cmd.CombinedOutput(); err != nil {
-				t.Errorf("compilation failed: %s", err)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Errorf("compilation failed: %s\ncompiler output: %s", err, string(out))
 				return
 			} else {
 				defer os.Remove(filename)

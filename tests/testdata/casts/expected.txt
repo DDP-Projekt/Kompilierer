@@ -1,0 +1,5 @@
+42;wahr;falsch;wahr;E;42
+42;42,222
+1;0;wahr;falsch
+69;Ü
+42;42,222

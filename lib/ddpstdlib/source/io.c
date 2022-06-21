@@ -10,7 +10,7 @@ void inbuilt_Schreibe_Zahl(ddpint p1) {
 }
 
 void inbuilt_Schreibe_Kommazahl(ddpfloat p1) {
-	printf("%g", p1);
+	printf("%.16g", p1);
 }
 
 void inbuilt_Schreibe_Boolean(ddpbool p1) {

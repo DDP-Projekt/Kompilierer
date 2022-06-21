@@ -20,7 +20,7 @@ func main() {
 	//resetTimer()
 	// run sub-commands like build or help
 	if err := runCommands(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 	//fmt.Printf("Took %dms\n", resetTimer().Milliseconds())

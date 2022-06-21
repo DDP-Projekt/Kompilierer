@@ -1,0 +1,35 @@
+Schreibe die Kommazahl (42 als Kommazahl).
+Schreibe den Buchstaben ';'.
+Schreibe den Boolean (1 als Boolean).
+Schreibe den Buchstaben ';'.
+Schreibe den Boolean (0 als Boolean).
+Schreibe den Buchstaben ';'.
+Schreibe den Boolean ((-1) als Boolean).
+Schreibe den Buchstaben ';'.
+Schreibe den Buchstaben (69 als Buchstabe).
+Schreibe den Buchstaben ';'.
+Schreibe den Text (42 als Text).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahl (42,222 als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe den Text (42,222 als Text).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahl (wahr als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe die Zahl (falsch als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe den Text (wahr als Text).
+Schreibe den Buchstaben ';'.
+Schreibe den Text (falsch als Text).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahl ('E' als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe den Text ('Ü' als Text).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahl ("42" als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe die Kommazahl ("42,222" als Kommazahl).

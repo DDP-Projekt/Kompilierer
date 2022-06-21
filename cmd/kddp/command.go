@@ -241,8 +241,7 @@ func (cmd *BuildCommand) Run() error {
 	print("creating output directory: %s", filepath.Dir(cmd.outPath))
 	// make the output file directory
 	if err := os.MkdirAll(filepath.Dir(cmd.outPath), os.ModePerm); err != nil {
-		print("failed to create output directory: %s", err.Error())
-		return nil
+		return fmt.Errorf("failed to create output directory: %s", err.Error())
 	}
 
 	// temp paths (might not need them)
@@ -251,8 +250,7 @@ func (cmd *BuildCommand) Run() error {
 
 	print("creating .ll output directory: %s", llPath)
 	if file, err := os.OpenFile(llPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm); err != nil {
-		print("failed to create .ll output directory: %s", err.Error())
-		return nil
+		return fmt.Errorf("failed to create .ll output directory: %s", err.Error())
 	} else {
 		if !cmd.targetIR && !cmd.nodeletes { // if the target is not llvm ir we remove the temp file
 			defer func() { // defer, to remove the file after it has been used
@@ -266,8 +264,7 @@ func (cmd *BuildCommand) Run() error {
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
 		// compile the input file to llvm ir
 		if err := compiler.CompileTo(cmd.filePath, nil, func(msg string) { fmt.Println(msg) }, file); err != nil {
-			print("failed to compile the source code: %s", err.Error())
-			return nil
+			return fmt.Errorf("failed to compile the source code: %s", err.Error())
 		}
 		if cmd.targetIR { // if the target is llvm ir we are finished
 			return nil
@@ -278,8 +275,7 @@ func (cmd *BuildCommand) Run() error {
 	if cmd.targetEXE { // compile to object-file and continue after that
 		print("compiling llir from %s to %s", llPath, objPath)
 		if err := compileToObject(llPath, objPath); err != nil { // compile the object file
-			print("failed to compile llir: %s", err.Error())
-			return nil
+			return fmt.Errorf("failed to compile llir: %s", err.Error())
 		}
 		if !cmd.nodeletes {
 			defer func() { // defer, to remove the temp file only after it has been used
@@ -292,8 +288,7 @@ func (cmd *BuildCommand) Run() error {
 	} else if cmd.targetASM || cmd.targetOBJ { // compile to assembly or object, and return
 		print("compiling llir from %s to %s", llPath, cmd.outPath)
 		if err := compileToObject(llPath, cmd.outPath); err != nil {
-			print("failed to compile llir: %s", err.Error())
-			return nil
+			return fmt.Errorf("failed to compile llir: %s", err.Error())
 		}
 		return nil
 	}
@@ -307,8 +302,7 @@ func (cmd *BuildCommand) Run() error {
 	// the target is an executable so we link the produced object file
 	print("invoking gcc on %s", objPath)
 	if err := invokeGCC(objPath, cmd.outPath, cmdOut); err != nil {
-		print("failed to invoke gcc: %s", err.Error())
-		return nil
+		return fmt.Errorf("failed to invoke gcc: %s", err.Error())
 	}
 
 	return nil
