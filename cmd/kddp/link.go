@@ -2,15 +2,17 @@ package main
 
 import (
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 )
 
 // invokes gcc on the input file and links it with the ddpstdlib
 func invokeGCC(inputFile, outputFile string, out io.Writer) error {
-	libdir := "ddpstdlib.lib"
+	libdir := filepath.Join(filepath.Dir(os.Args[0]), "ddpstdlib.lib")
 	if runtime.GOOS == "linux" {
-		libdir = "ddpstdlib.a"
+		libdir = changeExtension(libdir, ".a")
 	}
 	cmd := exec.Command("gcc", "-o", outputFile, inputFile, libdir, "-lm") // -lm needed for math.h (don't know why I need this on linux)
 	if out != nil {

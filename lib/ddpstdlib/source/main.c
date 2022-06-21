@@ -20,8 +20,7 @@ static void SegfaultHandler(int signal) {
 
 // initialize runtime stuff
 static void init_runtime() {
-	setlocale(LC_ALL, "de_DE");
-	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
+	setlocale(LC_ALL, "de_DE.UTF8");
 #ifdef _WIN32
 	// enable utf-8 printing on windows
 	// both of the functioncalls below are needed
