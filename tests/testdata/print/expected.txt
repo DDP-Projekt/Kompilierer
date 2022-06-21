@@ -1,0 +1,6 @@
+15
+42,222
+wahr
+falsch
+Ü
+hallo Üä+
