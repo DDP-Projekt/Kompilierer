@@ -29,10 +29,10 @@ func TestKDDP(t *testing.T) {
 				return
 			}
 			filename := filepath.Join(path, filepath.Base(path))
+			cmd := exec.Command("../build/kddp", "build", filename+".ddp", "-o", filename)
 			if runtime.GOOS == "windows" {
 				filename += ".exe"
 			}
-			cmd := exec.Command("../build/kddp", "build", filename+".ddp", "-o", filename)
 			if _, err := cmd.CombinedOutput(); err != nil {
 				t.Errorf("compilation failed: %s", err)
 				return
