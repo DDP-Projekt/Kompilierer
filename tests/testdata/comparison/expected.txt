@@ -1,0 +1,4 @@
+wahr,falsch,falsch,wahr,falsch,falsch,wahr,wahr
+falsch,falsch,wahr,falsch,falsch,wahr,falsch,falsch
+wahr,wahr,falsch,wahr,wahr,falsch,wahr,wahr
+falsch,wahr,wahr,falsch,wahr,wahr,falsch,falsch

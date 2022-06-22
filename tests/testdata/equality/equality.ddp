@@ -1,0 +1,43 @@
+Schreibe den Boolean (2 gleich 2).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (2 gleich 1).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (2 ungleich 2).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (1 ungleich 2).
+Schreibe den Buchstaben '\n'.
+
+Schreibe den Boolean (2,222 gleich 2,222).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (2,223 gleich 2,222).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (2,222 ungleich 2,222).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (2,222 ungleich 2,223).
+Schreibe den Buchstaben '\n'.
+
+Schreibe den Boolean (wahr gleich wahr).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (wahr gleich falsch).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (falsch ungleich falsch).
+Schreibe den Buchstaben ','.
+Schreibe den Boolean (wahr ungleich falsch).
+Schreibe den Buchstaben '\n'.
+
+Schreibe den Boolean ('Ü' gleich 'Ü').
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ('Ü' gleich 'Ä').
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ('a' ungleich 'a').
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ('2' ungleich 'a').
+Schreibe den Buchstaben '\n'.
+
+Schreibe den Boolean ("hallo" gleich "hallo").
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ("test" gleich "24").
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ("über den Wolken" ungleich "über den Wolken").
+Schreibe den Buchstaben ','.
+Schreibe den Boolean ("hi" ungleich "tschüss").
