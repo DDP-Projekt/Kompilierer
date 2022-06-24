@@ -6,7 +6,7 @@
 - [x] Logarithmus Operator
 - [x] Sinus/Kosinus/Tangens/... Operatoren
 - [x] Index Operator (an der Stelle)
-- [ ] Slice Operator (von bis)
+- [x] Slice Operator (von bis)
 - [ ] String/Listen Operatoren (basic + stdlib)
 
 ## Allgemein
