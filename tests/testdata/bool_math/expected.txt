@@ -1,0 +1,3 @@
+wahr,falsch,falsch,falsch
+wahr,wahr,wahr,falsch
+falsch,wahr

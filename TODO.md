@@ -11,6 +11,7 @@
 
 ## Allgemein
 - [ ] Iterierende For-Loops
+- [ ] Wiederholungen (Mache: x mal)
 - [ ] Listen
 - [ ] Strukturen
 
