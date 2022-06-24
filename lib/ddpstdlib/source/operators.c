@@ -86,6 +86,41 @@ ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	return utf8_string_to_char(str->str + i);
 }
 
+ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
+	DBGLOG("inbuilt_string_slice: %p", dstr);
+	if (index1 < 1 || index2 < 1 || index2 < index1) {
+		printf("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)", index1, index2);
+		exit(1);
+	}
+	if (index1 > str->cap) {
+		printf("Index außerhalb der Text Länge (Index 1 war %ld, Index 2 war %ld, Text Länge war %ld", index1, index2, utf8_strlen(str->str));
+		exit(1);
+	}
+
+	index1--,index2--; // ddp indices start at 1, c indices at 0
+
+	size_t i1 = 0, len = 0;
+    while(str->str[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
+        if ( !utf8_is_continuation(str->str[i1])) ++len;
+        i1 += utf8_num_bytes(str->str + i1);
+    }
+
+	size_t i2 = i1;
+    while(str->str[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
+        if ( !utf8_is_continuation(str->str[i2])) ++len;
+        i2 += utf8_num_bytes(str->str + i2);
+    }
+
+	size_t new_str_cap = (i2 - i1) + 2; // + 2 because null-terminator
+	char* string = ALLOCATE(char, new_str_cap);
+	memcpy(string, str->str + i1, new_str_cap - 1);
+	string[new_str_cap-1] = '\0';
+	dstr->cap = new_str_cap;
+	dstr->str = string;
+	return dstr;
+}
+
 ddpstring* inbuilt_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
 	DBGLOG("inbuilt_string_string_verkettet: %p", dstr);

@@ -113,6 +113,7 @@ const (
 	IN
 	AN
 	STELLE
+	VONBIS
 
 	DOT    // .
 	COMMA  // ,
@@ -234,6 +235,7 @@ var tokenStrings = [...]string{
 	IN:           "IN",
 	AN:           "AN",
 	STELLE:       "STELLE",
+	VONBIS:       "VON BIS", // as operator
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",

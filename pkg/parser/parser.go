@@ -1149,6 +1149,18 @@ func (p *Parser) primary() ast.Expression {
 			Operator: p.previous(),
 			Rhs:      p.expression(),
 		}
+	} else if p.match(token.VON) {
+		operator := p.previous()
+		operator.Type = token.VONBIS
+		lhs := expr
+		mid := p.expression()
+		p.consume(token.BIS)
+		expr = &ast.TernaryExpr{
+			Lhs:      lhs,
+			Mid:      mid,
+			Rhs:      p.expression(),
+			Operator: operator,
+		}
 	}
 
 	// type-casting

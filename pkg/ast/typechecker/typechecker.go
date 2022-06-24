@@ -84,6 +84,11 @@ func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2, op token.TokenType
 	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, op))
 }
 
+// helper for commmon error message
+func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3, op token.TokenType) {
+	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op))
+}
+
 func (t *Typechecker) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	t.Errored = true
 	t.latestReturnedType = token.NICHTS
@@ -202,6 +207,8 @@ func (t *Typechecker) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			t.errExpected(e.Operator, rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE)
 		}
 		t.latestReturnedType = token.TEXT
+	default:
+		t.err(e.Operator, fmt.Sprintf("Unbekannter unärer Operator '%s'", e.Operator.String()))
 	}
 	return t
 }
@@ -271,6 +278,32 @@ func (t *Typechecker) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.LOGISCHODER, token.LOGISCHUND, token.KONTRA:
 		validate(op, token.ZAHL)
 		t.latestReturnedType = token.ZAHL
+	default:
+		t.err(e.Operator, fmt.Sprintf("Unbekannter binärer Operator '%s'", e.Operator.String()))
+	}
+	return t
+}
+func (t *Typechecker) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+	lhs := t.Evaluate(e.Lhs)
+	mid := t.Evaluate(e.Mid)
+	rhs := t.Evaluate(e.Rhs)
+
+	// helper to validate if types match
+	validateBin := func(op token.TokenType, valid ...token.TokenType) {
+		if !isTypeBin(mid, rhs, valid...) {
+			t.errExpectedTern(e.Token(), lhs, mid, rhs, op)
+		}
+	}
+
+	switch e.Operator.Type {
+	case token.VONBIS:
+		if lhs != token.TEXT {
+			t.errExpectedTern(e.Token(), lhs, mid, rhs, e.Operator.Type)
+		}
+		validateBin(e.Operator.Type, token.ZAHL)
+		t.latestReturnedType = token.TEXT
+	default:
+		t.err(e.Operator, fmt.Sprintf("Unbekannter ternärer Operator '%s'", e.Operator.String()))
 	}
 	return t
 }

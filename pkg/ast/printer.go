@@ -100,6 +100,10 @@ func (p *printer) VisitBinaryExpr(e *BinaryExpr) Visitor {
 	p.parenthesizeNode(fmt.Sprintf("BinaryExpr[%s]", e.Operator.String()), e.Lhs, e.Rhs)
 	return p
 }
+func (p *printer) VisitTernaryExpr(e *TernaryExpr) Visitor {
+	p.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", e.Operator.String()), e.Lhs, e.Mid, e.Rhs)
+	return p
+}
 func (p *printer) VisitGrouping(e *Grouping) Visitor {
 	p.parenthesizeNode("Grouping", e.Expr)
 	return p

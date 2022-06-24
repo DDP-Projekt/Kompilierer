@@ -31,7 +31,7 @@ static Entry* findEntry(Entry* entries, int capacity, void* key) {
 				// We found a tombstone.
 				if (tombstone == NULL) tombstone = entry;
 			}
-			} else if (entry->key == key) {
+		} else if (entry->key == key) {
 			// We found the key.
 			return entry;
 		}

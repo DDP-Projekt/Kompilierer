@@ -527,6 +527,18 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	}
 	return i
 }
+func (i *Interpreter) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+	lhs := i.evaluate(e.Lhs)
+	mid := i.evaluate(e.Mid)
+	rhs := i.evaluate(e.Rhs)
+
+	switch e.Operator.Type {
+	case token.VONBIS:
+		i.lastReturn = ddpstring(([]rune(lhs.(ddpstring)))[mid.(ddpint)-1 : rhs.(ddpint)])
+	}
+
+	return i
+}
 func (i *Interpreter) VisitGrouping(e *ast.Grouping) ast.Visitor {
 	return e.Expr.Accept(i)
 }

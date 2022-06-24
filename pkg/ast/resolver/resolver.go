@@ -119,6 +119,9 @@ func (r *Resolver) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 func (r *Resolver) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	return e.Rhs.Accept(e.Lhs.Accept(r)) // visit the actual expressions
 }
+func (r *Resolver) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+	return e.Rhs.Accept(e.Mid.Accept(e.Lhs.Accept(r))) // visit the actual expressions
+}
 func (r *Resolver) VisitGrouping(e *ast.Grouping) ast.Visitor {
 	return e.Expr.Accept(r)
 }

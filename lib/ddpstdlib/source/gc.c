@@ -39,7 +39,11 @@ void inbuilt_decrement_ref_count(void* key) {
 	// get the current value state
 	if (tableGet(get_ref_table(), key, &val)) {
 		val.reference_count--; // decrement the reference_count
-		if (val.reference_count <= 0) free_value(key, &val); // if it is 0, free the value
+		DBGLOG("new ref count: %d", val.reference_count);
+		if (val.reference_count <= 0) {
+			tableSet(get_ref_table(), key, val); // if this key is reused sometime in the future, the ref_count must be 0
+			free_value(key, &val); // if it is 0, free the value
+		}
 		else tableSet(get_ref_table(), key, val); // otherwise override the value in the table with the new reference_count
 	} else {
 		DBGLOG("key %p not found in refTable", key);
@@ -54,6 +58,7 @@ void inbuilt_increment_ref_count(void* key, uint8_t kind) {
 	Value val; // will hold the value from the ref-table
 	if (tableGet(get_ref_table(), key, &val)) { // key already in table
 		val.reference_count++; // increment the reference_count
+		DBGLOG("new ref count: %d", val.reference_count);
 		tableSet(get_ref_table(), key, val); // otherwise override the value in the table with the new reference_count
 	} else { // key must be added to the table
 		DBGLOG("new key added");

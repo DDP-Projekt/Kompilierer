@@ -236,6 +236,7 @@ func (c *Compiler) setupOperators() {
 
 	// string indexing
 	c.declareInbuiltFunction("inbuilt_string_index", ddpchar, ir.NewParam("str", ddpstrptr), ir.NewParam("index", ddpint))
+	c.declareInbuiltFunction("inbuilt_string_slice", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 }
 
 // helper to call increment_ref_count
@@ -952,6 +953,38 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	}
 	if lhs.Type() == ddpstrptr {
 		c.decrementRC(lhs)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.decrementRC(rhs)
+	}
+	return c
+}
+func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+	lhs := c.evaluate(e.Lhs)
+	mid := c.evaluate(e.Mid)
+	rhs := c.evaluate(e.Rhs)
+	if lhs.Type() == ddpstrptr {
+		c.incrementRC(lhs, VK_STRING)
+	}
+	if mid.Type() == ddpstrptr {
+		c.incrementRC(mid, VK_STRING)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.incrementRC(rhs, VK_STRING)
+	}
+
+	switch e.Operator.Type {
+	case token.VONBIS:
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_slice"].irFunc, lhs, mid, rhs)
+	default:
+		err(fmt.Sprintf("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type()))
+	}
+
+	if lhs.Type() == ddpstrptr {
+		c.decrementRC(lhs)
+	}
+	if mid.Type() == ddpstrptr {
+		c.decrementRC(mid)
 	}
 	if rhs.Type() == ddpstrptr {
 		c.decrementRC(rhs)

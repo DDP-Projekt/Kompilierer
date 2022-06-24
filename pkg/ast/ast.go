@@ -126,6 +126,14 @@ type (
 		Rhs      Expression
 	}
 
+	// currently only used for von bis
+	TernaryExpr struct {
+		Lhs      Expression
+		Mid      Expression
+		Rhs      Expression
+		Operator token.Token
+	}
+
 	Grouping struct {
 		LParen token.Token // (
 		Expr   Expression
@@ -138,53 +146,57 @@ type (
 	}
 )
 
-func (e *BadExpr) String() string    { return "BadExpr" }
-func (e *Ident) String() string      { return "Ident" }
-func (e *IntLit) String() string     { return "IntLit" }
-func (e *FloatLit) String() string   { return "FloatLit" }
-func (e *BoolLit) String() string    { return "BoolLit" }
-func (e *CharLit) String() string    { return "CharLit" }
-func (e *StringLit) String() string  { return "StringLit" }
-func (e *UnaryExpr) String() string  { return "UnaryExpr" }
-func (e *BinaryExpr) String() string { return "BinaryExpr" }
-func (e *Grouping) String() string   { return "Grouping" }
-func (e *FuncCall) String() string   { return "FuncCall" }
+func (e *BadExpr) String() string     { return "BadExpr" }
+func (e *Ident) String() string       { return "Ident" }
+func (e *IntLit) String() string      { return "IntLit" }
+func (e *FloatLit) String() string    { return "FloatLit" }
+func (e *BoolLit) String() string     { return "BoolLit" }
+func (e *CharLit) String() string     { return "CharLit" }
+func (e *StringLit) String() string   { return "StringLit" }
+func (e *UnaryExpr) String() string   { return "UnaryExpr" }
+func (e *BinaryExpr) String() string  { return "BinaryExpr" }
+func (e *TernaryExpr) String() string { return "BinaryExpr" }
+func (e *Grouping) String() string    { return "Grouping" }
+func (e *FuncCall) String() string    { return "FuncCall" }
 
-func (e *BadExpr) Token() token.Token    { return e.Tok }
-func (e *Ident) Token() token.Token      { return e.Literal }
-func (e *IntLit) Token() token.Token     { return e.Literal }
-func (e *FloatLit) Token() token.Token   { return e.Literal }
-func (e *BoolLit) Token() token.Token    { return e.Literal }
-func (e *CharLit) Token() token.Token    { return e.Literal }
-func (e *StringLit) Token() token.Token  { return e.Literal }
-func (e *UnaryExpr) Token() token.Token  { return e.Operator }
-func (e *BinaryExpr) Token() token.Token { return e.Operator }
-func (e *Grouping) Token() token.Token   { return e.LParen }
-func (e *FuncCall) Token() token.Token   { return e.Tok }
+func (e *BadExpr) Token() token.Token     { return e.Tok }
+func (e *Ident) Token() token.Token       { return e.Literal }
+func (e *IntLit) Token() token.Token      { return e.Literal }
+func (e *FloatLit) Token() token.Token    { return e.Literal }
+func (e *BoolLit) Token() token.Token     { return e.Literal }
+func (e *CharLit) Token() token.Token     { return e.Literal }
+func (e *StringLit) Token() token.Token   { return e.Literal }
+func (e *UnaryExpr) Token() token.Token   { return e.Operator }
+func (e *BinaryExpr) Token() token.Token  { return e.Operator }
+func (e *TernaryExpr) Token() token.Token { return e.Operator }
+func (e *Grouping) Token() token.Token    { return e.LParen }
+func (e *FuncCall) Token() token.Token    { return e.Tok }
 
-func (e *BadExpr) Accept(v Visitor) Visitor    { return v.VisitBadExpr(e) }
-func (e *Ident) Accept(v Visitor) Visitor      { return v.VisitIdent(e) }
-func (e *IntLit) Accept(v Visitor) Visitor     { return v.VisitIntLit(e) }
-func (e *FloatLit) Accept(v Visitor) Visitor   { return v.VisitFLoatLit(e) }
-func (e *BoolLit) Accept(v Visitor) Visitor    { return v.VisitBoolLit(e) }
-func (e *CharLit) Accept(v Visitor) Visitor    { return v.VisitCharLit(e) }
-func (e *StringLit) Accept(v Visitor) Visitor  { return v.VisitStringLit(e) }
-func (e *UnaryExpr) Accept(v Visitor) Visitor  { return v.VisitUnaryExpr(e) }
-func (e *BinaryExpr) Accept(v Visitor) Visitor { return v.VisitBinaryExpr(e) }
-func (e *Grouping) Accept(v Visitor) Visitor   { return v.VisitGrouping(e) }
-func (e *FuncCall) Accept(v Visitor) Visitor   { return v.VisitFuncCall(e) }
+func (e *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(e) }
+func (e *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(e) }
+func (e *IntLit) Accept(v Visitor) Visitor      { return v.VisitIntLit(e) }
+func (e *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(e) }
+func (e *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(e) }
+func (e *CharLit) Accept(v Visitor) Visitor     { return v.VisitCharLit(e) }
+func (e *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(e) }
+func (e *UnaryExpr) Accept(v Visitor) Visitor   { return v.VisitUnaryExpr(e) }
+func (e *BinaryExpr) Accept(v Visitor) Visitor  { return v.VisitBinaryExpr(e) }
+func (e *TernaryExpr) Accept(v Visitor) Visitor { return v.VisitTernaryExpr(e) }
+func (e *Grouping) Accept(v Visitor) Visitor    { return v.VisitGrouping(e) }
+func (e *FuncCall) Accept(v Visitor) Visitor    { return v.VisitFuncCall(e) }
 
-func (e *BadExpr) expressionNode()    {}
-func (e *Ident) expressionNode()      {}
-func (e *IntLit) expressionNode()     {}
-func (e *FloatLit) expressionNode()   {}
-func (e *BoolLit) expressionNode()    {}
-func (e *CharLit) expressionNode()    {}
-func (e *StringLit) expressionNode()  {}
-func (e *UnaryExpr) expressionNode()  {}
-func (e *BinaryExpr) expressionNode() {}
-func (e *Grouping) expressionNode()   {}
-func (e *FuncCall) expressionNode()   {}
+func (e *BadExpr) expressionNode()     {}
+func (e *Ident) expressionNode()       {}
+func (e *IntLit) expressionNode()      {}
+func (e *FloatLit) expressionNode()    {}
+func (e *BoolLit) expressionNode()     {}
+func (e *CharLit) expressionNode()     {}
+func (e *StringLit) expressionNode()   {}
+func (e *UnaryExpr) expressionNode()   {}
+func (e *BinaryExpr) expressionNode()  {}
+func (e *TernaryExpr) expressionNode() {}
+func (e *Grouping) expressionNode()    {}
+func (e *FuncCall) expressionNode()    {}
 
 // Statements
 type (

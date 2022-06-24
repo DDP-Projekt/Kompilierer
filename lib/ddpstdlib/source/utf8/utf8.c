@@ -35,7 +35,7 @@ bool utf8_is_continuation(char c) {
 size_t utf8_strlen(char* s) {
     size_t i = 0, len = 0;
     while(s[i] != 0) { // while not at null-terminator
-        if ( ! utf8_is_continuation(s[i])) ++len;
+        if ( !utf8_is_continuation(s[i])) ++len;
         ++i;
     }
     return len;
