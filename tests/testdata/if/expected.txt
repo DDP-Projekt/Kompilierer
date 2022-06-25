@@ -1,0 +1,8 @@
+wahr
+falsch
+wahr2
+falsch
+wahr
+falsch
+wahr2
+falsch
