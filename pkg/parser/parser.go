@@ -517,17 +517,6 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.match(token.DOT) {
 		return stmt
 	}
-	if p.match(token.COMMA) {
-		p.consume(token.SOLANGE)
-		while := p.previous()
-		cond := p.expression()
-		p.consumeN(token.IST, token.DOT)
-		return &ast.WhileStmt{
-			While:     while,
-			Condition: cond,
-			Body:      stmt,
-		}
-	}
 	if p.match(token.LPAREN) {
 		count := p.grouping()
 		p.consume(token.MAL)
@@ -551,29 +540,21 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	var varName token.Token
 	if operator.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
 		operand = p.primary()
-		/*switch operand.(type) {
-		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
-		default:
-			p.decrease()
-			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
-			p.advance()
-		}*/
 	} else {
 		p.consume(token.IDENTIFIER)
 		varName = p.previous()
 		if operator.Type == token.NEGIERE {
-			return p.finishStatement(
-				&ast.AssignStmt{
-					Tok:  operator,
-					Name: varName,
-					Rhs: &ast.UnaryExpr{
-						Operator: operator,
-						Rhs: &ast.Ident{
-							Literal: varName,
-						},
+			p.consume(token.DOT)
+			return &ast.AssignStmt{
+				Tok:  operator,
+				Name: varName,
+				Rhs: &ast.UnaryExpr{
+					Operator: operator,
+					Rhs: &ast.Ident{
+						Literal: varName,
 					},
 				},
-			)
+			}
 		}
 	}
 	switch operator.Type {
@@ -591,64 +572,54 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		varName = p.previous()
 	} else {
 		operand = p.primary()
-		/*switch operand.(type) {
-		case *ast.IntLit, *ast.FloatLit, *ast.Ident:
-		default:
-			p.decrease()
-			p.consumeAny(token.INT, token.FLOAT, token.IDENTIFIER)
-			p.advance()
-		}*/
 	}
 
 	switch operator.Type {
 	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
 		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)
 		targetName := p.previous()
-		return p.finishStatement(
-			&ast.AssignStmt{
-				Tok:  operator,
-				Name: targetName,
-				Rhs: &ast.BinaryExpr{
-					Lhs: &ast.Ident{
-						Literal: varName,
-					},
-					Operator: operator,
-					Rhs:      operand,
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  operator,
+			Name: targetName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
 				},
+				Operator: operator,
+				Rhs:      operand,
 			},
-		)
+		}
 	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.TEILE:
-		return p.finishStatement(
-			&ast.AssignStmt{
-				Tok:  operator,
-				Name: varName,
-				Rhs: &ast.BinaryExpr{
-					Lhs: &ast.Ident{
-						Literal: varName,
-					},
-					Operator: operator,
-					Rhs:      operand,
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  operator,
+			Name: varName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
 				},
+				Operator: operator,
+				Rhs:      operand,
 			},
-		)
+		}
 	case token.VERSCHIEBE:
 		p.consumeN(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		tok := operator
 		operator = p.previous()
-		return p.finishStatement(
-			&ast.AssignStmt{
-				Tok:  tok,
-				Name: varName,
-				Rhs: &ast.BinaryExpr{
-					Lhs: &ast.Ident{
-						Literal: varName,
-					},
-					Operator: operator,
-					Rhs:      operand,
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Tok:  tok,
+			Name: varName,
+			Rhs: &ast.BinaryExpr{
+				Lhs: &ast.Ident{
+					Literal: varName,
 				},
+				Operator: operator,
+				Rhs:      operand,
 			},
-		)
+		}
 	default:
 		return &ast.BadStmt{
 			Tok: operator,
