@@ -285,7 +285,7 @@ var keywordMap = map[string]TokenType{
 	"dann":            DANN,
 	"aber":            ABER,
 	"sonst":           SONST,
-	"Solange":         SOLANGE,
+	"solange":         SOLANGE,
 	"für":             FÜR,
 	"fuer":            FÜR,
 	"jede":            JEDE,

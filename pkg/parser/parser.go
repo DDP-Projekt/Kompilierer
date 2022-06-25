@@ -512,6 +512,37 @@ func (p *Parser) statement() ast.Statement {
 	return p.expressionStatement()
 }
 
+// either consumes the neccesery . or adds a postfix do-while or repeat
+func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
+	if p.match(token.DOT) {
+		return stmt
+	}
+	if p.match(token.COMMA) {
+		p.consume(token.SOLANGE)
+		while := p.previous()
+		cond := p.expression()
+		p.consumeN(token.IST, token.DOT)
+		return &ast.WhileStmt{
+			While:     while,
+			Condition: cond,
+			Body:      stmt,
+		}
+	}
+	if p.match(token.LPAREN) {
+		count := p.grouping()
+		p.consume(token.MAL)
+		tok := p.previous()
+		p.consume(token.DOT)
+		return &ast.WhileStmt{
+			While:     tok,
+			Condition: count,
+			Body:      stmt,
+		}
+	}
+	p.consume(token.DOT)
+	return stmt
+}
+
 // += -= *= /=
 func (p *Parser) compoundAssignement() ast.Statement {
 	// the many branches are here mostly because of different prepositons
@@ -531,17 +562,18 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		p.consume(token.IDENTIFIER)
 		varName = p.previous()
 		if operator.Type == token.NEGIERE {
-			p.consume(token.DOT)
-			return &ast.AssignStmt{
-				Tok:  operator,
-				Name: varName,
-				Rhs: &ast.UnaryExpr{
-					Operator: operator,
-					Rhs: &ast.Ident{
-						Literal: varName,
+			return p.finishStatement(
+				&ast.AssignStmt{
+					Tok:  operator,
+					Name: varName,
+					Rhs: &ast.UnaryExpr{
+						Operator: operator,
+						Rhs: &ast.Ident{
+							Literal: varName,
+						},
 					},
 				},
-			}
+			)
 		}
 	}
 	switch operator.Type {
@@ -572,48 +604,51 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
 		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)
 		targetName := p.previous()
-		p.consume(token.DOT)
-		return &ast.AssignStmt{
-			Tok:  operator,
-			Name: targetName,
-			Rhs: &ast.BinaryExpr{
-				Lhs: &ast.Ident{
-					Literal: varName,
+		return p.finishStatement(
+			&ast.AssignStmt{
+				Tok:  operator,
+				Name: targetName,
+				Rhs: &ast.BinaryExpr{
+					Lhs: &ast.Ident{
+						Literal: varName,
+					},
+					Operator: operator,
+					Rhs:      operand,
 				},
-				Operator: operator,
-				Rhs:      operand,
 			},
-		}
+		)
 	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.TEILE:
-		p.consume(token.DOT)
-		return &ast.AssignStmt{
-			Tok:  operator,
-			Name: varName,
-			Rhs: &ast.BinaryExpr{
-				Lhs: &ast.Ident{
-					Literal: varName,
+		return p.finishStatement(
+			&ast.AssignStmt{
+				Tok:  operator,
+				Name: varName,
+				Rhs: &ast.BinaryExpr{
+					Lhs: &ast.Ident{
+						Literal: varName,
+					},
+					Operator: operator,
+					Rhs:      operand,
 				},
-				Operator: operator,
-				Rhs:      operand,
 			},
-		}
+		)
 	case token.VERSCHIEBE:
 		p.consumeN(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		tok := operator
 		operator = p.previous()
-		p.consume(token.DOT)
-		return &ast.AssignStmt{
-			Tok:  tok,
-			Name: varName,
-			Rhs: &ast.BinaryExpr{
-				Lhs: &ast.Ident{
-					Literal: varName,
+		return p.finishStatement(
+			&ast.AssignStmt{
+				Tok:  tok,
+				Name: varName,
+				Rhs: &ast.BinaryExpr{
+					Lhs: &ast.Ident{
+						Literal: varName,
+					},
+					Operator: operator,
+					Rhs:      operand,
 				},
-				Operator: operator,
-				Rhs:      operand,
 			},
-		}
+		)
 	default:
 		return &ast.BadStmt{
 			Tok: operator,
@@ -634,12 +669,13 @@ func (p *Parser) assignLiteral() ast.Statement {
 			p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
-	p.consume(token.DOT)
-	return &ast.AssignStmt{
-		Tok:  ident,
-		Name: ident,
-		Rhs:  expr,
-	}
+	return p.finishStatement(
+		&ast.AssignStmt{
+			Tok:  ident,
+			Name: ident,
+			Rhs:  expr,
+		},
+	)
 }
 
 // helper to parse an Speichere expr in x Assignement
@@ -658,12 +694,13 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 	if typ, _ := p.resolver.CurrentTable.LookupVar(name.Literal); typ == token.BOOLEAN {
 		p.err(name, "Variablen vom Typ 'BOOLEAN' sind hier nicht zulässig")
 	}
-	p.consume(token.DOT)
-	return &ast.AssignStmt{
-		Tok:  speichere,
-		Name: name,
-		Rhs:  expr,
-	}
+	return p.finishStatement(
+		&ast.AssignStmt{
+			Tok:  speichere,
+			Name: name,
+			Rhs:  expr,
+		},
+	)
 }
 
 func (p *Parser) ifStatement() ast.Statement {
@@ -827,9 +864,7 @@ func (p *Parser) blockStatement() ast.Statement {
 }
 
 func (p *Parser) expressionStatement() ast.Statement {
-	stmt := &ast.ExprStmt{Expr: p.expression()}
-	p.consume(token.DOT)
-	return stmt
+	return p.finishStatement(&ast.ExprStmt{Expr: p.expression()})
 }
 
 // entry for expression parsing
