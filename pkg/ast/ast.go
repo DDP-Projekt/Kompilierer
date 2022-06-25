@@ -232,7 +232,7 @@ type (
 	}
 
 	WhileStmt struct {
-		While     token.Token // solange
+		While     token.Token // solange, mache, mal
 		Condition Expression
 		Body      Statement
 	}

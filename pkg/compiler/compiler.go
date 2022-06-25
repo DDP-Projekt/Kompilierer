@@ -1138,8 +1138,6 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	scp := c.scp // to restore it later
-
 	condBlock := c.cf.NewBlock("")
 	body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
 
@@ -1156,7 +1154,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 	c.commentNode(c.cbb, s, "")
 	condBlock.NewCondBr(c.evaluate(s.Condition), body, leaveBlock)
 
-	c.cbb, c.scp = leaveBlock, scp
+	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
 	return c
 }
 

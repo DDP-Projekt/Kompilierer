@@ -494,6 +494,9 @@ func (p *Parser) statement() ast.Statement {
 	case token.SOLANGE:
 		p.consume(token.SOLANGE)
 		return p.whileStatement()
+	case token.MACHE:
+		p.consume(token.MACHE)
+		return p.doRepeatStmt()
 	case token.FÜR:
 		p.consume(token.FÜR)
 		return p.forStatement()
@@ -718,6 +721,32 @@ func (p *Parser) whileStatement() ast.Statement {
 		While:     While,
 		Condition: condition,
 		Body:      Body,
+	}
+}
+
+// TODO: add non-block statements
+func (p *Parser) doRepeatStmt() ast.Statement {
+	Do := p.previous()
+	p.consume(token.COLON)
+	body := p.blockStatement()
+	if p.match(token.SOLANGE) {
+		condition := p.expression()
+		p.consumeN(token.IST, token.DOT)
+		return &ast.WhileStmt{
+			While:     Do,
+			Condition: condition,
+			Body:      body,
+		}
+	}
+	p.consume(token.LPAREN)
+	count := p.grouping()
+	p.consume(token.MAL)
+	tok := p.previous()
+	p.consume(token.DOT)
+	return &ast.WhileStmt{
+		While:     tok,
+		Condition: count,
+		Body:      body,
 	}
 }
 
@@ -1122,13 +1151,7 @@ func (p *Parser) primary() ast.Expression {
 			lit := p.previous()
 			expr = &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
 		case token.LPAREN:
-			lParen := p.previous()
-			innerExpr := p.expression()
-			p.consume(token.RPAREN)
-			expr = &ast.Grouping{
-				LParen: lParen,
-				Expr:   innerExpr,
-			}
+			expr = p.grouping()
 		case token.IDENTIFIER:
 			expr = &ast.Ident{
 				Literal: p.previous(),
@@ -1173,6 +1196,16 @@ func (p *Parser) primary() ast.Expression {
 	}
 
 	return expr
+}
+
+func (p *Parser) grouping() ast.Expression {
+	lParen := p.previous()
+	innerExpr := p.expression()
+	p.consume(token.RPAREN)
+	return &ast.Grouping{
+		LParen: lParen,
+		Expr:   innerExpr,
+	}
 }
 
 func (p *Parser) funcCall() ast.Expression {

@@ -374,11 +374,21 @@ func (t *Typechecker) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 }
 func (t *Typechecker) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 	condty := t.Evaluate(s.Condition)
-	if condty != token.BOOLEAN {
-		t.err(s.Condition.Token(), fmt.Sprintf(
-			"Die Bedingung einer SOLANGE Anweisung muss vom Typ BOOLEAN sein, war aber vom Typ %s",
-			condty,
-		))
+	switch s.While.Type {
+	case token.SOLANGE, token.MACHE:
+		if condty != token.BOOLEAN {
+			t.err(s.Condition.Token(), fmt.Sprintf(
+				"Die Bedingung einer SOLANGE Anweisung muss vom Typ BOOLEAN sein, war aber vom Typ %s",
+				condty,
+			))
+		}
+	case token.MAL:
+		if condty != token.ZAHL {
+			t.err(s.Condition.Token(), fmt.Sprintf(
+				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
+				condty,
+			))
+		}
 	}
 	return s.Body.Accept(t)
 }

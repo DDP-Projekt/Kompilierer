@@ -605,8 +605,21 @@ func (i *Interpreter) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	return i
 }
 func (i *Interpreter) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	for i.evaluate(s.Condition).(ddpbool) {
+	switch s.While.Type {
+	case token.SOLANGE:
+		for i.evaluate(s.Condition).(ddpbool) {
+			i.execute(s.Body)
+		}
+	case token.MACHE:
 		i.execute(s.Body)
+		for i.evaluate(s.Condition).(ddpbool) {
+			i.execute(s.Body)
+		}
+	case token.MAL:
+		count := i.evaluate(s.Condition).(ddpint)
+		for c := ddpint(0); c < count; c++ {
+			i.execute(s.Body)
+		}
 	}
 	return i
 }
