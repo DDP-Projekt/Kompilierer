@@ -10,11 +10,10 @@
 - [ ] String/Listen Operatoren (basic + stdlib)
 
 ## Allgemein
-- [ ] do-while loops
-- [ ] Wiederholungen
+- [x] do-while loops
 - [ ] Boolean und/oder mit jumps
 - [ ] Iterierende For-Loops
-- [ ] Wiederholungen (Mache: x mal)
+- [x] Wiederholungen (Mache: x mal)
 - [ ] Listen
 - [ ] Strukturen
 

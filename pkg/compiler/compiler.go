@@ -1138,23 +1138,58 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	condBlock := c.cf.NewBlock("")
-	body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
+	switch op := s.While.Type; op {
+	case token.SOLANGE, token.MACHE:
+		condBlock := c.cf.NewBlock("")
+		body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
 
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewBr(condBlock)
-	c.cbb, c.scp = body, bodyScope
-	c.visitNode(s.Body)
-	if c.cbb.Term == nil {
+		c.commentNode(c.cbb, s, "")
+		if op == token.SOLANGE {
+			c.cbb.NewBr(condBlock)
+		} else {
+			c.cbb.NewBr(body)
+		}
+
+		c.cbb, c.scp = body, bodyScope
+		c.visitNode(s.Body)
+		if c.cbb.Term == nil {
+			c.cbb.NewBr(condBlock)
+		}
+
+		leaveBlock := c.cf.NewBlock("")
+		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
+		c.commentNode(c.cbb, s, "")
+		condBlock.NewCondBr(c.evaluate(s.Condition), body, leaveBlock)
+
+		c.cbb = leaveBlock
+	case token.MAL:
+		counter := c.cf.Blocks[0].NewAlloca(ddpint)
+		c.cbb.NewStore(c.evaluate(s.Condition), counter)
+		condBlock := c.cf.NewBlock("")
+		body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
+
+		c.commentNode(c.cbb, s, "")
 		c.cbb.NewBr(condBlock)
+
+		c.cbb, c.scp = body, bodyScope
+		c.cbb.NewStore(c.cbb.NewSub(c.cbb.NewLoad(ddpint, counter), newInt(1)), counter)
+		c.visitNode(s.Body)
+		if c.cbb.Term == nil {
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewBr(condBlock)
+		}
+
+		leaveBlock := c.cf.NewBlock("")
+		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
+		c.commentNode(c.cbb, s, "")
+		c.cbb.NewCondBr( // while counter != 0, execute body
+			c.cbb.NewICmp(enum.IPredNE, c.cbb.NewLoad(ddpint, counter), zero),
+			body,
+			leaveBlock,
+		)
+
+		c.cbb = leaveBlock
 	}
-
-	leaveBlock := c.cf.NewBlock("")
-	c.cbb = condBlock
-	c.commentNode(c.cbb, s, "")
-	condBlock.NewCondBr(c.evaluate(s.Condition), body, leaveBlock)
-
-	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
 	return c
 }
 
