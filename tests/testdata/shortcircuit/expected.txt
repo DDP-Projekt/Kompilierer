@@ -1,0 +1,16 @@
+istWahr
+istFalsch
+falsch
+istWahr
+istWahr
+wahr
+istFalsch
+falsch
+istFalsch
+istWahr
+wahr
+istWahr
+wahr
+istFalsch
+istFalsch
+falsch

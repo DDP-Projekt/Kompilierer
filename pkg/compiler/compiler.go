@@ -610,6 +610,39 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+	switch e.Operator.Type {
+	case token.UND:
+		lhs := c.evaluate(e.Lhs)
+		startBlock, trueBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
+
+		c.cbb = trueBlock
+		rhs := c.evaluate(e.Rhs)
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewBr(leaveBlock)
+
+		c.cbb = leaveBlock
+		c.commentNode(c.cbb, e, "")
+		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
+		return c
+	case token.ODER:
+		lhs := c.evaluate(e.Lhs)
+		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
+
+		c.cbb = falseBlock
+		rhs := c.evaluate(e.Rhs)
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewBr(leaveBlock)
+
+		c.cbb = leaveBlock
+		c.commentNode(c.cbb, e, "")
+		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
+		return c
+	}
+
 	// compile the two expressions onto which the operator is applied
 	lhs := c.evaluate(e.Lhs)
 	rhs := c.evaluate(e.Rhs)
@@ -813,10 +846,6 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		c.latestReturn = c.cbb.NewXor(lhs, rhs)
 	case token.MODULO:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
-	case token.UND:
-		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
-	case token.ODER:
-		c.latestReturn = c.cbb.NewOr(lhs, rhs)
 	case token.LINKS:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 	case token.RECHTS:
