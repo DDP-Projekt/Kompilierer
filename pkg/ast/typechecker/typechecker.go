@@ -412,6 +412,25 @@ func (t *Typechecker) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	}
 	return s.Body.Accept(t)
 }
+func (t *Typechecker) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+	elementType := s.Initializer.Type.Type
+	inType := t.Evaluate(s.In)
+	switch inType {
+	case token.TEXT:
+		if elementType != token.BUCHSTABE {
+			t.err(s.Initializer.Token(), fmt.Sprintf(
+				"Es wurde ein Ausdruck vom Typ BUCHSTABE erwartet aber %s gefunden",
+				elementType,
+			))
+		}
+	default:
+		t.err(s.Token(), fmt.Sprintf(
+			"Es wurde ein Ausdruck vom Typ TEXT erwartet aber %s gefunden",
+			inType,
+		))
+	}
+	return s.Body.Accept(t)
+}
 func (t *Typechecker) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(t)
 }

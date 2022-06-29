@@ -75,6 +75,7 @@ const (
 	SOLANGE
 	FÜR
 	JEDE
+	JEDEN
 	BIS
 	MIT
 	SCHRITTGRÖßE
@@ -82,6 +83,7 @@ const (
 	KOMMAZAHL
 	BOOLEAN
 	BUCHSTABE
+	BUCHSTABEN
 	TEXT
 	FUNKTION
 	BINDE
@@ -197,6 +199,7 @@ var tokenStrings = [...]string{
 	SOLANGE:      "SOLANGE",
 	FÜR:          "FÜR",
 	JEDE:         "JEDE",
+	JEDEN:        "JEDEN",
 	BIS:          "BIS",
 	MIT:          "MIT",
 	SCHRITTGRÖßE: "SCHRITTGRÖßE",
@@ -204,6 +207,7 @@ var tokenStrings = [...]string{
 	KOMMAZAHL:    "KOMMAZAHL",
 	BOOLEAN:      "BOOLEAN",
 	BUCHSTABE:    "BUCHSTABE",
+	BUCHSTABEN:   "BUCHSTABEN",
 	TEXT:         "TEXT",
 	FUNKTION:     "FUNKTION",
 	BINDE:        "BINDE",
@@ -289,6 +293,7 @@ var keywordMap = map[string]TokenType{
 	"für":             FÜR,
 	"fuer":            FÜR,
 	"jede":            JEDE,
+	"jeden":           JEDEN,
 	"bis":             BIS,
 	"mit":             MIT,
 	"Schrittgröße":    SCHRITTGRÖßE,
@@ -297,6 +302,7 @@ var keywordMap = map[string]TokenType{
 	"Kommazahl":       KOMMAZAHL,
 	"Boolean":         BOOLEAN,
 	"Buchstabe":       BUCHSTABE,
+	"Buchstaben":      BUCHSTABEN,
 	"Text":            TEXT,
 	"Funktion":        FUNKTION,
 	"Binde":           BINDE,

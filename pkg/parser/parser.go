@@ -760,46 +760,88 @@ func (p *Parser) doRepeatStmt() ast.Statement {
 
 func (p *Parser) forStatement() ast.Statement {
 	For := p.previous()
-	p.consumeN(token.JEDE, token.ZAHL) // currently we only support int for loops (no strings or lists)
-	Zahl := p.previous()
+	p.consumeAny(token.JEDE, token.JEDEN)
+	if p.previous().Type == token.JEDE {
+		p.consumeAny(token.ZAHL)
+	} else {
+		p.consumeAny(token.BUCHSTABEN)
+	}
+	Type := p.previous()
+	if Type.Type == token.BUCHSTABEN { // grammar stuff
+		Type.Type = token.BUCHSTABE
+	}
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
-	p.consume(token.VON)
-	from := p.expression() // start of the counter
-	initializer := &ast.VarDecl{
-		Type:    Zahl,
-		Name:    Ident,
-		InitVal: from,
-	}
-	p.consume(token.BIS)
-	to := p.expression()                            // end of the counter
-	var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
-	if p.match(token.MIT) {
-		p.consume(token.SCHRITTGRÖßE)
-		step = p.expression() // custom specified step-size
-	}
-	p.consumeN(token.COMMA)
-	var Body ast.Statement
-	if p.match(token.MACHE) { // body is a block statement
-		p.consume(token.COLON)
-		Body = p.blockStatement()
-	} else { // body is a single statement
-		Colon := p.previous()
-		stmts := make([]ast.Statement, 1)
-		stmts[0] = p.declaration()
-		// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
-		Body = &ast.BlockStmt{
-			Colon:      Colon,
-			Statements: stmts,
-			Symbols:    nil,
+	if p.match(token.VON) {
+		from := p.expression() // start of the counter
+		initializer := &ast.VarDecl{
+			Type:    Type,
+			Name:    Ident,
+			InitVal: from,
+		}
+		p.consume(token.BIS)
+		to := p.expression()                            // end of the counter
+		var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
+		if p.match(token.MIT) {
+			p.consume(token.SCHRITTGRÖßE)
+			step = p.expression() // custom specified step-size
+		}
+		p.consume(token.COMMA)
+		var Body ast.Statement
+		if p.match(token.MACHE) { // body is a block statement
+			p.consume(token.COLON)
+			Body = p.blockStatement()
+		} else { // body is a single statement
+			Colon := p.previous()
+			stmts := make([]ast.Statement, 1)
+			stmts[0] = p.declaration()
+			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
+			Body = &ast.BlockStmt{
+				Colon:      Colon,
+				Statements: stmts,
+				Symbols:    nil,
+			}
+		}
+		return &ast.ForStmt{
+			For:         For,
+			Initializer: initializer,
+			To:          to,
+			StepSize:    step,
+			Body:        Body,
+		}
+	} else if p.match(token.IN) {
+		In := p.expression()
+		initializer := &ast.VarDecl{
+			Type:    Type,
+			Name:    Ident,
+			InitVal: In,
+		}
+		p.consume(token.COMMA)
+		var Body ast.Statement
+		if p.match(token.MACHE) { // body is a block statement
+			p.consume(token.COLON)
+			Body = p.blockStatement()
+		} else { // body is a single statement
+			Colon := p.previous()
+			stmts := make([]ast.Statement, 1)
+			stmts[0] = p.declaration()
+			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
+			Body = &ast.BlockStmt{
+				Colon:      Colon,
+				Statements: stmts,
+				Symbols:    nil,
+			}
+		}
+		return &ast.ForRangeStmt{
+			For:         For,
+			Initializer: initializer,
+			In:          In,
+			Body:        Body,
 		}
 	}
-	return &ast.ForStmt{
-		For:         For,
-		Initializer: initializer,
-		To:          to,
-		StepSize:    step,
-		Body:        Body,
+	p.err(p.previous(), fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous()))
+	return &ast.BadStmt{
+		Tok: p.previous(),
 	}
 }
 

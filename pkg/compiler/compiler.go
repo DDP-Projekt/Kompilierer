@@ -1289,6 +1289,39 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
 	return c
 }
+func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+	c.scp = newScope(c.scp)
+	in := c.evaluate(s.In)
+	c.incrementRC(in, VK_STRING)
+
+	strlen := c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, in)
+	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, strlen, zero), leaveBlock, loopStart)
+
+	c.cbb = loopStart
+	index := c.cf.Blocks[0].NewAlloca(ddpint)
+	c.cbb.NewStore(newInt(1), index)
+	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(ddpchar), ddpchar)
+	c.cbb.NewBr(condBlock)
+
+	c.cbb = condBlock
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), strlen), bodyBlock, leaveBlock)
+
+	c.cbb = bodyBlock
+	c.cbb.NewStore(c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, in, c.cbb.NewLoad(ddpint, index)), c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	c.visitNode(s.Body)
+	if c.cbb.Term == nil {
+		c.cbb.NewBr(incrementBlock)
+	}
+
+	c.cbb = incrementBlock
+	c.cbb.NewStore(c.cbb.NewAdd(c.cbb.NewLoad(ddpint, index), newInt(1)), index)
+	c.cbb.NewBr(condBlock)
+
+	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
+	c.decrementRC(in)
+	return c
+}
 func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(c)
 }

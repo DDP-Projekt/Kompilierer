@@ -28,6 +28,7 @@ type Visitor interface {
 	VisitIfStmt(*IfStmt) Visitor
 	VisitWhileStmt(*WhileStmt) Visitor
 	VisitForStmt(*ForStmt) Visitor
+	VisitForRangeStmt(*ForRangeStmt) Visitor
 	VisitFuncCallStmt(*FuncCallStmt) Visitor
 	VisitReturnStmt(*ReturnStmt) Visitor
 }

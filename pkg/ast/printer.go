@@ -157,6 +157,10 @@ func (p *printer) VisitForStmt(s *ForStmt) Visitor {
 	p.parenthesizeNode("ForStmt", s.Initializer, s.To, s.StepSize, s.Body)
 	return p
 }
+func (p *printer) VisitForRangeStmt(s *ForRangeStmt) Visitor {
+	p.parenthesizeNode("ForRangeStmt", s.Initializer, s.In, s.Body)
+	return p
+}
 func (p *printer) VisitFuncCallStmt(s *FuncCallStmt) Visitor {
 	p.parenthesizeNode("FuncCallStmt", s.Call)
 	return p

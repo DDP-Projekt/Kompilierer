@@ -11,8 +11,8 @@
 
 ## Allgemein
 - [x] do-while loops
-- [ ] Boolean und/oder mit jumps
-- [ ] Iterierende For-Loops
+- [x] Boolean und/oder mit jumps
+- [x] Iterierende For-Loops
 - [x] Wiederholungen (Mache: x mal)
 - [ ] Listen
 - [ ] Strukturen

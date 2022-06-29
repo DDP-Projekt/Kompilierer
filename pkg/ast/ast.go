@@ -245,6 +245,13 @@ type (
 		Body        Statement
 	}
 
+	ForRangeStmt struct {
+		For         token.Token // Für
+		Initializer *VarDecl    // InitVal is the same pointer as In
+		In          Expression  // the string/list to range over
+		Body        Statement
+	}
+
 	FuncCallStmt struct {
 		Call *FuncCall
 	}
@@ -264,6 +271,7 @@ func (s *BlockStmt) String() string    { return "BlockStmt" }
 func (s *IfStmt) String() string       { return "IfStmt" }
 func (s *WhileStmt) String() string    { return "WhileStmt" }
 func (s *ForStmt) String() string      { return "ForStmt" }
+func (s *ForRangeStmt) String() string { return "ForRangeStmt" }
 func (s *FuncCallStmt) String() string { return "FuncCallStmt" }
 func (s *ReturnStmt) String() string   { return "ReturnStmt" }
 
@@ -275,6 +283,7 @@ func (s *BlockStmt) Token() token.Token    { return s.Colon }
 func (s *IfStmt) Token() token.Token       { return s.If }
 func (s *WhileStmt) Token() token.Token    { return s.While }
 func (s *ForStmt) Token() token.Token      { return s.For }
+func (s *ForRangeStmt) Token() token.Token { return s.For }
 func (s *FuncCallStmt) Token() token.Token { return s.Call.Token() }
 func (s *ReturnStmt) Token() token.Token   { return s.Return }
 
@@ -286,6 +295,7 @@ func (s *BlockStmt) Accept(v Visitor) Visitor    { return v.VisitBlockStmt(s) }
 func (s *IfStmt) Accept(v Visitor) Visitor       { return v.VisitIfStmt(s) }
 func (s *WhileStmt) Accept(v Visitor) Visitor    { return v.VisitWhileStmt(s) }
 func (s *ForStmt) Accept(v Visitor) Visitor      { return v.VisitForStmt(s) }
+func (s *ForRangeStmt) Accept(v Visitor) Visitor { return v.VisitForRangeStmt(s) }
 func (s *FuncCallStmt) Accept(v Visitor) Visitor { return v.VisitFuncCallStmt(s) }
 func (s *ReturnStmt) Accept(v Visitor) Visitor   { return v.VisitReturnStmt(s) }
 
@@ -297,5 +307,6 @@ func (s *BlockStmt) statementNode()    {}
 func (s *IfStmt) statementNode()       {}
 func (s *WhileStmt) statementNode()    {}
 func (s *ForStmt) statementNode()      {}
+func (s *ForRangeStmt) statementNode() {}
 func (s *FuncCallStmt) statementNode() {}
 func (s *ReturnStmt) statementNode()   {}

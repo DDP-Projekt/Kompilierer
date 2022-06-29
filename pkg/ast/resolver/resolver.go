@@ -195,6 +195,21 @@ func (r *Resolver) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	r.CurrentTable = env.Enclosing
 	return r
 }
+func (r *Resolver) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+	var env *ast.SymbolTable // scope of the for loop
+	// if it contains a block statement, the counter variable needs to go in there
+	if body, ok := s.Body.(*ast.BlockStmt); ok {
+		body.Symbols = ast.NewSymbolTable(r.CurrentTable)
+		env = body.Symbols
+	} else { // otherwise, just a new scope
+		env = ast.NewSymbolTable(r.CurrentTable)
+	}
+	r.CurrentTable = env
+	r.visit(s.Initializer) // also visits s.In
+	r.visit(s.Body)
+	r.CurrentTable = env.Enclosing
+	return r
+}
 func (r *Resolver) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(r)
 }

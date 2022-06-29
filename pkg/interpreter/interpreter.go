@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
@@ -312,6 +313,25 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return i
 }
 func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+	switch e.Operator.Type {
+	case token.UND:
+		lhs := i.evaluate(e.Lhs).(ddpbool)
+		if !lhs {
+			i.lastReturn = lhs
+			return i
+		}
+		i.lastReturn = lhs && i.evaluate(e.Rhs).(ddpbool)
+		return i
+	case token.ODER:
+		lhs := i.evaluate(e.Lhs).(ddpbool)
+		if lhs {
+			i.lastReturn = lhs
+			return i
+		}
+		i.lastReturn = lhs || i.evaluate(e.Rhs).(ddpbool)
+		return i
+	}
+
 	lhs := i.evaluate(e.Lhs)
 	rhs := i.evaluate(e.Rhs)
 	switch e.Operator.Type {
@@ -444,10 +464,6 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		i.lastReturn = ddpint(lhs.(ddpint) ^ rhs.(ddpint))
 	case token.MODULO:
 		i.lastReturn = ddpint(lhs.(ddpint) % rhs.(ddpint))
-	case token.UND:
-		i.lastReturn = lhs.(ddpbool) && rhs.(ddpbool)
-	case token.ODER:
-		i.lastReturn = lhs.(ddpbool) || rhs.(ddpbool)
 	case token.LINKS:
 		i.lastReturn = lhs.(ddpint) << rhs.(ddpint)
 	case token.RECHTS:
@@ -647,6 +663,31 @@ func (i *Interpreter) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 		}
 	}
 	i.execute(s.Body)
+
+	return i
+}
+func (i *Interpreter) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+	i.currentEnvironment = newEnvironment(i.currentEnvironment)
+	defer i.exitEnvironment() // we have to defer it due to return panic issues
+
+	in := i.evaluate(s.In)
+	switch in := in.(type) {
+	case ddpstring:
+		length := len(in)
+		if length == 0 {
+			return i
+		}
+		ch, size := utf8.DecodeRuneInString(string(in))
+		i.currentEnvironment.addVar(s.Initializer.Name.Literal, ddpchar(ch))
+		i.execute(s.Body)
+		for j := size; j < length; j += size {
+			ch, size = utf8.DecodeRuneInString(string(in)[j:])
+			i.currentEnvironment.updateVar(s.Initializer.Name.Literal, ddpchar(ch))
+			i.execute(s.Body)
+		}
+	default:
+		panic("runtime error") // unreachable
+	}
 
 	return i
 }
