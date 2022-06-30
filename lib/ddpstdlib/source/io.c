@@ -1,7 +1,6 @@
 /*
 	defines inbuilt ddp functions to work with io
 */
-#include <stdio.h>
 #include "ddptypes.h"
 #include "utf8/utf8.h"
 

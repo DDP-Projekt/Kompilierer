@@ -5,8 +5,6 @@
 #include "memory.h"
 #include "debug.h"
 #include "utf8/utf8.h"
-#include <stdlib.h>
-#include <string.h>
 #include <math.h>
 #include <float.h>
 
@@ -68,19 +66,17 @@ ddpint inbuilt_string_length(ddpstring* str) {
 
 ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		printf("Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)", index, utf8_strlen(str->str));
-		exit(1);
+		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 	
-	size_t i = 0;
-	while (str->str[i] != 0 && index > 1) {
+	size_t i = 0, len = index;
+	while (str->str[i] != 0 && len > 1) {
 		i += utf8_num_bytes(str->str + i);
-		index--;
+		len--;
 	}
 
 	if (str->str[i] == 0) {
-		printf("Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)", index, utf8_strlen(str->str));
-		exit(1);
+		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 
 	return utf8_string_to_char(str->str + i);
@@ -90,12 +86,10 @@ ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
 	DBGLOG("inbuilt_string_slice: %p", dstr);
 	if (index1 < 1 || index2 < 1 || index2 < index1) {
-		printf("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)", index1, index2);
-		exit(1);
+		runtime_error(1, "Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n", index1, index2);
 	}
 	if (index1 > str->cap) {
-		printf("Index außerhalb der Text Länge (Index 1 war %ld, Index 2 war %ld, Text Länge war %ld", index1, index2, utf8_strlen(str->str));
-		exit(1);
+		runtime_error(1, "Index außerhalb der Text Länge (Index 1 war %ld, Index 2 war %ld, Text Länge war %ld\n", index1, index2, utf8_strlen(str->str));
 	}
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0

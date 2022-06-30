@@ -1,7 +1,6 @@
 #include "gc.h"
 #include "ddptypes.h"
 #include "debug.h"
-#include <stdlib.h>
 
 // the reference table
 // holds pointers as keys to every
@@ -25,8 +24,7 @@ static void free_value(void* key, Value* val) {
 		free_string((ddpstring*)key);
 		break;
 	default:
-		DBGLOG("invalid value kind");
-		exit(1);
+		runtime_error(1, "invalid value kind\n"); // unreachable
 		break;
 	}
 	tableDelete(get_ref_table(), key); // delete the value from the ref table
@@ -46,8 +44,7 @@ void inbuilt_decrement_ref_count(void* key) {
 		}
 		else tableSet(get_ref_table(), key, val); // otherwise override the value in the table with the new reference_count
 	} else {
-		DBGLOG("key %p not found in refTable", key);
-		exit(1);
+		runtime_error(1, "key %p not found in refTable\n", key); // unreachable
 	}
 }
 

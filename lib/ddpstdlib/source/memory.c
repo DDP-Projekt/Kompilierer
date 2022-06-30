@@ -1,7 +1,5 @@
 #include "memory.h"
 #include "debug.h"
-#include <stdlib.h>
-#include <stdio.h>
 
 // used for allocation/reallocation and freeing of memory
 // to allocate call reallocate(NULL, 0, size)
@@ -31,8 +29,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 		DBGLOG("allocated %lu bytes, now at %llu bytesAllocated", newSize - oldSize, allocatedBytes);
 #endif // DEBUG
 	if (result == NULL) { // out of memory
-		printf("out of memory");
-		exit(1);
+		runtime_error(1, "out of memory\n");
 	}
 
 	return result;

@@ -4,9 +4,7 @@
 #ifndef DDP_TYPES_H
 #define DDP_TYPES_H
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include "common.h"
 
 // typedefs of primitive ddp types
 typedef int64_t ddpint;

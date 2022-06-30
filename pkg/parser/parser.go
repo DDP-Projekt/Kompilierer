@@ -288,10 +288,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	var paramNames []token.Token = nil
 	var paramTypes []token.Token = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
-		validate(p.consumeN(token.DEN, token.PARAMETERN, token.IDENTIFIER) && p.previous().Type == token.IDENTIFIER)
+		validate(p.consumeN(token.DEN, token.PARAMETERN, token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
 		for p.match(token.COMMA) {                                // the function takes multiple parameters
-			p.consume(token.IDENTIFIER)
+			if !p.consume(token.IDENTIFIER) {
+				break
+			}
 			if containsLiteral(paramNames, p.previous().Literal) { // check that each parameter name is unique
 				valid = false
 				p.err(p.previous(), fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", p.previous().Literal))
@@ -328,9 +330,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	case token.EINE:
 		validate(p.consumeAny(token.ZAHL, token.KOMMAZAHL))
 	case token.EINEN:
-		validate(p.consumeAny(token.BOOLEAN, token.TEXT, token.BUCHSTABE))
+		validate(p.consumeAny(token.BOOLEAN, token.TEXT, token.BUCHSTABEN))
 	}
 	Typ := p.previous()
+	if Typ.Type == token.BUCHSTABEN {
+		Typ.Type = token.BUCHSTABE
+	}
 
 	p.consumeN(token.ZURÜCK, token.COMMA, token.MACHT, token.COLON)
 	bodyStart := p.cur                            // save the body start-position for later, we first need to parse aliases to enable recursion

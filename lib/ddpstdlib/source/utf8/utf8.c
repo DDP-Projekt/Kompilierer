@@ -1,8 +1,6 @@
 /*
     copied and modified from https://gist.github.com/stanislaw/f62c36823242c4ffea1b
 */
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "utf8/utf8.h"
 

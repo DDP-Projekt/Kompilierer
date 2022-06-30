@@ -3,8 +3,6 @@
 	also defines the entry point of the executable
 */
 #include <locale.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
 #ifdef _WIN32
 #include <Windows.h>
@@ -14,8 +12,7 @@
 // should not be needed in production
 // mainly for debugging
 static void SegfaultHandler(int signal) {
-	printf("Segmentation fault");
-	exit(1);
+	runtime_error(1, "Segmentation fault\n");
 }
 
 // initialize runtime stuff

@@ -5,7 +5,7 @@
 #ifndef DDP_MEMORY_H
 #define DDP_MEMORY_H
 
-#include <stddef.h>
+#include "common.h"
 
 // used for allocation/reallocation and freeing of memory
 // to allocate call reallocate(NULL, 0, size)

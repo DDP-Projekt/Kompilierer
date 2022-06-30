@@ -1,5 +1,3 @@
-#include <string.h>
-#include <stdlib.h>
 #include "ddptypes.h"
 #include "memory.h"
 #include "debug.h"

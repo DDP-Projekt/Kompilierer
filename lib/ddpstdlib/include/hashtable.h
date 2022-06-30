@@ -5,8 +5,7 @@
 #ifndef DDP_HASH_TABLE_H
 #define DDP_HASH_TABLE_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "common.h"
 
 // type of the pointer in a Value
 // currently only string, later also 
