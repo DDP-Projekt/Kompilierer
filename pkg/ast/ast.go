@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/DDP-Projekt/Kompilierer/pkg/token"
+import (
+	"fmt"
+
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+)
 
 // represents an Abstract Syntax Tree for a DDP program
 type Ast struct {
@@ -20,8 +24,9 @@ func WalkAst(ast *Ast, v Visitor) {
 // basic Node interfaces
 type (
 	Node interface {
-		String() string
+		fmt.Stringer
 		Token() token.Token
+		GetRange() token.Range
 		Accept(Visitor) Visitor
 	}
 
@@ -45,16 +50,19 @@ type (
 type (
 	// an invalid Declaration
 	BadDecl struct {
-		Tok token.Token
+		Range token.Range
+		Tok   token.Token // first token of the bad declaration
 	}
 
 	VarDecl struct {
+		Range   token.Range
 		Type    token.Token // Zahl, Kommazahl etc
 		Name    token.Token // identifier name
 		InitVal Expression  // initial value
 	}
 
 	FuncDecl struct {
+		Range      token.Range
 		Func       token.Token   // Funktion
 		Name       token.Token   // identifier name
 		ParamNames []token.Token // x, y und z
@@ -72,6 +80,10 @@ func (d *BadDecl) Token() token.Token  { return d.Tok }
 func (d *VarDecl) Token() token.Token  { return d.Type }
 func (d *FuncDecl) Token() token.Token { return d.Func }
 
+func (d *BadDecl) GetRange() token.Range  { return d.Range }
+func (d *VarDecl) GetRange() token.Range  { return d.Range }
+func (d *FuncDecl) GetRange() token.Range { return d.Range }
+
 func (d *BadDecl) Accept(v Visitor) Visitor  { return v.VisitBadDecl(d) }
 func (d *VarDecl) Accept(v Visitor) Visitor  { return v.VisitVarDecl(d) }
 func (d *FuncDecl) Accept(v Visitor) Visitor { return v.VisitFuncDecl(d) }
@@ -83,7 +95,8 @@ func (d *FuncDecl) declarationNode() {}
 // Expressions
 type (
 	BadExpr struct {
-		Tok token.Token // first token of the bad expression
+		Range token.Range
+		Tok   token.Token // first token of the bad expression
 	}
 
 	Ident struct {
@@ -116,11 +129,13 @@ type (
 	}
 
 	UnaryExpr struct {
+		Range    token.Range
 		Operator token.Token
 		Rhs      Expression
 	}
 
 	BinaryExpr struct {
+		Range    token.Range
 		Lhs      Expression
 		Operator token.Token
 		Rhs      Expression
@@ -128,6 +143,7 @@ type (
 
 	// currently only used for von bis
 	TernaryExpr struct {
+		Range    token.Range
 		Lhs      Expression
 		Mid      Expression
 		Rhs      Expression
@@ -135,14 +151,16 @@ type (
 	}
 
 	Grouping struct {
+		Range  token.Range
 		LParen token.Token // (
 		Expr   Expression
 	}
 
 	FuncCall struct {
-		Tok  token.Token // first token of the call
-		Name string      // name of the function
-		Args map[string]Expression
+		Range token.Range
+		Tok   token.Token // first token of the call
+		Name  string      // name of the function
+		Args  map[string]Expression
 	}
 )
 
@@ -171,6 +189,19 @@ func (e *BinaryExpr) Token() token.Token  { return e.Operator }
 func (e *TernaryExpr) Token() token.Token { return e.Operator }
 func (e *Grouping) Token() token.Token    { return e.LParen }
 func (e *FuncCall) Token() token.Token    { return e.Tok }
+
+func (e *BadExpr) GetRange() token.Range     { return e.Range }
+func (e *Ident) GetRange() token.Range       { return token.NewRange(e.Literal, e.Literal) }
+func (e *IntLit) GetRange() token.Range      { return token.NewRange(e.Literal, e.Literal) }
+func (e *FloatLit) GetRange() token.Range    { return token.NewRange(e.Literal, e.Literal) }
+func (e *BoolLit) GetRange() token.Range     { return token.NewRange(e.Literal, e.Literal) }
+func (e *CharLit) GetRange() token.Range     { return token.NewRange(e.Literal, e.Literal) }
+func (e *StringLit) GetRange() token.Range   { return token.NewRange(e.Literal, e.Literal) }
+func (e *UnaryExpr) GetRange() token.Range   { return e.Range }
+func (e *BinaryExpr) GetRange() token.Range  { return e.Range }
+func (e *TernaryExpr) GetRange() token.Range { return e.Range }
+func (e *Grouping) GetRange() token.Range    { return e.Range }
+func (e *FuncCall) GetRange() token.Range    { return e.Range }
 
 func (e *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(e) }
 func (e *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(e) }
@@ -201,7 +232,8 @@ func (e *FuncCall) expressionNode()    {}
 // Statements
 type (
 	BadStmt struct {
-		Tok token.Token
+		Range token.Range
+		Tok   token.Token
 	}
 
 	DeclStmt struct {
@@ -213,18 +245,21 @@ type (
 	}
 
 	AssignStmt struct {
-		Tok  token.Token
-		Name token.Token // name of the variable
-		Rhs  Expression  // literal assign value
+		Range token.Range
+		Tok   token.Token
+		Name  token.Token // name of the variable
+		Rhs   Expression  // literal assign value
 	}
 
 	BlockStmt struct {
+		Range      token.Range
 		Colon      token.Token
 		Statements []Statement
 		Symbols    *SymbolTable
 	}
 
 	IfStmt struct {
+		Range     token.Range
 		If        token.Token // wenn/aber
 		Condition Expression
 		Then      Statement
@@ -232,12 +267,14 @@ type (
 	}
 
 	WhileStmt struct {
+		Range     token.Range
 		While     token.Token // solange, mache, mal
 		Condition Expression
 		Body      Statement
 	}
 
 	ForStmt struct {
+		Range       token.Range
 		For         token.Token // Für
 		Initializer *VarDecl    // Zahl (name) von (Initializer.InitVal)
 		To          Expression  // bis (To)
@@ -246,6 +283,7 @@ type (
 	}
 
 	ForRangeStmt struct {
+		Range       token.Range
 		For         token.Token // Für
 		Initializer *VarDecl    // InitVal is the same pointer as In
 		In          Expression  // the string/list to range over
@@ -257,6 +295,7 @@ type (
 	}
 
 	ReturnStmt struct {
+		Range  token.Range
 		Return token.Token // Gib
 		Func   string
 		Value  Expression
@@ -286,6 +325,18 @@ func (s *ForStmt) Token() token.Token      { return s.For }
 func (s *ForRangeStmt) Token() token.Token { return s.For }
 func (s *FuncCallStmt) Token() token.Token { return s.Call.Token() }
 func (s *ReturnStmt) Token() token.Token   { return s.Return }
+
+func (s *BadStmt) GetRange() token.Range      { return s.Range }
+func (s *DeclStmt) GetRange() token.Range     { return s.Decl.GetRange() }
+func (s *ExprStmt) GetRange() token.Range     { return s.Expr.GetRange() }
+func (s *AssignStmt) GetRange() token.Range   { return s.Range }
+func (s *BlockStmt) GetRange() token.Range    { return s.Range }
+func (s *IfStmt) GetRange() token.Range       { return s.Range }
+func (s *WhileStmt) GetRange() token.Range    { return s.Range }
+func (s *ForStmt) GetRange() token.Range      { return s.Range }
+func (s *ForRangeStmt) GetRange() token.Range { return s.Range }
+func (s *FuncCallStmt) GetRange() token.Range { return s.Call.GetRange() }
+func (s *ReturnStmt) GetRange() token.Range   { return s.Range }
 
 func (s *BadStmt) Accept(v Visitor) Visitor      { return v.VisitBadStmt(s) }
 func (s *DeclStmt) Accept(v Visitor) Visitor     { return v.VisitDeclStmt(s) }

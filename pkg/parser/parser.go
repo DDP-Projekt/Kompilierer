@@ -185,7 +185,7 @@ func (p *Parser) synchronize() {
 		}
 		// these tokens typically begin statements which begin a new node
 		switch p.peek().Type {
-		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON:
+		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON, token.MACHE:
 			return
 		}
 		p.advance()
@@ -228,9 +228,14 @@ func (p *Parser) assignRhs() ast.Expression {
 		if p.match(token.WENN) {
 			if tok := p.tokens[p.cur-2]; tok.Type == token.FALSE { // if it is false, we add a unary bool-negate into the ast
 				tok.Type = token.NICHT
+				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
 				expr = &ast.UnaryExpr{
+					Range: token.Range{
+						Start: token.NewStartPos(tok),
+						End:   rhs.GetRange().End,
+					},
 					Operator: tok,
-					Rhs:      p.expression(), // the actual boolean expression after falsch wenn, which is negated
+					Rhs:      rhs,
 				}
 			} else {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
@@ -250,9 +255,10 @@ func (p *Parser) assignRhs() ast.Expression {
 }
 
 func (p *Parser) varDeclaration() ast.Declaration {
+	begin := p.peekN(-2)
 	typ := p.previous()               // ZAHL, KOMMAZAHL, etc.
 	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
-		return &ast.BadDecl{Tok: p.peek()}
+		return &ast.BadDecl{Range: token.NewRange(p.peekN(-2), p.peek()), Tok: p.peek()}
 	}
 	name := p.previous()
 	p.consume(token.IST)
@@ -264,6 +270,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	}
 	p.consume(token.DOT)
 	return &ast.VarDecl{
+		Range:   token.NewRange(begin, p.previous()),
 		Type:    typ,
 		Name:    name,
 		InitVal: expr,
@@ -277,9 +284,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			valid = false
 		}
 	}
+	begin := p.peekN(-2)
 	Funktion := p.previous()          // save the token
 	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
-		return &ast.BadDecl{Tok: p.peek()}
+		return &ast.BadDecl{Range: token.NewRange(begin, p.peek()), Tok: p.peek()}
 	}
 	name := p.previous()
 
@@ -396,7 +404,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	if !valid {
 		p.Errored = true
-		return &ast.BadDecl{Tok: Funktion}
+		return &ast.BadDecl{Range: token.NewRange(begin, p.tokens[aliasEnd]), Tok: Funktion}
 	}
 
 	p.funcAliases = append(p.funcAliases, funcAliases...)
@@ -423,6 +431,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
 	return &ast.FuncDecl{
+		Range:      token.NewRange(begin, p.previous()),
 		Func:       Funktion,
 		Name:       name,
 		ParamNames: paramNames,
@@ -528,6 +537,10 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 		tok := p.previous()
 		p.consume(token.DOT)
 		return &ast.WhileStmt{
+			Range: token.Range{
+				Start: stmt.GetRange().Start,
+				End:   token.NewEndPos(p.previous()),
+			},
 			While:     tok,
 			Condition: count,
 			Body:      stmt,
@@ -551,9 +564,11 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		if operator.Type == token.NEGIERE {
 			p.consume(token.DOT)
 			return &ast.AssignStmt{
-				Tok:  operator,
-				Name: varName,
+				Range: token.NewRange(operator, p.previous()),
+				Tok:   operator,
+				Name:  varName,
 				Rhs: &ast.UnaryExpr{
+					Range:    token.NewRange(operator, p.previous()),
 					Operator: operator,
 					Rhs: &ast.Ident{
 						Literal: varName,
@@ -585,9 +600,11 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		targetName := p.previous()
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
-			Tok:  operator,
-			Name: targetName,
+			Range: token.NewRange(operator, p.previous()),
+			Tok:   operator,
+			Name:  targetName,
 			Rhs: &ast.BinaryExpr{
+				Range: token.NewRange(operator, p.previous()),
 				Lhs: &ast.Ident{
 					Literal: varName,
 				},
@@ -598,9 +615,11 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.TEILE:
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
-			Tok:  operator,
-			Name: varName,
+			Range: token.NewRange(operator, p.previous()),
+			Tok:   operator,
+			Name:  varName,
 			Rhs: &ast.BinaryExpr{
+				Range: token.NewRange(operator, p.previous()),
 				Lhs: &ast.Ident{
 					Literal: varName,
 				},
@@ -615,9 +634,11 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		operator = p.previous()
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
-			Tok:  tok,
-			Name: varName,
+			Range: token.NewRange(operator, p.previous()),
+			Tok:   tok,
+			Name:  varName,
 			Rhs: &ast.BinaryExpr{
+				Range: token.NewRange(operator, p.previous()),
 				Lhs: &ast.Ident{
 					Literal: varName,
 				},
@@ -625,10 +646,8 @@ func (p *Parser) compoundAssignement() ast.Statement {
 				Rhs:      operand,
 			},
 		}
-	default:
-		return &ast.BadStmt{
-			Tok: operator,
-		}
+	default: // unreachable
+		return &ast.BadStmt{}
 	}
 }
 
@@ -647,9 +666,10 @@ func (p *Parser) assignLiteral() ast.Statement {
 	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Tok:  ident,
-			Name: ident,
-			Rhs:  expr,
+			Range: token.NewRange(ident, p.peek()),
+			Tok:   ident,
+			Name:  ident,
+			Rhs:   expr,
 		},
 	)
 }
@@ -672,9 +692,10 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Tok:  speichere,
-			Name: name,
-			Rhs:  expr,
+			Range: token.NewRange(speichere, p.peek()),
+			Tok:   speichere,
+			Name:  name,
+			Rhs:   expr,
 		},
 	)
 }
@@ -710,7 +731,17 @@ func (p *Parser) ifStatement() ast.Statement {
 			p.decrease() // no if-else just if, so decrease to parse the next if seperately
 		}
 	}
+	var endPos token.Position
+	if Else != nil {
+		endPos = Else.GetRange().End
+	} else {
+		endPos = Then.GetRange().End
+	}
 	return &ast.IfStmt{
+		Range: token.Range{
+			Start: token.NewStartPos(If),
+			End:   endPos,
+		},
 		If:        If,
 		Condition: condition,
 		Then:      Then,
@@ -731,6 +762,10 @@ func (p *Parser) whileStatement() ast.Statement {
 		Body = p.declaration()
 	}
 	return &ast.WhileStmt{
+		Range: token.Range{
+			Start: token.NewStartPos(While),
+			End:   Body.GetRange().End,
+		},
 		While:     While,
 		Condition: condition,
 		Body:      Body,
@@ -746,6 +781,10 @@ func (p *Parser) doRepeatStmt() ast.Statement {
 		condition := p.expression()
 		p.consumeN(token.IST, token.DOT)
 		return &ast.WhileStmt{
+			Range: token.Range{
+				Start: token.NewStartPos(Do),
+				End:   token.NewEndPos(p.previous()),
+			},
 			While:     Do,
 			Condition: condition,
 			Body:      body,
@@ -757,6 +796,10 @@ func (p *Parser) doRepeatStmt() ast.Statement {
 	tok := p.previous()
 	p.consume(token.DOT)
 	return &ast.WhileStmt{
+		Range: token.Range{
+			Start: token.NewStartPos(Do),
+			End:   body.GetRange().End,
+		},
 		While:     tok,
 		Condition: count,
 		Body:      body,
@@ -780,6 +823,10 @@ func (p *Parser) forStatement() ast.Statement {
 	if p.match(token.VON) {
 		from := p.expression() // start of the counter
 		initializer := &ast.VarDecl{
+			Range: token.Range{
+				Start: token.NewStartPos(Type),
+				End:   from.GetRange().End,
+			},
 			Type:    Type,
 			Name:    Ident,
 			InitVal: from,
@@ -802,12 +849,20 @@ func (p *Parser) forStatement() ast.Statement {
 			stmts[0] = p.declaration()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
+				Range: token.Range{
+					Start: token.NewStartPos(Colon),
+					End:   stmts[0].GetRange().End,
+				},
 				Colon:      Colon,
 				Statements: stmts,
 				Symbols:    nil,
 			}
 		}
 		return &ast.ForStmt{
+			Range: token.Range{
+				Start: token.NewStartPos(For),
+				End:   Body.GetRange().End,
+			},
 			For:         For,
 			Initializer: initializer,
 			To:          to,
@@ -817,6 +872,10 @@ func (p *Parser) forStatement() ast.Statement {
 	} else if p.match(token.IN) {
 		In := p.expression()
 		initializer := &ast.VarDecl{
+			Range: token.Range{
+				Start: token.NewStartPos(Type),
+				End:   In.GetRange().End,
+			},
 			Type:    Type,
 			Name:    Ident,
 			InitVal: In,
@@ -832,12 +891,20 @@ func (p *Parser) forStatement() ast.Statement {
 			stmts[0] = p.declaration()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
+				Range: token.Range{
+					Start: token.NewStartPos(Colon),
+					End:   stmts[0].GetRange().End,
+				},
 				Colon:      Colon,
 				Statements: stmts,
 				Symbols:    nil,
 			}
 		}
 		return &ast.ForRangeStmt{
+			Range: token.Range{
+				Start: token.NewStartPos(For),
+				End:   Body.GetRange().End,
+			},
 			For:         For,
 			Initializer: initializer,
 			In:          In,
@@ -846,7 +913,8 @@ func (p *Parser) forStatement() ast.Statement {
 	}
 	p.err(p.previous(), fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous()))
 	return &ast.BadStmt{
-		Tok: p.previous(),
+		Range: token.NewRange(For, p.previous()),
+		Tok:   p.previous(),
 	}
 }
 
@@ -855,6 +923,7 @@ func (p *Parser) returnStatement() ast.Statement {
 	expr := p.expression()
 	p.consumeN(token.ZURÜCK, token.DOT)
 	return &ast.ReturnStmt{
+		Range:  token.NewRange(Return, p.previous()),
 		Func:   p.currentFunction,
 		Return: Return,
 		Value:  expr,
@@ -875,6 +944,7 @@ func (p *Parser) blockStatement() ast.Statement {
 		}
 	}
 	return &ast.BlockStmt{
+		Range:      token.NewRange(colon, p.previous()),
 		Colon:      colon,
 		Statements: statements,
 		Symbols:    nil,
@@ -896,6 +966,10 @@ func (p *Parser) boolOR() ast.Expression {
 		operator := p.previous()
 		rhs := p.boolAND()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -910,6 +984,10 @@ func (p *Parser) boolAND() ast.Expression {
 		operator := p.previous()
 		rhs := p.trigo()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -920,14 +998,20 @@ func (p *Parser) boolAND() ast.Expression {
 
 func (p *Parser) trigo() ast.Expression {
 	if p.match(token.DER) {
+		start := p.previous()
 		if p.match(token.SINUS, token.KOSINUS, token.TANGENS,
 			token.ARKSIN, token.ARKKOS, token.ARKTAN,
 			token.HYPSIN, token.HYPKOS, token.HYPTAN) {
 			operator := p.previous()
 			p.consume(token.VON)
+			rhs := p.bitwiseOR()
 			return &ast.UnaryExpr{
+				Range: token.Range{
+					Start: token.NewStartPos(start),
+					End:   rhs.GetRange().End,
+				},
 				Operator: operator,
-				Rhs:      p.bitwiseOR(),
+				Rhs:      rhs,
 			}
 		} else {
 			p.decrease()
@@ -943,6 +1027,10 @@ func (p *Parser) bitwiseOR() ast.Expression {
 		operator.Type = token.LOGISCHODER
 		rhs := p.bitwiseXOR()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -957,6 +1045,10 @@ func (p *Parser) bitwiseXOR() ast.Expression {
 		operator := p.previous()
 		rhs := p.bitwiseAND()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -972,6 +1064,10 @@ func (p *Parser) bitwiseAND() ast.Expression {
 		operator.Type = token.LOGISCHUND
 		rhs := p.equality()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -986,6 +1082,10 @@ func (p *Parser) equality() ast.Expression {
 		operator := p.previous()
 		rhs := p.comparison()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1010,6 +1110,10 @@ func (p *Parser) comparison() ast.Expression {
 
 		rhs := p.bitShift()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1025,10 +1129,20 @@ func (p *Parser) bitShift() ast.Expression {
 		p.consumeN(token.BIT, token.NACH)
 		if !p.match(token.LINKS, token.RECHTS) {
 			p.err(p.previous(), fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal))
-			return &ast.BadExpr{Tok: expr.Token()}
+			return &ast.BadExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   token.NewEndPos(p.peek()),
+				},
+				Tok: expr.Token(),
+			}
 		}
 		operator := p.previous()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1047,6 +1161,10 @@ func (p *Parser) term() ast.Expression {
 		}
 		rhs := p.factor()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1061,6 +1179,10 @@ func (p *Parser) factor() ast.Expression {
 		operator := p.previous()
 		rhs := p.unary()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1074,19 +1196,23 @@ func (p *Parser) unary() ast.Expression {
 	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
 		return expr
 	}
+	var start token.Token
 	// match the correct unary operator
 	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER, token.LOGISCH) {
 		if p.previous().Type == token.DIE {
+			start = p.previous()
 			if !p.match(token.GRÖßE, token.LÄNGE) {
 				p.decrease() // DIE does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		} else if p.previous().Type == token.DER {
+			start = p.previous()
 			if !p.match(token.BETRAG) {
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		} else if p.previous().Type == token.LOGISCH {
+			start = p.previous()
 			if !p.match(token.NICHT) {
 				p.decrease() // LOGISCH does not belong to a operator, so maybe it is a function call
 				return p.negate()
@@ -1098,6 +1224,7 @@ func (p *Parser) unary() ast.Expression {
 			case token.BETRAG:
 				p.err(p.previous(), "Vor 'BETRAG' muss 'DER' stehen")
 			}
+			start = p.previous()
 		}
 		operator := p.previous()
 		switch operator.Type {
@@ -1108,9 +1235,14 @@ func (p *Parser) unary() ast.Expression {
 				operator.Type = token.LOGISCHNICHT
 			}
 		}
+		rhs := p.unary()
 		return &ast.UnaryExpr{
+			Range: token.Range{
+				Start: token.NewStartPos(start),
+				End:   rhs.GetRange().End,
+			},
 			Operator: operator,
-			Rhs:      p.unary(),
+			Rhs:      rhs,
 		}
 	}
 	return p.negate()
@@ -1118,9 +1250,15 @@ func (p *Parser) unary() ast.Expression {
 
 func (p *Parser) negate() ast.Expression {
 	if p.match(token.NEGATE) {
+		op := p.previous()
+		rhs := p.unary()
 		return &ast.UnaryExpr{
-			Operator: p.previous(),
-			Rhs:      p.unary(),
+			Range: token.Range{
+				Start: token.NewStartPos(op),
+				End:   rhs.GetRange().End,
+			},
+			Operator: op,
+			Rhs:      rhs,
 		}
 	}
 	return p.power()
@@ -1136,8 +1274,13 @@ func (p *Parser) power() ast.Expression {
 		op2.Type = token.DURCH
 		p.consume(token.VON)
 		// root is implemented as pow(degree, 1/radicant)
+		expr := p.unary()
 		return &ast.BinaryExpr{
-			Lhs:      p.unary(), // TODO: check if this should be primary or negate
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   lhs.GetRange().End,
+			},
+			Lhs:      expr, // TODO: check if this should be primary or negate
 			Operator: operator,
 			Rhs: &ast.BinaryExpr{
 				Lhs: &ast.IntLit{
@@ -1154,10 +1297,15 @@ func (p *Parser) power() ast.Expression {
 		p.consume(token.VON)
 		numerus := p.expression()
 		p.consumeN(token.ZUR, token.BASIS)
+		rhs := p.unary()
 		return &ast.BinaryExpr{
+			Range: token.Range{
+				Start: numerus.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      numerus,
 			Operator: operator,
-			Rhs:      p.unary(),
+			Rhs:      rhs,
 		}
 	}
 	expr := p.primary()
@@ -1165,6 +1313,10 @@ func (p *Parser) power() ast.Expression {
 		operator := p.previous()
 		rhs := p.unary() // TODO: check if this should be primary or negate
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1176,7 +1328,7 @@ func (p *Parser) power() ast.Expression {
 func (p *Parser) primary() ast.Expression {
 	var expr ast.Expression = nil
 	if expr = p.funcCall(); expr == nil { // funccall has the highest precedence (aliases + operator overloading)
-		switch p.advance().Type {
+		switch tok := p.advance(); tok.Type {
 		case token.FALSE:
 			expr = &ast.BoolLit{Literal: p.previous(), Value: false}
 		case token.TRUE:
@@ -1212,7 +1364,8 @@ func (p *Parser) primary() ast.Expression {
 		default:
 			p.err(p.previous(), fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal))
 			expr = &ast.BadExpr{
-				Tok: p.previous(),
+				Range: token.NewRange(tok, tok),
+				Tok:   tok,
 			}
 		}
 	}
@@ -1220,10 +1373,15 @@ func (p *Parser) primary() ast.Expression {
 	// indexing
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
+		rhs := p.expression()
 		expr = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      expr,
 			Operator: p.previous(),
-			Rhs:      p.expression(),
+			Rhs:      rhs,
 		}
 	} else if p.match(token.VON) {
 		operator := p.previous()
@@ -1231,10 +1389,15 @@ func (p *Parser) primary() ast.Expression {
 		lhs := expr
 		mid := p.expression()
 		p.consume(token.BIS)
+		rhs := p.expression()
 		expr = &ast.TernaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
 			Lhs:      lhs,
 			Mid:      mid,
-			Rhs:      p.expression(),
+			Rhs:      rhs,
 			Operator: operator,
 		}
 	}
@@ -1243,6 +1406,10 @@ func (p *Parser) primary() ast.Expression {
 	if p.match(token.ALS) {
 		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)
 		return &ast.UnaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   token.NewEndPos(p.previous()),
+			},
 			Operator: p.previous(),
 			Rhs:      expr,
 		}
@@ -1256,6 +1423,7 @@ func (p *Parser) grouping() ast.Expression {
 	innerExpr := p.expression()
 	p.consume(token.RPAREN)
 	return &ast.Grouping{
+		Range:  token.NewRange(lParen, p.previous()),
 		LParen: lParen,
 		Expr:   innerExpr,
 	}
@@ -1389,10 +1557,12 @@ outer:
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
 		if args := checkAlias(&matchedAliases[i], true); args != nil {
+			finalAlias := matchedAliases[i].alias.Tokens
 			return &ast.FuncCall{
-				Tok:  p.tokens[start],
-				Name: matchedAliases[i].alias.Func,
-				Args: args,
+				Range: token.NewRange(finalAlias[0], finalAlias[len(finalAlias)-1]),
+				Tok:   p.tokens[start],
+				Name:  matchedAliases[i].alias.Func,
+				Args:  args,
 			}
 		}
 	}
@@ -1405,9 +1575,10 @@ outer:
 	args := checkAlias(mostFitting, false)
 
 	return &ast.FuncCall{
-		Tok:  p.tokens[start],
-		Name: mostFitting.alias.Func,
-		Args: args,
+		Range: token.NewRange(p.tokens[start], mostFitting.alias.Tokens[len(mostFitting.alias.Tokens)-1]),
+		Tok:   p.tokens[start],
+		Name:  mostFitting.alias.Func,
+		Args:  args,
 	}
 }
 
