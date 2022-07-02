@@ -340,7 +340,7 @@ func (s *Scanner) skipWhitespace() {
 		case '\n':
 			s.line++
 			s.indent = 0
-			s.column = 1
+			s.column = 0
 			s.shouldIndent = true
 			s.advance()
 		case '[':
