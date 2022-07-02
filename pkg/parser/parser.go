@@ -1557,9 +1557,8 @@ outer:
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
 		if args := checkAlias(&matchedAliases[i], true); args != nil {
-			finalAlias := matchedAliases[i].alias.Tokens
 			return &ast.FuncCall{
-				Range: token.NewRange(finalAlias[0], finalAlias[len(finalAlias)-1]),
+				Range: token.NewRange(p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  matchedAliases[i].alias.Func,
 				Args:  args,
