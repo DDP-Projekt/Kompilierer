@@ -258,7 +258,11 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	begin := p.peekN(-2)
 	typ := p.previous()               // ZAHL, KOMMAZAHL, etc.
 	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
-		return &ast.BadDecl{Range: token.NewRange(p.peekN(-2), p.peek()), Tok: p.peek()}
+		return &ast.BadDecl{
+			Range:   token.NewRange(p.peekN(-2), p.peek()),
+			Tok:     p.peek(),
+			Message: "Es wurde ein Variablen Name erwartet",
+		}
 	}
 	name := p.previous()
 	p.consume(token.IST)
@@ -284,10 +288,21 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			valid = false
 		}
 	}
+	errorMessage := ""
+	perr := func(tok token.Token, msg string) {
+		p.err(tok, msg)
+		if errorMessage == "" {
+			errorMessage = msg
+		}
+	}
 	begin := p.peekN(-2)
 	Funktion := p.previous()          // save the token
 	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
-		return &ast.BadDecl{Range: token.NewRange(begin, p.peek()), Tok: p.peek()}
+		return &ast.BadDecl{
+			Range:   token.NewRange(begin, p.peek()),
+			Tok:     p.peek(),
+			Message: "Es wurde ein Funktions Name erwartet",
+		}
 	}
 	name := p.previous()
 
@@ -304,7 +319,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			}
 			if containsLiteral(paramNames, p.previous().Literal) { // check that each parameter name is unique
 				valid = false
-				p.err(p.previous(), fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", p.previous().Literal))
+				perr(p.previous(), fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", p.previous().Literal))
 			}
 			paramNames = append(paramNames, p.previous()) // append the parameter name
 		}
@@ -321,13 +336,13 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			paramTypes = append(paramTypes, p.previous())
 		}
 		if p.previous().Type != token.COMMA {
-			p.err(p.previous(), fmt.Sprintf("Es wurde 'COMMA' erwartet aber '%s' gefunden", p.previous().String()))
+			perr(p.previous(), fmt.Sprintf("Es wurde 'COMMA' erwartet aber '%s' gefunden", p.previous().String()))
 		}
 	}
 	// we need as many parmeter names as types
 	if len(paramNames) != len(paramTypes) {
 		valid = false
-		p.err(p.previous(), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter vs %d Typen)", len(paramNames), len(paramTypes)))
+		perr(p.previous(), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter vs %d Typen)", len(paramNames), len(paramTypes)))
 	}
 
 	// parse the return type declaration
@@ -378,19 +393,19 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	for _, v := range aliases {
 		// scan the raw alias withouth the ""
 		if alias, err := scanner.ScanAlias([]byte(v.Literal[1:len(v.Literal)-1]), p.errorHandler); err != nil {
-			p.err(v, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
+			perr(v, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				p.err(v, "Ein Alias muss mindestens 1 Symbol enthalten")
+				perr(v, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
-					p.err(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
+					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
 					funcAliases = append(funcAliases, funcAlias{Tokens: alias, Func: name.Literal, Args: argTypes})
 				}
 			} else {
 				valid = false
-				p.err(v, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+				perr(v, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
 			}
 		}
 	}
@@ -399,12 +414,16 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	if p.currentFunction != "" {
 		valid = false
-		p.err(Funktion, "Es können nur globale Funktionen deklariert werden")
+		perr(Funktion, "Es können nur globale Funktionen deklariert werden")
 	}
 
 	if !valid {
 		p.Errored = true
-		return &ast.BadDecl{Range: token.NewRange(begin, p.tokens[aliasEnd]), Tok: Funktion}
+		return &ast.BadDecl{
+			Range:   token.NewRange(begin, p.tokens[aliasEnd]),
+			Tok:     Funktion,
+			Message: errorMessage,
+		}
 	}
 
 	p.funcAliases = append(p.funcAliases, funcAliases...)
@@ -417,12 +436,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	if Typ.Type != token.NICHTS { // only if the function does not return void
 		b := body.(*ast.BlockStmt)
 		if len(b.Statements) < 1 { // at least the return statement is needed
-			p.err(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+			perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
 		} else {
 			// the last statement must be a return statement
 			lastStmt := b.Statements[len(b.Statements)-1]
 			if _, ok := lastStmt.(*ast.ReturnStmt); !ok {
-				p.err(lastStmt.Token(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+				perr(lastStmt.Token(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
 			}
 		}
 	}
@@ -911,10 +930,12 @@ func (p *Parser) forStatement() ast.Statement {
 			Body:        Body,
 		}
 	}
-	p.err(p.previous(), fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous()))
+	msg := fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous())
+	p.err(p.previous(), msg)
 	return &ast.BadStmt{
-		Range: token.NewRange(For, p.previous()),
-		Tok:   p.previous(),
+		Range:   token.NewRange(For, p.previous()),
+		Tok:     p.previous(),
+		Message: msg,
 	}
 }
 
@@ -1128,13 +1149,15 @@ func (p *Parser) bitShift() ast.Expression {
 		rhs := p.term()
 		p.consumeN(token.BIT, token.NACH)
 		if !p.match(token.LINKS, token.RECHTS) {
-			p.err(p.previous(), fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal))
+			msg := fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal)
+			p.err(p.previous(), msg)
 			return &ast.BadExpr{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
 					End:   token.NewEndPos(p.peek()),
 				},
-				Tok: expr.Token(),
+				Tok:     expr.Token(),
+				Message: msg,
 			}
 		}
 		operator := p.previous()
@@ -1362,10 +1385,12 @@ func (p *Parser) primary() ast.Expression {
 				Literal: p.previous(),
 			}
 		default:
-			p.err(p.previous(), fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal))
+			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
+			p.err(p.previous(), msg)
 			expr = &ast.BadExpr{
-				Range: token.NewRange(tok, tok),
-				Tok:   tok,
+				Range:   token.NewRange(tok, tok),
+				Tok:     tok,
+				Message: msg,
 			}
 		}
 	}
