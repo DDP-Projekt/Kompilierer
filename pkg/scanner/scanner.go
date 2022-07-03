@@ -21,7 +21,7 @@ const (
 	ModeInitializing                       // allow special characters for inbuilt functions
 )
 
-type ErrorHandler func(msg string)
+type ErrorHandler func(tok token.Token, msg string)
 
 type Scanner struct {
 	file         string // Path to the file
@@ -46,7 +46,7 @@ type Scanner struct {
 func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Scanner, error) {
 	// default errorHandler does nothing
 	if errorHandler == nil {
-		errorHandler = func(string) {} // to avoid nil pointer dereference
+		errorHandler = func(token.Token, string) {} // to avoid nil pointer dereference
 	}
 
 	scan := &Scanner{
@@ -68,7 +68,7 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			scan.errorHandler("Der angegebene Pfad ist keine .ddp Datei")
+			scan.errorHandler(token.Token{Line: scan.line, Column: scan.column}, "Der angegebene Pfad ist keine .ddp Datei")
 			return nil, errors.New("ungültiger Datei Typ")
 		}
 		file, err := os.ReadFile(filePath)
@@ -271,7 +271,7 @@ func (s *Scanner) identifier() token.Token {
 		if err != nil {
 			s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", strings.Trim(lit.Literal, "\"")+".ddp", err.Error()))
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
-			if s.include, err = New(inclPath, nil, s.err, s.mode); err != nil {
+			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
 				s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error()))
 			} else {
 				// append the already included files
@@ -419,10 +419,17 @@ func (s *Scanner) peekNext() rune {
 }
 
 func (s *Scanner) err(msg string) {
+	tok := token.Token{
+		File:    s.file,
+		Line:    s.line,
+		Column:  s.column,
+		Indent:  s.indent,
+		Literal: msg,
+	}
 	if s.aliasMode() {
-		s.errorHandler(fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg))
+		s.errorHandler(tok, fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg))
 	} else {
-		s.errorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", s.file, s.line, s.column, msg))
+		s.errorHandler(tok, msg)
 	}
 }
 

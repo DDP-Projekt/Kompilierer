@@ -29,7 +29,7 @@ type Interpreter struct {
 // returns a new Interpreter ready to interpret it's Ast
 func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Interpreter {
 	if errorHandler == nil {
-		errorHandler = func(string) {}
+		errorHandler = func(token.Token, string) {}
 	}
 	i := &Interpreter{
 		ast:                Ast,

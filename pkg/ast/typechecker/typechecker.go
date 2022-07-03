@@ -59,7 +59,7 @@ func (t *Typechecker) Evaluate(expr ast.Expression) token.TokenType {
 // helper for errors
 func (t *Typechecker) err(tok token.Token, msg string) {
 	t.Errored = true
-	t.ErrorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line, tok.Column, msg))
+	t.ErrorHandler(tok, msg)
 }
 
 // helper for commmon error message

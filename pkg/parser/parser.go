@@ -35,9 +35,9 @@ func init() {
 	initializing = true
 	errored := false
 	// helper to set the errored flag on error
-	Err := func(msg string) {
+	Err := func(t token.Token, msg string) {
 		errored = true
-		fmt.Println(msg)
+		fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line, t.Column, msg)
 	}
 
 	inbuiltSymbolTable = ast.NewSymbolTable(nil) // global SymbolTable
@@ -49,20 +49,21 @@ func init() {
 	fs.WalkDir(inbuilt, ".", func(path string, entry fs.DirEntry, err error) error {
 		if !entry.IsDir() {
 			if filepath.Ext(path) == ".ddp" {
+				errTok := token.Token{File: path, Line: 1, Column: 1}
 				file, err := inbuilt.ReadFile(path) // read the file
 				if err != nil {
-					Err(err.Error())
+					Err(errTok, err.Error())
 					return err
 				}
 				tokens, err := scanner.ScanSource(path, file, Err, scanner.ModeInitializing) // scan the file with the ModeInitializing flag to scan § correctly
 				if err != nil {
-					Err(err.Error())
+					Err(errTok, err.Error())
 					return err
 				}
 				parser := New(tokens, Err) // create the parser for this file
 				Ast := parser.Parse()      // parse the file
 				if Ast.Faulty {
-					Err(err.Error())
+					Err(errTok, err.Error())
 					return err
 				}
 				// append all inbuilt function and variable declarations to the inbuildDecls
@@ -109,7 +110,7 @@ type Parser struct {
 // returns a new parser, ready to parse the provided tokens
 func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 	if errorHandler == nil { // default error handler does nothing
-		errorHandler = func(string) {}
+		errorHandler = func(token.Token, string) {}
 	}
 	if len(tokens) == 0 {
 		tokens = []token.Token{{Type: token.EOF}} // we need at least one EOF at the end of the tokens slice
@@ -1555,7 +1556,7 @@ outer:
 				// otherwise it doesn't matter
 				if typeSensitive {
 					typecheckErrored := p.typechecker.Errored
-					p.typechecker.ErrorHandler = func(string) {} // silence errors
+					p.typechecker.ErrorHandler = func(token.Token, string) {} // silence errors
 					typ := p.typechecker.Evaluate(arg)
 					p.typechecker.ErrorHandler = p.errorHandler // turn errors on again
 					p.typechecker.Errored = typecheckErrored
@@ -1742,7 +1743,7 @@ func (p *Parser) consumeAny(t ...token.TokenType) bool {
 func (p *Parser) err(t token.Token, msg string) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", t.File, t.Line, t.Column, msg))
+		p.errorHandler(t, msg)
 	}
 }
 
