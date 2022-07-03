@@ -50,8 +50,9 @@ type (
 type (
 	// an invalid Declaration
 	BadDecl struct {
-		Range token.Range
-		Tok   token.Token // first token of the bad declaration
+		Range   token.Range
+		Tok     token.Token // first token of the bad declaration
+		Message string      // error message
 	}
 
 	VarDecl struct {
@@ -95,8 +96,9 @@ func (d *FuncDecl) declarationNode() {}
 // Expressions
 type (
 	BadExpr struct {
-		Range token.Range
-		Tok   token.Token // first token of the bad expression
+		Range   token.Range
+		Tok     token.Token // first token of the bad expression
+		Message string      // error message
 	}
 
 	Ident struct {
@@ -232,8 +234,9 @@ func (e *FuncCall) expressionNode()    {}
 // Statements
 type (
 	BadStmt struct {
-		Range token.Range
-		Tok   token.Token
+		Range   token.Range
+		Tok     token.Token
+		Message string // error message
 	}
 
 	DeclStmt struct {

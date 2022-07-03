@@ -42,7 +42,7 @@ type Compiler struct {
 // create a new Compiler to compile the passed AST
 func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 	if errorHandler == nil { // default error handler does nothing
-		errorHandler = func(string) {}
+		errorHandler = func(token.Token, string) {}
 	}
 	return &Compiler{
 		ast:          Ast,

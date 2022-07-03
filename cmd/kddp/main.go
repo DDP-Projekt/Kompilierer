@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 var startTime = time.Now() // used to measure the time that everything took (will be removed for release builds)
@@ -14,6 +16,10 @@ func resetTimer() time.Duration {
 	elapsed := time.Since(startTime)
 	startTime = time.Now()
 	return elapsed
+}
+
+func errHndl(t token.Token, msg string) {
+	fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line, t.Column, msg)
 }
 
 func main() {

@@ -62,8 +62,6 @@ func (cmd *InterpretCommand) Init(args []string) error {
 }
 
 func (cmd *InterpretCommand) Run() error {
-	errHndl := func(msg string) { fmt.Println(msg) }
-
 	// parse the input file into a ast
 	ast, err := parser.ParseFile(cmd.filePath, errHndl)
 	if err != nil {
@@ -263,7 +261,7 @@ func (cmd *BuildCommand) Run() error {
 		defer file.Close()
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
 		// compile the input file to llvm ir
-		if err := compiler.CompileTo(cmd.filePath, nil, func(msg string) { fmt.Println(msg) }, file); err != nil {
+		if err := compiler.CompileTo(cmd.filePath, nil, errHndl, file); err != nil {
 			return fmt.Errorf("failed to compile the source code: %s", err.Error())
 		}
 		if cmd.targetIR { // if the target is llvm ir we are finished
@@ -421,8 +419,6 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	errHndl := func(msg string) { fmt.Println(msg) }
-
 	ast, err := parser.ParseFile(cmd.filePath, errHndl)
 	if err != nil {
 		return err

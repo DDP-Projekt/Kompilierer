@@ -56,7 +56,7 @@ func (r *Resolver) visit(node ast.Node) {
 // helper for errors
 func (r *Resolver) err(t token.Token, msg string) {
 	r.Errored = true
-	r.ErrorHandler(fmt.Sprintf("Fehler in %s in Zeile %d, Spalte %d: %s", t.File, t.Line, t.Column, msg))
+	r.ErrorHandler(t, msg)
 }
 
 // if a BadDecl exists the AST is faulty
