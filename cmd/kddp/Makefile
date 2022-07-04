@@ -2,10 +2,18 @@ OUT_FILE_NAME = ""
 LLVM_CONFIG = ""
 ifeq ($(OS),Windows_NT)
 	OUT_FILE_NAME := kddp.exe
-	LLVM_CONFIG := "llvm-config"
+	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config.exe)","")
+		LLVM_CONFIG := "../../llvm_build/bin/llvm-config.exe"
+	else
+		LLVM_CONFIG := "llvm-config"
+	endif
 else
 	OUT_FILE_NAME := kddp
-	LLVM_CONFIG := "llvm-config-12"
+	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config)","")
+		LLVM_CONFIG := "../../llvm_build/bin/llvm-config"
+	else
+		LLVM_CONFIG := "llvm-config-12"
+	endif
 endif
 
 .PHONY = all build make_out_dir

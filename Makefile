@@ -8,6 +8,14 @@ else
 	STD_BIN := ddpstdlib.a
 endif
 
+LLVM_SRC_DIR=./llvm-project/llvm
+LLVM_BUILD_DIR=./llvm_build
+
+CC="gcc"
+CXX="g++"
+LLVM_BUILD_TYPE="Release"
+LLVM_CMAKE_GENERATOR="MinGW Makefiles"
+
 OUT_DIR := build/
 
 .DEFAULT_GOAL = all
@@ -15,9 +23,10 @@ OUT_DIR := build/
 DDP_DIR = ./cmd/kddp
 STD_DIR = ./lib/ddpstdlib
 
+CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug
+.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug test llvm
 
 all: make_out_dir kddp ddpstdlib
 
@@ -37,3 +46,23 @@ ddpstdlib-debug:
 
 make_out_dir:
 	mkdir -p $(OUT_DIR)
+
+test: all
+	go test -v ./tests | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+llvm:
+# clone the submodule
+	git submodule init
+	git submodule update
+
+# ignore gopls errors
+	cd ./llvm-project
+	go mod init ignored || true
+
+# generate cmake build files
+	cd ..
+	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G"$(LLVM_CMAKE_GENERATOR)" -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+
+# build llvm
+	cd $(LLVM_BUILD_DIR)
+	$(MAKE)
