@@ -11,9 +11,9 @@ endif
 LLVM_SRC_DIR=./llvm-project/llvm
 LLVM_BUILD_DIR=./llvm_build
 
-CC="gcc"
-CXX="g++"
-LLVM_BUILD_TYPE="Release"
+CC=gcc
+CXX=g++
+LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 
 OUT_DIR := build/
@@ -56,13 +56,10 @@ llvm:
 	git submodule update
 
 # ignore gopls errors
-	cd ./llvm-project
-	go mod init ignored || true
+	cd ./llvm-project ; go mod init ignored || true
 
 # generate cmake build files
-	cd ..
-	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G"$(LLVM_CMAKE_GENERATOR)" -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR)
-	$(MAKE)
+	cd $(LLVM_BUILD_DIR) ; $(MAKE)
