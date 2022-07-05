@@ -66,7 +66,7 @@ size_t utf8_num_bytes(char* s) {
 
 // decodes the unicode character c into s
 // s must be at least 5 chars long and will be null-terminated by the functions
-// returns the number of bytes in c (the resulting strlen of s)
+// returns the number of bytes in c
 // returns -1 if c is not a valid utf8 character
 int utf8_char_to_string(char* s, int32_t c) {
     // copied from the Go stdlib (see utf8.go in unicode/utf8)

@@ -122,6 +122,16 @@ func (t *Typechecker) VisitIdent(e *ast.Ident) ast.Visitor {
 	t.latestReturnedType, _ = t.CurrentTable.LookupVar(e.Literal.Literal)
 	return t
 }
+func (t *Typechecker) VisitIndexing(e *ast.Indexing) ast.Visitor {
+	if t.Evaluate(e.Index) != token.ZAHL {
+		t.err(e.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+	}
+	if t.Evaluate(e.Name) != token.TEXT {
+		t.err(e.Name.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
+	}
+	t.latestReturnedType = token.BUCHSTABE // later on the list element type
+	return t
+}
 func (t *Typechecker) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	t.latestReturnedType = token.ZAHL
 	return t
@@ -341,12 +351,33 @@ func (t *Typechecker) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 }
 func (t *Typechecker) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	ty := t.Evaluate(s.Rhs)
-	if vartyp, exists := t.CurrentTable.LookupVar(s.Name.Literal); exists && vartyp != ty {
-		t.err(s.Rhs.Token(), fmt.Sprintf(
-			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-			ty,
-			vartyp,
-		))
+	switch assign := s.Var.(type) {
+	case *ast.Ident:
+		if vartyp, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && vartyp != ty {
+			t.err(s.Rhs.Token(), fmt.Sprintf(
+				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+				ty,
+				vartyp,
+			))
+		}
+	case *ast.Indexing:
+		if t.Evaluate(assign.Index) != token.ZAHL {
+			t.err(assign.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+		}
+		lhs := t.Evaluate(assign.Name)
+		switch lhs {
+		case token.TEXT:
+			lhs = token.BUCHSTABE
+		default:
+			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
+		}
+		if lhs != ty {
+			t.err(s.Rhs.Token(), fmt.Sprintf(
+				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+				ty,
+				lhs,
+			))
+		}
 	}
 	return t
 }

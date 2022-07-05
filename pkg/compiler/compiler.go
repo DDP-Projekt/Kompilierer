@@ -236,6 +236,7 @@ func (c *Compiler) setupOperators() {
 
 	// string indexing
 	c.declareInbuiltFunction("inbuilt_string_index", ddpchar, ir.NewParam("str", ddpstrptr), ir.NewParam("index", ddpint))
+	c.declareInbuiltFunction("inbuilt_replace_char_in_string", void, ir.NewParam("str", ddpstrptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
 	c.declareInbuiltFunction("inbuilt_string_slice", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 }
 
@@ -358,6 +359,34 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(Var.typ, Var.val))
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
+	}
+	return c
+}
+func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
+	lhs := c.evaluate(e.Name)
+	rhs := c.evaluate(e.Index)
+	if lhs.Type() == ddpstrptr {
+		c.incrementRC(lhs, VK_STRING)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.incrementRC(rhs, VK_STRING)
+	}
+	switch lhs.Type() {
+	case ddpstrptr:
+		switch rhs.Type() {
+		case ddpint:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+		default:
+			err(fmt.Sprintf("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type()))
+		}
+	default:
+		err(fmt.Sprintf("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type()))
+	}
+	if lhs.Type() == ddpstrptr {
+		c.decrementRC(lhs)
+	}
+	if rhs.Type() == ddpstrptr {
+		c.decrementRC(rhs)
 	}
 	return c
 }
@@ -1075,13 +1104,24 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	if val.Type() == ddpstrptr {
 		c.incrementRC(val, VK_STRING)
 	}
-	Var := c.scp.lookupVar(s.Name.Literal) // get the variable
-	// free the value which was previously contained in the variable
-	if Var.typ == ddpstrptr {
-		c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
+	switch assign := s.Var.(type) {
+	case *ast.Ident:
+		Var := c.scp.lookupVar(assign.Literal.Literal) // get the variable
+		// free the value which was previously contained in the variable
+		if Var.typ == ddpstrptr {
+			c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
+		}
+		c.commentNode(c.cbb, s, assign.Literal.Literal)
+		c.cbb.NewStore(val, Var.val) // store the new value
+	case *ast.Indexing:
+		Var := c.scp.lookupVar(assign.Name.Literal.Literal) // get the variable
+		index := c.evaluate(assign.Index)
+		switch Var.typ {
+		case ddpstrptr:
+			c.commentNode(c.cbb, s, assign.Name.Literal.Literal)
+			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, c.cbb.NewLoad(ddpstrptr, Var.val), val, index)
+		}
 	}
-	c.commentNode(c.cbb, s, s.Name.Literal)
-	c.cbb.NewStore(val, Var.val) // store the new value
 	return c
 }
 func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {

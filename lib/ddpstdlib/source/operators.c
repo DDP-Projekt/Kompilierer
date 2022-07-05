@@ -82,6 +82,43 @@ ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	return utf8_string_to_char(str->str + i);
 }
 
+void inbuilt_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
+	if (index > str->cap || index < 1 || str->cap <= 1) {
+		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+	}
+
+	size_t i = 0, len = index;
+	while (str->str[i] != 0 && len > 1) {
+		i += utf8_num_bytes(str->str + i);
+		len--;
+	}
+
+	if (str->str[i] == 0) {
+		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+	}
+
+	size_t oldCharLen = utf8_num_bytes(str->str + i);
+	char newChar[5];
+	size_t newCharLen = utf8_char_to_string(newChar, ch);
+
+	if (oldCharLen == newCharLen) { // no need for allocations
+		memcpy(str->str + i, newChar, newCharLen);
+		return;
+	} else if (oldCharLen > newCharLen) { // no need for allocations 
+		memcpy(str->str + i, newChar, newCharLen);
+		memmove(str->str + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
+	} else {
+		size_t newStrCap = str->cap - oldCharLen + newCharLen;
+		char* newStr = ALLOCATE(char, newStrCap);
+		memcpy(newStr, str->str, i); // copy everything before the new char
+		memcpy(newStr + i, newChar, newCharLen);
+		memcpy(newStr + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
+		FREE_ARRAY(char, str->str, str->cap);
+		str->cap = newStrCap;
+		str->str = newStr;
+	}
+}
+
 ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
 	DBGLOG("inbuilt_string_slice: %p", dstr);
@@ -159,8 +196,8 @@ ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
 
 	char* string = ALLOCATE(char, str->cap + num_bytes);
 	memcpy(string, str->str, str->cap - 1); // don't copy the null-terminator
-	memcpy(&string[str->cap - 1], temp, num_bytes);
-	string[str->cap + num_bytes] = '\0';
+	memcpy(string + str->cap - 1, temp, num_bytes);
+	string[str->cap + num_bytes - 1] = '\0';
 
 	dstr->cap = str->cap + num_bytes;
 	dstr->str = string;

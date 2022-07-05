@@ -9,6 +9,7 @@ type Visitor interface {
 
 	VisitBadExpr(*BadExpr) Visitor
 	VisitIdent(*Ident) Visitor
+	VisitIndexing(*Indexing) Visitor
 	VisitIntLit(*IntLit) Visitor
 	VisitFLoatLit(*FloatLit) Visitor
 	VisitBoolLit(*BoolLit) Visitor

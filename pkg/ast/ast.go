@@ -44,6 +44,14 @@ type (
 		Node
 		declarationNode() // dummy function for the interface
 	}
+
+	// *Ident or *Indexing
+	// Nodes that fulfill this interface can be
+	// on the left side of an assignement (meaning, variables or references)
+	Assigneable interface {
+		Expression
+		assigneable() // dummy function for the interface
+	}
 )
 
 // Declarations
@@ -103,6 +111,14 @@ type (
 
 	Ident struct {
 		Literal token.Token
+	}
+
+	// also exists as Binary expression for Literals
+	// this one can count as Reference, and may be used
+	// inplace of Ident (may be assigned to etc.)
+	Indexing struct {
+		Name  *Ident // variable Name
+		Index Expression
 	}
 
 	IntLit struct {
@@ -168,6 +184,7 @@ type (
 
 func (e *BadExpr) String() string     { return "BadExpr" }
 func (e *Ident) String() string       { return "Ident" }
+func (e *Indexing) String() string    { return "Indexing" }
 func (e *IntLit) String() string      { return "IntLit" }
 func (e *FloatLit) String() string    { return "FloatLit" }
 func (e *BoolLit) String() string     { return "BoolLit" }
@@ -181,6 +198,7 @@ func (e *FuncCall) String() string    { return "FuncCall" }
 
 func (e *BadExpr) Token() token.Token     { return e.Tok }
 func (e *Ident) Token() token.Token       { return e.Literal }
+func (e *Indexing) Token() token.Token    { return e.Name.Token() }
 func (e *IntLit) Token() token.Token      { return e.Literal }
 func (e *FloatLit) Token() token.Token    { return e.Literal }
 func (e *BoolLit) Token() token.Token     { return e.Literal }
@@ -192,8 +210,11 @@ func (e *TernaryExpr) Token() token.Token { return e.Operator }
 func (e *Grouping) Token() token.Token    { return e.LParen }
 func (e *FuncCall) Token() token.Token    { return e.Tok }
 
-func (e *BadExpr) GetRange() token.Range     { return e.Range }
-func (e *Ident) GetRange() token.Range       { return token.NewRange(e.Literal, e.Literal) }
+func (e *BadExpr) GetRange() token.Range { return e.Range }
+func (e *Ident) GetRange() token.Range   { return token.NewRange(e.Literal, e.Literal) }
+func (e *Indexing) GetRange() token.Range {
+	return token.Range{Start: e.Name.GetRange().Start, End: e.Index.GetRange().End}
+}
 func (e *IntLit) GetRange() token.Range      { return token.NewRange(e.Literal, e.Literal) }
 func (e *FloatLit) GetRange() token.Range    { return token.NewRange(e.Literal, e.Literal) }
 func (e *BoolLit) GetRange() token.Range     { return token.NewRange(e.Literal, e.Literal) }
@@ -207,6 +228,7 @@ func (e *FuncCall) GetRange() token.Range    { return e.Range }
 
 func (e *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(e) }
 func (e *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(e) }
+func (e *Indexing) Accept(v Visitor) Visitor    { return v.VisitIndexing(e) }
 func (e *IntLit) Accept(v Visitor) Visitor      { return v.VisitIntLit(e) }
 func (e *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(e) }
 func (e *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(e) }
@@ -220,6 +242,7 @@ func (e *FuncCall) Accept(v Visitor) Visitor    { return v.VisitFuncCall(e) }
 
 func (e *BadExpr) expressionNode()     {}
 func (e *Ident) expressionNode()       {}
+func (e *Indexing) expressionNode()    {}
 func (e *IntLit) expressionNode()      {}
 func (e *FloatLit) expressionNode()    {}
 func (e *BoolLit) expressionNode()     {}
@@ -230,6 +253,9 @@ func (e *BinaryExpr) expressionNode()  {}
 func (e *TernaryExpr) expressionNode() {}
 func (e *Grouping) expressionNode()    {}
 func (e *FuncCall) expressionNode()    {}
+
+func (e *Ident) assigneable()    {}
+func (e *Indexing) assigneable() {}
 
 // Statements
 type (
@@ -250,7 +276,7 @@ type (
 	AssignStmt struct {
 		Range token.Range
 		Tok   token.Token
-		Name  token.Token // name of the variable
+		Var   Assigneable // the variable to assign to
 		Rhs   Expression  // literal assign value
 	}
 

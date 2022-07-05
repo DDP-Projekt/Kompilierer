@@ -96,6 +96,10 @@ func (r *Resolver) VisitIdent(e *ast.Ident) ast.Visitor {
 	}
 	return r
 }
+func (r *Resolver) VisitIndexing(e *ast.Indexing) ast.Visitor {
+	r.visit(e.Name)
+	return e.Index.Accept(r)
+}
 
 // nothing to do for literals
 func (r *Resolver) VisitIntLit(e *ast.IntLit) ast.Visitor {
@@ -145,9 +149,16 @@ func (r *Resolver) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(r)
 }
 func (r *Resolver) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	// check if the variable exists
-	if _, exists := r.CurrentTable.LookupVar(s.Name.Literal); !exists {
-		r.err(s.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", s.Name.Literal))
+	switch assign := s.Var.(type) {
+	case *ast.Ident:
+		// check if the variable exists
+		if _, exists := r.CurrentTable.LookupVar(assign.Literal.Literal); !exists {
+			r.err(s.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
+		}
+	case *ast.Indexing:
+		if _, exists := r.CurrentTable.LookupVar(assign.Name.Literal.Literal); !exists {
+			r.err(s.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal))
+		}
 	}
 	return s.Rhs.Accept(r)
 }

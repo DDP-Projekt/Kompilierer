@@ -505,7 +505,7 @@ func (p *Parser) statement() ast.Statement {
 	// check for assignement
 	if p.peek().Type == token.IDENTIFIER {
 		p.consume(token.IDENTIFIER)
-		if p.peek().Type == token.IST {
+		if p.peek().Type == token.IST || p.peek().Type == token.AN {
 			return p.assignLiteral() // x ist ... assignements may only have literals, so we use this helper function
 		} else {
 			p.decrease() // no assignement, so probably an expressionStatement()
@@ -575,24 +575,22 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	// the many branches are here mostly because of different prepositons
 	operator := p.previous()
 	var operand ast.Expression
-	var varName token.Token
+	var varName ast.Assigneable
 	if operator.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
 		operand = p.primary()
 	} else {
 		p.consume(token.IDENTIFIER)
-		varName = p.previous()
+		varName = p.assigneable()
 		if operator.Type == token.NEGIERE {
 			p.consume(token.DOT)
 			return &ast.AssignStmt{
 				Range: token.NewRange(operator, p.previous()),
 				Tok:   operator,
-				Name:  varName,
+				Var:   varName,
 				Rhs: &ast.UnaryExpr{
 					Range:    token.NewRange(operator, p.previous()),
 					Operator: operator,
-					Rhs: &ast.Ident{
-						Literal: varName,
-					},
+					Rhs:      varName,
 				},
 			}
 		}
@@ -609,7 +607,7 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	}
 	if operator.Type == token.SUBTRAHIERE { // order of operands is reversed
 		p.consume(token.IDENTIFIER)
-		varName = p.previous()
+		varName = p.assigneable()
 	} else {
 		operand = p.primary()
 	}
@@ -617,17 +615,15 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	switch operator.Type {
 	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
 		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)
-		targetName := p.previous()
+		targetName := p.assigneable()
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(operator, p.previous()),
 			Tok:   operator,
-			Name:  targetName,
+			Var:   targetName,
 			Rhs: &ast.BinaryExpr{
-				Range: token.NewRange(operator, p.previous()),
-				Lhs: &ast.Ident{
-					Literal: varName,
-				},
+				Range:    token.NewRange(operator, p.previous()),
+				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
@@ -637,12 +633,10 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		return &ast.AssignStmt{
 			Range: token.NewRange(operator, p.previous()),
 			Tok:   operator,
-			Name:  varName,
+			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range: token.NewRange(operator, p.previous()),
-				Lhs: &ast.Ident{
-					Literal: varName,
-				},
+				Range:    token.NewRange(operator, p.previous()),
+				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
@@ -656,12 +650,10 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		return &ast.AssignStmt{
 			Range: token.NewRange(operator, p.previous()),
 			Tok:   tok,
-			Name:  varName,
+			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range: token.NewRange(operator, p.previous()),
-				Lhs: &ast.Ident{
-					Literal: varName,
-				},
+				Range:    token.NewRange(operator, p.previous()),
+				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
@@ -673,22 +665,24 @@ func (p *Parser) compoundAssignement() ast.Statement {
 
 // helper to parse assignements which may only be literals
 func (p *Parser) assignLiteral() ast.Statement {
-	ident := p.previous() // name of the variable was already consumed
+	ident := p.assigneable() // name of the variable was already consumed
 	p.consume(token.IST)
 	expr := p.assignRhs() // parse the expression
 	// validate that the expression is a literal
-	switch expr.(type) {
+	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit:
-	default:
-		if typ, _ := p.resolver.CurrentTable.LookupVar(ident.Literal); typ != token.BOOLEAN {
+	case ast.Assigneable:
+		if typ := p.typechecker.Evaluate(ident); typ != token.BOOLEAN {
 			p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
+	default:
+		p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(ident, p.peek()),
-			Tok:   ident,
-			Name:  ident,
+			Range: token.NewRange(ident.Token(), p.peek()),
+			Tok:   ident.Token(),
+			Var:   ident,
 			Rhs:   expr,
 		},
 	)
@@ -705,16 +699,16 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 		expr = p.expression() // and parse the expression
 	}
 	p.consumeN(token.IN, token.IDENTIFIER)
-	name := p.previous() // name of the variable is the just consumed identifier
+	name := p.assigneable() // name of the variable is the just consumed identifier
 	// for booleans, the ist wahr/falsch wenn syntax should be used
-	if typ, _ := p.resolver.CurrentTable.LookupVar(name.Literal); typ == token.BOOLEAN {
-		p.err(name, "Variablen vom Typ 'BOOLEAN' sind hier nicht zulässig")
+	if typ := p.typechecker.Evaluate(name); typ == token.BOOLEAN {
+		p.err(name.Token(), "Variablen vom Typ 'BOOLEAN' sind hier nicht zulässig")
 	}
 	return p.finishStatement(
 		&ast.AssignStmt{
 			Range: token.NewRange(speichere, p.peek()),
 			Tok:   speichere,
-			Name:  name,
+			Var:   name,
 			Rhs:   expr,
 		},
 	)
@@ -1382,9 +1376,7 @@ func (p *Parser) primary() ast.Expression {
 		case token.LPAREN:
 			expr = p.grouping()
 		case token.IDENTIFIER:
-			expr = &ast.Ident{
-				Literal: p.previous(),
-			}
+			expr = p.assigneable()
 		default:
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)
@@ -1447,8 +1439,19 @@ func (p *Parser) primary() ast.Expression {
 
 // either ast.Ident or ast.Indexing
 // p.previous() must be of Type token.IDENTIFIER
-func (p *Parser) reference() ast.Expression {
-	return nil
+func (p *Parser) assigneable() ast.Assigneable {
+	var expr ast.Assigneable = &ast.Ident{
+		Literal: p.previous(),
+	}
+	if p.match(token.AN) {
+		p.consumeN(token.DER, token.STELLE)
+		rhs := p.expression()
+		expr = &ast.Indexing{
+			Name:  expr.(*ast.Ident),
+			Index: rhs,
+		}
+	}
+	return expr
 }
 
 func (p *Parser) grouping() ast.Expression {

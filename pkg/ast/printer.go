@@ -72,6 +72,10 @@ func (p *printer) VisitIdent(e *Ident) Visitor {
 	p.parenthesizeNode(fmt.Sprintf("Ident[%s]", e.Literal.Literal))
 	return p
 }
+func (p *printer) VisitIndexing(e *Indexing) Visitor {
+	p.parenthesizeNode(fmt.Sprintf("Indexing"), e.Name, e.Index)
+	return p
+}
 func (p *printer) VisitIntLit(e *IntLit) Visitor {
 	p.parenthesizeNode(fmt.Sprintf("IntLit(%d)", e.Value))
 	return p
@@ -85,7 +89,7 @@ func (p *printer) VisitBoolLit(e *BoolLit) Visitor {
 	return p
 }
 func (p *printer) VisitCharLit(e *CharLit) Visitor {
-	p.parenthesizeNode(fmt.Sprintf("CharLit(%v)", e.Value))
+	p.parenthesizeNode(fmt.Sprintf("CharLit(%c)", e.Value))
 	return p
 }
 func (p *printer) VisitStringLit(e *StringLit) Visitor {
@@ -130,7 +134,7 @@ func (p *printer) VisitExprStmt(s *ExprStmt) Visitor {
 	return p
 }
 func (p *printer) VisitAssignStmt(s *AssignStmt) Visitor {
-	p.parenthesizeNode(fmt.Sprintf("AssignStmt[%s]", s.Name.Literal), s.Rhs)
+	p.parenthesizeNode("AssignStmt", s.Var, s.Rhs)
 	return p
 }
 func (p *printer) VisitBlockStmt(s *BlockStmt) Visitor {
