@@ -10,7 +10,7 @@ endif
 
 CC = gcc
 DEBUGFLAGS := -D DEBUG
-INC := -I./include/ # set on the debug phony
+INC := -I./include/
 
 SRCS := $(shell find source -name '*.c')
 OBJS := $(notdir $(SRCS))

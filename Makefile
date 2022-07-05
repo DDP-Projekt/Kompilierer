@@ -33,15 +33,15 @@ all: make_out_dir kddp ddpstdlib
 debug: make_out_dir kddp ddpstdlib-debug
 
 kddp:
-	$(MAKE) -C $(DDP_DIR)
+	cd $(DDP_DIR) ; $(MAKE)
 	mv $(DDP_DIR)/build/$(DDP_BIN) $(OUT_DIR)
 
 ddpstdlib:
-	$(MAKE) -C $(STD_DIR)
+	cd $(STD_DIR) ; $(MAKE)
 	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 ddpstdlib-debug:
-	$(MAKE) -C $(STD_DIR) debug
+	cd $(STD_DIR) ; $(MAKE) debug
 	mv $(STD_DIR)/$(STD_BIN) $(OUT_DIR)
 
 make_out_dir:
