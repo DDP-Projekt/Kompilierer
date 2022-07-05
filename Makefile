@@ -18,7 +18,7 @@ LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 
 OUT_DIR := build/
 
-.DEFAULT_GOAL = all
+.DEFAULT_GOAL := all
 
 DDP_DIR = ./cmd/kddp
 STD_DIR = ./lib/ddpstdlib

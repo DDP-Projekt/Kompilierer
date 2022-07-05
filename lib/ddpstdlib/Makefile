@@ -6,6 +6,7 @@ else
 endif
 
 .PHONY = all build clean debug
+.DEFAULT_GOAL := all
 
 CC = gcc
 DEBUGFLAGS := -D DEBUG
@@ -26,6 +27,6 @@ clean:
 	rm -rf $(OBJS)
 
 debug:
-	$(CC) -c $(INC) $(DEBUGFLAGS) $(CCFLAGS) $(SRCS)
+	$(CC) -c $(INC) $(DEBUGFLAGS) $(SRCS)
 	ar cr $(OUT_FILE_NAME) $(OBJS)
 	rm -rf $(OBJS)
