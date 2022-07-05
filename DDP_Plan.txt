@@ -20,7 +20,7 @@ Anweisungen/Befehle
 - Zahl => int64 (long)
 - Kommazahl => float64 (double)
 - Boolean => bool
-- Buchstabe => char(16bit)
+- Buchstabe => char(32bit)
 - Text => string
 
 Ansammlungen (jeden Typs):

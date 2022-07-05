@@ -9,9 +9,9 @@ const (
 	INT    // 1 2
 	FLOAT  // 2,2 3,4
 	STRING // "hallo" "hi\n"
-	CHAR
-	TRUE  // wahr
-	FALSE // falsch
+	CHAR   // 'H' 'ü'
+	TRUE   // wahr
+	FALSE  // falsch
 
 	PLUS     // plus
 	MINUS    // minus

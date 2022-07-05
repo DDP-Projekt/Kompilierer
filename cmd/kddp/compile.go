@@ -51,6 +51,7 @@ func compileToObject(inputFile, outputFile string) error {
 	pass.AddLoopDeletionPass()
 	pass.AddLoopUnrollPass()
 	pass.AddStripDeadPrototypesPass()
+	pass.AddPromoteMemoryToRegisterPass() // promote as many allocas as possible to registers
 	targetMachine.AddAnalysisPasses(pass)
 	pass.Run(mod)
 

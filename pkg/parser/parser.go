@@ -1399,6 +1399,7 @@ func (p *Parser) primary() ast.Expression {
 	// indexing
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
+		operator := p.previous()
 		rhs := p.expression()
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
@@ -1406,7 +1407,7 @@ func (p *Parser) primary() ast.Expression {
 				End:   rhs.GetRange().End,
 			},
 			Lhs:      expr,
-			Operator: p.previous(),
+			Operator: operator,
 			Rhs:      rhs,
 		}
 	} else if p.match(token.VON) {
@@ -1442,6 +1443,12 @@ func (p *Parser) primary() ast.Expression {
 	}
 
 	return expr
+}
+
+// either ast.Ident or ast.Indexing
+// p.previous() must be of Type token.IDENTIFIER
+func (p *Parser) reference() ast.Expression {
+	return nil
 }
 
 func (p *Parser) grouping() ast.Expression {
