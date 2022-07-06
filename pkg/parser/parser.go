@@ -1376,7 +1376,9 @@ func (p *Parser) primary() ast.Expression {
 		case token.LPAREN:
 			expr = p.grouping()
 		case token.IDENTIFIER:
-			expr = p.assigneable()
+			expr = &ast.Ident{
+				Literal: p.previous(),
+			}
 		default:
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)

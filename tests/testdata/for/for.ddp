@@ -1,0 +1,16 @@
+Die Zahl i ist 5. [check variable shadowing]
+Für jede Zahl i von 0 bis 10, mache:
+	Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Zahl i von 10 bis 0 mit Schrittgröße -1, mache:
+	Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Zahl i von 0 bis 10 mit Schrittgröße 2, mache:
+	Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+
+Für jede Zahl i von 0 bis 10, Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Zahl i von 10 bis 0 mit Schrittgröße -1, Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Zahl i von 0 bis 10 mit Schrittgröße 2, Schreibe die Zahl i.

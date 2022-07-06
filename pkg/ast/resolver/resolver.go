@@ -68,13 +68,13 @@ func (r *Resolver) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	d.InitVal.Accept(r) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertVar(d.Name.Literal, d.Type.Type); existed {
-		r.err(d.Token(), fmt.Sprintf("Die Variable '%s' existiert bereits", d.Name.Literal)) // variables may only be declared once in the same scope
+		r.err(d.Name, fmt.Sprintf("Die Variable '%s' existiert bereits", d.Name.Literal)) // variables may only be declared once in the same scope
 	}
 	return r
 }
 func (r *Resolver) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	if existed := r.CurrentTable.InsertFunc(d.Name.Literal, d); existed {
-		r.err(d.Token(), fmt.Sprintf("Die Funktion '%s' existiert bereits", d.Name.Literal)) // functions may only be declared once
+		r.err(d.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", d.Name.Literal)) // functions may only be declared once
 	}
 	d.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
 	// add the function parameters to the scope of the function body

@@ -1,0 +1,9 @@
+Die Zahl i ist 5.
+Solange i größer als 0 ist, mache:
+	Schreibe die Zahl i.
+	Verringere i um 1.
+
+Schreibe den Buchstaben '\n'.
+Mache:
+	Schreibe die Zahl i.
+Solange i größer als 0 ist.

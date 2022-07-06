@@ -52,5 +52,5 @@ for more information try: kddp help
 		}
 	}
 
-	return fmt.Errorf("Unknown command '%s'", subcmd)
+	return fmt.Errorf("Unknown command '%s'\nFor a list of all commands try: kddp help", subcmd)
 }

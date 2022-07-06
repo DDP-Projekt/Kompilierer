@@ -47,7 +47,7 @@ ddpstdlib-debug:
 make_out_dir:
 	mkdir -p $(OUT_DIR)
 
-test: all
+test:
 	go test -v ./tests | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 llvm:

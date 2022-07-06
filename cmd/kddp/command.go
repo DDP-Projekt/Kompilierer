@@ -128,7 +128,7 @@ func (cmd *HelpCommand) Run() error {
 	// otherwise, print the usage of every command
 	fmt.Println("available commands:")
 	for _, cmd := range commands {
-		fmt.Println(cmd.Usage())
+		fmt.Println(cmd.Usage() + "\n")
 	}
 
 	return nil
