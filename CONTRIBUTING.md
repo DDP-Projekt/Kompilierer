@@ -15,7 +15,7 @@ If you want to build LLVM yourself on linux anyway, skip to the *Building LLVM* 
 To run the makefile on Windows, you also need the following programs installed and added to your PATH:
 
 - [mingw64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z/download) (version 8.1.0 is tested and works, other versions might not work)
-- [make](https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download?use_mirror=netcologne&download=) (can also be downloaded via chocolatey)
+- make (can be downloaded via chocolatey, or you can use mingw32-make which comes with mingw64)
 - [git](https://git-scm.com/download/win) (you need git-bash to run the makefiles)
 
 ## On Linux
@@ -28,6 +28,9 @@ If you built llvm from the submodule, make will use this llvm build instead of t
 ## On Windows
 
 After you installed LLVM (see *Building LLVM*), follow the same steps as on Linux, but use git-bash to run the commands (otherwise some unix commands will not work).
+
+### Important
+GNUMake will not work. If you have gnu make installed it has the name *make* on windows, so you should use mingw32-make instead when running the makefiles.
 
 # Building LLVM
 
