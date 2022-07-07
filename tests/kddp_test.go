@@ -42,9 +42,9 @@ func TestKDDP(t *testing.T) {
 			if err != nil {
 				cmd = exec.Command("../build/kddp", "build", changeExtension(filename, ".ddp"), "-c")
 				if out, err := cmd.CombinedOutput(); err != nil {
-					t.Logf("temp combined out err: %s\nout:\n%s", err, string(out))
+					t.Logf("cannot getcombined out when recompiling: %s\nout:\n%s", err, out)
 				}
-				t.Errorf("error getting combined output: %s", err)
+				t.Errorf("\nerror getting combined output: %s\noutput:\n%s", err, out)
 				return
 			}
 			if out, expected := string(out), string(expected); out != expected {

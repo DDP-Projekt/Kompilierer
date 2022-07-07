@@ -344,13 +344,20 @@ func (s *Scanner) skipWhitespace() {
 			s.shouldIndent = true
 			s.advance()
 		case '[':
-			for s.peek() != ']' && !s.atEnd() {
-				if s.peek() == '\n' {
+			s.advance()
+			bracketCount := 1
+			for bracketCount > 0 && !s.atEnd() {
+				switch s.peek() {
+				case '[':
+					bracketCount++
+				case ']':
+					bracketCount--
+					if bracketCount <= 0 {
+						break
+					}
+				case '\n':
 					s.line++
 				}
-				s.advance()
-			}
-			if !s.atEnd() {
 				s.advance()
 			}
 		default:

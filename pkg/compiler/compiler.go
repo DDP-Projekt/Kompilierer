@@ -10,6 +10,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -74,7 +75,9 @@ func (c *Compiler) Compile(w io.Writer) (result string, rerr error) {
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
-	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
+	c.mod.TargetTriple = llvm.DefaultTargetTriple()
+	c.mod.DataLayout = getDataLayout()
+	c.setupRuntimeFunctions() // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
 		"inbuilt_ddpmain",
@@ -1391,4 +1394,29 @@ func getTraceInfo(skip int) (file string, line int, function string) {
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
 	return frame.File, frame.Line, frame.Function
+}
+
+func getDataLayout() string {
+	llvm.InitializeAllTargetInfos()
+	llvm.InitializeAllTargets()
+	llvm.InitializeAllTargetMCs()
+	llvm.InitializeAllAsmParsers()
+	llvm.InitializeAllAsmPrinters()
+
+	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
+	if err != nil {
+		return ""
+	}
+	targetMachine := target.CreateTargetMachine(
+		llvm.DefaultTargetTriple(),
+		"generic",
+		"",
+		llvm.CodeGenOptLevel(llvm.CodeGenLevelDefault),
+		llvm.RelocMode(llvm.RelocDefault),
+		llvm.CodeModel(llvm.CodeModelDefault),
+	)
+	defer targetMachine.Dispose()
+	targetData := targetMachine.CreateTargetData()
+	defer targetData.Dispose()
+	return targetData.String()
 }
