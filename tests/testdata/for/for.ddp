@@ -14,3 +14,15 @@ Schreibe den Buchstaben '\n'.
 Für jede Zahl i von 10 bis 0 mit Schrittgröße -1, Schreibe die Zahl i.
 Schreibe den Buchstaben '\n'.
 Für jede Zahl i von 0 bis 10 mit Schrittgröße 2, Schreibe die Zahl i.
+
+
+Schreibe den Buchstaben '\n'.
+Für jede Zahl a von 1 bis 3, mache:
+	Für jede Zahl b von 1 bis 3, mache:
+		Schreibe die Zahl a.
+		Schreibe den Buchstaben '*'.
+		Schreibe die Zahl b.
+		Schreibe den Buchstaben '='.
+		Schreibe die Zahl (a mal b).
+		Wenn a mal b ungleich 9 ist, dann:
+			Schreibe den Buchstaben '\n'.

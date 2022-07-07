@@ -3,7 +3,25 @@ Solange i größer als 0 ist, mache:
 	Schreibe die Zahl i.
 	Verringere i um 1.
 
+
 Schreibe den Buchstaben '\n'.
 Mache:
 	Schreibe die Zahl i.
 Solange i größer als 0 ist.
+
+
+Schreibe den Buchstaben '\n'.
+Die Zahl j ist 0.
+i ist 5.
+Solange j kleiner als 3 ist, mache:
+	Solange i größer als 0 ist, mache:
+		Schreibe die Zahl i.
+		Verringere i um 1.
+	Schreibe die Zahl j.
+	Schreibe den Buchstaben '|'.
+	Erhöhe j um 1.
+	i ist 5.
+
+
+Solange falsch ist, mache:
+	Schreibe den Text "fehler".

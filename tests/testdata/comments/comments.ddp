@@ -1,0 +1,22 @@
+[Einzelzeiliger Kommentar]
+[[Verschachtelter einzelzeiliger Kommentar]]
+
+[
+	Mehr-
+	zeiliger
+	Kommentar
+]
+
+[
+	[verschachtelter]
+	Mehr-
+	zeiliger
+	Kommentar
+	[
+		test
+	]
+]
+
+[]
+
+Schreibe [Schreibe] den [den] Text [Text] "hi" [hallo]. [.]
