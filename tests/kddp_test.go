@@ -44,7 +44,7 @@ func TestKDDP(t *testing.T) {
 			cmd = exec.Command(filename)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Errorf("error getting combined output: %s", err)
+				t.Errorf("error getting combined output: %s\noutput:\n%s", err, out)
 				return
 			}
 			if out, expected := string(out), string(expected); out != expected {
