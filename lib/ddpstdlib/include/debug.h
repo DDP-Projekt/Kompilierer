@@ -7,9 +7,9 @@
 
 #include <stdio.h>
 
-//#define DEBUG // undef to remove logs and similar debug stuff
+//#define DDP_DEBUG // undef to remove logs and similar debug stuff
 
-#ifdef DEBUG
+#ifdef DDP_DEBUG
 // helper macro to log stuff in debug mode
 #define DBGLOG(...) \
 	{ printf("\n\t"); \
@@ -18,6 +18,6 @@
 	}
 #else
 #define DBGLOG(...)
-#endif // DEBUG
+#endif // DDP_DEBUG
 
 #endif // DDP_DEBUG_H

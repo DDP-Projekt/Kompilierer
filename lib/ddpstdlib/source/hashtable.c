@@ -18,8 +18,8 @@ void freeTable(Table* table) {
 }
 
 static Entry* findEntry(Entry* entries, int capacity, void* key) {
-	uint32_t hash = hashPointer(key, sizeof(key));
-	uint32_t index = hash % capacity;
+	uintptr_t hash = (uintptr_t)key; //hashPointer(key, sizeof(key));
+	uintptr_t index = hash & (capacity - 1);
 	Entry* tombstone = NULL;
 	for (;;) {
 		Entry* entry = &entries[index];
@@ -36,7 +36,7 @@ static Entry* findEntry(Entry* entries, int capacity, void* key) {
 			return entry;
 		}
 
-		index = (index + 1) % capacity;
+		index = (index + 1) & (capacity - 1);
 	}
 }
 

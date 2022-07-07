@@ -9,7 +9,7 @@ endif
 .DEFAULT_GOAL := all
 
 CC = gcc
-DEBUGFLAGS := -D DEBUG
+DEBUGFLAGS := -DDDP_DEBUG
 INC := -I./include/
 
 SRCS := $(shell find source -name '*.c')

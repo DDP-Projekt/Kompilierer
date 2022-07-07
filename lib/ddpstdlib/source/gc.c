@@ -27,7 +27,9 @@ static void free_value(void* key, Value* val) {
 		runtime_error(1, "invalid value kind\n"); // unreachable
 		break;
 	}
-	tableDelete(get_ref_table(), key); // delete the value from the ref table
+	if(!tableDelete(get_ref_table(), key)) { // delete the value from the ref table
+		runtime_error(1, "free_value: key %p not found in refTable\n", key);
+	}
 }
 
 // decrement the ref-count of a given garbage-collected object
