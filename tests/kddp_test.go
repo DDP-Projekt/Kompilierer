@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -29,22 +28,23 @@ func TestKDDP(t *testing.T) {
 				t.Errorf("Could not read expected output: %s", err.Error())
 				return
 			}
-			filename := filepath.Join(path, filepath.Base(path))
-			cmd := exec.Command("../build/kddp", "build", filename+".ddp", "-o", filename, "--verbose")
-			if runtime.GOOS == "windows" {
-				filename += ".exe"
-			}
+			filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
+			cmd := exec.Command("../build/kddp", "build", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--verbose")
 			if out, err := cmd.CombinedOutput(); err != nil {
 				t.Errorf("compilation failed: %s\ncompiler output: %s", err, string(out))
 				return
 			} else {
-				defer os.Remove(filename)
+				defer os.Remove(changeExtension(filename, ".exe"))
 			}
 
-			cmd = exec.Command(filename)
+			cmd = exec.Command(changeExtension(filename, ".exe"))
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Errorf("error getting combined output: %s\noutput:\n%s", err, out)
+				cmd = exec.Command("../build/kddp", "build", changeExtension(filename, ".ddp"), "-c")
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Logf("temp combined out err: %s\nout:\n%s", err, string(out))
+				}
+				t.Errorf("error getting combined output: %s", err)
 				return
 			}
 			if out, expected := string(out), string(expected); out != expected {
@@ -59,4 +59,10 @@ func TestKDDP(t *testing.T) {
 	if err != nil {
 		t.Logf("Error walking the test directory: %s", err)
 	}
+}
+
+// helper function
+// returns path with the specified extension
+func changeExtension(path, ext string) string {
+	return path[:len(path)-len(filepath.Ext(path))] + ext
 }
