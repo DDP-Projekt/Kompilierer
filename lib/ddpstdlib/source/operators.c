@@ -119,14 +119,20 @@ void inbuilt_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
 	}
 }
 
+static ddpint clamp(ddpint i, ddpint min, ddpint max) {
+  const ddpint t = i < min ? min : i;
+  return t > max ? max : t;
+}
+
 ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
 	DBGLOG("inbuilt_string_slice: %p", dstr);
-	if (index1 < 1 || index2 < 1 || index2 < index1) {
+
+	size_t start_length = utf8_strlen(str->str);
+	index1 = clamp(index1, 1, start_length);
+	index2 = clamp(index2, 1, start_length);
+	if (index2 < index1) {
 		runtime_error(1, "Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n", index1, index2);
-	}
-	if (index1 > str->cap) {
-		runtime_error(1, "Index außerhalb der Text Länge (Index 1 war %ld, Index 2 war %ld, Text Länge war %ld\n", index1, index2, utf8_strlen(str->str));
 	}
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0

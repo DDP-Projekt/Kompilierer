@@ -1148,6 +1148,7 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 		c.comment("thenBlock", thenBlock)
 		c.cbb, c.scp = thenBlock, newScope(c.scp) // with its own scope
 		c.visitNode(s.Then)
+		thenLeave := c.cbb                     // if there are nested loops etc, the thenBlock might not be the block at the end of s.Then
 		c.cbb, c.scp = cbb, c.exitScope(c.scp) // revert the scope and block
 
 		if s.Else != nil { // handle else and possible else-ifs
@@ -1174,9 +1175,9 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, elseBlock) // jump with the condition
 
 			// add a terminator
-			if thenBlock.Term == nil {
+			if thenLeave.Term == nil {
 				c.commentNode(c.cbb, s, "")
-				thenBlock.NewBr(leaveBlock)
+				thenLeave.NewBr(leaveBlock)
 			}
 			if elseBlock.Term == nil {
 				c.commentNode(c.cbb, s, "")
@@ -1193,9 +1194,9 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 			c.commentNode(c.cbb, s, "")
 			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, leaveBlock)
 			// we need a terminator (simply jump after the then block)
-			if thenBlock.Term == nil {
+			if thenLeave.Term == nil {
 				c.commentNode(c.cbb, s, "")
-				thenBlock.NewBr(leaveBlock)
+				thenLeave.NewBr(leaveBlock)
 			}
 			c.cbb = leaveBlock // continue compilation in the leave block
 		}
@@ -1225,10 +1226,11 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 			c.cbb.NewBr(condBlock)
 		}
 
-		leaveBlock := c.cf.NewBlock("")
 		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
+		cond := c.evaluate(s.Condition)
+		leaveBlock := c.cf.NewBlock("")
 		c.commentNode(c.cbb, s, "")
-		condBlock.NewCondBr(c.evaluate(s.Condition), body, leaveBlock)
+		c.cbb.NewCondBr(cond, body, leaveBlock)
 
 		c.cbb = leaveBlock
 	case token.MAL:
@@ -1296,11 +1298,13 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 		c.cbb = incrementBlock
 		incrementer = c.evaluate(s.StepSize)
 	}
+
+	c.cbb = incrementBlock
 	// add the incrementer to the counter variable
-	add := incrementBlock.NewAdd(indexVar, incrementer)
-	incrementBlock.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
-	c.commentNode(incrementBlock, s, "")
-	incrementBlock.NewBr(condBlock) // check the condition (loop)
+	add := c.cbb.NewAdd(indexVar, incrementer)
+	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	c.commentNode(c.cbb, s, "")
+	c.cbb.NewBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
 	initGreaterTo := c.cf.NewBlock("")
@@ -1312,19 +1316,21 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := condBlock.NewICmp(enum.IPredSLE, initValue, c.evaluate(s.To))
-	c.commentNode(condBlock, s, "")
-	condBlock.NewCondBr(cond, initLessthenTo, initGreaterTo)
+	cond := c.cbb.NewICmp(enum.IPredSLE, initValue, c.evaluate(s.To))
+	c.commentNode(c.cbb, s, "")
+	c.cbb.NewCondBr(cond, initLessthenTo, initGreaterTo)
 
+	c.cbb = initLessthenTo
 	// we are counting up, so compare less-or-equal
-	cond = initLessthenTo.NewICmp(enum.IPredSLE, initLessthenTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
-	c.commentNode(initLessthenTo, s, "")
-	initLessthenTo.NewCondBr(cond, forBody, leaveBlock)
+	cond = c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	c.commentNode(c.cbb, s, "")
+	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
+	c.cbb = initGreaterTo
 	// we are counting down, so compare greater-or-equal
-	cond = initGreaterTo.NewICmp(enum.IPredSGE, initGreaterTo.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
-	c.commentNode(initGreaterTo, s, "")
-	initGreaterTo.NewCondBr(cond, forBody, leaveBlock)
+	cond = c.cbb.NewICmp(enum.IPredSGE, c.cbb.NewLoad(Var.typ, Var.val), c.evaluate(s.To))
+	c.commentNode(c.cbb, s, "")
+	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
 	return c

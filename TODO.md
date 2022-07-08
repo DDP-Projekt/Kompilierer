@@ -16,6 +16,7 @@
 - [x] Wiederholungen (Mache: x mal)
 - [ ] Listen
 - [ ] Strukturen
+- [ ] Bessere Tests (vor allem für komplex verschachtelte Loops)
 
 ## Sonstiges
 - [ ] Standardbibliothek (Duden)

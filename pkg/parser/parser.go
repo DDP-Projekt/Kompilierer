@@ -1402,7 +1402,7 @@ func (p *Parser) primary() ast.Expression {
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
 		operator := p.previous()
-		rhs := p.expression()
+		rhs := p.unary()
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
@@ -1418,7 +1418,7 @@ func (p *Parser) primary() ast.Expression {
 		lhs := expr
 		mid := p.expression()
 		p.consume(token.BIS)
-		rhs := p.expression()
+		rhs := p.unary()
 		expr = &ast.TernaryExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
