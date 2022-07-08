@@ -6,7 +6,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
@@ -92,10 +91,6 @@ func (i *Interpreter) evaluate(expr ast.Expression) value {
 
 func (i *Interpreter) execute(stmt ast.Statement) {
 	i.visitNode(stmt)
-}
-
-func isInbuiltFunc(fun *ast.FuncDecl) bool {
-	return strings.HasPrefix(fun.Name.Literal, "§")
 }
 
 func (i *Interpreter) exitEnvironment() {
@@ -576,7 +571,7 @@ func (i *Interpreter) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			i.currentEnvironment.addVar(k, i.evaluate(v))
 		}
 
-		if isInbuiltFunc(fun) {
+		if ast.IsInbuiltFunc(fun) {
 			i.lastReturn = i.callInbuilt(e.Name)
 		} else {
 			// execute the function body, a panic may return a value

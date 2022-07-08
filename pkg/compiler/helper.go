@@ -2,9 +2,7 @@ package compiler
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/llir/llvm/ir/constant"
@@ -75,9 +73,4 @@ func getDefaultValue(t token.TokenType) constant.Constant {
 		return constant.NewNull(ddpstrptr)
 	}
 	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
-}
-
-// check if the function is inbuilt
-func isInbuiltFunc(fun *ast.FuncDecl) bool {
-	return strings.HasPrefix(fun.Name.Literal, "§")
 }

@@ -73,7 +73,7 @@ func (r *Resolver) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	return r
 }
 func (r *Resolver) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
-	if existed := r.CurrentTable.InsertFunc(d.Name.Literal, d); existed {
+	if existed := r.CurrentTable.InsertFunc(d.Name.Literal, d); existed && !ast.IsInbuiltFunc(d) {
 		r.err(d.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", d.Name.Literal)) // functions may only be declared once
 	}
 	d.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body

@@ -10,7 +10,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
-	"github.com/bafto/Go-LLVM-Bindings/llvm"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -75,9 +74,7 @@ func (c *Compiler) Compile(w io.Writer) (result string, rerr error) {
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
-	c.mod.TargetTriple = llvm.DefaultTargetTriple()
-	c.mod.DataLayout = getDataLayout()
-	c.setupRuntimeFunctions() // setup internal functions to interact with the ddp-c-runtime
+	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
 		"inbuilt_ddpmain",
@@ -308,7 +305,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	// append a prefix to every ir function to make it impossible for the user to break internal stuff
 	name := d.Name.Literal
-	if isInbuiltFunc(d) { // inbuilt/runtime functions are prefixed with inbuilt_
+	if ast.IsInbuiltFunc(d) { // inbuilt/runtime functions are prefixed with inbuilt_
 		name = "inbuilt_" + strings.TrimLeft(name, "§")
 	} else { // user-defined functions are prefixed with ddpfunc_
 		name = "ddpfunc_" + name
@@ -318,7 +315,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	c.insertFunction(d.Name.Literal, d, irFunc)
 
-	if isInbuiltFunc(d) {
+	if ast.IsInbuiltFunc(d) {
 		irFunc.Linkage = enum.LinkageExternal // inbuilt functions are defined in c
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
@@ -1394,29 +1391,4 @@ func getTraceInfo(skip int) (file string, line int, function string) {
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
 	return frame.File, frame.Line, frame.Function
-}
-
-func getDataLayout() string {
-	llvm.InitializeAllTargetInfos()
-	llvm.InitializeAllTargets()
-	llvm.InitializeAllTargetMCs()
-	llvm.InitializeAllAsmParsers()
-	llvm.InitializeAllAsmPrinters()
-
-	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
-	if err != nil {
-		return ""
-	}
-	targetMachine := target.CreateTargetMachine(
-		llvm.DefaultTargetTriple(),
-		"generic",
-		"",
-		llvm.CodeGenOptLevel(llvm.CodeGenLevelDefault),
-		llvm.RelocMode(llvm.RelocDefault),
-		llvm.CodeModel(llvm.CodeModelDefault),
-	)
-	defer targetMachine.Dispose()
-	targetData := targetMachine.CreateTargetData()
-	defer targetData.Dispose()
-	return targetData.String()
 }

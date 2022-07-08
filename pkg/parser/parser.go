@@ -1351,6 +1351,14 @@ func (p *Parser) primary() ast.Expression {
 			expr = &ast.BoolLit{Literal: p.previous(), Value: false}
 		case token.TRUE:
 			expr = &ast.BoolLit{Literal: p.previous(), Value: true}
+		case token.PI:
+			expr = &ast.FloatLit{Literal: p.previous(), Value: 3.141592654}
+		case token.E:
+			expr = &ast.FloatLit{Literal: p.previous(), Value: 2.718281828}
+		case token.TAU:
+			expr = &ast.FloatLit{Literal: p.previous(), Value: 6.283185307}
+		case token.PHI:
+			expr = &ast.FloatLit{Literal: p.previous(), Value: 1.618033989}
 		case token.INT:
 			lit := p.previous()
 			if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
@@ -1490,7 +1498,8 @@ outer:
 			// expand arguments
 			if tok.Type == token.ALIAS_PARAMETER {
 				switch t := p.peek(); t.Type {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
+					token.PI, token.E, token.TAU, token.PHI:
 					p.advance() // single-token so skip it
 					continue
 				case token.LPAREN:
@@ -1540,7 +1549,8 @@ outer:
 			if tok.Type == token.ALIAS_PARAMETER {
 				exprStart := p.cur
 				switch p.peek().Type {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
+					token.PI, token.E, token.TAU, token.PHI:
 					p.advance() // single-token argument
 				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 					p.advance()
@@ -1823,11 +1833,13 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	if t1.Type != t2.Type {
 		return false
 	}
-	if t1.Type == token.IDENTIFIER {
+	switch t1.Type {
+	case token.IDENTIFIER:
 		return t1.Literal == t2.Literal
-	}
-	if t1.Type == token.ALIAS_PARAMETER {
+	case token.ALIAS_PARAMETER:
 		return t1.AliasInfo.Type == t2.AliasInfo.Type
+	case token.INT, token.FLOAT, token.CHAR, token.STRING:
+		return t1.Literal == t2.Literal
 	}
 	return true
 }

@@ -13,6 +13,11 @@ const (
 	TRUE   // wahr
 	FALSE  // falsch
 
+	PI  // pi
+	E   // e
+	TAU // tau
+	PHI // phi
+
 	PLUS     // plus
 	MINUS    // minus
 	MAL      // mal
@@ -137,6 +142,11 @@ var tokenStrings = [...]string{
 	TRUE:   "TRUE",
 	FALSE:  "FALSE",
 
+	PI:  "PI",
+	E:   "E",
+	TAU: "TAU",
+	PHI: "PHI",
+
 	PLUS:          "PLUS",
 	MINUS:         "MINUS",
 	MAL:           "MAL",
@@ -253,6 +263,10 @@ func (t TokenType) String() string {
 }
 
 var keywordMap = map[string]TokenType{
+	"pi":              PI,
+	"e":               E,
+	"tau":             TAU,
+	"phi":             PHI,
 	"wahr":            TRUE,
 	"falsch":          FALSE,
 	"plus":            PLUS,

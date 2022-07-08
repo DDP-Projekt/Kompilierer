@@ -41,7 +41,4 @@ bool tableSet(Table* table, void* key, Value value); // overwrites/adds a value 
 bool tableGet(Table* table, void* key, Value* value); // returns true if the key is in the table and stores the value in value. returns false otherwise
 bool tableDelete(Table* table, void* key); // removes a key from the table. returns true if something was removed
 
-
-uint32_t hashPointer(const char* key, int length); // hash function for pointers
-
 #endif // DDP_HASH_TABLE_H
