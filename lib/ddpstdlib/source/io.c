@@ -3,13 +3,22 @@
 */
 #include "ddptypes.h"
 #include "utf8/utf8.h"
+#include "math.h"
 
 void inbuilt_Schreibe_Zahl(ddpint p1) {
 	printf("%ld", p1);
 }
 
 void inbuilt_Schreibe_Kommazahl(ddpfloat p1) {
-	printf("%.16g", p1);
+	if (isinf(p1)){
+		printf("Unendlich");
+	}
+	else if (isnan(p1)) {
+		printf("Keine Zahl (NaN)");
+	}
+	else {
+		printf("%.16g", p1);
+	}
 }
 
 void inbuilt_Schreibe_Boolean(ddpbool p1) {

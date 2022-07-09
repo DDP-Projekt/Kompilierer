@@ -1,15 +1,14 @@
 #!/bin/bash -xe
 
-if [[ "$OSTYPE" = "linux-gnu"* ]]; then
-    export CGO_CPPFLAGS="`llvm-config-12 --cppflags`"
-    export CGO_CXXFLAGS=-std=c++14
-    export CGO_LDFLAGS="`llvm-config-12 --ldflags --libs --system-libs all`"
-elif [[ "$OSTYPE" = "win32" || "$OSTYPE" = "msys" ]]; then
-    export CGO_CPPFLAGS="`llvm-config --cppflags`"
-    export CGO_CXXFLAGS=-std=c++14
-    export CGO_LDFLAGS="`llvm-config --ldflags --libs --system-libs all`"
-else 
-	echo unknown os
+llvm_config="llvm-config"
+if [[ -d "llvm_build" ]]; then
+    llvm_config="llvm_build/bin/llvm-config"
+elif [[ "$OSTYPE" = "linux-gnu"* ]]; then
+    llvm_config="llvm-config-12"
 fi
+
+export CGO_CPPFLAGS="`$llvm_config --cppflags`"
+export CGO_CXXFLAGS=-std=c++14
+export CGO_LDFLAGS="`$llvm_config --ldflags --libs --system-libs all`"
 
 code .
