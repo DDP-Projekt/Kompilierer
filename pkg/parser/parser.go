@@ -386,7 +386,9 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// map function parameters to their type (given to the alias if it is valid)
 	argTypes := map[string]token.TokenType{}
 	for i, v := range paramNames {
-		argTypes[v.Literal] = paramTypes[i].Type
+		if i < len(paramTypes) {
+			argTypes[v.Literal] = paramTypes[i].Type
+		}
 	}
 
 	// scan the raw aliases into tokens
@@ -469,7 +471,9 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []t
 	}
 	nameSet := map[string]token.TokenType{} // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
-		nameSet[v.Literal] = paramTypes[i].Type
+		if i < len(paramTypes) {
+			nameSet[v.Literal] = paramTypes[i].Type
+		}
 	}
 	// validate that each parameter is contained in the alias exactly once
 	// and fill in the AliasInfo
@@ -1502,6 +1506,13 @@ outer:
 					token.PI, token.E, token.TAU, token.PHI:
 					p.advance() // single-token so skip it
 					continue
+				case token.NEGATE:
+					p.advance()
+					if !p.match(token.INT, token.FLOAT, token.PI, token.E, token.TAU, token.PHI, token.IDENTIFIER) {
+						p.cur = start
+						continue outer
+					}
+					continue
 				case token.LPAREN:
 					p.advance()
 					numLparens := 1 // used to enable groupings and multi-token expressions inside the argument
@@ -1552,6 +1563,9 @@ outer:
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
 					token.PI, token.E, token.TAU, token.PHI:
 					p.advance() // single-token argument
+				case token.NEGATE:
+					p.advance()
+					p.match(token.INT, token.FLOAT, token.PI, token.E, token.TAU, token.PHI, token.IDENTIFIER)
 				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 					p.advance()
 					numLparens := 1
