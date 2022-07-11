@@ -139,13 +139,13 @@ ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 
 	size_t i1 = 0, len = 0;
     while(str->str[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
-        if ( !utf8_is_continuation(str->str[i1])) ++len;
+        if ( !utf8_is_continuation(str->str[i1])) ++len; // TODO: check if utf8_is_continuation is needed
         i1 += utf8_num_bytes(str->str + i1);
     }
 
 	size_t i2 = i1;
     while(str->str[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
-        if ( !utf8_is_continuation(str->str[i2])) ++len;
+        if ( !utf8_is_continuation(str->str[i2])) ++len; // TODO: check if utf8_is_continuation is needed
         i2 += utf8_num_bytes(str->str + i2);
     }
 

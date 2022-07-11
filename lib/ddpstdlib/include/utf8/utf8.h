@@ -1,5 +1,6 @@
 /*
     copied and modified from https://gist.github.com/stanislaw/f62c36823242c4ffea1b
+    further information on utf8 bit info can be found here https://stackoverflow.com/questions/5012803/test-if-char-string-contains-multibyte-characters
 */
 #ifndef DDP_UTF8_H
 #define DDP_UTF8_H
@@ -7,6 +8,13 @@
 #include "common.h"
 
 bool utf8_is_continuation(char c);
+
+// checks if this byte is part of a multibyte sequence
+bool utf8_is_multibyte(char c);
+
+// returns the number of bytes of the Unicode char which c is the first byte of
+// 0 indicates error
+int utf8_indicated_num_bytes(char c);
 
 // returns the number of unicode characters in s
 // s must be null-terminated

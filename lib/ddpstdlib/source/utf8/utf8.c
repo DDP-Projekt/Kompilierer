@@ -28,6 +28,21 @@ bool utf8_is_continuation(char c) {
     return (c & 0xc0) == 0x80;
 }
 
+// checks if this byte is part of a multibyte sequence
+bool utf8_is_multibyte(char c) {
+	return (c & 0x80) == 0x80;
+}
+
+// returns the number of bytes of the Unicode char which c is the first byte of
+// 0 indicates error
+int utf8_indicated_num_bytes(char c) {
+	if ((c & 0x80) == 0x0) return 1;
+	if ((c & 0xc0) == 0xc0) return 2;
+	if ((c & 0xe0) == 0xe0) return 3;
+	if ((c & 0xf0) == 0xf0) return 4;
+	return 0;
+}
+
 // returns the number of unicode characters in s
 // s must be null-terminated
 size_t utf8_strlen(char* s) {

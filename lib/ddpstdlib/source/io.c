@@ -45,6 +45,7 @@ HANDLE* get_stdin_handle() {
 }
 #endif // _WIN32
 
+// discards all characters in stdin up to and including '\n' or EOF
 void flush_stdin() {
 	int c;
 	while ((c = getchar()) != '\n' && c != EOF);
@@ -56,8 +57,8 @@ ddpstring* inbuilt_Lese_Zeile() {
 	dstr->cap = 0;
 	DBGLOG("inbuilt_Lese_Zeile: %p", dstr);
 
-#ifdef _WIN32
 #define MAX_INPUT_LENGTH 255
+#ifdef _WIN32
 
 	static CONSOLE_READCONSOLE_CONTROL crc = {
 		.nLength = sizeof(CONSOLE_READCONSOLE_CONTROL),
@@ -72,16 +73,36 @@ ddpstring* inbuilt_Lese_Zeile() {
 		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, NULL, 0, NULL, NULL); // get the required buffer size
 		if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
 		dstr->str = reallocate(dstr->str, dstr->cap, dstr->cap + size);
-		if (WideCharToMultiByte(CP_UTF8, 0, buff, read, dstr->str + dstr->cap - 1, size, NULL, NULL) == 0) runtime_error(1, "WideCharToMultiByte (2) failed with code %ld", GetLastError());
+		if (WideCharToMultiByte(CP_UTF8, 0, buff, read, dstr->str + dstr->cap, size, NULL, NULL) == 0) runtime_error(1, "WideCharToMultiByte (2) failed with code %ld", GetLastError());
 		dstr->cap += size;
 		if (read < MAX_INPUT_LENGTH) break;
 	}
-	dstr->str[dstr->cap] = '\0';
+	dstr->str[dstr->cap-1] = '\0';
 	flush_stdin();
-	return dstr;
 
-#undef MAX_INPUT_LENGTH
+#else
+
+	char buff[MAX_INPUT_LENGTH]; // buffer for input
+	while (true) { // loop if the string is longer than MAX_INPUT_LENGTH
+		size_t size = 0;
+		// read chars until CRLF or EOF or MAX_INPUT_LENGTH
+		while (size < MAX_INPUT_LENGTH && (buff[size] = getchar()) != EOF) {
+			size++;
+			if (!utf8_is_multibyte(buff[size-1]) && (buff[size-1] == '\r' || buff[size-1] == '\n')) break;
+		}
+		// add the read size to the string buffer
+		dstr->str = reallocate(dstr->str, dstr->cap, dstr->cap + size);
+		// copy the read data into the string
+		memcpy(dstr->str + dstr->cap, buff, size);
+		dstr->cap += size;
+		if (size < MAX_INPUT_LENGTH) break;
+	}
+	dstr->str[dstr->cap-1] = '\0';
+
 #endif
+#undef MAX_INPUT_LENGTH
+
+	return dstr;
 }
 
 ddpchar inbuilt_Lese_Buchstabe() {
@@ -94,5 +115,13 @@ ddpchar inbuilt_Lese_Buchstabe() {
 	mbStr[size] = '\0';
 	flush_stdin();
 	return utf8_string_to_char(mbStr);
+#else
+	char temp[5];
+	temp[0] = getchar();
+	int i = utf8_indicated_num_bytes(temp[0]);
+	for (int j = 1; j < i; j++) temp[j] = getchar();
+	temp[i] = '\0';
+	flush_stdin();
+	return utf8_string_to_char(temp);
 #endif
 }
