@@ -22,3 +22,14 @@ Die Funktion §Schreibe_Text mit den Parametern p1 vom Typ Text, gibt nichts zur
 Und kann so benutzt werden:
 	"Schreibe den Text *p1" oder
 	"Gib den Text *p1 aus"
+
+
+Die Funktion §Lese_Zeile gibt einen Text zurück, macht:
+	Gib "Platzhalter" zurück. [Damit der Parser nicht meckert]
+Und kann so benutzt werden:
+	"die nächste Benutzereingabe"
+
+Die Funktion §Lese_Buchstabe gibt einen Buchstaben zurück, macht:
+	Gib 'n' zurück. [Damit der Parser nicht meckert]
+Und kann so benutzt werden:
+	"die nächste Taste"

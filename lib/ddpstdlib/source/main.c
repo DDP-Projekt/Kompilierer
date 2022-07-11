@@ -5,7 +5,7 @@
 #include <locale.h>
 #include <signal.h>
 #ifdef _WIN32
-#include <Windows.h>
+#include "io.h"
 #endif // _WIN32
 #include "gc.h"
 
@@ -24,6 +24,7 @@ static void init_runtime() {
 	// both of the functioncalls below are needed
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
+	(*get_stdin_handle()) = GetStdHandle(STD_INPUT_HANDLE);
 #endif // _WIN32
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
