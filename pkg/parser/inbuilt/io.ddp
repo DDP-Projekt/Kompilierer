@@ -25,11 +25,9 @@ Und kann so benutzt werden:
 
 
 Die Funktion §Lese_Zeile gibt einen Text zurück, macht:
-	Gib "Platzhalter" zurück. [Damit der Parser nicht meckert]
 Und kann so benutzt werden:
 	"die nächste Benutzereingabe"
 
 Die Funktion §Lese_Buchstabe gibt einen Buchstaben zurück, macht:
-	Gib 'n' zurück. [Damit der Parser nicht meckert]
 Und kann so benutzt werden:
 	"die nächste Taste"

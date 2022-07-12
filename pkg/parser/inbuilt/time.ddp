@@ -1,5 +1,4 @@
 Die Funktion §Zeit_Seit_Programmstart gibt eine Zahl zurück, macht:
-	Gib 0 zurück. [Damit der Parser nicht meckert]
 Und kann so benutzt werden:
 	"die Zeit seit Programmstart" oder
 	"die Millisekunden seit Programmstart"

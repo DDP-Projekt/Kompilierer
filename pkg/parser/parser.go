@@ -436,7 +436,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.currentFunction = name.Literal
 	body := p.blockStatement() // parse the body
 	// check that the function has a return statement if it needs one
-	if Typ.Type != token.NICHTS { // only if the function does not return void
+	if Typ.Type != token.NICHTS && !initializing { // only if the function does not return void
 		b := body.(*ast.BlockStmt)
 		if len(b.Statements) < 1 { // at least the return statement is needed
 			perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")

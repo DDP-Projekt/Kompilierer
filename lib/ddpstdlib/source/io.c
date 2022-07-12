@@ -58,7 +58,7 @@ ddpstring* inbuilt_Lese_Zeile() {
 	DBGLOG("inbuilt_Lese_Zeile: %p", dstr);
 
 #define MAX_INPUT_LENGTH 255
-#ifdef _WIN32
+#ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 
 	static CONSOLE_READCONSOLE_CONTROL crc = {
 		.nLength = sizeof(CONSOLE_READCONSOLE_CONTROL),
@@ -78,7 +78,6 @@ ddpstring* inbuilt_Lese_Zeile() {
 		if (read < MAX_INPUT_LENGTH) break;
 	}
 	dstr->str[dstr->cap-1] = '\0';
-	flush_stdin();
 
 #else
 
@@ -106,14 +105,13 @@ ddpstring* inbuilt_Lese_Zeile() {
 }
 
 ddpchar inbuilt_Lese_Buchstabe() {
-#ifdef _WIN32
+#ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 	wchar_t buff[2];
 	char mbStr[4];
 	unsigned long read;
 	ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL);
 	int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
 	mbStr[size] = '\0';
-	flush_stdin();
 	return utf8_string_to_char(mbStr);
 #else
 	char temp[5];
