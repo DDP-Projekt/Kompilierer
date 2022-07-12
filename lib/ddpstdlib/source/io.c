@@ -107,11 +107,12 @@ ddpstring* inbuilt_Lese_Zeile() {
 ddpchar inbuilt_Lese_Buchstabe() {
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 	wchar_t buff[2];
-	char mbStr[4];
+	char mbStr[5];
 	unsigned long read;
 	ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL);
 	int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
 	mbStr[size] = '\0';
+	flush_stdin();
 	return utf8_string_to_char(mbStr);
 #else
 	char temp[5];

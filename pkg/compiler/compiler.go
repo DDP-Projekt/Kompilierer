@@ -643,31 +643,33 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.UND:
 		lhs := c.evaluate(e.Lhs)
 		startBlock, trueBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
 
 		c.cbb = trueBlock
 		rhs := c.evaluate(e.Rhs)
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
+		trueBlock = c.cbb
 
 		c.cbb = leaveBlock
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
 		return c
 	case token.ODER:
 		lhs := c.evaluate(e.Lhs)
 		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
 
 		c.cbb = falseBlock
 		rhs := c.evaluate(e.Rhs)
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
+		falseBlock = c.cbb // incase c.evaluate has multiple blocks
 
 		c.cbb = leaveBlock
-		c.commentNode(c.cbb, e, "")
+		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
 		return c
 	}
