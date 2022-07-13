@@ -20,84 +20,92 @@ func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
 }
 
 // returns the type of the variable name and if it exists in the table or it's enclosing scopes
-func (s *SymbolTable) LookupVar(name string) (token.TokenType, bool) {
-	if v, ok := s.variables[name]; !ok {
+func (scope *SymbolTable) LookupVar(name string) (token.TokenType, bool) {
+	if val, ok := scope.variables[name]; !ok {
 		// if the variable was not found here we recursively check the enclosing scopes
-		if s.Enclosing != nil {
-			return s.Enclosing.LookupVar(name)
+		if scope.Enclosing != nil {
+			return scope.Enclosing.LookupVar(name)
 		}
 		return token.ILLEGAL, false // variable doesn't exist
 	} else {
-		return v, true
+		return val, true
 	}
 }
 
 // returns the type of the variable name and if it exists in the table or it's enclosing scopes
-func (s *SymbolTable) LookupFunc(name string) (*FuncDecl, bool) {
-	if v, ok := s.functions[name]; !ok {
+func (scope *SymbolTable) LookupFunc(name string) (*FuncDecl, bool) {
+	if val, ok := scope.functions[name]; !ok {
 		// if the function was not found here we recursively check the enclosing scopes
-		if s.Enclosing != nil {
-			return s.Enclosing.LookupFunc(name)
+		if scope.Enclosing != nil {
+			return scope.Enclosing.LookupFunc(name)
 		}
 		return nil, false // function doesn't exist
 	} else {
-		return v, true
+		return val, true
 	}
 }
 
 // inserts a variable into the scope if it didn't exist yet
 // and returns wether it already existed
-func (s *SymbolTable) InsertVar(name string, typ token.TokenType) bool {
+func (scope *SymbolTable) InsertVar(name string, typ token.TokenType) bool {
 	switch typ {
 	case token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT:
 	default:
 		panic("invalid type argument")
 	}
-	if _, ok := s.variables[name]; ok {
+
+	if _, ok := scope.variables[name]; ok {
 		return true
 	}
-	s.variables[name] = typ
+
+	scope.variables[name] = typ
 	return false
 }
 
 // inserts a function into the scope if it didn't exist yet
 // and returns wether it already existed
-func (s *SymbolTable) InsertFunc(name string, fun *FuncDecl) bool {
+func (scope *SymbolTable) InsertFunc(name string, fun *FuncDecl) bool {
 	switch fun.Type.Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT, token.NICHTS:
 	default:
 		panic("invalid type argument")
 	}
-	if _, ok := s.functions[name]; ok {
+
+	if _, ok := scope.functions[name]; ok {
 		return true
 	}
-	s.functions[name] = fun
+
+	scope.functions[name] = fun
 	return false
 }
 
-// merge other into s, replacing already existing symbols
-func (s *SymbolTable) Merge(other *SymbolTable) {
-	for k, v := range other.functions {
-		s.functions[k] = v
+// merge other into scope, replacing already existing symbols
+func (scope *SymbolTable) Merge(other *SymbolTable) {
+	for k, val := range other.functions {
+		scope.functions[k] = val
 	}
-	for k, v := range other.variables {
-		s.variables[k] = v
+
+	for k, val := range other.variables {
+		scope.variables[k] = val
 	}
 }
 
-// return a copy of s
+// return a copy of scope
 // not a deep copy, FuncDecl pointers stay the same
-func (s *SymbolTable) Copy() *SymbolTable {
+func (scope *SymbolTable) Copy() *SymbolTable {
 	table := &SymbolTable{
-		Enclosing: s.Enclosing,
+		Enclosing: scope.Enclosing,
 		variables: make(map[string]token.TokenType),
 		functions: make(map[string]*FuncDecl),
 	}
-	for k, v := range s.variables {
-		table.variables[k] = v
+
+	for k, val := range scope.variables {
+		table.variables[k] = val
 	}
-	for k, v := range s.functions {
-		table.functions[k] = v
+
+	for k, val := range scope.functions {
+		table.functions[k] = val
 	}
+
 	return table
 }

@@ -40,8 +40,8 @@ func newInt(value int64) *constant.Int {
 }
 
 // turn a tokenType into the corresponding llvm type
-func toDDPType(t token.TokenType) types.Type {
-	switch t {
+func toDDPType(tokenType token.TokenType) types.Type {
+	switch tokenType {
 	case token.NICHTS:
 		return void
 	case token.ZAHL:
@@ -55,12 +55,12 @@ func toDDPType(t token.TokenType) types.Type {
 	case token.TEXT:
 		return ddpstrptr
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", tokenType.String()))
 }
 
 // returns the default constant for global variables
-func getDefaultValue(t token.TokenType) constant.Constant {
-	switch t {
+func getDefaultValue(tokenType token.TokenType) constant.Constant {
+	switch tokenType {
 	case token.ZAHL:
 		return constant.NewInt(ddpint, 0)
 	case token.KOMMAZAHL:
@@ -72,5 +72,5 @@ func getDefaultValue(t token.TokenType) constant.Constant {
 	case token.TEXT:
 		return constant.NewNull(ddpstrptr)
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", t.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", tokenType.String()))
 }

@@ -35,9 +35,9 @@ func init() {
 	initializing = true
 	errored := false
 	// helper to set the errored flag on error
-	Err := func(t token.Token, msg string) {
+	Err := func(token token.Token, msg string) {
 		errored = true
-		fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line, t.Column, msg)
+		fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", token.File, token.Line, token.Column, msg)
 	}
 
 	inbuiltSymbolTable = ast.NewSymbolTable(nil) // global SymbolTable
@@ -50,22 +50,26 @@ func init() {
 		if !entry.IsDir() {
 			if filepath.Ext(path) == ".ddp" {
 				errTok := token.Token{File: path, Line: 1, Column: 1}
+
 				file, err := inbuilt.ReadFile(path) // read the file
 				if err != nil {
 					Err(errTok, err.Error())
 					return err
 				}
+
 				tokens, err := scanner.ScanSource(path, file, Err, scanner.ModeInitializing) // scan the file with the ModeInitializing flag to scan § correctly
 				if err != nil {
 					Err(errTok, err.Error())
 					return err
 				}
-				parser := New(tokens, Err) // create the parser for this file
-				Ast := parser.Parse()      // parse the file
+
+				p := New(tokens, Err) // create the p for this file
+				Ast := p.Parse()      // parse the file
 				if Ast.Faulty {
 					Err(errTok, err.Error())
 					return err
 				}
+
 				// append all inbuilt function and variable declarations to the inbuildDecls
 				// they are compiled into every ddp executable
 				for _, stmt := range Ast.Statements {
@@ -73,8 +77,9 @@ func init() {
 						inbuiltDecls = append(inbuiltDecls, decl)
 					}
 				}
-				inbuiltAliases = append(inbuiltAliases, parser.funcAliases...) // append the function aliases
-				inbuiltSymbolTable.Merge(Ast.Symbols)                          // add the symbols (variable and function names) to the inbuildSymbolTable
+
+				inbuiltAliases = append(inbuiltAliases, p.funcAliases...) // append the function aliases
+				inbuiltSymbolTable.Merge(Ast.Symbols)                     // add the symbols (variable and function names) to the inbuildSymbolTable
 			}
 		}
 		return nil
@@ -102,27 +107,32 @@ type Parser struct {
 	funcAliases     []funcAlias              // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
 	panicMode       bool                     // flag to not report following errors
-	Errored         bool                     // wether the parser found an error
+	Errored         bool                     // wether the p found an error
 	resolver        *resolver.Resolver       // used to resolve every node directly after it has been parsed
 	typechecker     *typechecker.Typechecker // used to typecheck every node directly after it has been parsed
 }
 
 // returns a new parser, ready to parse the provided tokens
 func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
-	if errorHandler == nil { // default error handler does nothing
+	// default error handler does nothing
+	if errorHandler == nil {
 		errorHandler = func(token.Token, string) {}
 	}
+
 	if len(tokens) == 0 {
 		tokens = []token.Token{{Type: token.EOF}} // we need at least one EOF at the end of the tokens slice
 	}
-	if tokens[len(tokens)-1].Type != token.EOF { // the last token must be EOF
+
+	// the last token must be EOF
+	if tokens[len(tokens)-1].Type != token.EOF {
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
+
 	aliases := make([]funcAlias, len(inbuiltAliases))
 	// we don't want to change the inbuilt aliases incase we are in initializing mode,
 	// so we copy them
 	copy(aliases, inbuiltAliases)
-	p := &Parser{
+	parser := &Parser{
 		tokens:       tokens,
 		cur:          0,
 		errorHandler: errorHandler,
@@ -132,7 +142,8 @@ func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 		resolver:     &resolver.Resolver{},
 		typechecker:  &typechecker.Typechecker{},
 	}
-	return p
+
+	return parser
 }
 
 // parse the provided tokens into an Ast
@@ -149,6 +160,7 @@ func (p *Parser) Parse() *ast.Ast {
 			Ast.Statements = append(Ast.Statements, v)
 		}
 	}
+
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	p.resolver = resolver.New(Ast, p.errorHandler)
 	*p.typechecker = *inbuiltTypechecker // the typechecker needs the funcArgs field from the inbuilt SymbolTable
@@ -224,10 +236,13 @@ func (p *Parser) declaration() ast.Statement {
 
 // helper for boolean assignments
 func (p *Parser) assignRhs() ast.Expression {
-	var expr ast.Expression               // the final expression
-	if p.match(token.TRUE, token.FALSE) { // parse possible wahr/falsch wenn syntax
+	var expr ast.Expression // the final expression
+
+	if p.match(token.TRUE, token.FALSE) {
+		// parse possible wahr/falsch wenn syntax
 		if p.match(token.WENN) {
-			if tok := p.tokens[p.cur-2]; tok.Type == token.FALSE { // if it is false, we add a unary bool-negate into the ast
+			// if it is false, we add a unary bool-negate into the ast
+			if tok := p.tokens[p.cur-2]; tok.Type == token.FALSE {
 				tok.Type = token.NICHT
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
 				expr = &ast.UnaryExpr{
@@ -241,38 +256,47 @@ func (p *Parser) assignRhs() ast.Expression {
 			} else {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
 			}
+
 			p.consume(token.IST) // ist, after wahr/falsch wenn for grammar
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
 			expr = p.expression()
-			if _, ok := expr.(*ast.BoolLit); !ok { // validate that nothing follows after the literal
+
+			// validate that nothing follows after the literal
+			if _, ok := expr.(*ast.BoolLit); !ok {
 				p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 			}
 		}
 	} else {
 		expr = p.expression() // no wahr/falsch, so a normal expression
 	}
+
 	return expr
 }
 
 func (p *Parser) varDeclaration() ast.Declaration {
 	begin := p.peekN(-2)
-	typ := p.previous()               // ZAHL, KOMMAZAHL, etc.
-	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
+	typ := p.previous() // ZAHL, KOMMAZAHL, etc.
+
+	// we need a name, so bailout if none is provided
+	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Range:   token.NewRange(p.peekN(-2), p.peek()),
 			Tok:     p.peek(),
 			Message: "Es wurde ein Variablen Name erwartet",
 		}
 	}
+
 	name := p.previous()
 	p.consume(token.IST)
 	var expr ast.Expression
+
 	if typ.Type == token.BOOLEAN {
 		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
 	} else {
 		expr = p.expression()
 	}
+
 	p.consume(token.DOT)
 	return &ast.VarDecl{
 		Range:   token.NewRange(begin, p.previous()),
@@ -283,12 +307,13 @@ func (p *Parser) varDeclaration() ast.Declaration {
 }
 
 func (p *Parser) funcDeclaration() ast.Declaration {
-	valid := true              // checks if the function is valid and may be appended to the parser state as p.errored = !valid
+	valid := true              // checks if the function is valid and may be appended to the p state as p.errored = !valid
 	validate := func(b bool) { // helper for setting the valid flag (to simplify some big boolean expressions)
 		if !b {
 			valid = false
 		}
 	}
+
 	errorMessage := ""
 	perr := func(tok token.Token, msg string) {
 		p.err(tok, msg)
@@ -296,9 +321,11 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			errorMessage = msg
 		}
 	}
+
 	begin := p.peekN(-2)
-	Funktion := p.previous()          // save the token
-	if !p.consume(token.IDENTIFIER) { // we need a name, so bailout if none is provided
+	Funktion := p.previous() // save the token
+	// we need a name, so bailout if none is provided
+	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Range:   token.NewRange(begin, p.peek()),
 			Tok:     p.peek(),
@@ -1295,6 +1322,7 @@ func (p *Parser) power(lhs ast.Expression) ast.Expression {
 		p.consume(token.VON)
 		// root is implemented as pow(degree, 1/radicant)
 		expr := p.unary()
+
 		return &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
@@ -1312,12 +1340,14 @@ func (p *Parser) power(lhs ast.Expression) ast.Expression {
 			},
 		}
 	}
+
 	if p.matchN(token.DER, token.LOGARITHMUS) {
 		operator := p.previous()
 		p.consume(token.VON)
 		numerus := p.expression()
 		p.consumeN(token.ZUR, token.BASIS)
 		rhs := p.unary()
+
 		return &ast.BinaryExpr{
 			Range: token.Range{
 				Start: numerus.GetRange().Start,
@@ -1328,6 +1358,7 @@ func (p *Parser) power(lhs ast.Expression) ast.Expression {
 			Rhs:      rhs,
 		}
 	}
+
 	lhs = p.primary(lhs)
 	for p.match(token.HOCH) {
 		operator := p.previous()
@@ -1458,6 +1489,7 @@ func (p *Parser) assigneable() ast.Assigneable {
 	var expr ast.Assigneable = &ast.Ident{
 		Literal: p.previous(),
 	}
+
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
 		rhs := p.expression()
@@ -1473,6 +1505,7 @@ func (p *Parser) grouping() ast.Expression {
 	lParen := p.previous()
 	innerExpr := p.expression()
 	p.consume(token.RPAREN)
+
 	return &ast.Grouping{
 		Range:  token.NewRange(lParen, p.previous()),
 		LParen: lParen,
@@ -1555,6 +1588,7 @@ outer:
 	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) map[string]ast.Expression {
 		p.cur = start
 		args := map[string]ast.Expression{}
+
 		for i, l := 0, len(mAlias.alias.Tokens); i < l && mAlias.alias.Tokens[i].Type != token.EOF; i++ {
 			tok := &mAlias.alias.Tokens[i]
 
@@ -1583,7 +1617,7 @@ outer:
 				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 				// append the EOF needed for the parser
 				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
-				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
+				argParser := New(tokens, p.errorHandler) // create a new p for this expression
 				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
 				arg := argParser.expression()            // parse the argument
 
@@ -1681,31 +1715,34 @@ func (p *Parser) parseChar(s string) (r rune) {
 // helper to parse ddp strings with escape sequences
 func (p *Parser) parseString(s string) string {
 	str := s[1 : len(s)-1] // remove the ""
+
 	for i, w := 0, 0; i < len(str); i += w {
 		var r rune
 		r, w = utf8.DecodeRuneInString(str[i:])
 		if r == '\\' {
-			r2, w2 := utf8.DecodeRuneInString(str[i+w:])
-			switch r2 {
+			seq, w2 := utf8.DecodeRuneInString(str[i+w:])
+			switch seq {
 			case 'a':
-				r2 = '\a'
+				seq = '\a'
 			case 'b':
-				r2 = '\b'
+				seq = '\b'
 			case 'n':
-				r2 = '\n'
+				seq = '\n'
 			case 'r':
-				r2 = '\r'
+				seq = '\r'
 			case 't':
-				r2 = '\t'
+				seq = '\t'
 			case '"':
 			case '\\':
 			default:
-				p.err(p.previous(), fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Text Literal", string(r2)))
+				p.err(p.previous(), fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq)))
 				continue
 			}
-			str = str[0:i] + string(r2) + str[i+w+w2:]
+
+			str = str[0:i] + string(seq) + str[i+w+w2:]
 		}
 	}
+
 	return str
 }
 
@@ -1729,10 +1766,12 @@ func (p *Parser) matchN(types ...token.TokenType) bool {
 			return false
 		}
 	}
+
 	for i := range types {
 		_ = i
 		p.advance()
 	}
+
 	return true
 }
 
@@ -1742,6 +1781,7 @@ func (p *Parser) consume(t token.TokenType) bool {
 		p.advance()
 		return true
 	}
+
 	p.err(p.peek(), fmt.Sprintf("Es wurde '%s' erwartet aber '%s' gefunden", t.String(), p.peek().Literal))
 	return false
 }
@@ -1757,30 +1797,32 @@ func (p *Parser) consumeN(t ...token.TokenType) bool {
 }
 
 // same as consume but tolerates multiple tokenTypes
-func (p *Parser) consumeAny(t ...token.TokenType) bool {
-	for _, v := range t {
+func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
+	for _, v := range tokenTypes {
 		if p.check(v) {
 			p.advance()
 			return true
 		}
 	}
+
 	msg := "Es wurde "
-	for i, v := range t {
-		if i >= len(t)-1 {
+	for i, v := range tokenTypes {
+		if i >= len(tokenTypes)-1 {
 			break
 		}
 		msg += "'" + v.String() + "', "
 	}
-	msg += "oder '" + t[len(t)-1].String() + "' erwartet aber '" + p.peek().Literal + "' gefunden"
+	msg += "oder '" + tokenTypes[len(tokenTypes)-1].String() + "' erwartet aber '" + p.peek().Literal + "' gefunden"
+
 	p.err(p.peek(), msg)
 	return false
 }
 
 // helper to report errors and enter panic mode
-func (p *Parser) err(t token.Token, msg string) {
+func (p *Parser) err(token token.Token, msg string) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(t, msg)
+		p.errorHandler(token, msg)
 	}
 }
 
@@ -1848,6 +1890,7 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	if t1.Type != t2.Type {
 		return false
 	}
+
 	switch t1.Type {
 	case token.IDENTIFIER:
 		return t1.Literal == t2.Literal
@@ -1856,6 +1899,7 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	case token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal == t2.Literal
 	}
+
 	return true
 }
 
@@ -1874,10 +1918,12 @@ func slicesEqual[T any](s1 []T, s2 []T, equal func(T, T) bool) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
+
 	for i := range s1 {
 		if !equal(s1[i], s2[i]) {
 			return false
 		}
 	}
+
 	return true
 }

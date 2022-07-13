@@ -18,26 +18,26 @@ func newEnvironment(enclosing *environment) *environment {
 }
 
 // receives the value of the var name and checks if it exists or not
-func (e *environment) lookupVar(name string) (value, bool) {
-	if v, ok := e.variables[name]; !ok {
-		if e.enclosing != nil {
-			return e.enclosing.lookupVar(name)
+func (env *environment) lookupVar(name string) (value, bool) {
+	if val, ok := env.variables[name]; !ok {
+		if env.enclosing != nil {
+			return env.enclosing.lookupVar(name)
 		}
 		return nil, false // variable doesn't exist
 	} else {
-		return v, true
+		return val, true
 	}
 }
 
 // receives the function of name and checks if it exists or not
-func (e *environment) lookupFunc(name string) (*ast.FuncDecl, bool) {
-	if v, ok := e.functions[name]; !ok {
-		if e.enclosing != nil {
-			return e.enclosing.lookupFunc(name)
+func (env *environment) lookupFunc(name string) (*ast.FuncDecl, bool) {
+	if val, ok := env.functions[name]; !ok {
+		if env.enclosing != nil {
+			return env.enclosing.lookupFunc(name)
 		}
 		return nil, false
 	} else {
-		return v, true
+		return val, true
 	}
 }
 

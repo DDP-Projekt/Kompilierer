@@ -71,10 +71,12 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 			scan.errorHandler(token.Token{Line: scan.line, Column: scan.column}, "Der angegebene Pfad ist keine .ddp Datei")
 			return nil, errors.New("ungültiger Datei Typ")
 		}
+
 		file, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
+
 		src = file
 		filePath, _ = filepath.Abs(filePath) // if src was loaded from file, add the absolute path to the set, not the one that was passed
 		scan.includedFiles[filePath] = struct{}{}
@@ -86,8 +88,8 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 	}
 
 	scan.src = make([]rune, 0, utf8.RuneCount(src))
-	s := string(src)
-	for _, r := range s {
+	str := string(src)
+	for _, r := range str {
 		scan.src = append(scan.src, r)
 	}
 
@@ -101,6 +103,7 @@ func (s *Scanner) ScanAll() []token.Token {
 	for tok = s.NextToken(); tok.Type != token.EOF; tok = s.NextToken() {
 		tokens = append(tokens, tok)
 	}
+
 	tokens = append(tokens, tok) // append the EOF
 	return tokens
 }
@@ -110,10 +113,10 @@ func (s *Scanner) ScanAll() []token.Token {
 func (s *Scanner) NextToken() token.Token {
 	// check if we are currently including a file
 	if s.include != nil {
-		if t := s.include.NextToken(); t.Type == token.EOF {
+		if tok := s.include.NextToken(); tok.Type == token.EOF {
 			s.include = nil
 		} else {
-			return t
+			return tok
 		}
 	}
 
@@ -124,16 +127,16 @@ func (s *Scanner) NextToken() token.Token {
 		return s.newToken(token.EOF)
 	}
 
-	ch := s.advance()
+	char := s.advance()
 
-	if isAlpha(ch, s.initMode()) {
+	if isAlpha(char, s.initMode()) {
 		return s.identifier()
 	}
-	if isDigit(ch) {
+	if isDigit(char) {
 		return s.number()
 	}
 
-	switch ch {
+	switch char {
 	case '-':
 		return s.newToken(token.NEGATE)
 	case '.':
@@ -156,7 +159,7 @@ func (s *Scanner) NextToken() token.Token {
 		}
 	}
 
-	return s.errorToken(fmt.Sprintf("Unerwartetes Zeichen '%s'", string(ch)))
+	return s.errorToken(fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char)))
 }
 
 func (s *Scanner) scanEscape(quote rune) bool {
@@ -223,20 +226,20 @@ func (s *Scanner) char() token.Token {
 }
 
 func (s *Scanner) number() token.Token {
-	t := token.INT
+	tok := token.INT
 	for isDigit(s.peek()) {
 		s.advance()
 	}
 
 	if s.peek() == ',' && isDigit(s.peekNext()) {
-		t = token.FLOAT
+		tok = token.FLOAT
 		s.advance()
 		for isDigit(s.peek()) {
 			s.advance()
 		}
 	}
 
-	return s.newToken(t)
+	return s.newToken(tok)
 }
 
 func (s *Scanner) identifier() token.Token {
@@ -244,22 +247,24 @@ func (s *Scanner) identifier() token.Token {
 	if s.strictCapitalizationMode() && s.shouldCapitalize && !isUpper(s.src[s.cur-1]) {
 		shouldReportCapitailzation = true
 	}
+
 	for isAlphaNumeric(s.peek(), s.initMode()) {
 		s.advance()
 	}
 
-	t := s.identifierType()
+	tokenType := s.identifierType()
 
-	if shouldReportCapitailzation && t != token.IDENTIFIER {
+	if shouldReportCapitailzation && tokenType != token.IDENTIFIER {
 		s.err("Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
 	}
 
-	if t == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
+	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
 		lit := s.NextToken()
 		if lit.Type != token.STRING {
 			s.err("Nach 'Binde' muss ein Text Literal folgen")
 			return lit
 		}
+
 		if s.NextToken().Type != token.EIN {
 			s.err("Es wurde 'ein' erwartet")
 		} else if s.NextToken().Type != token.DOT {
@@ -279,24 +284,25 @@ func (s *Scanner) identifier() token.Token {
 				}
 			}
 		}
+
 		return s.NextToken()
 	}
 
-	return s.newToken(t)
+	return s.newToken(tokenType)
 }
 
 func (s *Scanner) identifierType() token.TokenType {
 	lit := string(s.src[s.start:s.cur])
 
-	v := token.KeywordToTokenType(lit)
-	if v == token.IDENTIFIER {
-		v2 := token.KeywordToTokenType(strings.ToLower(lit))
-		if v2 != v {
-			v = v2
+	tokenType := token.KeywordToTokenType(lit)
+	if tokenType == token.IDENTIFIER {
+		litTokenType := token.KeywordToTokenType(strings.ToLower(lit))
+		if litTokenType != tokenType {
+			tokenType = litTokenType
 		}
 	}
 
-	return v
+	return tokenType
 }
 
 // helper to scan the *argname in aliases
@@ -305,7 +311,7 @@ func (s *Scanner) aliasParameter() token.Token {
 		s.advance()
 	}
 
-	if t := s.identifierType(); t != token.IDENTIFIER {
+	if tokenType := s.identifierType(); tokenType != token.IDENTIFIER {
 		s.err("Es wurde ein Name als Alias-Parameter erwartet")
 	}
 
@@ -315,14 +321,14 @@ func (s *Scanner) aliasParameter() token.Token {
 func (s *Scanner) skipWhitespace() {
 	consecutiveSpaceCount := 0
 	for {
-		ch := s.peek()
-		if ch == ' ' {
+		char := s.peek()
+		if char == ' ' {
 			consecutiveSpaceCount++
 		} else {
 			consecutiveSpaceCount = 0
 		}
 
-		switch ch {
+		switch char {
 		case ' ':
 			if s.shouldIndent && consecutiveSpaceCount == 4 {
 				s.indent++
@@ -345,15 +351,13 @@ func (s *Scanner) skipWhitespace() {
 		case '[':
 			s.advance()
 			bracketCount := 1
+
 			for bracketCount > 0 && !s.atEnd() {
 				switch s.peek() {
 				case '[':
 					bracketCount++
 				case ']':
 					bracketCount--
-					if bracketCount <= 0 {
-						break
-					}
 				case '\n':
 					s.line++
 				}
@@ -369,15 +373,15 @@ func (s *Scanner) atEnd() bool {
 	return s.cur >= len(s.src)
 }
 
-func (s *Scanner) newToken(t token.TokenType) token.Token {
-	if t == token.DOT || t == token.COLON {
+func (s *Scanner) newToken(tokenType token.TokenType) token.Token {
+	if tokenType == token.DOT || tokenType == token.COLON {
 		s.shouldCapitalize = true
 	} else {
 		s.shouldCapitalize = false
 	}
 
 	return token.Token{
-		Type:      t,
+		Type:      tokenType,
 		Literal:   string(s.src[s.start:s.cur]),
 		Indent:    s.indent,
 		File:      s.file,

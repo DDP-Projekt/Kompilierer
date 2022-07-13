@@ -124,7 +124,7 @@ func (c *Compiler) comment(comment string, block *ir.Block) {
 
 // helper to visit a single node
 func (c *Compiler) visitNode(node ast.Node) {
-	c = node.Accept(c).(*Compiler)
+	node.Accept(c)
 }
 
 // helper to evalueate an expression and return its ir value

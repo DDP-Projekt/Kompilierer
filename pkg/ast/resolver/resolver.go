@@ -30,15 +30,15 @@ func New(ast *ast.Ast, errorHandler scanner.ErrorHandler) *Resolver {
 func ResolveAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
 	Ast.Symbols = ast.NewSymbolTable(nil) // reset the ASTs symbols
 
-	r := New(Ast, errorHandler)
+	resolver := New(Ast, errorHandler)
 
 	// visit all nodes of the AST
 	for i, l := 0, len(Ast.Statements); i < l; i++ {
-		Ast.Statements[i].Accept(r)
+		Ast.Statements[i].Accept(resolver)
 	}
 
 	// if the resolver errored, the AST is not valid DDP code
-	if r.Errored {
+	if resolver.Errored {
 		Ast.Faulty = true
 	}
 }
@@ -50,183 +50,193 @@ func (r *Resolver) ResolveNode(node ast.Node) *Resolver {
 
 // helper to visit a node
 func (r *Resolver) visit(node ast.Node) {
-	r = node.Accept(r).(*Resolver)
+	node.Accept(r)
 }
 
 // helper for errors
-func (r *Resolver) err(t token.Token, msg string) {
+func (r *Resolver) err(tok token.Token, msg string) {
 	r.Errored = true
-	r.ErrorHandler(t, msg)
+	r.ErrorHandler(tok, msg)
 }
 
 // if a BadDecl exists the AST is faulty
-func (r *Resolver) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
+func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	d.InitVal.Accept(r) // resolve the initial value
+func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
+	decl.InitVal.Accept(r) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
-	if existed := r.CurrentTable.InsertVar(d.Name.Literal, d.Type.Type); existed {
-		r.err(d.Name, fmt.Sprintf("Die Variable '%s' existiert bereits", d.Name.Literal)) // variables may only be declared once in the same scope
+	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl.Type.Type); existed {
+		r.err(decl.Name, fmt.Sprintf("Die Variable '%s' existiert bereits", decl.Name.Literal)) // variables may only be declared once in the same scope
 	}
+
 	return r
 }
-func (r *Resolver) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
-	if existed := r.CurrentTable.InsertFunc(d.Name.Literal, d); existed && !ast.IsInbuiltFunc(d) {
-		r.err(d.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", d.Name.Literal)) // functions may only be declared once
+func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
+	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed && !ast.IsInbuiltFunc(decl) {
+		r.err(decl.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal)) // functions may only be declared once
 	}
-	d.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
+	decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
 	// add the function parameters to the scope of the function body
-	for i, l := 0, len(d.ParamNames); i < l; i++ {
-		d.Body.Symbols.InsertVar(d.ParamNames[i].Literal, d.ParamTypes[i].Type)
+	for i, l := 0, len(decl.ParamNames); i < l; i++ {
+		decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, decl.ParamTypes[i].Type)
 	}
-	return d.Body.Accept(r) // resolve the function body
+
+	return decl.Body.Accept(r) // resolve the function body
 }
 
 // if a BadExpr exists the AST is faulty
-func (r *Resolver) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
+func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitIdent(e *ast.Ident) ast.Visitor {
+func (r *Resolver) VisitIdent(expr *ast.Ident) ast.Visitor {
 	// check if the variable exists
-	if _, exists := r.CurrentTable.LookupVar(e.Literal.Literal); !exists {
-		r.err(e.Token(), fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", e.Literal.Literal))
+	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
+		r.err(expr.Token(), fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
 	}
 	return r
 }
-func (r *Resolver) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	r.visit(e.Name)
-	return e.Index.Accept(r)
+func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.Visitor {
+	r.visit(expr.Name)
+	return expr.Index.Accept(r)
 }
 
 // nothing to do for literals
-func (r *Resolver) VisitIntLit(e *ast.IntLit) ast.Visitor {
+func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (r *Resolver) VisitFLoatLit(expr *ast.FloatLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
+func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitCharLit(e *ast.CharLit) ast.Visitor {
+func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitStringLit(e *ast.StringLit) ast.Visitor {
+func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	return e.Rhs.Accept(r) // visit the actual expression
+func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
+	return expr.Rhs.Accept(r) // visit the actual expression
 }
-func (r *Resolver) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
-	return e.Rhs.Accept(e.Lhs.Accept(r)) // visit the actual expressions
+func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
+	return expr.Rhs.Accept(expr.Lhs.Accept(r)) // visit the actual expressions
 }
-func (r *Resolver) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
-	return e.Rhs.Accept(e.Mid.Accept(e.Lhs.Accept(r))) // visit the actual expressions
+func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
+	return expr.Rhs.Accept(expr.Mid.Accept(expr.Lhs.Accept(r))) // visit the actual expressions
 }
-func (r *Resolver) VisitGrouping(e *ast.Grouping) ast.Visitor {
-	return e.Expr.Accept(r)
+func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.Visitor {
+	return expr.Expr.Accept(r)
 }
-func (r *Resolver) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
+func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.Visitor {
 	// visit the passed arguments
-	for _, v := range e.Args {
+	for _, v := range expr.Args {
 		r.visit(v)
 	}
 	return r
 }
 
 // if a BadStmt exists the AST is faulty
-func (r *Resolver) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
+func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) ast.Visitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
-	return s.Decl.Accept(r)
+func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) ast.Visitor {
+	return stmt.Decl.Accept(r)
 }
-func (r *Resolver) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
-	return s.Expr.Accept(r)
+func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.Visitor {
+	return stmt.Expr.Accept(r)
 }
-func (r *Resolver) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	switch assign := s.Var.(type) {
+func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
+	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
 		// check if the variable exists
 		if _, exists := r.CurrentTable.LookupVar(assign.Literal.Literal); !exists {
-			r.err(s.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
+			r.err(stmt.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
 		}
 	case *ast.Indexing:
 		if _, exists := r.CurrentTable.LookupVar(assign.Name.Literal.Literal); !exists {
-			r.err(s.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal))
+			r.err(stmt.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal))
 		}
 	}
-	return s.Rhs.Accept(r)
+
+	return stmt.Rhs.Accept(r)
 }
-func (r *Resolver) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
+func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
 	// a block needs a new scope
-	if s.Symbols == nil {
-		s.Symbols = ast.NewSymbolTable(r.CurrentTable)
+	if stmt.Symbols == nil {
+		stmt.Symbols = ast.NewSymbolTable(r.CurrentTable)
 	}
-	r.CurrentTable = s.Symbols // set the current scope to the block
+	r.CurrentTable = stmt.Symbols // set the current scope to the block
+
 	// visit every statement in the block
-	for _, stmt := range s.Statements {
+	for _, stmt := range stmt.Statements {
 		r.visit(stmt)
 	}
-	r.CurrentTable = s.Symbols.Enclosing
+
+	r.CurrentTable = stmt.Symbols.Enclosing
 	return r
 }
-func (r *Resolver) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	r.visit(s.Condition)
-	r.visit(s.Then)
-	if s.Else != nil {
-		r.visit(s.Else)
+func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {
+	r.visit(stmt.Condition)
+	r.visit(stmt.Then)
+	if stmt.Else != nil {
+		r.visit(stmt.Else)
 	}
+
 	return r
 }
-func (r *Resolver) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	r.visit(s.Condition)
-	return s.Body.Accept(r)
+func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) ast.Visitor {
+	r.visit(stmt.Condition)
+	return stmt.Body.Accept(r)
 }
-func (r *Resolver) VisitForStmt(s *ast.ForStmt) ast.Visitor {
+func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 	var env *ast.SymbolTable // scope of the for loop
 	// if it contains a block statement, the counter variable needs to go in there
-	if body, ok := s.Body.(*ast.BlockStmt); ok {
+	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
 		body.Symbols = ast.NewSymbolTable(r.CurrentTable)
 		env = body.Symbols
 	} else { // otherwise, just a new scope
 		env = ast.NewSymbolTable(r.CurrentTable)
 	}
+
 	r.CurrentTable = env
-	r.visit(s.Initializer)
-	r.visit(s.To)
-	if s.StepSize != nil {
-		r.visit(s.StepSize)
+	r.visit(stmt.Initializer)
+	r.visit(stmt.To)
+	if stmt.StepSize != nil {
+		r.visit(stmt.StepSize)
 	}
-	r.visit(s.Body)
+	r.visit(stmt.Body)
 	r.CurrentTable = env.Enclosing
+
 	return r
 }
-func (r *Resolver) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.Visitor {
 	var env *ast.SymbolTable // scope of the for loop
 	// if it contains a block statement, the counter variable needs to go in there
-	if body, ok := s.Body.(*ast.BlockStmt); ok {
+	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
 		body.Symbols = ast.NewSymbolTable(r.CurrentTable)
 		env = body.Symbols
 	} else { // otherwise, just a new scope
 		env = ast.NewSymbolTable(r.CurrentTable)
 	}
+
 	r.CurrentTable = env
-	r.visit(s.Initializer) // also visits s.In
-	r.visit(s.Body)
+	r.visit(stmt.Initializer) // also visits stmt.In
+	r.visit(stmt.Body)
 	r.CurrentTable = env.Enclosing
+
 	return r
 }
-func (r *Resolver) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(r)
+func (r *Resolver) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
+	return stmt.Call.Accept(r)
 }
-func (r *Resolver) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	if _, exists := r.CurrentTable.LookupFunc(s.Func); !exists {
-		r.err(s.Token(), "Man kann nur aus Funktionen einen Wert zurückgeben")
+func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
+	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
+		r.err(stmt.Token(), "Man kann nur aus Funktionen einen Wert zurückgeben")
 	}
-	return s.Value.Accept(r)
+	return stmt.Value.Accept(r)
 }
