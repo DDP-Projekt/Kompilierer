@@ -12,6 +12,7 @@ func InterpretFile(path string, errorHandler scanner.ErrorHandler) error {
 	if err != nil {
 		return err
 	}
+
 	return New(Ast, errorHandler).Interpret()
 }
 
@@ -21,6 +22,7 @@ func InterpretSource(name string, src []byte, errorHandler scanner.ErrorHandler)
 	if err != nil {
 		return err
 	}
+
 	return New(Ast, errorHandler).Interpret()
 }
 

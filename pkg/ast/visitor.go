@@ -3,9 +3,17 @@ package ast
 // interface for visiting DDP expressions, statements and declarations
 // see the Visitor pattern
 type Visitor interface {
+	/*
+		Declarations
+	*/
+
 	VisitBadDecl(*BadDecl) Visitor
 	VisitVarDecl(*VarDecl) Visitor
 	VisitFuncDecl(*FuncDecl) Visitor
+
+	/*
+		Expressions
+	*/
 
 	VisitBadExpr(*BadExpr) Visitor
 	VisitIdent(*Ident) Visitor
@@ -20,6 +28,10 @@ type Visitor interface {
 	VisitTernaryExpr(*TernaryExpr) Visitor
 	VisitGrouping(*Grouping) Visitor
 	VisitFuncCall(*FuncCall) Visitor
+
+	/*
+		Statements
+	*/
 
 	VisitBadStmt(*BadStmt) Visitor
 	VisitDeclStmt(*DeclStmt) Visitor

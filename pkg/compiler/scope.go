@@ -40,7 +40,7 @@ func (s *scope) lookupVar(name string) varwrapper {
 }
 
 // add a variable to the scope
-func (s *scope) addVar(name string, val value.Value, ty types.Type) value.Value {
-	s.variables[name] = varwrapper{val: val, typ: ty}
+func (scope *scope) addVar(name string, val value.Value, ty types.Type) value.Value {
+	scope.variables[name] = varwrapper{val: val, typ: ty}
 	return val
 }

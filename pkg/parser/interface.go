@@ -12,6 +12,7 @@ func ParseFile(path string, errorHandler scanner.ErrorHandler) (*ast.Ast, error)
 	if err != nil {
 		return nil, err
 	}
+
 	return New(file, errorHandler).Parse(), nil
 }
 
@@ -22,6 +23,7 @@ func ParseSource(name string, src []byte, errorHandler scanner.ErrorHandler) (*a
 	if err != nil {
 		return nil, err
 	}
+
 	return New(file, errorHandler).Parse(), nil
 }
 

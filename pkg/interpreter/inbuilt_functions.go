@@ -21,20 +21,20 @@ var inbuiltFunctions = map[string]inbuiltfunction{
 }
 
 func schreibeZahl(i *Interpreter) value {
-	v, _ := i.currentEnvironment.lookupVar("p1")
-	fmt.Fprint(i.Stdout, v.(ddpint))
+	val, _ := i.currentEnvironment.lookupVar("p1")
+	fmt.Fprint(i.Stdout, val.(ddpint))
 	return nil
 }
 
 func schreibeKommazahl(i *Interpreter) value {
-	v, _ := i.currentEnvironment.lookupVar("p1")
-	fmt.Fprint(i.Stdout, v.(ddpfloat))
+	val, _ := i.currentEnvironment.lookupVar("p1")
+	fmt.Fprint(i.Stdout, val.(ddpfloat))
 	return nil
 }
 
 func schreibeBoolean(i *Interpreter) value {
-	v, _ := i.currentEnvironment.lookupVar("p1")
-	if v.(ddpbool) {
+	val, _ := i.currentEnvironment.lookupVar("p1")
+	if val.(ddpbool) {
 		fmt.Fprint(i.Stdout, "wahr")
 	} else {
 		fmt.Fprint(i.Stdout, "falsch")
@@ -43,14 +43,14 @@ func schreibeBoolean(i *Interpreter) value {
 }
 
 func schreibeBuchstabe(i *Interpreter) value {
-	v, _ := i.currentEnvironment.lookupVar("p1")
-	fmt.Fprint(i.Stdout, string(v.(ddpchar)))
+	val, _ := i.currentEnvironment.lookupVar("p1")
+	fmt.Fprint(i.Stdout, string(val.(ddpchar)))
 	return nil
 }
 
 func schreibeText(i *Interpreter) value {
-	v, _ := i.currentEnvironment.lookupVar("p1")
-	fmt.Fprint(i.Stdout, v.(ddpstring))
+	val, _ := i.currentEnvironment.lookupVar("p1")
+	fmt.Fprint(i.Stdout, val.(ddpstring))
 	return nil
 }
 

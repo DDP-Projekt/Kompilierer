@@ -68,7 +68,7 @@ func (i *Interpreter) Interpret() (result error) {
 }
 
 func (i *Interpreter) visitNode(node ast.Node) {
-	i = node.Accept(i).(*Interpreter)
+	node.Accept(i)
 }
 
 func (i *Interpreter) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
@@ -303,7 +303,7 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	case token.TEXT:
 		switch v := rhs.(type) {
 		case ddpint:
-			i.lastReturn = ddpstring(strconv.FormatInt(int64(v), 64))
+			i.lastReturn = ddpstring(strconv.FormatInt(int64(v), 10))
 		case ddpfloat:
 			i.lastReturn = ddpstring(strconv.FormatFloat(float64(v), 'f', -1, 64))
 		case ddpchar:

@@ -14,9 +14,11 @@ func TestKDDP(t *testing.T) {
 			t.Logf("Error walking %s: %s\nskipping this directory", path, err)
 			return fs.SkipDir
 		}
+
 		if !d.IsDir() {
 			return nil
 		}
+
 		if d.Name() == "testdata" {
 			return nil
 		}
@@ -28,6 +30,7 @@ func TestKDDP(t *testing.T) {
 				t.Errorf("Could not read expected output: %s", err.Error())
 				return
 			}
+
 			filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
 			cmd := exec.Command("../build/kddp", "build", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--verbose")
 			if out, err := cmd.CombinedOutput(); err != nil {
@@ -44,9 +47,11 @@ func TestKDDP(t *testing.T) {
 				if out, err := cmd.CombinedOutput(); err != nil {
 					t.Logf("cannot getcombined out when recompiling: %s\nout:\n%s", err, out)
 				}
+
 				t.Errorf("\nerror getting combined output: %s\noutput:\n%s", err, out)
 				return
 			}
+
 			if out, expected := string(out), string(expected); out != expected {
 				t.Errorf("Test did not yield the expected output\nExpected:\n%s\nGot:\n%s", expected, out)
 				return

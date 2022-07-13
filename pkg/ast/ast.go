@@ -15,9 +15,9 @@ type Ast struct {
 }
 
 // invoke the Visitor for each top level statement in the Ast
-func WalkAst(ast *Ast, v Visitor) {
+func WalkAst(ast *Ast, visitor Visitor) {
 	for _, stmt := range ast.Statements {
-		stmt.Accept(v)
+		stmt.Accept(visitor)
 	}
 }
 
@@ -81,25 +81,25 @@ type (
 	}
 )
 
-func (d *BadDecl) String() string  { return "BadDecl" }
-func (d *VarDecl) String() string  { return "VarDecl" }
-func (d *FuncDecl) String() string { return "FuncDecl" }
+func (decl *BadDecl) String() string  { return "BadDecl" }
+func (decl *VarDecl) String() string  { return "VarDecl" }
+func (decl *FuncDecl) String() string { return "FuncDecl" }
 
-func (d *BadDecl) Token() token.Token  { return d.Tok }
-func (d *VarDecl) Token() token.Token  { return d.Type }
-func (d *FuncDecl) Token() token.Token { return d.Func }
+func (decl *BadDecl) Token() token.Token  { return decl.Tok }
+func (decl *VarDecl) Token() token.Token  { return decl.Type }
+func (decl *FuncDecl) Token() token.Token { return decl.Func }
 
-func (d *BadDecl) GetRange() token.Range  { return d.Range }
-func (d *VarDecl) GetRange() token.Range  { return d.Range }
-func (d *FuncDecl) GetRange() token.Range { return d.Range }
+func (decl *BadDecl) GetRange() token.Range  { return decl.Range }
+func (decl *VarDecl) GetRange() token.Range  { return decl.Range }
+func (decl *FuncDecl) GetRange() token.Range { return decl.Range }
 
-func (d *BadDecl) Accept(v Visitor) Visitor  { return v.VisitBadDecl(d) }
-func (d *VarDecl) Accept(v Visitor) Visitor  { return v.VisitVarDecl(d) }
-func (d *FuncDecl) Accept(v Visitor) Visitor { return v.VisitFuncDecl(d) }
+func (decl *BadDecl) Accept(visitor Visitor) Visitor  { return visitor.VisitBadDecl(decl) }
+func (decl *VarDecl) Accept(visitor Visitor) Visitor  { return visitor.VisitVarDecl(decl) }
+func (decl *FuncDecl) Accept(visitor Visitor) Visitor { return visitor.VisitFuncDecl(decl) }
 
-func (d *BadDecl) declarationNode()  {}
-func (d *VarDecl) declarationNode()  {}
-func (d *FuncDecl) declarationNode() {}
+func (decl *BadDecl) declarationNode()  {}
+func (decl *VarDecl) declarationNode()  {}
+func (decl *FuncDecl) declarationNode() {}
 
 // Expressions
 type (
@@ -182,80 +182,80 @@ type (
 	}
 )
 
-func (e *BadExpr) String() string     { return "BadExpr" }
-func (e *Ident) String() string       { return "Ident" }
-func (e *Indexing) String() string    { return "Indexing" }
-func (e *IntLit) String() string      { return "IntLit" }
-func (e *FloatLit) String() string    { return "FloatLit" }
-func (e *BoolLit) String() string     { return "BoolLit" }
-func (e *CharLit) String() string     { return "CharLit" }
-func (e *StringLit) String() string   { return "StringLit" }
-func (e *UnaryExpr) String() string   { return "UnaryExpr" }
-func (e *BinaryExpr) String() string  { return "BinaryExpr" }
-func (e *TernaryExpr) String() string { return "BinaryExpr" }
-func (e *Grouping) String() string    { return "Grouping" }
-func (e *FuncCall) String() string    { return "FuncCall" }
+func (expr *BadExpr) String() string     { return "BadExpr" }
+func (expr *Ident) String() string       { return "Ident" }
+func (expr *Indexing) String() string    { return "Indexing" }
+func (expr *IntLit) String() string      { return "IntLit" }
+func (expr *FloatLit) String() string    { return "FloatLit" }
+func (expr *BoolLit) String() string     { return "BoolLit" }
+func (expr *CharLit) String() string     { return "CharLit" }
+func (expr *StringLit) String() string   { return "StringLit" }
+func (expr *UnaryExpr) String() string   { return "UnaryExpr" }
+func (expr *BinaryExpr) String() string  { return "BinaryExpr" }
+func (expr *TernaryExpr) String() string { return "BinaryExpr" }
+func (expr *Grouping) String() string    { return "Grouping" }
+func (expr *FuncCall) String() string    { return "FuncCall" }
 
-func (e *BadExpr) Token() token.Token     { return e.Tok }
-func (e *Ident) Token() token.Token       { return e.Literal }
-func (e *Indexing) Token() token.Token    { return e.Name.Token() }
-func (e *IntLit) Token() token.Token      { return e.Literal }
-func (e *FloatLit) Token() token.Token    { return e.Literal }
-func (e *BoolLit) Token() token.Token     { return e.Literal }
-func (e *CharLit) Token() token.Token     { return e.Literal }
-func (e *StringLit) Token() token.Token   { return e.Literal }
-func (e *UnaryExpr) Token() token.Token   { return e.Operator }
-func (e *BinaryExpr) Token() token.Token  { return e.Operator }
-func (e *TernaryExpr) Token() token.Token { return e.Operator }
-func (e *Grouping) Token() token.Token    { return e.LParen }
-func (e *FuncCall) Token() token.Token    { return e.Tok }
+func (expr *BadExpr) Token() token.Token     { return expr.Tok }
+func (expr *Ident) Token() token.Token       { return expr.Literal }
+func (expr *Indexing) Token() token.Token    { return expr.Name.Token() }
+func (expr *IntLit) Token() token.Token      { return expr.Literal }
+func (expr *FloatLit) Token() token.Token    { return expr.Literal }
+func (expr *BoolLit) Token() token.Token     { return expr.Literal }
+func (expr *CharLit) Token() token.Token     { return expr.Literal }
+func (expr *StringLit) Token() token.Token   { return expr.Literal }
+func (expr *UnaryExpr) Token() token.Token   { return expr.Operator }
+func (expr *BinaryExpr) Token() token.Token  { return expr.Operator }
+func (expr *TernaryExpr) Token() token.Token { return expr.Operator }
+func (expr *Grouping) Token() token.Token    { return expr.LParen }
+func (expr *FuncCall) Token() token.Token    { return expr.Tok }
 
-func (e *BadExpr) GetRange() token.Range { return e.Range }
-func (e *Ident) GetRange() token.Range   { return token.NewRange(e.Literal, e.Literal) }
-func (e *Indexing) GetRange() token.Range {
-	return token.Range{Start: e.Name.GetRange().Start, End: e.Index.GetRange().End}
+func (expr *BadExpr) GetRange() token.Range { return expr.Range }
+func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *Indexing) GetRange() token.Range {
+	return token.Range{Start: expr.Name.GetRange().Start, End: expr.Index.GetRange().End}
 }
-func (e *IntLit) GetRange() token.Range      { return token.NewRange(e.Literal, e.Literal) }
-func (e *FloatLit) GetRange() token.Range    { return token.NewRange(e.Literal, e.Literal) }
-func (e *BoolLit) GetRange() token.Range     { return token.NewRange(e.Literal, e.Literal) }
-func (e *CharLit) GetRange() token.Range     { return token.NewRange(e.Literal, e.Literal) }
-func (e *StringLit) GetRange() token.Range   { return token.NewRange(e.Literal, e.Literal) }
-func (e *UnaryExpr) GetRange() token.Range   { return e.Range }
-func (e *BinaryExpr) GetRange() token.Range  { return e.Range }
-func (e *TernaryExpr) GetRange() token.Range { return e.Range }
-func (e *Grouping) GetRange() token.Range    { return e.Range }
-func (e *FuncCall) GetRange() token.Range    { return e.Range }
+func (expr *IntLit) GetRange() token.Range      { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *FloatLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *BoolLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *CharLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *StringLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *UnaryExpr) GetRange() token.Range   { return expr.Range }
+func (expr *BinaryExpr) GetRange() token.Range  { return expr.Range }
+func (expr *TernaryExpr) GetRange() token.Range { return expr.Range }
+func (expr *Grouping) GetRange() token.Range    { return expr.Range }
+func (expr *FuncCall) GetRange() token.Range    { return expr.Range }
 
-func (e *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(e) }
-func (e *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(e) }
-func (e *Indexing) Accept(v Visitor) Visitor    { return v.VisitIndexing(e) }
-func (e *IntLit) Accept(v Visitor) Visitor      { return v.VisitIntLit(e) }
-func (e *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(e) }
-func (e *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(e) }
-func (e *CharLit) Accept(v Visitor) Visitor     { return v.VisitCharLit(e) }
-func (e *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(e) }
-func (e *UnaryExpr) Accept(v Visitor) Visitor   { return v.VisitUnaryExpr(e) }
-func (e *BinaryExpr) Accept(v Visitor) Visitor  { return v.VisitBinaryExpr(e) }
-func (e *TernaryExpr) Accept(v Visitor) Visitor { return v.VisitTernaryExpr(e) }
-func (e *Grouping) Accept(v Visitor) Visitor    { return v.VisitGrouping(e) }
-func (e *FuncCall) Accept(v Visitor) Visitor    { return v.VisitFuncCall(e) }
+func (expr *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(expr) }
+func (expr *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(expr) }
+func (expr *Indexing) Accept(v Visitor) Visitor    { return v.VisitIndexing(expr) }
+func (expr *IntLit) Accept(v Visitor) Visitor      { return v.VisitIntLit(expr) }
+func (expr *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(expr) }
+func (expr *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(expr) }
+func (expr *CharLit) Accept(v Visitor) Visitor     { return v.VisitCharLit(expr) }
+func (expr *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(expr) }
+func (expr *UnaryExpr) Accept(v Visitor) Visitor   { return v.VisitUnaryExpr(expr) }
+func (expr *BinaryExpr) Accept(v Visitor) Visitor  { return v.VisitBinaryExpr(expr) }
+func (expr *TernaryExpr) Accept(v Visitor) Visitor { return v.VisitTernaryExpr(expr) }
+func (expr *Grouping) Accept(v Visitor) Visitor    { return v.VisitGrouping(expr) }
+func (expr *FuncCall) Accept(v Visitor) Visitor    { return v.VisitFuncCall(expr) }
 
-func (e *BadExpr) expressionNode()     {}
-func (e *Ident) expressionNode()       {}
-func (e *Indexing) expressionNode()    {}
-func (e *IntLit) expressionNode()      {}
-func (e *FloatLit) expressionNode()    {}
-func (e *BoolLit) expressionNode()     {}
-func (e *CharLit) expressionNode()     {}
-func (e *StringLit) expressionNode()   {}
-func (e *UnaryExpr) expressionNode()   {}
-func (e *BinaryExpr) expressionNode()  {}
-func (e *TernaryExpr) expressionNode() {}
-func (e *Grouping) expressionNode()    {}
-func (e *FuncCall) expressionNode()    {}
+func (expr *BadExpr) expressionNode()     {}
+func (expr *Ident) expressionNode()       {}
+func (expr *Indexing) expressionNode()    {}
+func (expr *IntLit) expressionNode()      {}
+func (expr *FloatLit) expressionNode()    {}
+func (expr *BoolLit) expressionNode()     {}
+func (expr *CharLit) expressionNode()     {}
+func (expr *StringLit) expressionNode()   {}
+func (expr *UnaryExpr) expressionNode()   {}
+func (expr *BinaryExpr) expressionNode()  {}
+func (expr *TernaryExpr) expressionNode() {}
+func (expr *Grouping) expressionNode()    {}
+func (expr *FuncCall) expressionNode()    {}
 
-func (e *Ident) assigneable()    {}
-func (e *Indexing) assigneable() {}
+func (expr *Ident) assigneable()    {}
+func (expr *Indexing) assigneable() {}
 
 // Statements
 type (
@@ -331,62 +331,62 @@ type (
 	}
 )
 
-func (s *BadStmt) String() string      { return "BadStmt" }
-func (s *DeclStmt) String() string     { return "DeclStmt" }
-func (s *ExprStmt) String() string     { return "ExprStmt" }
-func (s *AssignStmt) String() string   { return "AssignStmt" }
-func (s *BlockStmt) String() string    { return "BlockStmt" }
-func (s *IfStmt) String() string       { return "IfStmt" }
-func (s *WhileStmt) String() string    { return "WhileStmt" }
-func (s *ForStmt) String() string      { return "ForStmt" }
-func (s *ForRangeStmt) String() string { return "ForRangeStmt" }
-func (s *FuncCallStmt) String() string { return "FuncCallStmt" }
-func (s *ReturnStmt) String() string   { return "ReturnStmt" }
+func (stmt *BadStmt) String() string      { return "BadStmt" }
+func (stmt *DeclStmt) String() string     { return "DeclStmt" }
+func (stmt *ExprStmt) String() string     { return "ExprStmt" }
+func (stmt *AssignStmt) String() string   { return "AssignStmt" }
+func (stmt *BlockStmt) String() string    { return "BlockStmt" }
+func (stmt *IfStmt) String() string       { return "IfStmt" }
+func (stmt *WhileStmt) String() string    { return "WhileStmt" }
+func (stmt *ForStmt) String() string      { return "ForStmt" }
+func (stmt *ForRangeStmt) String() string { return "ForRangeStmt" }
+func (stmt *FuncCallStmt) String() string { return "FuncCallStmt" }
+func (stmt *ReturnStmt) String() string   { return "ReturnStmt" }
 
-func (s *BadStmt) Token() token.Token      { return s.Tok }
-func (s *DeclStmt) Token() token.Token     { return s.Decl.Token() }
-func (s *ExprStmt) Token() token.Token     { return s.Expr.Token() }
-func (s *AssignStmt) Token() token.Token   { return s.Tok }
-func (s *BlockStmt) Token() token.Token    { return s.Colon }
-func (s *IfStmt) Token() token.Token       { return s.If }
-func (s *WhileStmt) Token() token.Token    { return s.While }
-func (s *ForStmt) Token() token.Token      { return s.For }
-func (s *ForRangeStmt) Token() token.Token { return s.For }
-func (s *FuncCallStmt) Token() token.Token { return s.Call.Token() }
-func (s *ReturnStmt) Token() token.Token   { return s.Return }
+func (stmt *BadStmt) Token() token.Token      { return stmt.Tok }
+func (stmt *DeclStmt) Token() token.Token     { return stmt.Decl.Token() }
+func (stmt *ExprStmt) Token() token.Token     { return stmt.Expr.Token() }
+func (stmt *AssignStmt) Token() token.Token   { return stmt.Tok }
+func (stmt *BlockStmt) Token() token.Token    { return stmt.Colon }
+func (stmt *IfStmt) Token() token.Token       { return stmt.If }
+func (stmt *WhileStmt) Token() token.Token    { return stmt.While }
+func (stmt *ForStmt) Token() token.Token      { return stmt.For }
+func (stmt *ForRangeStmt) Token() token.Token { return stmt.For }
+func (stmt *FuncCallStmt) Token() token.Token { return stmt.Call.Token() }
+func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
 
-func (s *BadStmt) GetRange() token.Range      { return s.Range }
-func (s *DeclStmt) GetRange() token.Range     { return s.Decl.GetRange() }
-func (s *ExprStmt) GetRange() token.Range     { return s.Expr.GetRange() }
-func (s *AssignStmt) GetRange() token.Range   { return s.Range }
-func (s *BlockStmt) GetRange() token.Range    { return s.Range }
-func (s *IfStmt) GetRange() token.Range       { return s.Range }
-func (s *WhileStmt) GetRange() token.Range    { return s.Range }
-func (s *ForStmt) GetRange() token.Range      { return s.Range }
-func (s *ForRangeStmt) GetRange() token.Range { return s.Range }
-func (s *FuncCallStmt) GetRange() token.Range { return s.Call.GetRange() }
-func (s *ReturnStmt) GetRange() token.Range   { return s.Range }
+func (stmt *BadStmt) GetRange() token.Range      { return stmt.Range }
+func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
+func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
+func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
+func (stmt *BlockStmt) GetRange() token.Range    { return stmt.Range }
+func (stmt *IfStmt) GetRange() token.Range       { return stmt.Range }
+func (stmt *WhileStmt) GetRange() token.Range    { return stmt.Range }
+func (stmt *ForStmt) GetRange() token.Range      { return stmt.Range }
+func (stmt *ForRangeStmt) GetRange() token.Range { return stmt.Range }
+func (stmt *FuncCallStmt) GetRange() token.Range { return stmt.Call.GetRange() }
+func (stmt *ReturnStmt) GetRange() token.Range   { return stmt.Range }
 
-func (s *BadStmt) Accept(v Visitor) Visitor      { return v.VisitBadStmt(s) }
-func (s *DeclStmt) Accept(v Visitor) Visitor     { return v.VisitDeclStmt(s) }
-func (s *ExprStmt) Accept(v Visitor) Visitor     { return v.VisitExprStmt(s) }
-func (s *AssignStmt) Accept(v Visitor) Visitor   { return v.VisitAssignStmt(s) }
-func (s *BlockStmt) Accept(v Visitor) Visitor    { return v.VisitBlockStmt(s) }
-func (s *IfStmt) Accept(v Visitor) Visitor       { return v.VisitIfStmt(s) }
-func (s *WhileStmt) Accept(v Visitor) Visitor    { return v.VisitWhileStmt(s) }
-func (s *ForStmt) Accept(v Visitor) Visitor      { return v.VisitForStmt(s) }
-func (s *ForRangeStmt) Accept(v Visitor) Visitor { return v.VisitForRangeStmt(s) }
-func (s *FuncCallStmt) Accept(v Visitor) Visitor { return v.VisitFuncCallStmt(s) }
-func (s *ReturnStmt) Accept(v Visitor) Visitor   { return v.VisitReturnStmt(s) }
+func (stmt *BadStmt) Accept(v Visitor) Visitor      { return v.VisitBadStmt(stmt) }
+func (stmt *DeclStmt) Accept(v Visitor) Visitor     { return v.VisitDeclStmt(stmt) }
+func (stmt *ExprStmt) Accept(v Visitor) Visitor     { return v.VisitExprStmt(stmt) }
+func (stmt *AssignStmt) Accept(v Visitor) Visitor   { return v.VisitAssignStmt(stmt) }
+func (stmt *BlockStmt) Accept(v Visitor) Visitor    { return v.VisitBlockStmt(stmt) }
+func (stmt *IfStmt) Accept(v Visitor) Visitor       { return v.VisitIfStmt(stmt) }
+func (stmt *WhileStmt) Accept(v Visitor) Visitor    { return v.VisitWhileStmt(stmt) }
+func (stmt *ForStmt) Accept(v Visitor) Visitor      { return v.VisitForStmt(stmt) }
+func (stmt *ForRangeStmt) Accept(v Visitor) Visitor { return v.VisitForRangeStmt(stmt) }
+func (stmt *FuncCallStmt) Accept(v Visitor) Visitor { return v.VisitFuncCallStmt(stmt) }
+func (stmt *ReturnStmt) Accept(v Visitor) Visitor   { return v.VisitReturnStmt(stmt) }
 
-func (s *BadStmt) statementNode()      {}
-func (s *DeclStmt) statementNode()     {}
-func (s *ExprStmt) statementNode()     {}
-func (s *AssignStmt) statementNode()   {}
-func (s *BlockStmt) statementNode()    {}
-func (s *IfStmt) statementNode()       {}
-func (s *WhileStmt) statementNode()    {}
-func (s *ForStmt) statementNode()      {}
-func (s *ForRangeStmt) statementNode() {}
-func (s *FuncCallStmt) statementNode() {}
-func (s *ReturnStmt) statementNode()   {}
+func (stmt *BadStmt) statementNode()      {}
+func (stmt *DeclStmt) statementNode()     {}
+func (stmt *ExprStmt) statementNode()     {}
+func (stmt *AssignStmt) statementNode()   {}
+func (stmt *BlockStmt) statementNode()    {}
+func (stmt *IfStmt) statementNode()       {}
+func (stmt *WhileStmt) statementNode()    {}
+func (stmt *ForStmt) statementNode()      {}
+func (stmt *ForRangeStmt) statementNode() {}
+func (stmt *FuncCallStmt) statementNode() {}
+func (stmt *ReturnStmt) statementNode()   {}
