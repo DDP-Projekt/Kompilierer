@@ -1,5 +1,6 @@
 /*
     copied and modified from https://gist.github.com/stanislaw/f62c36823242c4ffea1b
+	further information on utf8 bit info can be found here https://stackoverflow.com/questions/5012803/test-if-char-string-contains-multibyte-characters
 */
 #include <string.h>
 #include "utf8/utf8.h"

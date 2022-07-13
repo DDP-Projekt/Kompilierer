@@ -250,7 +250,6 @@ func (s *Scanner) identifier() token.Token {
 
 	t := s.identifierType()
 
-	// TODO: in the future we might want to report capitalization on any tokenType
 	if shouldReportCapitailzation && t != token.IDENTIFIER {
 		s.err("Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
 	}

@@ -1136,7 +1136,6 @@ func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	return c
 }
 
-// TODO: test ifs, they may be buggy as hell
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
 func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	var handleIf func(*ast.IfStmt, *ir.Block) // declaration to use it recursively for nested else-ifs

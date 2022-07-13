@@ -581,7 +581,7 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	var operand ast.Expression
 	var varName ast.Assigneable
 	if operator.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
-		operand = p.primary()
+		operand = p.primary(nil)
 	} else {
 		p.consume(token.IDENTIFIER)
 		varName = p.assigneable()
@@ -613,7 +613,7 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		p.consume(token.IDENTIFIER)
 		varName = p.assigneable()
 	} else {
-		operand = p.primary()
+		operand = p.primary(nil)
 	}
 
 	switch operator.Type {
@@ -736,7 +736,6 @@ func (p *Parser) ifStatement() ast.Statement {
 	var Else ast.Statement = nil
 	// parse a possible sonst statement
 	if p.match(token.SONST) {
-		// TODO: test if this if is necessary
 		if p.match(token.COLON) {
 			Else = p.blockStatement() // with colon it is a block statement
 		} else { // without it we just parse a single statement
@@ -773,7 +772,6 @@ func (p *Parser) whileStatement() ast.Statement {
 	condition := p.expression()
 	p.consumeN(token.IST, token.COMMA)
 	var Body ast.Statement
-	// TODO: test if this if is necessery
 	if p.match(token.MACHE) {
 		p.consume(token.COLON)
 		Body = p.blockStatement()
@@ -791,7 +789,6 @@ func (p *Parser) whileStatement() ast.Statement {
 	}
 }
 
-// TODO: add non-block statements
 func (p *Parser) doRepeatStmt() ast.Statement {
 	Do := p.previous()
 	p.consume(token.COLON)
@@ -1215,9 +1212,8 @@ func (p *Parser) factor() ast.Expression {
 }
 
 func (p *Parser) unary() ast.Expression {
-	// TODO: check if we can return here (type-casting, hoch etc. are ignored)
 	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
-		return expr
+		return p.power(expr)
 	}
 	var start token.Token
 	// match the correct unary operator
@@ -1284,12 +1280,13 @@ func (p *Parser) negate() ast.Expression {
 			Rhs:      rhs,
 		}
 	}
-	return p.power()
+	return p.power(nil)
 }
 
-func (p *Parser) power() ast.Expression {
+// when called from unary() lhs might be a funcCall
+func (p *Parser) power(lhs ast.Expression) ast.Expression {
 	if p.match(token.DIE) {
-		lhs := p.primary()
+		lhs := p.unary()
 		p.consumeN(token.DOT, token.WURZEL)
 		operator := p.previous()
 		operator.Type = token.HOCH
@@ -1303,7 +1300,7 @@ func (p *Parser) power() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   lhs.GetRange().End,
 			},
-			Lhs:      expr, // TODO: check if this should be primary or negate
+			Lhs:      expr,
 			Operator: operator,
 			Rhs: &ast.BinaryExpr{
 				Lhs: &ast.IntLit{
@@ -1331,71 +1328,74 @@ func (p *Parser) power() ast.Expression {
 			Rhs:      rhs,
 		}
 	}
-	expr := p.primary()
+	lhs = p.primary(lhs)
 	for p.match(token.HOCH) {
 		operator := p.previous()
-		rhs := p.unary() // TODO: check if this should be primary or negate
-		expr = &ast.BinaryExpr{
+		rhs := p.unary()
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: operator,
 			Rhs:      rhs,
 		}
 	}
-	return expr
+	return lhs
 }
 
-func (p *Parser) primary() ast.Expression {
-	var expr ast.Expression = nil
-	if expr = p.funcCall(); expr == nil { // funccall has the highest precedence (aliases + operator overloading)
+// when called from power() lhs might be a funcCall
+func (p *Parser) primary(lhs ast.Expression) ast.Expression {
+	if lhs == nil {
+		lhs = p.funcCall()
+	}
+	if lhs == nil { // funccall has the highest precedence (aliases + operator overloading)
 		switch tok := p.advance(); tok.Type {
 		case token.FALSE:
-			expr = &ast.BoolLit{Literal: p.previous(), Value: false}
+			lhs = &ast.BoolLit{Literal: p.previous(), Value: false}
 		case token.TRUE:
-			expr = &ast.BoolLit{Literal: p.previous(), Value: true}
+			lhs = &ast.BoolLit{Literal: p.previous(), Value: true}
 		case token.PI:
-			expr = &ast.FloatLit{Literal: p.previous(), Value: 3.141592654}
+			lhs = &ast.FloatLit{Literal: p.previous(), Value: 3.141592654}
 		case token.E:
-			expr = &ast.FloatLit{Literal: p.previous(), Value: 2.718281828}
+			lhs = &ast.FloatLit{Literal: p.previous(), Value: 2.718281828}
 		case token.TAU:
-			expr = &ast.FloatLit{Literal: p.previous(), Value: 6.283185307}
+			lhs = &ast.FloatLit{Literal: p.previous(), Value: 6.283185307}
 		case token.PHI:
-			expr = &ast.FloatLit{Literal: p.previous(), Value: 1.618033989}
+			lhs = &ast.FloatLit{Literal: p.previous(), Value: 1.618033989}
 		case token.INT:
 			lit := p.previous()
 			if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
-				expr = &ast.IntLit{Literal: lit, Value: val}
+				lhs = &ast.IntLit{Literal: lit, Value: val}
 			} else {
 				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-				expr = &ast.IntLit{Literal: lit, Value: 0}
+				lhs = &ast.IntLit{Literal: lit, Value: 0}
 			}
 		case token.FLOAT:
 			lit := p.previous()
 			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
-				expr = &ast.FloatLit{Literal: lit, Value: val}
+				lhs = &ast.FloatLit{Literal: lit, Value: val}
 			} else {
 				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-				expr = &ast.FloatLit{Literal: lit, Value: 0}
+				lhs = &ast.FloatLit{Literal: lit, Value: 0}
 			}
 		case token.CHAR:
 			lit := p.previous()
-			expr = &ast.CharLit{Literal: lit, Value: p.parseChar(lit.Literal)}
+			lhs = &ast.CharLit{Literal: lit, Value: p.parseChar(lit.Literal)}
 		case token.STRING:
 			lit := p.previous()
-			expr = &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
+			lhs = &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
 		case token.LPAREN:
-			expr = p.grouping()
+			lhs = p.grouping()
 		case token.IDENTIFIER:
-			expr = &ast.Ident{
+			lhs = &ast.Ident{
 				Literal: p.previous(),
 			}
 		default:
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)
-			expr = &ast.BadExpr{
+			lhs = &ast.BadExpr{
 				Range:   token.NewRange(tok, tok),
 				Tok:     tok,
 				Message: msg,
@@ -1408,28 +1408,28 @@ func (p *Parser) primary() ast.Expression {
 		p.consumeN(token.DER, token.STELLE)
 		operator := p.previous()
 		rhs := p.unary()
-		expr = &ast.BinaryExpr{
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: operator,
 			Rhs:      rhs,
 		}
 	} else if p.match(token.VON) {
 		operator := p.previous()
 		operator.Type = token.VONBIS
-		lhs := expr
+		operand := lhs
 		mid := p.expression()
 		p.consume(token.BIS)
 		rhs := p.unary()
-		expr = &ast.TernaryExpr{
+		lhs = &ast.TernaryExpr{
 			Range: token.Range{
-				Start: lhs.GetRange().Start,
+				Start: operand.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Lhs:      lhs,
+			Lhs:      operand,
 			Mid:      mid,
 			Rhs:      rhs,
 			Operator: operator,
@@ -1441,15 +1441,15 @@ func (p *Parser) primary() ast.Expression {
 		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)
 		return &ast.UnaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
 			Operator: p.previous(),
-			Rhs:      expr,
+			Rhs:      lhs,
 		}
 	}
 
-	return expr
+	return lhs
 }
 
 // either ast.Ident or ast.Indexing
