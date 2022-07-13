@@ -87,11 +87,7 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 		return nil, errors.New("invalid utf8 source")
 	}
 
-	scan.src = make([]rune, 0, utf8.RuneCount(src))
-	str := string(src)
-	for _, r := range str {
-		scan.src = append(scan.src, r)
-	}
+	scan.src = []rune(string(src))
 
 	return scan, nil
 }

@@ -63,7 +63,7 @@ func init() {
 					return err
 				}
 
-				p := New(tokens, Err) // create the p for this file
+				p := New(tokens, Err) // create the parser for this file
 				Ast := p.Parse()      // parse the file
 				if Ast.Faulty {
 					Err(errTok, err.Error())
@@ -107,7 +107,7 @@ type Parser struct {
 	funcAliases     []funcAlias              // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
 	panicMode       bool                     // flag to not report following errors
-	Errored         bool                     // wether the p found an error
+	Errored         bool                     // wether the parser found an error
 	resolver        *resolver.Resolver       // used to resolve every node directly after it has been parsed
 	typechecker     *typechecker.Typechecker // used to typecheck every node directly after it has been parsed
 }
@@ -307,7 +307,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 }
 
 func (p *Parser) funcDeclaration() ast.Declaration {
-	valid := true              // checks if the function is valid and may be appended to the p state as p.errored = !valid
+	valid := true              // checks if the function is valid and may be appended to the parser state as p.errored = !valid
 	validate := func(b bool) { // helper for setting the valid flag (to simplify some big boolean expressions)
 		if !b {
 			valid = false
@@ -1617,7 +1617,7 @@ outer:
 				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 				// append the EOF needed for the parser
 				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
-				argParser := New(tokens, p.errorHandler) // create a new p for this expression
+				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
 				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
 				arg := argParser.expression()            // parse the argument
 
