@@ -273,7 +273,7 @@ func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	Typ := toDDPType(d.Type.Type) // get the llvm type
+	Typ := toIRType(d.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
@@ -281,7 +281,7 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	c.commentNode(c.cbb, d, d.Name.Literal)
 	var varLocation value.Value
 	if c.scp.enclosing == nil { // global scope
-		varLocation = c.mod.NewGlobalDef("", getDefaultValue(d.Type.Type))
+		varLocation = c.mod.NewGlobalDef("", getDefaultValue(d.Type))
 	} else {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ)
 	}
@@ -294,12 +294,12 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
-	retType := toDDPType(d.Type.Type)                 // get the llvm type
+	retType := toIRType(d.Type)                       // get the llvm type
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
 
 	// append all the other parameters
-	for i, tok := range d.ParamTypes {
-		ty := toDDPType(tok.Type)                                         // convert the type of the parameter
+	for i, typ := range d.ParamTypes {
+		ty := toIRType(typ)                                               // convert the type of the parameter
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
@@ -323,7 +323,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
-			if d.ParamTypes[i].Type == token.TEXT { // strings (and later other garbage collected types) need special handling
+			if d.ParamTypes[i] == token.DDPStringType() { // strings (and later other garbage collected types) need special handling
 				// add the local variable for the parameter
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(ddpstrptr), ddpstrptr)
 				// we need to deep copy the passed string because the caller

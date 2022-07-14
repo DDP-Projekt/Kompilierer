@@ -10,11 +10,11 @@ import (
 
 // holds state to check if the types of an AST are valid
 type Typechecker struct {
-	ErrorHandler       scanner.ErrorHandler                  // function to which errors are passed
-	CurrentTable       *ast.SymbolTable                      // SymbolTable of the current scope (needed for name type-checking)
-	Errored            bool                                  // wether the typechecker found an error
-	latestReturnedType token.TokenType                       // type of the last visited expression
-	funcArgs           map[string]map[string]token.TokenType // for function parameter types
+	ErrorHandler       scanner.ErrorHandler                // function to which errors are passed
+	CurrentTable       *ast.SymbolTable                    // SymbolTable of the current scope (needed for name type-checking)
+	Errored            bool                                // wether the typechecker found an error
+	latestReturnedType token.DDPType                       // type of the last visited expression
+	funcArgs           map[string]map[string]token.DDPType // for function parameter types
 }
 
 func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
@@ -22,8 +22,8 @@ func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typecheck
 		ErrorHandler:       errorHandler,
 		CurrentTable:       symbols,
 		Errored:            false,
-		latestReturnedType: token.NICHTS,
-		funcArgs:           make(map[string]map[string]token.TokenType),
+		latestReturnedType: token.DDPVoidType(),
+		funcArgs:           make(map[string]map[string]token.DDPType),
 	}
 }
 
@@ -51,7 +51,7 @@ func (t *Typechecker) visit(node ast.Node) {
 }
 
 // Evaluates the type of an expression
-func (t *Typechecker) Evaluate(expr ast.Expression) token.TokenType {
+func (t *Typechecker) Evaluate(expr ast.Expression) token.DDPType {
 	t.visit(expr)
 	return t.latestReturnedType
 }
@@ -63,7 +63,7 @@ func (t *Typechecker) err(tok token.Token, msg string) {
 }
 
 // helper for commmon error message
-func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected ...token.TokenType) {
+func (t *Typechecker) errExpected(tok token.Token, got token.DDPType, expected ...token.DDPType) {
 	msg := "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ "
 	if len(expected) == 1 {
 		msg = "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ " + expected[0].String() + " aber hat '" + got.String() + "' bekommen"
@@ -80,35 +80,35 @@ func (t *Typechecker) errExpected(tok token.Token, got token.TokenType, expected
 }
 
 // helper for commmon error message
-func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2, op token.TokenType) {
+func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2 token.DDPType, op token.TokenType) {
 	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, op))
 }
 
 // helper for commmon error message
-func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3, op token.TokenType) {
+func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3 token.DDPType, op token.TokenType) {
 	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op))
 }
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 	t.Errored = true
-	t.latestReturnedType = token.NICHTS
+	t.latestReturnedType = token.DDPVoidType()
 	return t
 }
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
-	tokenType := t.Evaluate(decl.InitVal)
-	if tokenType != decl.Type.Type {
+	initialType := t.Evaluate(decl.InitVal)
+	if initialType != decl.Type {
 		t.err(decl.InitVal.Token(), fmt.Sprintf(
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-			tokenType,
-			decl.Type.Type,
+			initialType,
+			decl.Type,
 		))
 	}
 	return t
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	t.funcArgs[decl.Name.Literal] = make(map[string]token.TokenType)
+	t.funcArgs[decl.Name.Literal] = make(map[string]token.DDPType)
 	for i, l := 0, len(decl.ParamNames); i < l; i++ {
-		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = decl.ParamTypes[i].Type
+		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = decl.ParamTypes[i]
 	}
 
 	return decl.Body.Accept(t)
@@ -116,7 +116,7 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
 	t.Errored = true
-	t.latestReturnedType = token.NICHTS
+	t.latestReturnedType = token.DDPVoidType()
 	return t
 }
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.Visitor {
@@ -124,35 +124,35 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.Visitor {
-	if t.Evaluate(expr.Index) != token.ZAHL {
+	if t.Evaluate(expr.Index) != token.DDPIntType() {
 		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
 	}
 
-	if t.Evaluate(expr.Name) != token.TEXT {
+	if t.Evaluate(expr.Name) != token.DDPStringType() {
 		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
 	}
 
-	t.latestReturnedType = token.BUCHSTABE // later on the list element type
+	t.latestReturnedType = token.DDPCharType() // later on the list element type
 	return t
 }
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.Visitor {
-	t.latestReturnedType = token.ZAHL
+	t.latestReturnedType = token.DDPIntType()
 	return t
 }
 func (t *Typechecker) VisitFLoatLit(expr *ast.FloatLit) ast.Visitor {
-	t.latestReturnedType = token.KOMMAZAHL
+	t.latestReturnedType = token.DDPFloatType()
 	return t
 }
 func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) ast.Visitor {
-	t.latestReturnedType = token.BOOLEAN
+	t.latestReturnedType = token.DDPBoolType()
 	return t
 }
 func (t *Typechecker) VisitCharLit(expr *ast.CharLit) ast.Visitor {
-	t.latestReturnedType = token.BUCHSTABE
+	t.latestReturnedType = token.DDPCharType()
 	return t
 }
 func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.Visitor {
-	t.latestReturnedType = token.TEXT
+	t.latestReturnedType = token.DDPStringType()
 	return t
 }
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
@@ -164,71 +164,71 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 	}*/
 	switch expr.Operator.Type {
 	case token.BETRAG, token.NEGATE:
-		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
+		if !rhs.IsNumeric() {
+			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPFloatType())
 		}
 	case token.NICHT:
-		if !isType(rhs, token.BOOLEAN) {
-			t.errExpected(expr.Operator, rhs, token.BOOLEAN)
+		if !isOfType(rhs, token.DDPBoolType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPBoolType())
 		}
 
-		t.latestReturnedType = token.BOOLEAN
+		t.latestReturnedType = token.DDPBoolType()
 	case token.NEGIERE:
-		if !isType(rhs, token.BOOLEAN, token.ZAHL) {
-			t.errExpected(expr.Operator, rhs, token.BOOLEAN, token.ZAHL)
+		if !isOfType(rhs, token.DDPBoolType(), token.DDPIntType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPBoolType(), token.DDPIntType())
 		}
 	case token.LOGISCHNICHT:
-		if !isType(rhs, token.ZAHL) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL)
+		if !isOfType(rhs, token.DDPIntType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPIntType())
 		}
 
-		t.latestReturnedType = token.ZAHL
+		t.latestReturnedType = token.DDPIntType()
 	case token.LÄNGE:
-		if !isType(rhs, token.TEXT) {
-			t.errExpected(expr.Operator, rhs, token.TEXT)
+		if !isOfType(rhs, token.DDPStringType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPStringType())
 		}
 
-		t.latestReturnedType = token.ZAHL // some operators change the type of the rhs expression, so we set that
+		t.latestReturnedType = token.DDPIntType()
 	case token.GRÖßE:
-		t.latestReturnedType = token.ZAHL
+		t.latestReturnedType = token.DDPIntType()
 	case token.SINUS, token.KOSINUS, token.TANGENS,
 		token.ARKSIN, token.ARKKOS, token.ARKTAN,
 		token.HYPSIN, token.HYPKOS, token.HYPTAN:
-		if !isType(rhs, token.ZAHL, token.KOMMAZAHL) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.KOMMAZAHL)
+		if !rhs.IsNumeric() {
+			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPFloatType())
 		}
 
-		t.latestReturnedType = token.KOMMAZAHL
+		t.latestReturnedType = token.DDPFloatType()
 	case token.ZAHL:
-		if !isType(rhs, token.KOMMAZAHL, token.ZAHL, token.TEXT, token.BOOLEAN, token.BUCHSTABE) {
-			t.errExpected(expr.Operator, rhs, token.KOMMAZAHL, token.ZAHL, token.TEXT, token.BOOLEAN, token.BUCHSTABE)
+		if !rhs.IsPrimitive() {
+			t.errExpected(expr.Operator, rhs, token.DDPFloatType(), token.DDPIntType(), token.DDPStringType(), token.DDPBoolType(), token.DDPCharType())
 		}
 
-		t.latestReturnedType = token.ZAHL
+		t.latestReturnedType = token.DDPIntType()
 	case token.KOMMAZAHL:
-		if !isType(rhs, token.TEXT, token.ZAHL, token.KOMMAZAHL) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.TEXT, token.KOMMAZAHL)
+		if !isOfType(rhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType())
 		}
 
-		t.latestReturnedType = token.KOMMAZAHL
+		t.latestReturnedType = token.DDPFloatType()
 	case token.BOOLEAN:
-		if !isType(rhs, token.ZAHL, token.BOOLEAN) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.BOOLEAN)
+		if !isOfType(rhs, token.DDPIntType(), token.DDPBoolType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPBoolType())
 		}
 
-		t.latestReturnedType = token.BOOLEAN
+		t.latestReturnedType = token.DDPBoolType()
 	case token.BUCHSTABE:
-		if !isType(rhs, token.ZAHL, token.BUCHSTABE) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.BUCHSTABE)
+		if !isOfType(rhs, token.DDPIntType(), token.DDPCharType()) {
+			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPCharType())
 		}
 
-		t.latestReturnedType = token.BUCHSTABE
+		t.latestReturnedType = token.DDPCharType()
 	case token.TEXT:
-		if !isType(rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE) {
-			t.errExpected(expr.Operator, rhs, token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE)
+		if !rhs.IsPrimitive() {
+			t.errExpected(expr.Operator, rhs, token.DDPFloatType(), token.DDPIntType(), token.DDPStringType(), token.DDPBoolType(), token.DDPCharType())
 		}
 
-		t.latestReturnedType = token.TEXT
+		t.latestReturnedType = token.DDPStringType()
 	default:
 		t.err(expr.Operator, fmt.Sprintf("Unbekannter unärer Operator '%s'", expr.Operator.String()))
 	}
@@ -239,71 +239,71 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
 	rhs := t.Evaluate(expr.Rhs)
 
 	// helper to validate if types match
-	validate := func(op token.TokenType, valid ...token.TokenType) {
-		if !isTypeBin(lhs, rhs, valid...) {
+	validate := func(op token.TokenType, valid ...token.DDPType) {
+		if !isOfTypeBin(lhs, rhs, valid...) {
 			t.errExpectedBin(expr.Token(), lhs, rhs, op)
 		}
 	}
 
 	switch op := expr.Operator.Type; op {
 	case token.VERKETTET:
-		validate(op, token.TEXT, token.BUCHSTABE)
-		t.latestReturnedType = token.TEXT // some operators change the type of the expression, so we set that here
+		validate(op, token.DDPStringType(), token.DDPCharType())
+		t.latestReturnedType = token.DDPStringType() // some operators change the type of the expression, so we set that here
 	case token.PLUS, token.ADDIERE, token.ERHÖHE,
 		token.MINUS, token.SUBTRAHIERE, token.VERRINGERE,
 		token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
-		validate(op, token.ZAHL, token.KOMMAZAHL)
+		validate(op, token.DDPIntType(), token.DDPFloatType())
 
-		if lhs == token.ZAHL && rhs == token.ZAHL {
-			t.latestReturnedType = token.ZAHL
+		if lhs == token.DDPIntType() && rhs == token.DDPIntType() {
+			t.latestReturnedType = token.DDPIntType()
 		} else {
-			t.latestReturnedType = token.KOMMAZAHL
+			t.latestReturnedType = token.DDPFloatType()
 		}
 	case token.STELLE:
-		if lhs != token.TEXT {
+		if lhs != token.DDPStringType() {
 			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
 		}
-		if rhs != token.ZAHL {
+		if rhs != token.DDPIntType() {
 			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
 		}
 
-		t.latestReturnedType = token.BUCHSTABE // later on the list element type
+		t.latestReturnedType = token.DDPCharType() // later on the list element type
 	case token.DURCH, token.DIVIDIERE, token.TEILE, token.HOCH, token.LOGARITHMUS:
-		validate(op, token.ZAHL, token.KOMMAZAHL)
-		t.latestReturnedType = token.KOMMAZAHL
+		validate(op, token.DDPIntType(), token.DDPFloatType())
+		t.latestReturnedType = token.DDPFloatType()
 	case token.MODULO:
-		validate(op, token.ZAHL)
-		t.latestReturnedType = token.ZAHL
+		validate(op, token.DDPIntType())
+		t.latestReturnedType = token.DDPIntType()
 	case token.UND:
-		validate(op, token.BOOLEAN)
-		t.latestReturnedType = token.BOOLEAN
+		validate(op, token.DDPBoolType())
+		t.latestReturnedType = token.DDPBoolType()
 	case token.ODER:
-		validate(op, token.BOOLEAN)
-		t.latestReturnedType = token.BOOLEAN
+		validate(op, token.DDPBoolType())
+		t.latestReturnedType = token.DDPBoolType()
 	case token.LINKS:
-		validate(op, token.ZAHL)
-		t.latestReturnedType = token.ZAHL
+		validate(op, token.DDPIntType())
+		t.latestReturnedType = token.DDPIntType()
 	case token.RECHTS:
-		validate(op, token.ZAHL)
-		t.latestReturnedType = token.ZAHL
+		validate(op, token.DDPIntType())
+		t.latestReturnedType = token.DDPIntType()
 	case token.GLEICH:
 		if lhs != rhs {
 			t.errExpectedBin(expr.Token(), lhs, rhs, op)
 		}
 
-		t.latestReturnedType = token.BOOLEAN
+		t.latestReturnedType = token.DDPBoolType()
 	case token.UNGLEICH:
 		if lhs != rhs {
 			t.errExpectedBin(expr.Token(), lhs, rhs, op)
 		}
 
-		t.latestReturnedType = token.BOOLEAN
+		t.latestReturnedType = token.DDPBoolType()
 	case token.GRÖßERODER, token.KLEINER, token.KLEINERODER, token.GRÖßER:
-		validate(op, token.ZAHL, token.KOMMAZAHL)
-		t.latestReturnedType = token.BOOLEAN
+		validate(op, token.DDPIntType(), token.DDPFloatType())
+		t.latestReturnedType = token.DDPBoolType()
 	case token.LOGISCHODER, token.LOGISCHUND, token.KONTRA:
-		validate(op, token.ZAHL)
-		t.latestReturnedType = token.ZAHL
+		validate(op, token.DDPIntType())
+		t.latestReturnedType = token.DDPIntType()
 	default:
 		t.err(expr.Operator, fmt.Sprintf("Unbekannter binärer Operator '%s'", expr.Operator.String()))
 	}
@@ -315,20 +315,20 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
 	rhs := t.Evaluate(expr.Rhs)
 
 	// helper to validate if types match
-	validateBin := func(op token.TokenType, valid ...token.TokenType) {
-		if !isTypeBin(mid, rhs, valid...) {
+	validateBin := func(op token.TokenType, valid ...token.DDPType) {
+		if !isOfTypeBin(mid, rhs, valid...) {
 			t.errExpectedTern(expr.Token(), lhs, mid, rhs, op)
 		}
 	}
 
 	switch expr.Operator.Type {
 	case token.VONBIS:
-		if lhs != token.TEXT {
+		if lhs != token.DDPStringType() {
 			t.errExpectedTern(expr.Token(), lhs, mid, rhs, expr.Operator.Type)
 		}
 
-		validateBin(expr.Operator.Type, token.ZAHL)
-		t.latestReturnedType = token.TEXT
+		validateBin(expr.Operator.Type, token.DDPIntType())
+		t.latestReturnedType = token.DDPStringType()
 	default:
 		t.err(expr.Operator, fmt.Sprintf("Unbekannter ternärer Operator '%s'", expr.Operator.String()))
 	}
@@ -352,13 +352,13 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.Visitor {
 		}
 	}
 	fun, _ := t.CurrentTable.LookupFunc(callExpr.Name)
-	t.latestReturnedType = fun.Type.Type
+	t.latestReturnedType = fun.Type
 	return t
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) ast.Visitor {
 	t.Errored = true
-	t.latestReturnedType = token.NICHTS
+	t.latestReturnedType = token.DDPVoidType()
 	return t
 }
 func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) ast.Visitor {
@@ -379,14 +379,14 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 			))
 		}
 	case *ast.Indexing:
-		if t.Evaluate(assign.Index) != token.ZAHL {
+		if t.Evaluate(assign.Index) != token.DDPIntType() {
 			t.err(assign.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
 		}
 
 		lhs := t.Evaluate(assign.Name)
 		switch lhs {
-		case token.TEXT:
-			lhs = token.BUCHSTABE
+		case token.DDPStringType():
+			lhs = token.DDPCharType()
 		default:
 			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
 		}
@@ -413,7 +413,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
 }
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {
 	conditionType := t.Evaluate(stmt.Condition)
-	if conditionType != token.BOOLEAN {
+	if conditionType != token.DDPBoolType() {
 		t.err(stmt.Condition.Token(), fmt.Sprintf(
 			"Die Bedingung einer WENN Anweisung muss vom Typ Boolean sein, war aber vom Typ %s",
 			conditionType,
@@ -429,14 +429,14 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.Visitor {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
-		if conditionType != token.BOOLEAN {
+		if conditionType != token.DDPBoolType() {
 			t.err(stmt.Condition.Token(), fmt.Sprintf(
 				"Die Bedingung einer SOLANGE Anweisung muss vom Typ BOOLEAN sein, war aber vom Typ %s",
 				conditionType,
 			))
 		}
 	case token.MAL:
-		if conditionType != token.ZAHL {
+		if conditionType != token.DDPIntType() {
 			t.err(stmt.Condition.Token(), fmt.Sprintf(
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
@@ -448,7 +448,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.Visitor {
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 	t.visit(stmt.Initializer)
 	toType := t.Evaluate(stmt.To)
-	if toType != token.ZAHL {
+	if toType != token.DDPIntType() {
 		t.err(stmt.To.Token(), fmt.Sprintf(
 			"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
 			toType,
@@ -456,7 +456,7 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 	}
 	if stmt.StepSize != nil {
 		stepType := t.Evaluate(stmt.StepSize)
-		if stepType != token.ZAHL {
+		if stepType != token.DDPIntType() {
 			t.err(stmt.To.Token(), fmt.Sprintf(
 				"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
 				stepType,
@@ -466,11 +466,11 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 	return stmt.Body.Accept(t)
 }
 func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.Visitor {
-	elementType := stmt.Initializer.Type.Type
+	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
 	switch inType {
-	case token.TEXT:
-		if elementType != token.BUCHSTABE {
+	case token.DDPStringType():
+		if elementType != token.DDPCharType() {
 			t.err(stmt.Initializer.Token(), fmt.Sprintf(
 				"Es wurde ein Ausdruck vom Typ BUCHSTABE erwartet aber %s gefunden",
 				elementType,
@@ -488,19 +488,19 @@ func (t *Typechecker) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
 	return stmt.Call.Accept(t)
 }
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
-	tokenType := t.Evaluate(stmt.Value)
-	if fun, exists := t.CurrentTable.LookupFunc(stmt.Func); exists && fun.Type.Type != tokenType {
+	returnType := t.Evaluate(stmt.Value)
+	if fun, exists := t.CurrentTable.LookupFunc(stmt.Func); exists && fun.Type != returnType {
 		t.err(stmt.Token(), fmt.Sprintf(
 			"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-			fun.Type.Type,
-			tokenType,
+			fun.Type,
+			returnType,
 		))
 	}
 	return t
 }
 
 // checks if t is contained in types
-func isType(t token.TokenType, types ...token.TokenType) bool {
+func isOfType(t token.DDPType, types ...token.DDPType) bool {
 	for _, v := range types {
 		if t == v {
 			return true
@@ -510,6 +510,6 @@ func isType(t token.TokenType, types ...token.TokenType) bool {
 }
 
 // checks if t1 and t2 are both contained in types
-func isTypeBin(t1, t2 token.TokenType, types ...token.TokenType) bool {
-	return isType(t1, types...) && isType(t2, types...)
+func isOfTypeBin(t1, t2 token.DDPType, types ...token.DDPType) bool {
+	return isOfType(t1, types...) && isOfType(t2, types...)
 }

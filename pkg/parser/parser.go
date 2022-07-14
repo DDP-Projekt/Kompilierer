@@ -93,9 +93,9 @@ func init() {
 
 // wrapper for an alias
 type funcAlias struct {
-	Tokens []token.Token              // tokens of the alias
-	Func   string                     // the function it refers to
-	Args   map[string]token.TokenType // types of the arguments (used for funcCall parsing)
+	Tokens []token.Token            // tokens of the alias
+	Func   string                   // the function it refers to
+	Args   map[string]token.DDPType // types of the arguments (used for funcCall parsing)
 }
 
 // holds state when parsing a .ddp file into an AST
@@ -211,22 +211,22 @@ func (p *Parser) declaration() ast.Statement {
 		switch p.previous().Type {
 		case token.DER:
 			switch p.peek().Type {
-			case token.BETRAG:
-				p.decrease() // decrease, so expressionStatement() can recognize it as operator
 			case token.BOOLEAN, token.TEXT, token.BUCHSTABE:
 				p.match(token.BOOLEAN, token.TEXT, token.BUCHSTABE) // consume the type
 				return &ast.DeclStmt{Decl: p.varDeclaration()}      // parse the declaration
+			default:
+				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
 		case token.DIE:
 			switch p.peek().Type {
-			case token.GRÖßE, token.LÄNGE:
-				p.decrease() // decrease, so expressionStatement() can recognize it as operator
 			case token.ZAHL, token.KOMMAZAHL:
 				p.match(token.ZAHL, token.KOMMAZAHL)           // consume the type
 				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			case token.FUNKTION:
 				p.match(token.FUNKTION)
 				return &ast.DeclStmt{Decl: p.funcDeclaration()} // parse the function declaration
+			default:
+				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
 		}
 	}
@@ -276,7 +276,11 @@ func (p *Parser) assignRhs() ast.Expression {
 
 func (p *Parser) varDeclaration() ast.Declaration {
 	begin := p.peekN(-2)
-	typ := p.previous() // ZAHL, KOMMAZAHL, etc.
+	p.decrease()
+	typ := p.parseType()
+	if typ.IsList {
+		panic("lists not implemented yet")
+	}
 
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
@@ -291,7 +295,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	p.consume(token.IST)
 	var expr ast.Expression
 
-	if typ.Type == token.BOOLEAN {
+	if typ.PrimitiveType == token.BOOLEAN {
 		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
 	} else {
 		expr = p.expression()
@@ -337,7 +341,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
-	var paramTypes []token.Token = nil
+	var paramTypes []token.DDPType = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		validate(p.consumeN(token.DEN, token.PARAMETERN, token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
@@ -353,15 +357,17 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 		// parse the types of the parameters
 		p.consumeN(token.VOM, token.TYP)
-		validate(p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE)) // validate the first parameter type
-		paramTypes = append(make([]token.Token, 0), p.previous())                                       // append the first parameter type
-		for p.match(token.COMMA) {                                                                      // parse the other parameter types
+		firstType := p.parseType()
+		validate(firstType.PrimitiveType != token.ILLEGAL)
+		paramTypes = append(make([]token.DDPType, 0), firstType) // append the first parameter type
+		for p.match(token.COMMA) {                               // parse the other parameter types
 			if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
 				break
 			}
 			// validate the parameter type and append it
-			validate(p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.TEXT, token.BUCHSTABE))
-			paramTypes = append(paramTypes, p.previous())
+			typ := p.parseType()
+			validate(typ.PrimitiveType != token.ILLEGAL)
+			paramTypes = append(paramTypes, typ)
 		}
 		if p.previous().Type != token.COMMA {
 			perr(p.previous(), fmt.Sprintf("Es wurde 'COMMA' erwartet aber '%s' gefunden", p.previous().String()))
@@ -374,19 +380,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// parse the return type declaration
+	// TODO: handle grammar with eine/einen
 	p.consume(token.GIBT)
-	p.consumeAny(token.EINE, token.EINEN, token.NICHTS)
-	switch p.previous().Type {
-	case token.NICHTS:
-	case token.EINE:
-		validate(p.consumeAny(token.ZAHL, token.KOMMAZAHL))
-	case token.EINEN:
-		validate(p.consumeAny(token.BOOLEAN, token.TEXT, token.BUCHSTABEN))
-	}
-	Typ := p.previous()
-	if Typ.Type == token.BUCHSTABEN {
-		Typ.Type = token.BUCHSTABE
-	}
+	p.match(token.EINE, token.EINEN) // not neccessary
+	Typ := p.parseTypeOrVoid()
 
 	p.consumeN(token.ZURÜCK, token.COMMA, token.MACHT, token.COLON)
 	bodyStart := p.cur                            // save the body start-position for later, we first need to parse aliases to enable recursion
@@ -411,10 +408,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	argTypes := map[string]token.TokenType{}
+	argTypes := map[string]token.DDPType{}
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			argTypes[v.Literal] = paramTypes[i].Type
+			argTypes[v.Literal] = paramTypes[i]
 		}
 	}
 
@@ -463,7 +460,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.currentFunction = name.Literal
 	body := p.blockStatement() // parse the body
 	// check that the function has a return statement if it needs one
-	if Typ.Type != token.NICHTS && !initializing { // only if the function does not return void
+	if Typ != token.DDPVoidType() && !initializing { // only if the function does not return void
 		b := body.(*ast.BlockStmt)
 		if len(b.Statements) < 1 { // at least the return statement is needed
 			perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
@@ -491,15 +488,15 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.Token) bool {
+func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.DDPType) bool {
 	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
 	}
-	nameSet := map[string]token.TokenType{} // set that holds the parameter names contained in the alias and their corresponding type
+	nameSet := map[string]token.DDPType{} // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			nameSet[v.Literal] = paramTypes[i].Type
+			nameSet[v.Literal] = paramTypes[i]
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
@@ -508,9 +505,7 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []t
 		if isAliasExpr(v) {
 			k := v.Literal[1:] // remove the * from *argname
 			if typ, ok := nameSet[k]; ok {
-				alias[i].AliasInfo = &token.AliasInfo{ // fill in the corresponding parameter type
-					Type: typ,
-				}
+				alias[i].AliasInfo = &typ
 				delete(nameSet, k)
 			} else {
 				return false
@@ -534,8 +529,7 @@ func (p *Parser) aliasExists(alias []token.Token) *string {
 // parse a single statement
 func (p *Parser) statement() ast.Statement {
 	// check for assignement
-	if p.peek().Type == token.IDENTIFIER {
-		p.consume(token.IDENTIFIER)
+	if p.match(token.IDENTIFIER) {
 		if p.peek().Type == token.IST || p.peek().Type == token.AN {
 			return p.assignLiteral() // x ist ... assignements may only have literals, so we use this helper function
 		} else {
@@ -703,7 +697,7 @@ func (p *Parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit:
 	case ast.Assigneable:
-		if typ := p.typechecker.Evaluate(ident); typ != token.BOOLEAN {
+		if typ := p.typechecker.Evaluate(ident); typ != token.DDPBoolType() {
 			p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	default:
@@ -853,9 +847,9 @@ func (p *Parser) forStatement() ast.Statement {
 	For := p.previous()
 	p.consumeAny(token.JEDE, token.JEDEN)
 	if p.previous().Type == token.JEDE {
-		p.consumeAny(token.ZAHL)
+		p.consume(token.ZAHL)
 	} else {
-		p.consumeAny(token.BUCHSTABEN)
+		p.consume(token.BUCHSTABEN)
 	}
 	Type := p.previous()
 	if Type.Type == token.BUCHSTABEN { // grammar stuff
@@ -870,7 +864,7 @@ func (p *Parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(Type),
 				End:   from.GetRange().End,
 			},
-			Type:    Type,
+			Type:    token.NewPrimitiveType(Type.Type),
 			Name:    Ident,
 			InitVal: from,
 		}
@@ -919,7 +913,7 @@ func (p *Parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(Type),
 				End:   In.GetRange().End,
 			},
-			Type:    Type,
+			Type:    token.NewPrimitiveType(Type.Type),
 			Name:    Ident,
 			InitVal: In,
 		}
@@ -1746,6 +1740,51 @@ func (p *Parser) parseString(s string) string {
 	return str
 }
 
+// parses tokens into a DDPType
+// expects the next token to be the start of the type
+// returns ILLEGAL and errors if no typename was found
+func (p *Parser) parseType() token.DDPType {
+	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+		p.err(p.peek(), fmt.Sprintf("Es wurde ein Typname erwartet aber '%s' gefundne", p.peek().Literal))
+		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
+	}
+
+	switch p.previous().Type {
+	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
+		return token.NewPrimitiveType(p.previous().Type)
+	case token.BOOLEAN, token.TEXT:
+		if !p.match(token.LISTE) {
+			return token.NewPrimitiveType(p.previous().Type)
+		}
+		return token.NewListType(p.previous().Type)
+	case token.ZAHLEN:
+		p.consume(token.LISTE)
+		return token.NewListType(token.ZAHL)
+	case token.KOMMAZAHLEN:
+		p.consume(token.LISTE)
+		return token.NewListType(token.KOMMAZAHL)
+	case token.BUCHSTABEN:
+		if p.peekN(-2).Type == token.EINEN { // edge case in function return types
+			return token.NewPrimitiveType(token.BUCHSTABE)
+		}
+		p.consume(token.LISTE)
+		return token.NewListType(token.BUCHSTABE)
+	}
+
+	return token.NewPrimitiveType(token.ILLEGAL) // unreachable
+}
+
+// parses tokens into a DDPType
+// unlike parseType it may return void
+// the error return is ILLEGAL
+func (p *Parser) parseTypeOrVoid() token.DDPType {
+	if p.match(token.NICHTS) {
+		return token.DDPVoidType()
+	}
+	return p.parseType()
+}
+
 // if the current tokenType is contained in types, advance
 // returns wether we advanced or not
 func (p *Parser) match(types ...token.TokenType) bool {
@@ -1895,7 +1934,7 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	case token.IDENTIFIER:
 		return t1.Literal == t2.Literal
 	case token.ALIAS_PARAMETER:
-		return t1.AliasInfo.Type == t2.AliasInfo.Type
+		return *t1.AliasInfo == *t2.AliasInfo
 	case token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal == t2.Literal
 	}

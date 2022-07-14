@@ -6,7 +6,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
-// represents an Abstract Syntax Tree for a DDP program
+// represents an Abstract Syntax Tree for a token.DDP program
 type Ast struct {
 	Statements []Statement // the top level statements
 	Symbols    *SymbolTable
@@ -65,18 +65,18 @@ type (
 
 	VarDecl struct {
 		Range   token.Range
-		Type    token.Token // Zahl, Kommazahl etc
+		Type    token.DDPType
 		Name    token.Token // identifier name
 		InitVal Expression  // initial value
 	}
 
 	FuncDecl struct {
 		Range      token.Range
-		Func       token.Token   // Funktion
-		Name       token.Token   // identifier name
-		ParamNames []token.Token // x, y und z
-		ParamTypes []token.Token // Zahl, Text und Boolean
-		Type       token.Token   // Zahl Kommazahl nichts ...
+		Func       token.Token     // Funktion
+		Name       token.Token     // identifier name
+		ParamNames []token.Token   // x, y und z
+		ParamTypes []token.DDPType // Zahl, Text und Boolean
+		Type       token.DDPType   // Zahl Kommazahl nichts ...
 		Body       *BlockStmt
 	}
 )
@@ -86,7 +86,7 @@ func (decl *VarDecl) String() string  { return "VarDecl" }
 func (decl *FuncDecl) String() string { return "FuncDecl" }
 
 func (decl *BadDecl) Token() token.Token  { return decl.Tok }
-func (decl *VarDecl) Token() token.Token  { return decl.Type }
+func (decl *VarDecl) Token() token.Token  { return decl.Name }
 func (decl *FuncDecl) Token() token.Token { return decl.Func }
 
 func (decl *BadDecl) GetRange() token.Range  { return decl.Range }

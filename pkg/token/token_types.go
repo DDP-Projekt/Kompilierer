@@ -85,11 +85,14 @@ const (
 	MIT
 	SCHRITTGRÖßE
 	ZAHL
+	ZAHLEN
 	KOMMAZAHL
+	KOMMAZAHLEN
 	BOOLEAN
 	BUCHSTABE
 	BUCHSTABEN
 	TEXT
+	LISTE
 	FUNKTION
 	BINDE
 	EIN
@@ -214,11 +217,14 @@ var tokenStrings = [...]string{
 	MIT:          "MIT",
 	SCHRITTGRÖßE: "SCHRITTGRÖßE",
 	ZAHL:         "ZAHL",
+	ZAHLEN:       "ZAHLEN",
 	KOMMAZAHL:    "KOMMAZAHL",
+	KOMMAZAHLEN:  "KOMMAZAHLEN",
 	BOOLEAN:      "BOOLEAN",
 	BUCHSTABE:    "BUCHSTABE",
 	BUCHSTABEN:   "BUCHSTABEN",
 	TEXT:         "TEXT",
+	LISTE:        "LISTE",
 	FUNKTION:     "FUNKTION",
 	BINDE:        "BINDE",
 	EIN:          "EIN",
@@ -313,11 +319,14 @@ var keywordMap = map[string]TokenType{
 	"Schrittgröße":    SCHRITTGRÖßE,
 	"Schrittgroesse":  SCHRITTGRÖßE,
 	"Zahl":            ZAHL,
+	"Zahlen":          ZAHLEN,
 	"Kommazahl":       KOMMAZAHL,
+	"Kommazahlen":     KOMMAZAHLEN,
 	"Boolean":         BOOLEAN,
 	"Buchstabe":       BUCHSTABE,
 	"Buchstaben":      BUCHSTABEN,
 	"Text":            TEXT,
+	"Liste":           LISTE,
 	"Funktion":        FUNKTION,
 	"Binde":           BINDE,
 	"ein":             EIN,

@@ -40,37 +40,43 @@ func newInt(value int64) *constant.Int {
 }
 
 // turn a tokenType into the corresponding llvm type
-func toDDPType(tokenType token.TokenType) types.Type {
-	switch tokenType {
-	case token.NICHTS:
-		return void
-	case token.ZAHL:
-		return ddpint
-	case token.KOMMAZAHL:
-		return ddpfloat
-	case token.BOOLEAN:
-		return ddpbool
-	case token.BUCHSTABE:
-		return ddpchar
-	case token.TEXT:
-		return ddpstrptr
+func toIRType(ddpType token.DDPType) types.Type {
+	if ddpType.IsList {
+		notimplemented()
+	} else {
+		switch ddpType.PrimitiveType {
+		case token.NICHTS:
+			return void
+		case token.ZAHL:
+			return ddpint
+		case token.KOMMAZAHL:
+			return ddpfloat
+		case token.BOOLEAN:
+			return ddpbool
+		case token.BUCHSTABE:
+			return ddpchar
+		case token.TEXT:
+			return ddpstrptr
+		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", tokenType.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType.String()))
 }
 
 // returns the default constant for global variables
-func getDefaultValue(tokenType token.TokenType) constant.Constant {
-	switch tokenType {
-	case token.ZAHL:
-		return constant.NewInt(ddpint, 0)
-	case token.KOMMAZAHL:
-		return constant.NewFloat(ddpfloat, 0.0)
-	case token.BOOLEAN:
-		return constant.NewInt(ddpbool, 0)
-	case token.BUCHSTABE:
-		return constant.NewInt(ddpchar, 0)
-	case token.TEXT:
-		return constant.NewNull(ddpstrptr)
+func getDefaultValue(ddpType token.DDPType) constant.Constant {
+	if ddpType.IsPrimitive() {
+		switch ddpType.PrimitiveType {
+		case token.ZAHL:
+			return constant.NewInt(ddpint, 0)
+		case token.KOMMAZAHL:
+			return constant.NewFloat(ddpfloat, 0.0)
+		case token.BOOLEAN:
+			return constant.NewInt(ddpbool, 0)
+		case token.BUCHSTABE:
+			return constant.NewInt(ddpchar, 0)
+		case token.TEXT:
+			return constant.NewNull(ddpstrptr)
+		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", tokenType.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType.String()))
 }
