@@ -6,6 +6,9 @@ Currently the DDP repos are private and no contributions are taken.
 
 ## Prerequisites
 
+The DDP Compiler is written in Go. Therefore you need to have Golang version 1.18 installed. You can download it here: https://go.dev/dl/. <br>
+NOTE: Some package managers don't install the correct version of Go. Please check your Go version with `go version`.
+
 To build the DDP Compiler, you need to have a build of LLVM 12.0.0 installed.
 On linux this is easily done by running `sudo apt install llvm-12`.
 On Windows you need to build LLVM yourself (which you can also do on linux if you wish, but it is not recommended, because it can take several hours).
