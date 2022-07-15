@@ -330,9 +330,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	c.insertFunction(d.Name.Literal, d, irFunc)
 
 	// inbuilt or external functions are defined in c
-	if ast.IsInbuiltFunc(d) {
-		irFunc.Linkage = enum.LinkageExternal
-	} else if ast.IsExternFunc(d) {
+	if ast.IsExternFunc(d) {
 		irFunc.Linkage = enum.LinkageExternal
 		path, err := filepath.Abs(d.ExternFile.Literal[1 : len(d.ExternFile.Literal)-1])
 		if err != nil {
