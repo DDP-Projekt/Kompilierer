@@ -341,7 +341,6 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		}
 		c.result.Dependencies[path] = struct{}{}
 	} else {
-		irFunc.Linkage = enum.LinkageInternal
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
