@@ -111,7 +111,10 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = decl.ParamTypes[i]
 	}
 
-	return decl.Body.Accept(t)
+	if !ast.IsExternFunc(decl) {
+		return decl.Body.Accept(t)
+	}
+	return t
 }
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {

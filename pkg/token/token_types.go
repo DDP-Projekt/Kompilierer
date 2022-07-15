@@ -124,6 +124,7 @@ const (
 	AN
 	STELLE
 	VONBIS
+	DEFINIERT
 
 	DOT    // .
 	COMMA  // ,
@@ -256,6 +257,7 @@ var tokenStrings = [...]string{
 	AN:           "AN",
 	STELLE:       "STELLE",
 	VONBIS:       "VON BIS", // as operator
+	DEFINIERT:    "DEFINIERT",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -380,6 +382,7 @@ var keywordMap = map[string]TokenType{
 	"Logarithmus":     LOGARITHMUS,
 	"zur":             ZUR,
 	"Basis":           BASIS,
+	"definiert":       DEFINIERT,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

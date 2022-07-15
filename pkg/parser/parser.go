@@ -385,11 +385,23 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.match(token.EINE, token.EINEN) // not neccessary
 	Typ := p.parseTypeOrVoid()
 
-	p.consumeN(token.ZURÜCK, token.COMMA, token.MACHT, token.COLON)
-	bodyStart := p.cur                            // save the body start-position for later, we first need to parse aliases to enable recursion
-	indent := p.previous().Indent + 1             // indentation level of the function body
-	for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
-		p.advance()
+	p.consumeN(token.ZURÜCK, token.COMMA)
+	bodyStart := -1
+	definedIn := token.Token{Type: token.ILLEGAL}
+	if p.matchN(token.MACHT, token.COLON) {
+		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
+		indent := p.previous().Indent + 1             // indentation level of the function body
+		for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
+			p.advance()
+		}
+	} else {
+		validate(p.consumeN(token.IST, token.IN, token.STRING, token.DEFINIERT))
+		definedIn = p.peekN(-2)
+		switch filepath.Ext(definedIn.Literal[1 : len(definedIn.Literal)-1]) {
+		case ".c", ".lib", ".a", ".o":
+		default:
+			p.err(definedIn, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+		}
 	}
 
 	// parse the alias definitions before the body to enable recursion
@@ -456,19 +468,21 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.funcAliases = append(p.funcAliases, funcAliases...)
 
 	// parse the body after the aliases to enable recursion
-	p.cur = bodyStart // go back to the body
-	p.currentFunction = name.Literal
-	body := p.blockStatement() // parse the body
-	// check that the function has a return statement if it needs one
-	if Typ != token.DDPVoidType() && !initializing { // only if the function does not return void
-		b := body.(*ast.BlockStmt)
-		if len(b.Statements) < 1 { // at least the return statement is needed
-			perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
-		} else {
-			// the last statement must be a return statement
-			lastStmt := b.Statements[len(b.Statements)-1]
-			if _, ok := lastStmt.(*ast.ReturnStmt); !ok {
-				perr(lastStmt.Token(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+	var body *ast.BlockStmt = nil
+	if bodyStart != -1 {
+		p.cur = bodyStart // go back to the body
+		p.currentFunction = name.Literal
+		body = p.blockStatement().(*ast.BlockStmt) // parse the body
+		// check that the function has a return statement if it needs one
+		if Typ != token.DDPVoidType() && !initializing { // only if the function does not return void
+			if len(body.Statements) < 1 { // at least the return statement is needed
+				perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+			} else {
+				// the last statement must be a return statement
+				lastStmt := body.Statements[len(body.Statements)-1]
+				if _, ok := lastStmt.(*ast.ReturnStmt); !ok {
+					perr(lastStmt.Token(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+				}
 			}
 		}
 	}
@@ -483,7 +497,8 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		ParamNames: paramNames,
 		ParamTypes: paramTypes,
 		Type:       Typ,
-		Body:       body.(*ast.BlockStmt),
+		Body:       body,
+		ExternFile: definedIn,
 	}
 }
 

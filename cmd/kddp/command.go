@@ -28,7 +28,6 @@ var commands = []Command{
 	NewInterpretCommand(),
 	NewBuildCommand(),
 	NewParseCommand(),
-	NewLinkCommand(),
 }
 
 // $kddp interpret walks the parsed ast and executes it
@@ -247,6 +246,7 @@ func (cmd *BuildCommand) Run() error {
 	objPath := changeExtension(cmd.outPath, ".o")
 
 	print("creating .ll output directory: %s", llPath)
+	var result *compiler.CompileResult
 	if file, err := os.OpenFile(llPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create .ll output directory: %s", err.Error())
 	} else {
@@ -261,7 +261,7 @@ func (cmd *BuildCommand) Run() error {
 		defer file.Close()
 		print("parsing and compiling llvm ir from %s", cmd.filePath)
 		// compile the input file to llvm ir
-		if err := compiler.CompileTo(cmd.filePath, nil, errHndl, file); err != nil {
+		if result, err = compiler.CompileTo(cmd.filePath, nil, errHndl, file); err != nil {
 			return fmt.Errorf("failed to compile the source code: %s", err.Error())
 		}
 		if cmd.targetIR { // if the target is llvm ir we are finished
@@ -299,7 +299,7 @@ func (cmd *BuildCommand) Run() error {
 
 	// the target is an executable so we link the produced object file
 	print("invoking gcc on %s", objPath)
-	if err := invokeGCC(objPath, cmd.outPath, cmdOut); err != nil {
+	if err := invokeGCC(objPath, cmd.outPath, result, cmdOut, cmd.nodeletes); err != nil {
 		return fmt.Errorf("failed to invoke gcc: %s", err.Error())
 	}
 
@@ -316,72 +316,6 @@ options:
 		-o <filepath>: specify the name of the output file
 		-verbose: print verbose output
 		-c: compile to llvm ir but don't assemble or link`
-}
-
-// $kddp link links the specified object files with the ddpstdlib
-// mainly for testing
-type LinkCommand struct {
-	fs       *flag.FlagSet // FlagSet for the arguments
-	filePath string        // input file, neccessery
-	outPath  string        // path for the output file, specified by the -o flag, may be empty
-	verbose  bool          // print verbose output, specified by the --verbose flag
-}
-
-func NewLinkCommand() *LinkCommand {
-	return &LinkCommand{
-		fs:       flag.NewFlagSet("link", flag.ExitOnError),
-		filePath: "",
-		outPath:  "",
-		verbose:  false,
-	}
-}
-
-func (cmd *LinkCommand) Init(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("link requires a file name")
-	}
-
-	cmd.filePath = args[0]
-	if filepath.Ext(cmd.filePath) != ".obj" && filepath.Ext(cmd.filePath) != ".o" {
-		return fmt.Errorf("the provided file is not a .obj or .o file")
-	}
-
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
-	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose link output")
-	return cmd.fs.Parse(args[1:])
-}
-
-func (cmd *LinkCommand) Run() error {
-	print := func(format string, args ...any) {
-		if cmd.verbose {
-			fmt.Printf(format+"\n", args...)
-		}
-	}
-
-	var cmdOut io.Writer = nil
-	if cmd.verbose {
-		cmdOut = os.Stdout
-	}
-
-	// the target is an executable so we link the produced object file
-	print("invoking gcc on %s", cmd.filePath)
-	if err := invokeGCC(cmd.filePath, cmd.outPath, cmdOut); err != nil {
-		print("failed to invoke gcc: %s", err.Error())
-		return nil
-	}
-
-	return nil
-}
-
-func (cmd *LinkCommand) Name() string {
-	return cmd.fs.Name()
-}
-
-func (cmd *LinkCommand) Usage() string {
-	return `build <filename> <options>: link the given .obj or .o file into a executable expecting it to come from ddp code
-options:
-		-o <filepath>: specify the name of the output file
-		-verbose: print verbose output`
 }
 
 // helper function

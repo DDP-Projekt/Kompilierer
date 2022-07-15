@@ -77,13 +77,16 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed && !ast.IsInbuiltFunc(decl) {
 		r.err(decl.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal)) // functions may only be declared once
 	}
-	decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
-	// add the function parameters to the scope of the function body
-	for i, l := 0, len(decl.ParamNames); i < l; i++ {
-		decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, decl.ParamTypes[i])
-	}
+	if !ast.IsExternFunc(decl) {
+		decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
+		// add the function parameters to the scope of the function body
+		for i, l := 0, len(decl.ParamNames); i < l; i++ {
+			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, decl.ParamTypes[i])
+		}
 
-	return decl.Body.Accept(r) // resolve the function body
+		return decl.Body.Accept(r) // resolve the function body
+	}
+	return r
 }
 
 // if a BadExpr exists the AST is faulty

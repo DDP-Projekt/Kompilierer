@@ -77,7 +77,8 @@ type (
 		ParamNames []token.Token   // x, y und z
 		ParamTypes []token.DDPType // Zahl, Text und Boolean
 		Type       token.DDPType   // Zahl Kommazahl nichts ...
-		Body       *BlockStmt
+		Body       *BlockStmt      // nil for extern functions
+		ExternFile token.Token     // string literal with filepath (only pesent if Body is nil)
 	}
 )
 

@@ -26,11 +26,20 @@ type funcWrapper struct {
 	funcDecl *ast.FuncDecl // the ast.FuncDecl
 }
 
+// the result of a compilation
+type CompileResult struct {
+	// a set which contains all files needed
+	// to link the final executable
+	// contains .c, .lib and .o files
+	Dependencies map[string]struct{}
+}
+
 // holds state to compile a DDP AST into llvm ir
 type Compiler struct {
 	ast          *ast.Ast
 	mod          *ir.Module           // the ir module (basically the ir file)
 	errorHandler scanner.ErrorHandler // errors are passed to this function
+	result       *CompileResult       // result of the compilation
 
 	cbb          *ir.Block               // current basic block in the ir
 	cf           *ir.Func                // current function
@@ -48,6 +57,9 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 		ast:          Ast,
 		mod:          ir.NewModule(),
 		errorHandler: errorHandler,
+		result: &CompileResult{
+			Dependencies: make(map[string]struct{}),
+		},
 		cbb:          nil,
 		cf:           nil,
 		scp:          newScope(nil), // global scope
@@ -59,18 +71,18 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned
-func (c *Compiler) Compile(w io.Writer) (result string, rerr error) {
+func (c *Compiler) Compile(w io.Writer) (llvmir string, result *CompileResult, rerr error) {
 	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
 			rerr = fmt.Errorf("%v", err)
-			result = ""
+			llvmir = ""
 		}
 	}()
 
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
-		return "", fmt.Errorf("Fehlerhafter Syntax Baum")
+		return "", nil, fmt.Errorf("Fehlerhafter Syntax Baum")
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
@@ -95,9 +107,9 @@ func (c *Compiler) Compile(w io.Writer) (result string, rerr error) {
 	c.cbb.NewRet(newInt(0))
 	if w != nil {
 		_, err := c.mod.WriteTo(w)
-		return "", err
+		return "", c.result, err
 	} else {
-		return c.mod.String(), nil // return the module as string
+		return c.mod.String(), c.result, nil // return the module as string
 	}
 }
 
@@ -307,6 +319,8 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	name := d.Name.Literal
 	if ast.IsInbuiltFunc(d) { // inbuilt/runtime functions are prefixed with inbuilt_
 		name = "inbuilt_" + strings.TrimLeft(name, "§")
+	} else if ast.IsExternFunc(d) {
+		name = "ddpextern_" + name
 	} else { // user-defined functions are prefixed with ddpfunc_
 		name = "ddpfunc_" + name
 	}
@@ -315,9 +329,19 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	c.insertFunction(d.Name.Literal, d, irFunc)
 
+	// inbuilt or external functions are defined in c
 	if ast.IsInbuiltFunc(d) {
-		irFunc.Linkage = enum.LinkageExternal // inbuilt functions are defined in c
+		irFunc.Linkage = enum.LinkageExternal
+	} else if ast.IsExternFunc(d) {
+		irFunc.Linkage = enum.LinkageExternal
+		path, err := filepath.Abs(d.ExternFile.Literal[1 : len(d.ExternFile.Literal)-1])
+		if err != nil {
+			c.errorHandler(d.ExternFile, err.Error())
+			return c
+		}
+		c.result.Dependencies[path] = struct{}{}
 	} else {
+		irFunc.Linkage = enum.LinkageInternal
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
