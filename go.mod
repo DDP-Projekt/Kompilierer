@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/bafto/Go-LLVM-Bindings v0.0.0-20220418211425-9d34d266f573
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/llir/irutil v0.0.0-20211226215541-daa08657c5c1
 	github.com/llir/llvm v0.3.5-0.20210831075850-f8d0325a931a
 )

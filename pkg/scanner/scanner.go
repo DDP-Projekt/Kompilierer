@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/kardianos/osext"
 )
 
 type Mode uint32
@@ -238,14 +239,17 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
-var duden_dir string
+var exe_dir string // path to the folder of the kddp executable
 
 func init() {
-	exePath, err := os.Executable()
-	if err != nil {
+	// get the path to the ddp install directory
+	if ddppath := os.Getenv("DDPPATH"); ddppath != "" {
+		exe_dir = ddppath
+	} else if exeFolder, err := osext.ExecutableFolder(); err != nil { // fallback if the environment variable is not set, might fail though
 		panic(err)
+	} else {
+		exe_dir = exeFolder
 	}
-	duden_dir = filepath.Dir(exePath) // for stdlib includes
 }
 
 func (s *Scanner) identifier() token.Token {
@@ -281,7 +285,7 @@ func (s *Scanner) identifier() token.Token {
 		inclPath := ""
 		var err error
 		if filepath.Dir(literalContent) == "Duden" {
-			inclPath = filepath.Join(duden_dir, literalContent) + ".ddp"
+			inclPath = filepath.Join(exe_dir, literalContent) + ".ddp"
 		} else {
 			inclPath, err = filepath.Abs(literalContent + ".ddp") // to eliminate ambiguity with nested includes
 		}

@@ -1541,7 +1541,9 @@ outer:
 				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
 				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
 				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
-				arg := argParser.expression()            // parse the argument
+				argParser.resolver = p.resolver
+				argParser.typechecker = p.typechecker
+				arg := argParser.expression() // parse the argument
 
 				// check if the argument type matches the prameter type
 				argName := tok.Literal[1:]
