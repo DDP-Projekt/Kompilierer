@@ -22,7 +22,7 @@ Die Funktion sign mit den Parametern wert vom Typ Zahl, gibt eine Zahl zurück, 
 	Wenn aber wert größer als 0 ist, Gib 1 zurück.
 	Gib 0 zurück.
 Und kann so benutzt werden:
-	"der Sign von *wert"
+	"das Vorzeichen von *wert"
 
 Die Funktion floor mit den Parametern wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert minus (wert minus wert als Zahl) zurück.
