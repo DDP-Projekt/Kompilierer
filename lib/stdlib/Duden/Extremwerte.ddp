@@ -1,0 +1,31 @@
+Die Funktion MinZahl gibt eine Zahl zurück, macht:
+	Gib -9223372036854775807 zurück.
+Und kann so benutzt werden:
+	"der minimale Wert einer Zahl"
+
+Die Funktion MaxZahl gibt eine Zahl zurück, macht:
+	Gib 9223372036854775807 zurück.
+Und kann so benutzt werden:
+	"der maximale Wert einer Zahl"
+
+[rundungsfehler]
+Die Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
+	Gib 4,9406564584124654 mal 10 hoch -323,6[4] zurück.
+Und kann so benutzt werden:
+	"der minimale Wert einer Kommazahl"
+
+[Wieder hier, rundungsfehler]
+Die Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
+	Gib 1,79769313486231[57] mal 10 hoch 308 zurück.
+Und kann so benutzt werden:
+	"der maximale Wert einer Kommazahl"
+
+Die Funktion Unendlich gibt eine Kommazahl zurück, macht:
+	Gib 1 durch 0 zurück.
+Und kann so benutzt werden:
+	"Unendlich"
+
+Die Funktion KeineZahl gibt eine Kommazahl zurück, macht:
+	Gib 0,0 durch 0,0 zurück.
+Und kann so benutzt werden:
+	"keine Zahl"

@@ -1,0 +1,70 @@
+Die Funktion TrimAnfang mit den Parametern text, zeichen vom Typ Text, Buchstabe, gibt einen Text zurück, macht:
+	Die Zahl index ist 1.
+	Solange (text an der Stelle index) gleich zeichen ist, mache:
+		Erhöhe index um 1.
+	Gib text von index bis (die Länge von text) zurück.
+Und kann so benutzt werden:
+	"entferne alle *zeichen vor *text"
+
+Die Funktion TrimEnde mit den Parametern text, zeichen vom Typ Text, Buchstabe, gibt einen Text zurück, macht:
+	Die Zahl index ist die Länge von text.
+	Solange (text an der Stelle index) gleich zeichen ist, mache:
+		Verringere index um 1.
+	Gib text von 1 bis index zurück.
+Und kann so benutzt werden:
+	"entferne alle *zeichen nach *text"
+
+Die Funktion Trim mit den Parametern text, zeichen vom Typ Text, Buchstabe, gibt einen Text zurück, macht:
+	Die Zahl startIndex ist 1.
+	Die Zahl stopIndex ist die Länge von text.
+	Solange (text an der Stelle startIndex) gleich zeichen ist, mache:
+		Erhöhe startIndex um 1.
+	Solange (text an der Stelle stopIndex) gleich zeichen ist, mache:
+		Verringere stopIndex um 1.
+	Gib text von startIndex bis stopIndex zurück.
+Und kann so benutzt werden:
+	"entferne alle *zeichen vor und nach *text"
+
+Die Funktion EnthältBuchstabe mit den Parametern text, zeichen vom Typ Text, Buchstabe, gibt einen Boolean zurück, macht:
+	Für jeden Buchstaben b in text, mache:
+		Wenn b gleich zeichen ist, dann:
+			Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"*text *zeichen enthält"
+
+Die Funktion EnthältText mit den Parametern text, suchText vom Typ Text, Text, gibt einen Boolean zurück, macht:
+	Die Zahl startIndex ist 0.
+	Die Zahl endIndex ist startIndex plus die Länge von suchText.
+
+	Solange endIndex kleiner als, oder die Länge von text ist, mache:
+		Der Text subtext ist text von startIndex bis endIndex.
+
+		Wenn subtext gleich suchText ist, dann:
+			Gib wahr zurück.
+		
+		Speichere das Ergebnis von startIndex plus die Länge von suchText in endIndex.
+		Erhöhe startIndex um 1.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"*text *suchText enthält"
+
+Die Funktion BeginntMitBuchstabe mit den Parametern text, buchstabe vom Typ Text, Buchstabe, gibt einen Boolean zurück, macht:
+	Gib (text an der Stelle 1) gleich buchstabe zurück.
+Und kann so benutzt werden:
+	"*text mit *buchstabe anfängt"
+
+Die Funktion BeginntMitText mit den Parametern text, suchText vom Typ Text, Text, gibt einen Boolean zurück, macht:
+	Gib (text von 1 bis die Länge von suchText) gleich suchText zurück.
+Und kann so benutzt werden:
+	"*text mit *suchText anfängt"
+
+Die Funktion EndetMitBuchstabe mit den Parametern text, buchstabe vom Typ Text, Buchstabe, gibt einen Boolean zurück, macht:
+	Gib (text an der Stelle die Länge von text) gleich buchstabe zurück.
+Und kann so benutzt werden:
+	"*text mit *buchstabe aufhört"
+
+Die Funktion EndetMitText mit den Parametern text, suchText vom Typ Text, Text, gibt einen Boolean zurück, macht:
+	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis die Länge von text) gleich suchText zurück.
+Und kann so benutzt werden:
+	"*text mit *suchText aufhört"
