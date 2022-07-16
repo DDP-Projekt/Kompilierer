@@ -1,4 +1,4 @@
-Binde "Duden/io" ein.
+Binde "Duden/Ausgabe" ein.
 
 Die Funktion istWahr gibt einen Boolean zurück, macht:
 	Schreibe den Text "istWahr\n".

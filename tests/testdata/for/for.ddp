@@ -1,4 +1,4 @@
-Binde "Duden/io" ein.
+Binde "Duden/Ausgabe" ein.
 
 Die Zahl i ist 5. [check variable shadowing]
 Für jede Zahl i von 0 bis 10, mache:

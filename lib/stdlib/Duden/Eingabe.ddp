@@ -1,0 +1,9 @@
+Die Funktion Lese_Zeile gibt einen Text zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"die nächste Benutzereingabe"
+
+Die Funktion Lese_Buchstabe gibt einen Buchstaben zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"die nächste Taste"

@@ -33,7 +33,7 @@ MAKE = make
 
 .PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug copy-duden ddpruntime ddpruntime-debug test llvm
 
-all: make_out_dir kddp ddpruntime ddpstdlib
+all: make_out_dir kddp ddpruntime ddpstdlib copy-duden
 
 debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug copy-duden
 
