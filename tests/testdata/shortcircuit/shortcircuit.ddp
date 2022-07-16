@@ -1,3 +1,5 @@
+Binde "Duden/io" ein.
+
 Die Funktion istWahr gibt einen Boolean zurück, macht:
 	Schreibe den Text "istWahr\n".
 	Gib wahr zurück.

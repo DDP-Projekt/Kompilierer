@@ -1,3 +1,5 @@
+Binde "Duden/io" ein.
+
 Die Zahl i ist 5. [check variable shadowing]
 Für jede Zahl i von 0 bis 10, mache:
 	Schreibe die Zahl i.

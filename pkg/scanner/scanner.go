@@ -238,6 +238,16 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
+var duden_dir string
+
+func init() {
+	exePath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	duden_dir = filepath.Dir(exePath) // for stdlib includes
+}
+
 func (s *Scanner) identifier() token.Token {
 	shouldReportCapitailzation := false // we don't report capitalization errors on aliases but don't know the tokenType yet, so this flag is used
 	if s.strictCapitalizationMode() && s.shouldCapitalize && !isUpper(s.src[s.cur-1]) {
@@ -267,9 +277,16 @@ func (s *Scanner) identifier() token.Token {
 			s.err("Nach 'ein' muss ein Punkt folgen")
 		}
 
-		inclPath, err := filepath.Abs(strings.Trim(lit.Literal, "\"") + ".ddp") // to eliminate ambiguity with nested includes
+		literalContent := strings.Trim(lit.Literal, "\"")
+		inclPath := ""
+		var err error
+		if filepath.Dir(literalContent) == "Duden" {
+			inclPath = filepath.Join(duden_dir, literalContent) + ".ddp"
+		} else {
+			inclPath, err = filepath.Abs(literalContent + ".ddp") // to eliminate ambiguity with nested includes
+		}
 		if err != nil {
-			s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", strings.Trim(lit.Literal, "\"")+".ddp", err.Error()))
+			s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error()))
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
 			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
 				s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error()))

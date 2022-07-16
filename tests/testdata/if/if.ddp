@@ -1,3 +1,5 @@
+Binde "Duden/io" ein.
+
 Wenn 2 kleiner als 3 ist, dann:
     Schreibe den Text "wahr\n".
 Sonst:

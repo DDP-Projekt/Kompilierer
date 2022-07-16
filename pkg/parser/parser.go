@@ -1,10 +1,7 @@
 package parser
 
 import (
-	"embed"
-	"errors"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -17,79 +14,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
-
-//go:embed inbuilt
-var inbuilt embed.FS
-
-// inbuilt functions are prefixed with § (e.g. §Schreibe_Zahl), that's also how the compiler/interpreter recognizes them as inbuilt
-// the variables below hold the declarations of inbuilt functions and variables
-// they are initialized in the init() func of this package (called when the package is imported)
-var inbuiltSymbolTable *ast.SymbolTable         // stores inbuilt Symbols (func names and constants)
-var inbuiltAliases []funcAlias                  // stores inbuilt aliases
-var inbuiltTypechecker *typechecker.Typechecker // stores the types of inbuilt function arguments
-var inbuiltDecls []*ast.DeclStmt                // stores inbuilt declarations to be evalueated first later on (you could compare it to the go runtime which is compiled into the binaries every time)
-var initializing bool                           // flag if we are currently running the init() function
-
-// load inbuilt functions
-func init() {
-	initializing = true
-	errored := false
-	// helper to set the errored flag on error
-	Err := func(token token.Token, msg string) {
-		errored = true
-		fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", token.File, token.Line, token.Column, msg)
-	}
-
-	inbuiltSymbolTable = ast.NewSymbolTable(nil) // global SymbolTable
-	inbuiltAliases = make([]funcAlias, 0)
-	inbuiltTypechecker = typechecker.New(inbuiltSymbolTable, Err) // needs the global inbuiltSymbolTable to determine inbuilt function argument types
-	inbuiltDecls = make([]*ast.DeclStmt, 0)
-
-	// walk every .ddp file in the inbuilt directory and add its Declarations to the global state
-	fs.WalkDir(inbuilt, ".", func(path string, entry fs.DirEntry, err error) error {
-		if !entry.IsDir() {
-			if filepath.Ext(path) == ".ddp" {
-				errTok := token.Token{File: path, Line: 1, Column: 1}
-
-				file, err := inbuilt.ReadFile(path) // read the file
-				if err != nil {
-					Err(errTok, err.Error())
-					return err
-				}
-
-				tokens, err := scanner.ScanSource(path, file, Err, scanner.ModeInitializing) // scan the file with the ModeInitializing flag to scan § correctly
-				if err != nil {
-					Err(errTok, err.Error())
-					return err
-				}
-
-				p := New(tokens, Err) // create the parser for this file
-				Ast := p.Parse()      // parse the file
-				if Ast.Faulty {
-					Err(errTok, err.Error())
-					return err
-				}
-
-				// append all inbuilt function and variable declarations to the inbuildDecls
-				// they are compiled into every ddp executable
-				for _, stmt := range Ast.Statements {
-					if decl, ok := stmt.(*ast.DeclStmt); ok {
-						inbuiltDecls = append(inbuiltDecls, decl)
-					}
-				}
-
-				inbuiltAliases = append(inbuiltAliases, p.funcAliases...) // append the function aliases
-				inbuiltSymbolTable.Merge(Ast.Symbols)                     // add the symbols (variable and function names) to the inbuildSymbolTable
-			}
-		}
-		return nil
-	})
-
-	if errored {
-		panic(errors.New("unable to load inbuilts")) // inbuilts MUST build
-	}
-	initializing = false
-}
 
 // wrapper for an alias
 type funcAlias struct {
@@ -128,10 +52,7 @@ func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
-	aliases := make([]funcAlias, len(inbuiltAliases))
-	// we don't want to change the inbuilt aliases incase we are in initializing mode,
-	// so we copy them
-	copy(aliases, inbuiltAliases)
+	aliases := make([]funcAlias, 0)
 	parser := &Parser{
 		tokens:       tokens,
 		cur:          0,
@@ -149,23 +70,15 @@ func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 // parse the provided tokens into an Ast
 func (p *Parser) Parse() *ast.Ast {
 	Ast := &ast.Ast{
-		Statements: make([]ast.Statement, 0, len(inbuiltDecls)), // every AST has at least the inbuild function and variable declarations
-		Symbols:    inbuiltSymbolTable.Copy(),                   // every AST has at least the inbuild function and variable symbols
+		Statements: make([]ast.Statement, 0),
+		Symbols:    ast.NewSymbolTable(nil),
 		Faulty:     false,
 		File:       p.tokens[0].File,
 	}
 
-	if !initializing { // don't append inbuilt stuff if this is just a temporary ast during initialization
-		for _, v := range inbuiltDecls {
-			Ast.Statements = append(Ast.Statements, v)
-		}
-	}
-
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	p.resolver = resolver.New(Ast, p.errorHandler)
-	*p.typechecker = *inbuiltTypechecker // the typechecker needs the funcArgs field from the inbuilt SymbolTable
-	p.typechecker.ErrorHandler = p.errorHandler
-	p.typechecker.CurrentTable = Ast.Symbols
+	p.typechecker = typechecker.New(Ast.Symbols, p.errorHandler)
 
 	// main parsing loop
 	for !p.atEnd() {
@@ -474,7 +387,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		p.currentFunction = name.Literal
 		body = p.blockStatement().(*ast.BlockStmt) // parse the body
 		// check that the function has a return statement if it needs one
-		if Typ != token.DDPVoidType() && !initializing { // only if the function does not return void
+		if Typ != token.DDPVoidType() { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
 				perr(Funktion, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
 			} else {

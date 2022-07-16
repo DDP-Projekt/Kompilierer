@@ -1,3 +1,5 @@
+Binde "Duden/io" ein.
+
 Für jeden Buchstaben b in "Hallo", mache:
 	Schreibe den Buchstaben b.
 Für jeden Buchstaben b in "Hallo", Schreibe den Buchstaben b.
