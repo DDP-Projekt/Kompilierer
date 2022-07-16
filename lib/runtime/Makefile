@@ -1,8 +1,8 @@
 OUT_FILE_NAME = ""
 ifeq ($(OS),Windows_NT)
-	OUT_FILE_NAME := ddpstdlib.lib
+	OUT_FILE_NAME := ddpruntime.lib
 else
-	OUT_FILE_NAME := ddpstdlib.a
+	OUT_FILE_NAME := ddpruntime.a
 endif
 
 .PHONY = all build clean debug

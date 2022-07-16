@@ -321,6 +321,7 @@ ddpstring* inbuilt_char_to_string(ddpchar c) {
 }
 
 ddpbool inbuilt_string_equal(ddpstring* str1, ddpstring* str2) {
+	if (str1 == str2) return true;
 	if (strlen(str1->str) != strlen(str2->str)) return false; // if the length is different, it's a quick false return
 	return memcmp(str1->str, str2->str, str1->cap) == 0;
 }

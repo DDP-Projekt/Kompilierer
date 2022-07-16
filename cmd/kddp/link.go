@@ -39,12 +39,14 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 	}
 
 	stdlibdir := filepath.Join(filepath.Dir(os.Args[0]), "ddpstdlib.lib")
+	runtimedir := filepath.Join(filepath.Dir(os.Args[0]), "ddpruntime.lib")
 	if runtime.GOOS == "linux" {
 		stdlibdir = changeExtension(stdlibdir, ".a")
+		runtimedir = changeExtension(runtimedir, ".a")
 	}
 	args := append(make([]string, 0), "-o", outputFile) // -lm needed for math.h (don't know why I need this on linux)
 	args = append(args, link_dependencies...)
-	args = append(args, inputFile, stdlibdir, "-lm")
+	args = append(args, inputFile, stdlibdir, runtimedir, "-lm")
 	cmd := exec.Command("gcc", args...)
 	if out != nil {
 		cmd.Stdout = out

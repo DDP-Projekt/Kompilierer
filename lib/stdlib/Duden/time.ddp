@@ -1,4 +1,4 @@
-Die Funktion §Zeit_Seit_Programmstart gibt eine Zahl zurück,
+Die Funktion Zeit_Seit_Programmstart gibt eine Zahl zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"die Zeit seit Programmstart" oder

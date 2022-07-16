@@ -31,4 +31,4 @@
 - [ ] References
 - [ ] Modul System
 - [ ] Single-function import
-- [ ] Externe Funktionen (in C geschrieben)
+- [X] Externe Funktionen (in C geschrieben)

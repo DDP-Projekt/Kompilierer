@@ -1,40 +1,40 @@
-Die Funktion §Schreibe_Zahl mit den Parametern p1 vom Typ Zahl, gibt nichts zurück,
+Die Funktion Schreibe_Zahl mit den Parametern p1 vom Typ Zahl, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe die Zahl *p1" oder
 	"Schreibe *p1"
 
-Die Funktion §Schreibe_Kommazahl mit den Parametern p1 vom Typ Kommazahl, gibt nichts zurück,
+Die Funktion Schreibe_Kommazahl mit den Parametern p1 vom Typ Kommazahl, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe die Kommazahl *p1" oder
 	"Schreibe *p1"
 
-Die Funktion §Schreibe_Boolean mit den Parametern p1 vom Typ Boolean, gibt nichts zurück,
+Die Funktion Schreibe_Boolean mit den Parametern p1 vom Typ Boolean, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe den Boolean *p1" oder
 	"Schreibe *p1"
 
-Die Funktion §Schreibe_Buchstabe mit den Parametern p1 vom Typ Buchstabe, gibt nichts zurück,
+Die Funktion Schreibe_Buchstabe mit den Parametern p1 vom Typ Buchstabe, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe den Buchstaben *p1" oder
 	"Schreibe *p1"
 
-Die Funktion §Schreibe_Text mit den Parametern p1 vom Typ Text, gibt nichts zurück,
+Die Funktion Schreibe_Text mit den Parametern p1 vom Typ Text, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe den Text *p1" oder
 	"Schreibe *p1"
 
 
-Die Funktion §Lese_Zeile gibt einen Text zurück,
+Die Funktion Lese_Zeile gibt einen Text zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"die nächste Benutzereingabe"
 
-Die Funktion §Lese_Buchstabe gibt einen Buchstaben zurück,
+Die Funktion Lese_Buchstabe gibt einen Buchstaben zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"die nächste Taste"
