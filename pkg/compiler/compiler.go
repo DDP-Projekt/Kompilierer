@@ -5,7 +5,6 @@ import (
 	"io"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
@@ -317,9 +316,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	// append a prefix to every ir function to make it impossible for the user to break internal stuff
 	name := d.Name.Literal
-	if ast.IsInbuiltFunc(d) { // inbuilt/runtime functions are prefixed with inbuilt_
-		name = "inbuilt_" + strings.TrimLeft(name, "§")
-	} else if ast.IsExternFunc(d) {
+	if ast.IsExternFunc(d) {
 		name = "ddpextern_" + name
 	} else { // user-defined functions are prefixed with ddpfunc_
 		name = "ddpfunc_" + name

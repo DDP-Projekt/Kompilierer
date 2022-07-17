@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
@@ -571,8 +572,12 @@ func (i *Interpreter) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			i.currentEnvironment.addVar(k, i.evaluate(v))
 		}
 
-		if ast.IsInbuiltFunc(fun) {
-			i.lastReturn = i.callInbuilt(e.Name)
+		if ast.IsExternFunc(fun) {
+			if strings.Trim(fun.ExternFile.Literal, "\"") == "ddpstdlib.lib" {
+				i.callInbuilt(fun.Name.Literal)
+			} else {
+				err(e.Token(), "Externe Funktionen können nicht interpretiert werden")
+			}
 		} else {
 			// execute the function body, a panic may return a value
 			var returnValue value = nil

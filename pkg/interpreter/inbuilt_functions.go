@@ -11,13 +11,14 @@ func (i *Interpreter) callInbuilt(name string) value {
 	return inbuiltFunctions[name](i)
 }
 
+// TODO: add all stdlib functions
 var inbuiltFunctions = map[string]inbuiltfunction{
-	"§Schreibe_Zahl":           schreibeZahl,
-	"§Schreibe_Kommazahl":      schreibeKommazahl,
-	"§Schreibe_Boolean":        schreibeBoolean,
-	"§Schreibe_Buchstabe":      schreibeBuchstabe,
-	"§Schreibe_Text":           schreibeText,
-	"§Zeit_Seit_Programmstart": zeitSeitProgrammstart,
+	"Schreibe_Zahl":           schreibeZahl,
+	"Schreibe_Kommazahl":      schreibeKommazahl,
+	"Schreibe_Boolean":        schreibeBoolean,
+	"Schreibe_Buchstabe":      schreibeBuchstabe,
+	"Schreibe_Text":           schreibeText,
+	"Zeit_Seit_Programmstart": zeitSeitProgrammstart,
 }
 
 func schreibeZahl(i *Interpreter) value {

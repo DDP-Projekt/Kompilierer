@@ -19,7 +19,6 @@ const (
 	ModeNone                 = 0           // nothing special
 	ModeStrictCapitalization = (1 << iota) // report capitalization errors
 	ModeAlias                              // interpret the tokens as alias (enables *arg syntax)
-	ModeInitializing                       // allow special characters for inbuilt functions
 )
 
 type ErrorHandler func(tok token.Token, msg string)
@@ -126,7 +125,7 @@ func (s *Scanner) NextToken() token.Token {
 
 	char := s.advance()
 
-	if isAlpha(char, s.initMode()) {
+	if isAlpha(char) {
 		return s.identifier()
 	}
 	if isDigit(char) {
@@ -258,7 +257,7 @@ func (s *Scanner) identifier() token.Token {
 		shouldReportCapitailzation = true
 	}
 
-	for isAlphaNumeric(s.peek(), s.initMode()) {
+	for isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
 
@@ -324,7 +323,7 @@ func (s *Scanner) identifierType() token.TokenType {
 
 // helper to scan the *argname in aliases
 func (s *Scanner) aliasParameter() token.Token {
-	for isAlphaNumeric(s.peek(), s.initMode()) {
+	for isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
 
@@ -472,18 +471,11 @@ func (s *Scanner) aliasMode() bool {
 	return s.mode&ModeAlias != 0
 }
 
-func (s *Scanner) initMode() bool {
-	return s.mode&ModeInitializing != 0
-}
-
 func isDigit(r rune) bool {
 	return '0' <= r && r <= '9'
 }
 
-func isAlpha(r rune, initializing bool) bool {
-	if initializing && r == '§' {
-		return true
-	}
+func isAlpha(r rune) bool {
 	return ('a' <= r && r <= 'z') ||
 		('A' <= r && r <= 'Z') ||
 		r == 'ß' || r == '_' || r == 'ä' ||
@@ -491,8 +483,8 @@ func isAlpha(r rune, initializing bool) bool {
 		r == 'ü' || r == 'Ü'
 }
 
-func isAlphaNumeric(r rune, initializing bool) bool {
-	return isAlpha(r, initializing) || isDigit(r)
+func isAlphaNumeric(r rune) bool {
+	return isAlpha(r) || isDigit(r)
 }
 
 func isSpace(r rune) bool {

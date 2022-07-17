@@ -74,7 +74,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	return r
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed && !ast.IsInbuiltFunc(decl) {
+	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed {
 		r.err(decl.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal)) // functions may only be declared once
 	}
 	if !ast.IsExternFunc(decl) {
