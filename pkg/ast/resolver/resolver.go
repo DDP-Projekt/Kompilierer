@@ -97,7 +97,7 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
 func (r *Resolver) VisitIdent(expr *ast.Ident) ast.Visitor {
 	// check if the variable exists
 	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
-		r.err(expr.Token(), fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
+		r.err(expr.Token(), fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal))
 	}
 	return r
 }

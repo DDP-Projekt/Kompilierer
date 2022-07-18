@@ -270,14 +270,14 @@ func (s *Scanner) identifier() token.Token {
 	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
 		lit := s.NextToken()
 		if lit.Type != token.STRING {
-			s.err("Nach 'Binde' muss ein Text Literal folgen")
+			s.errorHandler(lit, "Nach 'Binde' muss ein Text Literal folgen")
 			return lit
 		}
 
-		if s.NextToken().Type != token.EIN {
-			s.err("Es wurde 'ein' erwartet")
-		} else if s.NextToken().Type != token.DOT {
-			s.err("Nach 'ein' muss ein Punkt folgen")
+		if tok := s.NextToken(); tok.Type != token.EIN {
+			s.errorHandler(tok, "Es wurde 'ein' erwartet")
+		} else if tok := s.NextToken(); tok.Type != token.DOT {
+			s.errorHandler(tok, "Nach 'ein' muss ein Punkt folgen")
 		}
 
 		literalContent := strings.Trim(lit.Literal, "\"")
@@ -289,10 +289,10 @@ func (s *Scanner) identifier() token.Token {
 			inclPath, err = filepath.Abs(literalContent + ".ddp") // to eliminate ambiguity with nested includes
 		}
 		if err != nil {
-			s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error()))
+			s.errorHandler(lit, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error()))
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
 			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
-				s.err(fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error()))
+				s.errorHandler(lit, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error()))
 			} else {
 				// append the already included files
 				for k, v := range s.includedFiles {
@@ -361,7 +361,7 @@ func (s *Scanner) skipWhitespace() {
 		case '\n':
 			s.line++
 			s.indent = 0
-			s.column = 0
+			s.column = 1
 			s.shouldIndent = true
 			s.advance()
 		case '[':
