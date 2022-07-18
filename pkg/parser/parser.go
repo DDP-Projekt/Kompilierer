@@ -132,7 +132,7 @@ func (p *Parser) declaration() ast.Statement {
 			}
 		case token.DIE:
 			switch p.peek().Type {
-			case token.ZAHL, token.KOMMAZAHL:
+			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN:
 				p.match(token.ZAHL, token.KOMMAZAHL)           // consume the type
 				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			case token.FUNKTION:
@@ -385,7 +385,18 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
 		p.currentFunction = name.Literal
-		body = p.blockStatement().(*ast.BlockStmt) // parse the body
+
+		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
+		// add the parameters to the table
+		for i, l := 0, len(paramNames); i < l; i++ {
+			bodyTable.InsertVar(paramNames[i].Literal, paramTypes[i])
+		}
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
+
+		body = p.blockStatement().(*ast.BlockStmt) // parse the body with the parameters in the current table
+
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
+
 		// check that the function has a return statement if it needs one
 		if Typ != token.DDPVoidType() { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
