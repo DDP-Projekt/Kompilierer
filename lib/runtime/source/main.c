@@ -8,6 +8,7 @@
 #include <Windows.h>
 #endif // _WIN32
 #include "gc.h"
+#include "mt19937-64.h"
 
 // should not be needed in production
 // mainly for debugging
@@ -27,6 +28,8 @@ static void init_runtime() {
 #endif // _WIN32
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
+
+	init_mt19937_64(); // seed the random generator
 
 	initTable(get_ref_table()); // initialize the reference table
 }
