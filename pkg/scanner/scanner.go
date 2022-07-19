@@ -326,13 +326,17 @@ func (s *Scanner) aliasParameter() token.Token {
 	if !isAlpha(s.peek()) {
 		s.err("Invalider Parameter Name")
 	}
-	for s.peek() != '>' {
+	for !s.atEnd() && s.peek() != '>' {
 		if !isAlphaNumeric(s.advance()) {
 			s.err("Invalider Parameter Name")
 		}
 	}
-	s.advance() // consume the closing >
-	if s.cur-s.start <= 2 {
+	if s.atEnd() {
+		s.err("Offener Parameter")
+	} else {
+		s.advance() // consume the closing >
+	}
+	if s.cur-s.start <= 2 && !s.atEnd() {
 		s.err("Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten!")
 	}
 
