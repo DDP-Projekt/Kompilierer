@@ -16,7 +16,7 @@ type Token struct {
 }
 
 func (t Token) String() string {
-	return t.Type.String()
+	return t.Literal
 }
 
 func (t Token) StringVerbose() string {

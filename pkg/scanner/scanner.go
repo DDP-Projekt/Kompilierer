@@ -149,7 +149,7 @@ func (s *Scanner) NextToken() token.Token {
 		return s.string()
 	case '\'':
 		return s.char()
-	case '*':
+	case '<':
 		if s.aliasMode() {
 			return s.aliasParameter()
 		}
@@ -323,8 +323,17 @@ func (s *Scanner) identifierType() token.TokenType {
 
 // helper to scan the *argname in aliases
 func (s *Scanner) aliasParameter() token.Token {
-	for isAlphaNumeric(s.peek()) {
-		s.advance()
+	if !isAlpha(s.peek()) {
+		s.err("Invalider Parameter Name")
+	}
+	for s.peek() != '>' {
+		if !isAlphaNumeric(s.advance()) {
+			s.err("Invalider Parameter Name")
+		}
+	}
+	s.advance() // consume the closing >
+	if s.cur-s.start <= 2 {
+		s.err("Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten!")
 	}
 
 	if tokenType := s.identifierType(); tokenType != token.IDENTIFIER {

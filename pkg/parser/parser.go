@@ -104,7 +104,7 @@ func (p *Parser) synchronize() {
 	p.panicMode = false
 	p.Errored = true
 
-	p.advance()
+	//p.advance() // maybe this needs to stay?
 	for !p.atEnd() {
 		if p.previous().Type == token.DOT { // a . ends statements, so we can continue parsing
 			return
@@ -256,35 +256,63 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	var paramNames []token.Token = nil
 	var paramTypes []token.DDPType = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
-		validate(p.consumeN(token.DEN, token.PARAMETERN, token.IDENTIFIER))
+		singleParameter := true
+		if p.matchN(token.DEN, token.PARAMETERN) {
+			singleParameter = false
+		} else if !p.matchN(token.DEM, token.PARAMETER) {
+			valid = false
+			p.err(p.peek(), fmt.Sprintf("Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek().String()))
+		}
+		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
-		for p.match(token.COMMA) {                                // the function takes multiple parameters
-			if !p.consume(token.IDENTIFIER) {
-				break
+		if !singleParameter {
+			addParamName := func(name token.Token) {
+				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
+					valid = false
+					perr(name, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+				}
+				paramNames = append(paramNames, name) // append the parameter name
 			}
-			if containsLiteral(paramNames, p.previous().Literal) { // check that each parameter name is unique
-				valid = false
-				perr(p.previous(), fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", p.previous().Literal))
+			if p.match(token.UND) {
+				p.consume(token.IDENTIFIER)
+				addParamName(p.previous())
+			} else {
+				for p.match(token.COMMA) { // the function takes multiple parameters
+					if !p.consume(token.IDENTIFIER) {
+						break
+					}
+					addParamName(p.previous())
+				}
+				p.consumeN(token.UND, token.IDENTIFIER)
+				addParamName(p.previous())
 			}
-			paramNames = append(paramNames, p.previous()) // append the parameter name
 		}
 		// parse the types of the parameters
 		p.consumeN(token.VOM, token.TYP)
 		firstType := p.parseType()
 		validate(firstType.PrimitiveType != token.ILLEGAL)
 		paramTypes = append(make([]token.DDPType, 0), firstType) // append the first parameter type
-		for p.match(token.COMMA) {                               // parse the other parameter types
-			if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
-				break
+		if !singleParameter {
+			addType := func() {
+				// validate the parameter type and append it
+				typ := p.parseType()
+				validate(typ.PrimitiveType != token.ILLEGAL)
+				paramTypes = append(paramTypes, typ)
 			}
-			// validate the parameter type and append it
-			typ := p.parseType()
-			validate(typ.PrimitiveType != token.ILLEGAL)
-			paramTypes = append(paramTypes, typ)
+			if p.match(token.UND) {
+				addType()
+			} else {
+				for p.match(token.COMMA) { // parse the other parameter types
+					if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
+						break
+					}
+					addType()
+				}
+				p.consume(token.UND)
+				addType()
+			}
 		}
-		if p.previous().Type != token.COMMA {
-			perr(p.previous(), fmt.Sprintf("Es wurde 'COMMA' erwartet aber '%s' gefunden", p.previous().String()))
-		}
+		p.consume(token.COMMA)
 	}
 	// we need as many parmeter names as types
 	if len(paramNames) != len(paramTypes) {
@@ -310,7 +338,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	} else {
 		validate(p.consumeN(token.IST, token.IN, token.STRING, token.DEFINIERT))
 		definedIn = p.peekN(-2)
-		switch filepath.Ext(definedIn.Literal[1 : len(definedIn.Literal)-1]) {
+		switch filepath.Ext(strings.Trim(definedIn.Literal, "\"")) {
 		case ".c", ".lib", ".a", ".o":
 		default:
 			p.err(definedIn, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
@@ -344,7 +372,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	funcAliases := make([]funcAlias, 0)
 	for _, v := range aliases {
 		// scan the raw alias withouth the ""
-		if alias, err := scanner.ScanAlias([]byte(v.Literal[1:len(v.Literal)-1]), p.errorHandler); err != nil {
+		if alias, err := scanner.ScanAlias([]byte(strings.Trim(v.Literal, "\"")), p.errorHandler); err != nil {
 			perr(v, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
@@ -442,7 +470,7 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []t
 	// and fill in the AliasInfo
 	for i, v := range alias {
 		if isAliasExpr(v) {
-			k := v.Literal[1:] // remove the * from *argname
+			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 			if typ, ok := nameSet[k]; ok {
 				alias[i].AliasInfo = &typ
 				delete(nameSet, k)
@@ -1617,7 +1645,7 @@ outer:
 
 // helper to parse ddp chars with escape sequences
 func (p *Parser) parseChar(s string) (r rune) {
-	lit := s[1 : len(s)-1] // remove the ''
+	lit := strings.Trim(s, "'") // remove the ''
 	switch utf8.RuneCountInString(lit) {
 	case 1: // a single character can just be returned
 		r, _ = utf8.DecodeRuneInString(lit)
@@ -1649,7 +1677,7 @@ func (p *Parser) parseChar(s string) (r rune) {
 
 // helper to parse ddp strings with escape sequences
 func (p *Parser) parseString(s string) string {
-	str := s[1 : len(s)-1] // remove the ""
+	str := strings.Trim(s, "\"") // remove the ""
 
 	for i, w := 0, 0; i < len(str); i += w {
 		var r rune
