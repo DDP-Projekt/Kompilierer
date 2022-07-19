@@ -1,14 +1,14 @@
-Die Funktion ZufallFloat mit den Parametern a, b vom Typ Kommazahl, Kommazahl, gibt eine Kommazahl zurück,
+Die Funktion ZufallFloat mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
-	"eine zufällige Kommazahl zwischen *a und *b"
+	"eine zufällige Kommazahl zwischen <a> und <b>"
 
-Die Funktion ZufallInt mit den Parametern a, b vom Typ Zahl, Zahl, gibt eine Zahl zurück,
+Die Funktion ZufallInt mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
-	"eine zufällige Zahl zwischen *a und *b"
+	"eine zufällige Zahl zwischen <a> und <b>"
 
-Die Funktion ZufallBool mit den Parametern p vom Typ Kommazahl, gibt einen Boolean zurück,
+Die Funktion ZufallBool mit dem Parameter p vom Typ Kommazahl, gibt einen Boolean zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
-	"ein Ereignis mit Wahrscheinlichkeit *p Prozent eingetroffen"
+	"ein Ereignis mit Wahrscheinlichkeit <p> Prozent eingetroffen"
