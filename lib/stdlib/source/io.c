@@ -7,6 +7,9 @@
 #include "memory.h"
 #include "debug.h"
 #include <math.h>
+#ifdef _WIN32
+#include <Windows.h>
+#endif // _WIN32
 
 void ddpextern_Schreibe_Zahl(ddpint p1) {
 	printf("%ld", p1);
@@ -39,7 +42,7 @@ void ddpextern_Schreibe_Text(ddpstring* p1) {
 }
 
 #ifdef _WIN32
-HANDLE* get_stdin_handle() {
+static HANDLE* get_stdin_handle() {
 	static HANDLE stdin_hndl;
 	static bool initialized = false;
 	if (!initialized) {
@@ -51,7 +54,7 @@ HANDLE* get_stdin_handle() {
 #endif // _WIN32
 
 // discards all characters in stdin up to and including '\n' or EOF
-void flush_stdin() {
+static void flush_stdin() {
 	int c;
 	while ((c = getchar()) != '\n' && c != EOF);
 }

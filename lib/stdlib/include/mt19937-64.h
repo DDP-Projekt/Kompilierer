@@ -3,9 +3,6 @@
 
 #include "common.h"
 
-// initialize the global mt19937_64 algorithm with time(NULL) as seed
-void init_mt19937_64();
-
 // generates a random number on [0, 2^64-1]-interval
 uint64_t genrand64_int64();
 
