@@ -1585,7 +1585,7 @@ outer:
 				arg := argParser.expression() // parse the argument
 
 				// check if the argument type matches the prameter type
-				argName := tok.Literal[1:]
+				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
 				// we are in the for loop below, so the types must match
 				// otherwise it doesn't matter
 				if typeSensitive {
@@ -1702,7 +1702,7 @@ func (p *Parser) parseString(s string) string {
 				continue
 			}
 
-			str = str[0:i] + string(seq) + str[i+w+w2:]
+			str = str[:i] + string(seq) + str[i+w+w2:]
 		}
 	}
 
