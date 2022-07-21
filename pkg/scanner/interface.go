@@ -1,6 +1,10 @@
 package scanner
 
-import "github.com/DDP-Projekt/Kompilierer/pkg/token"
+import (
+	"strings"
+
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+)
 
 // scans the provided file
 func ScanFile(path string, errorHandler ErrorHandler, mode Mode) ([]token.Token, error) {
@@ -22,10 +26,11 @@ func ScanSource(name string, src []byte, errorHandler ErrorHandler, mode Mode) (
 
 // scans the provided source as a function alias
 // expects the alias without the enclosing ""
-func ScanAlias(alias []byte, errorHandler ErrorHandler) ([]token.Token, error) {
-	if scan, err := New("Alias", alias, errorHandler, ModeAlias); err != nil {
+func ScanAlias(alias token.Token, errorHandler ErrorHandler) ([]token.Token, error) {
+	if scan, err := New("Alias", []byte(strings.Trim(alias.Literal, "\"")), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
+		scan.file, scan.line, scan.column, scan.indent = alias.File, alias.Line, alias.Column, alias.Indent
 		return scan.ScanAll(), nil
 	}
 }

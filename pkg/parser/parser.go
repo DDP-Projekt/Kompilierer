@@ -372,7 +372,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	funcAliases := make([]funcAlias, 0)
 	for _, v := range aliases {
 		// scan the raw alias withouth the ""
-		if alias, err := scanner.ScanAlias([]byte(strings.Trim(v.Literal, "\"")), p.errorHandler); err != nil {
+		if alias, err := scanner.ScanAlias(v, p.errorHandler); err != nil {
 			perr(v, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)

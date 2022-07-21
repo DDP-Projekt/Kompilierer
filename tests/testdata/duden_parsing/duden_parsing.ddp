@@ -1,0 +1,12 @@
+[
+	This test just includes every ddp file from the duden
+	to check that it parses correctly
+]
+
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Eingabe" ein.
+Binde "Duden/Extremwerte" ein.
+Binde "Duden/Mathe" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Zeit" ein.
+Binde "Duden/Zufall" ein.
