@@ -133,8 +133,8 @@ func (p *Parser) declaration() ast.Statement {
 		case token.DIE:
 			switch p.peek().Type {
 			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN:
-				p.match(token.ZAHL, token.KOMMAZAHL)           // consume the type
-				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
+				p.match(token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN) // consume the type
+				return &ast.DeclStmt{Decl: p.varDeclaration()}                                                                     // parse the declaration
 			case token.FUNKTION:
 				p.match(token.FUNKTION)
 				return &ast.DeclStmt{Decl: p.funcDeclaration()} // parse the function declaration
@@ -1715,7 +1715,7 @@ func (p *Parser) parseString(s string) string {
 func (p *Parser) parseType() token.DDPType {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), fmt.Sprintf("Es wurde ein Typname erwartet aber '%s' gefundne", p.peek().Literal))
+		p.err(p.peek(), fmt.Sprintf("Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal))
 		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
 	}
 
