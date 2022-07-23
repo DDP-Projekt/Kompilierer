@@ -249,69 +249,6 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpfloat:
 			i.lastReturn = ddpfloat(math.Tanh(float64(v)))
 		}
-	case token.ZAHL:
-		switch v := rhs.(type) {
-		case ddpint:
-			i.lastReturn = v
-		case ddpfloat:
-			i.lastReturn = ddpint(v)
-		case ddpbool:
-			if v {
-				i.lastReturn = ddpint(1)
-			} else {
-				i.lastReturn = ddpint(0)
-			}
-		case ddpchar:
-			i.lastReturn = ddpint(v)
-		case ddpstring:
-			if result, Err := strconv.ParseInt(string(v), 10, 64); Err != nil {
-				err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Zahl umgewandelt werden", string(v)))
-			} else {
-				i.lastReturn = ddpint(result)
-			}
-		}
-	case token.KOMMAZAHL:
-		switch v := rhs.(type) {
-		case ddpint:
-			i.lastReturn = ddpfloat(v)
-		case ddpfloat:
-			i.lastReturn = v
-		case ddpstring:
-			if result, Err := strconv.ParseFloat(string(v), 64); Err != nil {
-				err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Kommazahl umgewandelt werden", string(v)))
-			} else {
-				i.lastReturn = ddpfloat(result)
-			}
-		}
-	case token.BOOLEAN:
-		switch v := rhs.(type) {
-		case ddpint:
-			if v == 0 {
-				i.lastReturn = ddpbool(false)
-			} else {
-				i.lastReturn = ddpbool(true)
-			}
-		case ddpbool:
-			i.lastReturn = v
-		}
-	case token.BUCHSTABE:
-		switch v := rhs.(type) {
-		case ddpint:
-			i.lastReturn = ddpchar(v)
-		case ddpchar:
-			i.lastReturn = v
-		}
-	case token.TEXT:
-		switch v := rhs.(type) {
-		case ddpint:
-			i.lastReturn = ddpstring(strconv.FormatInt(int64(v), 10))
-		case ddpfloat:
-			i.lastReturn = ddpstring(strconv.FormatFloat(float64(v), 'f', -1, 64))
-		case ddpchar:
-			i.lastReturn = ddpstring(v)
-		case ddpstring:
-			i.lastReturn = v
-		}
 	default:
 		err(e.Token(), fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
 	}
@@ -558,6 +495,81 @@ func (i *Interpreter) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 		i.lastReturn = ddpstring(([]rune(lhs.(ddpstring)))[mid.(ddpint)-1 : rhs.(ddpint)])
 	}
 
+	return i
+}
+func (i *Interpreter) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+	lhs := i.evaluate(e.Lhs)
+	if e.Type.IsList {
+		err(e.Token(), "Lists not implemented")
+	} else {
+		switch e.Type.PrimitiveType {
+		case token.ZAHL:
+			switch v := lhs.(type) {
+			case ddpint:
+				i.lastReturn = v
+			case ddpfloat:
+				i.lastReturn = ddpint(v)
+			case ddpbool:
+				if v {
+					i.lastReturn = ddpint(1)
+				} else {
+					i.lastReturn = ddpint(0)
+				}
+			case ddpchar:
+				i.lastReturn = ddpint(v)
+			case ddpstring:
+				if result, Err := strconv.ParseInt(string(v), 10, 64); Err != nil {
+					err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Zahl umgewandelt werden", string(v)))
+				} else {
+					i.lastReturn = ddpint(result)
+				}
+			}
+		case token.KOMMAZAHL:
+			switch v := lhs.(type) {
+			case ddpint:
+				i.lastReturn = ddpfloat(v)
+			case ddpfloat:
+				i.lastReturn = v
+			case ddpstring:
+				if result, Err := strconv.ParseFloat(string(v), 64); Err != nil {
+					err(e.Token(), fmt.Sprintf("Der Text '%s' kann nicht in eine Kommazahl umgewandelt werden", string(v)))
+				} else {
+					i.lastReturn = ddpfloat(result)
+				}
+			}
+		case token.BOOLEAN:
+			switch v := lhs.(type) {
+			case ddpint:
+				if v == 0 {
+					i.lastReturn = ddpbool(false)
+				} else {
+					i.lastReturn = ddpbool(true)
+				}
+			case ddpbool:
+				i.lastReturn = v
+			}
+		case token.BUCHSTABE:
+			switch v := lhs.(type) {
+			case ddpint:
+				i.lastReturn = ddpchar(v)
+			case ddpchar:
+				i.lastReturn = v
+			}
+		case token.TEXT:
+			switch v := lhs.(type) {
+			case ddpint:
+				i.lastReturn = ddpstring(strconv.FormatInt(int64(v), 10))
+			case ddpfloat:
+				i.lastReturn = ddpstring(strconv.FormatFloat(float64(v), 'f', -1, 64))
+			case ddpchar:
+				i.lastReturn = ddpstring(v)
+			case ddpstring:
+				i.lastReturn = v
+			}
+		default:
+			err(e.Token(), "Inalide Typumwandlung")
+		}
+	}
 	return i
 }
 func (i *Interpreter) VisitGrouping(e *ast.Grouping) ast.Visitor {

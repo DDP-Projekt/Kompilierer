@@ -202,36 +202,6 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 		}
 
 		t.latestReturnedType = token.DDPFloatType()
-	case token.ZAHL:
-		if !rhs.IsPrimitive() {
-			t.errExpected(expr.Operator, rhs, token.DDPFloatType(), token.DDPIntType(), token.DDPStringType(), token.DDPBoolType(), token.DDPCharType())
-		}
-
-		t.latestReturnedType = token.DDPIntType()
-	case token.KOMMAZAHL:
-		if !isOfType(rhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType()) {
-			t.errExpected(expr.Operator, rhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType())
-		}
-
-		t.latestReturnedType = token.DDPFloatType()
-	case token.BOOLEAN:
-		if !isOfType(rhs, token.DDPIntType(), token.DDPBoolType()) {
-			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPBoolType())
-		}
-
-		t.latestReturnedType = token.DDPBoolType()
-	case token.BUCHSTABE:
-		if !isOfType(rhs, token.DDPIntType(), token.DDPCharType()) {
-			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPCharType())
-		}
-
-		t.latestReturnedType = token.DDPCharType()
-	case token.TEXT:
-		if !rhs.IsPrimitive() {
-			t.errExpected(expr.Operator, rhs, token.DDPFloatType(), token.DDPIntType(), token.DDPStringType(), token.DDPBoolType(), token.DDPCharType())
-		}
-
-		t.latestReturnedType = token.DDPStringType()
 	default:
 		t.err(expr.Operator, fmt.Sprintf("Unbekannter unärer Operator '%s'", expr.Operator.String()))
 	}
@@ -335,6 +305,71 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
 	default:
 		t.err(expr.Operator, fmt.Sprintf("Unbekannter ternärer Operator '%s'", expr.Operator.String()))
 	}
+	return t
+}
+func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.Visitor {
+	lhs := t.Evaluate(expr.Lhs)
+	if expr.Type.IsList {
+		switch expr.Type.PrimitiveType {
+		case token.ZAHL:
+			if !isOfType(lhs, token.DDPIntType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Zahlen Liste umgewandelt werden", lhs.String()))
+			}
+		case token.KOMMAZAHL:
+			if !isOfType(lhs, token.DDPFloatType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahlen Liste umgewandelt werden", lhs.String()))
+			}
+		case token.BOOLEAN:
+			if !isOfType(lhs, token.DDPBoolType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Boolean Liste umgewandelt werden", lhs.String()))
+			}
+		case token.BUCHSTABE:
+			if !isOfType(lhs, token.DDPCharType(), token.DDPStringType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Buchstaben Liste umgewandelt werden", lhs.String()))
+			}
+		case token.TEXT:
+			if !isOfType(lhs, token.DDPStringType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Text Liste umgewandelt werden", lhs.String()))
+			}
+		default:
+			t.err(expr.Token(), fmt.Sprintf("Invalide Typumwandlung zu %s", expr.Type.String()))
+		}
+	} else {
+		switch expr.Type.PrimitiveType {
+		case token.ZAHL:
+			if !lhs.IsPrimitive() {
+				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einer Zahl umgewandelt werden", lhs.String()))
+			}
+		case token.KOMMAZAHL:
+			if !lhs.IsPrimitive() {
+				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einer Kommazahl umgewandelt werden", lhs.String()))
+			}
+			if !isOfType(lhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahl umgewandelt werden", lhs.String()))
+			}
+		case token.BOOLEAN:
+			if !lhs.IsPrimitive() {
+				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Boolean umgewandelt werden", lhs.String()))
+			}
+			if !isOfType(lhs, token.DDPIntType(), token.DDPBoolType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einem Boolean umgewandelt werden", lhs.String()))
+			}
+		case token.BUCHSTABE:
+			if !lhs.IsPrimitive() {
+				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Buchstaben umgewandelt werden", lhs.String()))
+			}
+			if !isOfType(lhs, token.DDPIntType(), token.DDPCharType()) {
+				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einem Buchstaben umgewandelt werden", lhs.String()))
+			}
+		case token.TEXT:
+			if !lhs.IsPrimitive() {
+				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Text umgewandelt werden", lhs.String()))
+			}
+		default:
+			t.err(expr.Token(), fmt.Sprintf("Invalide Typumwandlung zu %s", expr.Type.String()))
+		}
+	}
+	t.latestReturnedType = expr.Type
 	return t
 }
 func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.Visitor {

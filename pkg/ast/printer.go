@@ -115,6 +115,10 @@ func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) Visitor {
 	pr.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", expr.Operator.String()), expr.Lhs, expr.Mid, expr.Rhs)
 	return pr
 }
+func (pr *printer) VisitCastExpr(expr *CastExpr) Visitor {
+	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type.String()), expr.Lhs)
+	return pr
+}
 func (pr *printer) VisitGrouping(expr *Grouping) Visitor {
 	pr.parenthesizeNode("Grouping", expr.Expr)
 	return pr

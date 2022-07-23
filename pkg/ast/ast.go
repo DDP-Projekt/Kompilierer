@@ -147,6 +147,11 @@ type (
 		Value   string // the evaluated string
 	}
 
+	/*ListLit struct {
+		Empty token.Token // optional leer
+		Values []Expression
+	}*/
+
 	UnaryExpr struct {
 		Range    token.Range
 		Operator token.Token
@@ -167,6 +172,15 @@ type (
 		Mid      Expression
 		Rhs      Expression
 		Operator token.Token
+	}
+
+	// als Expressions cannot be unary
+	// because the type operator might be multiple
+	// tokens long
+	CastExpr struct {
+		Range token.Range
+		Type  token.DDPType
+		Lhs   Expression
 	}
 
 	Grouping struct {
@@ -194,6 +208,7 @@ func (expr *StringLit) String() string   { return "StringLit" }
 func (expr *UnaryExpr) String() string   { return "UnaryExpr" }
 func (expr *BinaryExpr) String() string  { return "BinaryExpr" }
 func (expr *TernaryExpr) String() string { return "BinaryExpr" }
+func (expr *CastExpr) String() string    { return "CastExpr" }
 func (expr *Grouping) String() string    { return "Grouping" }
 func (expr *FuncCall) String() string    { return "FuncCall" }
 
@@ -208,6 +223,7 @@ func (expr *StringLit) Token() token.Token   { return expr.Literal }
 func (expr *UnaryExpr) Token() token.Token   { return expr.Operator }
 func (expr *BinaryExpr) Token() token.Token  { return expr.Operator }
 func (expr *TernaryExpr) Token() token.Token { return expr.Operator }
+func (expr *CastExpr) Token() token.Token    { return expr.Lhs.Token() }
 func (expr *Grouping) Token() token.Token    { return expr.LParen }
 func (expr *FuncCall) Token() token.Token    { return expr.Tok }
 
@@ -224,6 +240,7 @@ func (expr *StringLit) GetRange() token.Range   { return token.NewRange(expr.Lit
 func (expr *UnaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *BinaryExpr) GetRange() token.Range  { return expr.Range }
 func (expr *TernaryExpr) GetRange() token.Range { return expr.Range }
+func (expr *CastExpr) GetRange() token.Range    { return expr.Range }
 func (expr *Grouping) GetRange() token.Range    { return expr.Range }
 func (expr *FuncCall) GetRange() token.Range    { return expr.Range }
 
@@ -238,6 +255,7 @@ func (expr *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(exp
 func (expr *UnaryExpr) Accept(v Visitor) Visitor   { return v.VisitUnaryExpr(expr) }
 func (expr *BinaryExpr) Accept(v Visitor) Visitor  { return v.VisitBinaryExpr(expr) }
 func (expr *TernaryExpr) Accept(v Visitor) Visitor { return v.VisitTernaryExpr(expr) }
+func (expr *CastExpr) Accept(v Visitor) Visitor    { return v.VisitCastExpr(expr) }
 func (expr *Grouping) Accept(v Visitor) Visitor    { return v.VisitGrouping(expr) }
 func (expr *FuncCall) Accept(v Visitor) Visitor    { return v.VisitFuncCall(expr) }
 
@@ -252,6 +270,7 @@ func (expr *StringLit) expressionNode()   {}
 func (expr *UnaryExpr) expressionNode()   {}
 func (expr *BinaryExpr) expressionNode()  {}
 func (expr *TernaryExpr) expressionNode() {}
+func (expr *CastExpr) expressionNode()    {}
 func (expr *Grouping) expressionNode()    {}
 func (expr *FuncCall) expressionNode()    {}
 

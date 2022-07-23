@@ -125,18 +125,18 @@ func (p *Parser) declaration() ast.Statement {
 		case token.DER:
 			switch p.peek().Type {
 			case token.BOOLEAN, token.TEXT, token.BUCHSTABE:
-				p.match(token.BOOLEAN, token.TEXT, token.BUCHSTABE) // consume the type
-				return &ast.DeclStmt{Decl: p.varDeclaration()}      // parse the declaration
+				p.advance()                                    // consume the type
+				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			default:
 				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
 		case token.DIE:
 			switch p.peek().Type {
 			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN:
-				p.match(token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN) // consume the type
-				return &ast.DeclStmt{Decl: p.varDeclaration()}                                                                     // parse the declaration
+				p.advance()                                    // consume the type
+				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			case token.FUNKTION:
-				p.match(token.FUNKTION)
+				p.advance()
 				return &ast.DeclStmt{Decl: p.funcDeclaration()} // parse the function declaration
 			default:
 				p.decrease() // decrease, so expressionStatement() can recognize it as expression
@@ -1430,14 +1430,14 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 
 	// type-casting
 	if p.match(token.ALS) {
-		p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT)
-		return &ast.UnaryExpr{
+		Type := p.parseType()
+		return &ast.CastExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
-			Operator: p.previous(),
-			Rhs:      lhs,
+			Type: Type,
+			Lhs:  lhs,
 		}
 	}
 

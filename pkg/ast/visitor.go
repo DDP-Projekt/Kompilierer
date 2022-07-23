@@ -26,6 +26,7 @@ type Visitor interface {
 	VisitUnaryExpr(*UnaryExpr) Visitor
 	VisitBinaryExpr(*BinaryExpr) Visitor
 	VisitTernaryExpr(*TernaryExpr) Visitor
+	VisitCastExpr(*CastExpr) Visitor
 	VisitGrouping(*Grouping) Visitor
 	VisitFuncCall(*FuncCall) Visitor
 

@@ -10,6 +10,20 @@ type DDPType struct {
 }
 
 func (ddpType DDPType) String() string {
+	if ddpType.IsList {
+		switch ddpType.PrimitiveType {
+		case ZAHL:
+			return "Zahlen Liste"
+		case KOMMAZAHL:
+			return "Kommazahlen Liste"
+		case BOOLEAN:
+			return "Boolean Liste"
+		case BUCHSTABE:
+			return "Buchstaben Liste"
+		case TEXT:
+			return "Text Liste"
+		}
+	}
 	return ddpType.PrimitiveType.String()
 }
 

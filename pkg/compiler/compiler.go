@@ -588,66 +588,6 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		default:
 			err(fmt.Sprintf("invalid Parameter Type for HYPERBELTANGENS: %s", rhs.Type()))
 		}
-	case token.ZAHL:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = rhs
-		case ddpfloat:
-			c.latestReturn = c.cbb.NewFPToSI(rhs, ddpint)
-		case ddpbool:
-			cond := c.cbb.NewICmp(enum.IPredNE, rhs, zero)
-			c.latestReturn = c.cbb.NewZExt(cond, ddpint)
-		case ddpchar:
-			c.latestReturn = c.cbb.NewSExt(rhs, ddpint)
-		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_int"].irFunc, rhs)
-		default:
-			err(fmt.Sprintf("invalid Parameter Type for ZAHL: %s", rhs.Type()))
-		}
-	case token.KOMMAZAHL:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = c.cbb.NewSIToFP(rhs, ddpfloat)
-		case ddpfloat:
-			c.latestReturn = rhs
-		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_float"].irFunc, rhs)
-		default:
-			err(fmt.Sprintf("invalid Parameter Type for KOMMAZAHL: %s", rhs.Type()))
-		}
-	case token.BOOLEAN:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, rhs, zero)
-		case ddpbool:
-			c.latestReturn = rhs
-		default:
-			err(fmt.Sprintf("invalid Parameter Type for BOOLEAN: %s", rhs.Type()))
-		}
-	case token.BUCHSTABE:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = c.cbb.NewTrunc(rhs, ddpchar)
-		case ddpchar:
-			c.latestReturn = rhs
-		default:
-			err(fmt.Sprintf("invalid Parameter Type for BUCHSTABE: %s", rhs.Type()))
-		}
-	case token.TEXT:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_int_to_string"].irFunc, rhs)
-		case ddpfloat:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_to_string"].irFunc, rhs)
-		case ddpbool:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_bool_to_string"].irFunc, rhs)
-		case ddpchar:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_to_string"].irFunc, rhs)
-		case ddpstrptr:
-			c.latestReturn = c.deepCopyStr(rhs)
-		default:
-			err(fmt.Sprintf("invalid Parameter Type for TEXT: %s", rhs.Type()))
-		}
 	default:
 		err(fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
 	}
@@ -1066,6 +1006,84 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	}
 	if rhs.Type() == ddpstrptr {
 		c.decrementRC(rhs)
+	}
+	return c
+}
+func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+	lhs := c.evaluate(e.Lhs)
+	if lhs.Type() == ddpstrptr {
+		c.incrementRC(lhs, VK_STRING)
+	}
+	if e.Type.IsList {
+		err("lists not implemented")
+	} else {
+		switch e.Type.PrimitiveType {
+		case token.ZAHL:
+			switch lhs.Type() {
+			case ddpint:
+				c.latestReturn = lhs
+			case ddpfloat:
+				c.latestReturn = c.cbb.NewFPToSI(lhs, ddpint)
+			case ddpbool:
+				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
+				c.latestReturn = c.cbb.NewZExt(cond, ddpint)
+			case ddpchar:
+				c.latestReturn = c.cbb.NewSExt(lhs, ddpint)
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_int"].irFunc, lhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Type for ZAHL: %s", lhs.Type()))
+			}
+		case token.KOMMAZAHL:
+			switch lhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewSIToFP(lhs, ddpfloat)
+			case ddpfloat:
+				c.latestReturn = lhs
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_float"].irFunc, lhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Type for KOMMAZAHL: %s", lhs.Type()))
+			}
+		case token.BOOLEAN:
+			switch lhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
+			case ddpbool:
+				c.latestReturn = lhs
+			default:
+				err(fmt.Sprintf("invalid Parameter Type for BOOLEAN: %s", lhs.Type()))
+			}
+		case token.BUCHSTABE:
+			switch lhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewTrunc(lhs, ddpchar)
+			case ddpchar:
+				c.latestReturn = lhs
+			default:
+				err(fmt.Sprintf("invalid Parameter Type for BUCHSTABE: %s", lhs.Type()))
+			}
+		case token.TEXT:
+			switch lhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_int_to_string"].irFunc, lhs)
+			case ddpfloat:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_to_string"].irFunc, lhs)
+			case ddpbool:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_bool_to_string"].irFunc, lhs)
+			case ddpchar:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_to_string"].irFunc, lhs)
+			case ddpstrptr:
+				c.latestReturn = c.deepCopyStr(lhs)
+			default:
+				err(fmt.Sprintf("invalid Parameter Type for TEXT: %s", lhs.Type()))
+			}
+		default:
+			err(fmt.Sprintf("Invalide Typumwandlung zu %s", e.Type.String()))
+		}
+	}
+	if lhs.Type() == ddpstrptr {
+		c.decrementRC(lhs)
 	}
 	return c
 }
