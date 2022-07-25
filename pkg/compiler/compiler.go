@@ -440,6 +440,10 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
 	return c
 }
+func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
+	notimplemented()
+	return c
+}
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	if rhs.Type() == ddpstrptr {

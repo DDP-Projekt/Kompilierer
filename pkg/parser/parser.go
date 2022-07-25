@@ -662,7 +662,7 @@ func (p *Parser) assignLiteral() ast.Statement {
 	expr := p.assignRhs() // parse the expression
 	// validate that the expression is a literal
 	switch expr := expr.(type) {
-	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit:
+	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	case ast.Assigneable:
 		if typ := p.typechecker.Evaluate(ident); typ != token.DDPBoolType() {
 			p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
@@ -1384,6 +1384,16 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.Ident{
 				Literal: p.previous(),
 			}
+		case token.EINE:
+			begin := p.previous()
+			p.consume(token.LEERE)
+			typ := p.parseListType()
+			lhs = &ast.ListLit{
+				Tok:    begin,
+				Range:  token.NewRange(begin, p.previous()),
+				Type:   typ,
+				Values: nil,
+			}
 		default:
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)
@@ -1431,13 +1441,34 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 	// type-casting
 	if p.match(token.ALS) {
 		Type := p.parseType()
-		return &ast.CastExpr{
+		lhs = &ast.CastExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
 			Type: Type,
 			Lhs:  lhs,
+		}
+	}
+
+	// list-literals
+	if p.peek().Type == token.COMMA {
+		values := make([]ast.Expression, 1, 2)
+		values[0] = lhs
+		for p.match(token.COMMA) {
+			// workaround for for-loops, as they have a trailing comma which leads to ambiguouty
+			if call := p.funcCall(); call == nil && p.peek().Type == token.MACHE {
+				p.decrease()
+				break
+			} else if call != nil {
+				values = append(values, call)
+				continue
+			}
+			values = append(values, p.expression())
+		}
+		lhs = &ast.ListLit{
+			Tok:    values[0].Token(),
+			Values: values,
 		}
 	}
 
@@ -1737,6 +1768,33 @@ func (p *Parser) parseType() token.DDPType {
 		if p.peekN(-2).Type == token.EINEN { // edge case in function return types
 			return token.NewPrimitiveType(token.BUCHSTABE)
 		}
+		p.consume(token.LISTE)
+		return token.NewListType(token.BUCHSTABE)
+	}
+
+	return token.NewPrimitiveType(token.ILLEGAL) // unreachable
+}
+
+// parses tokens into a DDPType which must be a list type
+// expects the next token to be the start of the type
+// returns ILLEGAL and errors if no typename was found
+func (p *Parser) parseListType() token.DDPType {
+	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+		p.err(p.peek(), fmt.Sprintf("Es wurde ein Listen-Typname erwartet aber '%s' gefunden", p.peek().Literal))
+		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
+	}
+
+	switch p.previous().Type {
+	case token.BOOLEAN, token.TEXT:
+		p.consume(token.LISTE)
+		return token.NewListType(p.previous().Type)
+	case token.ZAHLEN:
+		p.consume(token.LISTE)
+		return token.NewListType(token.ZAHL)
+	case token.KOMMAZAHLEN:
+		p.consume(token.LISTE)
+		return token.NewListType(token.KOMMAZAHL)
+	case token.BUCHSTABEN:
 		p.consume(token.LISTE)
 		return token.NewListType(token.BUCHSTABE)
 	}

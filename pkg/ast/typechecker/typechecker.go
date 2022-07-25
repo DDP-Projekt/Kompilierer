@@ -158,6 +158,21 @@ func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.Visitor {
 	t.latestReturnedType = token.DDPStringType()
 	return t
 }
+func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.Visitor {
+	if expr.Values != nil {
+		elementType := t.Evaluate(expr.Values[0])
+		for _, v := range expr.Values[1:] {
+			if ty := t.Evaluate(v); elementType != ty {
+				t.err(v.Token(), fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType))
+			}
+		}
+		expr.Type = elementType
+		t.latestReturnedType = elementType
+	} else {
+		t.latestReturnedType = expr.Type
+	}
+	return t
+}
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)

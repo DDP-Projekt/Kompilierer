@@ -23,6 +23,7 @@ type Visitor interface {
 	VisitBoolLit(*BoolLit) Visitor
 	VisitCharLit(*CharLit) Visitor
 	VisitStringLit(*StringLit) Visitor
+	VisitListLit(*ListLit) Visitor
 	VisitUnaryExpr(*UnaryExpr) Visitor
 	VisitBinaryExpr(*BinaryExpr) Visitor
 	VisitTernaryExpr(*TernaryExpr) Visitor

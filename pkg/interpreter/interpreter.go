@@ -139,6 +139,9 @@ func (i *Interpreter) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	i.lastReturn = ddpstring(e.Value)
 	return i
 }
+func (i *Interpreter) VisitListLit(e *ast.ListLit) ast.Visitor {
+	panic("lists not implemented")
+}
 func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	rhs := i.evaluate(e.Rhs)
 	switch e.Operator.Type {

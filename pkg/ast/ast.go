@@ -147,10 +147,14 @@ type (
 		Value   string // the evaluated string
 	}
 
-	/*ListLit struct {
-		Empty token.Token // optional leer
-		Values []Expression
-	}*/
+	ListLit struct {
+		Tok   token.Token
+		Range token.Range // should only be used if Values is nil
+		// type of the empty list if Values is nil
+		// the typechecker fills this field if Values is nil
+		Type   token.DDPType
+		Values []Expression // nil if it is an empty list
+	}
 
 	UnaryExpr struct {
 		Range    token.Range
@@ -205,6 +209,7 @@ func (expr *FloatLit) String() string    { return "FloatLit" }
 func (expr *BoolLit) String() string     { return "BoolLit" }
 func (expr *CharLit) String() string     { return "CharLit" }
 func (expr *StringLit) String() string   { return "StringLit" }
+func (expr *ListLit) String() string     { return "ListLit" }
 func (expr *UnaryExpr) String() string   { return "UnaryExpr" }
 func (expr *BinaryExpr) String() string  { return "BinaryExpr" }
 func (expr *TernaryExpr) String() string { return "BinaryExpr" }
@@ -220,6 +225,7 @@ func (expr *FloatLit) Token() token.Token    { return expr.Literal }
 func (expr *BoolLit) Token() token.Token     { return expr.Literal }
 func (expr *CharLit) Token() token.Token     { return expr.Literal }
 func (expr *StringLit) Token() token.Token   { return expr.Literal }
+func (expr *ListLit) Token() token.Token     { return expr.Tok }
 func (expr *UnaryExpr) Token() token.Token   { return expr.Operator }
 func (expr *BinaryExpr) Token() token.Token  { return expr.Operator }
 func (expr *TernaryExpr) Token() token.Token { return expr.Operator }
@@ -232,11 +238,20 @@ func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Name.GetRange().Start, End: expr.Index.GetRange().End}
 }
-func (expr *IntLit) GetRange() token.Range      { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *FloatLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *BoolLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *CharLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *StringLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *IntLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *FloatLit) GetRange() token.Range  { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *BoolLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *CharLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *StringLit) GetRange() token.Range { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *ListLit) GetRange() token.Range {
+	if expr.Values != nil {
+		return token.Range{
+			Start: expr.Values[0].GetRange().Start,
+			End:   expr.Values[len(expr.Values)-1].GetRange().End,
+		}
+	}
+	return expr.Range
+}
 func (expr *UnaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *BinaryExpr) GetRange() token.Range  { return expr.Range }
 func (expr *TernaryExpr) GetRange() token.Range { return expr.Range }
@@ -252,6 +267,7 @@ func (expr *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(expr
 func (expr *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(expr) }
 func (expr *CharLit) Accept(v Visitor) Visitor     { return v.VisitCharLit(expr) }
 func (expr *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(expr) }
+func (expr *ListLit) Accept(v Visitor) Visitor     { return v.VisitListLit(expr) }
 func (expr *UnaryExpr) Accept(v Visitor) Visitor   { return v.VisitUnaryExpr(expr) }
 func (expr *BinaryExpr) Accept(v Visitor) Visitor  { return v.VisitBinaryExpr(expr) }
 func (expr *TernaryExpr) Accept(v Visitor) Visitor { return v.VisitTernaryExpr(expr) }
@@ -267,6 +283,7 @@ func (expr *FloatLit) expressionNode()    {}
 func (expr *BoolLit) expressionNode()     {}
 func (expr *CharLit) expressionNode()     {}
 func (expr *StringLit) expressionNode()   {}
+func (expr *ListLit) expressionNode()     {}
 func (expr *UnaryExpr) expressionNode()   {}
 func (expr *BinaryExpr) expressionNode()  {}
 func (expr *TernaryExpr) expressionNode() {}

@@ -122,6 +122,14 @@ func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.Visitor {
 func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.Visitor {
 	return r
 }
+func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.Visitor {
+	if expr.Values != nil {
+		for _, v := range expr.Values {
+			r.visit(v)
+		}
+	}
+	return r
+}
 func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 	return expr.Rhs.Accept(r) // visit the actual expression
 }

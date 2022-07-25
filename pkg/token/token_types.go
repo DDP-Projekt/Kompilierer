@@ -4,7 +4,7 @@ const (
 	ILLEGAL TokenType = iota
 	EOF
 	IDENTIFIER
-	ALIAS_PARAMETER // *x only found in function aliases
+	ALIAS_PARAMETER // <x> only found in function aliases
 
 	INT    // 1 2
 	FLOAT  // 2,2 3,4
@@ -127,6 +127,7 @@ const (
 	STELLE
 	VONBIS
 	DEFINIERT
+	LEERE
 
 	DOT    // .
 	COMMA  // ,
@@ -262,6 +263,7 @@ var tokenStrings = [...]string{
 	STELLE:       "STELLE",
 	VONBIS:       "VON BIS", // as operator
 	DEFINIERT:    "DEFINIERT",
+	LEERE:        "LEERE",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -389,6 +391,7 @@ var keywordMap = map[string]TokenType{
 	"zur":             ZUR,
 	"Basis":           BASIS,
 	"definiert":       DEFINIERT,
+	"leere":           LEERE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

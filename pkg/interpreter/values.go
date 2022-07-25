@@ -5,7 +5,7 @@ import (
 )
 
 type value interface {
-	Type() token.TokenType
+	Type() token.DDPType
 }
 
 type ddpint int64
@@ -14,18 +14,40 @@ type ddpbool bool
 type ddpchar rune
 type ddpstring string
 
-func (ddpint) Type() token.TokenType {
-	return token.ZAHL
+type ddpintlist []ddpint
+type ddpfloatlist []ddpfloat
+type ddpboollist []ddpbool
+type ddpcharlist []ddpchar
+type ddpstringlist []ddpstring
+
+func (ddpint) Type() token.DDPType {
+	return token.DDPIntType()
 }
-func (ddpfloat) Type() token.TokenType {
-	return token.KOMMAZAHL
+func (ddpfloat) Type() token.DDPType {
+	return token.DDPFloatType()
 }
-func (ddpbool) Type() token.TokenType {
-	return token.BOOLEAN
+func (ddpbool) Type() token.DDPType {
+	return token.DDPBoolType()
 }
-func (ddpchar) Type() token.TokenType {
-	return token.BUCHSTABE
+func (ddpchar) Type() token.DDPType {
+	return token.DDPCharType()
 }
-func (ddpstring) Type() token.TokenType {
-	return token.TEXT
+func (ddpstring) Type() token.DDPType {
+	return token.DDPStringType()
+}
+
+func (ddpintlist) Type() token.DDPType {
+	return token.NewListType(token.ZAHL)
+}
+func (ddpfloatlist) Type() token.DDPType {
+	return token.NewListType(token.KOMMAZAHL)
+}
+func (ddpboollist) Type() token.DDPType {
+	return token.NewListType(token.BOOLEAN)
+}
+func (ddpcharlist) Type() token.DDPType {
+	return token.NewListType(token.BUCHSTABE)
+}
+func (ddpstringlist) Type() token.DDPType {
+	return token.NewListType(token.TEXT)
 }

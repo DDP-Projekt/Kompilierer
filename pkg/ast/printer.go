@@ -103,6 +103,18 @@ func (pr *printer) VisitStringLit(expr *StringLit) Visitor {
 	pr.parenthesizeNode(fmt.Sprintf("StringLit[%s]", expr.Token().Literal))
 	return pr
 }
+func (pr *printer) VisitListLit(expr *ListLit) Visitor {
+	if expr.Values == nil {
+		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type.String()))
+	} else {
+		nodes := make([]Node, 0, len(expr.Values))
+		for _, v := range expr.Values {
+			nodes = append(nodes, v)
+		}
+		pr.parenthesizeNode("ListLit", nodes...)
+	}
+	return pr
+}
 func (pr *printer) VisitUnaryExpr(expr *UnaryExpr) Visitor {
 	pr.parenthesizeNode(fmt.Sprintf("UnaryExpr[%s]", expr.Operator.String()), expr.Rhs)
 	return pr
