@@ -122,7 +122,7 @@ func err(msg string) {
 }
 
 func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
-	comment := fmt.Sprintf("File %s, Line %d, Column %d: %s", node.Token().File, node.Token().Line, node.Token().Column, node.String())
+	comment := fmt.Sprintf("File %s, Line %d, Column %d: %s", node.Token().File, node.Token().Line, node.Token().Column, node)
 	if details != "" {
 		comment += " (" + details + ")"
 	}
@@ -593,7 +593,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			err(fmt.Sprintf("invalid Parameter Type for HYPERBELTANGENS: %s", rhs.Type()))
 		}
 	default:
-		err(fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
+		err(fmt.Sprintf("Unbekannter Operator '%s'", e.Operator))
 	}
 	if rhs.Type() == ddpstrptr {
 		c.decrementRC(rhs)
@@ -1083,7 +1083,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 				err(fmt.Sprintf("invalid Parameter Type for TEXT: %s", lhs.Type()))
 			}
 		default:
-			err(fmt.Sprintf("Invalide Typumwandlung zu %s", e.Type.String()))
+			err(fmt.Sprintf("Invalide Typumwandlung zu %s", e.Type))
 		}
 	}
 	if lhs.Type() == ddpstrptr {

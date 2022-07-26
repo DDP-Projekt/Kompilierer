@@ -128,8 +128,10 @@ const (
 	VONBIS
 	DEFINIERT
 	LEERE
+	LEEREN
 	AUS
 	BESTEHEND
+	EINER
 
 	DOT    // .
 	COMMA  // ,
@@ -266,8 +268,10 @@ var tokenStrings = [...]string{
 	VONBIS:       "VON BIS", // as operator
 	DEFINIERT:    "DEFINIERT",
 	LEERE:        "LEERE",
+	LEEREN:       "LEEREN",
 	AUS:          "AUS",
 	BESTEHEND:    "BESTEHEND",
+	EINER:        "EINER",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -396,8 +400,11 @@ var keywordMap = map[string]TokenType{
 	"Basis":           BASIS,
 	"definiert":       DEFINIERT,
 	"leere":           LEERE,
-	"aus":             AUS,
-	"bestehend":       BESTEHEND,
+	"leeren":          LEEREN,
+
+	"aus":       AUS,
+	"bestehend": BESTEHEND,
+	"einer":     EINER,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

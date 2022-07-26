@@ -59,7 +59,7 @@ func toIRType(ddpType token.DDPType) types.Type {
 			return ddpstrptr
 		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType))
 }
 
 // returns the default constant for global variables
@@ -78,5 +78,5 @@ func getDefaultValue(ddpType token.DDPType) constant.Constant {
 			return constant.NewNull(ddpstrptr)
 		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType.String()))
+	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType))
 }

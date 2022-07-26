@@ -20,5 +20,5 @@ func (t Token) String() string {
 }
 
 func (t Token) StringVerbose() string {
-	return fmt.Sprintf("[F: %s L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.File, t.Line, t.Column, t.Indent, t.Literal, t.Type.String())
+	return fmt.Sprintf("[F: %s L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.File, t.Line, t.Column, t.Indent, t.Literal, t.Type)
 }

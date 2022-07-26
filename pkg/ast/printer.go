@@ -55,7 +55,7 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 }
 
 func (pr *printer) VisitBadDecl(decl *BadDecl) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok.String()))
+	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
 	return pr
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) Visitor {
@@ -64,15 +64,15 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) Visitor {
 }
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) Visitor {
 	if IsExternFunc(decl) {
-		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type.String()), decl.Body)
+		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type), decl.Body)
 	} else {
-		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s] Extern", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type.String()))
+		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s] Extern", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type))
 	}
 	return pr
 }
 
 func (pr *printer) VisitBadExpr(expr *BadExpr) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", expr.Tok.String()))
+	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", expr.Tok))
 	return pr
 }
 func (pr *printer) VisitIdent(expr *Ident) Visitor {
@@ -105,7 +105,7 @@ func (pr *printer) VisitStringLit(expr *StringLit) Visitor {
 }
 func (pr *printer) VisitListLit(expr *ListLit) Visitor {
 	if expr.Values == nil {
-		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type.String()))
+		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type))
 	} else {
 		nodes := make([]Node, 0, len(expr.Values))
 		for _, v := range expr.Values {
@@ -116,19 +116,19 @@ func (pr *printer) VisitListLit(expr *ListLit) Visitor {
 	return pr
 }
 func (pr *printer) VisitUnaryExpr(expr *UnaryExpr) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("UnaryExpr[%s]", expr.Operator.String()), expr.Rhs)
+	pr.parenthesizeNode(fmt.Sprintf("UnaryExpr[%s]", expr.Operator), expr.Rhs)
 	return pr
 }
 func (pr *printer) VisitBinaryExpr(expr *BinaryExpr) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("BinaryExpr[%s]", expr.Operator.String()), expr.Lhs, expr.Rhs)
+	pr.parenthesizeNode(fmt.Sprintf("BinaryExpr[%s]", expr.Operator), expr.Lhs, expr.Rhs)
 	return pr
 }
 func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", expr.Operator.String()), expr.Lhs, expr.Mid, expr.Rhs)
+	pr.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", expr.Operator), expr.Lhs, expr.Mid, expr.Rhs)
 	return pr
 }
 func (pr *printer) VisitCastExpr(expr *CastExpr) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type.String()), expr.Lhs)
+	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
 	return pr
 }
 func (pr *printer) VisitGrouping(expr *Grouping) Visitor {
@@ -145,7 +145,7 @@ func (pr *printer) VisitFuncCall(expr *FuncCall) Visitor {
 }
 
 func (pr *printer) VisitBadStmt(stmt *BadStmt) Visitor {
-	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", stmt.Tok.String()))
+	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", stmt.Tok))
 	return pr
 }
 func (pr *printer) VisitDeclStmt(stmt *DeclStmt) Visitor {

@@ -253,7 +253,7 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			i.lastReturn = ddpfloat(math.Tanh(float64(v)))
 		}
 	default:
-		err(e.Token(), fmt.Sprintf("Unbekannter Operator '%s'", e.Operator.String()))
+		err(e.Token(), fmt.Sprintf("Unbekannter Operator '%s'", e.Operator))
 	}
 	return i
 }

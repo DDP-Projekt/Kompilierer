@@ -57,36 +57,36 @@ func (t *Typechecker) Evaluate(expr ast.Expression) token.DDPType {
 }
 
 // helper for errors
-func (t *Typechecker) err(tok token.Token, msg string) {
+func (t *Typechecker) err(tok token.Token, msg string, args ...any) {
 	t.Errored = true
-	t.ErrorHandler(tok, msg)
+	t.ErrorHandler(tok, fmt.Sprintf(msg, args...))
 }
 
 // helper for commmon error message
 func (t *Typechecker) errExpected(tok token.Token, got token.DDPType, expected ...token.DDPType) {
-	msg := "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ "
+	msg := fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ ", tok)
 	if len(expected) == 1 {
-		msg = "Der " + tok.String() + " Operator erwartet einen Ausdruck vom Typ " + expected[0].String() + " aber hat '" + got.String() + "' bekommen"
+		msg = fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ %s aber hat '%s' bekommen", tok, expected[0], got)
 	} else {
 		for i, v := range expected {
 			if i >= len(expected)-1 {
 				break
 			}
-			msg += "'" + v.String() + "', "
+			msg += fmt.Sprintf("'%s', ", v)
 		}
-		msg += "oder '" + expected[len(expected)-1].String() + "' aber hat '" + got.String() + "' bekommen"
+		msg += fmt.Sprintf("oder '%s' aber hat '%s' bekommen", expected[len(expected)-1], got)
 	}
 	t.err(tok, msg)
 }
 
 // helper for commmon error message
 func (t *Typechecker) errExpectedBin(tok token.Token, t1, t2 token.DDPType, op token.TokenType) {
-	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, op))
+	t.err(tok, "Die Typen Kombination aus '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, op)
 }
 
 // helper for commmon error message
 func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3 token.DDPType, op token.TokenType) {
-	t.err(tok, fmt.Sprintf("Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op))
+	t.err(tok, "Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op)
 }
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
@@ -97,11 +97,11 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	initialType := t.Evaluate(decl.InitVal)
 	if initialType != decl.Type {
-		t.err(decl.InitVal.Token(), fmt.Sprintf(
+		t.err(decl.InitVal.Token(),
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			initialType,
 			decl.Type,
-		))
+		)
 	}
 	return t
 }
@@ -131,11 +131,16 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.Visitor {
 		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
 	}
 
-	if t.Evaluate(expr.Name) != token.DDPStringType() {
-		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
+	lhs := t.Evaluate(expr.Name)
+	if !lhs.IsList && lhs.PrimitiveType != token.TEXT {
+		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
 	}
 
-	t.latestReturnedType = token.DDPCharType() // later on the list element type
+	if lhs.IsList {
+		t.latestReturnedType = token.NewPrimitiveType(lhs.PrimitiveType)
+	} else {
+		t.latestReturnedType = token.DDPCharType() // later on the list element type
+	}
 	return t
 }
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.Visitor {
@@ -163,7 +168,7 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.Visitor {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
 			if ty := t.Evaluate(v); elementType != ty {
-				t.err(v.Token(), fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType))
+				t.err(v.Token(), "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
 		expr.Type = token.NewListType(elementType.PrimitiveType)
@@ -198,8 +203,8 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 
 		t.latestReturnedType = token.DDPIntType()
 	case token.LÄNGE:
-		if !isOfType(rhs, token.DDPStringType()) {
-			t.errExpected(expr.Operator, rhs, token.DDPStringType())
+		if !rhs.IsList && rhs.PrimitiveType != token.TEXT {
+			t.err(expr.Token(), "Der LÄNGE Operator erwartet einen Text oder eine Liste als Operanden")
 		}
 
 		t.latestReturnedType = token.DDPIntType()
@@ -214,7 +219,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 
 		t.latestReturnedType = token.DDPFloatType()
 	default:
-		t.err(expr.Operator, fmt.Sprintf("Unbekannter unärer Operator '%s'", expr.Operator.String()))
+		t.err(expr.Operator, "Unbekannter unärer Operator '%s'", expr.Operator)
 	}
 	return t
 }
@@ -231,8 +236,15 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
 
 	switch op := expr.Operator.Type; op {
 	case token.VERKETTET:
-		validate(op, token.DDPStringType(), token.DDPCharType())
-		t.latestReturnedType = token.DDPStringType() // some operators change the type of the expression, so we set that here
+		if (!lhs.IsList && !rhs.IsList) && (lhs == token.DDPStringType() || rhs == token.DDPStringType()) { // string, char edge case
+			validate(expr.Operator.Type, token.DDPStringType(), token.DDPCharType())
+			t.latestReturnedType = token.DDPStringType()
+		} else { // lists
+			if lhs.PrimitiveType != rhs.PrimitiveType {
+				t.err(expr.Operator, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
+			}
+			t.latestReturnedType = token.NewListType(lhs.PrimitiveType)
+		}
 	case token.PLUS, token.ADDIERE, token.ERHÖHE,
 		token.MINUS, token.SUBTRAHIERE, token.VERRINGERE,
 		token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
@@ -244,14 +256,18 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
 			t.latestReturnedType = token.DDPFloatType()
 		}
 	case token.STELLE:
-		if lhs != token.DDPStringType() {
-			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text als ersten Operanden")
+		if !lhs.IsList && lhs != token.DDPStringType() {
+			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
 		}
 		if rhs != token.DDPIntType() {
 			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
 		}
 
-		t.latestReturnedType = token.DDPCharType() // later on the list element type
+		if lhs.IsList {
+			t.latestReturnedType = token.NewPrimitiveType(lhs.PrimitiveType)
+		} else if lhs == token.DDPStringType() {
+			t.latestReturnedType = token.DDPCharType() // later on the list element type
+		}
 	case token.DURCH, token.DIVIDIERE, token.TEILE, token.HOCH, token.LOGARITHMUS:
 		validate(op, token.DDPIntType(), token.DDPFloatType())
 		t.latestReturnedType = token.DDPFloatType()
@@ -289,7 +305,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
 		validate(op, token.DDPIntType())
 		t.latestReturnedType = token.DDPIntType()
 	default:
-		t.err(expr.Operator, fmt.Sprintf("Unbekannter binärer Operator '%s'", expr.Operator.String()))
+		t.err(expr.Operator, "Unbekannter binärer Operator '%s'", expr.Operator)
 	}
 	return t
 }
@@ -307,14 +323,18 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
 
 	switch expr.Operator.Type {
 	case token.VONBIS:
-		if lhs != token.DDPStringType() {
-			t.errExpectedTern(expr.Token(), lhs, mid, rhs, expr.Operator.Type)
+		if !lhs.IsList && lhs != token.DDPStringType() {
+			t.err(expr.Lhs.Token(), "Der VON_BIS Operator erwartet einen Text oder eine Liste als ersten Operanden")
 		}
 
 		validateBin(expr.Operator.Type, token.DDPIntType())
-		t.latestReturnedType = token.DDPStringType()
+		if lhs.IsList {
+			t.latestReturnedType = token.NewPrimitiveType(lhs.PrimitiveType)
+		} else if lhs == token.DDPStringType() {
+			t.latestReturnedType = token.DDPStringType()
+		}
 	default:
-		t.err(expr.Operator, fmt.Sprintf("Unbekannter ternärer Operator '%s'", expr.Operator.String()))
+		t.err(expr.Operator, "Unbekannter ternärer Operator '%s'", expr.Operator)
 	}
 	return t
 }
@@ -324,60 +344,60 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.Visitor {
 		switch expr.Type.PrimitiveType {
 		case token.ZAHL:
 			if !isOfType(lhs, token.DDPIntType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Zahlen Liste umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Zahlen Liste umgewandelt werden", lhs)
 			}
 		case token.KOMMAZAHL:
 			if !isOfType(lhs, token.DDPFloatType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahlen Liste umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahlen Liste umgewandelt werden", lhs)
 			}
 		case token.BOOLEAN:
 			if !isOfType(lhs, token.DDPBoolType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Boolean Liste umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Boolean Liste umgewandelt werden", lhs)
 			}
 		case token.BUCHSTABE:
 			if !isOfType(lhs, token.DDPCharType(), token.DDPStringType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Buchstaben Liste umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Buchstaben Liste umgewandelt werden", lhs)
 			}
 		case token.TEXT:
 			if !isOfType(lhs, token.DDPStringType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Text Liste umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Text Liste umgewandelt werden", lhs)
 			}
 		default:
-			t.err(expr.Token(), fmt.Sprintf("Invalide Typumwandlung zu %s", expr.Type.String()))
+			t.err(expr.Token(), "Invalide Typumwandlung zu %s", expr.Type)
 		}
 	} else {
 		switch expr.Type.PrimitiveType {
 		case token.ZAHL:
 			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einer Zahl umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Eine %s kann nicht zu einer Zahl umgewandelt werden", lhs)
 			}
 		case token.KOMMAZAHL:
 			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einer Kommazahl umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Eine %s kann nicht zu einer Kommazahl umgewandelt werden", lhs)
 			}
 			if !isOfType(lhs, token.DDPStringType(), token.DDPIntType(), token.DDPFloatType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahl umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Kommazahl umgewandelt werden", lhs)
 			}
 		case token.BOOLEAN:
 			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Boolean umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Eine %s kann nicht zu einem Boolean umgewandelt werden", lhs)
 			}
 			if !isOfType(lhs, token.DDPIntType(), token.DDPBoolType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einem Boolean umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einem Boolean umgewandelt werden", lhs)
 			}
 		case token.BUCHSTABE:
 			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Buchstaben umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Eine %s kann nicht zu einem Buchstaben umgewandelt werden", lhs)
 			}
 			if !isOfType(lhs, token.DDPIntType(), token.DDPCharType()) {
-				t.err(expr.Token(), fmt.Sprintf("Ein Ausdruck vom Typ %s kann nicht zu einem Buchstaben umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einem Buchstaben umgewandelt werden", lhs)
 			}
 		case token.TEXT:
 			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), fmt.Sprintf("Eine %s kann nicht zu einem Text umgewandelt werden", lhs.String()))
+				t.err(expr.Token(), "Eine %s kann nicht zu einem Text umgewandelt werden", lhs)
 			}
 		default:
-			t.err(expr.Token(), fmt.Sprintf("Invalide Typumwandlung zu %s", expr.Type.String()))
+			t.err(expr.Token(), "Invalide Typumwandlung zu %s", expr.Type)
 		}
 	}
 	t.latestReturnedType = expr.Type
@@ -391,13 +411,13 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.Visitor {
 		tokenType := t.Evaluate(expr)
 
 		if tokenType != t.funcArgs[callExpr.Name][k] {
-			t.err(expr.Token(), fmt.Sprintf(
+			t.err(expr.Token(),
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
 				t.funcArgs[callExpr.Name][k],
 				k,
 				tokenType,
-			))
+			)
 		}
 	}
 	fun, _ := t.CurrentTable.LookupFunc(callExpr.Name)
@@ -417,15 +437,15 @@ func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) ast.Visitor {
 	return stmt.Expr.Accept(t)
 }
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
-	tokenType := t.Evaluate(stmt.Rhs)
+	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if vartyp, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && vartyp != tokenType {
-			t.err(stmt.Rhs.Token(), fmt.Sprintf(
+		if vartyp, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && vartyp != rhs {
+			t.err(stmt.Rhs.Token(),
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-				tokenType,
+				rhs,
 				vartyp,
-			))
+			)
 		}
 	case *ast.Indexing:
 		if t.Evaluate(assign.Index) != token.DDPIntType() {
@@ -433,19 +453,21 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 		}
 
 		lhs := t.Evaluate(assign.Name)
-		switch lhs {
-		case token.DDPStringType():
-			lhs = token.DDPCharType()
-		default:
+		if !lhs.IsList && lhs != token.DDPStringType() {
 			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
 		}
+		if lhs.IsList {
+			lhs = token.NewPrimitiveType(lhs.PrimitiveType)
+		} else if lhs == token.DDPStringType() {
+			lhs = token.DDPCharType()
+		}
 
-		if lhs != tokenType {
-			t.err(stmt.Rhs.Token(), fmt.Sprintf(
+		if lhs != rhs {
+			t.err(stmt.Rhs.Token(),
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-				tokenType,
+				rhs,
 				lhs,
-			))
+			)
 		}
 	}
 
@@ -463,10 +485,10 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {
 	conditionType := t.Evaluate(stmt.Condition)
 	if conditionType != token.DDPBoolType() {
-		t.err(stmt.Condition.Token(), fmt.Sprintf(
+		t.err(stmt.Condition.Token(),
 			"Die Bedingung einer WENN Anweisung muss vom Typ Boolean sein, war aber vom Typ %s",
 			conditionType,
-		))
+		)
 	}
 	t.visit(stmt.Then)
 	if stmt.Else != nil {
@@ -479,17 +501,17 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.Visitor {
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
 		if conditionType != token.DDPBoolType() {
-			t.err(stmt.Condition.Token(), fmt.Sprintf(
+			t.err(stmt.Condition.Token(),
 				"Die Bedingung einer SOLANGE Anweisung muss vom Typ BOOLEAN sein, war aber vom Typ %s",
 				conditionType,
-			))
+			)
 		}
 	case token.MAL:
 		if conditionType != token.DDPIntType() {
-			t.err(stmt.Condition.Token(), fmt.Sprintf(
+			t.err(stmt.Condition.Token(),
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
-			))
+			)
 		}
 	}
 	return stmt.Body.Accept(t)
@@ -498,18 +520,18 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 	t.visit(stmt.Initializer)
 	toType := t.Evaluate(stmt.To)
 	if toType != token.DDPIntType() {
-		t.err(stmt.To.Token(), fmt.Sprintf(
+		t.err(stmt.To.Token(),
 			"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
 			toType,
-		))
+		)
 	}
 	if stmt.StepSize != nil {
 		stepType := t.Evaluate(stmt.StepSize)
 		if stepType != token.DDPIntType() {
-			t.err(stmt.To.Token(), fmt.Sprintf(
+			t.err(stmt.To.Token(),
 				"Es wurde ein Ausdruck vom Typ ZAHL erwartet aber %s gefunden",
 				stepType,
-			))
+			)
 		}
 	}
 	return stmt.Body.Accept(t)
@@ -517,20 +539,23 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.Visitor {
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
-	switch inType {
-	case token.DDPStringType():
-		if elementType != token.DDPCharType() {
-			t.err(stmt.Initializer.Token(), fmt.Sprintf(
-				"Es wurde ein Ausdruck vom Typ BUCHSTABE erwartet aber %s gefunden",
-				elementType,
-			))
-		}
-	default:
-		t.err(stmt.Token(), fmt.Sprintf(
-			"Es wurde ein Ausdruck vom Typ TEXT erwartet aber %s gefunden",
-			inType,
-		))
+
+	if !inType.IsList && inType != token.DDPStringType() {
+		t.err(stmt.In.Token(), "Man kann nur über Texte oder Listen iterieren")
 	}
+
+	if inType.IsList && elementType != token.NewPrimitiveType(inType.PrimitiveType) {
+		t.err(stmt.Initializer.Token(),
+			"Es wurde ein Ausdruck vom Typ %s erwartet aber %s gefunden",
+			token.NewListType(elementType.PrimitiveType), inType,
+		)
+	} else if inType == token.DDPStringType() && elementType != token.DDPCharType() {
+		t.err(stmt.Initializer.Token(),
+			"Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
+			elementType,
+		)
+	}
+
 	return stmt.Body.Accept(t)
 }
 func (t *Typechecker) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
@@ -539,11 +564,11 @@ func (t *Typechecker) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
 	returnType := t.Evaluate(stmt.Value)
 	if fun, exists := t.CurrentTable.LookupFunc(stmt.Func); exists && fun.Type != returnType {
-		t.err(stmt.Token(), fmt.Sprintf(
+		t.err(stmt.Token(),
 			"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
 			fun.Type,
 			returnType,
-		))
+		)
 	}
 	return t
 }

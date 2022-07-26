@@ -258,7 +258,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			singleParameter = false
 		} else if !p.matchN(token.DEM, token.PARAMETER) {
 			valid = false
-			p.err(p.peek(), fmt.Sprintf("Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek().String()))
+			p.err(p.peek(), fmt.Sprintf("Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek()))
 		}
 		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
@@ -1224,7 +1224,7 @@ func (p *Parser) unary() ast.Expression {
 		} else { // error handling
 			switch p.previous().Type {
 			case token.GRÖßE, token.LÄNGE:
-				p.err(p.previous(), fmt.Sprintf("Vor '%s' muss 'DIE' stehen", p.previous().String()))
+				p.err(p.previous(), fmt.Sprintf("Vor '%s' muss 'DIE' stehen", p.previous()))
 			case token.BETRAG:
 				p.err(p.previous(), "Vor 'BETRAG' muss 'DER' stehen")
 			}
@@ -1381,9 +1381,17 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.Ident{
 				Literal: p.previous(),
 			}
-		case token.EINE: // list literals
+		case token.EINE, token.EINER: // list literals
 			begin := p.previous()
-			if p.match(token.LEERE) {
+			if begin.Type == token.EINER && p.match(token.LEEREN) {
+				typ := p.parseListType()
+				lhs = &ast.ListLit{
+					Tok:    begin,
+					Range:  token.NewRange(begin, p.previous()),
+					Type:   typ,
+					Values: nil,
+				}
+			} else if p.match(token.LEERE) {
 				typ := p.parseListType()
 				lhs = &ast.ListLit{
 					Tok:    begin,
@@ -1840,7 +1848,7 @@ func (p *Parser) consume(t token.TokenType) bool {
 		return true
 	}
 
-	p.err(p.peek(), fmt.Sprintf("Es wurde '%s' erwartet aber '%s' gefunden", t.String(), p.peek().Literal))
+	p.err(p.peek(), fmt.Sprintf("Es wurde '%s' erwartet aber '%s' gefunden", t, p.peek().Literal))
 	return false
 }
 
@@ -1868,9 +1876,9 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 		if i >= len(tokenTypes)-1 {
 			break
 		}
-		msg += "'" + v.String() + "', "
+		msg += fmt.Sprintf("'%s', ", v)
 	}
-	msg += "oder '" + tokenTypes[len(tokenTypes)-1].String() + "' erwartet aber '" + p.peek().Literal + "' gefunden"
+	msg += fmt.Sprintf("oder '%s' erwartet aber '%s' gefunden", tokenTypes[len(tokenTypes)-1], p.peek().Literal)
 
 	p.err(p.peek(), msg)
 	return false
