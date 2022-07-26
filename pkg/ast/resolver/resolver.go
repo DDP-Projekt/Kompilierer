@@ -54,9 +54,9 @@ func (r *Resolver) visit(node ast.Node) {
 }
 
 // helper for errors
-func (r *Resolver) err(tok token.Token, msg string) {
+func (r *Resolver) err(tok token.Token, msg string, args ...any) {
 	r.Errored = true
-	r.ErrorHandler(tok, msg)
+	r.ErrorHandler(tok, fmt.Sprintf(msg, args...))
 }
 
 // if a BadDecl exists the AST is faulty
@@ -68,14 +68,14 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	decl.InitVal.Accept(r) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl.Type); existed {
-		r.err(decl.Name, fmt.Sprintf("Die Variable '%s' existiert bereits", decl.Name.Literal)) // variables may only be declared once in the same scope
+		r.err(decl.Name, "Die Variable '%s' existiert bereits", decl.Name.Literal) // variables may only be declared once in the same scope
 	}
 
 	return r
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed {
-		r.err(decl.Name, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal)) // functions may only be declared once
+		r.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
 	}
 	if !ast.IsExternFunc(decl) {
 		decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
@@ -97,7 +97,7 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
 func (r *Resolver) VisitIdent(expr *ast.Ident) ast.Visitor {
 	// check if the variable exists
 	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
-		r.err(expr.Token(), fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal))
+		r.err(expr.Token(), "Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal)
 	}
 	return r
 }
@@ -169,11 +169,11 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 	case *ast.Ident:
 		// check if the variable exists
 		if _, exists := r.CurrentTable.LookupVar(assign.Literal.Literal); !exists {
-			r.err(stmt.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
+			r.err(stmt.Token(), "Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal)
 		}
 	case *ast.Indexing:
 		if _, exists := r.CurrentTable.LookupVar(assign.Name.Literal.Literal); !exists {
-			r.err(stmt.Token(), fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal))
+			r.err(stmt.Token(), "Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal)
 		}
 	}
 

@@ -258,7 +258,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			singleParameter = false
 		} else if !p.matchN(token.DEM, token.PARAMETER) {
 			valid = false
-			p.err(p.peek(), fmt.Sprintf("Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek()))
+			p.err(p.peek(), "Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek())
 		}
 		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
@@ -280,7 +280,9 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 					}
 					addParamName(p.previous())
 				}
-				p.consumeN(token.UND, token.IDENTIFIER)
+				if !p.consumeN(token.UND, token.IDENTIFIER) {
+					perr(p.peek(), fmt.Sprintf("Es wurde 'und <letzter Parameter>' erwartet aber %s gefunden", p.peek().Literal))
+				}
 				addParamName(p.previous())
 			}
 		}
@@ -338,7 +340,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		switch filepath.Ext(strings.Trim(definedIn.Literal, "\"")) {
 		case ".c", ".lib", ".a", ".o":
 		default:
-			p.err(definedIn, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+			perr(definedIn, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
 		}
 	}
 
@@ -397,7 +399,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	if !valid {
 		p.Errored = true
 		return &ast.BadDecl{
-			Range:   token.NewRange(begin, p.tokens[aliasEnd]),
+			Range:   token.NewRange(begin, p.tokens[aliasEnd-1]),
 			Tok:     Funktion,
 			Message: errorMessage,
 		}
@@ -1358,7 +1360,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
 				lhs = &ast.IntLit{Literal: lit, Value: val}
 			} else {
-				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+				p.err(lit, "Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal)
 				lhs = &ast.IntLit{Literal: lit, Value: 0}
 			}
 		case token.FLOAT:
@@ -1366,7 +1368,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
 				lhs = &ast.FloatLit{Literal: lit, Value: val}
 			} else {
-				p.err(lit, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+				p.err(lit, "Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal)
 				lhs = &ast.FloatLit{Literal: lit, Value: 0}
 			}
 		case token.CHAR:
@@ -1698,7 +1700,7 @@ func (p *Parser) parseChar(s string) (r rune) {
 			r = '\''
 		case '\\':
 		default:
-			p.err(p.previous(), fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Buchstaben Literal", string(r)))
+			p.err(p.previous(), "Ungültige Escape Sequenz '\\%s' im Buchstaben Literal", string(r))
 		}
 		return r
 	}
@@ -1729,7 +1731,7 @@ func (p *Parser) parseString(s string) string {
 			case '"':
 			case '\\':
 			default:
-				p.err(p.previous(), fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq)))
+				p.err(p.previous(), "Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq))
 				continue
 			}
 
@@ -1746,7 +1748,7 @@ func (p *Parser) parseString(s string) string {
 func (p *Parser) parseType() token.DDPType {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), fmt.Sprintf("Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal))
+		p.err(p.peek(), "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
 		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
 	}
 
@@ -1780,7 +1782,7 @@ func (p *Parser) parseType() token.DDPType {
 // returns ILLEGAL and errors if no typename was found
 func (p *Parser) parseListType() token.DDPType {
 	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), fmt.Sprintf("Es wurde ein Listen-Typname erwartet aber '%s' gefunden", p.peek().Literal))
+		p.err(p.peek(), "Es wurde ein Listen-Typname erwartet aber '%s' gefunden", p.peek().Literal)
 		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
 	}
 
@@ -1848,7 +1850,7 @@ func (p *Parser) consume(t token.TokenType) bool {
 		return true
 	}
 
-	p.err(p.peek(), fmt.Sprintf("Es wurde '%s' erwartet aber '%s' gefunden", t, p.peek().Literal))
+	p.err(p.peek(), "Es wurde '%s' erwartet aber '%s' gefunden", t, p.peek().Literal)
 	return false
 }
 
@@ -1885,10 +1887,10 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 }
 
 // helper to report errors and enter panic mode
-func (p *Parser) err(token token.Token, msg string) {
+func (p *Parser) err(token token.Token, msg string, args ...any) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(token, msg)
+		p.errorHandler(token, fmt.Sprintf(msg, args...))
 	}
 }
 
