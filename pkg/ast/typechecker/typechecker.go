@@ -166,8 +166,8 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.Visitor {
 				t.err(v.Token(), fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType))
 			}
 		}
-		expr.Type = elementType
-		t.latestReturnedType = elementType
+		expr.Type = token.NewListType(elementType.PrimitiveType)
+		t.latestReturnedType = expr.Type
 	} else {
 		t.latestReturnedType = expr.Type
 	}
@@ -176,10 +176,6 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.Visitor {
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
-	// boolean vs bitwise negate (compound assignement)
-	/*if expr.Operator.Type == token.NEGIERE && rhs == token.ZAHL {
-		expr.Operator.Type == token.LOGISCHNICHT
-	}*/
 	switch expr.Operator.Type {
 	case token.BETRAG, token.NEGATE:
 		if !rhs.IsNumeric() {

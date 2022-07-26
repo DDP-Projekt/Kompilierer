@@ -149,7 +149,7 @@ type (
 
 	ListLit struct {
 		Tok   token.Token
-		Range token.Range // should only be used if Values is nil
+		Range token.Range
 		// type of the empty list if Values is nil
 		// the typechecker fills this field if Values is nil
 		Type   token.DDPType
@@ -238,20 +238,12 @@ func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Name.GetRange().Start, End: expr.Index.GetRange().End}
 }
-func (expr *IntLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *FloatLit) GetRange() token.Range  { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *BoolLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *CharLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *StringLit) GetRange() token.Range { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *ListLit) GetRange() token.Range {
-	if expr.Values != nil {
-		return token.Range{
-			Start: expr.Values[0].GetRange().Start,
-			End:   expr.Values[len(expr.Values)-1].GetRange().End,
-		}
-	}
-	return expr.Range
-}
+func (expr *IntLit) GetRange() token.Range      { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *FloatLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *BoolLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *CharLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *StringLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *ListLit) GetRange() token.Range     { return expr.Range }
 func (expr *UnaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *BinaryExpr) GetRange() token.Range  { return expr.Range }
 func (expr *TernaryExpr) GetRange() token.Range { return expr.Range }

@@ -191,9 +191,6 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	begin := p.peekN(-2)
 	p.decrease()
 	typ := p.parseType()
-	if typ.IsList {
-		panic("lists not implemented yet")
-	}
 
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
@@ -1384,15 +1381,31 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.Ident{
 				Literal: p.previous(),
 			}
-		case token.EINE:
+		case token.EINE: // list literals
 			begin := p.previous()
-			p.consume(token.LEERE)
-			typ := p.parseListType()
-			lhs = &ast.ListLit{
-				Tok:    begin,
-				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ,
-				Values: nil,
+			if p.match(token.LEERE) {
+				typ := p.parseListType()
+				lhs = &ast.ListLit{
+					Tok:    begin,
+					Range:  token.NewRange(begin, p.previous()),
+					Type:   typ,
+					Values: nil,
+				}
+			} else {
+				p.consumeN(token.LISTE, token.AUS)
+				values := append(make([]ast.Expression, 0, 2), p.expression())
+				for p.match(token.COMMA) {
+					values = append(values, p.expression())
+				}
+				p.consume(token.BESTEHEND)
+				lhs = &ast.ListLit{
+					Tok: begin,
+					Range: token.Range{
+						Start: token.NewStartPos(begin),
+						End:   values[len(values)-1].GetRange().End,
+					},
+					Values: values,
+				}
 			}
 		default:
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
@@ -1448,27 +1461,6 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			},
 			Type: Type,
 			Lhs:  lhs,
-		}
-	}
-
-	// list-literals
-	if p.peek().Type == token.COMMA {
-		values := make([]ast.Expression, 1, 2)
-		values[0] = lhs
-		for p.match(token.COMMA) {
-			// workaround for for-loops, as they have a trailing comma which leads to ambiguouty
-			if call := p.funcCall(); call == nil && p.peek().Type == token.MACHE {
-				p.decrease()
-				break
-			} else if call != nil {
-				values = append(values, call)
-				continue
-			}
-			values = append(values, p.expression())
-		}
-		lhs = &ast.ListLit{
-			Tok:    values[0].Token(),
-			Values: values,
 		}
 	}
 
