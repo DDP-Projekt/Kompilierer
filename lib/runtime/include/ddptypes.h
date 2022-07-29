@@ -21,4 +21,48 @@ typedef struct {
 // free a ddpstring
 void free_string(ddpstring* str);
 
+
+/***** Partially generated code *****/
+
+typedef struct {
+	ddpint* arr; // the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpintlist;
+
+void free_ddpintlist(ddpintlist* list);
+
+typedef struct {
+	ddpfloat* arr; // the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpfloatlist;
+
+void free_ddpfloatlist(ddpfloatlist* list);
+
+typedef struct {
+	ddpbool* arr; // the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpboollist;
+
+void free_ddpboollist(ddpboollist* list);
+
+typedef struct {
+	ddpchar* arr; // the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpcharlist;
+
+void free_ddpcharlist(ddpcharlist* list);
+
+typedef struct {
+	ddpstring** arr; // the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpstringlist;
+
+void free_ddpstringlist(ddpstringlist* list);
+
+
 #endif // DDP_TYPES_H

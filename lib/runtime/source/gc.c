@@ -23,6 +23,21 @@ static void free_value(void* key, Value* val) {
 	case VK_STRING:
 		free_string((ddpstring*)key);
 		break;
+	case VK_INT_LIST:
+		free_ddpintlist((ddpintlist*)key);
+		break;
+	case VK_FLOAT_LIST:
+		free_ddpfloatlist((ddpfloatlist*)key);
+		break;
+	case VK_BOOL_LIST:
+		free_ddpboollist((ddpboollist*)key);
+		break;
+	case VK_CHAR_LIST:
+		free_ddpcharlist((ddpcharlist*)key);
+		break;
+	case VK_STRING_LIST:
+		free_ddpstringlist((ddpstringlist*)key);
+		break;
 	default:
 		runtime_error(1, "invalid value kind\n"); // unreachable
 		break;

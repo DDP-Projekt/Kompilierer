@@ -8,10 +8,13 @@
 #include "common.h"
 
 // type of the pointer in a Value
-// currently only string, later also 
-// other garbage-collected types
 typedef enum {
-	VK_STRING // ValueKind_STRING
+	VK_STRING, // ValueKind_STRING
+	VK_INT_LIST,
+	VK_FLOAT_LIST,
+	VK_BOOL_LIST,
+	VK_CHAR_LIST,
+	VK_STRING_LIST,
 } ValueKind;
 
 // a single garbage-collected value

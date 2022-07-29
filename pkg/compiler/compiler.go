@@ -167,6 +167,7 @@ func (c *Compiler) declareInbuiltFunction(name string, retType types.Type, param
 // declares functions defined in the ddp-c-runtime
 func (c *Compiler) setupRuntimeFunctions() {
 	c.setupStringType()
+	c.setupListTypes()
 	c.setupOperators()
 }
 
@@ -199,6 +200,91 @@ func (c *Compiler) setupStringType() {
 	// takes the pointer and the type to which it points
 	// (currently only string, but later lists and structs too)
 	c.declareInbuiltFunction("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
+}
+
+// declares some internal list functions
+// and completes the ddp<type>list structs
+func (c *Compiler) setupListTypes() {
+
+	// complete the ddpintlist definition to interact with the c ddp runtime
+	ddpintlist.Fields = make([]types.Type, 3)
+	ddpintlist.Fields[0] = ptr(ddpint)
+	ddpintlist.Fields[1] = ddpint
+	ddpintlist.Fields[2] = ddpint
+	c.mod.NewTypeDef("ddpintlist", ddpintlist)
+
+	// creates a ddpintlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
+	c.functions["inbuilt_ddpintlist_from_constants"].irFunc.Sig.Variadic = true
+
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
+
+	// complete the ddpfloatlist definition to interact with the c ddp runtime
+	ddpfloatlist.Fields = make([]types.Type, 3)
+	ddpfloatlist.Fields[0] = ptr(ddpfloat)
+	ddpfloatlist.Fields[1] = ddpint
+	ddpfloatlist.Fields[2] = ddpint
+	c.mod.NewTypeDef("ddpfloatlist", ddpfloatlist)
+
+	// creates a ddpfloatlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
+	c.functions["inbuilt_ddpfloatlist_from_constants"].irFunc.Sig.Variadic = true
+
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_deep_copy_ddpfloatlist", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr))
+
+	// complete the ddpboollist definition to interact with the c ddp runtime
+	ddpboollist.Fields = make([]types.Type, 3)
+	ddpboollist.Fields[0] = ptr(ddpbool)
+	ddpboollist.Fields[1] = ddpint
+	ddpboollist.Fields[2] = ddpint
+	c.mod.NewTypeDef("ddpboollist", ddpboollist)
+
+	// creates a ddpboollist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
+	c.functions["inbuilt_ddpboollist_from_constants"].irFunc.Sig.Variadic = true
+
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
+
+	// complete the ddpcharlist definition to interact with the c ddp runtime
+	ddpcharlist.Fields = make([]types.Type, 3)
+	ddpcharlist.Fields[0] = ptr(ddpchar)
+	ddpcharlist.Fields[1] = ddpint
+	ddpcharlist.Fields[2] = ddpint
+	c.mod.NewTypeDef("ddpcharlist", ddpcharlist)
+
+	// creates a ddpcharlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
+	c.functions["inbuilt_ddpcharlist_from_constants"].irFunc.Sig.Variadic = true
+
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_deep_copy_ddpcharlist", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr))
+
+	// complete the ddpstringlist definition to interact with the c ddp runtime
+	ddpstringlist.Fields = make([]types.Type, 3)
+	ddpstringlist.Fields[0] = ptr(ddpstrptr)
+	ddpstringlist.Fields[1] = ddpint
+	ddpstringlist.Fields[2] = ddpint
+	c.mod.NewTypeDef("ddpstringlist", ddpstringlist)
+
+	// creates a ddpstringlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
+	c.functions["inbuilt_ddpstringlist_from_constants"].irFunc.Sig.Variadic = true
+
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
+	c.declareInbuiltFunction("inbuilt_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
 }
 
 func (c *Compiler) setupOperators() {
@@ -261,9 +347,24 @@ func (c *Compiler) decrementRC(key value.Value) {
 	c.cbb.NewCall(c.functions["inbuilt_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
 }
 
-// helper to call deep_copy_string
-func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
-	return c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, strptr)
+// helper to call deep_copy_<type>
+func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
+	switch listptr.Type() {
+	case ddpstrptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, listptr)
+	case ddpintlistptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpintlist"].irFunc, listptr)
+	case ddpfloatlistptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpfloatlist"].irFunc, listptr)
+	case ddpboollistptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpboollist"].irFunc, listptr)
+	case ddpcharlistptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpcharlist"].irFunc, listptr)
+	case ddpstringlistptr:
+		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpstringlist"].irFunc, listptr)
+	}
+	err("invalid list type %s", listptr)
+	return zero // unreachable
 }
 
 // helper to exit a scope
@@ -271,8 +372,8 @@ func (c *Compiler) deepCopyStr(strptr value.Value) value.Value {
 // returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
-		if v.typ == ddpstrptr {
-			c.decrementRC(c.cbb.NewLoad(ddpstrptr, v.val))
+		if ok, _ := isRefCounted(v.typ); ok {
+			c.decrementRC(c.cbb.NewLoad(v.typ, v.val))
 		}
 	}
 	return scp.enclosing
@@ -297,10 +398,10 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ)
 	}
 	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ)
-	initVal := c.evaluate(d.InitVal) // evaluate the initial value
-	c.cbb.NewStore(initVal, Var)     // store the initial value
-	if Typ == ddpstrptr {            // strings must be added to the ref-table
-		c.incrementRC(initVal, VK_STRING) // ref_count becomes 1
+	initVal := c.evaluate(d.InitVal)     // evaluate the initial value
+	c.cbb.NewStore(initVal, Var)         // store the initial value
+	if ok, vk := isRefCounted(Typ); ok { // strings and lists must be added to the ref-table
+		c.incrementRC(initVal, vk) // ref_count becomes 1
 	}
 	return c
 }
@@ -341,14 +442,15 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
-			if d.ParamTypes[i] == token.DDPStringType() { // strings (and later other garbage collected types) need special handling
+			irType := toIRType(d.ParamTypes[i])
+			if ok, vk := isRefCounted(irType); ok { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(ddpstrptr), ddpstrptr)
-				// we need to deep copy the passed string because the caller
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType)
+				// we need to deep copy the passed string/list because the caller
 				// must call increment/decrement_ref_count on it
-				strptr := c.deepCopyStr(params[i])
-				c.incrementRC(strptr, VK_STRING) // increment-ref-count on the new local variable
-				c.cbb.NewStore(strptr, v)        // store the copy in the local variable
+				ptr := c.deepCopyRefCounted(params[i])
+				c.incrementRC(ptr, vk) // increment-ref-count on the new local variable
+				c.cbb.NewStore(ptr, v) // store the copy in the local variable
 			} else {
 				// non garbage-collected types are just declared as their ir type
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
@@ -373,8 +475,8 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
-	if Var.typ == ddpstrptr { // strings must be copied in case the user of the expression modifies them
-		c.latestReturn = c.deepCopyStr(c.cbb.NewLoad(Var.typ, Var.val))
+	if ok, _ := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
+		c.latestReturn = c.deepCopyRefCounted(c.cbb.NewLoad(Var.typ, Var.val))
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
 	}
@@ -383,11 +485,11 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	lhs := c.evaluate(e.Name)
 	rhs := c.evaluate(e.Index)
-	if lhs.Type() == ddpstrptr {
-		c.incrementRC(lhs, VK_STRING)
+	if ok, vk := isRefCounted(lhs.Type()); ok {
+		c.incrementRC(lhs, vk)
 	}
-	if rhs.Type() == ddpstrptr {
-		c.incrementRC(rhs, VK_STRING)
+	if ok, vk := isRefCounted(rhs.Type()); ok {
+		c.incrementRC(rhs, vk)
 	}
 	switch lhs.Type() {
 	case ddpstrptr:
@@ -400,10 +502,10 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
-	if lhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
-	if rhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
 	return c
@@ -446,8 +548,8 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
-	if rhs.Type() == ddpstrptr {
-		c.incrementRC(rhs, VK_STRING)
+	if ok, vk := isRefCounted(rhs.Type()); ok {
+		c.incrementRC(rhs, vk)
 	}
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
@@ -595,7 +697,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	default:
 		err("Unbekannter Operator '%s'", e.Operator)
 	}
-	if rhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
 	return c
@@ -639,11 +741,11 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	// compile the two expressions onto which the operator is applied
 	lhs := c.evaluate(e.Lhs)
 	rhs := c.evaluate(e.Rhs)
-	if lhs.Type() == ddpstrptr {
-		c.incrementRC(lhs, VK_STRING)
+	if ok, vk := isRefCounted(lhs.Type()); ok {
+		c.incrementRC(lhs, vk)
 	}
-	if rhs.Type() == ddpstrptr {
-		c.incrementRC(rhs, VK_STRING)
+	if ok, vk := isRefCounted(rhs.Type()); ok {
+		c.incrementRC(rhs, vk)
 	}
 	// big switches on the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
@@ -973,10 +1075,10 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type())
 		}
 	}
-	if lhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
-	if rhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
 	return c
@@ -985,14 +1087,14 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)
 	mid := c.evaluate(e.Mid)
 	rhs := c.evaluate(e.Rhs)
-	if lhs.Type() == ddpstrptr {
-		c.incrementRC(lhs, VK_STRING)
+	if ok, vk := isRefCounted(lhs.Type()); ok {
+		c.incrementRC(lhs, vk)
 	}
-	if mid.Type() == ddpstrptr {
-		c.incrementRC(mid, VK_STRING)
+	if ok, vk := isRefCounted(mid.Type()); ok {
+		c.incrementRC(mid, vk)
 	}
-	if rhs.Type() == ddpstrptr {
-		c.incrementRC(rhs, VK_STRING)
+	if ok, vk := isRefCounted(rhs.Type()); ok {
+		c.incrementRC(rhs, vk)
 	}
 
 	switch e.Operator.Type {
@@ -1002,21 +1104,21 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 		err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
 	}
 
-	if lhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
-	if mid.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(mid.Type()); ok {
 		c.decrementRC(mid)
 	}
-	if rhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
 	return c
 }
 func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)
-	if lhs.Type() == ddpstrptr {
-		c.incrementRC(lhs, VK_STRING)
+	if ok, vk := isRefCounted(lhs.Type()); ok {
+		c.incrementRC(lhs, vk)
 	}
 	if e.Type.IsList {
 		err("lists not implemented")
@@ -1078,7 +1180,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			case ddpchar:
 				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_to_string"].irFunc, lhs)
 			case ddpstrptr:
-				c.latestReturn = c.deepCopyStr(lhs)
+				c.latestReturn = c.deepCopyRefCounted(lhs)
 			default:
 				err("invalid Parameter Type for TEXT: %s", lhs.Type())
 			}
@@ -1086,7 +1188,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
-	if lhs.Type() == ddpstrptr {
+	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
 	return c
@@ -1106,8 +1208,8 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 		val := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
 		// strings ref-count is managed by the caller, so increment it
 		// and mark it toBeFreed for after the function returns
-		if val.Type() == ddpstrptr {
-			c.incrementRC(val, VK_STRING)
+		if ok, vk := isRefCounted(val.Type()); ok {
+			c.incrementRC(val, vk)
 			toBeFreed = append(toBeFreed, &val)
 		}
 		args = append(args, val) // add the value to the arguments
@@ -1134,8 +1236,8 @@ func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
 func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	expr := c.evaluate(s.Expr)
 	// free garbage collected returns
-	if expr.Type() == ddpstrptr {
-		c.incrementRC(expr, VK_STRING) // add it to the table (will be made better later)
+	if ok, vk := isRefCounted(expr.Type()); ok {
+		c.incrementRC(expr, vk) // add it to the table (will be made better later)
 		c.decrementRC(expr)
 	}
 	return c
@@ -1143,14 +1245,14 @@ func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	val := c.evaluate(s.Rhs) // compile the expression
 	// intermediate values ref-counts must be incremented/decremented
-	if val.Type() == ddpstrptr {
-		c.incrementRC(val, VK_STRING)
+	if ok, vk := isRefCounted(val.Type()); ok {
+		c.incrementRC(val, vk)
 	}
 	switch assign := s.Var.(type) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Literal.Literal) // get the variable
 		// free the value which was previously contained in the variable
-		if Var.typ == ddpstrptr {
+		if ok, _ := isRefCounted(Var.typ); ok {
 			c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
 		}
 		c.commentNode(c.cbb, s, assign.Literal.Literal)
@@ -1379,7 +1481,8 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	c.scp = newScope(c.scp)
 	in := c.evaluate(s.In)
-	c.incrementRC(in, VK_STRING)
+	_, vk := isRefCounted(in.Type())
+	c.incrementRC(in, vk)
 
 	strlen := c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, in)
 	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
@@ -1413,11 +1516,11 @@ func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(c)
 }
 func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	ret := c.evaluate(s.Value)   // compile the return value
-	if ret.Type() == ddpstrptr { // strings need to be copied and memory-managed
+	ret := c.evaluate(s.Value)                  // compile the return value
+	if ok, vk := isRefCounted(ret.Type()); ok { // strings need to be copied and memory-managed
 		oldRet := ret
-		c.incrementRC(oldRet, VK_STRING)
-		ret = c.deepCopyStr(oldRet)
+		c.incrementRC(oldRet, vk)
+		ret = c.deepCopyRefCounted(oldRet)
 		c.decrementRC(oldRet)
 	}
 	c.commentNode(c.cbb, s, "")

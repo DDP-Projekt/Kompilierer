@@ -17,18 +17,33 @@ var (
 	i32 = types.I32
 	i64 = types.I64
 
-	ddpint    = i64
-	ddpfloat  = types.Double
-	ddpbool   = types.I1
-	ddpchar   = i32
-	ddpstring = types.NewStruct() // defined in setupStringType
-	ddpstrptr = types.NewPointer(ddpstring)
+	ddpint           = i64
+	ddpfloat         = types.Double
+	ddpbool          = types.I1
+	ddpchar          = i32
+	ddpstring        = types.NewStruct() // defined in setupStringType
+	ddpintlist       = types.NewStruct() // defined in setupListTypes
+	ddpfloatlist     = types.NewStruct() // defined in setupListTypes
+	ddpboollist      = types.NewStruct() // defined in setupListTypes
+	ddpcharlist      = types.NewStruct() // defined in setupListTypes
+	ddpstringlist    = types.NewStruct() // defined in setupListTypes
+	ddpstrptr        = types.NewPointer(ddpstring)
+	ddpintlistptr    = types.NewPointer(ddpintlist)
+	ddpfloatlistptr  = types.NewPointer(ddpfloatlist)
+	ddpboollistptr   = types.NewPointer(ddpboollist)
+	ddpcharlistptr   = types.NewPointer(ddpcharlist)
+	ddpstringlistptr = types.NewPointer(ddpstringlist)
 
 	ptr = types.NewPointer
 
 	zero = constant.NewInt(ddpint, 0)
 
-	VK_STRING = constant.NewInt(i8, 0)
+	VK_STRING      = constant.NewInt(i8, 0)
+	VK_INT_LIST    = constant.NewInt(i8, 1)
+	VK_FLOAT_LIST  = constant.NewInt(i8, 2)
+	VK_BOOL_LIST   = constant.NewInt(i8, 3)
+	VK_CHAR_LIST   = constant.NewInt(i8, 4)
+	VK_STRING_LIST = constant.NewInt(i8, 5)
 )
 
 const (
@@ -42,7 +57,18 @@ func newInt(value int64) *constant.Int {
 // turn a tokenType into the corresponding llvm type
 func toIRType(ddpType token.DDPType) types.Type {
 	if ddpType.IsList {
-		notimplemented()
+		switch ddpType.PrimitiveType {
+		case token.ZAHL:
+			return ddpintlistptr
+		case token.KOMMAZAHL:
+			return ddpfloatlistptr
+		case token.BOOLEAN:
+			return ddpboollistptr
+		case token.BUCHSTABE:
+			return ddpcharlistptr
+		case token.TEXT:
+			return ddpstringlistptr
+		}
 	} else {
 		switch ddpType.PrimitiveType {
 		case token.NICHTS:
@@ -64,7 +90,20 @@ func toIRType(ddpType token.DDPType) types.Type {
 
 // returns the default constant for global variables
 func getDefaultValue(ddpType token.DDPType) constant.Constant {
-	if ddpType.IsPrimitive() {
+	if ddpType.IsList {
+		switch ddpType.PrimitiveType {
+		case token.ZAHL:
+			return constant.NewNull(ddpintlistptr)
+		case token.KOMMAZAHL:
+			return constant.NewNull(ddpfloatlistptr)
+		case token.BOOLEAN:
+			return constant.NewNull(ddpboollistptr)
+		case token.BUCHSTABE:
+			return constant.NewNull(ddpcharlistptr)
+		case token.TEXT:
+			return constant.NewNull(ddpstringlistptr)
+		}
+	} else {
 		switch ddpType.PrimitiveType {
 		case token.ZAHL:
 			return constant.NewInt(ddpint, 0)
@@ -79,4 +118,23 @@ func getDefaultValue(ddpType token.DDPType) constant.Constant {
 		}
 	}
 	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType))
+}
+
+// returns wether the given type is reference counted, and if so its associated ValueKind
+func isRefCounted(typ types.Type) (bool, *constant.Int) {
+	switch typ {
+	case ddpstrptr:
+		return true, VK_STRING
+	case ddpintlistptr:
+		return true, VK_INT_LIST
+	case ddpfloatlistptr:
+		return true, VK_FLOAT_LIST
+	case ddpboollistptr:
+		return true, VK_BOOL_LIST
+	case ddpcharlistptr:
+		return true, VK_CHAR_LIST
+	case ddpstringlistptr:
+		return true, VK_STRING_LIST
+	}
+	return false, zero
 }
