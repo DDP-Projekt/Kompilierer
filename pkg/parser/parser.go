@@ -205,7 +205,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	p.consume(token.IST)
 	var expr ast.Expression
 
-	if typ.PrimitiveType == token.BOOLEAN {
+	if typ == token.DDPBoolType() {
 		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
 	} else {
 		expr = p.expression()
@@ -1759,7 +1759,7 @@ func (p *Parser) parseType() token.DDPType {
 		if !p.match(token.LISTE) {
 			return token.NewPrimitiveType(p.previous().Type)
 		}
-		return token.NewListType(p.previous().Type)
+		return token.NewListType(p.peekN(-2).Type)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
 		return token.NewListType(token.ZAHL)
@@ -1789,7 +1789,7 @@ func (p *Parser) parseListType() token.DDPType {
 	switch p.previous().Type {
 	case token.BOOLEAN, token.TEXT:
 		p.consume(token.LISTE)
-		return token.NewListType(p.previous().Type)
+		return token.NewListType(p.peekN(-2).Type)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
 		return token.NewListType(token.ZAHL)

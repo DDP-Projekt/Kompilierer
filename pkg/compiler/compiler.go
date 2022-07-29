@@ -543,7 +543,16 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
-	notimplemented()
+	if e.Values != nil {
+		values := make([]value.Value, len(e.Values)+1)
+		values[0] = newInt(int64(len(e.Values)))
+		for i, v := range e.Values {
+			values[i+1] = c.evaluate(v)
+		}
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, values...)
+	} else {
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
+	}
 	return c
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {

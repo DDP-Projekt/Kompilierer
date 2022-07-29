@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"fmt"
-
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/llir/llvm/ir/constant"
@@ -85,7 +83,8 @@ func toIRType(ddpType token.DDPType) types.Type {
 			return ddpstrptr
 		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType))
+	err("illegal ddp type to ir type conversion (%s)", ddpType)
+	return i8 // unreachable
 }
 
 // returns the default constant for global variables
@@ -117,7 +116,8 @@ func getDefaultValue(ddpType token.DDPType) constant.Constant {
 			return constant.NewNull(ddpstrptr)
 		}
 	}
-	panic(fmt.Errorf("illegal ddp type to ir type conversion (%s)", ddpType))
+	err("illegal ddp type to ir type conversion (%s)", ddpType)
+	return zero // unreachable
 }
 
 // returns wether the given type is reference counted, and if so its associated ValueKind
@@ -137,4 +137,36 @@ func isRefCounted(typ types.Type) (bool, *constant.Int) {
 		return true, VK_STRING_LIST
 	}
 	return false, zero
+}
+
+func getTypeName(ddpType token.DDPType) string {
+	if ddpType.IsList {
+		switch ddpType.PrimitiveType {
+		case token.ZAHL:
+			return "ddpintlist"
+		case token.KOMMAZAHL:
+			return "ddpfloatlist"
+		case token.BOOLEAN:
+			return "ddpboollist"
+		case token.BUCHSTABE:
+			return "ddpcharlist"
+		case token.TEXT:
+			return "ddpstringlist"
+		}
+	} else {
+		switch ddpType.PrimitiveType {
+		case token.ZAHL:
+			return "ddpint"
+		case token.KOMMAZAHL:
+			return "ddpfloat"
+		case token.BOOLEAN:
+			return "ddpbool"
+		case token.BUCHSTABE:
+			return "ddpchar"
+		case token.TEXT:
+			return "ddpstring"
+		}
+	}
+	err("illegal ddp type to ir type conversion (%s)", ddpType)
+	return "" // unreachable
 }

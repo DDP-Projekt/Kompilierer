@@ -48,20 +48,23 @@ extern void inbuilt_increment_ref_count(void*, uint8_t);
 ddpintlist* inbuilt_ddpintlist_from_constants(ddpint count, ...) {
 	ddpintlist* list = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpintlist_from_constants: %p", list);
-	ddpint* arr = ALLOCATE(ddpint, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
-
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = va_arg(elements, ddpint);
+	if (count > 0) {
+		ddpint* arr = ALLOCATE(ddpint, count); // the element array of the list
 		
+		va_list elements;
+		va_start(elements, count);
+
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = va_arg(elements, ddpint);
+			
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
@@ -90,20 +93,23 @@ ddpintlist* inbuilt_deep_copy_ddpintlist(ddpintlist* list) {
 ddpfloatlist* inbuilt_ddpfloatlist_from_constants(ddpint count, ...) {
 	ddpfloatlist* list = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpfloatlist_from_constants: %p", list);
-	ddpfloat* arr = ALLOCATE(ddpfloat, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
-
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = va_arg(elements, ddpfloat);
+	if (count > 0) {
+		ddpfloat* arr = ALLOCATE(ddpfloat, count); // the element array of the list
 		
+		va_list elements;
+		va_start(elements, count);
+
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = va_arg(elements, ddpfloat);
+			
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
@@ -132,20 +138,23 @@ ddpfloatlist* inbuilt_deep_copy_ddpfloatlist(ddpfloatlist* list) {
 ddpboollist* inbuilt_ddpboollist_from_constants(ddpint count, ...) {
 	ddpboollist* list = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpboollist_from_constants: %p", list);
-	ddpbool* arr = ALLOCATE(ddpbool, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
-
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = (ddpbool)va_arg(elements, int);
+	if (count > 0) {
+		ddpbool* arr = ALLOCATE(ddpbool, count); // the element array of the list
 		
+		va_list elements;
+		va_start(elements, count);
+
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = (ddpbool)va_arg(elements, int);
+			
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
@@ -174,20 +183,23 @@ ddpboollist* inbuilt_deep_copy_ddpboollist(ddpboollist* list) {
 ddpcharlist* inbuilt_ddpcharlist_from_constants(ddpint count, ...) {
 	ddpcharlist* list = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpcharlist_from_constants: %p", list);
-	ddpchar* arr = ALLOCATE(ddpchar, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
-
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = va_arg(elements, ddpchar);
+	if (count > 0) {
+		ddpchar* arr = ALLOCATE(ddpchar, count); // the element array of the list
 		
+		va_list elements;
+		va_start(elements, count);
+
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = va_arg(elements, ddpchar);
+			
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
@@ -216,22 +228,25 @@ ddpcharlist* inbuilt_deep_copy_ddpcharlist(ddpcharlist* list) {
 ddpstringlist* inbuilt_ddpstringlist_from_constants(ddpint count, ...) {
 	ddpstringlist* list = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpstringlist_from_constants: %p", list);
-	ddpstring** arr = ALLOCATE(ddpstring*, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
+	if (count > 0) {
+		ddpstring** arr = ALLOCATE(ddpstring*, count); // the element array of the list
+		
+		va_list elements;
+		va_start(elements, count);
 
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = va_arg(elements, ddpstring*);
-		
-		inbuilt_increment_ref_count(arr[i], VK_STRING);
-		
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = va_arg(elements, ddpstring*);
+			
+			inbuilt_increment_ref_count(arr[i], VK_STRING);
+			
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
@@ -265,3 +280,4 @@ ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list) {
 	cpylist->cap = list->cap;
 	return cpylist;
 }
+

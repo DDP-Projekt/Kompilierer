@@ -4,22 +4,25 @@ extern void inbuilt_increment_ref_count(void*, uint8_t);
 {{ .T }}* inbuilt_{{ .T }}_from_constants(ddpint count, ...) {
 	{{ .T }}* list = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
 	DBGLOG("{{ .T }}_from_constants: %p", list);
-	{{ .E }}* arr = ALLOCATE({{ .E }}, count); // the element array of the list
-	
-	va_list elements;
-	va_start(elements, count);
+	if (count > 0) {
+		{{ .E }}* arr = ALLOCATE({{ .E }}, count); // the element array of the list
+		
+		va_list elements;
+		va_start(elements, count);
 
-	for (size_t i = 0; i < count; i++) {
-		arr[i] = va_arg(elements, {{ .E }});
-		{{if .D}}
-		inbuilt_increment_ref_count(arr[i], VK_STRING);
-		{{end}}
+		for (size_t i = 0; i < count; i++) {
+			arr[i] = va_arg(elements, {{ .E }});
+			{{if .D}}
+			inbuilt_increment_ref_count(arr[i], VK_STRING);
+			{{end}}
+		}
+
+		va_end(elements);
+
+		list->arr = arr;
+	} else {
+		list->arr = NULL;
 	}
-
-	va_end(elements);
-
-	// set the list fields
-	list->arr = arr;
 	list->len = count;
 	list->cap = count;
 	return list;
