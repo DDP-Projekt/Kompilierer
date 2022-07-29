@@ -170,3 +170,20 @@ func getTypeName(ddpType token.DDPType) string {
 	err("illegal ddp type to ir type conversion (%s)", ddpType)
 	return "" // unreachable
 }
+
+func derefListPtr(typ types.Type) types.Type {
+	switch typ {
+	case ddpintlistptr:
+		return ddpintlist
+	case ddpfloatlistptr:
+		return ddpfloatlist
+	case ddpboollistptr:
+		return ddpboollist
+	case ddpcharlistptr:
+		return ddpcharlist
+	case ddpstringlistptr:
+		return ddpstringlist
+	}
+	err("bad argument")
+	return void // unreachable
+}

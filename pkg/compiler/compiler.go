@@ -488,25 +488,16 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	if ok, vk := isRefCounted(lhs.Type()); ok {
 		c.incrementRC(lhs, vk)
 	}
-	if ok, vk := isRefCounted(rhs.Type()); ok {
-		c.incrementRC(rhs, vk)
-	}
 	switch lhs.Type() {
 	case ddpstrptr:
-		switch rhs.Type() {
-		case ddpint:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
-		default:
-			err("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type())
-		}
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+	case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr:
+		notimplemented()
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
-	}
-	if ok, _ := isRefCounted(rhs.Type()); ok {
-		c.decrementRC(rhs)
 	}
 	return c
 }
@@ -596,6 +587,9 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		switch rhs.Type() {
 		case ddpstrptr:
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, rhs)
+		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(rhs.Type()), rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			c.latestReturn = c.cbb.NewLoad(ddpint, lenptr)
 		default:
 			err("invalid Parameter Type for LÄNGE: %s", rhs.Type())
 		}
@@ -609,7 +603,10 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 			c.latestReturn = newInt(4)
 		case ddpstrptr:
 			strcapptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
-			c.latestReturn = c.cbb.NewLoad(ddpint, strcapptr)
+			strcap := c.cbb.NewLoad(ddpint, strcapptr)
+			c.latestReturn = c.cbb.NewAdd(strcap, newInt(16))
+		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+			c.latestReturn = newInt(24) // TODO: this
 		default:
 			err("invalid Parameter Type for GRÖßE: %s", rhs.Type())
 		}
