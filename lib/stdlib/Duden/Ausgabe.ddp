@@ -27,3 +27,33 @@ ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
 	"Schreibe den Text <p1>" oder
 	"Schreibe <p1>"
+
+Die Funktion Schreibe_Zahlen_Liste mit dem Parameter p1 vom Typ Zahlen Liste, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Schreibe die Zahlen Liste <p1>" oder
+	"Schreibe <p1>"
+
+Die Funktion Schreibe_Kommazahlen_Liste mit dem Parameter p1 vom Typ Kommazahlen Liste, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Schreibe die Kommazahlen Liste <p1>" oder
+	"Schreibe <p1>"
+
+Die Funktion Schreibe_Boolean_Liste mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Schreibe die Boolean Liste <p1>" oder
+	"Schreibe <p1>"
+
+Die Funktion Schreibe_Buchstaben_Liste mit dem Parameter p1 vom Typ Buchstaben Liste, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Schreibe die Buchstaben Liste <p1>" oder
+	"Schreibe <p1>"
+
+Die Funktion Schreibe_Text_Liste mit dem Parameter p1 vom Typ Text Liste, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Schreibe die Text Liste <p1>" oder
+	"Schreibe <p1>"

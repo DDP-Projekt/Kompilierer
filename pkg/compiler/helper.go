@@ -52,6 +52,10 @@ func newInt(value int64) *constant.Int {
 	return constant.NewInt(ddpint, value)
 }
 
+func newIntT(typ *types.IntType, value int64) *constant.Int {
+	return constant.NewInt(typ, value)
+}
+
 // turn a tokenType into the corresponding llvm type
 func toIRType(ddpType token.DDPType) types.Type {
 	if ddpType.IsList {
@@ -183,6 +187,23 @@ func derefListPtr(typ types.Type) types.Type {
 		return ddpcharlist
 	case ddpstringlistptr:
 		return ddpstringlist
+	}
+	err("bad argument")
+	return void // unreachable
+}
+
+func getElementType(typ types.Type) types.Type {
+	switch typ {
+	case ddpintlistptr:
+		return ddpint
+	case ddpfloatlistptr:
+		return ddpfloat
+	case ddpboollistptr:
+		return ddpbool
+	case ddpcharlistptr:
+		return ddpchar
+	case ddpstringlistptr:
+		return ddpstrptr
 	}
 	err("bad argument")
 	return void // unreachable

@@ -168,6 +168,7 @@ func (c *Compiler) declareInbuiltFunction(name string, retType types.Type, param
 func (c *Compiler) setupRuntimeFunctions() {
 	c.setupStringType()
 	c.setupListTypes()
+	c.declareInbuiltFunction("out_of_bounds", void, ir.NewParam("index", i64), ir.NewParam("len", i64)) // helper function for out-of-bounds error
 	c.setupOperators()
 }
 
@@ -213,13 +214,9 @@ func (c *Compiler) setupListTypes() {
 	ddpintlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpintlist", ddpintlist)
 
-	// creates a ddpintlist from the elements and returns a pointer to it
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpintlist_from_constants"].irFunc.Sig.Variadic = true
 
-	// returns a copy of the passed string as a new pointer
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
 
 	// complete the ddpfloatlist definition to interact with the c ddp runtime
@@ -229,13 +226,9 @@ func (c *Compiler) setupListTypes() {
 	ddpfloatlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpfloatlist", ddpfloatlist)
 
-	// creates a ddpfloatlist from the elements and returns a pointer to it
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpfloatlist_from_constants"].irFunc.Sig.Variadic = true
 
-	// returns a copy of the passed string as a new pointer
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpfloatlist", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr))
 
 	// complete the ddpboollist definition to interact with the c ddp runtime
@@ -245,13 +238,9 @@ func (c *Compiler) setupListTypes() {
 	ddpboollist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpboollist", ddpboollist)
 
-	// creates a ddpboollist from the elements and returns a pointer to it
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpboollist_from_constants"].irFunc.Sig.Variadic = true
 
-	// returns a copy of the passed string as a new pointer
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
 
 	// complete the ddpcharlist definition to interact with the c ddp runtime
@@ -261,13 +250,9 @@ func (c *Compiler) setupListTypes() {
 	ddpcharlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpcharlist", ddpcharlist)
 
-	// creates a ddpcharlist from the elements and returns a pointer to it
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpcharlist_from_constants"].irFunc.Sig.Variadic = true
 
-	// returns a copy of the passed string as a new pointer
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpcharlist", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr))
 
 	// complete the ddpstringlist definition to interact with the c ddp runtime
@@ -277,13 +262,9 @@ func (c *Compiler) setupListTypes() {
 	ddpstringlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpstringlist", ddpstringlist)
 
-	// creates a ddpstringlist from the elements and returns a pointer to it
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpstringlist_from_constants"].irFunc.Sig.Variadic = true
 
-	// returns a copy of the passed string as a new pointer
-	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
 }
 
@@ -484,15 +465,13 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 }
 func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	lhs := c.evaluate(e.Name)
-	rhs := c.evaluate(e.Index)
+	rhs := c.evaluate(e.Index) // rhs is never refCounted
 	if ok, vk := isRefCounted(lhs.Type()); ok {
 		c.incrementRC(lhs, vk)
 	}
 	switch lhs.Type() {
 	case ddpstrptr:
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
-	case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr:
-		notimplemented()
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
@@ -505,7 +484,7 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 // literals are simple ir constants
 func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	c.commentNode(c.cbb, e, "")
-	c.latestReturn = constant.NewInt(ddpint, e.Value)
+	c.latestReturn = newInt(e.Value)
 	return c
 }
 func (c *Compiler) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
@@ -520,7 +499,7 @@ func (c *Compiler) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
 }
 func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 	c.commentNode(c.cbb, e, "")
-	c.latestReturn = constant.NewInt(ddpchar, int64(e.Value))
+	c.latestReturn = newIntT(ddpchar, int64(e.Value))
 	return c
 }
 
@@ -539,6 +518,9 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 		values[0] = newInt(int64(len(e.Values)))
 		for i, v := range e.Values {
 			values[i+1] = c.evaluate(v)
+			if e.Type.PrimitiveType == token.BOOLEAN {
+				values[i+1] = c.cbb.NewZExt(values[i+1], i32)
+			}
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, values...)
 	} else {
@@ -588,7 +570,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpstrptr:
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, rhs)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
-			lenptr := c.cbb.NewGetElementPtr(derefListPtr(rhs.Type()), rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(rhs.Type()), rhs, newIntT(i32, 0), newIntT(i32, 1))
 			c.latestReturn = c.cbb.NewLoad(ddpint, lenptr)
 		default:
 			err("invalid Parameter Type for LÄNGE: %s", rhs.Type())
@@ -602,7 +584,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		case ddpchar:
 			c.latestReturn = newInt(4)
 		case ddpstrptr:
-			strcapptr := c.cbb.NewGetElementPtr(ddpstring, rhs, constant.NewInt(i32, 0), constant.NewInt(i32, 1))
+			strcapptr := c.cbb.NewGetElementPtr(ddpstring, rhs, newIntT(i32, 0), newIntT(i32, 1))
 			strcap := c.cbb.NewLoad(ddpint, strcapptr)
 			c.latestReturn = c.cbb.NewAdd(strcap, newInt(16))
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
@@ -884,12 +866,38 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.STELLE:
 		switch lhs.Type() {
 		case ddpstrptr:
-			switch rhs.Type() {
-			case ddpint:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
-			default:
-				err("invalid Parameter Types for DURCH (%s, %s)", lhs.Type(), rhs.Type())
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+			thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+			// get the length of the list
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
+			len := c.cbb.NewLoad(ddpint, lenptr)
+			// get the 0 based index
+			index := c.cbb.NewSub(rhs, newInt(1))
+			// bounds check
+			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
+
+			// out of bounds error
+			c.cbb = errorBlock
+			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, rhs, len)
+			c.cbb.NewUnreachable()
+
+			c.cbb = thenBlock
+			// get a pointer to the array
+			arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
+			// get the array
+			arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
+			// index into the array
+			elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+			// load the element
+			c.latestReturn = c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr)
+			// copy strings
+			if lhs.Type() == ddpstringlistptr {
+				c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
 			}
+			c.cbb.NewBr(leaveBlock)
+			c.cbb = leaveBlock
 		default:
 			err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 		}
@@ -1442,7 +1450,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		incrementer = constant.NewInt(ddpint, 1)
+		incrementer = newInt(1)
 	} else { // stepsize was present, so compile it
 		c.cbb = incrementBlock
 		incrementer = c.evaluate(s.StepSize)

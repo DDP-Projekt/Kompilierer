@@ -80,7 +80,7 @@ void free_ddpintlist(ddpintlist* list) {
 ddpintlist* inbuilt_deep_copy_ddpintlist(ddpintlist* list) {
 	DBGLOG("inbuilt_deep_copy_ddpintlist: %p", list);
 	ddpint* cpy = ALLOCATE(ddpint, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof(ddpint) * list->cap); // copy the chars
 	
 	ddpintlist* cpylist = ALLOCATE(ddpintlist, 1); // alocate the copy list
 	// set the fields of the copy
@@ -125,7 +125,7 @@ void free_ddpfloatlist(ddpfloatlist* list) {
 ddpfloatlist* inbuilt_deep_copy_ddpfloatlist(ddpfloatlist* list) {
 	DBGLOG("inbuilt_deep_copy_ddpfloatlist: %p", list);
 	ddpfloat* cpy = ALLOCATE(ddpfloat, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof(ddpfloat) * list->cap); // copy the chars
 	
 	ddpfloatlist* cpylist = ALLOCATE(ddpfloatlist, 1); // alocate the copy list
 	// set the fields of the copy
@@ -170,7 +170,7 @@ void free_ddpboollist(ddpboollist* list) {
 ddpboollist* inbuilt_deep_copy_ddpboollist(ddpboollist* list) {
 	DBGLOG("inbuilt_deep_copy_ddpboollist: %p", list);
 	ddpbool* cpy = ALLOCATE(ddpbool, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof(ddpbool) * list->cap); // copy the chars
 	
 	ddpboollist* cpylist = ALLOCATE(ddpboollist, 1); // alocate the copy list
 	// set the fields of the copy
@@ -215,7 +215,7 @@ void free_ddpcharlist(ddpcharlist* list) {
 ddpcharlist* inbuilt_deep_copy_ddpcharlist(ddpcharlist* list) {
 	DBGLOG("inbuilt_deep_copy_ddpcharlist: %p", list);
 	ddpchar* cpy = ALLOCATE(ddpchar, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof(ddpchar) * list->cap); // copy the chars
 	
 	ddpcharlist* cpylist = ALLOCATE(ddpcharlist, 1); // alocate the copy list
 	// set the fields of the copy
@@ -266,7 +266,7 @@ void free_ddpstringlist(ddpstringlist* list) {
 ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list) {
 	DBGLOG("inbuilt_deep_copy_ddpstringlist: %p", list);
 	ddpstring** cpy = ALLOCATE(ddpstring*, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof(ddpstring*) * list->cap); // copy the chars
 	
 	for (size_t i = 0; i < list->len; i++) {
 		cpy[i] = inbuilt_deep_copy_string(cpy[i]);
@@ -280,4 +280,3 @@ ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list) {
 	cpylist->cap = list->cap;
 	return cpylist;
 }
-

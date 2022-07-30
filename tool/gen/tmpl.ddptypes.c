@@ -42,7 +42,7 @@ void free_{{ .T }}({{ .T }}* list) {
 {{ .T }}* inbuilt_deep_copy_{{ .T }}({{ .T }}* list) {
 	DBGLOG("inbuilt_deep_copy_{{ .T }}: %p", list);
 	{{ .E }}* cpy = ALLOCATE({{ .E }}, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, list->cap); // copy the chars
+	memcpy(cpy, list->arr, sizeof({{ .E }}) * list->cap); // copy the chars
 	{{if .D}}
 	for (size_t i = 0; i < list->len; i++) {
 		cpy[i] = inbuilt_deep_copy_string(cpy[i]);
