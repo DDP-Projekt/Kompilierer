@@ -80,7 +80,7 @@ func (pr *printer) VisitIdent(expr *Ident) Visitor {
 	return pr
 }
 func (pr *printer) VisitIndexing(expr *Indexing) Visitor {
-	pr.parenthesizeNode("Indexing", expr.Name, expr.Index)
+	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
 	return pr
 }
 func (pr *printer) VisitIntLit(expr *IntLit) Visitor {

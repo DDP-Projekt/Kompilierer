@@ -111,12 +111,13 @@ func (i *Interpreter) VisitIdent(e *ast.Ident) ast.Visitor {
 	return i
 }
 func (i *Interpreter) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	if v, exists := i.currentEnvironment.lookupVar(e.Name.Literal.Literal); !exists {
+	/*if v, exists := i.currentEnvironment.lookupVar(e.Name.Literal.Literal); !exists {
 		err(e.Token(), fmt.Sprintf("Die Variable '%s' wurde noch nicht deklariert", e.Name.Literal.Literal))
 	} else {
 		rhs := i.evaluate(e.Index)
 		i.lastReturn = ddpchar(([]rune(v.(ddpstring)))[rhs.(ddpint)-1])
-	}
+	}*/
+	err(e.Token(), "indexing not implemented in the interpreter")
 	return i
 }
 func (i *Interpreter) VisitIntLit(e *ast.IntLit) ast.Visitor {
@@ -629,7 +630,7 @@ func (i *Interpreter) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	case *ast.Ident:
 		i.currentEnvironment.updateVar(assign.Literal.Literal, i.evaluate(s.Rhs))
 	case *ast.Indexing:
-		rhs := i.evaluate(s.Rhs)
+		/*rhs := i.evaluate(s.Rhs)
 		index := i.evaluate(assign.Index).(ddpint)
 		varRef, _ := i.currentEnvironment.lookupVar(assign.Name.Literal.Literal)
 		switch varRef := varRef.(type) {
@@ -637,7 +638,8 @@ func (i *Interpreter) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 			runes := []rune(varRef)
 			runes[index-1] = rune(rhs.(ddpchar))
 			i.currentEnvironment.updateVar(assign.Name.Literal.Literal, ddpstring(runes))
-		}
+		}*/
+		err(assign.Token(), "indexing not implemented in the interpreter")
 	}
 	return i
 }

@@ -464,7 +464,7 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	lhs := c.evaluate(e.Name)
+	lhs := c.evaluate(e.Lhs)   // TODO: check if this works
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
 	if ok, vk := isRefCounted(lhs.Type()); ok {
 		c.incrementRC(lhs, vk)
@@ -1294,6 +1294,52 @@ func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	}
 	return c
 }
+
+// helper to resolve nested indexings for VisitAssignStmt
+// currently only returns ddpstrptrs as there are no nested lists (yet)
+func (c *Compiler) evaluateAssignable(ass ast.Assigneable) value.Value {
+	switch assign := ass.(type) {
+	case *ast.Ident:
+		Var := c.scp.lookupVar(assign.Literal.Literal)
+		return c.cbb.NewLoad(Var.typ, Var.val)
+	case *ast.Indexing:
+		lhs := c.evaluateAssignable(assign.Lhs) // get the (possibly nested) assignable
+		index := c.evaluate(assign.Index)
+		switch lhs.Type() {
+		case ddpstrptr:
+			return lhs
+		case ddpstringlistptr:
+			thenBlock, errorBlock := c.cf.NewBlock(""), c.cf.NewBlock("")
+			// get the length of the list
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
+			len := c.cbb.NewLoad(ddpint, lenptr)
+			// get the 0 based index
+			index := c.cbb.NewSub(index, newInt(1))
+			// bounds check
+			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+			c.commentNode(c.cbb, ass, "")
+			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
+
+			// out of bounds error
+			c.cbb = errorBlock
+			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, index, len)
+			c.commentNode(c.cbb, ass, "")
+			c.cbb.NewUnreachable()
+
+			c.cbb = thenBlock
+			// get a pointer to the array
+			arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
+			// get the array
+			arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
+			// index into the array
+			elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+			return c.cbb.NewLoad(elementPtr.ElemType, elementPtr)
+		}
+	}
+	err("Invalid types in evaluateAssignable %s", ass)
+	return nil
+}
+
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	val := c.evaluate(s.Rhs) // compile the expression
 	// intermediate values ref-counts must be incremented/decremented
@@ -1310,18 +1356,16 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 		c.commentNode(c.cbb, s, assign.Literal.Literal)
 		c.cbb.NewStore(val, Var.val) // store the new value
 	case *ast.Indexing:
-		Var := c.scp.lookupVar(assign.Name.Literal.Literal) // get the variable
+		lhs := c.evaluateAssignable(assign.Lhs) // get the (possibly nested) assignable
 		index := c.evaluate(assign.Index)
-		switch Var.typ {
+		switch lhs.Type() {
 		case ddpstrptr:
-			c.commentNode(c.cbb, s, assign.Name.Literal.Literal)
-			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, c.cbb.NewLoad(ddpstrptr, Var.val), val, index)
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, lhs, val, index)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
 			thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-			// load the list from the variable
-			listptr := c.cbb.NewLoad(Var.typ, Var.val)
 			// get the length of the list
-			lenptr := c.cbb.NewGetElementPtr(derefListPtr(Var.typ), listptr, newIntT(i32, 0), newIntT(i32, 1))
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
 			len := c.cbb.NewLoad(ddpint, lenptr)
 			// get the 0 based index
 			index := c.cbb.NewSub(index, newInt(1))
@@ -1338,14 +1382,14 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 
 			c.cbb = thenBlock
 			// get a pointer to the array
-			arrptr := c.cbb.NewGetElementPtr(derefListPtr(Var.typ), listptr, newIntT(i32, 0), newIntT(i32, 0))
+			arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
 			// get the array
-			arr := c.cbb.NewLoad(ptr(getElementType(Var.typ)), arrptr)
+			arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
 			// index into the array
-			elementPtr := c.cbb.NewGetElementPtr(getElementType(Var.typ), arr, index)
-			if Var.typ == ddpstringlistptr {
+			elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+			if lhs.Type() == ddpstringlistptr {
 				// free the old string
-				c.decrementRC(c.cbb.NewLoad(getElementType(Var.typ), elementPtr))
+				c.decrementRC(c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr))
 			}
 			c.cbb.NewStore(val, elementPtr)
 
@@ -1353,7 +1397,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 			c.cbb.NewBr(leaveBlock)
 			c.cbb = leaveBlock
 		default:
-			err("invalid Parameter Types for STELLE (%s, %s)", Var.typ, index.Type())
+			err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), index.Type())
 		}
 	}
 	return c

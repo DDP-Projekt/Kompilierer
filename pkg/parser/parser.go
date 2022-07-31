@@ -1480,19 +1480,22 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 // either ast.Ident or ast.Indexing
 // p.previous() must be of Type token.IDENTIFIER
 func (p *Parser) assigneable() ast.Assigneable {
-	var expr ast.Assigneable = &ast.Ident{
+	var ass ast.Assigneable = &ast.Ident{
 		Literal: p.previous(),
 	}
 
-	if p.match(token.AN) {
+	for p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
-		rhs := p.expression()
-		expr = &ast.Indexing{
-			Name:  expr.(*ast.Ident),
-			Index: rhs,
+		index := p.expression()
+		ass = &ast.Indexing{
+			Lhs:   ass,
+			Index: index,
+		}
+		if !p.match(token.COMMA) {
+			break
 		}
 	}
-	return expr
+	return ass
 }
 
 func (p *Parser) grouping() ast.Expression {

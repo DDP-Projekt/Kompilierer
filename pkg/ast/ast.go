@@ -118,7 +118,7 @@ type (
 	// this one can count as Reference, and may be used
 	// inplace of Ident (may be assigned to etc.)
 	Indexing struct {
-		Name  *Ident // variable Name
+		Lhs   Assigneable // variable Name
 		Index Expression
 	}
 
@@ -219,7 +219,7 @@ func (expr *FuncCall) String() string    { return "FuncCall" }
 
 func (expr *BadExpr) Token() token.Token     { return expr.Tok }
 func (expr *Ident) Token() token.Token       { return expr.Literal }
-func (expr *Indexing) Token() token.Token    { return expr.Name.Token() }
+func (expr *Indexing) Token() token.Token    { return expr.Lhs.Token() }
 func (expr *IntLit) Token() token.Token      { return expr.Literal }
 func (expr *FloatLit) Token() token.Token    { return expr.Literal }
 func (expr *BoolLit) Token() token.Token     { return expr.Literal }
@@ -236,7 +236,7 @@ func (expr *FuncCall) Token() token.Token    { return expr.Tok }
 func (expr *BadExpr) GetRange() token.Range { return expr.Range }
 func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
 func (expr *Indexing) GetRange() token.Range {
-	return token.Range{Start: expr.Name.GetRange().Start, End: expr.Index.GetRange().End}
+	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }
 func (expr *IntLit) GetRange() token.Range      { return token.NewRange(expr.Literal, expr.Literal) }
 func (expr *FloatLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }

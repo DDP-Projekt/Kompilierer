@@ -102,7 +102,7 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) ast.Visitor {
 	return r
 }
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.Visitor {
-	r.visit(expr.Name)
+	r.visit(expr.Lhs)
 	return expr.Index.Accept(r)
 }
 
@@ -172,9 +172,8 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 			r.err(stmt.Token(), "Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal)
 		}
 	case *ast.Indexing:
-		if _, exists := r.CurrentTable.LookupVar(assign.Name.Literal.Literal); !exists {
-			r.err(stmt.Token(), "Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Name.Literal.Literal)
-		}
+		r.visit(assign.Lhs)
+		r.visit(assign.Index)
 	}
 
 	return stmt.Rhs.Accept(r)

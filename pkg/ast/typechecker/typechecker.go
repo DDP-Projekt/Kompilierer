@@ -131,9 +131,9 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.Visitor {
 		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 	}
 
-	lhs := t.Evaluate(expr.Name)
+	lhs := t.Evaluate(expr.Lhs)
 	if !lhs.IsList && lhs.PrimitiveType != token.TEXT {
-		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
+		t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 	}
 
 	if lhs.IsList {
@@ -452,9 +452,9 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 			t.err(assign.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 		}
 
-		lhs := t.Evaluate(assign.Name)
+		lhs := t.Evaluate(assign.Lhs)
 		if !lhs.IsList && lhs != token.DDPStringType() {
-			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
+			t.err(assign.Lhs.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
 		if lhs.IsList {
 			lhs = token.NewPrimitiveType(lhs.PrimitiveType)
