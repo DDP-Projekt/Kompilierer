@@ -127,13 +127,13 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.Visitor {
-	if t.Evaluate(expr.Index) != token.DDPIntType() {
-		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+	if typ := t.Evaluate(expr.Index); typ != token.DDPIntType() {
+		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 	}
 
 	lhs := t.Evaluate(expr.Name)
 	if !lhs.IsList && lhs.PrimitiveType != token.TEXT {
-		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
+		t.err(expr.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 	}
 
 	if lhs.IsList {
@@ -204,7 +204,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 		t.latestReturnedType = token.DDPIntType()
 	case token.LÄNGE:
 		if !rhs.IsList && rhs.PrimitiveType != token.TEXT {
-			t.err(expr.Token(), "Der LÄNGE Operator erwartet einen Text oder eine Liste als Operanden")
+			t.err(expr.Token(), "Der LÄNGE Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", rhs)
 		}
 
 		t.latestReturnedType = token.DDPIntType()
@@ -257,10 +257,10 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
 		}
 	case token.STELLE:
 		if !lhs.IsList && lhs != token.DDPStringType() {
-			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
+			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
 		if rhs != token.DDPIntType() {
-			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+			t.err(expr.Lhs.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", rhs)
 		}
 
 		if lhs.IsList {
@@ -324,7 +324,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
 	switch expr.Operator.Type {
 	case token.VONBIS:
 		if !lhs.IsList && lhs != token.DDPStringType() {
-			t.err(expr.Lhs.Token(), "Der VON_BIS Operator erwartet einen Text oder eine Liste als ersten Operanden")
+			t.err(expr.Lhs.Token(), "Der VON_BIS Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
 
 		validateBin(expr.Operator.Type, token.DDPIntType())
@@ -448,13 +448,13 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 			)
 		}
 	case *ast.Indexing:
-		if t.Evaluate(assign.Index) != token.DDPIntType() {
-			t.err(assign.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden")
+		if typ := t.Evaluate(assign.Index); typ != token.DDPIntType() {
+			t.err(assign.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 		}
 
 		lhs := t.Evaluate(assign.Name)
 		if !lhs.IsList && lhs != token.DDPStringType() {
-			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden")
+			t.err(assign.Name.Token(), "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
 		if lhs.IsList {
 			lhs = token.NewPrimitiveType(lhs.PrimitiveType)

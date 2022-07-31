@@ -472,6 +472,40 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	switch lhs.Type() {
 	case ddpstrptr:
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+	case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+		thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+		// get the length of the list
+		lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
+		len := c.cbb.NewLoad(ddpint, lenptr)
+		// get the 0 based index
+		index := c.cbb.NewSub(rhs, newInt(1))
+		// bounds check
+		cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewCondBr(cond, thenBlock, errorBlock)
+
+		// out of bounds error
+		c.cbb = errorBlock
+		c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, rhs, len)
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewUnreachable()
+
+		c.cbb = thenBlock
+		// get a pointer to the array
+		arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
+		// get the array
+		arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
+		// index into the array
+		elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+		// load the element
+		c.latestReturn = c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr)
+		// copy strings
+		if lhs.Type() == ddpstringlistptr {
+			c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
+		}
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewBr(leaveBlock)
+		c.cbb = leaveBlock
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
@@ -691,6 +725,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return c
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+	// for UND and ODER both operands are booleans, so no refcounting needs to be done
 	switch e.Operator.Type {
 	case token.UND:
 		lhs := c.evaluate(e.Lhs)
@@ -876,11 +911,13 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			index := c.cbb.NewSub(rhs, newInt(1))
 			// bounds check
 			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+			c.commentNode(c.cbb, e, "")
 			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
 
 			// out of bounds error
 			c.cbb = errorBlock
 			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, rhs, len)
+			c.commentNode(c.cbb, e, "")
 			c.cbb.NewUnreachable()
 
 			c.cbb = thenBlock
@@ -896,6 +933,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			if lhs.Type() == ddpstringlistptr {
 				c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
 			}
+			c.commentNode(c.cbb, e, "")
 			c.cbb.NewBr(leaveBlock)
 			c.cbb = leaveBlock
 		default:
@@ -1278,6 +1316,44 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 		case ddpstrptr:
 			c.commentNode(c.cbb, s, assign.Name.Literal.Literal)
 			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, c.cbb.NewLoad(ddpstrptr, Var.val), val, index)
+		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+			thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+			// load the list from the variable
+			listptr := c.cbb.NewLoad(Var.typ, Var.val)
+			// get the length of the list
+			lenptr := c.cbb.NewGetElementPtr(derefListPtr(Var.typ), listptr, newIntT(i32, 0), newIntT(i32, 1))
+			len := c.cbb.NewLoad(ddpint, lenptr)
+			// get the 0 based index
+			index := c.cbb.NewSub(index, newInt(1))
+			// bounds check
+			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
+
+			// out of bounds error
+			c.cbb = errorBlock
+			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, index, len)
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewUnreachable()
+
+			c.cbb = thenBlock
+			// get a pointer to the array
+			arrptr := c.cbb.NewGetElementPtr(derefListPtr(Var.typ), listptr, newIntT(i32, 0), newIntT(i32, 0))
+			// get the array
+			arr := c.cbb.NewLoad(ptr(getElementType(Var.typ)), arrptr)
+			// index into the array
+			elementPtr := c.cbb.NewGetElementPtr(getElementType(Var.typ), arr, index)
+			if Var.typ == ddpstringlistptr {
+				// free the old string
+				c.decrementRC(c.cbb.NewLoad(getElementType(Var.typ), elementPtr))
+			}
+			c.cbb.NewStore(val, elementPtr)
+
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewBr(leaveBlock)
+			c.cbb = leaveBlock
+		default:
+			err("invalid Parameter Types for STELLE (%s, %s)", Var.typ, index.Type())
 		}
 	}
 	return c
