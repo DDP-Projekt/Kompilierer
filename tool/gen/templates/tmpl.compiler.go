@@ -4,7 +4,7 @@ func (c *Compiler) setupListTypes() {
 	{{range .}}
 	// complete the {{ .T }} definition to interact with the c ddp runtime
 	{{ .T }}.Fields = make([]types.Type, 3)
-	{{ .T }}.Fields[0] = {{if .D}}ddpstrptr{{else}}ptr({{ .E }}){{end}}
+	{{ .T }}.Fields[0] = ptr({{ .E }})
 	{{ .T }}.Fields[1] = ddpint
 	{{ .T }}.Fields[2] = ddpint
 	c.mod.NewTypeDef("{{ .T }}", {{ .T }})

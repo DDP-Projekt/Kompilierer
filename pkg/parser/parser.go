@@ -812,25 +812,18 @@ func (p *Parser) doRepeatStmt() ast.Statement {
 func (p *Parser) forStatement() ast.Statement {
 	For := p.previous()
 	p.consumeAny(token.JEDE, token.JEDEN)
-	if p.previous().Type == token.JEDE {
-		p.consume(token.ZAHL)
-	} else {
-		p.consume(token.BUCHSTABEN)
-	}
-	Type := p.previous()
-	if Type.Type == token.BUCHSTABEN { // grammar stuff
-		Type.Type = token.BUCHSTABE
-	}
+	TypeTok := p.peek()
+	Typ := p.parseType()
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
 	if p.match(token.VON) {
 		from := p.expression() // start of the counter
 		initializer := &ast.VarDecl{
 			Range: token.Range{
-				Start: token.NewStartPos(Type),
+				Start: token.NewStartPos(TypeTok),
 				End:   from.GetRange().End,
 			},
-			Type:    token.NewPrimitiveType(Type.Type),
+			Type:    Typ,
 			Name:    Ident,
 			InitVal: from,
 		}
@@ -876,10 +869,10 @@ func (p *Parser) forStatement() ast.Statement {
 		In := p.expression()
 		initializer := &ast.VarDecl{
 			Range: token.Range{
-				Start: token.NewStartPos(Type),
+				Start: token.NewStartPos(TypeTok),
 				End:   In.GetRange().End,
 			},
-			Type:    token.NewPrimitiveType(Type.Type),
+			Type:    Typ,
 			Name:    Ident,
 			InitVal: In,
 		}
@@ -1770,7 +1763,7 @@ func (p *Parser) parseType() token.DDPType {
 		p.consume(token.LISTE)
 		return token.NewListType(token.KOMMAZAHL)
 	case token.BUCHSTABEN:
-		if p.peekN(-2).Type == token.EINEN { // edge case in function return types
+		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
 			return token.NewPrimitiveType(token.BUCHSTABE)
 		}
 		p.consume(token.LISTE)

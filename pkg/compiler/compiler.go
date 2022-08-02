@@ -289,7 +289,7 @@ func (c *Compiler) setupListTypes() {
 
 	// complete the ddpstringlist definition to interact with the c ddp runtime
 	ddpstringlist.Fields = make([]types.Type, 3)
-	ddpstringlist.Fields[0] = ddpstrptr
+	ddpstringlist.Fields[0] = ptr(ddpstrptr)
 	ddpstringlist.Fields[1] = ddpint
 	ddpstringlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpstringlist", ddpstringlist)
@@ -1699,21 +1699,43 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	_, vk := isRefCounted(in.Type())
 	c.incrementRC(in, vk)
 
-	strlen := c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, in)
+	var len value.Value
+	if in.Type() == ddpstrptr {
+		len = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, in)
+	} else {
+		lenptr := c.cbb.NewGetElementPtr(derefListPtr(in.Type()), in, newIntT(i32, 0), newIntT(i32, 1))
+		len = c.cbb.NewLoad(ddpint, lenptr)
+	}
 	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, strlen, zero), leaveBlock, loopStart)
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, len, zero), leaveBlock, loopStart)
 
 	c.cbb = loopStart
 	index := c.cf.Blocks[0].NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
-	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(ddpchar), ddpchar)
+	irType := toIRType(s.Initializer.Type)
+	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(irType), irType)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), strlen), bodyBlock, leaveBlock)
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
 
 	c.cbb = bodyBlock
-	c.cbb.NewStore(c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, in, c.cbb.NewLoad(ddpint, index)), c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	var loopVar value.Value
+	if in.Type() == ddpstrptr {
+		loopVar = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, in, c.cbb.NewLoad(ddpint, index))
+	} else {
+		arrptr := c.cbb.NewGetElementPtr(derefListPtr(in.Type()), in, newIntT(i32, 0), newIntT(i32, 0))
+		arr := c.cbb.NewLoad(ptr(getElementType(in.Type())), arrptr)
+		ddpindex := c.cbb.NewSub(c.cbb.NewLoad(ddpint, index), newInt(1))
+		elementPtr := c.cbb.NewGetElementPtr(getElementType(in.Type()), arr, ddpindex)
+		loopVar = c.cbb.NewLoad(getElementType(in.Type()), elementPtr)
+		// copy strings
+		if in.Type() == ddpstringlistptr {
+			loopVar = c.deepCopyRefCounted(loopVar)
+			c.incrementRC(loopVar, VK_STRING)
+		}
+	}
+	c.cbb.NewStore(loopVar, c.scp.lookupVar(s.Initializer.Name.Literal).val)
 	c.visitNode(s.Body)
 	if c.cbb.Term == nil {
 		c.cbb.NewBr(incrementBlock)
