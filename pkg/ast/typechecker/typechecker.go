@@ -363,7 +363,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.Visitor {
 				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einer Text Liste umgewandelt werden", lhs)
 			}
 		default:
-			t.err(expr.Token(), "Invalide Typumwandlung zu %s", expr.Type)
+			t.err(expr.Token(), "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
 	} else {
 		switch expr.Type.PrimitiveType {
@@ -393,11 +393,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.Visitor {
 				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einem Buchstaben umgewandelt werden", lhs)
 			}
 		case token.TEXT:
-			if !lhs.IsPrimitive() {
-				t.err(expr.Token(), "Eine %s kann nicht zu einem Text umgewandelt werden", lhs)
-			}
 		default:
-			t.err(expr.Token(), "Invalide Typumwandlung zu %s", expr.Type)
+			t.err(expr.Token(), "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
 	}
 	t.latestReturnedType = expr.Type
