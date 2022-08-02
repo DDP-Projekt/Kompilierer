@@ -17,5 +17,8 @@ func (c *Compiler) setupListTypes() {
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_{{ .T }}", {{ .T }}ptr, ir.NewParam("list", {{ .T }}ptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_{{ .T }}_equal", ddpbool, ir.NewParam("list1", {{ .T }}ptr), ir.NewParam("list2", {{ .T }}ptr))
 	{{end}}
 }

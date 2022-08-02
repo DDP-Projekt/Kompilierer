@@ -214,10 +214,17 @@ func (c *Compiler) setupListTypes() {
 	ddpintlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpintlist", ddpintlist)
 
+	// creates a ddpintlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpintlist_from_constants"].irFunc.Sig.Variadic = true
 
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_ddpintlist_equal", ddpbool, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
 
 	// complete the ddpfloatlist definition to interact with the c ddp runtime
 	ddpfloatlist.Fields = make([]types.Type, 3)
@@ -226,10 +233,17 @@ func (c *Compiler) setupListTypes() {
 	ddpfloatlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpfloatlist", ddpfloatlist)
 
+	// creates a ddpfloatlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpfloatlist_from_constants"].irFunc.Sig.Variadic = true
 
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpfloatlist", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_ddpfloatlist_equal", ddpbool, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
 
 	// complete the ddpboollist definition to interact with the c ddp runtime
 	ddpboollist.Fields = make([]types.Type, 3)
@@ -238,10 +252,17 @@ func (c *Compiler) setupListTypes() {
 	ddpboollist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpboollist", ddpboollist)
 
+	// creates a ddpboollist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpboollist_from_constants"].irFunc.Sig.Variadic = true
 
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_ddpboollist_equal", ddpbool, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
 
 	// complete the ddpcharlist definition to interact with the c ddp runtime
 	ddpcharlist.Fields = make([]types.Type, 3)
@@ -250,22 +271,37 @@ func (c *Compiler) setupListTypes() {
 	ddpcharlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpcharlist", ddpcharlist)
 
+	// creates a ddpcharlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpcharlist_from_constants"].irFunc.Sig.Variadic = true
 
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpcharlist", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_ddpcharlist_equal", ddpbool, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
 
 	// complete the ddpstringlist definition to interact with the c ddp runtime
 	ddpstringlist.Fields = make([]types.Type, 3)
-	ddpstringlist.Fields[0] = ptr(ddpstrptr)
+	ddpstringlist.Fields[0] = ptr(ddpstring)
 	ddpstringlist.Fields[1] = ddpint
 	ddpstringlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpstringlist", ddpstringlist)
 
+	// creates a ddpstringlist from the elements and returns a pointer to it
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
 	c.functions["inbuilt_ddpstringlist_from_constants"].irFunc.Sig.Variadic = true
 
+	// returns a copy of the passed string as a new pointer
+	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
+
+	// inbuilt operators for lists
+	c.declareInbuiltFunction("inbuilt_ddpstringlist_equal", ddpbool, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
+
 }
 
 func (c *Compiler) setupOperators() {
@@ -328,7 +364,7 @@ func (c *Compiler) decrementRC(key value.Value) {
 	c.cbb.NewCall(c.functions["inbuilt_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
 }
 
-// helper to call deep_copy_<type>
+// helper to call inbuilt_deep_copy_<type>
 func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
 	switch listptr.Type() {
 	case ddpstrptr:
@@ -1009,6 +1045,16 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
 		case ddpstrptr:
 			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
+		case ddpintlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_equal"].irFunc, lhs, rhs)
+		case ddpfloatlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_equal"].irFunc, lhs, rhs)
+		case ddpboollistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_equal"].irFunc, lhs, rhs)
+		case ddpcharlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_equal"].irFunc, lhs, rhs)
+		case ddpstringlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_equal"].irFunc, lhs, rhs)
 		default:
 			err("invalid Parameter Types for GLEICH (%s, %s)", lhs.Type(), rhs.Type())
 		}
@@ -1024,6 +1070,21 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, rhs)
 		case ddpstrptr:
 			equal := c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		case ddpintlistptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_ddpintlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		case ddpfloatlistptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		case ddpboollistptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_ddpboollist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		case ddpcharlistptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		case ddpstringlistptr:
+			equal := c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		default:
 			err("invalid Parameter Types for UNGLEICH (%s, %s)", lhs.Type(), rhs.Type())
@@ -1173,7 +1234,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 		c.incrementRC(lhs, vk)
 	}
 	if e.Type.IsList {
-		err("lists not implemented")
+		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1), lhs)
 	} else {
 		switch e.Type.PrimitiveType {
 		case token.ZAHL:

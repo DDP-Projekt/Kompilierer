@@ -22,8 +22,8 @@ var List_Types = []DDP_List{
 }
 
 func generate(fileName string) {
-	templ := template.Must(template.New("templates/tmpl." + fileName).ParseFiles("templates/tmpl." + fileName))
-	f, err := os.OpenFile("generated/gen."+fileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+	templ := template.Must(template.New("tmpl." + fileName).ParseFiles("./templates/tmpl." + fileName))
+	f, err := os.OpenFile("./generated/gen."+fileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
