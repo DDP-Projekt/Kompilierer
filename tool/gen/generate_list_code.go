@@ -42,5 +42,6 @@ func main() {
 		generate("ddptypes.h")
 		generate("ddptypes.c")
 		generate("compiler.go")
+		generate("list_operators.c")
 	}
 }

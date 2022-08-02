@@ -329,7 +329,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
 
 		validateBin(expr.Operator.Type, token.DDPIntType())
 		if lhs.IsList {
-			t.latestReturnedType = token.NewPrimitiveType(lhs.PrimitiveType)
+			t.latestReturnedType = token.NewListType(lhs.PrimitiveType)
 		} else if lhs == token.DDPStringType() {
 			t.latestReturnedType = token.DDPStringType()
 		}

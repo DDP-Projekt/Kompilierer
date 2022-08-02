@@ -4,7 +4,7 @@ func (c *Compiler) setupListTypes() {
 	{{range .}}
 	// complete the {{ .T }} definition to interact with the c ddp runtime
 	{{ .T }}.Fields = make([]types.Type, 3)
-	{{ .T }}.Fields[0] = ptr({{ .E }})
+	{{ .T }}.Fields[0] = {{if .D}}ddpstrptr{{else}}ptr({{ .E }}){{end}}
 	{{ .T }}.Fields[1] = ddpint
 	{{ .T }}.Fields[2] = ddpint
 	c.mod.NewTypeDef("{{ .T }}", {{ .T }})
@@ -20,5 +20,6 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_{{ .T }}_equal", ddpbool, ir.NewParam("list1", {{ .T }}ptr), ir.NewParam("list2", {{ .T }}ptr))
+	c.declareInbuiltFunction("inbuilt_{{ .T }}_slice", {{ .T }}ptr, ir.NewParam("list", {{ .T }}ptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	{{end}}
 }

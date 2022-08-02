@@ -225,6 +225,7 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_ddpintlist_equal", ddpbool, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpintlist_slice", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
 	// complete the ddpfloatlist definition to interact with the c ddp runtime
 	ddpfloatlist.Fields = make([]types.Type, 3)
@@ -244,6 +245,7 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_equal", ddpbool, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpfloatlist_slice", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
 	// complete the ddpboollist definition to interact with the c ddp runtime
 	ddpboollist.Fields = make([]types.Type, 3)
@@ -263,6 +265,7 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_ddpboollist_equal", ddpbool, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
+	c.declareInbuiltFunction("inbuilt_ddpboollist_slice", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
 	// complete the ddpcharlist definition to interact with the c ddp runtime
 	ddpcharlist.Fields = make([]types.Type, 3)
@@ -282,10 +285,11 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_equal", ddpbool, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpcharlist_slice", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
 	// complete the ddpstringlist definition to interact with the c ddp runtime
 	ddpstringlist.Fields = make([]types.Type, 3)
-	ddpstringlist.Fields[0] = ptr(ddpstring)
+	ddpstringlist.Fields[0] = ddpstrptr
 	ddpstringlist.Fields[1] = ddpint
 	ddpstringlist.Fields[2] = ddpint
 	c.mod.NewTypeDef("ddpstringlist", ddpstringlist)
@@ -301,6 +305,7 @@ func (c *Compiler) setupListTypes() {
 
 	// inbuilt operators for lists
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_equal", ddpbool, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpstringlist_slice", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
 }
 
@@ -1212,7 +1217,22 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 
 	switch e.Operator.Type {
 	case token.VONBIS:
-		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_slice"].irFunc, lhs, mid, rhs)
+		switch lhs.Type() {
+		case ddpstrptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_slice"].irFunc, lhs, mid, rhs)
+		case ddpintlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_slice"].irFunc, lhs, mid, rhs)
+		case ddpfloatlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_slice"].irFunc, lhs, mid, rhs)
+		case ddpboollistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_slice"].irFunc, lhs, mid, rhs)
+		case ddpcharlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_slice"].irFunc, lhs, mid, rhs)
+		case ddpstringlistptr:
+			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_slice"].irFunc, lhs, mid, rhs)
+		default:
+			err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
+		}
 	default:
 		err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
 	}
