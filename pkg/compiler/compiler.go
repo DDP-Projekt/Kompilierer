@@ -228,6 +228,12 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("inbuilt_ddpintlist_slice", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	c.declareInbuiltFunction("inbuilt_ddpintlist_to_string", ddpstrptr, ir.NewParam("list", ddpintlistptr))
 
+	c.declareInbuiltFunction("inbuilt_ddpintlist_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpintlist_ddpint_verkettet", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("el", ddpint))
+
+	c.declareInbuiltFunction("inbuilt_ddpint_ddpint_verkettet", ddpintlistptr, ir.NewParam("el1", ddpint), ir.NewParam("el2", ddpint))
+	c.declareInbuiltFunction("inbuilt_ddpint_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("el", ddpint), ir.NewParam("list", ddpintlistptr))
+
 	// complete the ddpfloatlist definition to interact with the c ddp runtime
 	ddpfloatlist.Fields = make([]types.Type, 3)
 	ddpfloatlist.Fields[0] = ptr(ddpfloat)
@@ -248,6 +254,12 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_equal", ddpbool, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_slice", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_to_string", ddpstrptr, ir.NewParam("list", ddpfloatlistptr))
+
+	c.declareInbuiltFunction("inbuilt_ddpfloatlist_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpfloatlist_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("el", ddpfloat))
+
+	c.declareInbuiltFunction("inbuilt_ddpfloat_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("el1", ddpfloat), ir.NewParam("el2", ddpfloat))
+	c.declareInbuiltFunction("inbuilt_ddpfloat_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("el", ddpfloat), ir.NewParam("list", ddpfloatlistptr))
 
 	// complete the ddpboollist definition to interact with the c ddp runtime
 	ddpboollist.Fields = make([]types.Type, 3)
@@ -270,6 +282,12 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("inbuilt_ddpboollist_slice", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	c.declareInbuiltFunction("inbuilt_ddpboollist_to_string", ddpstrptr, ir.NewParam("list", ddpboollistptr))
 
+	c.declareInbuiltFunction("inbuilt_ddpboollist_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
+	c.declareInbuiltFunction("inbuilt_ddpboollist_ddpbool_verkettet", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("el", ddpbool))
+
+	c.declareInbuiltFunction("inbuilt_ddpbool_ddpbool_verkettet", ddpboollistptr, ir.NewParam("el1", ddpbool), ir.NewParam("el2", ddpbool))
+	c.declareInbuiltFunction("inbuilt_ddpbool_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("el", ddpbool), ir.NewParam("list", ddpboollistptr))
+
 	// complete the ddpcharlist definition to interact with the c ddp runtime
 	ddpcharlist.Fields = make([]types.Type, 3)
 	ddpcharlist.Fields[0] = ptr(ddpchar)
@@ -291,6 +309,12 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_slice", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_to_string", ddpstrptr, ir.NewParam("list", ddpcharlistptr))
 
+	c.declareInbuiltFunction("inbuilt_ddpcharlist_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpcharlist_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("el", ddpchar))
+
+	c.declareInbuiltFunction("inbuilt_ddpchar_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("el1", ddpchar), ir.NewParam("el2", ddpchar))
+	c.declareInbuiltFunction("inbuilt_ddpchar_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("el", ddpchar), ir.NewParam("list", ddpcharlistptr))
+
 	// complete the ddpstringlist definition to interact with the c ddp runtime
 	ddpstringlist.Fields = make([]types.Type, 3)
 	ddpstringlist.Fields[0] = ptr(ddpstrptr)
@@ -311,6 +335,11 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_equal", ddpbool, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_slice", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_to_string", ddpstrptr, ir.NewParam("list", ddpstringlistptr))
+
+	c.declareInbuiltFunction("inbuilt_ddpstringlist_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
+	c.declareInbuiltFunction("inbuilt_ddpstringlist_ddpstring_verkettet", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("el", ddpstrptr))
+
+	c.declareInbuiltFunction("inbuilt_ddpstring_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("str", ddpstrptr), ir.NewParam("list", ddpstringlistptr))
 
 }
 
@@ -821,21 +850,97 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	switch e.Operator.Type {
 	case token.VERKETTET:
 		switch lhs.Type() {
+		case ddpintlistptr:
+			switch rhs.Type() {
+			case ddpintlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_ddpintlist_verkettet"].irFunc, lhs, rhs)
+			case ddpint:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_ddpint_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpint:
+			switch rhs.Type() {
+			case ddpint:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpint_ddpint_verkettet"].irFunc, lhs, rhs)
+			case ddpintlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpint_ddpintlist_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpfloatlistptr:
+			switch rhs.Type() {
+			case ddpfloatlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
+			case ddpfloat:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_ddpfloat_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpfloat:
+			switch rhs.Type() {
+			case ddpfloat:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloat_ddpfloat_verkettet"].irFunc, lhs, rhs)
+			case ddpfloatlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloat_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpboollistptr:
+			switch rhs.Type() {
+			case ddpboollistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_ddpboollist_verkettet"].irFunc, lhs, rhs)
+			case ddpbool:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_ddpbool_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpbool:
+			switch rhs.Type() {
+			case ddpbool:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpbool_ddpbool_verkettet"].irFunc, lhs, rhs)
+			case ddpboollistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpbool_ddpboollist_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpcharlistptr:
+			switch rhs.Type() {
+			case ddpcharlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_ddpcharlist_verkettet"].irFunc, lhs, rhs)
+			case ddpchar:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_ddpchar_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpchar:
+			switch rhs.Type() {
+			case ddpchar:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpchar_ddpchar_verkettet"].irFunc, lhs, rhs)
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_string_verkettet"].irFunc, lhs, rhs)
+			case ddpcharlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpchar_ddpcharlist_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
+		case ddpstringlistptr:
+			switch rhs.Type() {
+			case ddpstringlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_ddpstringlist_verkettet"].irFunc, lhs, rhs)
+			case ddpstrptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_ddpstring_verkettet"].irFunc, lhs, rhs)
+			default:
+				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
+			}
 		case ddpstrptr:
 			switch rhs.Type() {
 			case ddpstrptr:
 				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_string_verkettet"].irFunc, lhs, rhs)
 			case ddpchar:
 				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_char_verkettet"].irFunc, lhs, rhs)
-			default:
-				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
-			}
-		case ddpchar:
-			switch rhs.Type() {
-			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_string_verkettet"].irFunc, lhs, rhs)
-			case ddpchar:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_char_verkettet"].irFunc, lhs, rhs)
+			case ddpstringlistptr:
+				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstring_ddpstringlist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}

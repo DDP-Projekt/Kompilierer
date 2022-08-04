@@ -7,14 +7,15 @@
 - [x] Sinus/Kosinus/Tangens/... Operatoren
 - [x] Index Operator (an der Stelle)
 - [x] Slice Operator (von bis)
-- [ ] String/Listen Operatoren (basic + stdlib)
+- [x] String/Listen Operatoren (basic)
+- [ ] String/Listen Operatoren (stdlib)
 
 ## Allgemein
 - [x] do-while loops
 - [x] Boolean und/oder mit jumps
 - [x] Iterierende For-Loops
 - [x] Wiederholungen (Mache: x mal)
-- [ ] Listen
+- [x] Listen
 - [ ] Strukturen
 - [ ] Bessere Tests (vor allem für komplex verschachtelte Loops)
 - [ ] Bessere error-messages

@@ -1,0 +1,48 @@
+Binde "Duden/Ausgabe" ein.
+
+Schreibe den Text ("Hallo" verkettet mit " Welt\n").
+Schreibe den Text ("Hallo" verkettet mit 'Ä').
+Schreibe den Text ('\n' verkettet mit "Tschüss").
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahlen Liste (eine Liste aus 1, 2, 3 bestehend verkettet mit einer Liste aus 1, 2, 3 bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Zahlen Liste (eine Liste aus 1, 2, 3 bestehend verkettet mit 69).
+Schreibe den Buchstaben '\n'.
+Schreibe die Zahlen Liste (69 verkettet mit einer Liste aus 1, 2, 3 bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Zahlen Liste (42 verkettet mit 69).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Kommazahlen Liste (eine Liste aus 1,2, 2,2, 3,2 bestehend verkettet mit einer Liste aus 1,2, 2,2, 3,2 bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Kommazahlen Liste (eine Liste aus 1,2, 2,2, 3,2 bestehend verkettet mit 69,2).
+Schreibe den Buchstaben '\n'.
+Schreibe die Kommazahlen Liste (69,2 verkettet mit einer Liste aus 1,2, 2,2, 3,2 bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Kommazahlen Liste (42,2 verkettet mit 69,2).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Boolean Liste (eine Liste aus wahr, falsch, wahr bestehend verkettet mit einer Liste aus wahr, falsch, wahr bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Boolean Liste (eine Liste aus wahr, falsch, wahr bestehend verkettet mit wahr).
+Schreibe den Buchstaben '\n'.
+Schreibe die Boolean Liste (falsch verkettet mit einer Liste aus wahr, falsch, wahr bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Boolean Liste (wahr verkettet mit falsch).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Buchstaben Liste (eine Liste aus 'a', 'b', 'c' bestehend verkettet mit einer Liste aus 'a', 'b', 'c' bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Buchstaben Liste (eine Liste aus 'a', 'b', 'c' bestehend verkettet mit 'Ä').
+Schreibe den Buchstaben '\n'.
+Schreibe die Buchstaben Liste ('Ä' verkettet mit einer Liste aus 'a', 'b', 'c' bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Buchstaben Liste ('Ü' verkettet mit 'Ä').
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Text Liste (eine Liste aus "hi", "über", "dir" bestehend verkettet mit einer Liste aus "hi", "über", "dir" bestehend).
+Schreibe den Buchstaben '\n'.
+Schreibe die Text Liste (eine Liste aus "hi", "über", "dir" bestehend verkettet mit "hallo").
+Schreibe den Buchstaben '\n'.
+Schreibe die Text Liste ("hallo" verkettet mit einer Liste aus "hi", "über", "dir" bestehend).

@@ -1,0 +1,22 @@
+Hallo Welt
+HalloÄ
+Tschüss
+1, 2, 3, 1, 2, 3
+1, 2, 3, 69
+69, 1, 2, 3
+42, 69
+1,2, 2,2, 3,2, 1,2, 2,2, 3,2
+1,2, 2,2, 3,2, 69,2
+69,2, 1,2, 2,2, 3,2
+42,2, 69,2
+wahr, falsch, wahr, wahr, falsch, wahr
+wahr, falsch, wahr, wahr
+falsch, wahr, falsch, wahr
+wahr, falsch
+a, b, c, a, b, c
+a, b, c, Ä
+Ä, a, b, c
+Ü, Ä
+hi, über, dir, hi, über, dir
+hi, über, dir, hallo
+hallo, hi, über, dir

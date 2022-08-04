@@ -210,32 +210,6 @@ ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
 	return dstr;
 }
 
-ddpstring* inbuilt_char_char_verkettet(ddpchar c1, ddpchar c2) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_char_char_verkettet: %p", dstr);
-
-	char temp1[5];
-	int num_bytes1 = utf8_char_to_string(temp1, c1);
-	if (num_bytes1 == -1) { // if c is invalid utf8, we return simply a copy of str
-		num_bytes1 = 0;
-	}
-
-	char temp2[5];
-	int num_bytes2 = utf8_char_to_string(temp2, c2);
-	if (num_bytes2 == -1) { // if c is invalid utf8, we return simply a copy of str
-		num_bytes2 = 0;
-	}
-
-	char* string = ALLOCATE(char, num_bytes1 + num_bytes2 + 1);
-	memcpy(string, temp1, num_bytes1);
-	memcpy(&string[num_bytes1], temp2, num_bytes2);
-	string[num_bytes1 + num_bytes2] = '\0';
-
-	dstr->cap = num_bytes1 + num_bytes2 + 1;
-	dstr->str = string;
-	return dstr;
-}
-
 ddpint inbuilt_string_to_int(ddpstring* str) {
 	if (str->cap == 0 || str->str[0] == '\0') return 0; // empty string
 
