@@ -40,61 +40,6 @@ void ddpextern_Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
 
-void ddpextern_Schreibe_Zahlen_Liste(ddpintlist* p1) {
-	if (p1->len <= 0) {
-		return;
-	}
-	for (size_t i = 0; i < p1->len-1; i++) {
-		ddpextern_Schreibe_Zahl(p1->arr[i]);
-		printf(", ");
-	}
-	ddpextern_Schreibe_Zahl(p1->arr[p1->len-1]);
-}
-
-void ddpextern_Schreibe_Kommazahlen_Liste(ddpfloatlist* p1) {
-	if (p1->len <= 0) {
-		return;
-	}
-	for (size_t i = 0; i < p1->len-1; i++) {
-		ddpextern_Schreibe_Kommazahl(p1->arr[i]);
-		printf(", ");
-	}
-	ddpextern_Schreibe_Kommazahl(p1->arr[p1->len-1]);
-}
-
-void ddpextern_Schreibe_Boolean_Liste(ddpboollist* p1) {
-	if (p1->len <= 0) {
-		return;
-	}
-	for (size_t i = 0; i < p1->len-1; i++) {
-		ddpextern_Schreibe_Boolean(p1->arr[i]);
-		printf(", ");
-	}
-	ddpextern_Schreibe_Boolean(p1->arr[p1->len-1]);
-}
-
-void ddpextern_Schreibe_Buchstaben_Liste(ddpcharlist* p1) {
-	if (p1->len <= 0) {
-		return;
-	}
-	for (size_t i = 0; i < p1->len-1; i++) {
-		ddpextern_Schreibe_Buchstabe(p1->arr[i]);
-		printf(", ");
-	}
-	ddpextern_Schreibe_Buchstabe(p1->arr[p1->len-1]);
-}
-
-void ddpextern_Schreibe_Text_Liste(ddpstringlist* p1) {
-	if (p1->len <= 0) {
-		return;
-	}
-	for (size_t i = 0; i < p1->len-1; i++) {
-		ddpextern_Schreibe_Text(p1->arr[i]);
-		printf(", ");
-	}
-	ddpextern_Schreibe_Text(p1->arr[p1->len-1]);
-}
-
 #ifdef _WIN32
 static HANDLE* get_stdin_handle() {
 	static HANDLE stdin_hndl;
