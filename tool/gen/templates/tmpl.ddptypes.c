@@ -1,5 +1,3 @@
-extern void inbuilt_decrement_ref_count(void*);
-extern void inbuilt_increment_ref_count(void*, uint8_t);
 {{range .}}
 {{ .T }}* inbuilt_{{ .T }}_from_constants(ddpint count, ...) {
 	{{ .T }}* list = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode

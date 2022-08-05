@@ -35,7 +35,7 @@ Und kann so benutzt werden:
 
 Die Funktion EnthältText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Die Zahl startIndex ist 0.
-	Die Zahl endIndex ist startIndex plus die Länge von suchText.
+	Die Zahl endIndex ist die Länge von suchText.
 
 	Solange endIndex kleiner als, oder die Länge von text ist, mache:
 		Der Text subtext ist text von startIndex bis endIndex.

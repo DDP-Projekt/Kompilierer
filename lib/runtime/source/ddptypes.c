@@ -1,7 +1,7 @@
 #include "ddptypes.h"
 #include "memory.h"
 #include "debug.h"
-#include "hashtable.h"
+#include "gc.h"
 #include "utf8/utf8.h"
 #include <stdarg.h>
 
@@ -41,9 +41,6 @@ ddpstring* inbuilt_deep_copy_string(ddpstring* str) {
 }
 
 /***** Partially generated code *****/
-
-extern void inbuilt_decrement_ref_count(void*);
-extern void inbuilt_increment_ref_count(void*, uint8_t);
 
 ddpintlist* inbuilt_ddpintlist_from_constants(ddpint count, ...) {
 	ddpintlist* list = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode

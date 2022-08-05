@@ -16,7 +16,7 @@ Table* get_ref_table() {
 // reference_count of val must be 0
 // key is the pointer to the value
 // val is needed to determine the type of value
-static void free_value(void* key, Value* val) {
+void free_value(void* key, Value* val) {
 	DBGLOG("free_value: %p", key);
 	switch (val->kind)
 	{

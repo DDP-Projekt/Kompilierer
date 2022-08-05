@@ -1,5 +1,4 @@
 extern ddpbool inbuilt_string_equal(ddpstring*, ddpstring*);
-extern void inbuilt_increment_ref_count(void*, uint8_t);
 extern ddpstring* inbuilt_deep_copy_string(ddpstring*);
 
 static ddpint clamp(ddpint i, ddpint min, ddpint max) {

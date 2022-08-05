@@ -2,21 +2,25 @@
 	initialization for the ddp-c-runtime
 	also defines the entry point of the executable
 */
+#include "main.h"
 #include <locale.h>
 #include <signal.h>
 #ifdef _WIN32
 #include <Windows.h>
 #endif // _WIN32
 #include "gc.h"
+#include "debug.h"
 
 // should not be needed in production
 // mainly for debugging
 static void SegfaultHandler(int signal) {
+	end_runtime();
 	runtime_error(1, "Segmentation fault\n");
 }
 
 // initialize runtime stuff
-static void init_runtime() {
+void init_runtime() {
+	DBGLOG("init_runtime");
 	setlocale(LC_ALL, "de_DE.UTF8");
 #ifdef _WIN32
 	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
@@ -32,7 +36,16 @@ static void init_runtime() {
 }
 
 // end the runtime
-static void end_runtime() {
+void end_runtime() {
+	DBGLOG("end_runtime");
+	// free all possibly remaining entries (there should be none, but maybe we segfaulted or aborted...)
+	Table* ref_table = get_ref_table();
+	for (size_t i = 0; i < ref_table->capacity; i++) {
+		Entry* entry = &ref_table->entries[i];
+		if (entry->key != NULL && entry->value.reference_count > 0) {
+			free_value(entry->key, &entry->value);
+		}
+	}
 	freeTable(get_ref_table()); // free the reference table (not the remaining entries, it should be empty)
 }
 

@@ -1,7 +1,7 @@
 #include "ddptypes.h"
 #include "memory.h"
 #include "debug.h"
-#include "hashtable.h"
+#include "gc.h"
 #include "utf8/utf8.h"
 #include <math.h>
 
@@ -152,7 +152,6 @@ ddpstring* inbuilt_ddpstringlist_to_string(ddpstringlist* list) {
 /***** Partially generated code *****/
 
 extern ddpbool inbuilt_string_equal(ddpstring*, ddpstring*);
-extern void inbuilt_increment_ref_count(void*, uint8_t);
 extern ddpstring* inbuilt_deep_copy_string(ddpstring*);
 
 static ddpint clamp(ddpint i, ddpint min, ddpint max) {
