@@ -231,6 +231,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	errorMessage := ""
 	perr := func(tok token.Token, msg string) {
 		p.err(tok, msg)
+		valid = false
 		if errorMessage == "" {
 			errorMessage = msg
 		}
@@ -271,7 +272,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				paramNames = append(paramNames, name) // append the parameter name
 			}
 			if p.match(token.UND) {
-				p.consume(token.IDENTIFIER)
+				validate(p.consume(token.IDENTIFIER))
 				addParamName(p.previous())
 			} else {
 				for p.match(token.COMMA) { // the function takes multiple parameters
@@ -281,13 +282,13 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 					addParamName(p.previous())
 				}
 				if !p.consumeN(token.UND, token.IDENTIFIER) {
-					perr(p.peek(), fmt.Sprintf("Es wurde 'und <letzter Parameter>' erwartet aber %s gefunden", p.peek().Literal))
+					perr(p.peek(), fmt.Sprintf("Es wurde 'und <letzter Parameter>' erwartet aber %s gefunden\nMeintest du vielleicht 'dem Parameter' anstatt 'den Parametern'?", p.peek().Literal))
 				}
 				addParamName(p.previous())
 			}
 		}
 		// parse the types of the parameters
-		p.consumeN(token.VOM, token.TYP)
+		validate(p.consumeN(token.VOM, token.TYP))
 		firstType := p.parseType()
 		validate(firstType.PrimitiveType != token.ILLEGAL)
 		paramTypes = append(make([]token.DDPType, 0), firstType) // append the first parameter type
@@ -316,16 +317,19 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// we need as many parmeter names as types
 	if len(paramNames) != len(paramTypes) {
 		valid = false
-		perr(p.previous(), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter vs %d Typen)", len(paramNames), len(paramTypes)))
+		perr(p.previous(), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)))
 	}
 
 	// parse the return type declaration
 	// TODO: handle grammar with eine/einen
-	p.consume(token.GIBT)
+	validate(p.consume(token.GIBT))
 	p.match(token.EINE, token.EINEN) // not neccessary
 	Typ := p.parseTypeOrVoid()
+	if Typ.PrimitiveType == token.ILLEGAL {
+		perr(p.peek(), fmt.Sprintf("Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal))
+	}
 
-	p.consumeN(token.ZURÜCK, token.COMMA)
+	validate(p.consumeN(token.ZURÜCK, token.COMMA))
 	bodyStart := -1
 	definedIn := token.Token{Type: token.ILLEGAL}
 	if p.matchN(token.MACHT, token.COLON) {
@@ -345,7 +349,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// parse the alias definitions before the body to enable recursion
-	p.consumeN(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING) // at least 1 alias is required
+	validate(p.consumeN(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
 	aliases := make([]token.Token, 0)
 	if p.previous().Type == token.STRING {
 		aliases = append(aliases, p.previous())
@@ -393,7 +397,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	if p.currentFunction != "" {
 		valid = false
-		perr(Funktion, "Es können nur globale Funktionen deklariert werden")
+		perr(begin, "Es können nur globale Funktionen deklariert werden")
 	}
 
 	if !valid {
@@ -1395,12 +1399,19 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 					Values: nil,
 				}
 			} else {
-				p.consumeN(token.LISTE, token.AUS)
+				besteht := true
+				if !p.matchN(token.LISTE, token.COMMA, token.DIE, token.AUS) {
+					besteht = !p.consumeN(token.LISTE, token.AUS)
+				}
 				values := append(make([]ast.Expression, 0, 2), p.expression())
 				for p.match(token.COMMA) {
 					values = append(values, p.expression())
 				}
-				p.consume(token.BESTEHEND)
+				if besteht {
+					p.consume(token.BESTEHT)
+				} else {
+					p.consume(token.BESTEHEND)
+				}
 				lhs = &ast.ListLit{
 					Tok: begin,
 					Range: token.Range{

@@ -131,6 +131,7 @@ const (
 	LEEREN
 	AUS
 	BESTEHEND
+	BESTEHT
 	EINER
 
 	DOT    // .
@@ -271,6 +272,7 @@ var tokenStrings = [...]string{
 	LEEREN:       "LEEREN",
 	AUS:          "AUS",
 	BESTEHEND:    "BESTEHEND",
+	BESTEHT:      "BESTEHT",
 	EINER:        "EINER",
 
 	DOT:    "DOT",
@@ -401,10 +403,10 @@ var keywordMap = map[string]TokenType{
 	"definiert":       DEFINIERT,
 	"leere":           LEERE,
 	"leeren":          LEEREN,
-
-	"aus":       AUS,
-	"bestehend": BESTEHEND,
-	"einer":     EINER,
+	"aus":             AUS,
+	"bestehend":       BESTEHEND,
+	"besteht":         BESTEHT,
+	"einer":           EINER,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
