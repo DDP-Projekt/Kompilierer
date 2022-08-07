@@ -1,9 +1,9 @@
 #include "main.h"
 #include "ddptypes.h"
 
-void ddpextern_Programm_Beenden() {
+void ddpextern_Programm_Beenden(ddpint code) {
 	end_runtime();
-	exit(0);
+	exit(code);
 }
 
 void ddpextern_Laufzeitfehler(ddpstring* Nachricht, ddpint code) {

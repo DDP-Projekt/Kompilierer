@@ -1,6 +1,12 @@
-Die Funktion Programm_Beenden gibt nichts zurück,
+Die Funktion Programm_Beenden mit dem Parameter Code vom Typ Zahl, gibt nichts zurück,
 ist in "ddpstdlib.lib" definiert
 und kann so benutzt werden:
+	"Beende das Programm mit Code <Code>" oder
+	"beende das Programm mit Code <Code>"
+
+Die Funktion Programm_Beenden_Standard gibt nichts zurück, macht:
+	Beende das Programm mit Code 0.
+Und kann so benutzt werden:
 	"Beende das Programm" oder
 	"beende das Programm"
 
