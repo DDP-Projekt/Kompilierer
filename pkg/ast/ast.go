@@ -356,7 +356,7 @@ type (
 		Range  token.Range
 		Return token.Token // Gib
 		Func   string
-		Value  Expression
+		Value  Expression // nil for void return
 	}
 )
 

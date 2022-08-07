@@ -1,0 +1,17 @@
+Die Funktion Programm_Beenden gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Beende das Programm" oder
+	"beende das Programm"
+
+Die Funktion Laufzeitfehler mit den Parametern Nachricht und Code vom Typ Text und Zahl, gibt nichts zurück,
+ist in "ddpstdlib.lib" definiert
+und kann so benutzt werden:
+	"Löse einen Laufzeitfehler mit der Nachricht <Nachricht> und dem Code <Code> aus" oder 
+	"löse einen Laufzeitfehler mit der Nachricht <Nachricht> und dem Code <Code> aus"
+
+Die Funktion Befehlszeilenargumente gibt eine Text Liste zurück,
+ist in "ddpruntime.lib" definiert
+und kann so benutzt werden:
+	"die Befehlszeilenargumente" oder 
+	"den Befehlszeilenargumenten"
