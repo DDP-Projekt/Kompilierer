@@ -251,5 +251,8 @@ func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
 	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
 		r.err(stmt.Token(), "Man kann nur aus Funktionen einen Wert zurückgeben")
 	}
+	if stmt.Value == nil {
+		return r
+	}
 	return stmt.Value.Accept(r)
 }

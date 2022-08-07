@@ -532,6 +532,9 @@ func (p *Parser) statement() ast.Statement {
 	case token.GIB:
 		p.consume(token.GIB)
 		return p.returnStatement()
+	case token.VERLASSE:
+		p.consume(token.VERLASSE)
+		return p.voidReturn()
 	case token.COLON:
 		p.consume(token.COLON)
 		return p.blockStatement()
@@ -929,6 +932,17 @@ func (p *Parser) returnStatement() ast.Statement {
 		Func:   p.currentFunction,
 		Return: Return,
 		Value:  expr,
+	}
+}
+
+func (p *Parser) voidReturn() ast.Statement {
+	Leave := p.previous()
+	p.consumeN(token.DIE, token.FUNKTION, token.DOT)
+	return &ast.ReturnStmt{
+		Range:  token.NewRange(Leave, p.previous()),
+		Func:   p.currentFunction,
+		Return: Leave,
+		Value:  nil,
 	}
 }
 

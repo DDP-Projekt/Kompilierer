@@ -559,7 +559,10 @@ func (t *Typechecker) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
 	return stmt.Call.Accept(t)
 }
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
-	returnType := t.Evaluate(stmt.Value)
+	returnType := token.DDPVoidType()
+	if stmt.Value != nil {
+		returnType = t.Evaluate(stmt.Value)
+	}
 	if fun, exists := t.CurrentTable.LookupFunc(stmt.Func); exists && fun.Type != returnType {
 		t.err(stmt.Token(),
 			"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",

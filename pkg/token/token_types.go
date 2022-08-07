@@ -133,6 +133,7 @@ const (
 	BESTEHEND
 	BESTEHT
 	EINER
+	VERLASSE
 
 	DOT    // .
 	COMMA  // ,
@@ -274,6 +275,7 @@ var tokenStrings = [...]string{
 	BESTEHEND:    "BESTEHEND",
 	BESTEHT:      "BESTEHT",
 	EINER:        "EINER",
+	VERLASSE:     "VERLASSE",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -407,6 +409,7 @@ var keywordMap = map[string]TokenType{
 	"bestehend":       BESTEHEND,
 	"besteht":         BESTEHT,
 	"einer":           EINER,
+	"verlasse":        VERLASSE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

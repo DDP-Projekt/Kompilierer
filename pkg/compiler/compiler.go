@@ -1873,6 +1873,11 @@ func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(c)
 }
 func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+	if s.Value == nil {
+		c.commentNode(c.cbb, s, "")
+		c.cbb.NewRet(nil)
+		return c
+	}
 	ret := c.evaluate(s.Value)                  // compile the return value
 	if ok, vk := isRefCounted(ret.Type()); ok { // strings need to be copied and memory-managed
 		oldRet := ret
