@@ -17,7 +17,8 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 
 	for path := range dependencies.Dependencies {
 		filename := filepath.Base(path)
-		if filename == "ddpstdlib.lib" || filename == "ddpstdlib.a" {
+		switch filename {
+		case "ddpstdlib.lib", "ddpstdlib.a", "ddpruntime.lib", "ddpruntime.a":
 			continue
 		}
 

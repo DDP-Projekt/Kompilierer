@@ -8,3 +8,53 @@ Der Text t ist "Hallo2".
 Für jeden Buchstaben b in t, mache:
 	Schreibe den Buchstaben b.
 Für jeden Buchstaben b in t, Schreibe den Buchstaben b.
+Schreibe den Buchstaben '\n'.
+
+Für jede Zahl z in einer Liste, die aus 1, 2, 3, 4 besteht, mache:
+	Schreibe z.
+Für jede Zahl z in einer Liste, die aus 1, 2, 3, 4 besteht, Schreibe z.
+Schreibe den Buchstaben '\n'.
+Die Zahlen Liste zl ist eine Liste, die aus 1, 2, 3, 4, 5 besteht.
+Für jede Zahl z in zl, mache:
+	Schreibe z.
+Für jede Zahl z in zl, Schreibe z.
+Schreibe den Buchstaben '\n'.
+
+Für jede Kommazahl z in einer Liste, die aus 1,2, 2,2, 3,2, 4,2 besteht, mache:
+	Schreibe z.
+Für jede Kommazahl z in einer Liste, die aus 1,2, 2,2, 3,2, 4,2 besteht, Schreibe z.
+Schreibe den Buchstaben '\n'.
+Die Kommazahlen Liste kzl ist eine Liste, die aus 1,2, 2,2, 3,2, 4,2, 5,2 besteht.
+Für jede Kommazahl z in kzl, mache:
+	Schreibe z.
+Für jede Kommazahl z in kzl, Schreibe z.
+Schreibe den Buchstaben '\n'.
+
+Für jeden Boolean z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, mache:
+	Schreibe z.
+Für jeden Boolean z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, Schreibe z.
+Schreibe den Buchstaben '\n'.
+Die Boolean Liste bl ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr besteht.
+Für jeden Boolean z in bl, mache:
+	Schreibe z.
+Für jeden Boolean z in bl, Schreibe z.
+Schreibe den Buchstaben '\n'.
+
+Für jeden Buchstaben z in einer Liste, die aus 'a', 'b', 'c', 'ü' besteht, mache:
+	Schreibe z.
+Für jeden Buchstaben z in einer Liste, die aus 'a', 'b', 'c', 'ü' besteht, Schreibe z.
+Schreibe den Buchstaben '\n'.
+Die Buchstaben Liste bbl ist eine Liste, die aus 'a', 'b', 'c', 'ü', 'Ö' besteht.
+Für jeden Buchstaben z in bbl, mache:
+	Schreibe z.
+Für jeden Buchstaben z in bbl, Schreibe z.
+Schreibe den Buchstaben '\n'.
+
+Für jeden Text z in einer Liste, die aus "Hallo", "du", "da", "." besteht, mache:
+	Schreibe z.
+Für jeden Text z in einer Liste, die aus "Hallo", "du", "da", "." besteht, Schreibe z.
+Schreibe den Buchstaben '\n'.
+Die Text Liste tl ist eine Liste, die aus "Hallo", "du", "da", ".", ";" besteht.
+Für jeden Text z in tl, mache:
+	Schreibe z.
+Für jeden Text z in tl, Schreibe z.

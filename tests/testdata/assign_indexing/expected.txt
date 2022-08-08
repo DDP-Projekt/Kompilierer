@@ -1,3 +1,22 @@
 Hallo
 Üallo
 ÜallÜ.
+1, 2, 3, 4, 5, 6
+69, 2, 3, 4, 5, 6
+69, 2, 3, 4, 3, 4
+1,2, 2,2, 3,2, 4,2, 5,2, 6,2
+69,2, 2,2, 3,2, 4,2, 5,2, 6,2
+69,2, 2,2, 3,2, 4,2, 3,2, 4,2
+wahr, falsch, wahr, falsch, wahr, falsch
+falsch, falsch, wahr, falsch, wahr, falsch
+falsch, falsch, wahr, falsch, falsch, wahr
+H, A, L, L, O, .
+B, A, L, L, O, .
+B, A, L, L, Ü, Ä
+Hallo, Welt, Tschüss
+Hi, Welt, Tschüss
+Hi, du, Mensch
+Hi
+Üi
+ÜÜ
+ÜÜ, du, Mensch

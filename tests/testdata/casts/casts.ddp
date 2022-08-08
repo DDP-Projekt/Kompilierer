@@ -35,3 +35,25 @@ Schreibe den Buchstaben '\n'.
 Schreibe die Zahl ("42" als Zahl).
 Schreibe den Buchstaben ';'.
 Schreibe die Kommazahl ("42,222" als Kommazahl).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahlen Liste (2 als Zahlen Liste).
+Schreibe den Buchstaben ';'.
+Schreibe die Kommazahlen Liste (2,2 als Kommazahlen Liste).
+Schreibe den Buchstaben ';'.
+Schreibe die Boolean Liste (wahr als Boolean Liste).
+Schreibe den Buchstaben ';'.
+Schreibe die Buchstaben Liste ('Ü' als Buchstaben Liste).
+Schreibe den Buchstaben ';'.
+Schreibe die Text Liste ("Hallo" als Text Liste).
+Schreibe den Buchstaben '\n'.
+
+Schreibe (eine Liste, die aus 1, 2, 3, 4 besteht als Text).
+Schreibe den Buchstaben '\n'.
+Schreibe (eine Liste, die aus 1,2, 2,2, 3,2, 4,2 besteht als Text).
+Schreibe den Buchstaben '\n'.
+Schreibe (eine Liste, die aus wahr, falsch, wahr, falsch besteht als Text).
+Schreibe den Buchstaben '\n'.
+Schreibe (eine Liste, die aus 'A', 'B', 'C', 'Ü' besteht als Text).
+Schreibe den Buchstaben '\n'.
+Schreibe (eine Liste, die aus "Hallo", "du", "da", "." besteht als Text).

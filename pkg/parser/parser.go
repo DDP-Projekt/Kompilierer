@@ -885,7 +885,10 @@ func (p *Parser) forStatement() ast.Statement {
 		}
 		p.consume(token.COMMA)
 		var Body ast.Statement
-		if p.match(token.MACHE) { // body is a block statement
+		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                   // temporary symbolTable for the loop variable
+		bodyTable.InsertVar(Ident.Literal, Typ)                                    // add the loop variable to the table
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
+		if p.match(token.MACHE) {                                                  // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement()
 		} else { // body is a single statement
@@ -903,6 +906,7 @@ func (p *Parser) forStatement() ast.Statement {
 				Symbols:    nil,
 			}
 		}
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
 		return &ast.ForRangeStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
