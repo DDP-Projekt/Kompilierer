@@ -71,7 +71,7 @@ ddpstring* inbuilt_ddpboollist_to_string(ddpboollist* list) {
 	if (list->len <= 0) {
 		return str;
 	}
-	char buffer[7];
+	char buffer[9];
 	for (size_t i = 0; i < list->len-1; i++) {
 		int len = sprintf(buffer, list->arr[i] ? "wahr, " : "falsch, ");
 		ddpint new_cap = str->cap + len;
@@ -100,16 +100,17 @@ ddpstring* inbuilt_ddpcharlist_to_string(ddpcharlist* list) {
 		return str;
 	}
 	char buffer[7];
+	char ch[5];
 	for (size_t i = 0; i < list->len-1; i++) {
-		utf8_char_to_string(buffer, list->arr[i]);
-		int len = sprintf(buffer, "%s, ", buffer);
+		utf8_char_to_string(ch, list->arr[i]);
+		int len = sprintf(buffer, "%s, ", ch);
 		ddpint new_cap = str->cap + len;
 		str->str = reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
-	utf8_char_to_string(buffer, list->arr[list->len-1]);
-	int len = sprintf(buffer, "%s", buffer);
+	utf8_char_to_string(ch, list->arr[list->len-1]);
+	int len = sprintf(buffer, "%s", ch);
 	ddpint new_cap = str->cap + len;
 	str->str = reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);
