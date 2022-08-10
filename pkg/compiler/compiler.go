@@ -217,7 +217,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpintlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_ddpintlist_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -244,7 +243,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpfloatlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_ddpfloatlist_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -271,7 +269,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpboollist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_ddpboollist_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -298,7 +295,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpcharlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_ddpcharlist_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -325,7 +321,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpstringlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_ddpstringlist_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -623,15 +618,18 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 }
 func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	if e.Values != nil {
-		values := make([]value.Value, len(e.Values)+1)
-		values[0] = newInt(int64(len(e.Values)))
+		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
 		for i, v := range e.Values {
-			values[i+1] = c.evaluate(v)
-			if e.Type.PrimitiveType == token.BOOLEAN {
-				values[i+1] = c.cbb.NewZExt(values[i+1], i32)
+			val := c.evaluate(v)
+			if ok, vk := isRefCounted(val.Type()); ok {
+				c.incrementRC(val, vk)
 			}
+			arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
+			arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
+			elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(int64(i)))
+			c.cbb.NewStore(val, elementPtr)
 		}
-		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, values...)
+		c.latestReturn = list
 	} else {
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
 	}
@@ -1364,7 +1362,15 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 		c.incrementRC(lhs, vk)
 	}
 	if e.Type.IsList {
-		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1), lhs)
+		if ok, vk := isRefCounted(lhs.Type()); ok {
+			c.incrementRC(lhs, vk)
+		}
+		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
+		arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
+		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
+		elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(0))
+		c.cbb.NewStore(lhs, elementPtr)
+		c.latestReturn = list
 	} else {
 		switch e.Type.PrimitiveType {
 		case token.ZAHL:

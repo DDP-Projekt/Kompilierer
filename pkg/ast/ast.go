@@ -151,7 +151,7 @@ type (
 		Tok   token.Token
 		Range token.Range
 		// type of the empty list if Values is nil
-		// the typechecker fills this field if Values is nil
+		// the typechecker fills this field if Values is non-nil
 		Type   token.DDPType
 		Values []Expression // nil if it is an empty list
 	}

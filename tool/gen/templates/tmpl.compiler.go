@@ -12,7 +12,6 @@ func (c *Compiler) setupListTypes() {
 	// creates a {{ .T }} from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("inbuilt_{{ .T }}_from_constants", {{ .T }}ptr, ir.NewParam("count", ddpint))
-	c.functions["inbuilt_{{ .T }}_from_constants"].irFunc.Sig.Variadic = true
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
