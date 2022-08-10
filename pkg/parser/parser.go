@@ -1936,8 +1936,9 @@ func (p *Parser) atEnd() bool {
 func (p *Parser) advance() token.Token {
 	if !p.atEnd() {
 		p.cur++
+		return p.previous()
 	}
-	return p.previous()
+	return p.peek() // return EOF
 }
 
 // returns the current token without advancing

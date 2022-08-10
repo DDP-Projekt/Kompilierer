@@ -286,7 +286,7 @@ func (s *Scanner) identifier() token.Token {
 		if filepath.Dir(literalContent) == "Duden" {
 			inclPath = filepath.Join(exe_dir, literalContent) + ".ddp"
 		} else {
-			inclPath, err = filepath.Abs(literalContent + ".ddp") // to eliminate ambiguity with nested includes
+			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
 		}
 		if err != nil {
 			s.errorHandler(lit, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error()))
