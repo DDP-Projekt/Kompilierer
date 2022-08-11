@@ -64,9 +64,9 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) Visitor {
 }
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) Visitor {
 	if IsExternFunc(decl) {
-		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type), decl.Body)
-	} else {
 		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s] Extern", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type))
+	} else {
+		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type), decl.Body)
 	}
 	return pr
 }
