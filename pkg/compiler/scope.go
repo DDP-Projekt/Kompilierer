@@ -7,7 +7,7 @@ import (
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val value.Value // alloca in the ir
+	val value.Value // alloca or global-Def in the ir
 	typ types.Type  // ir type of the variable
 }
 

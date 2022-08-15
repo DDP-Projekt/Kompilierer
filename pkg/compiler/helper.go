@@ -91,6 +91,13 @@ func toIRType(ddpType token.DDPType) types.Type {
 	return i8 // unreachable
 }
 
+func toIRTypeRef(ddpType token.DDPType, isRef bool) types.Type {
+	if !isRef {
+		return toIRType(ddpType)
+	}
+	return ptr(toIRType(ddpType))
+}
+
 // returns the default constant for global variables
 func getDefaultValue(ddpType token.DDPType) constant.Constant {
 	if ddpType.IsList {

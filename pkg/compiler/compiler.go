@@ -462,7 +462,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	// append all the other parameters
 	for i, typ := range d.ParamTypes {
-		ty := toIRType(typ)                                               // convert the type of the parameter
+		ty := toIRTypeRef(typ, d.IsReference[i])                          // convert the type of the parameter
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
@@ -486,7 +486,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 			c.errorHandler(d.ExternFile, err.Error())
 			return c
 		}
-		c.result.Dependencies[path] = struct{}{}
+		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
@@ -494,7 +494,12 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
 			irType := toIRType(d.ParamTypes[i])
-			if ok, vk := isRefCounted(irType); ok { // strings and lists need special handling
+			if d.IsReference[i] {
+				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType)
+				if ok, vk := isRefCounted(irType); ok { // we need to increment to prevent freeing of the local variable at the end of the function scope
+					c.incrementRC(c.cbb.NewLoad(irType, params[i]), vk)
+				}
+			} else if ok, vk := isRefCounted(irType); ok { // strings and lists need special handling
 				// add the local variable for the parameter
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType)
 				// we need to deep copy the passed string/list because the caller
@@ -504,7 +509,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 				c.cbb.NewStore(ptr, v) // store the copy in the local variable
 			} else {
 				// non garbage-collected types are just declared as their ir type
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(params[i].Type()), params[i].Type())
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -533,6 +538,37 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	}
 	return c
 }
+
+// helper for list indexing
+// takes the list and index values as parameters + a Node for comments
+// and returns a pointer to the element
+func (c *Compiler) getElementPointer(lhs, rhs value.Value, node ast.Node) *ir.InstGetElementPtr {
+	thenBlock, errorBlock := c.cf.NewBlock(""), c.cf.NewBlock("")
+	// get the length of the list
+	lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
+	len := c.cbb.NewLoad(ddpint, lenptr)
+	// get the 0 based index
+	index := c.cbb.NewSub(rhs, newInt(1))
+	// bounds check
+	cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
+	c.commentNode(c.cbb, node, "")
+	c.cbb.NewCondBr(cond, thenBlock, errorBlock)
+
+	// out of bounds error
+	c.cbb = errorBlock
+	c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, rhs, len)
+	c.commentNode(c.cbb, node, "")
+	c.cbb.NewUnreachable()
+
+	c.cbb = thenBlock
+	// get a pointer to the array
+	arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
+	// get the array
+	arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
+	// index into the array
+	return c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+}
+
 func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)   // TODO: check if this works
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
@@ -543,39 +579,13 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	case ddpstrptr:
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
 	case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
-		thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-		// get the length of the list
-		lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
-		len := c.cbb.NewLoad(ddpint, lenptr)
-		// get the 0 based index
-		index := c.cbb.NewSub(rhs, newInt(1))
-		// bounds check
-		cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
-		c.commentNode(c.cbb, e, "")
-		c.cbb.NewCondBr(cond, thenBlock, errorBlock)
-
-		// out of bounds error
-		c.cbb = errorBlock
-		c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, rhs, len)
-		c.commentNode(c.cbb, e, "")
-		c.cbb.NewUnreachable()
-
-		c.cbb = thenBlock
-		// get a pointer to the array
-		arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
-		// get the array
-		arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
-		// index into the array
-		elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+		elementPtr := c.getElementPointer(lhs, rhs, e)
 		// load the element
 		c.latestReturn = c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr)
 		// copy strings
 		if lhs.Type() == ddpstringlistptr {
 			c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
 		}
-		c.commentNode(c.cbb, e, "")
-		c.cbb.NewBr(leaveBlock)
-		c.cbb = leaveBlock
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
@@ -1463,8 +1473,30 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	// of passed garbage collected values, so we call increment_ref_count on any
 	// passed garbage collected argument
 	toBeFreed := make([]*value.Value, 0)
-	for _, param := range fun.funcDecl.ParamNames {
-		val := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+	for i, param := range fun.funcDecl.ParamNames {
+		var val value.Value
+
+		// differentiate between references and normal parameters
+		if fun.funcDecl.IsReference[i] {
+			switch assign := e.Args[param.Literal].(type) {
+			case *ast.Ident:
+				val = c.scp.lookupVar(assign.Literal.Literal).val // get the variable
+			case *ast.Indexing:
+				lhs := c.evaluateAssignable(assign.Lhs) // get the (possibly nested) assignable
+				index := c.evaluate(assign.Index)
+				switch lhs.Type() {
+				case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+					// index into the array
+					elementPtr := c.getElementPointer(lhs, index, e)
+					val = elementPtr
+				default:
+					err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), index.Type())
+				}
+			}
+		} else {
+			val = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+		}
+
 		// strings ref-count is managed by the caller, so increment it
 		// and mark it toBeFreed for after the function returns
 		if ok, vk := isRefCounted(val.Type()); ok {
@@ -1516,30 +1548,8 @@ func (c *Compiler) evaluateAssignable(ass ast.Assigneable) value.Value {
 		case ddpstrptr:
 			return lhs
 		case ddpstringlistptr:
-			thenBlock, errorBlock := c.cf.NewBlock(""), c.cf.NewBlock("")
-			// get the length of the list
-			lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
-			len := c.cbb.NewLoad(ddpint, lenptr)
-			// get the 0 based index
-			index := c.cbb.NewSub(index, newInt(1))
-			// bounds check
-			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
-			c.commentNode(c.cbb, ass, "")
-			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
-
-			// out of bounds error
-			c.cbb = errorBlock
-			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, index, len)
-			c.commentNode(c.cbb, ass, "")
-			c.cbb.NewUnreachable()
-
-			c.cbb = thenBlock
-			// get a pointer to the array
-			arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
-			// get the array
-			arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
 			// index into the array
-			elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+			elementPtr := c.getElementPointer(lhs, index, ass)
 			return c.cbb.NewLoad(elementPtr.ElemType, elementPtr)
 		}
 	}
@@ -1570,39 +1580,13 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 			c.commentNode(c.cbb, s, "")
 			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, lhs, val, index)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
-			thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-			// get the length of the list
-			lenptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 1))
-			len := c.cbb.NewLoad(ddpint, lenptr)
-			// get the 0 based index
-			index := c.cbb.NewSub(index, newInt(1))
-			// bounds check
-			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, len), c.cbb.NewICmp(enum.IPredSGE, index, newInt(0)))
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewCondBr(cond, thenBlock, errorBlock)
-
-			// out of bounds error
-			c.cbb = errorBlock
-			c.cbb.NewCall(c.functions["out_of_bounds"].irFunc, index, len)
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewUnreachable()
-
-			c.cbb = thenBlock
-			// get a pointer to the array
-			arrptr := c.cbb.NewGetElementPtr(derefListPtr(lhs.Type()), lhs, newIntT(i32, 0), newIntT(i32, 0))
-			// get the array
-			arr := c.cbb.NewLoad(ptr(getElementType(lhs.Type())), arrptr)
 			// index into the array
-			elementPtr := c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
+			elementPtr := c.getElementPointer(lhs, index, s)
 			if lhs.Type() == ddpstringlistptr {
 				// free the old string
 				c.decrementRC(c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr))
 			}
 			c.cbb.NewStore(val, elementPtr)
-
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewBr(leaveBlock)
-			c.cbb = leaveBlock
 		default:
 			err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), index.Type())
 		}
