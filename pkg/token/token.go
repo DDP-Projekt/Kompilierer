@@ -12,7 +12,7 @@ type Token struct {
 	File      string    // the file from which it was scanned
 	Line      int       // the line on which it appeared
 	Column    int       // the column it started
-	AliasInfo *DDPType  // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
+	AliasInfo *ArgType  // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
 }
 
 func (t Token) String() string {

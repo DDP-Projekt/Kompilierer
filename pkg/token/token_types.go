@@ -93,6 +93,8 @@ const (
 	BUCHSTABEN
 	TEXT
 	LISTE
+	LISTEN
+	REFERENZ
 	FUNKTION
 	BINDE
 	EIN
@@ -235,6 +237,8 @@ var tokenStrings = [...]string{
 	BUCHSTABEN:   "BUCHSTABEN",
 	TEXT:         "Text",
 	LISTE:        "LISTE",
+	LISTEN:       "LISTEN",
+	REFERENZ:     "REFERENZ",
 	FUNKTION:     "FUNKTION",
 	BINDE:        "BINDE",
 	EIN:          "EIN",
@@ -347,6 +351,8 @@ var keywordMap = map[string]TokenType{
 	"Buchstaben":      BUCHSTABEN,
 	"Text":            TEXT,
 	"Liste":           LISTE,
+	"Listen":          LISTEN,
+	"Referenz":        REFERENZ,
 	"Funktion":        FUNKTION,
 	"Binde":           BINDE,
 	"ein":             EIN,

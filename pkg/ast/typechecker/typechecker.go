@@ -14,7 +14,7 @@ type Typechecker struct {
 	CurrentTable       *ast.SymbolTable                    // SymbolTable of the current scope (needed for name type-checking)
 	Errored            bool                                // wether the typechecker found an error
 	latestReturnedType token.DDPType                       // type of the last visited expression
-	funcArgs           map[string]map[string]token.DDPType // for function parameter types
+	funcArgs           map[string]map[string]token.ArgType // for function parameter types
 }
 
 func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
@@ -23,7 +23,7 @@ func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typecheck
 		CurrentTable:       symbols,
 		Errored:            false,
 		latestReturnedType: token.DDPVoidType(),
-		funcArgs:           make(map[string]map[string]token.DDPType),
+		funcArgs:           make(map[string]map[string]token.ArgType),
 	}
 }
 
@@ -106,9 +106,12 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	t.funcArgs[decl.Name.Literal] = make(map[string]token.DDPType)
+	t.funcArgs[decl.Name.Literal] = make(map[string]token.ArgType)
 	for i, l := 0, len(decl.ParamNames); i < l; i++ {
-		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = decl.ParamTypes[i]
+		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = token.ArgType{
+			Type:        decl.ParamTypes[i],
+			IsReference: decl.IsReference[i],
+		}
 	}
 
 	if !ast.IsExternFunc(decl) {
@@ -407,11 +410,20 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.Visitor {
 	for k, expr := range callExpr.Args {
 		tokenType := t.Evaluate(expr)
 
-		if tokenType != t.funcArgs[callExpr.Name][k] {
+		argType := t.funcArgs[callExpr.Name][k]
+		if ass, ok := expr.(ast.Assigneable); argType.IsReference && !ok {
+			t.err(expr.Token(), "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
+		} else if ass, ok := ass.(*ast.Indexing); argType.IsReference && argType.Type == token.DDPCharType() && ok {
+			lhs := t.Evaluate(ass.Lhs)
+			if lhs.PrimitiveType == token.TEXT {
+				t.err(expr.Token(), "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
+			}
+		}
+		if tokenType != argType.Type {
 			t.err(expr.Token(),
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
-				t.funcArgs[callExpr.Name][k],
+				argType,
 				k,
 				tokenType,
 			)

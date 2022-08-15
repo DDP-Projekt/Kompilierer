@@ -19,7 +19,7 @@ import (
 type funcAlias struct {
 	Tokens []token.Token            // tokens of the alias
 	Func   string                   // the function it refers to
-	Args   map[string]token.DDPType // types of the arguments (used for funcCall parsing)
+	Args   map[string]token.ArgType // types of the arguments (used for funcCall parsing)
 }
 
 // holds state when parsing a .ddp file into an AST
@@ -253,6 +253,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
 	var paramTypes []token.DDPType = nil
+	var isReference []bool = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
 		if p.matchN(token.DEN, token.PARAMETERN) {
@@ -289,15 +290,17 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 		// parse the types of the parameters
 		validate(p.consumeN(token.VOM, token.TYP))
-		firstType := p.parseType()
+		firstType, ref := p.parseReferenceType()
 		validate(firstType.PrimitiveType != token.ILLEGAL)
 		paramTypes = append(make([]token.DDPType, 0), firstType) // append the first parameter type
+		isReference = append(make([]bool, 0), ref)
 		if !singleParameter {
 			addType := func() {
 				// validate the parameter type and append it
-				typ := p.parseType()
+				typ, ref := p.parseReferenceType()
 				validate(typ.PrimitiveType != token.ILLEGAL)
 				paramTypes = append(paramTypes, typ)
+				isReference = append(isReference, ref)
 			}
 			if p.match(token.UND) {
 				addType()
@@ -364,10 +367,13 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	argTypes := map[string]token.DDPType{}
+	argTypes := map[string]token.ArgType{}
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			argTypes[v.Literal] = paramTypes[i]
+			argTypes[v.Literal] = token.ArgType{
+				Type:        paramTypes[i],
+				IsReference: isReference[i],
+			}
 		}
 	}
 
@@ -380,7 +386,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				perr(v, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
+			} else if validateAlias(alias, paramNames, paramTypes, isReference) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
@@ -446,27 +452,31 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
 	return &ast.FuncDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		Func:       Funktion,
-		Name:       name,
-		ParamNames: paramNames,
-		ParamTypes: paramTypes,
-		Type:       Typ,
-		Body:       body,
-		ExternFile: definedIn,
+		Range:       token.NewRange(begin, p.previous()),
+		Func:        Funktion,
+		Name:        name,
+		ParamNames:  paramNames,
+		ParamTypes:  paramTypes,
+		IsReference: isReference,
+		Type:        Typ,
+		Body:        body,
+		ExternFile:  definedIn,
 	}
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.DDPType) bool {
+func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.DDPType, isReference []bool) bool {
 	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
 	}
-	nameSet := map[string]token.DDPType{} // set that holds the parameter names contained in the alias and their corresponding type
+	nameSet := map[string]token.ArgType{} // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			nameSet[v.Literal] = paramTypes[i]
+			nameSet[v.Literal] = token.ArgType{
+				Type:        paramTypes[i],
+				IsReference: isReference[i],
+			}
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
@@ -474,8 +484,8 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []t
 	for i, v := range alias {
 		if isAliasExpr(v) {
 			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-			if typ, ok := nameSet[k]; ok {
-				alias[i].AliasInfo = &typ
+			if argTyp, ok := nameSet[k]; ok {
+				alias[i].AliasInfo = &argTyp
 				delete(nameSet, k)
 			} else {
 				return false
@@ -1604,6 +1614,7 @@ outer:
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
+	// TODO: reference type-matching
 	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) map[string]ast.Expression {
 		p.cur = start
 		args := map[string]ast.Expression{}
@@ -1612,8 +1623,17 @@ outer:
 			tok := &mAlias.alias.Tokens[i]
 
 			if tok.Type == token.ALIAS_PARAMETER {
+				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
+				argType := mAlias.alias.Args[argName]      // type of the current parameter
+
+				pType := p.peek().Type
+				// early return if a non-identifier expression is passed as reference
+				if typeSensitive && argType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
+					return nil
+				}
+
 				exprStart := p.cur
-				switch p.peek().Type {
+				switch pType {
 				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
 					token.PI, token.E, token.TAU, token.PHI:
 					p.advance() // single-token argument
@@ -1635,25 +1655,50 @@ outer:
 				tokens := make([]token.Token, p.cur-exprStart)
 				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 				// append the EOF needed for the parser
-				tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil})
+				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil}
+				tokens = append(tokens, eof)
 				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
 				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
 				argParser.resolver = p.resolver
 				argParser.typechecker = p.typechecker
-				arg := argParser.expression() // parse the argument
+				var arg ast.Expression
+				if argType.IsReference {
+					if tokens[0].Type == token.LPAREN {
+						tokens = append(tokens[1:len(tokens)-2], eof)
+						argParser.tokens = tokens
+					}
+					argParser.advance() // consume the identifier for assigneable() to work
+					arg = argParser.assigneable()
+				} else {
+					arg = argParser.expression() // parse the argument
+				}
 
 				// check if the argument type matches the prameter type
-				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
+
 				// we are in the for loop below, so the types must match
 				// otherwise it doesn't matter
 				if typeSensitive {
 					typecheckErrored := p.typechecker.Errored
 					p.typechecker.ErrorHandler = func(token.Token, string) {} // silence errors
 					typ := p.typechecker.Evaluate(arg)
+
+					if typ != argType.Type {
+						arg = nil // arg and param types don't match
+					} else if                                                     // string-indexings may not be passed as char-reference
+					ass, ok := arg.(*ast.Indexing);                               // evaluate the argunemt
+					argType.IsReference && argType.Type == token.DDPCharType() && // if the parameter is a char-reference
+						ok { // and the argument is a indexing
+						lhs := p.typechecker.Evaluate(ass.Lhs)
+						if lhs.PrimitiveType == token.TEXT { // check if the lhs is a string
+							arg = nil
+						}
+					}
+
 					p.typechecker.ErrorHandler = p.errorHandler // turn errors on again
 					p.typechecker.Errored = typecheckErrored
-					if typ != mAlias.alias.Args[argName] {
-						return nil // arg and param types don't match
+
+					if arg == nil {
+						return nil
 					}
 				}
 
@@ -1827,6 +1872,61 @@ func (p *Parser) parseListType() token.DDPType {
 	}
 
 	return token.NewPrimitiveType(token.ILLEGAL) // unreachable
+}
+
+// parses tokens into a DDPType and returns wether the type is a reference type
+// expects the next token to be the start of the type
+// returns ILLEGAL and errors if no typename was found
+func (p *Parser) parseReferenceType() (token.DDPType, bool) {
+	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+		p.err(p.peek(), "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
+		return token.NewPrimitiveType(token.ILLEGAL), false // void indicates error
+	}
+
+	switch p.previous().Type {
+	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
+		return token.NewPrimitiveType(p.previous().Type), false
+	case token.BOOLEAN, token.TEXT:
+		if p.match(token.LISTE) {
+			return token.NewListType(p.peekN(-2).Type), false
+		} else if p.match(token.LISTEN) {
+			p.consume(token.REFERENZ)
+			return token.NewListType(p.peekN(-3).Type), true
+		} else if p.match(token.REFERENZ) {
+			return token.NewPrimitiveType(p.peekN(-2).Type), true
+		}
+		return token.NewPrimitiveType(p.previous().Type), false
+	case token.ZAHLEN:
+		if p.match(token.LISTE) {
+			return token.NewListType(token.ZAHL), false
+		} else if p.match(token.LISTEN) {
+			p.consume(token.REFERENZ)
+			return token.NewListType(token.ZAHL), true
+		}
+		p.consume(token.REFERENZ)
+		return token.NewPrimitiveType(token.ZAHL), true
+	case token.KOMMAZAHLEN:
+		if p.match(token.LISTE) {
+			return token.NewListType(token.KOMMAZAHL), false
+		} else if p.match(token.LISTEN) {
+			p.consume(token.REFERENZ)
+			return token.NewListType(token.KOMMAZAHL), true
+		}
+		p.consume(token.REFERENZ)
+		return token.NewPrimitiveType(token.KOMMAZAHL), true
+	case token.BUCHSTABEN:
+		if p.match(token.LISTE) {
+			return token.NewListType(token.BUCHSTABE), false
+		} else if p.match(token.LISTEN) {
+			p.consume(token.REFERENZ)
+			return token.NewListType(token.BUCHSTABE), true
+		}
+		p.consume(token.REFERENZ)
+		return token.NewPrimitiveType(token.BUCHSTABE), true
+	}
+
+	return token.NewPrimitiveType(token.ILLEGAL), false // unreachable
 }
 
 // parses tokens into a DDPType

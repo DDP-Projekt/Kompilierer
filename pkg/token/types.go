@@ -50,32 +50,64 @@ func NewListType(elementType TokenType) DDPType {
 
 /* Helper functions for primitive constants */
 
+// unexported ddp-types returned by the helper functions (go has no const struct-literals)
+var (
+	ddpVoidType   = DDPType{PrimitiveType: NICHTS, IsList: false}
+	ddpIntType    = DDPType{PrimitiveType: ZAHL, IsList: false}
+	ddpFloatType  = DDPType{PrimitiveType: KOMMAZAHL, IsList: false}
+	ddpBoolType   = DDPType{PrimitiveType: BOOLEAN, IsList: false}
+	ddpCharType   = DDPType{PrimitiveType: BUCHSTABE, IsList: false}
+	ddpStringType = DDPType{PrimitiveType: TEXT, IsList: false}
+)
+
 // this function serves as constant variable for a void type
 func DDPVoidType() DDPType {
-	return DDPType{PrimitiveType: NICHTS, IsList: false}
+	return ddpVoidType
 }
 
 // this function serves as constant variable for a int type
 func DDPIntType() DDPType {
-	return DDPType{PrimitiveType: ZAHL, IsList: false}
+	return ddpIntType
 }
 
 // this function serves as constant variable for a float type
 func DDPFloatType() DDPType {
-	return DDPType{PrimitiveType: KOMMAZAHL, IsList: false}
+	return ddpFloatType
 }
 
 // this function serves as constant variable for a bool type
 func DDPBoolType() DDPType {
-	return DDPType{PrimitiveType: BOOLEAN, IsList: false}
+	return ddpBoolType
 }
 
 // this function serves as constant variable for a char type
 func DDPCharType() DDPType {
-	return DDPType{PrimitiveType: BUCHSTABE, IsList: false}
+	return ddpCharType
 }
 
 // this function serves as constant variable for a string type
 func DDPStringType() DDPType {
-	return DDPType{PrimitiveType: TEXT, IsList: false}
+	return ddpStringType
+}
+
+type ArgType struct {
+	Type        DDPType // the type
+	IsReference bool    // if it is a reference
+}
+
+func (argType ArgType) String() string {
+	if !argType.IsReference {
+		return argType.Type.String()
+	}
+	if argType.Type.IsList {
+		return argType.Type.String() + "n Referenz"
+	}
+	switch argType.Type.PrimitiveType {
+	case ZAHL, KOMMAZAHL:
+		return argType.Type.String() + "en Referenz"
+	case BUCHSTABE:
+		return "Buchstaben Referenz"
+	default:
+		return argType.Type.String() + " Referenz"
+	}
 }
