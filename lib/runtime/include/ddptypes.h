@@ -21,7 +21,6 @@ typedef struct {
 // free a ddpstring
 void free_string(ddpstring* str);
 
-
 /***** Partially generated code *****/
 
 typedef struct {
@@ -64,5 +63,18 @@ typedef struct {
 
 void free_ddpstringlist(ddpstringlist* list);
 
+/***** End of generated code *****/
+
+typedef ddpint* ddpintref;
+typedef ddpfloat* ddpfloatref;
+typedef ddpbool* ddpboolref;
+typedef ddpchar* ddpcharref;
+typedef ddpstring** ddpstringref;
+
+typedef ddpintlist** ddpintlistref;
+typedef ddpfloatlist** ddpfloatlistref;
+typedef ddpboollist** ddpboollistref;
+typedef ddpcharlist** ddpcharlistref;
+typedef ddpstringlist** ddpstringlistref;
 
 #endif // DDP_TYPES_H

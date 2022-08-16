@@ -423,7 +423,7 @@ func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
 // returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
-		if ok, _ := isRefCounted(v.typ); ok {
+		if ok, _ := isRefCounted(v.typ); ok && !v.isRef {
 			c.decrementRC(c.cbb.NewLoad(v.typ, v.val))
 		}
 	}
@@ -448,7 +448,7 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	} else {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ)
 	}
-	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ)
+	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ, false)
 	initVal := c.evaluate(d.InitVal)     // evaluate the initial value
 	c.cbb.NewStore(initVal, Var)         // store the initial value
 	if ok, vk := isRefCounted(Typ); ok { // strings and lists must be added to the ref-table
@@ -495,13 +495,13 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		for i := range params {
 			irType := toIRType(d.ParamTypes[i])
 			if d.IsReference[i] {
-				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType)
-				if ok, vk := isRefCounted(irType); ok { // we need to increment to prevent freeing of the local variable at the end of the function scope
-					c.incrementRC(c.cbb.NewLoad(irType, params[i]), vk)
-				}
+				// references are implemented similar to name-shadowing
+				// they basically just get another name in the function scope, which
+				// refers to the same variable allocation
+				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType, true)
 			} else if ok, vk := isRefCounted(irType); ok { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType, false)
 				// we need to deep copy the passed string/list because the caller
 				// must call increment/decrement_ref_count on it
 				ptr := c.deepCopyRefCounted(params[i])
@@ -509,7 +509,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 				c.cbb.NewStore(ptr, v) // store the copy in the local variable
 			} else {
 				// non garbage-collected types are just declared as their ir type
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType, false)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -1823,7 +1823,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	index := c.cf.Blocks[0].NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := toIRType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(irType), irType)
+	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(irType), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock

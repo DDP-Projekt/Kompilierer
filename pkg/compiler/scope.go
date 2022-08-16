@@ -7,8 +7,9 @@ import (
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val value.Value // alloca or global-Def in the ir
-	typ types.Type  // ir type of the variable
+	val   value.Value // alloca or global-Def in the ir
+	typ   types.Type  // ir type of the variable
+	isRef bool
 }
 
 // wraps local variables of a scope + the enclosing scope
@@ -40,7 +41,7 @@ func (s *scope) lookupVar(name string) varwrapper {
 }
 
 // add a variable to the scope
-func (scope *scope) addVar(name string, val value.Value, ty types.Type) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty}
+func (scope *scope) addVar(name string, val value.Value, ty types.Type, isRef bool) value.Value {
+	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef}
 	return val
 }

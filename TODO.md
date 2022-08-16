@@ -29,7 +29,7 @@
 # Feature Ideen
 - [x] Function overloading (muss noch getestet werden)
 - [x] Type-sensitive alias-matching (muss noch getestet werden)
-- [ ] References
+- [x] References
 - [ ] Modul System
 - [ ] Single-function import
 - [X] Externe Funktionen (in C geschrieben)
