@@ -283,7 +283,7 @@ func (s *Scanner) identifier() token.Token {
 		literalContent := strings.Trim(lit.Literal, "\"")
 		inclPath := ""
 		var err error
-		if filepath.Dir(literalContent) == "Duden" {
+		if strings.HasPrefix(literalContent, "Duden") {
 			inclPath = filepath.Join(exe_dir, literalContent) + ".ddp"
 		} else {
 			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
