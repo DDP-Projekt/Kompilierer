@@ -1,0 +1,51 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion zahlref mit dem Parameter a vom Typ Zahlen Referenz, gibt nichts zurück, macht:
+	Speichere a plus 1 in a.
+Und kann so benutzt werden:
+	"Inkrementiere <a>"
+
+Die Funktion kommazahlref mit dem Parameter a vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
+	Speichere a plus 1 in a.
+Und kann so benutzt werden:
+	"Inkrementiere <a>"
+
+Die Funktion boolref mit dem Parameter a vom Typ Boolean Referenz, gibt nichts zurück, macht:
+	Negiere a.
+Und kann so benutzt werden:
+	"Negierere <a>"
+
+Die Funktion textref mit dem Parameter a vom Typ Text Referenz, gibt nichts zurück, macht:
+	Speichere "" in a.
+Und kann so benutzt werden:
+	"Leere <a>"
+
+Die Funktion buchstaberef mit dem Parameter a vom Typ Buchstaben Referenz, gibt nichts zurück, macht:
+	Speichere (a als Zahl minus 32) als Buchstabe in a.
+Und kann so benutzt werden:
+	"Kapitalisiere <a>"
+
+Die Zahl zahl ist 0.
+Inkrementiere zahl.
+
+Die Kommazahl kommazahl ist 1,5.
+Inkrementiere kommazahl.
+
+Der Boolean bool ist wahr.
+Negierere bool.
+
+Der Text text ist "Hallo Welt!".
+Leere text.
+
+Der Buchstabe buchstabe ist 'g'.
+Kapitalisiere buchstabe.
+
+Schreibe zahl.
+Schreibe '\n'.
+Schreibe kommazahl.
+Schreibe '\n'.
+Schreibe bool.
+Schreibe '\n'.
+Schreibe text.
+Schreibe '\n'.
+Schreibe buchstabe.
