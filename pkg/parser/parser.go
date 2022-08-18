@@ -1737,7 +1737,7 @@ outer:
 	args := checkAlias(mostFitting, false)
 
 	return &ast.FuncCall{
-		Range: token.NewRange(p.tokens[start], mostFitting.alias.Tokens[len(mostFitting.alias.Tokens)-1]),
+		Range: token.NewRange(p.tokens[start], p.previous()),
 		Tok:   p.tokens[start],
 		Name:  mostFitting.alias.Func,
 		Args:  args,
