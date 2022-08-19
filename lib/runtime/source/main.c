@@ -108,6 +108,6 @@ int main(int argc, char** argv) {
 
 extern ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list);
 
-ddpstringlist* ddpextern_Befehlszeilenargumente() {
+ddpstringlist* Befehlszeilenargumente() {
 	return inbuilt_deep_copy_ddpstringlist(cmd_args);
 }
