@@ -7,12 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
 )
 
 // invokes gcc on the input file and links it with the ddpstdlib
-func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool) error {
+func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool, gcc_flags string) error {
 	link_dependencies := make([]string, 0)
 
 	for path := range dependencies.Dependencies {
@@ -48,6 +49,10 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 	args := append(make([]string, 0), "-o", outputFile) // -lm needed for math.h (don't know why I need this on linux)
 	args = append(args, link_dependencies...)
 	args = append(args, inputFile, stdlibdir, runtimedir, "-lm")
+
+	flags := strings.Split(gcc_flags, " ")
+	args = append(args, flags...)
+
 	cmd := exec.Command("gcc", args...)
 	if out != nil {
 		cmd.Stdout = out

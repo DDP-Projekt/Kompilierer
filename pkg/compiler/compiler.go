@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
@@ -481,7 +482,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(d) {
 		irFunc.Linkage = enum.LinkageExternal
-		path, err := filepath.Abs(d.ExternFile.Literal[1 : len(d.ExternFile.Literal)-1])
+		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
 		if err != nil {
 			c.errorHandler(d.ExternFile, err.Error())
 			return c
