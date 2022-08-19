@@ -154,7 +154,10 @@ type (
 		// type of the empty list if Values is nil
 		// the typechecker fills this field if Values is non-nil
 		Type   token.DDPType
-		Values []Expression // nil if it is an empty list
+		Values []Expression // the values in the Literal
+		// if Values, Count and Value are nil, the list is empty
+		Count Expression // for big list initializations
+		Value Expression // the default value for big list initializations
 	}
 
 	UnaryExpr struct {

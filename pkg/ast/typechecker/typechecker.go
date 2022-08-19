@@ -175,10 +175,15 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.Visitor {
 			}
 		}
 		expr.Type = token.NewListType(elementType.PrimitiveType)
-		t.latestReturnedType = expr.Type
-	} else {
-		t.latestReturnedType = expr.Type
+	} else if expr.Count != nil && expr.Value != nil {
+		if count := t.Evaluate(expr.Count); count != token.DDPIntType() {
+			t.err(expr.Count.Token(), "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
+		}
+		if val := t.Evaluate(expr.Value); val != token.NewPrimitiveType(expr.Type.PrimitiveType) {
+			t.err(expr.Value.Token(), "Falscher Typ (%s) in Listen Literal vom Typ %s", val, token.NewPrimitiveType(expr.Type.PrimitiveType))
+		}
 	}
+	t.latestReturnedType = expr.Type
 	return t
 }
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {

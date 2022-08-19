@@ -634,6 +634,50 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 			c.cbb.NewStore(val, elementPtr)
 		}
 		c.latestReturn = list
+	} else if e.Count != nil && e.Value != nil {
+		count := c.evaluate(e.Count)
+		Value := c.evaluate(e.Value)
+		if ok, vk := isRefCounted(Value.Type()); ok {
+			c.incrementRC(Value, vk)
+		}
+
+		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, count)
+
+		counter := c.cbb.NewAlloca(ddpint)
+		c.cbb.NewStore(zero, counter)
+
+		condBlock, bodyBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewBr(condBlock)
+
+		c.cbb = condBlock
+		cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(ddpint, counter), count)
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewCondBr(cond, bodyBlock, leaveBlock)
+
+		c.cbb = bodyBlock
+		index := c.cbb.NewLoad(ddpint, counter)
+		var val value.Value
+		if ok, vk := isRefCounted(Value.Type()); ok {
+			val = c.deepCopyRefCounted(Value)
+			c.incrementRC(val, vk)
+		} else {
+			val = Value
+		}
+		arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
+		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
+		elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, index)
+		c.cbb.NewStore(val, elementPtr)
+		c.cbb.NewStore(c.cbb.NewAdd(index, newInt(1)), counter)
+		c.commentNode(c.cbb, e, "")
+		c.cbb.NewBr(condBlock)
+
+		c.cbb = leaveBlock
+		if ok, _ := isRefCounted(Value.Type()); ok {
+			c.decrementRC(Value)
+		}
+
+		c.latestReturn = list
 	} else {
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
 	}

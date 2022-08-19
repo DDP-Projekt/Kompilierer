@@ -203,10 +203,28 @@ func (p *Parser) varDeclaration() ast.Declaration {
 
 	name := p.previous()
 	p.consume(token.IST)
-	var expr ast.Expression
+	var (
+		expr, count, value ast.Expression
+	)
 
 	if typ == token.DDPBoolType() {
 		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
+	} else if typ.IsList && p.match(token.INT, token.LPAREN) {
+		if p.previous().Type == token.INT {
+			count = p.parseIntLit()
+		} else {
+			count = p.grouping()
+		}
+		p.consume(token.MAL)
+		value = p.expression()
+		expr = &ast.ListLit{
+			Tok:    count.Token(),
+			Range:  token.NewRange(count.Token(), p.previous()),
+			Type:   typ,
+			Values: nil,
+			Count:  count,
+			Value:  value,
+		}
 	} else {
 		expr = p.expression()
 	}
@@ -1381,13 +1399,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 		case token.PHI:
 			lhs = &ast.FloatLit{Literal: p.previous(), Value: 1.618033989}
 		case token.INT:
-			lit := p.previous()
-			if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
-				lhs = &ast.IntLit{Literal: lit, Value: val}
-			} else {
-				p.err(lit, "Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal)
-				lhs = &ast.IntLit{Literal: lit, Value: 0}
-			}
+			lhs = p.parseIntLit()
 		case token.FLOAT:
 			lit := p.previous()
 			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
@@ -1810,6 +1822,16 @@ func (p *Parser) parseString(s string) string {
 	}
 
 	return str
+}
+
+func (p *Parser) parseIntLit() *ast.IntLit {
+	lit := p.previous()
+	if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
+		return &ast.IntLit{Literal: lit, Value: val}
+	} else {
+		p.err(lit, "Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal)
+		return &ast.IntLit{Literal: lit, Value: 0}
+	}
 }
 
 // parses tokens into a DDPType
