@@ -4,6 +4,6 @@
 #include <time.h>
 #include "ddptypes.h"
 
-ddpint ddpextern_Zeit_Seit_Programmstart() {
+ddpint Zeit_Seit_Programmstart() {
 	return clock();
 }

@@ -238,16 +238,16 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
-var exe_dir string // path to the folder of the kddp executable
+var DDPPATH string // path to the folder of the kddp executable
 
 func init() {
 	// get the path to the ddp install directory
 	if ddppath := os.Getenv("DDPPATH"); ddppath != "" {
-		exe_dir = ddppath
+		DDPPATH = ddppath
 	} else if exeFolder, err := osext.ExecutableFolder(); err != nil { // fallback if the environment variable is not set, might fail though
 		panic(err)
 	} else {
-		exe_dir = exeFolder
+		DDPPATH = exeFolder
 	}
 }
 
@@ -284,7 +284,7 @@ func (s *Scanner) identifier() token.Token {
 		inclPath := ""
 		var err error
 		if strings.HasPrefix(literalContent, "Duden") {
-			inclPath = filepath.Join(exe_dir, literalContent) + ".ddp"
+			inclPath = filepath.Join(DDPPATH, literalContent) + ".ddp"
 		} else {
 			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
 		}

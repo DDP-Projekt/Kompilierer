@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
+	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 )
 
 // invokes gcc on the input file and links it with the ddpstdlib
@@ -40,18 +41,20 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 		}
 	}
 
-	stdlibdir := filepath.Join(filepath.Dir(os.Args[0]), "ddpstdlib.lib")
-	runtimedir := filepath.Join(filepath.Dir(os.Args[0]), "ddpruntime.lib")
+	stdlibdir := filepath.Join(scanner.DDPPATH, "ddpstdlib.lib")
+	runtimedir := filepath.Join(scanner.DDPPATH, "ddpruntime.lib")
 	if runtime.GOOS == "linux" {
 		stdlibdir = changeExtension(stdlibdir, ".a")
 		runtimedir = changeExtension(runtimedir, ".a")
 	}
-	args := append(make([]string, 0), "-o", outputFile) // -lm needed for math.h (don't know why I need this on linux)
+	args := append(make([]string, 0), "-O2", "-o", outputFile) // -lm needed for math.h (don't know why I need this on linux)
 	args = append(args, link_dependencies...)
 	args = append(args, inputFile, stdlibdir, runtimedir, "-lm")
 
-	flags := strings.Split(gcc_flags, " ")
-	args = append(args, flags...)
+	if gcc_flags != "" {
+		flags := strings.Split(gcc_flags, " ")
+		args = append(args, flags...)
+	}
 
 	cmd := exec.Command("gcc", args...)
 	if out != nil {
@@ -66,7 +69,7 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 // returns the path to the output file
 func compileCFile(inputFile string, out io.Writer) (string, error) {
 	outPath := changeExtension(changeFilename(inputFile, "ddpextern_"+filepath.Base(inputFile)), ".o")
-	cmd := exec.Command("gcc", "-c", "-o", outPath, inputFile)
+	cmd := exec.Command("gcc", "-O2", "-c", "-o", outPath, inputFile)
 	if out != nil {
 		cmd.Stdout = out
 		cmd.Stderr = out

@@ -467,15 +467,8 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
-	// append a prefix to every ir function to make it impossible for the user to break internal stuff
-	name := d.Name.Literal
-	if ast.IsExternFunc(d) {
-		name = "ddpextern_" + name
-	} else { // user-defined functions are prefixed with ddpfunc_
-		name = "ddpfunc_" + name
-	}
-	irFunc := c.mod.NewFunc(name, retType, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC            // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(d.Name.Literal, retType, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                      // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 
 	c.insertFunction(d.Name.Literal, d, irFunc)
 

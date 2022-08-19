@@ -10,11 +10,11 @@
 #include <Windows.h>
 #endif // _WIN32
 
-void ddpextern_Schreibe_Zahl(ddpint p1) {
+void Schreibe_Zahl(ddpint p1) {
 	printf("%ld", p1);
 }
 
-void ddpextern_Schreibe_Kommazahl(ddpfloat p1) {
+void Schreibe_Kommazahl(ddpfloat p1) {
 	if (isinf(p1)){
 		printf("Unendlich");
 	}
@@ -26,17 +26,17 @@ void ddpextern_Schreibe_Kommazahl(ddpfloat p1) {
 	}
 }
 
-void ddpextern_Schreibe_Boolean(ddpbool p1) {
+void Schreibe_Boolean(ddpbool p1) {
 	printf(p1 ? "wahr" : "falsch");
 }
 
-void ddpextern_Schreibe_Buchstabe(ddpchar p1) {
+void Schreibe_Buchstabe(ddpchar p1) {
 	char temp[5];
 	utf8_char_to_string(temp, p1);
 	printf("%s", temp);
 }
 
-void ddpextern_Schreibe_Text(ddpstring* p1) {
+void Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
 
@@ -58,11 +58,11 @@ static void flush_stdin() {
 	while ((c = getchar()) != '\n' && c != EOF);
 }
 
-ddpstring* ddpextern_Lese_Zeile() {
+ddpstring* Lese_Zeile() {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the address in debug mode
 	dstr->str = NULL;
 	dstr->cap = 0;
-	DBGLOG("ddpextern_Lese_Zeile: %p", dstr);
+	DBGLOG("Lese_Zeile: %p", dstr);
 
 #define MAX_INPUT_LENGTH 255
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
@@ -111,7 +111,7 @@ ddpstring* ddpextern_Lese_Zeile() {
 	return dstr;
 }
 
-ddpchar ddpextern_Lese_Buchstabe() {
+ddpchar Lese_Buchstabe() {
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 	wchar_t buff[2];
 	char mbStr[5];
