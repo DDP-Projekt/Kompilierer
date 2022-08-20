@@ -145,12 +145,13 @@ func (cmd *HelpCommand) Usage() string {
 type BuildCommand struct {
 	fs *flag.FlagSet // FlagSet for the arguments
 	// arguments
-	filePath  string // input file (.ddp), neccessery, first argument
-	outPath   string // path for the output file, specified by the -o flag, may be empty
-	gcc_flags string // custom flags that are passed to gcc
-	nodeletes bool   // should temp files be deleted, specified by the --nodeletes flag
-	verbose   bool   // print verbose output, specified by the --verbose flag
-	targetIR  bool   // only compile to llvm ir, specified by the -c flag
+	filePath         string // input file (.ddp), neccessery, first argument
+	outPath          string // path for the output file, specified by the -o flag, may be empty
+	gcc_flags        string // custom flags that are passed to gcc
+	extern_gcc_flags string // custom flags passed to extern .c files
+	nodeletes        bool   // should temp files be deleted, specified by the --nodeletes flag
+	verbose          bool   // print verbose output, specified by the --verbose flag
+	targetIR         bool   // only compile to llvm ir, specified by the -c flag
 	// some flags not specified in the commandline
 	targetASM bool
 	targetOBJ bool
@@ -159,16 +160,17 @@ type BuildCommand struct {
 
 func NewBuildCommand() *BuildCommand {
 	return &BuildCommand{
-		fs:        flag.NewFlagSet("build", flag.ExitOnError),
-		filePath:  "",
-		outPath:   "",
-		gcc_flags: "",
-		nodeletes: false,
-		verbose:   false,
-		targetIR:  false,
-		targetASM: false,
-		targetOBJ: false,
-		targetEXE: true,
+		fs:               flag.NewFlagSet("build", flag.ExitOnError),
+		filePath:         "",
+		outPath:          "",
+		gcc_flags:        "",
+		extern_gcc_flags: "",
+		nodeletes:        false,
+		verbose:          false,
+		targetIR:         false,
+		targetASM:        false,
+		targetOBJ:        false,
+		targetEXE:        true,
 	}
 }
 
@@ -187,6 +189,7 @@ func (cmd *BuildCommand) Init(args []string) error {
 	// set all the flags
 	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
 	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_flags", "", "custom flags that are passed to gcc")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "extern_gcc_flags", "", "custom flags passed to extern .c files")
 	cmd.fs.BoolVar(&cmd.nodeletes, "nodeletes", false, "don't delete temporary files such as .ll or .obj files")
 	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose build output")
 	cmd.fs.BoolVar(&cmd.targetIR, "c", false, "only produce llvm ir")
@@ -302,7 +305,7 @@ func (cmd *BuildCommand) Run() error {
 
 	// the target is an executable so we link the produced object file
 	print("invoking gcc on %s", objPath)
-	if err := invokeGCC(objPath, cmd.outPath, result, cmdOut, cmd.nodeletes, cmd.gcc_flags); err != nil {
+	if err := invokeGCC(objPath, cmd.outPath, result, cmdOut, cmd.nodeletes, cmd.gcc_flags, cmd.extern_gcc_flags); err != nil {
 		return fmt.Errorf("failed to invoke gcc: %s", err.Error())
 	}
 

@@ -14,8 +14,13 @@ import (
 )
 
 // invokes gcc on the input file and links it with the ddpstdlib
-func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool, gcc_flags string) error {
+func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool, gcc_flags string, extern_gcc_flags string) error {
 	link_dependencies := make([]string, 0)
+
+	extern_flags := strings.Split(extern_gcc_flags, " ")
+	if extern_gcc_flags == "" {
+		extern_flags = []string{}
+	}
 
 	for path := range dependencies.Dependencies {
 		filename := filepath.Base(path)
@@ -28,7 +33,7 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 		case ".lib", ".a", ".o":
 			link_dependencies = append(link_dependencies, path)
 		case ".c":
-			if outPath, err := compileCFile(path, out); err != nil {
+			if outPath, err := compileCFile(path, extern_flags, out); err != nil {
 				return err
 			} else {
 				link_dependencies = append(link_dependencies, outPath)
@@ -67,9 +72,13 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 
 // helper for invokeGCC
 // returns the path to the output file
-func compileCFile(inputFile string, out io.Writer) (string, error) {
+func compileCFile(inputFile string, gcc_flags []string, out io.Writer) (string, error) {
 	outPath := changeExtension(changeFilename(inputFile, "ddpextern_"+filepath.Base(inputFile)), ".o")
-	cmd := exec.Command("gcc", "-O2", "-c", "-o", outPath, inputFile)
+	args := append(make([]string, 0, 5), "-O2", "-c", "-o", outPath, inputFile)
+	if len(gcc_flags) > 0 {
+		args = append(args, gcc_flags...)
+	}
+	cmd := exec.Command("gcc", args...)
 	if out != nil {
 		cmd.Stdout = out
 		cmd.Stderr = out
