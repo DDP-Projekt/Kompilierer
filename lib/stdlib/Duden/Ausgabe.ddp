@@ -77,7 +77,7 @@ Die Funktion Schreibe_Kommazahlen_Liste_Getrennt mit den Parametern liste und se
 				Schreibe seperator.
 		Schreibe (liste an der Stelle die Länge von liste).
 Und kann so benutzt werden:
-	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe die Kommazahlen Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 Die Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern liste und seperator vom Typ Boolean Liste und Text, gibt nichts zurück, macht:
@@ -88,7 +88,7 @@ Die Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern liste und sepera
 				Schreibe seperator.
 		Schreibe (liste an der Stelle die Länge von liste).
 Und kann so benutzt werden:
-	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe die Boolean Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 Die Funktion Schreibe_Buchstaben_Liste_Getrennt mit den Parametern liste und seperator vom Typ Buchstaben Liste und Text, gibt nichts zurück, macht:
@@ -99,7 +99,7 @@ Die Funktion Schreibe_Buchstaben_Liste_Getrennt mit den Parametern liste und sep
 				Schreibe seperator.
 		Schreibe (liste an der Stelle die Länge von liste).
 Und kann so benutzt werden:
-	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe die Buchstaben Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 Die Funktion Schreibe_Text_Liste_Getrennt mit den Parametern liste und seperator vom Typ Text Liste und Text, gibt nichts zurück, macht:
@@ -110,7 +110,7 @@ Die Funktion Schreibe_Text_Liste_Getrennt mit den Parametern liste und seperator
 				Schreibe seperator.
 		Schreibe (liste an der Stelle die Länge von liste).
 Und kann so benutzt werden:
-	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe die Text Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 Die Funktion Schreibe_Zahlen_Liste mit dem Parameter p1 vom Typ Zahlen Liste, gibt nichts zurück, macht:
