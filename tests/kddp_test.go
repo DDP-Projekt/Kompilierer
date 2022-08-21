@@ -67,7 +67,9 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		}
 
 		if out, expected := string(out), string(expected); out != expected {
-			t.Errorf("Test did not yield the expected output\nExpected:\n%s\nGot:\n%s", expected, out)
+			t.Errorf("Test did not yield the expected output\n"+
+				"\x1b[1;32mExpected:\x1b[0m\n%s\n"+
+				"\x1b[1;31mGot:\x1b[0m\n%s", expected, out)
 			return
 		}
 	})
