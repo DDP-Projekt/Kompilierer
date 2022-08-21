@@ -342,7 +342,6 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// parse the return type declaration
-	// TODO: handle grammar with eine/einen
 	validate(p.consume(token.GIBT))
 	p.match(token.EINE, token.EINEN) // not neccessary
 	Typ := p.parseTypeOrVoid()
@@ -1626,7 +1625,6 @@ outer:
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
-	// TODO: reference type-matching
 	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) map[string]ast.Expression {
 		p.cur = start
 		args := map[string]ast.Expression{}
