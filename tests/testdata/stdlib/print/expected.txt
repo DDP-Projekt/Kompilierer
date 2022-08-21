@@ -1,6 +1,22 @@
+1542,222wahrfalschÜhallo Üä+
 15
 42,222
 wahr
 falsch
 Ü
 hallo Üä+
+1542,222wahrfalschÜhallo Üä+
+15
+42,222
+wahr
+falsch
+Ü
+hallo Üä+
+1, 2, 31, 2, 3
+1,4, 2,2, 3,141,4, 2,2, 3,14
+wahr, falsch, wahrwahr, falsch, wahr
+Hallo, Welt, !!Hallo, Welt, !!
+1 2 31 2 3
+1,4 2,2 3,141,4 2,2 3,14
+wahr falsch wahrwahr falsch wahr
+Hallo Welt !!Hallo Welt !!
