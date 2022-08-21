@@ -14,7 +14,7 @@ func TestKDDP(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Logf("Error walking the test directory: %s", err)
+		t.Errorf("Error walking the test directory: %s", err)
 	}
 }
 
@@ -24,13 +24,13 @@ func TestStdlib(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Logf("Error walking the test directory: %s", err)
+		t.Errorf("Error walking the test directory: %s", err)
 	}
 }
 
 func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err error) error {
 	if err != nil {
-		t.Logf("Error walking %s: %s\nskipping this directory", path, err)
+		t.Errorf("Error walking %s: %s\nskipping this directory", path, err)
 		return fs.SkipDir
 	}
 
@@ -62,11 +62,6 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		cmd = exec.Command(changeExtension(filename, ".exe"))
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			cmd = exec.Command("../build/kddp", "build", changeExtension(filename, ".ddp"), "-c")
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Logf("cannot getcombined out when recompiling: %s\nout:\n%s", err, out)
-			}
-
 			t.Errorf("\nerror getting combined output: %s\noutput:\n%s", err, out)
 			return
 		}
