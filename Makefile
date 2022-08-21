@@ -1,14 +1,10 @@
 DDP_BIN = ""
-STD_BIN = ""
-RUN_BIN = ""
+STD_BIN = libddpstdlib.a
+RUN_BIN = libddpruntime.a
 ifeq ($(OS),Windows_NT)
 	DDP_BIN := kddp.exe
-	STD_BIN := ddpstdlib.lib
-	RUN_BIN := ddpruntime.lib
 else
 	DDP_BIN := kddp
-	STD_BIN := ddpstdlib.a
-	RUN_BIN := ddpruntime.a
 endif
 
 LLVM_SRC_DIR=./llvm-project/llvm

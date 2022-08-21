@@ -227,7 +227,7 @@ ddpstring* inbuilt_int_to_string(ddpint i) {
 	DBGLOG("inbuilt_int_to_string: %p", dstr);
 
 	char buffer[21];
-	int len = sprintf(buffer, "%ld", i);
+	int len = sprintf(buffer, "%lld", i);
 
 	char* string = ALLOCATE(char, len + 1); // the char array of the string + null-terminator
 	memcpy(string, buffer, len);

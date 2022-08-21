@@ -17,13 +17,13 @@ ddpstring* inbuilt_ddpintlist_to_string(ddpintlist* list) {
 	}
 	char buffer[23];
 	for (size_t i = 0; i < list->len-1; i++) {
-		int len = sprintf(buffer, "%ld, ", list->arr[i]);
+		int len = sprintf(buffer, "%lld, ", list->arr[i]);
 		ddpint new_cap = str->cap + len;
 		str->str = reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
-	int len = sprintf(buffer, "%ld", list->arr[list->len-1]);
+	int len = sprintf(buffer, "%lld", list->arr[list->len-1]);
 	ddpint new_cap = str->cap + len;
 	str->str = reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);

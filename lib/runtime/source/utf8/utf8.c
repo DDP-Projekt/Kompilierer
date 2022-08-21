@@ -93,20 +93,20 @@ int utf8_char_to_string(char* s, int32_t c) {
 		num_bytes = 1;
 	} else if (ch <= 2047) {
 		s[0] = 192 | (char)(c >> 6);
-		s[1] = 128 | ((char)c)&63;
+		s[1] = 128 | (((char)c)&63);
 		num_bytes = 2;
 	} else if (ch > 1114111 || (55296 <= ch && ch <= 57343)) {
 		return -1;
 	} else if (ch <= 65535) {
 		s[0] = 224 | (char)(c >> 12);
-		s[1] = 128 | ((char)c >> 6)&63;
-		s[2] = 128 | ((char)c)&63;
+		s[1] = 128 | (((char)c >> 6)&63);
+		s[2] = 128 | (((char)c)&63);
 		num_bytes = 3;
 	} else { \
 		s[0] = 240 | (char)(c>>18);
 		s[1] = 128 | (char)(c >> 12);
-		s[2] = 128 | ((char)c >> 6)&63;
-		s[3] = 128 | ((char)c)&63;
+		s[2] = 128 | (((char)c >> 6)&63);
+		s[3] = 128 | (((char)c)&63);
 	}
 	s[num_bytes] = '\0';
     return num_bytes;

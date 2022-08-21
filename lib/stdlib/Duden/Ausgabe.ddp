@@ -1,29 +1,29 @@
 Die Funktion Schreibe_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe die Zahl <p1>" oder
 	"Schreibe <p1>"
 
 Die Funktion Schreibe_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe die Kommazahl <p1>" oder
 	"Schreibe <p1>"
 
 Die Funktion Schreibe_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Boolean <p1>" oder
 	"Schreibe <p1>"
 
 Die Funktion Schreibe_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Buchstaben <p1>" oder
 	"Schreibe <p1>"
 
 Die Funktion Schreibe_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Text <p1>" oder
 	"Schreibe <p1>"

@@ -11,7 +11,7 @@
 #endif // _WIN32
 
 void Schreibe_Zahl(ddpint p1) {
-	printf("%ld", p1);
+	printf("%lld", p1);
 }
 
 void Schreibe_Kommazahl(ddpfloat p1) {
