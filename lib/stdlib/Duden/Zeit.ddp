@@ -1,5 +1,5 @@
 Die Funktion Zeit_Seit_Programmstart gibt eine Zahl zurück,
-ist in "ddpstdlib.lib" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Zeit seit Programmstart" oder
 	"die Millisekunden seit Programmstart"

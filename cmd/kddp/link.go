@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
@@ -15,28 +14,41 @@ import (
 
 // invokes gcc on the input file and links it with the ddpstdlib
 func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool, gcc_flags string, extern_gcc_flags string) error {
-	link_dependencies := make([]string, 0)
-
+	// split the flags passed to gcc when compiling extern .c files
 	extern_flags := strings.Split(extern_gcc_flags, " ")
 	if extern_gcc_flags == "" {
 		extern_flags = []string{}
 	}
 
+	var (
+		link_objects = map[string][]string{} // library-search-paths to librarie filename map
+		input_files  = []string{inputFile}   // all input files (.o)
+	)
+
+	// add external files to be linked
 	for path := range dependencies.Dependencies {
 		filename := filepath.Base(path)
+		// stdlib and runtime are linked by default
+		// ignore them because of the Duden
 		switch filename {
-		case "ddpstdlib.lib", "ddpstdlib.a", "ddpruntime.lib", "ddpruntime.a":
+		case "libddpstdlib.a", "libddpruntime.a":
 			continue
 		}
 
 		switch filepath.Ext(path) {
-		case ".lib", ".a", ".o":
-			link_dependencies = append(link_dependencies, path)
-		case ".c":
+		case ".lib", ".a": // libraries are linked using the -l: flag
+			if objs, ok := link_objects[filepath.Dir(path)]; ok {
+				link_objects[filepath.Dir(path)] = append(objs, filename)
+			} else {
+				link_objects[filepath.Dir(path)] = []string{filename}
+			}
+		case ".o": // object files are simple input files
+			input_files = append(input_files, path)
+		case ".c": // .c files must be compiled first
 			if outPath, err := compileCFile(path, extern_flags, out); err != nil {
 				return err
 			} else {
-				link_dependencies = append(link_dependencies, outPath)
+				input_files = append(input_files, outPath)
 				if !nodeletes {
 					defer os.Remove(outPath)
 				}
@@ -46,16 +58,26 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 		}
 	}
 
-	stdlibdir := filepath.Join(scanner.DDPPATH, "ddpstdlib.lib")
-	runtimedir := filepath.Join(scanner.DDPPATH, "ddpruntime.lib")
-	if runtime.GOOS == "linux" {
-		stdlibdir = changeExtension(stdlibdir, ".a")
-		runtimedir = changeExtension(runtimedir, ".a")
-	}
-	args := append(make([]string, 0), "-O2", "-o", outputFile) // -lm needed for math.h (don't know why I need this on linux)
-	args = append(args, link_dependencies...)
-	args = append(args, inputFile, stdlibdir, runtimedir, "-lm")
+	libdir := scanner.DDPPATH
 
+	args := append(make([]string, 0), "-o", outputFile, "-O2", "-L"+libdir)
+
+	// add all librarie-search-paths
+	for k := range link_objects {
+		args = append(args, "-L"+k)
+	}
+	// add the input files
+	args = append(args, input_files...)
+	// add default dependencies
+	args = append(args, "-lddpstdlib", "-lddpruntime", "-lm")
+	// add external dependencies
+	for _, libs := range link_objects {
+		for _, lib := range libs {
+			args = append(args, "-l:"+lib)
+		}
+	}
+
+	// add additional gcc-flags such as other needed libraries
 	if gcc_flags != "" {
 		flags := strings.Split(gcc_flags, " ")
 		args = append(args, flags...)
@@ -74,9 +96,12 @@ func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResul
 // returns the path to the output file
 func compileCFile(inputFile string, gcc_flags []string, out io.Writer) (string, error) {
 	outPath := changeExtension(changeFilename(inputFile, "ddpextern_"+filepath.Base(inputFile)), ".o")
-	args := append(make([]string, 0, 5), "-O2", "-c", "-o", outPath, inputFile)
+	args := append(make([]string, 0, 5), "-O2", "-c", "-Wall", "-o", outPath, inputFile)
 	if len(gcc_flags) > 0 {
 		args = append(args, gcc_flags...)
+	}
+	if out != nil {
+		fmt.Fprintf(out, "invoking gcc on %s\n", inputFile)
 	}
 	cmd := exec.Command("gcc", args...)
 	if out != nil {

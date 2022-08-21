@@ -10,8 +10,12 @@
 #include <Windows.h>
 #endif // _WIN32
 
+/*
+	print functions
+*/
+
 void Schreibe_Zahl(ddpint p1) {
-	printf("%ld", p1);
+	printf("%lld", p1);
 }
 
 void Schreibe_Kommazahl(ddpfloat p1) {
@@ -38,6 +42,40 @@ void Schreibe_Buchstabe(ddpchar p1) {
 
 void Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
+}
+
+/*
+	print line functions
+*/
+
+void SchreibeZeile_Zahl(ddpint p1) {
+	printf("%lld\n", p1);
+}
+
+void SchreibeZeile_Kommazahl(ddpfloat p1) {
+	if (isinf(p1)){
+		printf("Unendlich\n");
+	}
+	else if (isnan(p1)) {
+		printf("Keine Zahl (NaN)\n");
+	}
+	else {
+		printf("%.16g\n", p1);
+	}
+}
+
+void SchreibeZeile_Boolean(ddpbool p1) {
+	printf(p1 ? "wahr\n" : "falsch\n");
+}
+
+void SchreibeZeile_Buchstabe(ddpchar p1) {
+	char temp[5];
+	utf8_char_to_string(temp, p1);
+	printf("%s\n", temp);
+}
+
+void SchreibeZeile_Text(ddpstring* p1) {
+	printf("%s\n", p1->str);
 }
 
 #ifdef _WIN32

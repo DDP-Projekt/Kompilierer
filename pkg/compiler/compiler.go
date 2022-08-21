@@ -30,8 +30,11 @@ type funcWrapper struct {
 type CompileResult struct {
 	// a set which contains all files needed
 	// to link the final executable
-	// contains .c, .lib and .o files
+	// contains .c, .lib, .a and .o files
 	Dependencies map[string]struct{}
+	// the llvm ir
+	// empty if the output was written to a io.Writer
+	LLVMIR string
 }
 
 // holds state to compile a DDP AST into llvm ir
@@ -59,6 +62,7 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 		errorHandler: errorHandler,
 		result: &CompileResult{
 			Dependencies: make(map[string]struct{}),
+			LLVMIR:       "",
 		},
 		cbb:          nil,
 		cf:           nil,
@@ -71,18 +75,20 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned
-func (c *Compiler) Compile(w io.Writer) (llvmir string, result *CompileResult, rerr error) {
+func (c *Compiler) Compile(w io.Writer) (result *CompileResult, rerr error) {
 	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
 			rerr = fmt.Errorf("%v", err)
-			llvmir = ""
+			if result != nil {
+				result.LLVMIR = ""
+			}
 		}
 	}()
 
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
-		return "", nil, fmt.Errorf("Fehlerhafter Syntax Baum")
+		return nil, fmt.Errorf("Fehlerhafter Syntax Baum")
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
@@ -107,9 +113,10 @@ func (c *Compiler) Compile(w io.Writer) (llvmir string, result *CompileResult, r
 	c.cbb.NewRet(newInt(0))
 	if w != nil {
 		_, err := c.mod.WriteTo(w)
-		return "", c.result, err
+		return c.result, err
 	} else {
-		return c.mod.String(), c.result, nil // return the module as string
+		c.result.LLVMIR = c.mod.String()
+		return c.result, nil // return the module as string
 	}
 }
 
