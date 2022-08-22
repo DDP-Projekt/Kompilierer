@@ -21,7 +21,7 @@
 - [ ] Bessere error-messages
 
 ## Sonstiges
-- [ ] Standardbibliothek (Duden)
+- [x] Standardbibliothek (Duden)
 
 ## Irgendwann
 - [ ] Arrays 
