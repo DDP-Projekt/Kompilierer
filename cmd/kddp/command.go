@@ -248,9 +248,9 @@ func (cmd *BuildCommand) Run() error {
 	var to *os.File
 	var err error
 	if targetExe {
-		to, err = os.OpenFile(objPath, os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		to, err = os.OpenFile(objPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	} else {
-		to, err = os.OpenFile(cmd.outPath, os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		to, err = os.OpenFile(cmd.outPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	}
 	if err != nil {
 		return err
