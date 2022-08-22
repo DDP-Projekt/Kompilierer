@@ -1,24 +1,23 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Mathe" ein.
 
-Schreibe (die größere Zahl von 2 und 3).
-Schreibe den Buchstaben '\n'.
-Schreibe (die größere Zahl von 99 und 42).
-Schreibe den Buchstaben '\n'.
-Schreibe (die größere Zahl von 0 und 0).
-Schreibe den Buchstaben '\n'.
+Schreibe (die größere Zahl von 2 und 3) auf eine Zeile.
+Schreibe (die größere Zahl von 99 und 42) auf eine Zeile.
+Schreibe (die größere Zahl von 0 und 0) auf eine Zeile.
 
-Schreibe (die kleinere Zahl von -2 und 5).
-Schreibe den Buchstaben '\n'.
-Schreibe (die kleinere Zahl von 60 und 13).
-Schreibe den Buchstaben '\n'.
-Schreibe (die kleinere Zahl von 0 und 0).
-Schreibe den Buchstaben '\n'.
+Schreibe (die kleinere Zahl von -2 und 5) auf eine Zeile.
+Schreibe (die kleinere Zahl von 60 und 13) auf eine Zeile.
+Schreibe (die kleinere Zahl von 0 und 0) auf eine Zeile.
 
-Schreibe (die Zahl 7 zwischen -30 und 10).
-Schreibe den Buchstaben '\n'.
-Schreibe (die Zahl 45 zwischen 75 und 95).
-Schreibe den Buchstaben '\n'.
-Schreibe (die Zahl 18 zwischen 2 und 13).
-Schreibe den Buchstaben '\n'.
-Schreibe (die Zahl 50 zwischen 0 und 0).
+Schreibe (die Zahl 7 zwischen -30 und 10) auf eine Zeile.
+Schreibe (die Zahl 45 zwischen 75 und 95) auf eine Zeile.
+Schreibe (die Zahl 18 zwischen 2 und 13) auf eine Zeile.
+Schreibe (die Zahl 50 zwischen 0 und 0) auf eine Zeile.
+
+Schreibe (das Vorzeichen von 0) auf eine Zeile.
+Schreibe (das Vorzeichen von 1) auf eine Zeile.
+Schreibe (das Vorzeichen von -1) auf eine Zeile.
+
+Schreibe (1,7 nach unten gerundet) auf eine Zeile.
+Schreibe (1,3 nach oben gerundet) auf eine Zeile.
+Schreibe (1,5 trunkiert).
