@@ -7,6 +7,7 @@
 #include "debug.h"
 #include <math.h>
 #ifdef _WIN32
+#include <io.h>
 #include <Windows.h>
 #endif // _WIN32
 
@@ -84,6 +85,7 @@ static HANDLE* get_stdin_handle() {
 	static bool initialized = false;
 	if (!initialized) {
 		stdin_hndl = GetStdHandle(STD_INPUT_HANDLE);
+		if (stdin_hndl == INVALID_HANDLE_VALUE) runtime_error(1, "GetStdHandle failed with code %ld", GetLastError());
 	}
 
 	return &stdin_hndl;
@@ -105,26 +107,28 @@ ddpstring* Lese_Zeile() {
 #define MAX_INPUT_LENGTH 255
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 
-	static CONSOLE_READCONSOLE_CONTROL crc = {
-		.nLength = sizeof(CONSOLE_READCONSOLE_CONTROL),
-		.nInitialChars = 0,
-		.dwCtrlWakeupMask = (1 << '\r') | (1 << '\n'),
-		.dwControlKeyState = 0,
-	};
+	if (_isatty(_fileno(stdin))) {
+		static CONSOLE_READCONSOLE_CONTROL crc = {
+			.nLength = sizeof(CONSOLE_READCONSOLE_CONTROL),
+			.nInitialChars = 0,
+			.dwCtrlWakeupMask = (1 << '\r') | (1 << '\n'),
+			.dwControlKeyState = 0,
+		};
 
-	wchar_t buff[MAX_INPUT_LENGTH];
-	unsigned long read;
-	while (ReadConsoleW(*get_stdin_handle(), buff, MAX_INPUT_LENGTH, &read, &crc) != 0 && read != 0) {
-		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, NULL, 0, NULL, NULL); // get the required buffer size
-		if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
-		dstr->str = reallocate(dstr->str, dstr->cap, dstr->cap + size);
-		if (WideCharToMultiByte(CP_UTF8, 0, buff, read, dstr->str + dstr->cap, size, NULL, NULL) == 0) runtime_error(1, "WideCharToMultiByte (2) failed with code %ld", GetLastError());
-		dstr->cap += size;
-		if (read < MAX_INPUT_LENGTH) break;
-	}
-	dstr->str[dstr->cap-1] = '\0';
-
-#else
+		wchar_t buff[MAX_INPUT_LENGTH];
+		unsigned long read;
+		while (ReadConsoleW(*get_stdin_handle(), buff, MAX_INPUT_LENGTH, &read, &crc) != 0 && read != 0) {
+			int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, NULL, 0, NULL, NULL); // get the required buffer size
+			if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
+			dstr->str = reallocate(dstr->str, dstr->cap, dstr->cap + size);
+			if (WideCharToMultiByte(CP_UTF8, 0, buff, read, dstr->str + dstr->cap, size, NULL, NULL) == 0) runtime_error(1, "WideCharToMultiByte (2) failed with code %ld", GetLastError());
+			dstr->cap += size;
+			if (read < MAX_INPUT_LENGTH) break;
+		}
+		if (read == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
+		dstr->str[dstr->cap-1] = '\0';
+	} else {
+#endif
 
 	char buff[MAX_INPUT_LENGTH]; // buffer for input
 	while (true) { // loop if the string is longer than MAX_INPUT_LENGTH
@@ -143,7 +147,10 @@ ddpstring* Lese_Zeile() {
 	}
 	dstr->str[dstr->cap-1] = '\0';
 
+#ifdef _WIN32
+	}
 #endif
+
 #undef MAX_INPUT_LENGTH
 
 	return dstr;
@@ -151,15 +158,18 @@ ddpstring* Lese_Zeile() {
 
 ddpchar Lese_Buchstabe() {
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
+	if (_isatty(_fileno(stdin))) {
 	wchar_t buff[2];
 	char mbStr[5];
 	unsigned long read;
-	ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL);
+	if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
 	int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
+	if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
 	mbStr[size] = '\0';
 	flush_stdin();
 	return utf8_string_to_char(mbStr);
-#else
+	} else {
+#endif
 	char temp[5];
 	temp[0] = getchar();
 	int i = utf8_indicated_num_bytes(temp[0]);
@@ -167,5 +177,7 @@ ddpchar Lese_Buchstabe() {
 	temp[i] = '\0';
 	flush_stdin();
 	return utf8_string_to_char(temp);
+#ifdef _WIN32
+	}
 #endif
 }

@@ -1,0 +1,24 @@
+Binde "Duden/Texte" ein.
+Binde "Duden/Ausgabe" ein.
+
+Schreibe (entferne alle ' ' vor "    guh??") auf eine Zeile.
+Schreibe (entferne alle ' ' nach "guh??   ") auf eine Zeile.
+Schreibe (entferne alle ' ' vor und nach "    guh??   ") auf eine Zeile.
+
+Schreibe ("Hello World" 'e' enthält) auf eine Zeile.
+Schreibe ("Hello World" '!' enthält) auf eine Zeile.
+
+Schreibe ("Hello World" "ello" enthält) auf eine Zeile.
+Schreibe ("Hello World" "guh" enthält) auf eine Zeile.
+
+Schreibe ("Hello World" mit 'H' anfängt) auf eine Zeile.
+Schreibe ("Hello World" mit ' ' anfängt) auf eine Zeile.
+
+Schreibe ("Hello World" mit 'd' aufhört) auf eine Zeile.
+Schreibe ("Hello World" mit ' ' aufhört) auf eine Zeile.
+
+Schreibe ("Hello World" mit "Hell" anfängt) auf eine Zeile.
+Schreibe ("Hello World" mit "hi" anfängt) auf eine Zeile.
+
+Schreibe ("Hello World" mit "orld" aufhört) auf eine Zeile.
+Schreibe ("Hello World" mit "orad" aufhört).

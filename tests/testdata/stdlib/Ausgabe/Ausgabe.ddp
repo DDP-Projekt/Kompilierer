@@ -1,0 +1,75 @@
+Binde "Duden/Ausgabe" ein.
+
+[Schreibe tests]
+Schreibe die Zahl 15.
+Schreibe die Kommazahl 42,222.
+Schreibe den Boolean wahr.
+Schreibe den Boolean falsch.
+Schreibe den Buchstaben 'Ü'.
+Schreibe den Text "hallo Üä+".
+Schreibe den Buchstaben '\n'.
+
+[Schreibe Zeile tests]
+Schreibe die Zahl 15 auf eine Zeile.
+Schreibe die Kommazahl 42,222 auf eine Zeile.
+Schreibe den Boolean wahr auf eine Zeile.
+Schreibe den Boolean falsch auf eine Zeile.
+Schreibe den Buchstaben 'Ü' auf eine Zeile.
+Schreibe den Text "hallo Üä+" auf eine Zeile.
+
+[implizites Schreibe tests]
+Schreibe 15.
+Schreibe 42,222.
+Schreibe wahr.
+Schreibe falsch.
+Schreibe 'Ü'.
+Schreibe "hallo Üä+".
+Schreibe '\n'.
+
+[implizites Schreibe Zeile tests]
+Schreibe 15 auf eine Zeile.
+Schreibe 42,222 auf eine Zeile.
+Schreibe wahr auf eine Zeile.
+Schreibe falsch auf eine Zeile.
+Schreibe 'Ü' auf eine Zeile.
+Schreibe "hallo Üä+" auf eine Zeile.
+
+[Schreibe Liste tests]
+Schreibe die Zahlen Liste (eine Liste, die aus 1, 2, 3 besteht).
+Schreibe (eine Liste, die aus 1, 2, 3 besteht).
+
+Schreibe '\n'.
+
+Schreibe die Kommazahlen Liste (eine Liste, die aus 1,4, 2,2, 3,14 besteht).
+Schreibe (eine Liste, die aus 1,4, 2,2, 3,14 besteht).
+
+Schreibe '\n'.
+
+Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht).
+Schreibe (eine Liste, die aus wahr, falsch, wahr besteht).
+
+Schreibe '\n'.
+
+Schreibe die Text Liste (eine Liste, die aus "Hallo", "Welt", "!!" besteht).
+Schreibe (eine Liste, die aus "Hallo", "Welt", "!!" besteht).
+
+Schreibe '\n'.
+
+[Schreibe Liste getrennt tests]
+Schreibe die Zahlen Liste (eine Liste, die aus 1, 2, 3 besteht) mit dem Seperator " ".
+Schreibe (eine Liste, die aus 1, 2, 3 besteht) mit dem Seperator " ".
+
+Schreibe '\n'.
+
+Schreibe die Kommazahlen Liste (eine Liste, die aus 1,4, 2,2, 3,14 besteht) mit dem Seperator " ".
+Schreibe (eine Liste, die aus 1,4, 2,2, 3,14 besteht) mit dem Seperator " ".
+
+Schreibe '\n'.
+
+Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht) mit dem Seperator " ".
+Schreibe (eine Liste, die aus wahr, falsch, wahr besteht) mit dem Seperator " ".
+
+Schreibe '\n'.
+
+Schreibe die Text Liste (eine Liste, die aus "Hallo", "Welt", "!!" besteht) mit dem Seperator " ".
+Schreibe (eine Liste, die aus "Hallo", "Welt", "!!" besteht) mit dem Seperator " ".
