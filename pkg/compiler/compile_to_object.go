@@ -1,22 +1,21 @@
-package main
+package compiler
 
 import (
-	"os"
-	"path/filepath"
+	"io"
 
 	"github.com/bafto/Go-LLVM-Bindings/llvm"
 )
 
-// takes a .ll file and compiles it into a .o .obj .s or .asm file depending on the outputFile extension
+// takes a .ll file and compiles it into the given OutputType
+// and writes the result to to
 // mainly copied from the llvm documentation
-func compileToObject(inputFile, outputFile string) error {
-	fileExtension := filepath.Ext(outputFile)
-
+func compileToObject(inputFile string, outType OutputType, to io.Writer) (int, error) {
 	ctx := llvm.NewContext()
 	defer ctx.Dispose()
+
 	mod, err := llvm.ParseIRFile(inputFile, ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer mod.Dispose()
 
@@ -28,8 +27,9 @@ func compileToObject(inputFile, outputFile string) error {
 
 	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
 	if err != nil {
-		return err
+		return 0, err
 	}
+
 	targetMachine := target.CreateTargetMachine(
 		llvm.DefaultTargetTriple(),
 		"generic",
@@ -39,13 +39,16 @@ func compileToObject(inputFile, outputFile string) error {
 		llvm.CodeModel(llvm.CodeModelDefault),
 	)
 	defer targetMachine.Dispose()
+
 	targetData := targetMachine.CreateTargetData()
 	defer targetData.Dispose()
+
 	mod.SetDataLayout(targetData.String())
 	mod.SetTarget(targetMachine.Triple())
 
 	pass := llvm.NewPassManager()
 	defer pass.Dispose()
+
 	// dunno if they do something, but who knows
 	pass.AddInstructionCombiningPass()
 	pass.AddLoopDeletionPass()
@@ -56,18 +59,18 @@ func compileToObject(inputFile, outputFile string) error {
 	pass.Run(mod)
 
 	var fileType llvm.CodeGenFileType
-	switch fileExtension {
-	case ".s", ".asm":
+	switch outType {
+	case OutputAsm:
 		fileType = llvm.CodeGenFileType(llvm.AssemblyFile)
-	case ".o", ".obj":
+	case OutputObj:
 		fileType = llvm.CodeGenFileType(llvm.ObjectFile)
 	}
 
 	memBuffer, err := targetMachine.EmitToMemoryBuffer(mod, fileType)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer memBuffer.Dispose()
 
-	return os.WriteFile(outputFile, memBuffer.Bytes(), os.ModePerm)
+	return to.Write(memBuffer.Bytes())
 }

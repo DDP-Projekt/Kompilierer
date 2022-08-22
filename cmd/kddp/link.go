@@ -13,7 +13,7 @@ import (
 )
 
 // invokes gcc on the input file and links it with the ddpstdlib
-func invokeGCC(inputFile, outputFile string, dependencies *compiler.CompileResult, out io.Writer, nodeletes bool, gcc_flags string, extern_gcc_flags string) error {
+func invokeGCC(inputFile, outputFile string, dependencies *compiler.Result, out io.Writer, nodeletes bool, gcc_flags string, extern_gcc_flags string) error {
 	// split the flags passed to gcc when compiling extern .c files
 	extern_flags := strings.Split(extern_gcc_flags, " ")
 	if extern_gcc_flags == "" {

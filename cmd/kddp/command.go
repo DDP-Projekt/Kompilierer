@@ -152,10 +152,6 @@ type BuildCommand struct {
 	nodeletes        bool   // should temp files be deleted, specified by the --nodeletes flag
 	verbose          bool   // print verbose output, specified by the --verbose flag
 	targetIR         bool   // only compile to llvm ir, specified by the -c flag
-	// some flags not specified in the commandline
-	targetASM bool
-	targetOBJ bool
-	targetEXE bool
 }
 
 func NewBuildCommand() *BuildCommand {
@@ -168,9 +164,6 @@ func NewBuildCommand() *BuildCommand {
 		nodeletes:        false,
 		verbose:          false,
 		targetIR:         false,
-		targetASM:        false,
-		targetOBJ:        false,
-		targetEXE:        true,
 	}
 }
 
@@ -206,31 +199,34 @@ func (cmd *BuildCommand) Run() error {
 	}
 
 	// determine the final output type (by file extension)
+	compOutType := compiler.OutputIR
 	extension := ".ll" // assume the -c flag
+	targetExe := false
 	if !cmd.targetIR { // -c was not set
-		cmd.targetEXE = false
 		switch ext := filepath.Ext(cmd.outPath); ext {
 		case ".ll":
 			cmd.targetIR = true
 		case ".s", ".asm":
 			extension = ext
-			cmd.targetASM = true
+			compOutType = compiler.OutputAsm
 		case ".o", ".obj":
 			extension = ext
-			cmd.targetOBJ = true
+			compOutType = compiler.OutputObj
 		case ".exe":
 			extension = ext
-			cmd.targetEXE = true
+			targetExe = true
+			compOutType = compiler.OutputObj
 		case "":
 			extension = ext
-			cmd.targetEXE = true
+			targetExe = true
+			compOutType = compiler.OutputObj
 		default: // by default we create a executable
 			if runtime.GOOS == "windows" {
 				extension = ".exe"
 			} else if runtime.GOOS == "linux" {
 				extension = ""
 			}
-			cmd.targetEXE = true
+			targetExe = true
 		}
 	}
 
@@ -247,54 +243,43 @@ func (cmd *BuildCommand) Run() error {
 		return fmt.Errorf("failed to create output directory: %s", err.Error())
 	}
 
-	// temp paths (might not need them)
-	llPath := changeExtension(cmd.outPath, ".ll")
 	objPath := changeExtension(cmd.outPath, ".o")
 
-	print("creating .ll output directory: %s", llPath)
-	var result *compiler.CompileResult
-	if file, err := os.OpenFile(llPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create .ll output directory: %s", err.Error())
+	var to *os.File
+	var err error
+	if targetExe {
+		to, err = os.OpenFile(objPath, os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	} else {
-		if !cmd.targetIR && !cmd.nodeletes { // if the target is not llvm ir we remove the temp file
-			defer func() { // defer, to remove the file after it has been used
-				print("removing temporary .ll file: %s", llPath)
-				if err := os.Remove(llPath); err != nil {
-					print("failed to remove temporary .ll file: %s", err.Error())
-				}
-			}()
-		}
-		defer file.Close()
-		print("parsing and compiling llvm ir from %s", cmd.filePath)
-		// compile the input file to llvm ir
-		if result, err = compiler.CompileTo(cmd.filePath, nil, errHndl, file); err != nil {
-			return fmt.Errorf("failed to compile the source code: %s", err.Error())
-		}
-		if cmd.targetIR { // if the target is llvm ir we are finished
-			return nil
-		}
+		to, err = os.OpenFile(cmd.outPath, os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	}
+	if err != nil {
+		return err
 	}
 
-	// the target was not llvm ir, so we compile it to an object-, assembly-, or executable file
-	if cmd.targetEXE { // compile to object-file and continue after that
-		print("compiling llir from %s to %s", llPath, objPath)
-		if err := compileToObject(llPath, objPath); err != nil { // compile the object file
-			return fmt.Errorf("failed to compile llir: %s", err.Error())
-		}
-		if !cmd.nodeletes {
-			defer func() { // defer, to remove the temp file only after it has been used
-				print("removing temporary .obj file: %s", objPath)
-				if err := os.Remove(objPath); err != nil {
-					print("failed to remove temporary .obj file: %s", err.Error())
-				}
-			}()
-		}
-	} else if cmd.targetASM || cmd.targetOBJ { // compile to assembly or object, and return
-		print("compiling llir from %s to %s", llPath, cmd.outPath)
-		if err := compileToObject(llPath, cmd.outPath); err != nil {
-			return fmt.Errorf("failed to compile llir: %s", err.Error())
-		}
+	print("compiling ddp-source to %s", cmd.outPath)
+	result, err := compiler.Compile(compiler.Options{
+		FileName:                cmd.filePath,
+		Source:                  nil,
+		From:                    nil,
+		To:                      to,
+		OutputType:              compOutType,
+		ErrorHandler:            errHndl,
+		DeleteIntermediateFiles: !cmd.nodeletes,
+	})
+	to.Close()
+	if err != nil {
+		return err
+	}
+
+	if !targetExe {
 		return nil
+	}
+
+	if !cmd.nodeletes {
+		defer func() {
+			print("removing %s", objPath)
+			os.Remove(objPath)
+		}()
 	}
 
 	// if --verbose was specified, print gccs output

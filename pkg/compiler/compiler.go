@@ -26,23 +26,12 @@ type funcWrapper struct {
 	funcDecl *ast.FuncDecl // the ast.FuncDecl
 }
 
-// the result of a compilation
-type CompileResult struct {
-	// a set which contains all files needed
-	// to link the final executable
-	// contains .c, .lib, .a and .o files
-	Dependencies map[string]struct{}
-	// the llvm ir
-	// empty if the output was written to a io.Writer
-	LLVMIR string
-}
-
 // holds state to compile a DDP AST into llvm ir
 type Compiler struct {
 	ast          *ast.Ast
 	mod          *ir.Module           // the ir module (basically the ir file)
 	errorHandler scanner.ErrorHandler // errors are passed to this function
-	result       *CompileResult       // result of the compilation
+	result       *Result              // result of the compilation
 
 	cbb          *ir.Block               // current basic block in the ir
 	cf           *ir.Func                // current function
@@ -60,9 +49,9 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 		ast:          Ast,
 		mod:          ir.NewModule(),
 		errorHandler: errorHandler,
-		result: &CompileResult{
+		result: &Result{
 			Dependencies: make(map[string]struct{}),
-			LLVMIR:       "",
+			Output:       "",
 		},
 		cbb:          nil,
 		cf:           nil,
@@ -74,14 +63,14 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
 
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
-// otherwise a string representation is returned
-func (c *Compiler) Compile(w io.Writer) (result *CompileResult, rerr error) {
+// otherwise a string representation is returned in result
+func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	// catch panics and instead set the returned error
 	defer func() {
 		if err := recover(); err != nil {
 			rerr = fmt.Errorf("%v", err)
 			if result != nil {
-				result.LLVMIR = ""
+				result.Output = ""
 			}
 		}
 	}()
@@ -115,7 +104,7 @@ func (c *Compiler) Compile(w io.Writer) (result *CompileResult, rerr error) {
 		_, err := c.mod.WriteTo(w)
 		return c.result, err
 	} else {
-		c.result.LLVMIR = c.mod.String()
+		c.result.Output = c.mod.String()
 		return c.result, nil // return the module as string
 	}
 }
