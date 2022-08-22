@@ -43,6 +43,8 @@ type Options struct {
 	// ErrorHandler used for the scanner, parser, ...
 	// May be nil
 	ErrorHandler scanner.ErrorHandler
+	// optional Log function to print intermediate messages
+	Log func(string, ...any)
 	// wether or not to delete intermediate .ll files
 	DeleteIntermediateFiles bool
 }
@@ -65,6 +67,9 @@ func validateOptions(options *Options) error {
 	if options.ErrorHandler == nil {
 		options.ErrorHandler = func(token.Token, string) {}
 	}
+	if options.Log == nil {
+		options.Log = func(string, ...any) {}
+	}
 	return nil
 }
 
@@ -79,6 +84,7 @@ func Compile(options Options) (*Result, error) {
 
 	// compile the ddp-source into an Ast
 	var Ast *ast.Ast
+	options.Log("Parsing ddp-source-code")
 	if options.Source != nil {
 		Ast, err = parser.ParseSource(options.FileName, options.Source, options.ErrorHandler)
 	} else if options.From != nil {
@@ -96,6 +102,7 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	// if set, only compile to llvm ir and return
+	options.Log("compiling ast to llvm ir")
 	if options.OutputType == OutputIR {
 		return New(Ast, options.ErrorHandler).Compile(options.To)
 	}
@@ -109,6 +116,7 @@ func Compile(options Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	options.Log("writing llvm ir to %s", tempFileName)
 	result, err := New(Ast, options.ErrorHandler).Compile(file)
 	if err != nil {
 		file.Close()
@@ -117,10 +125,12 @@ func Compile(options Options) (*Result, error) {
 	file.Close()
 
 	if options.DeleteIntermediateFiles {
+		defer options.Log("removing temporary file %s", tempFileName)
 		defer os.Remove(tempFileName)
 	}
 
 	// object files are written to the given io.Writer (most commonly a file)
+	options.Log("compiling llvm ir to object file")
 	if options.OutputType == OutputObj {
 		_, err = compileToObject(tempFileName, options.OutputType, options.To)
 		if err != nil {

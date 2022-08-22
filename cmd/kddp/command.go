@@ -5,11 +5,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 
+	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
 	"github.com/DDP-Projekt/Kompilierer/pkg/interpreter"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
@@ -264,6 +264,7 @@ func (cmd *BuildCommand) Run() error {
 		To:                      to,
 		OutputType:              compOutType,
 		ErrorHandler:            errHndl,
+		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 	})
 	to.Close()
@@ -282,16 +283,18 @@ func (cmd *BuildCommand) Run() error {
 		}()
 	}
 
-	// if --verbose was specified, print gccs output
-	var cmdOut io.Writer = nil
-	if cmd.verbose {
-		cmdOut = os.Stdout
-	}
-
 	// the target is an executable so we link the produced object file
-	print("invoking gcc on %s", objPath)
-	if err := invokeGCC(objPath, cmd.outPath, result, cmdOut, cmd.nodeletes, cmd.gcc_flags, cmd.extern_gcc_flags); err != nil {
-		return fmt.Errorf("failed to invoke gcc: %s", err.Error())
+	print("linking objects")
+	if err := linker.LinkDDPFiles(linker.Options{
+		InputFile:               objPath,
+		OutputFile:              cmd.outPath,
+		Dependencies:            result,
+		Log:                     print,
+		DeleteIntermediateFiles: !cmd.nodeletes,
+		GCCFlags:                cmd.gcc_flags,
+		ExternGCCFlags:          cmd.extern_gcc_flags,
+	}); err != nil {
+		return fmt.Errorf("linking failed: %s", err)
 	}
 
 	return nil
