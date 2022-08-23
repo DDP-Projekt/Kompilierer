@@ -203,27 +203,22 @@ func (p *Parser) varDeclaration() ast.Declaration {
 
 	name := p.previous()
 	p.consume(token.IST)
-	var (
-		expr, count, value ast.Expression
-	)
+	var expr ast.Expression
 
 	if typ == token.DDPBoolType() {
 		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
-	} else if typ.IsList && p.match(token.INT, token.LPAREN) {
-		if p.previous().Type == token.INT {
-			count = p.parseIntLit()
-		} else {
-			count = p.grouping()
-		}
-		p.consume(token.MAL)
-		value = p.expression()
-		expr = &ast.ListLit{
-			Tok:    count.Token(),
-			Range:  token.NewRange(count.Token(), p.previous()),
-			Type:   typ,
-			Values: nil,
-			Count:  count,
-			Value:  value,
+	} else if typ.IsList { // TODO: fix this with function calls and groupings
+		expr = p.expression()
+		if p.match(token.LIST_MAL) {
+			value := p.expression()
+			expr = &ast.ListLit{
+				Tok:    expr.Token(),
+				Range:  token.NewRange(expr.Token(), p.previous()),
+				Type:   typ,
+				Values: nil,
+				Count:  expr,
+				Value:  value,
+			}
 		}
 	} else {
 		expr = p.expression()
@@ -596,6 +591,7 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 }
 
 // += -= *= /=
+// TODO: fix indexings as assignebles with 'um' after the index
 func (p *Parser) compoundAssignement() ast.Statement {
 	// the many branches are here mostly because of different prepositons
 	operator := p.previous()
@@ -605,7 +601,14 @@ func (p *Parser) compoundAssignement() ast.Statement {
 		operand = p.primary(nil)
 	} else {
 		p.consume(token.IDENTIFIER)
-		varName = p.assigneable()
+		if p.match(token.LPAREN) { // indexings may be enclosed in parens to prevent the 'um' from being interpretetd as bitshift
+			varName = p.assigneable()
+			p.consume(token.RPAREN)
+		} else {
+			varName = p.assigneable()
+		}
+
+		// early return for negate
 		if operator.Type == token.NEGIERE {
 			p.consume(token.DOT)
 			return &ast.AssignStmt{
@@ -1529,7 +1532,7 @@ func (p *Parser) assigneable() ast.Assigneable {
 
 	for p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
-		index := p.expression()
+		index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
 		ass = &ast.Indexing{
 			Lhs:   ass,
 			Index: index,
