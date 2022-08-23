@@ -718,16 +718,11 @@ func (p *Parser) assignLiteral() ast.Statement {
 
 // helper to parse an Speichere expr in x Assignement
 func (p *Parser) assignNoLiteral() ast.Statement {
-	speichere := p.previous()             // Speichere token
-	var expr ast.Expression = nil         // final expression
-	if expr = p.funcCall(); expr == nil { // check for funcCall alias which might include "das Ergebnis von" to make that possible
-		if p.match(token.DAS) { // if there is no alias, we check the optional "das Ergebnis von" syntax
-			p.consumeN(token.ERGEBNIS, token.VON)
-		}
-		expr = p.expression() // and parse the expression
-	}
+	speichere := p.previous() // Speichere token
+	expr := p.expression()
 	p.consumeN(token.IN, token.IDENTIFIER)
 	name := p.assigneable() // name of the variable is the just consumed identifier
+
 	// for booleans, the ist wahr/falsch wenn syntax should be used
 	// TODO: fix this
 	/*if typ := p.typechecker.Evaluate(name); typ == token.BOOLEAN {

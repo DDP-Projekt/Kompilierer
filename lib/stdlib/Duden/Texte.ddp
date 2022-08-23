@@ -43,7 +43,7 @@ Die Funktion EnthältText mit den Parametern text und suchText vom Typ Text und 
 		Wenn subtext gleich suchText ist, dann:
 			Gib wahr zurück.
 		
-		Speichere das Ergebnis von startIndex plus die Länge von suchText in endIndex.
+		Speichere startIndex plus die Länge von suchText in endIndex.
 		Erhöhe startIndex um 1.
 	Gib falsch zurück.
 Und kann so benutzt werden:
