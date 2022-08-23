@@ -755,13 +755,17 @@ func (p *Parser) ifStatement() ast.Statement {
 	var Else ast.Statement = nil
 	// parse a possible sonst statement
 	if p.match(token.SONST) {
-		if p.match(token.COLON) {
-			Else = p.blockStatement() // with colon it is a block statement
-		} else { // without it we just parse a single statement
-			Else = p.declaration()
+		if p.previous().Indent == If.Indent {
+			if p.match(token.COLON) {
+				Else = p.blockStatement() // with colon it is a block statement
+			} else { // without it we just parse a single statement
+				Else = p.declaration()
+			}
+		} else {
+			p.decrease()
 		}
 	} else if p.match(token.WENN) { // if-else blocks are parsed as nested ifs where the else of the first if is an if-statement
-		if p.peek().Type == token.ABER {
+		if p.previous().Indent == If.Indent && p.peek().Type == token.ABER {
 			p.consume(token.ABER)
 			Else = p.ifStatement() // parse the wenn aber
 		} else {

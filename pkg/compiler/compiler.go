@@ -1639,72 +1639,37 @@ func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
 func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	var handleIf func(*ast.IfStmt, *ir.Block) // declaration to use it recursively for nested else-ifs
-	// inner function to handle if-else blocks (we need to pass the leaveBlock down the chain)
-	handleIf = func(s *ast.IfStmt, leaveBlock *ir.Block) {
-		cbb := c.cbb // saved for later
-
-		// compile the thenBlock
-		// we compile it first and safe it to jump to it later
-		thenBlock := c.cf.NewBlock("")
-		c.comment("thenBlock", thenBlock)
-		c.cbb, c.scp = thenBlock, newScope(c.scp) // with its own scope
-		c.visitNode(s.Then)
-		thenLeave := c.cbb                     // if there are nested loops etc, the thenBlock might not be the block at the end of s.Then
-		c.cbb, c.scp = cbb, c.exitScope(c.scp) // revert the scope and block
-
-		if s.Else != nil { // handle else and possible else-ifs
-			elseBlock := c.cf.NewBlock("")
-			c.comment("elseBlock", elseBlock)
-			if leaveBlock == nil { // if we don't have a leaveBlock, make one
-				leaveBlock = c.cf.NewBlock("")
-				c.comment("leaveBlock", leaveBlock)
-			}
-			c.cbb, c.scp = elseBlock, newScope(c.scp) // the else block has its own scope as well
-			// either execute the else statement or handle the else-if with our leaveBlock
-			if elseIf, ok := s.Else.(*ast.IfStmt); ok {
-				handleIf(elseIf, leaveBlock) // recursively handle if-else statements (wenn aber)
-			} else {
-				c.visitNode(s.Else) // handle only the else
-			}
-
-			if c.cbb != leaveBlock && c.cbb.Term == nil { // I don't understand this, maybe you do
-				c.commentNode(c.cbb, s, "")
-				c.cbb.NewBr(leaveBlock)
-			}
-			c.cbb, c.scp = cbb, c.exitScope(c.scp) // exit the else scope and restore the block before the if
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, elseBlock) // jump with the condition
-
-			// add a terminator
-			if thenLeave.Term == nil {
-				c.commentNode(c.cbb, s, "")
-				thenLeave.NewBr(leaveBlock)
-			}
-			if elseBlock.Term == nil {
-				c.commentNode(c.cbb, s, "")
-				elseBlock.NewBr(leaveBlock)
-			}
-
-			c.cbb = leaveBlock // continue compilation in the leave block
-		} else { // if there is no else we just conditionally execute the then block
-			if leaveBlock == nil { // if we don't already have a leaveBlock make one
-				leaveBlock = c.cf.NewBlock("")
-				c.comment("leaveBlock", leaveBlock)
-			}
-			// no else, so jump to then or leave
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewCondBr(c.evaluate(s.Condition), thenBlock, leaveBlock)
-			// we need a terminator (simply jump after the then block)
-			if thenLeave.Term == nil {
-				c.commentNode(c.cbb, s, "")
-				thenLeave.NewBr(leaveBlock)
-			}
-			c.cbb = leaveBlock // continue compilation in the leave block
-		}
+	cond := c.evaluate(s.Condition)
+	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+	c.commentNode(c.cbb, s, "")
+	if s.Else != nil {
+		c.cbb.NewCondBr(cond, thenBlock, elseBlock)
+	} else {
+		c.cbb.NewCondBr(cond, thenBlock, leaveBlock)
 	}
 
-	handleIf(s, nil) // begin the recursive compilation of the if statement
+	c.cbb, c.scp = thenBlock, newScope(c.scp)
+	c.visitNode(s.Then)
+	if c.cbb.Term == nil {
+		c.commentNode(c.cbb, s, "")
+		c.cbb.NewBr(leaveBlock)
+	}
+	c.scp = c.exitScope(c.scp)
+
+	if s.Else != nil {
+		c.cbb, c.scp = elseBlock, newScope(c.scp)
+		c.visitNode(s.Else)
+		if c.cbb.Term == nil {
+			c.commentNode(c.cbb, s, "")
+			c.cbb.NewBr(leaveBlock)
+		}
+		c.scp = c.exitScope(c.scp)
+	} else {
+		elseBlock.NewUnreachable()
+	}
+
+	c.cbb = leaveBlock
+
 	return c
 }
 
