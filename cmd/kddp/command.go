@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
@@ -28,6 +29,7 @@ var commands = []Command{
 	NewInterpretCommand(),
 	NewBuildCommand(),
 	NewParseCommand(),
+	NewVersionCommand(),
 }
 
 // $kddp interpret walks the parsed ast and executes it
@@ -381,4 +383,66 @@ func (cmd *ParseCommand) Usage() string {
 	return `parse <filepath> <options>: parse the specified ddp file into a ddp ast
 options:
 	-o <filepath>: specify the name of the output file; if none is set output is written to the terminal`
+}
+
+// $kddp version provides information about the version of the used kddp build
+type VersionCommand struct {
+	fs         *flag.FlagSet
+	verbose    bool
+	build_info bool
+}
+
+func NewVersionCommand() *VersionCommand {
+	return &VersionCommand{
+		fs: flag.NewFlagSet("version", flag.ExitOnError),
+	}
+}
+
+func (cmd *VersionCommand) Init(args []string) error {
+	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "show verbose output for all versions")
+	cmd.fs.BoolVar(&cmd.build_info, "build_info", false, "show go build info")
+	return cmd.fs.Parse(args)
+}
+
+var (
+	DDPVERSION     string = "undefined"
+	LLVMVERSION    string = "undefined"
+	GCCVERSION     string = "undefined"
+	GCCVERSIONFULL string = "undefined"
+)
+
+func (cmd *VersionCommand) Run() error {
+	fmt.Printf("ddp version: %s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
+
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		fmt.Printf("go version: %s\n", bi.GoVersion)
+		if cmd.build_info {
+			fmt.Printf("go build info:\n")
+			for _, v := range bi.Settings {
+				fmt.Printf("%s: %s\n", v.Key, v.Value)
+			}
+		}
+	} else {
+		fmt.Println("No go version available")
+	}
+
+	if cmd.verbose && GCCVERSIONFULL != "undefined" {
+		fmt.Printf("gcc version: %s\n", GCCVERSIONFULL)
+	} else {
+		fmt.Printf("gcc version: %s\n", GCCVERSION)
+	}
+	fmt.Printf("llvm version: %s\n", LLVMVERSION)
+
+	return nil
+}
+
+func (cmd *VersionCommand) Name() string {
+	return cmd.fs.Name()
+}
+
+func (cmd *VersionCommand) Usage() string {
+	return `version <options>: display version information for kddp
+options:
+	--verbose: show verbose output for all versions
+	--build_info: show go build info`
 }

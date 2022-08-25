@@ -22,6 +22,13 @@ endif
 
 OUT_DIR := build/
 
+DDPVERSION := DEV
+LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
+GCCVERSION := $(shell gcc -dumpfullversion)
+GCCVERSIONFULL := $(shell gcc --version | head -n1)
+
+LDFLAGS := "-X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'"
+
 build: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
 build: export CGO_CXXFLAGS = -std=c++14
 build: export CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
@@ -29,7 +36,7 @@ build: export CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-lib
 all: build
 
 build: make_out_dir
-	go build -o $(OUT_DIR)$(OUT_FILE_NAME) -tags byollvm
+	go build -o $(OUT_DIR)$(OUT_FILE_NAME) -tags byollvm -ldflags $(LDFLAGS)
 
 make_out_dir:
 	mkdir -p $(OUT_DIR)

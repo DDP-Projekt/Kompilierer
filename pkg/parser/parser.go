@@ -1045,6 +1045,7 @@ func (p *Parser) boolAND() ast.Expression {
 	return expr
 }
 
+// TODO: fix funcCall precedence
 func (p *Parser) trigo() ast.Expression {
 	if p.match(token.DER) {
 		start := p.previous()
