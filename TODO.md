@@ -8,7 +8,8 @@
 - [x] Index Operator (an der Stelle)
 - [x] Slice Operator (von bis)
 - [x] String/Listen Operatoren (basic)
-- [ ] String/Listen Operatoren (stdlib)
+- [X] Listen Operatoren (stdlib)
+- [ ] String Operatoren (stdlib)
 
 ## Allgemein
 - [x] do-while loops
@@ -22,9 +23,6 @@
 
 ## Sonstiges
 - [x] Standardbibliothek (Duden)
-
-## Irgendwann
-- [ ] Arrays 
 
 # Feature Ideen
 - [x] Function overloading (muss noch getestet werden)

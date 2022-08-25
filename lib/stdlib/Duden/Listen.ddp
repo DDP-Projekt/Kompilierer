@@ -1,0 +1,297 @@
+[ Zahlen Listen Funktionen]
+Die Funktion clearZ mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Zahlen Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+Die Funktion addZ mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste verkettet mit elm in liste.
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an"
+
+Die Funktion insertZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+Die Funktion insertRangeZ mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Listen Referenz, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+Die Funktion prependZ mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere elm verkettet mit liste in liste.
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+Die Funktion removeZ mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+Die Funktion removeRangeZ mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+Die Funktion fillZ mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Die Zahlen Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+Die Funktion indexOfZ mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+Die Funktion containsZ mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
+	Für jede Zahl z in liste, Wenn z gleich elm ist, Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> enthält"
+
+Die Funktion emptyZ mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
+	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+Und kann so benutzt werden:
+	"<liste> leer ist"
+
+
+[ Kommazahlen Listen Funktionen]
+Die Funktion clearK mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Kommazahlen Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+Die Funktion addK mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+	Speichere liste verkettet mit elm in liste.
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an"
+
+Die Funktion insertK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+Die Funktion insertRangeK mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Listen Referenz, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+Die Funktion prependK mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+	Speichere elm verkettet mit liste in liste.
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+Die Funktion removeK mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+Die Funktion removeRangeK mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+Die Funktion fillK mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+	Die Kommazahlen Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+Die Funktion indexOfK mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+Die Funktion containsK mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
+	Für jede Kommazahl z in liste, Wenn z gleich elm ist, Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> enthält"
+
+Die Funktion emptyK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
+	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+Und kann so benutzt werden:
+	"<liste> leer ist"
+
+[ Boolean Listen Funktionen ]
+Die Funktion clearB mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Boolean Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+Die Funktion addB mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+	Speichere liste verkettet mit elm in liste.
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an"
+
+Die Funktion insertB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+Die Funktion insertRangeB mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Listen Referenz, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+Die Funktion prependB mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+	Speichere elm verkettet mit liste in liste.
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+Die Funktion removeB mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+Die Funktion removeRangeB mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+Die Funktion fillB mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+	Die Boolean Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+Die Funktion indexOfB mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+Die Funktion containsB mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
+	Für jede Boolean b in liste, Wenn b gleich elm ist, Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> enthält"
+
+Die Funktion emptyB mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
+	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+Und kann so benutzt werden:
+	"<liste> leer ist"
+
+
+[ Buchstaben Listen Funktionen ]
+Die Funktion clearC mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Buchstaben Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+Die Funktion addC mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+	Speichere liste verkettet mit elm in liste.
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an"
+
+Die Funktion insertC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+Die Funktion insertRangeC mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Listen Referenz, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+Die Funktion prependC mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+	Speichere elm verkettet mit liste in liste.
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+Die Funktion removeC mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+Die Funktion removeRangeC mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+Die Funktion fillC mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+	Die Buchstaben Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+Die Funktion indexOfC mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+Die Funktion containsC mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
+	Für jede Buchstabe b in liste, Wenn b gleich elm ist, Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> enthält"
+
+Die Funktion emptyC mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
+	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+Und kann so benutzt werden:
+	"<liste> leer ist"
+
+
+[ Text Listen Funktionen ]
+Die Funktion clearT mit dem Parameter liste vom Typ Text Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Text Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+Die Funktion addT mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+	Speichere liste verkettet mit elm in liste.
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an"
+
+Die Funktion insertT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+Die Funktion insertRangeT mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Listen Referenz, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+Die Funktion prependT mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+	Speichere elm verkettet mit liste in liste.
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+Die Funktion removeT mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+Die Funktion removeRangeT mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+Die Funktion fillT mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+	Die Text Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+Die Funktion indexOfT mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+Die Funktion containsT mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
+	Für jede Text t in liste, Wenn t gleich elm ist, Gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> enthält"
+
+Die Funktion emptyT mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
+	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+Und kann so benutzt werden:
+	"<liste> leer ist"

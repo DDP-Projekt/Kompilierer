@@ -1,0 +1,176 @@
+Binde "Duden/Listen" ein.
+Binde "Duden/Ausgabe" ein.
+
+[ Listen initialisieren ]
+Die Zahlen Liste listZ ist eine Liste, die aus 1, 4, 5 besteht.
+Die Kommazahlen Liste listK ist eine Liste, die aus 3,14, 0,183, 2,5 besteht.
+Die Boolean Liste listB ist eine Liste, die aus wahr, falsch, wahr besteht.
+Die Buchstaben Liste listC ist eine Liste, die aus 'a', 'b', 'c' besteht.
+Die Text Liste listT ist eine Liste, die aus "hi", "yo", "test" besteht.
+
+Schreibe den Text "-- contains tests --" auf eine Zeile.
+[ contains tests]
+Schreibe (listZ 4 enthält) auf eine Zeile.
+Schreibe (listK 0,183 enthält) auf eine Zeile.
+Schreibe (listB falsch enthält) auf eine Zeile.
+Schreibe (listC 'b' enthält) auf eine Zeile.
+Schreibe (listT "yo" enthält) auf eine Zeile.
+
+Schreibe den Text "-- indexOf tests --" auf eine Zeile.
+[ indexOf tests ]
+Schreibe (der Index von 1 in listZ) auf eine Zeile.
+Schreibe (der Index von 2,5 in listK) auf eine Zeile.
+Schreibe (der Index von wahr in listB) auf eine Zeile.
+Schreibe (der Index von 'b' in listC) auf eine Zeile.
+Schreibe (der Index von "test" in listT) auf eine Zeile.
+Schreibe (der Index von "invalid" in listT) auf eine Zeile.
+
+Schreibe den Text "-- add tests --" auf eine Zeile.
+[ add tests ]
+Füge 9 an listZ an.
+Füge 5,5 an listK an.
+Füge falsch an listB an.
+Füge 'd' an listC an.
+Füge "neu" an listT an.
+
+Schreibe (listZ an der Stelle 4) auf eine Zeile.
+Schreibe (listK an der Stelle 4) auf eine Zeile.
+Schreibe (listB an der Stelle 4) auf eine Zeile.
+Schreibe (listC an der Stelle 4) auf eine Zeile.
+Schreibe (listT an der Stelle 4) auf eine Zeile.
+
+Schreibe den Text "-- insert tests --" auf eine Zeile.
+[ insert tests ]
+Setze 3 an die Stelle 2 von listZ.
+Setze 0,1 an die Stelle 2 von listK.
+Setze falsch an die Stelle 2 von listB.
+Setze '0' an die Stelle 2 von listC.
+Setze "world" an die Stelle 2 von listT.
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- insert range tests --" auf eine Zeile.
+[ insert range tests ]
+Setze die Elemente in listZ an die Stelle 3 von listZ.
+Setze die Elemente in listK an die Stelle 3 von listK.
+Setze die Elemente in listB an die Stelle 3 von listB.
+Setze die Elemente in listC an die Stelle 3 von listC.
+Setze die Elemente in listT an die Stelle 3 von listT.
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- remove tests --" auf eine Zeile.
+[ remove tests ]
+Lösche das Element an der Stelle 2 aus listZ.
+Lösche das Element an der Stelle 2 aus listK.
+Lösche das Element an der Stelle 2 aus listB.
+Lösche das Element an der Stelle 2 aus listC.
+Lösche das Element an der Stelle 2 aus listT.
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- remove range tests --" auf eine Zeile.
+[ remove range tests ]
+Lösche alle Elemente von 2 bis 6 aus listZ.
+Lösche alle Elemente von 2 bis 6 aus listK.
+Lösche alle Elemente von 2 bis 6 aus listB.
+Lösche alle Elemente von 2 bis 6 aus listC.
+Lösche alle Elemente von 2 bis 6 aus listT.
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- prepend tests --" auf eine Zeile.
+[ prepend tests ]
+Stelle 8 vor listZ.
+Stelle 8,5 vor listK.
+Stelle wahr vor listB.
+Stelle '8' vor listC.
+Stelle "8" vor listT.
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- fill tests --" auf eine Zeile.
+[ fill tests ]
+Fülle listZ mit 0.
+Fülle listK mit 0,0.
+Fülle listB mit falsch.
+Fülle listC mit 'x'.
+Fülle listT mit "lol".
+
+Schreibe listZ.
+Schreibe '\n'.
+Schreibe listK.
+Schreibe '\n'.
+Schreibe listB.
+Schreibe '\n'.
+Schreibe listC.
+Schreibe '\n'.
+Schreibe listT.
+Schreibe '\n'.
+
+Schreibe den Text "-- clear tests --" auf eine Zeile.
+[ clear tests ]
+Leere listZ.
+Leere listK.
+Leere listB.
+Leere listC.
+Leere listT.
+
+Schreibe listZ.
+Schreibe listK.
+Schreibe listB.
+Schreibe listC.
+Schreibe listT.
+
+Schreibe den Text "-- empty tests --" auf eine Zeile.
+[empty test]
+Schreibe den Boolean (listZ leer ist) auf eine Zeile.
+Schreibe den Boolean (listK leer ist) auf eine Zeile.
+Schreibe den Boolean (listB leer ist) auf eine Zeile.
+Schreibe den Boolean (listC leer ist) auf eine Zeile.
+Schreibe den Boolean (listT leer ist).
