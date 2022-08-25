@@ -21,11 +21,13 @@ void free_{{ .T }}({{ .T }}* list) {
 
 {{ .T }}* inbuilt_deep_copy_{{ .T }}({{ .T }}* list) {
 	DBGLOG("inbuilt_deep_copy_{{ .T }}: %p", list);
-	{{ .E }}* cpy = ALLOCATE({{ .E }}, list->cap); // allocate the element array for the copy
-	memcpy(cpy, list->arr, sizeof({{ .E }}) * list->cap); // copy the chars
+	{{ .E }}* cpy = ALLOCATE({{ .E }}, {{ if .D}}list->len{{else}}list->cap{{end}}); // allocate the element array for the copy
+	{{ if not .D }}
+	memcpy(cpy, list->arr, sizeof({{ .E }}) * list->cap); // copy the elements
+	{{end}}
 	{{if .D}}
 	for (size_t i = 0; i < list->len; i++) {
-		cpy[i] = inbuilt_deep_copy_string(cpy[i]);
+		cpy[i] = inbuilt_deep_copy_string(list->arr[i]);
 		inbuilt_increment_ref_count(cpy[i], VK_STRING);
 	}
 	{{end}}
@@ -33,7 +35,7 @@ void free_{{ .T }}({{ .T }}* list) {
 	// set the fields of the copy
 	cpylist->arr = cpy;
 	cpylist->len = list->len;
-	cpylist->cap = list->cap;
+	cpylist->cap = {{ if .D}}list->len{{else}}list->cap{{end}};
 	return cpylist;
 }
 {{end}}

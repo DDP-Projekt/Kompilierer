@@ -43,9 +43,10 @@ ddpbool inbuilt_{{ .T }}_equal({{ .T }}* list1, {{ .T }}* list2) {
 	{{ .E }}* arr = ALLOCATE({{ .E }}, new_list_cap);
 
 	{{if .D}}
-	for (size_t i = index1; i <= index2 && i < list->len; i++) {
-		arr[i] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(arr[i], VK_STRING);
+	size_t j = 0;
+	for (size_t i = index1; i <= index2 && i < list->len; i++, j++) {
+		arr[j] = inbuilt_deep_copy_string(list->arr[i]);
+		inbuilt_increment_ref_count(arr[j], VK_STRING);
 	}
 	{{else}}
 	memcpy(arr, &list->arr[index1], sizeof({{ .E }}) * new_list_cap);

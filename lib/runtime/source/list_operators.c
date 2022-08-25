@@ -151,7 +151,6 @@ ddpstring* inbuilt_ddpstringlist_to_string(ddpstringlist* list) {
 }
 
 /***** Partially generated code *****/
-
 extern ddpbool inbuilt_string_equal(ddpstring*, ddpstring*);
 extern ddpstring* inbuilt_deep_copy_string(ddpstring*);
 
@@ -575,9 +574,10 @@ ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, d
 	ddpstring** arr = ALLOCATE(ddpstring*, new_list_cap);
 
 	
-	for (size_t i = index1; i <= index2 && i < list->len; i++) {
-		arr[i] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(arr[i], VK_STRING);
+	size_t j = 0;
+	for (size_t i = index1; i <= index2 && i < list->len; i++, j++) {
+		arr[j] = inbuilt_deep_copy_string(list->arr[i]);
+		inbuilt_increment_ref_count(arr[j], VK_STRING);
 	}
 	
 

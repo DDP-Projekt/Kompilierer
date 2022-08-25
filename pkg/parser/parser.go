@@ -718,12 +718,6 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 	expr := p.expression()
 	p.consumeN(token.IN, token.IDENTIFIER)
 	name := p.assigneable() // name of the variable is the just consumed identifier
-
-	// for booleans, the ist wahr/falsch wenn syntax should be used
-	// TODO: fix this
-	/*if typ := p.typechecker.Evaluate(name); typ == token.BOOLEAN {
-		p.err(name.Token(), "Variablen vom Typ 'BOOLEAN' sind hier nicht zulässig")
-	}*/
 	return p.finishStatement(
 		&ast.AssignStmt{
 			Range: token.NewRange(speichere, p.peek()),
