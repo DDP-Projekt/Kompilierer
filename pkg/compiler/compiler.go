@@ -118,16 +118,24 @@ func err(msg string, args ...any) {
 	panic(fmt.Errorf("%s, %d: %s", filepath.Base(file), line, fmt.Sprintf(msg, args...)))
 }
 
+// if the llvm-ir should be commented
+// increases the intermediate file size
+var Comments_Enabled = true
+
 func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
-	comment := fmt.Sprintf("File %s, Line %d, Column %d: %s", node.Token().File, node.Token().Line, node.Token().Column, node)
-	if details != "" {
-		comment += " (" + details + ")"
+	if Comments_Enabled {
+		comment := fmt.Sprintf("F %s, %d:%d: %s", node.Token().File, node.Token().Line, node.Token().Column, node)
+		if details != "" {
+			comment += " (" + details + ")"
+		}
+		block.Insts = append(block.Insts, irutil.NewComment(comment))
 	}
-	block.Insts = append(block.Insts, irutil.NewComment(comment))
 }
 
 func (c *Compiler) comment(comment string, block *ir.Block) {
-	block.Insts = append(block.Insts, irutil.NewComment(comment))
+	if Comments_Enabled {
+		block.Insts = append(block.Insts, irutil.NewComment(comment))
+	}
 }
 
 // helper to visit a single node

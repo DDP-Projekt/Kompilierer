@@ -232,6 +232,11 @@ func (cmd *BuildCommand) Run() error {
 		}
 	}
 
+	// disable comments if the .ll files are deleted anyways
+	if compOutType != compiler.OutputIR && !cmd.nodeletes {
+		compiler.Comments_Enabled = false
+	}
+
 	// create the path to the output file
 	if cmd.outPath == "" { // if no output file was specified, we use the name of the input .ddp file
 		cmd.outPath = changeExtension(cmd.filePath, extension)
