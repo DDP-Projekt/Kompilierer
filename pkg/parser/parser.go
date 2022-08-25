@@ -205,9 +205,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	p.consume(token.IST)
 	var expr ast.Expression
 
-	if typ == token.DDPBoolType() {
-		expr = p.assignRhs() // handle booleans seperately (wahr/falsch wenn)
-	} else if typ.IsList { // TODO: fix this with function calls and groupings
+	if typ != token.DDPBoolType() && typ.IsList { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.match(token.LIST_MAL) {
 			value := p.expression()
@@ -221,7 +219,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 			}
 		}
 	} else {
-		expr = p.expression()
+		expr = p.assignRhs()
 	}
 
 	p.consume(token.DOT)
@@ -699,12 +697,10 @@ func (p *Parser) assignLiteral() ast.Statement {
 	// validate that the expression is a literal
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
-	case ast.Assigneable:
+	default:
 		if typ := p.typechecker.Evaluate(ident); typ != token.DDPBoolType() {
 			p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
-	default:
-		p.err(expr.Token(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 	}
 	return p.finishStatement(
 		&ast.AssignStmt{
