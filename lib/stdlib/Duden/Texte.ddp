@@ -1,7 +1,6 @@
 Die Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist 1.
-	Solange (text an der Stelle index) gleich zeichen ist, mache:
-		Erhöhe index um 1.
+	Solange (text an der Stelle index) gleich zeichen ist, erhöhe index um 1.
 	Speichere text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor <text>"
@@ -14,8 +13,7 @@ Und kann so benutzt werden:
 
 Die Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist die Länge von text.
-	Solange (text an der Stelle index) gleich zeichen ist, mache:
-		Verringere index um 1.
+	Solange (text an der Stelle index) gleich zeichen ist, verringere index um 1.
 	Speichere text von 1 bis index in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> nach <text>"
@@ -29,10 +27,8 @@ Und kann so benutzt werden:
 Die Funktion Trim mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl startIndex ist 1.
 	Die Zahl stopIndex ist die Länge von text.
-	Solange (text an der Stelle startIndex) gleich zeichen ist, mache:
-		Erhöhe startIndex um 1.
-	Solange (text an der Stelle stopIndex) gleich zeichen ist, mache:
-		Verringere stopIndex um 1.
+	Solange (text an der Stelle startIndex) gleich zeichen ist, erhöhe startIndex um 1.
+	Solange (text an der Stelle stopIndex) gleich zeichen ist, verringere stopIndex um 1.
 	Speichere text von startIndex bis stopIndex in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor und nach <text>"
@@ -44,9 +40,7 @@ Und kann so benutzt werden:
 	"<text> mit allen <zeichen> davor und danach entfernt"
 
 Die Funktion EnthältBuchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
-	Für jeden Buchstaben b in text, mache:
-		Wenn b gleich zeichen ist, dann:
-			Gib wahr zurück.
+	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<text> <zeichen> enthält"
@@ -58,8 +52,7 @@ Die Funktion EnthältText mit den Parametern text und suchText vom Typ Text und 
 	Solange endIndex kleiner als, oder die Länge von text ist, mache:
 		Der Text subtext ist text von startIndex bis endIndex.
 
-		Wenn subtext gleich suchText ist, dann:
-			Gib wahr zurück.
+		Wenn subtext gleich suchText ist, gib wahr zurück.
 		
 		Speichere startIndex plus die Länge von suchText in endIndex.
 		Erhöhe startIndex um 1.

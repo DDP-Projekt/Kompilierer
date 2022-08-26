@@ -41,13 +41,13 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion indexOfZ mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Für jede Zahl i von 1 bis die Länge von liste, wenn liste an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 Die Funktion containsZ mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
-	Für jede Zahl z in liste, Wenn z gleich elm ist, Gib wahr zurück.
+	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
@@ -107,7 +107,7 @@ Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 Die Funktion containsK mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
-	Für jede Kommazahl z in liste, Wenn z gleich elm ist, Gib wahr zurück.
+	Für jede Kommazahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
@@ -166,7 +166,7 @@ Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 Die Funktion containsB mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
-	Für jede Boolean b in liste, Wenn b gleich elm ist, Gib wahr zurück.
+	Für jeden Boolean b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
@@ -226,7 +226,7 @@ Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 Die Funktion containsC mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
-	Für jede Buchstabe b in liste, Wenn b gleich elm ist, Gib wahr zurück.
+	Für jeden Buchstaben b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
@@ -286,7 +286,7 @@ Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 Die Funktion containsT mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
-	Für jede Text t in liste, Wenn t gleich elm ist, Gib wahr zurück.
+	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"

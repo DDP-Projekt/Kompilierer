@@ -1,25 +1,25 @@
 Die Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
-	Wenn a größer als, oder b ist, Gib a zurück.
+	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
 Die Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
-	Wenn a kleiner als, oder b ist, Gib a zurück.
+	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
 
 Die Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
-	Wenn wert größer als max ist, Gib max zurück.
-	Wenn wert kleiner als min ist, Gib min zurück.
+	Wenn wert größer als max ist, gib max zurück.
+	Wenn wert kleiner als min ist, gib min zurück.
 	Gib wert zurück.
 Und kann so benutzt werden:
 	"die Zahl <wert> zwischen <min> und <max>"
 
 Die Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
-	Wenn wert kleiner als 0 ist, Gib -1 zurück.
-	Wenn aber wert größer als 0 ist, Gib 1 zurück.
+	Wenn wert kleiner als 0 ist, gib -1 zurück.
+	Wenn aber wert größer als 0 ist, gib 1 zurück.
 	Gib 0 zurück.
 Und kann so benutzt werden:
 	"das Vorzeichen von <wert>"
