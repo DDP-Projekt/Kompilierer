@@ -512,7 +512,6 @@ func (p *Parser) aliasExists(alias []token.Token) *string {
 }
 
 func (p *Parser) aliasDecl() ast.Statement {
-	begin := p.peekN(-2)
 	p.consume(token.STRING)
 	aliasTok := p.previous()
 	p.consumeN(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
@@ -520,13 +519,8 @@ func (p *Parser) aliasDecl() ast.Statement {
 
 	funDecl, ok := p.resolver.CurrentTable.LookupFunc(fun.Literal)
 	if !ok {
-		msg := fmt.Sprintf("Die Funktion %s existiert nicht", fun.Literal)
-		p.err(fun, msg)
-		return &ast.BadStmt{
-			Range:   token.NewRange(begin, fun),
-			Tok:     fun,
-			Message: msg,
-		}
+		p.err(fun, "Die Funktion %s existiert nicht", fun.Literal)
+		return nil
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
