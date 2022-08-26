@@ -467,7 +467,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 
 	// append all the other parameters
 	for i, typ := range d.ParamTypes {
-		ty := toIRTypeRef(typ, d.IsReference[i])                          // convert the type of the parameter
+		ty := toIRTypeRef(typ)                                            // convert the type of the parameter
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
@@ -491,8 +491,8 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
-			irType := toIRType(d.ParamTypes[i])
-			if d.IsReference[i] {
+			irType := toIRType(d.ParamTypes[i].Type)
+			if d.ParamTypes[i].IsReference {
 				// references are implemented similar to name-shadowing
 				// they basically just get another name in the function scope, which
 				// refers to the same variable allocation
@@ -1519,7 +1519,7 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 		var val value.Value
 
 		// differentiate between references and normal parameters
-		if fun.funcDecl.IsReference[i] {
+		if fun.funcDecl.ParamTypes[i].IsReference {
 			switch assign := e.Args[param.Literal].(type) {
 			case *ast.Ident:
 				val = c.scp.lookupVar(assign.Literal.Literal).val // get the variable

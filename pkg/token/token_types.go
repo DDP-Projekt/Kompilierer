@@ -137,6 +137,8 @@ const (
 	EINER
 	VERLASSE
 	LIST_MAL
+	ALIAS
+	STEHT
 
 	DOT    // .
 	COMMA  // ,
@@ -282,6 +284,8 @@ var tokenStrings = [...]string{
 	EINER:        "EINER",
 	VERLASSE:     "VERLASSE",
 	LIST_MAL:     "LIST_MAL",
+	ALIAS:        "ALIAS",
+	STEHT:        "STEHT",
 
 	DOT:    "DOT",
 	COMMA:  "COMMA",
@@ -419,6 +423,8 @@ var keywordMap = map[string]TokenType{
 	"einer":           EINER,
 	"verlasse":        VERLASSE,
 	"Mal":             LIST_MAL,
+	"Alias":           ALIAS,
+	"steht":           STEHT,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

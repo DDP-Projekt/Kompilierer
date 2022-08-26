@@ -107,11 +107,8 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 	t.funcArgs[decl.Name.Literal] = make(map[string]token.ArgType)
-	for i, l := 0, len(decl.ParamNames); i < l; i++ {
-		t.funcArgs[decl.Name.Literal][decl.ParamNames[i].Literal] = token.ArgType{
-			Type:        decl.ParamTypes[i],
-			IsReference: decl.IsReference[i],
-		}
+	for i, arg := range decl.ParamNames {
+		t.funcArgs[decl.Name.Literal][arg.Literal] = decl.ParamTypes[i]
 	}
 
 	if !ast.IsExternFunc(decl) {

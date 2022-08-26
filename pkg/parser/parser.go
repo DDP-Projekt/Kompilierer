@@ -82,11 +82,13 @@ func (p *Parser) Parse() *ast.Ast {
 
 	// main parsing loop
 	for !p.atEnd() {
-		stmt := p.declaration()                       // parse the node
-		p.resolver.ResolveNode(stmt)                  // resolve symbols in it (variables, functions, ...)
-		p.typechecker.TypecheckNode(stmt)             // typecheck the node
-		Ast.Statements = append(Ast.Statements, stmt) // add it to the ast
-		if p.panicMode {                              // synchronize the parsing if we are in panic mode
+		stmt := p.declaration() // parse the node
+		if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
+			p.resolver.ResolveNode(stmt)                  // resolve symbols in it (variables, functions, ...)
+			p.typechecker.TypecheckNode(stmt)             // typecheck the node
+			Ast.Statements = append(Ast.Statements, stmt) // add it to the ast
+		}
+		if p.panicMode { // synchronize the parsing if we are in panic mode
 			p.synchronize()
 		}
 	}
@@ -127,6 +129,9 @@ func (p *Parser) declaration() ast.Statement {
 			case token.BOOLEAN, token.TEXT, token.BUCHSTABE:
 				p.advance()                                    // consume the type
 				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
+			case token.ALIAS:
+				p.advance()
+				return p.aliasDecl()
 			default:
 				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
@@ -263,8 +268,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
-	var paramTypes []token.DDPType = nil
-	var isReference []bool = nil
+	var paramTypes []token.ArgType = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
 		if p.matchN(token.DEN, token.PARAMETERN) {
@@ -303,15 +307,13 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		validate(p.consumeN(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
 		validate(firstType.PrimitiveType != token.ILLEGAL)
-		paramTypes = append(make([]token.DDPType, 0), firstType) // append the first parameter type
-		isReference = append(make([]bool, 0), ref)
+		paramTypes = append(make([]token.ArgType, 0), token.ArgType{Type: firstType, IsReference: ref}) // append the first parameter type
 		if !singleParameter {
 			addType := func() {
 				// validate the parameter type and append it
 				typ, ref := p.parseReferenceType()
 				validate(typ.PrimitiveType != token.ILLEGAL)
-				paramTypes = append(paramTypes, typ)
-				isReference = append(isReference, ref)
+				paramTypes = append(paramTypes, token.ArgType{Type: typ, IsReference: ref})
 			}
 			if p.match(token.UND) {
 				addType()
@@ -380,10 +382,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	argTypes := map[string]token.ArgType{}
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			argTypes[v.Literal] = token.ArgType{
-				Type:        paramTypes[i],
-				IsReference: isReference[i],
-			}
+			argTypes[v.Literal] = paramTypes[i]
 		}
 	}
 
@@ -396,7 +395,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		} else {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				perr(v, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if validateAlias(alias, paramNames, paramTypes, isReference) { // check that the alias fits the function
+			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
@@ -436,7 +435,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, paramTypes[i])
+			bodyTable.InsertVar(paramNames[i].Literal, paramTypes[i].Type)
 		}
 		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
 
@@ -462,20 +461,19 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
 	return &ast.FuncDecl{
-		Range:       token.NewRange(begin, p.previous()),
-		Func:        Funktion,
-		Name:        name,
-		ParamNames:  paramNames,
-		ParamTypes:  paramTypes,
-		IsReference: isReference,
-		Type:        Typ,
-		Body:        body,
-		ExternFile:  definedIn,
+		Range:      token.NewRange(begin, p.previous()),
+		Func:       Funktion,
+		Name:       name,
+		ParamNames: paramNames,
+		ParamTypes: paramTypes,
+		Type:       Typ,
+		Body:       body,
+		ExternFile: definedIn,
 	}
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.DDPType, isReference []bool) bool {
+func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.ArgType) bool {
 	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
@@ -483,10 +481,7 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []t
 	nameSet := map[string]token.ArgType{} // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			nameSet[v.Literal] = token.ArgType{
-				Type:        paramTypes[i],
-				IsReference: isReference[i],
-			}
+			nameSet[v.Literal] = paramTypes[i]
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
@@ -513,6 +508,53 @@ func (p *Parser) aliasExists(alias []token.Token) *string {
 			return &p.funcAliases[i].Func
 		}
 	}
+	return nil
+}
+
+func (p *Parser) aliasDecl() ast.Statement {
+	begin := p.peekN(-2)
+	p.consume(token.STRING)
+	aliasTok := p.previous()
+	p.consumeN(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
+	fun := p.previous()
+
+	funDecl, ok := p.resolver.CurrentTable.LookupFunc(fun.Literal)
+	if !ok {
+		msg := fmt.Sprintf("Die Funktion %s existiert nicht", fun.Literal)
+		p.err(fun, msg)
+		return &ast.BadStmt{
+			Range:   token.NewRange(begin, fun),
+			Tok:     fun,
+			Message: msg,
+		}
+	}
+
+	// map function parameters to their type (given to the alias if it is valid)
+	argTypes := map[string]token.ArgType{}
+	for i, v := range funDecl.ParamNames {
+		if i < len(funDecl.ParamTypes) {
+			argTypes[v.Literal] = funDecl.ParamTypes[i]
+		}
+	}
+
+	// scan the raw alias withouth the ""
+	if alias, err := scanner.ScanAlias(aliasTok, p.errorHandler); err != nil {
+		p.err(aliasTok, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
+	} else {
+		if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+			p.err(aliasTok, "Ein Alias muss mindestens 1 Symbol enthalten")
+		} else if validateAlias(alias, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
+			if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
+				p.err(aliasTok, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
+			} else { // the alias is valid so we append it
+				p.funcAliases = append(p.funcAliases, funcAlias{Tokens: alias, Func: funDecl.Name.Literal, Args: argTypes})
+			}
+		} else {
+			p.err(aliasTok, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+		}
+	}
+
+	p.consume(token.DOT)
 	return nil
 }
 

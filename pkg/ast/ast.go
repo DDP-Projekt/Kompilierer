@@ -71,15 +71,14 @@ type (
 	}
 
 	FuncDecl struct {
-		Range       token.Range
-		Func        token.Token     // Funktion
-		Name        token.Token     // identifier name
-		ParamNames  []token.Token   // x, y und z
-		ParamTypes  []token.DDPType // Zahl, Text und Boolean
-		IsReference []bool          // maps to the indices of ParamNames and ParamTypes
-		Type        token.DDPType   // Zahl Kommazahl nichts ...
-		Body        *BlockStmt      // nil for extern functions
-		ExternFile  token.Token     // string literal with filepath (only pesent if Body is nil)
+		Range      token.Range
+		Func       token.Token     // Funktion
+		Name       token.Token     // identifier name
+		ParamNames []token.Token   // x, y und z
+		ParamTypes []token.ArgType // type, and wether the argument is a reference
+		Type       token.DDPType   // Zahl Kommazahl nichts ...
+		Body       *BlockStmt      // nil for extern functions
+		ExternFile token.Token     // string literal with filepath (only pesent if Body is nil)
 	}
 )
 
