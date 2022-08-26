@@ -28,33 +28,38 @@ und kann so benutzt werden:
 	"Schreibe den Text <p1>" oder
 	"Schreibe <p1>"
 
-Die Funktion SchreibeZeile_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die Funktion SchreibeZeile_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
 	"Schreibe die Zahl <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
-Die Funktion SchreibeZeile_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die Funktion SchreibeZeile_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
 	"Schreibe die Kommazahl <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
-Die Funktion SchreibeZeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die Funktion SchreibeZeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
 	"Schreibe den Boolean <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
-Die Funktion SchreibeZeile_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die Funktion SchreibeZeile_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
 	"Schreibe den Buchstaben <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
-Die Funktion SchreibeZeile_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die Funktion SchreibeZeile_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
 	"Schreibe den Text <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
@@ -142,3 +147,38 @@ Die Funktion Schreibe_Text_Liste mit dem Parameter p1 vom Typ Text Liste, gibt n
 Und kann so benutzt werden:
 	"Schreibe die Text Liste <p1>" oder
 	"Schreibe <p1>"
+
+Die Funktion Schreibe_Zahlen_Liste_Zeile mit dem Parameter p1 vom Typ Zahlen Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Zahlen Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+Die Funktion Schreibe_Kommazahlen_Liste_Zeile mit dem Parameter p1 vom Typ Kommazahlen Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Kommazahlen Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+Die Funktion Schreibe_Boolean_Liste_Zeile mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Boolean Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+Die Funktion Schreibe_Buchstaben_Liste_Zeile mit dem Parameter p1 vom Typ Buchstaben Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Buchstaben Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+Die Funktion Schreibe_Text_Liste_Zeile mit dem Parameter p1 vom Typ Text Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Text Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"

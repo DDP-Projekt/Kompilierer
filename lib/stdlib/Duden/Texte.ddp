@@ -1,29 +1,47 @@
-Die Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+Die Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist 1.
 	Solange (text an der Stelle index) gleich zeichen ist, mache:
 		Erhöhe index um 1.
-	Gib text von index bis (die Länge von text) zurück.
+	Speichere text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
-	"entferne alle <zeichen> vor <text>"
+	"Entferne alle <zeichen> vor <text>"
 
-Die Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+Die Funktion TrimAnfangWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+	Entferne alle zeichen vor text.
+	Gib text zurück.
+Und kann so benutzt werden:
+	"<text> mit allen <zeichen> davor entfernt"
+
+Die Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist die Länge von text.
 	Solange (text an der Stelle index) gleich zeichen ist, mache:
 		Verringere index um 1.
-	Gib text von 1 bis index zurück.
+	Speichere text von 1 bis index in text.
 Und kann so benutzt werden:
-	"entferne alle <zeichen> nach <text>"
+	"Entferne alle <zeichen> nach <text>"
 
-Die Funktion Trim mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+Die Funktion TrimEndeWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+	Entferne alle zeichen nach text.
+	Gib text zurück.
+Und kann so benutzt werden:
+	"<text> mit allen <zeichen> danach entfernt"
+
+Die Funktion Trim mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl startIndex ist 1.
 	Die Zahl stopIndex ist die Länge von text.
 	Solange (text an der Stelle startIndex) gleich zeichen ist, mache:
 		Erhöhe startIndex um 1.
 	Solange (text an der Stelle stopIndex) gleich zeichen ist, mache:
 		Verringere stopIndex um 1.
-	Gib text von startIndex bis stopIndex zurück.
+	Speichere text von startIndex bis stopIndex in text.
 Und kann so benutzt werden:
-	"entferne alle <zeichen> vor und nach <text>"
+	"Entferne alle <zeichen> vor und nach <text>"
+
+Die Funktion TrimWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
+	Entferne alle zeichen vor und nach text.
+	Gib text zurück.
+Und kann so benutzt werden:
+	"<text> mit allen <zeichen> davor und danach entfernt"
 
 Die Funktion EnthältBuchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Für jeden Buchstaben b in text, mache:

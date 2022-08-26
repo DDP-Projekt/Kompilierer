@@ -14,7 +14,7 @@ Die Funktion insertZ mit den Parametern liste, index und elm vom Typ Zahlen List
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion insertRangeZ mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Listen Referenz, gibt nichts zurück, macht:
+Die Funktion insertRangeZ mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -74,7 +74,7 @@ Die Funktion insertK mit den Parametern liste, index und elm vom Typ Kommazahlen
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion insertRangeK mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Listen Referenz, gibt nichts zurück, macht:
+Die Funktion insertRangeK mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -133,7 +133,7 @@ Die Funktion insertB mit den Parametern liste, index und elm vom Typ Boolean Lis
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion insertRangeB mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Listen Referenz, gibt nichts zurück, macht:
+Die Funktion insertRangeB mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -193,7 +193,7 @@ Die Funktion insertC mit den Parametern liste, index und elm vom Typ Buchstaben 
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion insertRangeC mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Listen Referenz, gibt nichts zurück, macht:
+Die Funktion insertRangeC mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -253,7 +253,7 @@ Die Funktion insertT mit den Parametern liste, index und elm vom Typ Text Listen
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion insertRangeT mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Listen Referenz, gibt nichts zurück, macht:
+Die Funktion insertRangeT mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
