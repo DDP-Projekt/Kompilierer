@@ -212,7 +212,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 
 	if typ != token.DDPBoolType() && typ.IsList { // TODO: fix this with function calls and groupings
 		expr = p.expression()
-		if p.match(token.LIST_MAL) {
+		if p.match(token.COUNT_MAL) {
 			value := p.expression()
 			expr = &ast.ListLit{
 				Tok:    expr.Token(),
@@ -605,23 +605,19 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.match(token.DOT) {
 		return stmt
 	}
-	if p.match(token.LPAREN) {
-		count := p.grouping()
-		p.consume(token.MAL)
-		tok := p.previous()
-		p.consume(token.DOT)
-		return &ast.WhileStmt{
-			Range: token.Range{
-				Start: stmt.GetRange().Start,
-				End:   token.NewEndPos(p.previous()),
-			},
-			While:     tok,
-			Condition: count,
-			Body:      stmt,
-		}
-	}
+	count := p.expression()
+	p.consume(token.COUNT_MAL)
+	tok := p.previous()
 	p.consume(token.DOT)
-	return stmt
+	return &ast.WhileStmt{
+		Range: token.Range{
+			Start: stmt.GetRange().Start,
+			End:   token.NewEndPos(p.previous()),
+		},
+		While:     tok,
+		Condition: count,
+		Body:      stmt,
+	}
 }
 
 // += -= *= /=
@@ -855,9 +851,8 @@ func (p *Parser) doRepeatStmt() ast.Statement {
 			Body:      body,
 		}
 	}
-	p.consume(token.LPAREN)
-	count := p.grouping()
-	p.consume(token.MAL)
+	count := p.expression()
+	p.consume(token.COUNT_MAL)
 	tok := p.previous()
 	p.consume(token.DOT)
 	return &ast.WhileStmt{

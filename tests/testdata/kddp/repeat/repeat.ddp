@@ -2,13 +2,13 @@ Binde "Duden/Ausgabe" ein.
 
 Mache:
 	Schreibe den Text "hier,".
-(5) mal.
+5 Mal.
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Text "hier," (5) mal.
+Schreibe den Text "hier," 5 Mal.
 Schreibe den Buchstaben '\n'.
 
 Die Zahl i ist 3.
 Mache:
 	Schreibe den Text "hier,".
-(i minus 1) mal.
+i minus 1 Mal.

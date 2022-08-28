@@ -136,7 +136,7 @@ const (
 	BESTEHT
 	EINER
 	VERLASSE
-	LIST_MAL
+	COUNT_MAL
 	ALIAS
 	STEHT
 
@@ -283,7 +283,7 @@ var tokenStrings = [...]string{
 	BESTEHT:      "BESTEHT",
 	EINER:        "EINER",
 	VERLASSE:     "VERLASSE",
-	LIST_MAL:     "LIST_MAL",
+	COUNT_MAL:    "COUNT_MAL",
 	ALIAS:        "ALIAS",
 	STEHT:        "STEHT",
 
@@ -422,7 +422,7 @@ var keywordMap = map[string]TokenType{
 	"besteht":         BESTEHT,
 	"einer":           EINER,
 	"verlasse":        VERLASSE,
-	"Mal":             LIST_MAL,
+	"Mal":             COUNT_MAL,
 	"Alias":           ALIAS,
 	"steht":           STEHT,
 }
