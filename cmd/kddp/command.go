@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -30,6 +31,7 @@ var commands = []Command{
 	NewBuildCommand(),
 	NewParseCommand(),
 	NewVersionCommand(),
+	NewRunCommand(),
 }
 
 // $kddp interpret walks the parsed ast and executes it
@@ -315,9 +317,11 @@ func (cmd *BuildCommand) Usage() string {
 	return `build <filename> <options>: build the given .ddp file into a executable
 options:
 		-o <filepath>: specify the name of the output file
-		-verbose: print verbose output
+		--verbose: print verbose output
+		--nodeletes: don't delete intermediate files
 		-c: compile to llvm ir but don't assemble or link
-		-gcc_flags: custom flags that are passed to gcc`
+		--gcc_flags: custom flags that are passed to gcc
+		--extern_gcc_flags: custom flags that are passed to gcc when compiling extern .c files`
 }
 
 // helper function
@@ -450,4 +454,92 @@ func (cmd *VersionCommand) Usage() string {
 options:
 	--verbose: show verbose output for all versions
 	--build_info: show go build info`
+}
+
+// $kddp run compiles and runs the specified
+type RunCommand struct {
+	fs *flag.FlagSet // FlagSet for the arguments
+	// arguments
+	filePath         string // input file (.ddp), neccessery, first argument
+	gcc_flags        string // custom flags that are passed to gcc
+	extern_gcc_flags string // custom flags passed to extern .c files
+	verbose          bool   // print verbose output, specified by the --verbose flag
+}
+
+func NewRunCommand() *RunCommand {
+	return &RunCommand{
+		fs:               flag.NewFlagSet("run", flag.ExitOnError),
+		filePath:         "",
+		gcc_flags:        "",
+		extern_gcc_flags: "",
+		verbose:          false,
+	}
+}
+
+func (cmd *RunCommand) Init(args []string) error {
+	// a input .ddp file is necessary
+	if len(args) < 1 {
+		return fmt.Errorf("run requires a file name")
+	}
+
+	// the first argument must be the input file (.ddp)
+	cmd.filePath = args[0]
+	if filepath.Ext(cmd.filePath) != ".ddp" {
+		return fmt.Errorf("the provided file is not a .ddp file")
+	}
+
+	// set all the flags
+	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_flags", "", "custom flags that are passed to gcc")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "extern_gcc_flags", "", "custom flags passed to extern .c files")
+	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose build output")
+	return cmd.fs.Parse(args[1:])
+}
+
+func (cmd *RunCommand) Run() error {
+	// helper function to print verbose output if the flag was set
+	print := func(format string, args ...any) {
+		if cmd.verbose {
+			fmt.Printf(format+"\n", args...)
+		}
+	}
+
+	outDir, err := os.MkdirTemp("", "KDDP_RUN")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(outDir)
+
+	exePath := filepath.Join(outDir, filepath.Base(changeExtension(cmd.filePath, ".exe")))
+
+	buildCmd := NewBuildCommand()
+	buildCmd.filePath = cmd.filePath
+	buildCmd.outPath = exePath
+	buildCmd.verbose = cmd.verbose
+	buildCmd.gcc_flags = cmd.gcc_flags
+	buildCmd.extern_gcc_flags = cmd.extern_gcc_flags
+
+	print("compiling the source code")
+	if err = buildCmd.Run(); err != nil {
+		return err
+	}
+
+	print("running the program")
+	ddpExe := exec.Command(exePath, cmd.fs.Args()...)
+	ddpExe.Stdin = os.Stdin
+	ddpExe.Stdout = os.Stdout
+	ddpExe.Stderr = os.Stderr
+
+	return ddpExe.Run()
+}
+
+func (cmd *RunCommand) Name() string {
+	return cmd.fs.Name()
+}
+
+func (cmd *RunCommand) Usage() string {
+	return `run <filename> <options>: compile and run the given .ddp file
+	options:
+			--verbose: print verbose output
+			--gcc_flags: custom flags that are passed to gcc
+			--extern_gcc_flags: custom flags that are passed to gcc when compiling extern .c files`
 }
