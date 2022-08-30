@@ -1,0 +1,7 @@
+Die Funktion Fib mit dem Parameter n vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Wenn n kleiner als, oder 1 ist, gib n zurück.
+	Gib die (n minus 1). Fibonacci Nummer plus die (n minus 2). Fibonacci Nummer zurück.
+Und kann so benutzt werden:
+	"die <n>. Fibonacci Nummer"
+
+[Berechne] die 45. Fibonacci Nummer.
