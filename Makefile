@@ -27,7 +27,7 @@ DUDEN_DIR = ./lib/stdlib/Duden
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug copy-duden ddpruntime ddpruntime-debug test llvm
+.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug copy-duden ddpruntime ddpruntime-debug test benchmark llvm
 
 all: make_out_dir kddp ddpruntime ddpstdlib copy-duden
 
@@ -62,6 +62,8 @@ make_out_dir:
 test:
 	go test -v ./tests | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
+benchmark:
+	go test -v ./tests -bench . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 llvm:
 # clone the submodule
 	git submodule init
