@@ -1469,11 +1469,8 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 				}
 				p.consume(token.BESTEHT)
 				lhs = &ast.ListLit{
-					Tok: begin,
-					Range: token.Range{
-						Start: token.NewStartPos(begin),
-						End:   values[len(values)-1].GetRange().End,
-					},
+					Tok:    begin,
+					Range:  token.NewRange(begin, p.previous()),
 					Values: values,
 				}
 			}

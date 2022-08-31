@@ -132,7 +132,6 @@ const (
 	LEERE
 	LEEREN
 	AUS
-	BESTEHEND
 	BESTEHT
 	EINER
 	VERLASSE
@@ -279,7 +278,6 @@ var tokenStrings = [...]string{
 	LEERE:        "LEERE",
 	LEEREN:       "LEEREN",
 	AUS:          "AUS",
-	BESTEHEND:    "BESTEHEND",
 	BESTEHT:      "BESTEHT",
 	EINER:        "EINER",
 	VERLASSE:     "VERLASSE",
@@ -418,7 +416,6 @@ var keywordMap = map[string]TokenType{
 	"leere":           LEERE,
 	"leeren":          LEEREN,
 	"aus":             AUS,
-	"bestehend":       BESTEHEND,
 	"besteht":         BESTEHT,
 	"einer":           EINER,
 	"verlasse":        VERLASSE,
