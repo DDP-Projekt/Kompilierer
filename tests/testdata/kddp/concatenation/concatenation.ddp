@@ -5,44 +5,44 @@ Schreibe den Text ("Hallo" verkettet mit 'Ä').
 Schreibe den Text ('\n' verkettet mit "Tschüss").
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Zahlen Liste (eine Liste aus 1, 2, 3 bestehend verkettet mit einer Liste aus 1, 2, 3 bestehend).
+Schreibe die Zahlen Liste (eine Liste, die aus 1, 2, 3 besteht verkettet mit einer Liste, die aus 1, 2, 3 besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Zahlen Liste (eine Liste aus 1, 2, 3 bestehend verkettet mit 69).
+Schreibe die Zahlen Liste (eine Liste, die aus 1, 2, 3 besteht verkettet mit 69).
 Schreibe den Buchstaben '\n'.
-Schreibe die Zahlen Liste (69 verkettet mit einer Liste aus 1, 2, 3 bestehend).
+Schreibe die Zahlen Liste (69 verkettet mit einer Liste, die aus 1, 2, 3 besteht).
 Schreibe den Buchstaben '\n'.
 Schreibe die Zahlen Liste (42 verkettet mit 69).
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Kommazahlen Liste (eine Liste aus 1,2, 2,2, 3,2 bestehend verkettet mit einer Liste aus 1,2, 2,2, 3,2 bestehend).
+Schreibe die Kommazahlen Liste (eine Liste, die aus 1,2, 2,2, 3,2 besteht verkettet mit einer Liste, die aus 1,2, 2,2, 3,2 besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Kommazahlen Liste (eine Liste aus 1,2, 2,2, 3,2 bestehend verkettet mit 69,2).
+Schreibe die Kommazahlen Liste (eine Liste, die aus 1,2, 2,2, 3,2 besteht verkettet mit 69,2).
 Schreibe den Buchstaben '\n'.
-Schreibe die Kommazahlen Liste (69,2 verkettet mit einer Liste aus 1,2, 2,2, 3,2 bestehend).
+Schreibe die Kommazahlen Liste (69,2 verkettet mit einer Liste, die aus 1,2, 2,2, 3,2 besteht).
 Schreibe den Buchstaben '\n'.
 Schreibe die Kommazahlen Liste (42,2 verkettet mit 69,2).
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Boolean Liste (eine Liste aus wahr, falsch, wahr bestehend verkettet mit einer Liste aus wahr, falsch, wahr bestehend).
+Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Boolean Liste (eine Liste aus wahr, falsch, wahr bestehend verkettet mit wahr).
+Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit wahr).
 Schreibe den Buchstaben '\n'.
-Schreibe die Boolean Liste (falsch verkettet mit einer Liste aus wahr, falsch, wahr bestehend).
+Schreibe die Boolean Liste (falsch verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
 Schreibe den Buchstaben '\n'.
 Schreibe die Boolean Liste (wahr verkettet mit falsch).
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Buchstaben Liste (eine Liste aus 'a', 'b', 'c' bestehend verkettet mit einer Liste aus 'a', 'b', 'c' bestehend).
+Schreibe die Buchstaben Liste (eine Liste, die aus 'a', 'b', 'c' besteht verkettet mit einer Liste, die aus 'a', 'b', 'c' besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Buchstaben Liste (eine Liste aus 'a', 'b', 'c' bestehend verkettet mit 'Ä').
+Schreibe die Buchstaben Liste (eine Liste, die aus 'a', 'b', 'c' besteht verkettet mit 'Ä').
 Schreibe den Buchstaben '\n'.
-Schreibe die Buchstaben Liste ('Ä' verkettet mit einer Liste aus 'a', 'b', 'c' bestehend).
+Schreibe die Buchstaben Liste ('Ä' verkettet mit einer Liste, die aus 'a', 'b', 'c' besteht).
 Schreibe den Buchstaben '\n'.
 Schreibe die Buchstaben Liste ('Ü' verkettet mit 'Ä').
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Text Liste (eine Liste aus "hi", "über", "dir" bestehend verkettet mit einer Liste aus "hi", "über", "dir" bestehend).
+Schreibe die Text Liste (eine Liste, die aus "hi", "über", "dir" besteht verkettet mit einer Liste, die aus "hi", "über", "dir" besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Text Liste (eine Liste aus "hi", "über", "dir" bestehend verkettet mit "hallo").
+Schreibe die Text Liste (eine Liste, die aus "hi", "über", "dir" besteht verkettet mit "hallo").
 Schreibe den Buchstaben '\n'.
-Schreibe die Text Liste ("hallo" verkettet mit einer Liste aus "hi", "über", "dir" bestehend).
+Schreibe die Text Liste ("hallo" verkettet mit einer Liste, die aus "hi", "über", "dir" besteht).

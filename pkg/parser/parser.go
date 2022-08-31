@@ -1462,19 +1462,12 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 					Values: nil,
 				}
 			} else {
-				besteht := true
-				if !p.matchN(token.LISTE, token.COMMA, token.DIE, token.AUS) {
-					besteht = !p.consumeN(token.LISTE, token.AUS)
-				}
+				p.consumeN(token.LISTE, token.COMMA, token.DIE, token.AUS)
 				values := append(make([]ast.Expression, 0, 2), p.expression())
 				for p.match(token.COMMA) {
 					values = append(values, p.expression())
 				}
-				if besteht {
-					p.consume(token.BESTEHT)
-				} else {
-					p.consume(token.BESTEHEND)
-				}
+				p.consume(token.BESTEHT)
 				lhs = &ast.ListLit{
 					Tok: begin,
 					Range: token.Range{

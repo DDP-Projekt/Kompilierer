@@ -9,7 +9,7 @@ t an der Stelle 6 ist '.'.
 Schreibe den Text t.
 Schreibe '\n'.
 
-Die Zahlen Liste z ist eine Liste aus 1, 2, 3, 4, 5, 6 bestehend.
+Die Zahlen Liste z ist eine Liste, die aus 1, 2, 3, 4, 5, 6 besteht.
 Schreibe z.
 Schreibe '\n'.
 z an der Stelle 1 ist 69.
@@ -20,7 +20,7 @@ z an der Stelle 6 ist 4.
 Schreibe z.
 Schreibe '\n'.
 
-Die Kommazahlen Liste kz ist eine Liste aus 1,2, 2,2, 3,2, 4,2, 5,2, 6,2 bestehend.
+Die Kommazahlen Liste kz ist eine Liste, die aus 1,2, 2,2, 3,2, 4,2, 5,2, 6,2 besteht.
 Schreibe kz.
 Schreibe '\n'.
 kz an der Stelle 1 ist 69,2.
@@ -31,7 +31,7 @@ kz an der Stelle 6 ist 4,2.
 Schreibe kz.
 Schreibe '\n'.
 
-Die Boolean Liste b ist eine Liste aus wahr, falsch, wahr, falsch, wahr, falsch bestehend.
+Die Boolean Liste b ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr, falsch besteht.
 Schreibe b.
 Schreibe '\n'.
 b an der Stelle 1 ist falsch.
@@ -42,7 +42,7 @@ b an der Stelle 6 ist wahr.
 Schreibe b.
 Schreibe '\n'.
 
-Die Buchstaben Liste bl ist eine Liste aus 'H', 'A', 'L', 'L', 'O', '.' bestehend.
+Die Buchstaben Liste bl ist eine Liste, die aus 'H', 'A', 'L', 'L', 'O', '.' besteht.
 Schreibe bl.
 Schreibe '\n'.
 bl an der Stelle 1 ist 'B'.
@@ -53,7 +53,7 @@ bl an der Stelle 6 ist 'Ä'.
 Schreibe bl.
 Schreibe '\n'.
 
-Die Text Liste tl ist eine Liste aus "Hallo", "Welt", "Tschüss" bestehend.
+Die Text Liste tl ist eine Liste, die aus "Hallo", "Welt", "Tschüss" besteht.
 Schreibe tl.
 Schreibe '\n'.
 tl an der Stelle 1 ist "Hi".
