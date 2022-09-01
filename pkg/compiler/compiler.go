@@ -511,7 +511,18 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 				c.cbb.NewStore(params[i], v)
 			}
 		}
-		c.visitNode(d.Body) // compile the function body
+
+		// modified VisitBlockStmt
+		c.scp = newScope(c.scp) // a block gets its own scope
+		for _, stmt := range d.Body.Statements {
+			c.visitNode(stmt)
+			// on toplevel return statements, ignore anything that follows
+			if _, ok := stmt.(*ast.ReturnStmt); ok {
+				break
+			}
+		}
+		c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
+
 		if c.cbb.Term == nil {
 			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
 		}

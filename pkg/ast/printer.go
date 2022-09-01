@@ -193,7 +193,11 @@ func (pr *printer) VisitFuncCallStmt(stmt *FuncCallStmt) Visitor {
 	return pr
 }
 func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) Visitor {
-	pr.parenthesizeNode("ReturnStmt", stmt.Value)
+	if stmt.Value == nil {
+		pr.parenthesizeNode("ReturnStmt[void]")
+	} else {
+		pr.parenthesizeNode("ReturnStmt", stmt.Value)
+	}
 	return pr
 }
 
