@@ -772,7 +772,14 @@ func (p *Parser) ifStatement() ast.Statement {
 		if p.peek().Type == token.COLON { // block statements are only allowed with the syntax above
 			p.err(p.peek(), "In einer Wenn Anweisung, muss ein 'dann' vor einem ':' stehen")
 		}
+		comma := p.previous()
 		Then = p.declaration() // parse the single (non-block) statement
+		Then = &ast.BlockStmt{
+			Range:      Then.GetRange(),
+			Colon:      comma,
+			Statements: []ast.Statement{Then},
+			Symbols:    nil,
+		}
 	}
 	var Else ast.Statement = nil
 	// parse a possible sonst statement
@@ -781,7 +788,14 @@ func (p *Parser) ifStatement() ast.Statement {
 			if p.match(token.COLON) {
 				Else = p.blockStatement() // with colon it is a block statement
 			} else { // without it we just parse a single statement
+				_else := p.previous()
 				Else = p.declaration()
+				Else = &ast.BlockStmt{
+					Range:      Else.GetRange(),
+					Colon:      _else,
+					Statements: []ast.Statement{Else},
+					Symbols:    nil,
+				}
 			}
 		} else {
 			p.decrease()
@@ -821,7 +835,14 @@ func (p *Parser) whileStatement() ast.Statement {
 		p.consume(token.COLON)
 		Body = p.blockStatement()
 	} else {
+		is := p.previous()
 		Body = p.declaration()
+		Body = &ast.BlockStmt{
+			Range:      Body.GetRange(),
+			Colon:      is,
+			Statements: []ast.Statement{Body},
+			Symbols:    nil,
+		}
 	}
 	return &ast.WhileStmt{
 		Range: token.Range{
@@ -898,16 +919,15 @@ func (p *Parser) forStatement() ast.Statement {
 			Body = p.blockStatement()
 		} else { // body is a single statement
 			Colon := p.previous()
-			stmts := make([]ast.Statement, 1)
-			stmts[0] = p.declaration()
+			Body = p.declaration()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
 					Start: token.NewStartPos(Colon),
-					End:   stmts[0].GetRange().End,
+					End:   Body.GetRange().End,
 				},
 				Colon:      Colon,
-				Statements: stmts,
+				Statements: []ast.Statement{Body},
 				Symbols:    nil,
 			}
 		}
@@ -943,16 +963,15 @@ func (p *Parser) forStatement() ast.Statement {
 			Body = p.blockStatement()
 		} else { // body is a single statement
 			Colon := p.previous()
-			stmts := make([]ast.Statement, 1)
-			stmts[0] = p.declaration()
+			Body = p.declaration()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
 					Start: token.NewStartPos(Colon),
-					End:   stmts[0].GetRange().End,
+					End:   Body.GetRange().End,
 				},
 				Colon:      Colon,
-				Statements: stmts,
+				Statements: []ast.Statement{Body},
 				Symbols:    nil,
 			}
 		}

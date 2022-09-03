@@ -4,4 +4,4 @@ Die Deutsche Programmiersprache (DDP) ist eine (Witz-)Programmiersprache von Not
 
 Die [Bedienungsanleitung](https://ddp-projekt.github.io/Bedienungsanleitung/?p=Startseite&lang=DE) ist ein guter Startpunkt um DDP (kennen) zu lernen, dort ist auch eine Installations-Anleitung zu finden.
 
-Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in *CONTRIBUTING.md*.
+Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTRIBUTING.md).

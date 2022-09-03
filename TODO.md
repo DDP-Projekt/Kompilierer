@@ -23,6 +23,7 @@
 
 ## Sonstiges
 - [x] Standardbibliothek (Duden)
+- [ ] Kommentare parsen (für LS und Docs)
 
 # Feature Ideen
 - [x] Function overloading (muss noch getestet werden)
