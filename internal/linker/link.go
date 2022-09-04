@@ -98,7 +98,7 @@ func LinkDDPFiles(options Options) error {
 		}
 	}
 
-	libdir := scanner.DDPPATH
+	libdir := filepath.Join(scanner.DDPPATH, "lib")
 
 	args := append(make([]string, 0), "-o", options.OutputFile, "-O2", "-L"+libdir)
 
