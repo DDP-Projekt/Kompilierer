@@ -463,7 +463,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	return &ast.FuncDecl{
 		Range:      token.NewRange(begin, p.previous()),
-		Func:       Funktion,
+		Tok:        begin,
 		Name:       name,
 		ParamNames: paramNames,
 		ParamTypes: paramTypes,

@@ -72,7 +72,7 @@ type (
 
 	FuncDecl struct {
 		Range      token.Range
-		Func       token.Token     // Funktion
+		Tok        token.Token     // Die
 		Name       token.Token     // identifier name
 		ParamNames []token.Token   // x, y und z
 		ParamTypes []token.ArgType // type, and wether the argument is a reference
@@ -88,7 +88,7 @@ func (decl *FuncDecl) String() string { return "FuncDecl" }
 
 func (decl *BadDecl) Token() token.Token  { return decl.Tok }
 func (decl *VarDecl) Token() token.Token  { return decl.Name }
-func (decl *FuncDecl) Token() token.Token { return decl.Func }
+func (decl *FuncDecl) Token() token.Token { return decl.Tok }
 
 func (decl *BadDecl) GetRange() token.Range  { return decl.Range }
 func (decl *VarDecl) GetRange() token.Range  { return decl.Range }
