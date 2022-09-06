@@ -435,7 +435,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, paramTypes[i].Type)
+			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type})
 		}
 		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
 
@@ -956,7 +956,7 @@ func (p *Parser) forStatement() ast.Statement {
 		p.consume(token.COMMA)
 		var Body ast.Statement
 		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                   // temporary symbolTable for the loop variable
-		bodyTable.InsertVar(Ident.Literal, Typ)                                    // add the loop variable to the table
+		bodyTable.InsertVar(Ident.Literal, &ast.VarDecl{Name: Ident, Type: Typ})   // add the loop variable to the table
 		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
 		if p.match(token.MACHE) {                                                  // body is a block statement
 			p.consume(token.COLON)

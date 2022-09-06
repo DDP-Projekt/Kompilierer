@@ -123,7 +123,12 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.Visitor {
-	t.latestReturnedType, _ = t.CurrentTable.LookupVar(expr.Literal.Literal)
+	decl, ok := t.CurrentTable.LookupVar(expr.Literal.Literal)
+	if !ok {
+		t.latestReturnedType = token.DDPVoidType()
+	} else {
+		t.latestReturnedType = decl.Type
+	}
 	return t
 }
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.Visitor {
@@ -451,11 +456,11 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if vartyp, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && vartyp != rhs {
+		if decl, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && decl.Type != rhs {
 			t.err(stmt.Rhs.Token(),
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 				rhs,
-				vartyp,
+				decl.Type,
 			)
 		}
 	case *ast.Indexing:

@@ -67,7 +67,7 @@ func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	decl.InitVal.Accept(r) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
-	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl.Type); existed {
+	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl); existed {
 		r.err(decl.Name, "Die Variable '%s' existiert bereits", decl.Name.Literal) // variables may only be declared once in the same scope
 	}
 
@@ -81,7 +81,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 		decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
 		// add the function parameters to the scope of the function body
 		for i, l := 0, len(decl.ParamNames); i < l; i++ {
-			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, decl.ParamTypes[i].Type)
+			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, &ast.VarDecl{Name: decl.ParamNames[i], Type: decl.ParamTypes[i].Type})
 		}
 
 		return decl.Body.Accept(r) // resolve the function body

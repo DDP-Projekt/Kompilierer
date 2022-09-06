@@ -1,32 +1,28 @@
 package ast
 
-import (
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
-)
-
 // stores symbols for one scope of an ast
 type SymbolTable struct {
-	Enclosing *SymbolTable             // enclosing scope (nil in the global scope)
-	variables map[string]token.DDPType // tokenType is used as type identifier (e.g. token.ZAHL -> int)
-	functions map[string]*FuncDecl     // same here, but token.NICHTS stands for void (also, only the global-scope can have function declarations)
+	Enclosing *SymbolTable         // enclosing scope (nil in the global scope)
+	variables map[string]*VarDecl  // tokenType is used as type identifier (e.g. token.ZAHL -> int)
+	functions map[string]*FuncDecl // same here, but token.NICHTS stands for void (also, only the global-scope can have function declarations)
 }
 
 func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
 	return &SymbolTable{
 		Enclosing: enclosing,
-		variables: make(map[string]token.DDPType),
+		variables: make(map[string]*VarDecl),
 		functions: make(map[string]*FuncDecl),
 	}
 }
 
 // returns the type of the variable name and if it exists in the table or it's enclosing scopes
-func (scope *SymbolTable) LookupVar(name string) (token.DDPType, bool) {
+func (scope *SymbolTable) LookupVar(name string) (*VarDecl, bool) {
 	if val, ok := scope.variables[name]; !ok {
 		// if the variable was not found here we recursively check the enclosing scopes
 		if scope.Enclosing != nil {
 			return scope.Enclosing.LookupVar(name)
 		}
-		return token.DDPVoidType(), false // variable doesn't exist
+		return nil, false // variable doesn't exist
 	} else {
 		return val, true
 	}
@@ -47,12 +43,12 @@ func (scope *SymbolTable) LookupFunc(name string) (*FuncDecl, bool) {
 
 // inserts a variable into the scope if it didn't exist yet
 // and returns wether it already existed
-func (scope *SymbolTable) InsertVar(name string, typ token.DDPType) bool {
+func (scope *SymbolTable) InsertVar(name string, decl *VarDecl) bool {
 	if _, ok := scope.variables[name]; ok {
 		return true
 	}
 
-	scope.variables[name] = typ
+	scope.variables[name] = decl
 	return false
 }
 
@@ -83,7 +79,7 @@ func (scope *SymbolTable) Merge(other *SymbolTable) {
 func (scope *SymbolTable) Copy() *SymbolTable {
 	table := &SymbolTable{
 		Enclosing: scope.Enclosing,
-		variables: make(map[string]token.DDPType),
+		variables: make(map[string]*VarDecl),
 		functions: make(map[string]*FuncDecl),
 	}
 
