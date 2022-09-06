@@ -417,8 +417,9 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	if !valid {
 		p.Errored = true
+		p.cur = aliasEnd
 		return &ast.BadDecl{
-			Range:   token.NewRange(begin, p.tokens[aliasEnd-1]),
+			Range:   token.NewRange(begin, p.previous()),
 			Tok:     Funktion,
 			Message: errorMessage,
 		}
