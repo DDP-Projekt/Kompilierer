@@ -13,7 +13,9 @@ func ParseFile(path string, errorHandler scanner.ErrorHandler) (*ast.Ast, error)
 		return nil, err
 	}
 
-	return New(file, errorHandler).Parse(), nil
+	Ast := New(file, errorHandler).Parse()
+	Ast.File = path
+	return Ast, nil
 }
 
 // parse the provided source into an Ast
@@ -24,7 +26,9 @@ func ParseSource(name string, src []byte, errorHandler scanner.ErrorHandler) (*a
 		return nil, err
 	}
 
-	return New(file, errorHandler).Parse(), nil
+	Ast := New(file, errorHandler).Parse()
+	Ast.File = name
+	return Ast, nil
 }
 
 // parse the provided tokens into an Ast
