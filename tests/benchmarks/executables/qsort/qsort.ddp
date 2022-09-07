@@ -40,7 +40,16 @@ Und kann so benutzt werden:
 	"<liste> mit quick-sort sortiert"
 
 
-[
-Die Zahl n ist 10000.
+
+Die Zahl n ist 2000.
 Die Zahlen Liste z ist n Mal 0.
+Für jede Zahl i von 1 bis n, speichere i in z an der Stelle i.
+
+[
+	z ist bereits sortiert und dieser qsort wählt immer das
+	letzte Element als pivot, also liegt hier der worst-case vor
+
+	Dieser Benchmark soll nicht die qsort-funktion sondern viel mehr
+	die effiziente Listen-allocation messen
 ]
+z mit quick-sort sortiert.

@@ -15,7 +15,7 @@ Die Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Z
 	Wenn wert kleiner als min ist, gib min zurück.
 	Gib wert zurück.
 Und kann so benutzt werden:
-	"die Zahl <wert> zwischen <min> und <max>"
+	"<wert> zwischen <min> und <max>"
 
 Die Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
