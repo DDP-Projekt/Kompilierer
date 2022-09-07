@@ -1792,7 +1792,7 @@ outer:
 
 // helper to parse ddp chars with escape sequences
 func (p *Parser) parseChar(s string) (r rune) {
-	lit := strings.Trim(s, "'") // remove the ''
+	lit := strings.TrimPrefix(strings.TrimSuffix(s, "'"), "'") // remove the ''
 	switch utf8.RuneCountInString(lit) {
 	case 1: // a single character can just be returned
 		r, _ = utf8.DecodeRuneInString(lit)
@@ -1824,7 +1824,7 @@ func (p *Parser) parseChar(s string) (r rune) {
 
 // helper to parse ddp strings with escape sequences
 func (p *Parser) parseString(s string) string {
-	str := strings.Trim(s, "\"") // remove the ""
+	str := strings.TrimPrefix(strings.TrimSuffix(s, "\""), "\"") // remove the ""
 
 	for i, w := 0, 0; i < len(str); i += w {
 		var r rune
