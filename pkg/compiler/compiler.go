@@ -144,6 +144,7 @@ func (c *Compiler) visitNode(node ast.Node) {
 }
 
 // helper to evalueate an expression and return its ir value
+// if the result is refCounted it's refcount is usually 1
 func (c *Compiler) evaluate(expr ast.Expression) value.Value {
 	c.visitNode(expr)
 	return c.latestReturn
@@ -454,11 +455,8 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ)
 	}
 	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ, false)
-	initVal := c.evaluate(d.InitVal)     // evaluate the initial value
-	c.cbb.NewStore(initVal, Var)         // store the initial value
-	if ok, vk := isRefCounted(Typ); ok { // strings and lists must be added to the ref-table
-		c.incrementRC(initVal, vk) // ref_count becomes 1
-	}
+	initVal := c.evaluate(d.InitVal) // evaluate the initial value
+	c.cbb.NewStore(initVal, Var)     // store the initial value
 	return c
 }
 func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
@@ -540,8 +538,9 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
-	if ok, _ := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
+	if ok, vk := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
 		c.latestReturn = c.deepCopyRefCounted(c.cbb.NewLoad(Var.typ, Var.val))
+		c.incrementRC(c.latestReturn, vk)
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
 	}
@@ -581,9 +580,6 @@ func (c *Compiler) getElementPointer(lhs, rhs value.Value, node ast.Node) *ir.In
 func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)   // TODO: check if this works
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
-	if ok, vk := isRefCounted(lhs.Type()); ok {
-		c.incrementRC(lhs, vk)
-	}
 	switch lhs.Type() {
 	case ddpstrptr:
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
@@ -594,6 +590,7 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 		// copy strings
 		if lhs.Type() == ddpstringlistptr {
 			c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
+			c.incrementRC(c.latestReturn, VK_STRING)
 		}
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
@@ -633,6 +630,7 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
+	c.incrementRC(c.latestReturn, VK_STRING)
 	return c
 }
 func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
@@ -640,9 +638,6 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
 		for i, v := range e.Values {
 			val := c.evaluate(v)
-			if ok, vk := isRefCounted(val.Type()); ok {
-				c.incrementRC(val, vk)
-			}
 			arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
 			arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
 			elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(int64(i)))
@@ -652,9 +647,6 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	} else if e.Count != nil && e.Value != nil {
 		count := c.evaluate(e.Count)
 		Value := c.evaluate(e.Value)
-		if ok, vk := isRefCounted(Value.Type()); ok {
-			c.incrementRC(Value, vk)
-		}
 
 		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, count)
 
@@ -696,13 +688,12 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	} else {
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
 	}
+	_, vk := isRefCounted(c.latestReturn.Type())
+	c.incrementRC(c.latestReturn, vk)
 	return c
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
-	if ok, vk := isRefCounted(rhs.Type()); ok {
-		c.incrementRC(rhs, vk)
-	}
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator.Type {
@@ -900,12 +891,6 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	// compile the two expressions onto which the operator is applied
 	lhs := c.evaluate(e.Lhs)
 	rhs := c.evaluate(e.Rhs)
-	if ok, vk := isRefCounted(lhs.Type()); ok {
-		c.incrementRC(lhs, vk)
-	}
-	if ok, vk := isRefCounted(rhs.Type()); ok {
-		c.incrementRC(rhs, vk)
-	}
 	// big switches on the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator.Type {
@@ -1144,6 +1129,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			// copy strings
 			if lhs.Type() == ddpstringlistptr {
 				c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
+				c.incrementRC(c.latestReturn, VK_STRING)
 			}
 			c.commentNode(c.cbb, e, "")
 			c.cbb.NewBr(leaveBlock)
@@ -1376,15 +1362,6 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)
 	mid := c.evaluate(e.Mid)
 	rhs := c.evaluate(e.Rhs)
-	if ok, vk := isRefCounted(lhs.Type()); ok {
-		c.incrementRC(lhs, vk)
-	}
-	if ok, vk := isRefCounted(mid.Type()); ok {
-		c.incrementRC(mid, vk)
-	}
-	if ok, vk := isRefCounted(rhs.Type()); ok {
-		c.incrementRC(rhs, vk)
-	}
 
 	switch e.Operator.Type {
 	case token.VONBIS:
@@ -1421,13 +1398,7 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 }
 func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)
-	if ok, vk := isRefCounted(lhs.Type()); ok {
-		c.incrementRC(lhs, vk)
-	}
 	if e.Type.IsList {
-		if ok, vk := isRefCounted(lhs.Type()); ok {
-			c.incrementRC(lhs, vk)
-		}
 		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
 		arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
 		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
@@ -1510,6 +1481,8 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
+	_, vk := isRefCounted(c.latestReturn.Type())
+	c.incrementRC(c.latestReturn, vk)
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
@@ -1548,14 +1521,9 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			}
 		} else {
 			val = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
-		}
-
-		// strings ref-count is managed by the caller, so increment it
-		// and mark it toBeFreed for after the function returns
-		if ok, vk := isRefCounted(val.Type()); ok {
-			c.incrementRC(val, vk)
 			toBeFreed = append(toBeFreed, &val)
 		}
+
 		args = append(args, val) // add the value to the arguments
 	}
 
@@ -1580,8 +1548,7 @@ func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
 func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	expr := c.evaluate(s.Expr)
 	// free garbage collected returns
-	if ok, vk := isRefCounted(expr.Type()); ok {
-		c.incrementRC(expr, vk) // add it to the table (will be made better later)
+	if ok, _ := isRefCounted(expr.Type()); ok {
 		c.decrementRC(expr)
 	}
 	return c
@@ -1612,10 +1579,6 @@ func (c *Compiler) evaluateAssignable(ass ast.Assigneable) value.Value {
 
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	val := c.evaluate(s.Rhs) // compile the expression
-	// intermediate values ref-counts must be incremented/decremented
-	if ok, vk := isRefCounted(val.Type()); ok {
-		c.incrementRC(val, vk)
-	}
 	switch assign := s.Var.(type) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Literal.Literal) // get the variable
@@ -1824,8 +1787,6 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	c.scp = newScope(c.scp)
 	in := c.evaluate(s.In)
-	_, vk := isRefCounted(in.Type())
-	c.incrementRC(in, vk)
 
 	var len value.Value
 	if in.Type() == ddpstrptr {
@@ -1886,15 +1847,8 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 		c.cbb.NewRet(nil)
 		return c
 	}
-	ret := c.evaluate(s.Value)                  // compile the return value
-	if ok, vk := isRefCounted(ret.Type()); ok { // strings need to be copied and memory-managed
-		oldRet := ret
-		c.incrementRC(oldRet, vk)
-		ret = c.deepCopyRefCounted(oldRet)
-		c.decrementRC(oldRet)
-	}
 	c.commentNode(c.cbb, s, "")
-	c.cbb.NewRet(ret)
+	c.cbb.NewRet(c.evaluate(s.Value))
 	return c
 }
 
