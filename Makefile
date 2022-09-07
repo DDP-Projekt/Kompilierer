@@ -32,7 +32,7 @@ INCL_DIR_OUT =  $(OUT_DIR)/include/DDP_Runtime
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug duden runtime-include ddpruntime ddpruntime-debug test llvm
+.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug duden runtime-include ddpruntime ddpruntime-debug test benchmark llvm
 
 all: make_out_dir kddp ddpruntime ddpstdlib duden runtime-include
 
@@ -75,6 +75,8 @@ make_out_dir:
 test:
 	go test -v ./tests | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
+benchmark:
+	go test -v ./tests -bench . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 llvm:
 # clone the submodule
 	git submodule init
