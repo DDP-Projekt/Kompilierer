@@ -169,15 +169,10 @@ ddpbool inbuilt_ddpintlist_equal(ddpintlist* list1, ddpintlist* list2) {
 }
 
 ddpintlist* inbuilt_ddpintlist_slice(ddpintlist* list, ddpint index1, ddpint index2) {
-	ddpintlist* cpyList = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_ddpintlist_slice: %p", cpyList);
+	DBGLOG("inbuilt_ddpintlist_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -194,39 +189,38 @@ ddpintlist* inbuilt_ddpintlist_slice(ddpintlist* list, ddpint index1, ddpint ind
 	memcpy(arr, &list->arr[index1], sizeof(ddpint) * new_list_cap);
 	
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY(ddpint, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 ddpintlist* inbuilt_ddpintlist_ddpintlist_verkettet(ddpintlist* list1, ddpintlist* list2) {
-	ddpintlist* newList = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpint, newList->cap);
-	DBGLOG("inbuilt_ddpintlist_ddpintlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpintlist_ddpintlist_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof(ddpint) * list1->cap, sizeof(ddpint) * new_cap);
 	
-	memcpy(newList->arr, list1->arr, sizeof(ddpint) * list1->len);
-	memcpy(&newList->arr[list1->len], list2->arr, sizeof(ddpint) * list2->len);
+	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpint) * list2->len);
 	
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 ddpintlist* inbuilt_ddpintlist_ddpint_verkettet(ddpintlist* list, ddpint el) {
-	ddpintlist* newList = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpint, newList->cap);
-	DBGLOG("inbuilt_ddpintlist_ddpint_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpintlist_ddpint_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_cap);
 	
-	memcpy(newList->arr, list->arr, sizeof(ddpint) * list->len);
-	newList->arr[list->len] = el;
+	list->arr[list->len] = el;
 	
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 ddpintlist* inbuilt_ddpint_ddpint_verkettet(ddpint el1, ddpint el2) {
@@ -242,16 +236,16 @@ ddpintlist* inbuilt_ddpint_ddpint_verkettet(ddpint el1, ddpint el2) {
 	return newList;
 }
 ddpintlist* inbuilt_ddpint_ddpintlist_verkettet(ddpint el, ddpintlist* list) {
-	ddpintlist* newList = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpint, newList->cap);
-	DBGLOG("inbuilt_ddpint_ddpintlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpint_ddpintlist_verkettet: %p", list);
 	
-	newList->arr[0] = el;
-	memcpy(&newList->arr[1], list->arr, sizeof(ddpint) * list->len);
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpint) * list->len);
+	list->arr[0] = el;
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 
@@ -264,15 +258,10 @@ ddpbool inbuilt_ddpfloatlist_equal(ddpfloatlist* list1, ddpfloatlist* list2) {
 }
 
 ddpfloatlist* inbuilt_ddpfloatlist_slice(ddpfloatlist* list, ddpint index1, ddpint index2) {
-	ddpfloatlist* cpyList = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_ddpfloatlist_slice: %p", cpyList);
+	DBGLOG("inbuilt_ddpfloatlist_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -289,39 +278,38 @@ ddpfloatlist* inbuilt_ddpfloatlist_slice(ddpfloatlist* list, ddpint index1, ddpi
 	memcpy(arr, &list->arr[index1], sizeof(ddpfloat) * new_list_cap);
 	
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY(ddpfloat, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 ddpfloatlist* inbuilt_ddpfloatlist_ddpfloatlist_verkettet(ddpfloatlist* list1, ddpfloatlist* list2) {
-	ddpfloatlist* newList = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpfloat, newList->cap);
-	DBGLOG("inbuilt_ddpfloatlist_ddpfloatlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpfloatlist_ddpfloatlist_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof(ddpfloat) * list1->cap, sizeof(ddpfloat) * new_cap);
 	
-	memcpy(newList->arr, list1->arr, sizeof(ddpfloat) * list1->len);
-	memcpy(&newList->arr[list1->len], list2->arr, sizeof(ddpfloat) * list2->len);
+	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpfloat) * list2->len);
 	
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 ddpfloatlist* inbuilt_ddpfloatlist_ddpfloat_verkettet(ddpfloatlist* list, ddpfloat el) {
-	ddpfloatlist* newList = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpfloat, newList->cap);
-	DBGLOG("inbuilt_ddpfloatlist_ddpfloat_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpfloatlist_ddpfloat_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_cap);
 	
-	memcpy(newList->arr, list->arr, sizeof(ddpfloat) * list->len);
-	newList->arr[list->len] = el;
+	list->arr[list->len] = el;
 	
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 ddpfloatlist* inbuilt_ddpfloat_ddpfloat_verkettet(ddpfloat el1, ddpfloat el2) {
@@ -337,16 +325,16 @@ ddpfloatlist* inbuilt_ddpfloat_ddpfloat_verkettet(ddpfloat el1, ddpfloat el2) {
 	return newList;
 }
 ddpfloatlist* inbuilt_ddpfloat_ddpfloatlist_verkettet(ddpfloat el, ddpfloatlist* list) {
-	ddpfloatlist* newList = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpfloat, newList->cap);
-	DBGLOG("inbuilt_ddpfloat_ddpfloatlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpfloat_ddpfloatlist_verkettet: %p", list);
 	
-	newList->arr[0] = el;
-	memcpy(&newList->arr[1], list->arr, sizeof(ddpfloat) * list->len);
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpfloat) * list->len);
+	list->arr[0] = el;
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 
@@ -359,15 +347,10 @@ ddpbool inbuilt_ddpboollist_equal(ddpboollist* list1, ddpboollist* list2) {
 }
 
 ddpboollist* inbuilt_ddpboollist_slice(ddpboollist* list, ddpint index1, ddpint index2) {
-	ddpboollist* cpyList = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_ddpboollist_slice: %p", cpyList);
+	DBGLOG("inbuilt_ddpboollist_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -384,39 +367,38 @@ ddpboollist* inbuilt_ddpboollist_slice(ddpboollist* list, ddpint index1, ddpint 
 	memcpy(arr, &list->arr[index1], sizeof(ddpbool) * new_list_cap);
 	
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY(ddpbool, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 ddpboollist* inbuilt_ddpboollist_ddpboollist_verkettet(ddpboollist* list1, ddpboollist* list2) {
-	ddpboollist* newList = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpbool, newList->cap);
-	DBGLOG("inbuilt_ddpboollist_ddpboollist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpboollist_ddpboollist_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof(ddpbool) * list1->cap, sizeof(ddpbool) * new_cap);
 	
-	memcpy(newList->arr, list1->arr, sizeof(ddpbool) * list1->len);
-	memcpy(&newList->arr[list1->len], list2->arr, sizeof(ddpbool) * list2->len);
+	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpbool) * list2->len);
 	
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 ddpboollist* inbuilt_ddpboollist_ddpbool_verkettet(ddpboollist* list, ddpbool el) {
-	ddpboollist* newList = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpbool, newList->cap);
-	DBGLOG("inbuilt_ddpboollist_ddpbool_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpboollist_ddpbool_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_cap);
 	
-	memcpy(newList->arr, list->arr, sizeof(ddpbool) * list->len);
-	newList->arr[list->len] = el;
+	list->arr[list->len] = el;
 	
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 ddpboollist* inbuilt_ddpbool_ddpbool_verkettet(ddpbool el1, ddpbool el2) {
@@ -432,16 +414,16 @@ ddpboollist* inbuilt_ddpbool_ddpbool_verkettet(ddpbool el1, ddpbool el2) {
 	return newList;
 }
 ddpboollist* inbuilt_ddpbool_ddpboollist_verkettet(ddpbool el, ddpboollist* list) {
-	ddpboollist* newList = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpbool, newList->cap);
-	DBGLOG("inbuilt_ddpbool_ddpboollist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpbool_ddpboollist_verkettet: %p", list);
 	
-	newList->arr[0] = el;
-	memcpy(&newList->arr[1], list->arr, sizeof(ddpbool) * list->len);
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpbool) * list->len);
+	list->arr[0] = el;
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 
@@ -454,15 +436,10 @@ ddpbool inbuilt_ddpcharlist_equal(ddpcharlist* list1, ddpcharlist* list2) {
 }
 
 ddpcharlist* inbuilt_ddpcharlist_slice(ddpcharlist* list, ddpint index1, ddpint index2) {
-	ddpcharlist* cpyList = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_ddpcharlist_slice: %p", cpyList);
+	DBGLOG("inbuilt_ddpcharlist_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -479,39 +456,38 @@ ddpcharlist* inbuilt_ddpcharlist_slice(ddpcharlist* list, ddpint index1, ddpint 
 	memcpy(arr, &list->arr[index1], sizeof(ddpchar) * new_list_cap);
 	
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY(ddpchar, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 ddpcharlist* inbuilt_ddpcharlist_ddpcharlist_verkettet(ddpcharlist* list1, ddpcharlist* list2) {
-	ddpcharlist* newList = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpchar, newList->cap);
-	DBGLOG("inbuilt_ddpcharlist_ddpcharlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpcharlist_ddpcharlist_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof(ddpchar) * list1->cap, sizeof(ddpchar) * new_cap);
 	
-	memcpy(newList->arr, list1->arr, sizeof(ddpchar) * list1->len);
-	memcpy(&newList->arr[list1->len], list2->arr, sizeof(ddpchar) * list2->len);
+	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpchar) * list2->len);
 	
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 ddpcharlist* inbuilt_ddpcharlist_ddpchar_verkettet(ddpcharlist* list, ddpchar el) {
-	ddpcharlist* newList = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpchar, newList->cap);
-	DBGLOG("inbuilt_ddpcharlist_ddpchar_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpcharlist_ddpchar_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_cap);
 	
-	memcpy(newList->arr, list->arr, sizeof(ddpchar) * list->len);
-	newList->arr[list->len] = el;
+	list->arr[list->len] = el;
 	
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 ddpcharlist* inbuilt_ddpchar_ddpchar_verkettet(ddpchar el1, ddpchar el2) {
@@ -527,16 +503,16 @@ ddpcharlist* inbuilt_ddpchar_ddpchar_verkettet(ddpchar el1, ddpchar el2) {
 	return newList;
 }
 ddpcharlist* inbuilt_ddpchar_ddpcharlist_verkettet(ddpchar el, ddpcharlist* list) {
-	ddpcharlist* newList = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpchar, newList->cap);
-	DBGLOG("inbuilt_ddpchar_ddpcharlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpchar_ddpcharlist_verkettet: %p", list);
 	
-	newList->arr[0] = el;
-	memcpy(&newList->arr[1], list->arr, sizeof(ddpchar) * list->len);
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpchar) * list->len);
+	list->arr[0] = el;
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 
@@ -552,15 +528,10 @@ ddpbool inbuilt_ddpstringlist_equal(ddpstringlist* list1, ddpstringlist* list2) 
 }
 
 ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, ddpint index2) {
-	ddpstringlist* cpyList = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_ddpstringlist_slice: %p", cpyList);
+	DBGLOG("inbuilt_ddpstringlist_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -581,65 +552,55 @@ ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, d
 	}
 	
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY(ddpstring*, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 ddpstringlist* inbuilt_ddpstringlist_ddpstringlist_verkettet(ddpstringlist* list1, ddpstringlist* list2) {
-	ddpstringlist* newList = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpstring*, newList->cap);
-	DBGLOG("inbuilt_ddpstringlist_ddpstringlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpstringlist_ddpstringlist_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof(ddpstring*) * list1->cap, sizeof(ddpstring*) * new_cap);
 	
-	for (size_t i = 0; i < list1->len; i++) {
-		newList->arr[i] = inbuilt_deep_copy_string(list1->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i], VK_STRING);
-	}
 	for (size_t i = 0; i < list2->len; i++) {
-		newList->arr[i+list1->len] = inbuilt_deep_copy_string(list2->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i+list1->len], VK_STRING);
+		list1->arr[i+list1->len] = inbuilt_deep_copy_string(list2->arr[i]);
+		inbuilt_increment_ref_count(list1->arr[i+list1->len], VK_STRING);
 	}
 	
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 ddpstringlist* inbuilt_ddpstringlist_ddpstring_verkettet(ddpstringlist* list, ddpstring* el) {
-	ddpstringlist* newList = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpstring*, newList->cap);
-	DBGLOG("inbuilt_ddpstringlist_ddpstring*_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpstringlist_ddpstring*_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_cap);
 	
-	for (size_t i = 0; i < list->len; i++) {
-		newList->arr[i] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i], VK_STRING);
-	}
-	newList->arr[list->len] = inbuilt_deep_copy_string(el);
-	inbuilt_increment_ref_count(newList->arr[list->len], VK_STRING);
+	list->arr[list->len] = inbuilt_deep_copy_string(el);
+	inbuilt_increment_ref_count(list->arr[list->len], VK_STRING);
 	
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 
 ddpstringlist* inbuilt_ddpstring_ddpstringlist_verkettet(ddpstring* str, ddpstringlist* list) {
-	ddpstringlist* newList = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE(ddpstring*, newList->cap);
-	DBGLOG("inbuilt_ddpstring_ddpstringlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpstring_ddpstringlist_verkettet: %p", list);
 
-	newList->arr[0] = inbuilt_deep_copy_string(str);
-	inbuilt_increment_ref_count(newList->arr[0], VK_STRING);
-	for (size_t i = 0; i < list->len; i++) {
-		newList->arr[i+1] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i+1], VK_STRING);
-	}
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpstring*) * list->len);
+	list->arr[0] = inbuilt_deep_copy_string(str);
+	inbuilt_increment_ref_count(list->arr[0], VK_STRING);
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 

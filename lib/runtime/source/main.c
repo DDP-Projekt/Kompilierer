@@ -60,6 +60,7 @@ void init_runtime(int argc, char** argv) {
 }
 
 static void free_ref_table() {
+	DBGLOG("free_ref_table");
 	// free all possibly remaining entries (there should be none, but maybe we segfaulted or aborted...)
 	Table* ref_table = get_ref_table();
 	// free all lists first to avoid freeing elements before their list has been freed
@@ -76,6 +77,7 @@ static void free_ref_table() {
 			free_value(entry->key, &entry->value);
 		}
 	}
+	DBGLOG("finish free_ref_table");
 	freeTable(get_ref_table()); // free the reference table (not the remaining entries, it should be empty)
 }
 

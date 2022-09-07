@@ -688,8 +688,9 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	} else {
 		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
 	}
-	_, vk := isRefCounted(c.latestReturn.Type())
-	c.incrementRC(c.latestReturn, vk)
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
+	}
 	return c
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
@@ -845,6 +846,9 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 		}
 	default:
 		err("Unbekannter Operator '%s'", e.Operator)
+	}
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
 	}
 	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
@@ -1350,6 +1354,9 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 			err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type())
 		}
 	}
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
+	}
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
@@ -1384,6 +1391,9 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	default:
 		err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
 	}
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
+	}
 
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
@@ -1404,6 +1414,9 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
 		elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(0))
 		c.cbb.NewStore(lhs, elementPtr)
+		if ok, vk := isRefCounted(lhs.Type()); ok {
+			c.incrementRC(lhs, vk)
+		}
 		c.latestReturn = list
 	} else {
 		switch e.Type.PrimitiveType {
@@ -1481,8 +1494,9 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
-	_, vk := isRefCounted(c.latestReturn.Type())
-	c.incrementRC(c.latestReturn, vk)
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
+	}
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
@@ -1521,7 +1535,9 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			}
 		} else {
 			val = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
-			toBeFreed = append(toBeFreed, &val)
+			if ok, _ := isRefCounted(val.Type()); ok {
+				toBeFreed = append(toBeFreed, &val)
+			}
 		}
 
 		args = append(args, val) // add the value to the arguments
@@ -1533,6 +1549,10 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	// all passed arguments
 	for i := range toBeFreed {
 		c.decrementRC(*toBeFreed[i])
+	}
+	// increment the rc on the function return
+	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
+		c.incrementRC(c.latestReturn, vk)
 	}
 	return c
 }

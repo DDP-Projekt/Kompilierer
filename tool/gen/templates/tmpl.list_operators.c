@@ -21,15 +21,10 @@ ddpbool inbuilt_{{ .T }}_equal({{ .T }}* list1, {{ .T }}* list2) {
 }
 
 {{ .T }}* inbuilt_{{ .T }}_slice({{ .T }}* list, ddpint index1, ddpint index2) {
-	{{ .T }}* cpyList = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_{{ .T }}_slice: %p", cpyList);
+	DBGLOG("inbuilt_{{ .T }}_slice: %p", list);
 
-	if (list->len <= 0) {
-		cpyList->arr = NULL;
-		cpyList->len = 0;
-		cpyList->cap = 0;
-		return cpyList;
-	}
+	if (list->len <= 0)
+		return list;
 
 	index1 = clamp(index1, 1, list->len);
 	index2 = clamp(index2, 1, list->len);
@@ -52,72 +47,60 @@ ddpbool inbuilt_{{ .T }}_equal({{ .T }}* list1, {{ .T }}* list2) {
 	memcpy(arr, &list->arr[index1], sizeof({{ .E }}) * new_list_cap);
 	{{end}}
 
-	cpyList->arr = arr;
-	cpyList->len = new_list_cap;
-	cpyList->cap = new_list_cap;
-	return cpyList;
+	FREE_ARRAY({{ .E }}, list->arr, list->cap);
+	list->arr = arr;
+	list->len = new_list_cap;
+	list->cap = new_list_cap;
+	return list;
 }
 
 {{ .T }}* inbuilt_{{ .T }}_{{ .T }}_verkettet({{ .T }}* list1, {{ .T }}* list2) {
-	{{ .T }}* newList = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
-	newList->len = list1->len + list2->len;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE({{ .E }}, newList->cap);
-	DBGLOG("inbuilt_{{ .T }}_{{ .T }}_verkettet: %p", newList);
+	DBGLOG("inbuilt_{{ .T }}_{{ .T }}_verkettet: %p", list1);
 
+	size_t new_cap = list1->len + list2->len;
+	list1->arr = reallocate(list1->arr, sizeof({{ .E }}) * list1->cap, sizeof({{ .E }}) * new_cap);
 	{{if .D}}
-	for (size_t i = 0; i < list1->len; i++) {
-		newList->arr[i] = inbuilt_deep_copy_string(list1->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i], VK_STRING);
-	}
 	for (size_t i = 0; i < list2->len; i++) {
-		newList->arr[i+list1->len] = inbuilt_deep_copy_string(list2->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i+list1->len], VK_STRING);
+		list1->arr[i+list1->len] = inbuilt_deep_copy_string(list2->arr[i]);
+		inbuilt_increment_ref_count(list1->arr[i+list1->len], VK_STRING);
 	}
 	{{else}}
-	memcpy(newList->arr, list1->arr, sizeof({{ .E }}) * list1->len);
-	memcpy(&newList->arr[list1->len], list2->arr, sizeof({{ .E }}) * list2->len);
+	memcpy(&list1->arr[list1->len], list2->arr, sizeof({{ .E }}) * list2->len);
 	{{end}}
 
-	return newList;
+	list1->cap = new_cap;
+	list1->len = new_cap;
+	return list1;
 }
 {{ .T }}* inbuilt_{{ .T }}_{{ .E }}_verkettet({{ .T }}* list, {{ .E }} el) {
-	{{ .T }}* newList = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE({{ .E }}, newList->cap);
-	DBGLOG("inbuilt_{{ .T }}_{{ .E }}_verkettet: %p", newList);
+	DBGLOG("inbuilt_{{ .T }}_{{ .E }}_verkettet: %p", list);
 
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof({{ .E }}) * list->cap, sizeof({{ .E }}) * new_cap);
 	{{if .D}}
-	for (size_t i = 0; i < list->len; i++) {
-		newList->arr[i] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i], VK_STRING);
-	}
-	newList->arr[list->len] = inbuilt_deep_copy_string(el);
-	inbuilt_increment_ref_count(newList->arr[list->len], VK_STRING);
+	list->arr[list->len] = inbuilt_deep_copy_string(el);
+	inbuilt_increment_ref_count(list->arr[list->len], VK_STRING);
 	{{else}}
-	memcpy(newList->arr, list->arr, sizeof({{ .E }}) * list->len);
-	newList->arr[list->len] = el;
+	list->arr[list->len] = el;
 	{{end}}
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 {{if .D}}
 {{ .T }}* inbuilt_ddpstring_ddpstringlist_verkettet({{ .E }} str, {{ .T }}* list) {
-	{{ .T }}* newList = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE({{ .E }}, newList->cap);
-	DBGLOG("inbuilt_ddpstring_ddpstringlist_verkettet: %p", newList);
+	DBGLOG("inbuilt_ddpstring_ddpstringlist_verkettet: %p", list);
 
-	newList->arr[0] = inbuilt_deep_copy_string(str);
-	inbuilt_increment_ref_count(newList->arr[0], VK_STRING);
-	for (size_t i = 0; i < list->len; i++) {
-		newList->arr[i+1] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(newList->arr[i+1], VK_STRING);
-	}
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof({{ .E }}) * list->cap, sizeof({{ .E }}) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof(ddpstring*) * list->len);
+	list->arr[0] = inbuilt_deep_copy_string(str);
+	inbuilt_increment_ref_count(list->arr[0], VK_STRING);
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 {{else}}
 {{ .T }}* inbuilt_{{ .E }}_{{ .E }}_verkettet({{ .E }} el1, {{ .E }} el2) {
@@ -133,16 +116,16 @@ ddpbool inbuilt_{{ .T }}_equal({{ .T }}* list1, {{ .T }}* list2) {
 	return newList;
 }
 {{ .T }}* inbuilt_{{ .E }}_{{ .T }}_verkettet({{ .E }} el, {{ .T }}* list) {
-	{{ .T }}* newList = ALLOCATE({{ .T }}, 1); // up here to log the adress in debug mode
-	newList->len = list->len + 1;
-	newList->cap = newList->len;
-	newList->arr = ALLOCATE({{ .E }}, newList->cap);
-	DBGLOG("inbuilt_{{ .E }}_{{ .T }}_verkettet: %p", newList);
+	DBGLOG("inbuilt_{{ .E }}_{{ .T }}_verkettet: %p", list);
 	
-	newList->arr[0] = el;
-	memcpy(&newList->arr[1], list->arr, sizeof({{ .E }}) * list->len);
+	size_t new_cap = list->len + 1;
+	list->arr = reallocate(list->arr, sizeof({{ .E }}) * list->cap, sizeof({{ .E }}) * new_cap);
+	memmove(&list->arr[1], list->arr, sizeof({{ .E }}) * list->len);
+	list->arr[0] = el;
 
-	return newList;
+	list->len = new_cap;
+	list->cap = new_cap;
+	return list;
 }
 {{end}}
 {{end}}
