@@ -14,7 +14,7 @@ Die Funktion qsort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahle
 	
 	Die Zahl Teiler ist 0. [für später]
 	:
-		Die Zahl pivot ist liste an der Stelle die Länge von liste. [das pivot Element ist das letzte Element der Liste]
+		Die Zahl pivot ist liste an der Stelle (die Länge von liste durch 2) als Zahl. [das pivot Element ist das mittlere Element der Liste]
 		[alle Elemente die größer als pivot sind kommen nach rechts, der Rest nach links, die Mitte wird in Teiler gespeichert]
 		Die Zahl _links ist 1.
 		Die Zahl _rechts ist die Länge von liste.

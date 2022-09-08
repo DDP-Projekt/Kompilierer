@@ -20,6 +20,9 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 		return NULL;
 	}
 
+	// GNU libc's realloc should already do this, but just to be sure
+	if (oldSize == newSize) return pointer;
+
 	// realloc can act as realloc or malloc
 	// if pointer is NULL it acts as malloc
 	// otherwise as realloc

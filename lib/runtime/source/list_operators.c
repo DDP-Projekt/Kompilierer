@@ -182,16 +182,17 @@ ddpintlist* inbuilt_ddpintlist_slice(ddpintlist* list, ddpint index1, ddpint ind
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0
 
-	size_t new_list_cap = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_len = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_cap = GROW_CAPACITY(new_list_len);
 	ddpint* arr = ALLOCATE(ddpint, new_list_cap);
 
 	
-	memcpy(arr, &list->arr[index1], sizeof(ddpint) * new_list_cap);
+	memcpy(arr, &list->arr[index1], sizeof(ddpint) * new_list_len);
 	
 
 	FREE_ARRAY(ddpint, list->arr, list->cap);
 	list->arr = arr;
-	list->len = new_list_cap;
+	list->len = new_list_len;
 	list->cap = new_list_cap;
 	return list;
 }
@@ -199,26 +200,30 @@ ddpintlist* inbuilt_ddpintlist_slice(ddpintlist* list, ddpint index1, ddpint ind
 ddpintlist* inbuilt_ddpintlist_ddpintlist_verkettet(ddpintlist* list1, ddpintlist* list2) {
 	DBGLOG("inbuilt_ddpintlist_ddpintlist_verkettet: %p", list1);
 
-	size_t new_cap = list1->len + list2->len;
+	size_t new_len = list1->len + list2->len;
+	size_t new_cap = list1->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list1->arr = reallocate(list1->arr, sizeof(ddpint) * list1->cap, sizeof(ddpint) * new_cap);
 	
 	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpint) * list2->len);
 	
 
+	list1->len = new_len;
 	list1->cap = new_cap;
-	list1->len = new_cap;
 	return list1;
 }
 ddpintlist* inbuilt_ddpintlist_ddpint_verkettet(ddpintlist* list, ddpint el) {
 	DBGLOG("inbuilt_ddpintlist_ddpint_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_cap);
 	
 	list->arr[list->len] = el;
 	
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -226,7 +231,7 @@ ddpintlist* inbuilt_ddpintlist_ddpint_verkettet(ddpintlist* list, ddpint el) {
 ddpintlist* inbuilt_ddpint_ddpint_verkettet(ddpint el1, ddpint el2) {
 	ddpintlist* newList = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
 	newList->len = 2;
-	newList->cap = newList->len;
+	newList->cap = GROW_CAPACITY(newList->len);
 	newList->arr = ALLOCATE(ddpint, newList->cap);
 	DBGLOG("inbuilt_ddpint_ddpint_verkettet: %p", newList);
 
@@ -238,12 +243,14 @@ ddpintlist* inbuilt_ddpint_ddpint_verkettet(ddpint el1, ddpint el2) {
 ddpintlist* inbuilt_ddpint_ddpintlist_verkettet(ddpint el, ddpintlist* list) {
 	DBGLOG("inbuilt_ddpint_ddpintlist_verkettet: %p", list);
 	
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_cap);
 	memmove(&list->arr[1], list->arr, sizeof(ddpint) * list->len);
 	list->arr[0] = el;
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -271,16 +278,17 @@ ddpfloatlist* inbuilt_ddpfloatlist_slice(ddpfloatlist* list, ddpint index1, ddpi
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0
 
-	size_t new_list_cap = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_len = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_cap = GROW_CAPACITY(new_list_len);
 	ddpfloat* arr = ALLOCATE(ddpfloat, new_list_cap);
 
 	
-	memcpy(arr, &list->arr[index1], sizeof(ddpfloat) * new_list_cap);
+	memcpy(arr, &list->arr[index1], sizeof(ddpfloat) * new_list_len);
 	
 
 	FREE_ARRAY(ddpfloat, list->arr, list->cap);
 	list->arr = arr;
-	list->len = new_list_cap;
+	list->len = new_list_len;
 	list->cap = new_list_cap;
 	return list;
 }
@@ -288,26 +296,30 @@ ddpfloatlist* inbuilt_ddpfloatlist_slice(ddpfloatlist* list, ddpint index1, ddpi
 ddpfloatlist* inbuilt_ddpfloatlist_ddpfloatlist_verkettet(ddpfloatlist* list1, ddpfloatlist* list2) {
 	DBGLOG("inbuilt_ddpfloatlist_ddpfloatlist_verkettet: %p", list1);
 
-	size_t new_cap = list1->len + list2->len;
+	size_t new_len = list1->len + list2->len;
+	size_t new_cap = list1->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list1->arr = reallocate(list1->arr, sizeof(ddpfloat) * list1->cap, sizeof(ddpfloat) * new_cap);
 	
 	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpfloat) * list2->len);
 	
 
+	list1->len = new_len;
 	list1->cap = new_cap;
-	list1->len = new_cap;
 	return list1;
 }
 ddpfloatlist* inbuilt_ddpfloatlist_ddpfloat_verkettet(ddpfloatlist* list, ddpfloat el) {
 	DBGLOG("inbuilt_ddpfloatlist_ddpfloat_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_cap);
 	
 	list->arr[list->len] = el;
 	
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -315,7 +327,7 @@ ddpfloatlist* inbuilt_ddpfloatlist_ddpfloat_verkettet(ddpfloatlist* list, ddpflo
 ddpfloatlist* inbuilt_ddpfloat_ddpfloat_verkettet(ddpfloat el1, ddpfloat el2) {
 	ddpfloatlist* newList = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
 	newList->len = 2;
-	newList->cap = newList->len;
+	newList->cap = GROW_CAPACITY(newList->len);
 	newList->arr = ALLOCATE(ddpfloat, newList->cap);
 	DBGLOG("inbuilt_ddpfloat_ddpfloat_verkettet: %p", newList);
 
@@ -327,12 +339,14 @@ ddpfloatlist* inbuilt_ddpfloat_ddpfloat_verkettet(ddpfloat el1, ddpfloat el2) {
 ddpfloatlist* inbuilt_ddpfloat_ddpfloatlist_verkettet(ddpfloat el, ddpfloatlist* list) {
 	DBGLOG("inbuilt_ddpfloat_ddpfloatlist_verkettet: %p", list);
 	
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_cap);
 	memmove(&list->arr[1], list->arr, sizeof(ddpfloat) * list->len);
 	list->arr[0] = el;
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -360,16 +374,17 @@ ddpboollist* inbuilt_ddpboollist_slice(ddpboollist* list, ddpint index1, ddpint 
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0
 
-	size_t new_list_cap = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_len = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_cap = GROW_CAPACITY(new_list_len);
 	ddpbool* arr = ALLOCATE(ddpbool, new_list_cap);
 
 	
-	memcpy(arr, &list->arr[index1], sizeof(ddpbool) * new_list_cap);
+	memcpy(arr, &list->arr[index1], sizeof(ddpbool) * new_list_len);
 	
 
 	FREE_ARRAY(ddpbool, list->arr, list->cap);
 	list->arr = arr;
-	list->len = new_list_cap;
+	list->len = new_list_len;
 	list->cap = new_list_cap;
 	return list;
 }
@@ -377,26 +392,30 @@ ddpboollist* inbuilt_ddpboollist_slice(ddpboollist* list, ddpint index1, ddpint 
 ddpboollist* inbuilt_ddpboollist_ddpboollist_verkettet(ddpboollist* list1, ddpboollist* list2) {
 	DBGLOG("inbuilt_ddpboollist_ddpboollist_verkettet: %p", list1);
 
-	size_t new_cap = list1->len + list2->len;
+	size_t new_len = list1->len + list2->len;
+	size_t new_cap = list1->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list1->arr = reallocate(list1->arr, sizeof(ddpbool) * list1->cap, sizeof(ddpbool) * new_cap);
 	
 	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpbool) * list2->len);
 	
 
+	list1->len = new_len;
 	list1->cap = new_cap;
-	list1->len = new_cap;
 	return list1;
 }
 ddpboollist* inbuilt_ddpboollist_ddpbool_verkettet(ddpboollist* list, ddpbool el) {
 	DBGLOG("inbuilt_ddpboollist_ddpbool_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_cap);
 	
 	list->arr[list->len] = el;
 	
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -404,7 +423,7 @@ ddpboollist* inbuilt_ddpboollist_ddpbool_verkettet(ddpboollist* list, ddpbool el
 ddpboollist* inbuilt_ddpbool_ddpbool_verkettet(ddpbool el1, ddpbool el2) {
 	ddpboollist* newList = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
 	newList->len = 2;
-	newList->cap = newList->len;
+	newList->cap = GROW_CAPACITY(newList->len);
 	newList->arr = ALLOCATE(ddpbool, newList->cap);
 	DBGLOG("inbuilt_ddpbool_ddpbool_verkettet: %p", newList);
 
@@ -416,12 +435,14 @@ ddpboollist* inbuilt_ddpbool_ddpbool_verkettet(ddpbool el1, ddpbool el2) {
 ddpboollist* inbuilt_ddpbool_ddpboollist_verkettet(ddpbool el, ddpboollist* list) {
 	DBGLOG("inbuilt_ddpbool_ddpboollist_verkettet: %p", list);
 	
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_cap);
 	memmove(&list->arr[1], list->arr, sizeof(ddpbool) * list->len);
 	list->arr[0] = el;
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -449,16 +470,17 @@ ddpcharlist* inbuilt_ddpcharlist_slice(ddpcharlist* list, ddpint index1, ddpint 
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0
 
-	size_t new_list_cap = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_len = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_cap = GROW_CAPACITY(new_list_len);
 	ddpchar* arr = ALLOCATE(ddpchar, new_list_cap);
 
 	
-	memcpy(arr, &list->arr[index1], sizeof(ddpchar) * new_list_cap);
+	memcpy(arr, &list->arr[index1], sizeof(ddpchar) * new_list_len);
 	
 
 	FREE_ARRAY(ddpchar, list->arr, list->cap);
 	list->arr = arr;
-	list->len = new_list_cap;
+	list->len = new_list_len;
 	list->cap = new_list_cap;
 	return list;
 }
@@ -466,26 +488,30 @@ ddpcharlist* inbuilt_ddpcharlist_slice(ddpcharlist* list, ddpint index1, ddpint 
 ddpcharlist* inbuilt_ddpcharlist_ddpcharlist_verkettet(ddpcharlist* list1, ddpcharlist* list2) {
 	DBGLOG("inbuilt_ddpcharlist_ddpcharlist_verkettet: %p", list1);
 
-	size_t new_cap = list1->len + list2->len;
+	size_t new_len = list1->len + list2->len;
+	size_t new_cap = list1->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list1->arr = reallocate(list1->arr, sizeof(ddpchar) * list1->cap, sizeof(ddpchar) * new_cap);
 	
 	memcpy(&list1->arr[list1->len], list2->arr, sizeof(ddpchar) * list2->len);
 	
 
+	list1->len = new_len;
 	list1->cap = new_cap;
-	list1->len = new_cap;
 	return list1;
 }
 ddpcharlist* inbuilt_ddpcharlist_ddpchar_verkettet(ddpcharlist* list, ddpchar el) {
 	DBGLOG("inbuilt_ddpcharlist_ddpchar_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_cap);
 	
 	list->arr[list->len] = el;
 	
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -493,7 +519,7 @@ ddpcharlist* inbuilt_ddpcharlist_ddpchar_verkettet(ddpcharlist* list, ddpchar el
 ddpcharlist* inbuilt_ddpchar_ddpchar_verkettet(ddpchar el1, ddpchar el2) {
 	ddpcharlist* newList = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
 	newList->len = 2;
-	newList->cap = newList->len;
+	newList->cap = GROW_CAPACITY(newList->len);
 	newList->arr = ALLOCATE(ddpchar, newList->cap);
 	DBGLOG("inbuilt_ddpchar_ddpchar_verkettet: %p", newList);
 
@@ -505,12 +531,14 @@ ddpcharlist* inbuilt_ddpchar_ddpchar_verkettet(ddpchar el1, ddpchar el2) {
 ddpcharlist* inbuilt_ddpchar_ddpcharlist_verkettet(ddpchar el, ddpcharlist* list) {
 	DBGLOG("inbuilt_ddpchar_ddpcharlist_verkettet: %p", list);
 	
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_cap);
 	memmove(&list->arr[1], list->arr, sizeof(ddpchar) * list->len);
 	list->arr[0] = el;
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -541,7 +569,8 @@ ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, d
 
 	index1--,index2--; // ddp indices start at 1, c indices at 0
 
-	size_t new_list_cap = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_len = (index2 - index1) + 1; // + 1 if indices are equal
+	size_t new_list_cap = GROW_CAPACITY(new_list_len);
 	ddpstring** arr = ALLOCATE(ddpstring*, new_list_cap);
 
 	
@@ -554,7 +583,7 @@ ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, d
 
 	FREE_ARRAY(ddpstring*, list->arr, list->cap);
 	list->arr = arr;
-	list->len = new_list_cap;
+	list->len = new_list_len;
 	list->cap = new_list_cap;
 	return list;
 }
@@ -562,7 +591,9 @@ ddpstringlist* inbuilt_ddpstringlist_slice(ddpstringlist* list, ddpint index1, d
 ddpstringlist* inbuilt_ddpstringlist_ddpstringlist_verkettet(ddpstringlist* list1, ddpstringlist* list2) {
 	DBGLOG("inbuilt_ddpstringlist_ddpstringlist_verkettet: %p", list1);
 
-	size_t new_cap = list1->len + list2->len;
+	size_t new_len = list1->len + list2->len;
+	size_t new_cap = list1->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list1->arr = reallocate(list1->arr, sizeof(ddpstring*) * list1->cap, sizeof(ddpstring*) * new_cap);
 	
 	for (size_t i = 0; i < list2->len; i++) {
@@ -571,21 +602,23 @@ ddpstringlist* inbuilt_ddpstringlist_ddpstringlist_verkettet(ddpstringlist* list
 	}
 	
 
+	list1->len = new_len;
 	list1->cap = new_cap;
-	list1->len = new_cap;
 	return list1;
 }
 ddpstringlist* inbuilt_ddpstringlist_ddpstring_verkettet(ddpstringlist* list, ddpstring* el) {
 	DBGLOG("inbuilt_ddpstringlist_ddpstring*_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_cap);
 	
 	list->arr[list->len] = inbuilt_deep_copy_string(el);
 	inbuilt_increment_ref_count(list->arr[list->len], VK_STRING);
 	
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
@@ -593,14 +626,15 @@ ddpstringlist* inbuilt_ddpstringlist_ddpstring_verkettet(ddpstringlist* list, dd
 ddpstringlist* inbuilt_ddpstring_ddpstringlist_verkettet(ddpstring* str, ddpstringlist* list) {
 	DBGLOG("inbuilt_ddpstring_ddpstringlist_verkettet: %p", list);
 
-	size_t new_cap = list->len + 1;
+	size_t new_len = list->len + 1;
+	size_t new_cap = list->cap;
+	while (new_cap < new_len) new_cap = GROW_CAPACITY(new_cap);
 	list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_cap);
 	memmove(&list->arr[1], list->arr, sizeof(ddpstring*) * list->len);
 	list->arr[0] = inbuilt_deep_copy_string(str);
 	inbuilt_increment_ref_count(list->arr[0], VK_STRING);
 
-	list->len = new_cap;
+	list->len = new_len;
 	list->cap = new_cap;
 	return list;
 }
-
