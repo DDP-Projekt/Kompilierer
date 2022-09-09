@@ -1,0 +1,38 @@
+--- IstLeer Test ---
+wahr
+wahr
+wahr
+wahr
+falsch
+--- IstGroß Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+falsch
+falsch
+--- IstKlein Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+falsch
+falsch
+--- IstLeerzeichen Test ---
+wahr
+falsch
+--- IstZahl Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
