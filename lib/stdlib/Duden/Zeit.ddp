@@ -3,3 +3,8 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Zeit seit Programmstart" oder
 	"die Millisekunden seit Programmstart"
+
+Die Funktion Zeit_Lokal gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"die Lokale Zeit"
