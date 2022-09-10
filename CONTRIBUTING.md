@@ -1,6 +1,8 @@
 # Contributing to DDP
 
-Currently the DDP repos are private and no contributions are taken.
+DDP is and will always be open source and any contributions are welcome! You can contribute to this project by submitting pull requests.
+
+Instructions for setting up a development environment are written below.
 
 # Building the DDP Compiler
 
