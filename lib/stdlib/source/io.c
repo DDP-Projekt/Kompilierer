@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "debug.h"
 #include <math.h>
+#include <locale.h>
 #ifdef _WIN32
 #include <io.h>
 #include <Windows.h>
@@ -27,6 +28,7 @@ void Schreibe_Kommazahl(ddpfloat p1) {
 		printf("Keine Zahl (NaN)");
 	}
 	else {
+		setlocale(LC_NUMERIC, "German_Germany.1252");
 		printf("%.16g", p1);
 	}
 }
