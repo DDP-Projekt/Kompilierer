@@ -1,67 +1,59 @@
-# Contributing to DDP
+# Zu DDP beitragen
+DDP ist und wird immer Open-Source bleiben und alle Beiträge sind willkommen! Sie können zu diesem Projekt beitragen indem Sie Pull-Requests erstellen.
 
-DDP is and will always be open source and any contributions are welcome! You can contribute to this project by submitting pull requests.
+# Den DDP Kompilierer bauen
+## Vorrausetzungen
+Der DDP Kompilierer ist in Go geschrieben. Daher müssen Sie eine Golang version von 1.18 oder höher haben. Diese können Sie hier downloaden: https://go.dev/dl/.<br>
+Hinweis: Manche Packet-Manager installieren nicht die korrekte version von Go. Bitte überprüfen Sie die Go version mit dem Befehl: `go version`.
 
-Instructions for setting up a development environment are written below.
+Um den DDP Kompilierer zu bauen, müssen Sie LLVM 12.0 installiert haben. Bei vielen Linux Distributionen geht das ganz einfach mit `sudo apt install llvm-12`.
+Unter Windows müssen Sie LLVM selber bauen (das können Sie auch bei Linux, wird aber nicht empfohlen, da es einige Stunden dauern kann).
 
-# Building the DDP Compiler
+Wenn Sie trotzdem LLVM auf linux bauen möchten, springen sie zum *LLVM bauen* Teil.
 
-## Prerequisites
+Um den Makefile auf Windows ausführen zu können müssen Sie folgende Programme installiert und in ihrem PATH haben:
 
-The DDP Compiler is written in Go. Therefore you need to have Golang version 1.18 or later installed. You can download it here: https://go.dev/dl/. <br>
-NOTE: Some package managers don't install the correct version of Go. Please check your Go version with `go version`.
+- [Go](https://go.dev/dl/) (mindestens version 1.18)
+- [mingw64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z/download) (version 8.1.0 wurde getestet und funktioniert, andere versionen werden vielleicht nicht funktionieren)
+- make (kann man mit chocolatey bekommen oder durch mingw32-make, was mit mingw64 dazu kommt)
+- [git](https://git-scm.com/download/win) (Sie werden git-bash benutzen um die makefiles auszuführen)
 
-To build the DDP Compiler, you need to have a build of LLVM 12.0.0 installed.
-On many linux distros, this is easily done by running `sudo apt install llvm-12`.
-On Windows you need to build LLVM yourself (which you can also do on linux if you wish, but it is not recommended, because it can take several hours).
+### Hinweis für Windows
 
-If you want to build LLVM yourself on linux anyway, skip to the *Building LLVM* section.
+Ihr endgültiger DDP-Build ist eng mit der von Ihnen verwendeten mingw64-Version gekoppelt.
+LLVM und die DDP-Laufzeit und stdlib müssen mit derselben Version von mingw64 erstellt werden, um zusammenzuarbeiten.
+Da DDP GCC als Linker und Libc-Anbieter verwendet, benötigt der endgültige DDP-Build dieselbe mingw64-Version mit der es gebaut wurde, um DDP-Programme zu kompilieren. Denken Sie daran, wenn Sie DDP auf einem beliebigen Computer einrichten.
 
-To run the makefile on Windows, you also need the following programs installed and added to your PATH:
+## Unter Linux
 
-- [Go](https://go.dev/dl/) (minimum version 1.18)
-- [mingw64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z/download) (version 8.1.0 is tested and works, other versions might not work)
-- make (can be downloaded via chocolatey, or you can use mingw32-make which comes with mingw64)
-- [git](https://git-scm.com/download/win) (you need git-bash to run the makefiles)
+Nachdem Sie LLVM installiert haben, führen Sie einfach `make` im Stammverzeichnis des Repositoriums aus.
+Um die Tests auszuführen, verwenden Sie `make test`.
+Um LLVM aus dem Untermodul llvm-project zu erstellen, führen Sie `make llvm` aus.
+Wenn Sie llvm aus dem Submodul erstellt haben, verwendet make diesen llvm-build anstelle des globalen.
 
-### Note for Windows
+## Unter Windows
 
-Your final DDP-build is tightly coupled with the mingw64 version you used.
-LLVM and the DDP runtime and stdlib must be built with the same version of mingw64 in order to work together.
-Also, as DDP uses GCC as linker and libc-provider, the final DDP-build will need the same mingw64 version with which
-it was built to compile DDP programs. Keep that in mind when setting DDP on any machine.
+Nachdem Sie LLVM installiert haben (siehe *LLVM bauen*), befolgen Sie die gleichen Schritte wie unter Linux, aber verwenden Sie git-bash, um die Befehle auszuführen (sonst funktionieren einige Unix-Befehle nicht).
 
-## On Linux
+### Wichtig
+GNUMake wird nicht funktionieren. Wenn Sie gnu make installiert haben, hat es unter Windows den Namen *make*, daher sollten Sie stattdessen mingw32-make verwenden, wenn Sie die Makefiles ausführen.
 
-After you installed LLVM, simply run `make` from the root of the repo.
-To run the tests, use `make test`.
-To build LLVM from the llvm-project submodule, run `make llvm`.
-If you built llvm from the submodule, make will use this llvm build instead of the global one.
+# LLVM bauen
 
-## On Windows
+## Voraussetzungen
 
-After you installed LLVM (see *Building LLVM*), follow the same steps as on Linux, but use git-bash to run the commands (otherwise some unix commands will not work).
-
-### Important
-GNUMake will not work. If you have gnu make installed it has the name *make* on windows, so you should use mingw32-make instead when running the makefiles.
-
-# Building LLVM
-
-## Prerequisites
-
-- [CMake](https://cmake.org/download/) (version 3.13.4 or above)
+- [CMake](https://cmake.org/download/) (Version 3.13.4 oder höher)
 - [Python3](https://www.python.org/downloads/)
 
-On Windows, the prerequisites above are also needed, and all the commands below need to be executed from git-bash and not cmd or powershell.
+Unter Windows sind die oben genannten Voraussetzungen ebenfalls erforderlich, und alle folgenden Befehle müssen in git-bash und nicht in cmd oder Powershell ausgeführt werden.
 
-After you installed all the prerequisites open a terminal in the root repository and run `make llvm`.
-This should download the llvm-project submodule and build it to llvm_build.
-The download is about 1GB, so it might take a while.
-Building LLVM also takes 2-3 hours, but it can be left to run in the background as it does not take up many resources.
+Nachdem Sie alle Voraussetzungen installiert haben, öffnen Sie ein Terminal im Root des Repositoriums und führen Sie `make llvm` aus.
+Dadurch sollte das Untermodul llvm-project heruntergeladen und in llvm_build gebaut werden.
+Der Download ist ungefähr 1 GB groß, daher kann es eine Weile dauern.
+Das Bauen von LLVM dauert ebenfalls 2-3 Stunden, kann aber im Hintergrund ausgeführt werden, da es nicht viele Ressourcen beansprucht.
 
-# Complete Example on Windows
-
-All commands are run from the root of the repo
+# Vollständiges Beispiel unter Windows
+Alle befehle wurden im Root des Repositoriums ausgeführt.
 
 ```
 $ make llvm
