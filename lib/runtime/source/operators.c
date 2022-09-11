@@ -25,42 +25,6 @@ ddpfloat inbuilt_log(ddpfloat numerus, ddpfloat base) {
 	return log10(numerus) / log10(base);
 }
 
-ddpfloat inbuilt_sin(ddpfloat f) {
-	return sin(f);
-}
-
-ddpfloat inbuilt_cos(ddpfloat f) {
-	return cos(f);
-}
-
-ddpfloat inbuilt_tan(ddpfloat f) {
-	return tan(f);
-}
-
-ddpfloat inbuilt_asin(ddpfloat f) {
-	return asin(f);
-}
-
-ddpfloat inbuilt_acos(ddpfloat f) {
-	return acos(f);
-}
-
-ddpfloat inbuilt_atan(ddpfloat f) {
-	return atan(f);
-}
-
-ddpfloat inbuilt_sinh(ddpfloat f) {
-	return sinh(f);
-}
-
-ddpfloat inbuilt_cosh(ddpfloat f) {
-	return cosh(f);
-}
-
-ddpfloat inbuilt_tanh(ddpfloat f) {
-	return tanh(f);
-}
-
 ddpint inbuilt_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
 }

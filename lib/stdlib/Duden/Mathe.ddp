@@ -38,3 +38,49 @@ Die Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl
 	Gib (wert als Zahl) als Kommazahl zurück.
 Und kann so benutzt werden:
 	"<wert> trunkiert"
+
+[ Trigonometrische Funktionen ]
+Die Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Sinus von <v>"
+
+Die Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Cosius von <v>"
+
+Die Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Tangens von <v>"
+
+Die Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Arkussinus von <v>"
+
+Die Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Arkuskosinus von <v>"
+
+Die Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Arkustangens von <v>"
+
+Die Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Hyperbelsinus von <v>"
+
+Die Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Hyperbelkosinus von <v>"
+
+Die Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Hyperbeltangens von <v>"
