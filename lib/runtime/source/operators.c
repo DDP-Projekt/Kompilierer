@@ -9,22 +9,6 @@
 #include <math.h>
 #include <float.h>
 
-ddpint inbuilt_int_betrag(ddpint i) {
-	return llabs(i);
-}
-
-ddpfloat inbuilt_float_betrag(ddpfloat f) {
-	return fabs(f);
-}
-
-ddpfloat inbuilt_hoch(ddpfloat f1, ddpfloat f2) {
-	return pow(f1, f2);
-}
-
-ddpfloat inbuilt_log(ddpfloat numerus, ddpfloat base) {
-	return log10(numerus) / log10(base);
-}
-
 ddpint inbuilt_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
 }
