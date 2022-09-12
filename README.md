@@ -1,4 +1,7 @@
-<h6 align="right"> <a href="README-en.md"> go to english README</a></h6>
+<div>
+  <img align="left" src="https://github.com/DDP-Projekt/Kompilierer/actions/workflows/build_and_test.yml/badge.svg?branch=master">
+  <h6 align="right"> <a href="README-en.md"> go to english README</a></h6>
+</div>
 <h1>Der <ins>K</ins>ompilierer <ins>D</ins>er <ins>D</ins>eutschen <ins>P</ins>rogrammiersprache</h1>
 
 Die Deutsche Programmiersprache (DDP) ist eine (Witz-)Programmiersprache von NotLe0n und bafto, die so entworfen wurde, dass in ihr geschriebene Programme so gelesen werden können wie (annähernd) korrektes Deutsch.
