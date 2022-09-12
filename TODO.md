@@ -24,6 +24,8 @@
 ## Sonstiges
 - [x] Standardbibliothek (Duden)
 - [ ] Kommentare parsen (für LS und Docs)
+- [ ] Code Optimizer (Dead-Code-Removal, constexpr-evaluation, ...)
+- [ ] kddp command-argumente deutsch machen
 
 # Feature Ideen
 - [x] Function overloading (muss noch getestet werden)

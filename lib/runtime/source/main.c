@@ -43,13 +43,14 @@ static void handle_args(int argc, char** argv) {
 // initialize runtime stuff
 void init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
-	setlocale(LC_ALL, "de_DE.UTF8");
 #ifdef _WIN32
-	setlocale(LC_NUMERIC, "French_Canada.1252"); // print floats with , instead of . as seperator
+	setlocale(LC_ALL, "German_Germany.1252");
 	// enable utf-8 printing on windows
 	// both of the functioncalls below are needed
 	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8); 
+#else
+	setlocale(LC_ALL, "de_DE.UTF-8");
 #endif // _WIN32
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
