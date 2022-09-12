@@ -220,14 +220,6 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
 		t.latestReturnedType = token.DDPIntType()
 	case token.GRÖßE:
 		t.latestReturnedType = token.DDPIntType()
-	case token.SINUS, token.KOSINUS, token.TANGENS,
-		token.ARKSIN, token.ARKKOS, token.ARKTAN,
-		token.HYPSIN, token.HYPKOS, token.HYPTAN:
-		if !rhs.IsNumeric() {
-			t.errExpected(expr.Operator, rhs, token.DDPIntType(), token.DDPFloatType())
-		}
-
-		t.latestReturnedType = token.DDPFloatType()
 	default:
 		t.err(expr.Operator, "Unbekannter unärer Operator '%s'", expr.Operator)
 	}

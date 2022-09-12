@@ -1069,10 +1069,10 @@ func (p *Parser) boolOR() ast.Expression {
 }
 
 func (p *Parser) boolAND() ast.Expression {
-	expr := p.trigo()
+	expr := p.bitwiseOR()
 	for p.match(token.UND) {
 		operator := p.previous()
-		rhs := p.trigo()
+		rhs := p.bitwiseOR()
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
@@ -1084,31 +1084,6 @@ func (p *Parser) boolAND() ast.Expression {
 		}
 	}
 	return expr
-}
-
-// TODO: fix funcCall precedence
-func (p *Parser) trigo() ast.Expression {
-	if p.match(token.DER) {
-		start := p.previous()
-		if p.match(token.SINUS, token.KOSINUS, token.TANGENS,
-			token.ARKSIN, token.ARKKOS, token.ARKTAN,
-			token.HYPSIN, token.HYPKOS, token.HYPTAN) {
-			operator := p.previous()
-			p.consume(token.VON)
-			rhs := p.bitwiseOR()
-			return &ast.UnaryExpr{
-				Range: token.Range{
-					Start: token.NewStartPos(start),
-					End:   rhs.GetRange().End,
-				},
-				Operator: operator,
-				Rhs:      rhs,
-			}
-		} else {
-			p.decrease()
-		}
-	}
-	return p.bitwiseOR()
 }
 
 func (p *Parser) bitwiseOR() ast.Expression {
