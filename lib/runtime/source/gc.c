@@ -48,8 +48,8 @@ void free_value(void* key, Value* val) {
 }
 
 // decrement the ref-count of a given garbage-collected object
-void inbuilt_decrement_ref_count(void* key) {
-	DBGLOG("inbuilt_decrement_ref_count: %p", key);
+void _ddp_decrement_ref_count(void* key) {
+	DBGLOG("_ddp_decrement_ref_count: %p", key);
 	Value val; // will hold the value from the ref-table
 	// get the current value state
 	if (tableGet(get_ref_table(), key, &val)) {
@@ -67,8 +67,8 @@ void inbuilt_decrement_ref_count(void* key) {
 
 // increment the ref-count of a given garbage-collected object
 // if key is not already in the table, it is added (that's why kind is needed)
-void inbuilt_increment_ref_count(void* key, uint8_t kind) {
-	DBGLOG("inbuilt_increment_ref_count: %p", key);
+void _ddp_increment_ref_count(void* key, uint8_t kind) {
+	DBGLOG("_ddp_increment_ref_count: %p", key);
 	Value val; // will hold the value from the ref-table
 	if (tableGet(get_ref_table(), key, &val)) { // key already in table
 		val.reference_count++; // increment the reference_count

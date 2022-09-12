@@ -84,9 +84,9 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
-		"inbuilt_ddpmain",
+		"_ddp_ddpmain",
 		nil,
-		c.mod.NewFunc("inbuilt_ddpmain", ddpint),
+		c.mod.NewFunc("_ddp_ddpmain", ddpint),
 	)
 	c.cf = ddpmain               // first function is ddpmain
 	c.cbb = ddpmain.NewBlock("") // first block
@@ -191,22 +191,22 @@ func (c *Compiler) setupStringType() {
 
 	// creates a ddpstring from a string literal and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(i8)))
+	c.declareInbuiltFunction("_ddp_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(i8)))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
 
 	// decrement the ref-count on a pointer and
 	// free the pointer if the ref-count becomes 0
 	// takes the pointer and the type to which it points
 	// (currently only string, but later lists and structs too)
-	c.declareInbuiltFunction("inbuilt_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
+	c.declareInbuiltFunction("_ddp_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
 
 	// increment the ref-count on a pointer
 	// takes the pointer and the type to which it points
 	// (currently only string, but later lists and structs too)
-	c.declareInbuiltFunction("inbuilt_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
+	c.declareInbuiltFunction("_ddp_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
 }
 
 // declares some internal list functions
@@ -222,22 +222,22 @@ func (c *Compiler) setupListTypes() {
 
 	// creates a ddpintlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
 
 	// inbuilt operators for lists
-	c.declareInbuiltFunction("inbuilt_ddpintlist_equal", ddpbool, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpintlist_slice", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpintlist_to_string", ddpstrptr, ir.NewParam("list", ddpintlistptr))
+	c.declareInbuiltFunction("_ddp_ddpintlist_equal", ddpbool, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
+	c.declareInbuiltFunction("_ddp_ddpintlist_slice", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpintlist_to_string", ddpstrptr, ir.NewParam("list", ddpintlistptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpintlist_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpintlist_ddpint_verkettet", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("el", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpintlist_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("list1", ddpintlistptr), ir.NewParam("list2", ddpintlistptr))
+	c.declareInbuiltFunction("_ddp_ddpintlist_ddpint_verkettet", ddpintlistptr, ir.NewParam("list", ddpintlistptr), ir.NewParam("el", ddpint))
 
-	c.declareInbuiltFunction("inbuilt_ddpint_ddpint_verkettet", ddpintlistptr, ir.NewParam("el1", ddpint), ir.NewParam("el2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpint_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("el", ddpint), ir.NewParam("list", ddpintlistptr))
+	c.declareInbuiltFunction("_ddp_ddpint_ddpint_verkettet", ddpintlistptr, ir.NewParam("el1", ddpint), ir.NewParam("el2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpint_ddpintlist_verkettet", ddpintlistptr, ir.NewParam("el", ddpint), ir.NewParam("list", ddpintlistptr))
 
 	// complete the ddpfloatlist definition to interact with the c ddp runtime
 	ddpfloatlist.Fields = make([]types.Type, 3)
@@ -248,22 +248,22 @@ func (c *Compiler) setupListTypes() {
 
 	// creates a ddpfloatlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_ddpfloatlist", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_ddpfloatlist", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr))
 
 	// inbuilt operators for lists
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_equal", ddpbool, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_slice", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_to_string", ddpstrptr, ir.NewParam("list", ddpfloatlistptr))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_equal", ddpbool, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_slice", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_to_string", ddpstrptr, ir.NewParam("list", ddpfloatlistptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpfloatlist_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("el", ddpfloat))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("list1", ddpfloatlistptr), ir.NewParam("list2", ddpfloatlistptr))
+	c.declareInbuiltFunction("_ddp_ddpfloatlist_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("list", ddpfloatlistptr), ir.NewParam("el", ddpfloat))
 
-	c.declareInbuiltFunction("inbuilt_ddpfloat_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("el1", ddpfloat), ir.NewParam("el2", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_ddpfloat_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("el", ddpfloat), ir.NewParam("list", ddpfloatlistptr))
+	c.declareInbuiltFunction("_ddp_ddpfloat_ddpfloat_verkettet", ddpfloatlistptr, ir.NewParam("el1", ddpfloat), ir.NewParam("el2", ddpfloat))
+	c.declareInbuiltFunction("_ddp_ddpfloat_ddpfloatlist_verkettet", ddpfloatlistptr, ir.NewParam("el", ddpfloat), ir.NewParam("list", ddpfloatlistptr))
 
 	// complete the ddpboollist definition to interact with the c ddp runtime
 	ddpboollist.Fields = make([]types.Type, 3)
@@ -274,22 +274,22 @@ func (c *Compiler) setupListTypes() {
 
 	// creates a ddpboollist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
 
 	// inbuilt operators for lists
-	c.declareInbuiltFunction("inbuilt_ddpboollist_equal", ddpbool, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
-	c.declareInbuiltFunction("inbuilt_ddpboollist_slice", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpboollist_to_string", ddpstrptr, ir.NewParam("list", ddpboollistptr))
+	c.declareInbuiltFunction("_ddp_ddpboollist_equal", ddpbool, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
+	c.declareInbuiltFunction("_ddp_ddpboollist_slice", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpboollist_to_string", ddpstrptr, ir.NewParam("list", ddpboollistptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpboollist_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
-	c.declareInbuiltFunction("inbuilt_ddpboollist_ddpbool_verkettet", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("el", ddpbool))
+	c.declareInbuiltFunction("_ddp_ddpboollist_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("list1", ddpboollistptr), ir.NewParam("list2", ddpboollistptr))
+	c.declareInbuiltFunction("_ddp_ddpboollist_ddpbool_verkettet", ddpboollistptr, ir.NewParam("list", ddpboollistptr), ir.NewParam("el", ddpbool))
 
-	c.declareInbuiltFunction("inbuilt_ddpbool_ddpbool_verkettet", ddpboollistptr, ir.NewParam("el1", ddpbool), ir.NewParam("el2", ddpbool))
-	c.declareInbuiltFunction("inbuilt_ddpbool_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("el", ddpbool), ir.NewParam("list", ddpboollistptr))
+	c.declareInbuiltFunction("_ddp_ddpbool_ddpbool_verkettet", ddpboollistptr, ir.NewParam("el1", ddpbool), ir.NewParam("el2", ddpbool))
+	c.declareInbuiltFunction("_ddp_ddpbool_ddpboollist_verkettet", ddpboollistptr, ir.NewParam("el", ddpbool), ir.NewParam("list", ddpboollistptr))
 
 	// complete the ddpcharlist definition to interact with the c ddp runtime
 	ddpcharlist.Fields = make([]types.Type, 3)
@@ -300,22 +300,22 @@ func (c *Compiler) setupListTypes() {
 
 	// creates a ddpcharlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_ddpcharlist", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_ddpcharlist", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr))
 
 	// inbuilt operators for lists
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_equal", ddpbool, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_slice", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_to_string", ddpstrptr, ir.NewParam("list", ddpcharlistptr))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_equal", ddpbool, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_slice", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_to_string", ddpstrptr, ir.NewParam("list", ddpcharlistptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpcharlist_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("el", ddpchar))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("list1", ddpcharlistptr), ir.NewParam("list2", ddpcharlistptr))
+	c.declareInbuiltFunction("_ddp_ddpcharlist_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("list", ddpcharlistptr), ir.NewParam("el", ddpchar))
 
-	c.declareInbuiltFunction("inbuilt_ddpchar_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("el1", ddpchar), ir.NewParam("el2", ddpchar))
-	c.declareInbuiltFunction("inbuilt_ddpchar_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("el", ddpchar), ir.NewParam("list", ddpcharlistptr))
+	c.declareInbuiltFunction("_ddp_ddpchar_ddpchar_verkettet", ddpcharlistptr, ir.NewParam("el1", ddpchar), ir.NewParam("el2", ddpchar))
+	c.declareInbuiltFunction("_ddp_ddpchar_ddpcharlist_verkettet", ddpcharlistptr, ir.NewParam("el", ddpchar), ir.NewParam("list", ddpcharlistptr))
 
 	// complete the ddpstringlist definition to interact with the c ddp runtime
 	ddpstringlist.Fields = make([]types.Type, 3)
@@ -326,21 +326,21 @@ func (c *Compiler) setupListTypes() {
 
 	// creates a ddpstringlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
-	c.declareInbuiltFunction("inbuilt_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
+	c.declareInbuiltFunction("_ddp_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
 
 	// inbuilt operators for lists
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_equal", ddpbool, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_slice", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_to_string", ddpstrptr, ir.NewParam("list", ddpstringlistptr))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_equal", ddpbool, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_slice", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_to_string", ddpstrptr, ir.NewParam("list", ddpstringlistptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
-	c.declareInbuiltFunction("inbuilt_ddpstringlist_ddpstring_verkettet", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("el", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("list1", ddpstringlistptr), ir.NewParam("list2", ddpstringlistptr))
+	c.declareInbuiltFunction("_ddp_ddpstringlist_ddpstring_verkettet", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("el", ddpstrptr))
 
-	c.declareInbuiltFunction("inbuilt_ddpstring_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("str", ddpstrptr), ir.NewParam("list", ddpstringlistptr))
+	c.declareInbuiltFunction("_ddp_ddpstring_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("str", ddpstrptr), ir.NewParam("list", ddpstringlistptr))
 
 }
 
@@ -353,72 +353,72 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
 	// trigonometric functions
-	c.declareInbuiltFunction("inbuilt_sin", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_cos", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_tan", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_asin", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_acos", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_atan", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_sinh", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_cosh", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_tanh", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_sin", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_cos", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_tan", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_asin", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_acos", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_atan", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_sinh", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_cosh", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_tanh", ddpfloat, ir.NewParam("f", ddpfloat))
 
 	// logarithm
 	c.declareInbuiltFunction("log10", ddpfloat, ir.NewParam("f", ddpfloat))
 
 	// ddpstring length
-	c.declareInbuiltFunction("inbuilt_string_length", ddpint, ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_string_length", ddpint, ir.NewParam("str", ddpstrptr))
 
 	// ddpstring to type cast
-	c.declareInbuiltFunction("inbuilt_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
-	c.declareInbuiltFunction("inbuilt_string_to_float", ddpfloat, ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_string_to_int", ddpint, ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_string_to_float", ddpfloat, ir.NewParam("str", ddpstrptr))
 
 	// casts to ddpstring
-	c.declareInbuiltFunction("inbuilt_int_to_string", ddpstrptr, ir.NewParam("i", ddpint))
-	c.declareInbuiltFunction("inbuilt_float_to_string", ddpstrptr, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("inbuilt_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
-	c.declareInbuiltFunction("inbuilt_char_to_string", ddpstrptr, ir.NewParam("c", ddpchar))
+	c.declareInbuiltFunction("_ddp_int_to_string", ddpstrptr, ir.NewParam("i", ddpint))
+	c.declareInbuiltFunction("_ddp_float_to_string", ddpstrptr, ir.NewParam("f", ddpfloat))
+	c.declareInbuiltFunction("_ddp_bool_to_string", ddpstrptr, ir.NewParam("b", ddpbool))
+	c.declareInbuiltFunction("_ddp_char_to_string", ddpstrptr, ir.NewParam("c", ddpchar))
 
 	// ddpstring equality
-	c.declareInbuiltFunction("inbuilt_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
 
 	// ddpstring concatenation for different types
-	c.declareInbuiltFunction("inbuilt_string_string_verkettet", ddpstrptr, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
-	c.declareInbuiltFunction("inbuilt_char_string_verkettet", ddpstrptr, ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstrptr))
-	c.declareInbuiltFunction("inbuilt_string_char_verkettet", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("c", ddpchar))
-	c.declareInbuiltFunction("inbuilt_char_char_verkettet", ddpstrptr, ir.NewParam("c1", ddpchar), ir.NewParam("c2", ddpchar))
+	c.declareInbuiltFunction("_ddp_string_string_verkettet", ddpstrptr, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_char_string_verkettet", ddpstrptr, ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstrptr))
+	c.declareInbuiltFunction("_ddp_string_char_verkettet", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("c", ddpchar))
+	c.declareInbuiltFunction("_ddp_char_char_verkettet", ddpstrptr, ir.NewParam("c1", ddpchar), ir.NewParam("c2", ddpchar))
 
 	// string indexing
-	c.declareInbuiltFunction("inbuilt_string_index", ddpchar, ir.NewParam("str", ddpstrptr), ir.NewParam("index", ddpint))
-	c.declareInbuiltFunction("inbuilt_replace_char_in_string", void, ir.NewParam("str", ddpstrptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
-	c.declareInbuiltFunction("inbuilt_string_slice", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	c.declareInbuiltFunction("_ddp_string_index", ddpchar, ir.NewParam("str", ddpstrptr), ir.NewParam("index", ddpint))
+	c.declareInbuiltFunction("_ddp_replace_char_in_string", void, ir.NewParam("str", ddpstrptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
+	c.declareInbuiltFunction("_ddp_string_slice", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 }
 
 // helper to call increment_ref_count
 func (c *Compiler) incrementRC(key value.Value, kind *constant.Int) {
-	c.cbb.NewCall(c.functions["inbuilt_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
+	c.cbb.NewCall(c.functions["_ddp_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
 }
 
 // helper to call decrement_ref_count
 func (c *Compiler) decrementRC(key value.Value) {
-	c.cbb.NewCall(c.functions["inbuilt_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
+	c.cbb.NewCall(c.functions["_ddp_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
 }
 
-// helper to call inbuilt_deep_copy_<type>
+// helper to call _ddp_deep_copy_<type>
 func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
 	switch listptr.Type() {
 	case ddpstrptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_string"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_string"].irFunc, listptr)
 	case ddpintlistptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpintlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpintlist"].irFunc, listptr)
 	case ddpfloatlistptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpfloatlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpfloatlist"].irFunc, listptr)
 	case ddpboollistptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpboollist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpboollist"].irFunc, listptr)
 	case ddpcharlistptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpcharlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpcharlist"].irFunc, listptr)
 	case ddpstringlistptr:
-		return c.cbb.NewCall(c.functions["inbuilt_deep_copy_ddpstringlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpstringlist"].irFunc, listptr)
 	}
 	err("invalid list type %s", listptr)
 	return zero // unreachable
@@ -582,7 +582,7 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
 	switch lhs.Type() {
 	case ddpstrptr:
-		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+		c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_index"].irFunc, lhs, rhs)
 	case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
 		elementPtr := c.getElementPointer(lhs, rhs, e)
 		// load the element
@@ -629,13 +629,13 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
-	c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
+	c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
 	c.incrementRC(c.latestReturn, VK_STRING)
 	return c
 }
 func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	if e.Values != nil {
-		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
+		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
 		for i, v := range e.Values {
 			val := c.evaluate(v)
 			arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
@@ -648,7 +648,7 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 		count := c.evaluate(e.Count)
 		Value := c.evaluate(e.Value)
 
-		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, count)
+		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, count)
 
 		counter := c.cbb.NewAlloca(ddpint)
 		c.cbb.NewStore(zero, counter)
@@ -686,7 +686,7 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 
 		c.latestReturn = list
 	} else {
-		c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
+		c.latestReturn = c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
 	}
 	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
 		c.incrementRC(c.latestReturn, vk)
@@ -730,7 +730,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	case token.LÄNGE:
 		switch rhs.Type() {
 		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_length"].irFunc, rhs)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
 			lenptr := c.cbb.NewGetElementPtr(derefListPtr(rhs.Type()), rhs, newIntT(i32, 0), newIntT(i32, 1))
 			c.latestReturn = c.cbb.NewLoad(ddpint, lenptr)
@@ -813,94 +813,94 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		case ddpintlistptr:
 			switch rhs.Type() {
 			case ddpintlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_ddpintlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_ddpintlist_verkettet"].irFunc, lhs, rhs)
 			case ddpint:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_ddpint_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_ddpint_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpint:
 			switch rhs.Type() {
 			case ddpint:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpint_ddpint_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpint_ddpint_verkettet"].irFunc, lhs, rhs)
 			case ddpintlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpint_ddpintlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpint_ddpintlist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpfloatlistptr:
 			switch rhs.Type() {
 			case ddpfloatlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
 			case ddpfloat:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_ddpfloat_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_ddpfloat_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpfloat:
 			switch rhs.Type() {
 			case ddpfloat:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloat_ddpfloat_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloat_ddpfloat_verkettet"].irFunc, lhs, rhs)
 			case ddpfloatlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloat_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloat_ddpfloatlist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpboollistptr:
 			switch rhs.Type() {
 			case ddpboollistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_ddpboollist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpboollist_ddpboollist_verkettet"].irFunc, lhs, rhs)
 			case ddpbool:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_ddpbool_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpboollist_ddpbool_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpbool:
 			switch rhs.Type() {
 			case ddpbool:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpbool_ddpbool_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpbool_ddpbool_verkettet"].irFunc, lhs, rhs)
 			case ddpboollistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpbool_ddpboollist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpbool_ddpboollist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpcharlistptr:
 			switch rhs.Type() {
 			case ddpcharlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_ddpcharlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpcharlist_ddpcharlist_verkettet"].irFunc, lhs, rhs)
 			case ddpchar:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_ddpchar_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpcharlist_ddpchar_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpchar:
 			switch rhs.Type() {
 			case ddpchar:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpchar_ddpchar_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpchar_ddpchar_verkettet"].irFunc, lhs, rhs)
 			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_string_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_char_string_verkettet"].irFunc, lhs, rhs)
 			case ddpcharlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpchar_ddpcharlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpchar_ddpcharlist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpstringlistptr:
 			switch rhs.Type() {
 			case ddpstringlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_ddpstringlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstringlist_ddpstringlist_verkettet"].irFunc, lhs, rhs)
 			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_ddpstring_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstringlist_ddpstring_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
 		case ddpstrptr:
 			switch rhs.Type() {
 			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_string_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_string_verkettet"].irFunc, lhs, rhs)
 			case ddpchar:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_char_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_char_verkettet"].irFunc, lhs, rhs)
 			case ddpstringlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstring_ddpstringlist_verkettet"].irFunc, lhs, rhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstring_ddpstringlist_verkettet"].irFunc, lhs, rhs)
 			default:
 				err("invalid Parameter Types for VERKETTET (%s, %s)", lhs.Type(), rhs.Type())
 			}
@@ -1012,7 +1012,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	case token.STELLE:
 		switch lhs.Type() {
 		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_index"].irFunc, lhs, rhs)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
 			thenBlock, errorBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 			// get the length of the list
@@ -1122,17 +1122,17 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		case ddpchar:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
 		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_equal"].irFunc, lhs, rhs)
 		case ddpintlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_equal"].irFunc, lhs, rhs)
 		case ddpfloatlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_equal"].irFunc, lhs, rhs)
 		case ddpboollistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpboollist_equal"].irFunc, lhs, rhs)
 		case ddpcharlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpcharlist_equal"].irFunc, lhs, rhs)
 		case ddpstringlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_equal"].irFunc, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstringlist_equal"].irFunc, lhs, rhs)
 		default:
 			err("invalid Parameter Types for GLEICH (%s, %s)", lhs.Type(), rhs.Type())
 		}
@@ -1147,22 +1147,22 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 		case ddpchar:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, rhs)
 		case ddpstrptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_string_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_string_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		case ddpintlistptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_ddpintlist_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_ddpintlist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		case ddpfloatlistptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		case ddpboollistptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_ddpboollist_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_ddpboollist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		case ddpcharlistptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_ddpcharlist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		case ddpstringlistptr:
-			equal := c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_equal"].irFunc, lhs, rhs)
+			equal := c.cbb.NewCall(c.functions["_ddp_ddpstringlist_equal"].irFunc, lhs, rhs)
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		default:
 			err("invalid Parameter Types for UNGLEICH (%s, %s)", lhs.Type(), rhs.Type())
@@ -1286,17 +1286,17 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	case token.VONBIS:
 		switch lhs.Type() {
 		case ddpstrptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_slice"].irFunc, lhs, mid, rhs)
 		case ddpintlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_slice"].irFunc, lhs, mid, rhs)
 		case ddpfloatlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_slice"].irFunc, lhs, mid, rhs)
 		case ddpboollistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpboollist_slice"].irFunc, lhs, mid, rhs)
 		case ddpcharlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpcharlist_slice"].irFunc, lhs, mid, rhs)
 		case ddpstringlistptr:
-			c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_slice"].irFunc, lhs, mid, rhs)
+			c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstringlist_slice"].irFunc, lhs, mid, rhs)
 		default:
 			err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
 		}
@@ -1321,7 +1321,7 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 	lhs := c.evaluate(e.Lhs)
 	if e.Type.IsList {
-		list := c.cbb.NewCall(c.functions["inbuilt_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
+		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
 		arrptr := c.cbb.NewGetElementPtr(derefListPtr(list.Type()), list, newIntT(i32, 0), newIntT(i32, 0))
 		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
 		elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(0))
@@ -1344,7 +1344,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			case ddpchar:
 				c.latestReturn = c.cbb.NewSExt(lhs, ddpint)
 			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_int"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_to_int"].irFunc, lhs)
 			default:
 				err("invalid Parameter Type for ZAHL: %s", lhs.Type())
 			}
@@ -1355,7 +1355,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 			case ddpfloat:
 				c.latestReturn = lhs
 			case ddpstrptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_string_to_float"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_to_float"].irFunc, lhs)
 			default:
 				err("invalid Parameter Type for KOMMAZAHL: %s", lhs.Type())
 			}
@@ -1380,25 +1380,25 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 		case token.TEXT:
 			switch lhs.Type() {
 			case ddpint:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_int_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_int_to_string"].irFunc, lhs)
 			case ddpfloat:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_float_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_float_to_string"].irFunc, lhs)
 			case ddpbool:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_bool_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_bool_to_string"].irFunc, lhs)
 			case ddpchar:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_char_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_char_to_string"].irFunc, lhs)
 			case ddpstrptr:
 				c.latestReturn = c.deepCopyRefCounted(lhs)
 			case ddpintlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpintlist_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_to_string"].irFunc, lhs)
 			case ddpfloatlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpfloatlist_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpfloatlist_to_string"].irFunc, lhs)
 			case ddpboollistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpboollist_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpboollist_to_string"].irFunc, lhs)
 			case ddpcharlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpcharlist_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpcharlist_to_string"].irFunc, lhs)
 			case ddpstringlistptr:
-				c.latestReturn = c.cbb.NewCall(c.functions["inbuilt_ddpstringlist_to_string"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpstringlist_to_string"].irFunc, lhs)
 			default:
 				err("invalid Parameter Type for TEXT: %s", lhs.Type())
 			}
@@ -1526,7 +1526,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 		switch lhs.Type() {
 		case ddpstrptr:
 			c.commentNode(c.cbb, s, "")
-			c.cbb.NewCall(c.functions["inbuilt_replace_char_in_string"].irFunc, lhs, val, index)
+			c.cbb.NewCall(c.functions["_ddp_replace_char_in_string"].irFunc, lhs, val, index)
 		case ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
 			// index into the array
 			elementPtr := c.getElementPointer(lhs, index, s)
@@ -1722,7 +1722,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 
 	var len value.Value
 	if in.Type() == ddpstrptr {
-		len = c.cbb.NewCall(c.functions["inbuilt_string_length"].irFunc, in)
+		len = c.cbb.NewCall(c.functions["_ddp_string_length"].irFunc, in)
 	} else {
 		lenptr := c.cbb.NewGetElementPtr(derefListPtr(in.Type()), in, newIntT(i32, 0), newIntT(i32, 1))
 		len = c.cbb.NewLoad(ddpint, lenptr)
@@ -1743,7 +1743,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	c.cbb = bodyBlock
 	var loopVar value.Value
 	if in.Type() == ddpstrptr {
-		loopVar = c.cbb.NewCall(c.functions["inbuilt_string_index"].irFunc, in, c.cbb.NewLoad(ddpint, index))
+		loopVar = c.cbb.NewCall(c.functions["_ddp_string_index"].irFunc, in, c.cbb.NewLoad(ddpint, index))
 	} else {
 		arrptr := c.cbb.NewGetElementPtr(derefListPtr(in.Type()), in, newIntT(i32, 0), newIntT(i32, 0))
 		arr := c.cbb.NewLoad(ptr(getElementType(in.Type())), arrptr)

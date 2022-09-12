@@ -7,9 +7,9 @@
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
-ddpstring* inbuilt_string_from_constant(char* str) {
+ddpstring* _ddp_string_from_constant(char* str) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_string_from_constant: %p", dstr);
+	DBGLOG("_ddp_string_from_constant: %p", dstr);
 	size_t size = strlen(str) + 1;
 	char* string = ALLOCATE(char, size); // the char array of the string (plus null terminator)
 	// copy the passed char array
@@ -29,8 +29,8 @@ void free_string(ddpstring* str) {
 }
 
 // allocate a new ddpstring as copy of str
-ddpstring* inbuilt_deep_copy_string(ddpstring* str) {
-	DBGLOG("inbuilt_deep_copy_string: %p", str);
+ddpstring* _ddp_deep_copy_string(ddpstring* str) {
+	DBGLOG("_ddp_deep_copy_string: %p", str);
 	char* cpy = ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap); // copy the chars
 	ddpstring* cpystr = ALLOCATE(ddpstring, 1); // alocate the copy string
@@ -42,7 +42,7 @@ ddpstring* inbuilt_deep_copy_string(ddpstring* str) {
 
 /***** Partially generated code *****/
 
-ddpintlist* inbuilt_ddpintlist_from_constants(ddpint count) {
+ddpintlist* _ddp_ddpintlist_from_constants(ddpint count) {
 	ddpintlist* list = ALLOCATE(ddpintlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpintlist_from_constants: %p", list);
 	list->arr = count > 0 ? ALLOCATE(ddpint, count) : NULL; // the element array of the list
@@ -58,8 +58,8 @@ void free_ddpintlist(ddpintlist* list) {
 	FREE(ddpintlist, list); // free the list pointer
 }
 
-ddpintlist* inbuilt_deep_copy_ddpintlist(ddpintlist* list) {
-	DBGLOG("inbuilt_deep_copy_ddpintlist: %p", list);
+ddpintlist* _ddp_deep_copy_ddpintlist(ddpintlist* list) {
+	DBGLOG("_ddp_deep_copy_ddpintlist: %p", list);
 	ddpint* cpy = ALLOCATE(ddpint, list->cap); // allocate the element array for the copy
 	
 	memcpy(cpy, list->arr, sizeof(ddpint) * list->cap); // copy the elements
@@ -73,7 +73,7 @@ ddpintlist* inbuilt_deep_copy_ddpintlist(ddpintlist* list) {
 	return cpylist;
 }
 
-ddpfloatlist* inbuilt_ddpfloatlist_from_constants(ddpint count) {
+ddpfloatlist* _ddp_ddpfloatlist_from_constants(ddpint count) {
 	ddpfloatlist* list = ALLOCATE(ddpfloatlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpfloatlist_from_constants: %p", list);
 	list->arr = count > 0 ? ALLOCATE(ddpfloat, count) : NULL; // the element array of the list
@@ -89,8 +89,8 @@ void free_ddpfloatlist(ddpfloatlist* list) {
 	FREE(ddpfloatlist, list); // free the list pointer
 }
 
-ddpfloatlist* inbuilt_deep_copy_ddpfloatlist(ddpfloatlist* list) {
-	DBGLOG("inbuilt_deep_copy_ddpfloatlist: %p", list);
+ddpfloatlist* _ddp_deep_copy_ddpfloatlist(ddpfloatlist* list) {
+	DBGLOG("_ddp_deep_copy_ddpfloatlist: %p", list);
 	ddpfloat* cpy = ALLOCATE(ddpfloat, list->cap); // allocate the element array for the copy
 	
 	memcpy(cpy, list->arr, sizeof(ddpfloat) * list->cap); // copy the elements
@@ -104,7 +104,7 @@ ddpfloatlist* inbuilt_deep_copy_ddpfloatlist(ddpfloatlist* list) {
 	return cpylist;
 }
 
-ddpboollist* inbuilt_ddpboollist_from_constants(ddpint count) {
+ddpboollist* _ddp_ddpboollist_from_constants(ddpint count) {
 	ddpboollist* list = ALLOCATE(ddpboollist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpboollist_from_constants: %p", list);
 	list->arr = count > 0 ? ALLOCATE(ddpbool, count) : NULL; // the element array of the list
@@ -120,8 +120,8 @@ void free_ddpboollist(ddpboollist* list) {
 	FREE(ddpboollist, list); // free the list pointer
 }
 
-ddpboollist* inbuilt_deep_copy_ddpboollist(ddpboollist* list) {
-	DBGLOG("inbuilt_deep_copy_ddpboollist: %p", list);
+ddpboollist* _ddp_deep_copy_ddpboollist(ddpboollist* list) {
+	DBGLOG("_ddp_deep_copy_ddpboollist: %p", list);
 	ddpbool* cpy = ALLOCATE(ddpbool, list->cap); // allocate the element array for the copy
 	
 	memcpy(cpy, list->arr, sizeof(ddpbool) * list->cap); // copy the elements
@@ -135,7 +135,7 @@ ddpboollist* inbuilt_deep_copy_ddpboollist(ddpboollist* list) {
 	return cpylist;
 }
 
-ddpcharlist* inbuilt_ddpcharlist_from_constants(ddpint count) {
+ddpcharlist* _ddp_ddpcharlist_from_constants(ddpint count) {
 	ddpcharlist* list = ALLOCATE(ddpcharlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpcharlist_from_constants: %p", list);
 	list->arr = count > 0 ? ALLOCATE(ddpchar, count) : NULL; // the element array of the list
@@ -151,8 +151,8 @@ void free_ddpcharlist(ddpcharlist* list) {
 	FREE(ddpcharlist, list); // free the list pointer
 }
 
-ddpcharlist* inbuilt_deep_copy_ddpcharlist(ddpcharlist* list) {
-	DBGLOG("inbuilt_deep_copy_ddpcharlist: %p", list);
+ddpcharlist* _ddp_deep_copy_ddpcharlist(ddpcharlist* list) {
+	DBGLOG("_ddp_deep_copy_ddpcharlist: %p", list);
 	ddpchar* cpy = ALLOCATE(ddpchar, list->cap); // allocate the element array for the copy
 	
 	memcpy(cpy, list->arr, sizeof(ddpchar) * list->cap); // copy the elements
@@ -166,7 +166,7 @@ ddpcharlist* inbuilt_deep_copy_ddpcharlist(ddpcharlist* list) {
 	return cpylist;
 }
 
-ddpstringlist* inbuilt_ddpstringlist_from_constants(ddpint count) {
+ddpstringlist* _ddp_ddpstringlist_from_constants(ddpint count) {
 	ddpstringlist* list = ALLOCATE(ddpstringlist, 1); // up here to log the adress in debug mode
 	DBGLOG("ddpstringlist_from_constants: %p", list);
 	list->arr = count > 0 ? ALLOCATE(ddpstring*, count) : NULL; // the element array of the list
@@ -179,21 +179,21 @@ void free_ddpstringlist(ddpstringlist* list) {
 	DBGLOG("free_ddpstringlist: %p", list);
 	
 	for (size_t i = 0; i < list->len; i++) {
-		inbuilt_decrement_ref_count(list->arr[i]);
+		_ddp_decrement_ref_count(list->arr[i]);
 	}
 	
 	FREE_ARRAY(ddpstring*, list->arr, list->cap); // free the element array
 	FREE(ddpstringlist, list); // free the list pointer
 }
 
-ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list) {
-	DBGLOG("inbuilt_deep_copy_ddpstringlist: %p", list);
+ddpstringlist* _ddp_deep_copy_ddpstringlist(ddpstringlist* list) {
+	DBGLOG("_ddp_deep_copy_ddpstringlist: %p", list);
 	ddpstring** cpy = ALLOCATE(ddpstring*, list->len); // allocate the element array for the copy
 	
 	
 	for (size_t i = 0; i < list->len; i++) {
-		cpy[i] = inbuilt_deep_copy_string(list->arr[i]);
-		inbuilt_increment_ref_count(cpy[i], VK_STRING);
+		cpy[i] = _ddp_deep_copy_string(list->arr[i]);
+		_ddp_increment_ref_count(cpy[i], VK_STRING);
 	}
 	
 	ddpstringlist* cpylist = ALLOCATE(ddpstringlist, 1); // alocate the copy list

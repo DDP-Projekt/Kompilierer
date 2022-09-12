@@ -26,7 +26,7 @@ static ddpstringlist* cmd_args = NULL; // holds the command line arguments as dd
 static void handle_args(int argc, char** argv) {
 	cmd_args = ALLOCATE(ddpstringlist, 1);
 	DBGLOG("handle_args: %p", cmd_args);
-	inbuilt_increment_ref_count(cmd_args, VK_STRING_LIST);
+	_ddp_increment_ref_count(cmd_args, VK_STRING_LIST);
 	cmd_args->cap = argc;
 	cmd_args->len = cmd_args->cap;
 	cmd_args->arr = ALLOCATE(ddpstring*, cmd_args->cap);
@@ -36,7 +36,7 @@ static void handle_args(int argc, char** argv) {
 		cmd_args->arr[i]->str = ALLOCATE(char, cmd_args->arr[i]->cap);
 		cmd_args->arr[i]->str[cmd_args->arr[i]->cap-1] = '\0';
 		strcpy(cmd_args->arr[i]->str, argv[i]);
-		inbuilt_increment_ref_count(cmd_args->arr[i], VK_STRING);
+		_ddp_increment_ref_count(cmd_args->arr[i], VK_STRING);
 	}
 }
 
@@ -94,23 +94,23 @@ void end_runtime() {
 	DBGLOG("end_runtime");
 
 	// free the cmd_args
-	inbuilt_decrement_ref_count(cmd_args);
+	_ddp_decrement_ref_count(cmd_args);
 
 	free_ref_table();
 }
 
-extern int inbuilt_ddpmain(); // implicitly defined by the ddp code
+extern int _ddp_ddpmain(); // implicitly defined by the ddp code
 
 // entry point of the final executable (needed by gcc)
 int main(int argc, char** argv) {
 	init_runtime(argc, argv); // initialize the runtime
-	int ret = inbuilt_ddpmain(); // run the ddp code
+	int ret = _ddp_ddpmain(); // run the ddp code
 	end_runtime(); // end the runtime
 	return ret; // return the exit status of the ddp-code
 }
 
-extern ddpstringlist* inbuilt_deep_copy_ddpstringlist(ddpstringlist* list);
+extern ddpstringlist* _ddp_deep_copy_ddpstringlist(ddpstringlist* list);
 
 ddpstringlist* Befehlszeilenargumente() {
-	return inbuilt_deep_copy_ddpstringlist(cmd_args);
+	return _ddp_deep_copy_ddpstringlist(cmd_args);
 }

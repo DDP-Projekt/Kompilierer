@@ -15,9 +15,9 @@ Table* get_ref_table(); // returns a pointer to the reference-table
 void free_value(void* key, Value* val);
 
 // decrement the ref-count of a given garbage-collected object
-void inbuilt_decrement_ref_count(void* key);
+void _ddp_decrement_ref_count(void* key);
 // increment the ref-count of a given garbage-collected object
 // if key is not already in the table, it is added (that's why kind is needed)
-void inbuilt_increment_ref_count(void* key, uint8_t kind);
+void _ddp_increment_ref_count(void* key, uint8_t kind);
 
 #endif // DDP_GC_H

@@ -9,11 +9,11 @@
 #include <math.h>
 #include <float.h>
 
-ddpint inbuilt_string_length(ddpstring* str) {
+ddpint _ddp_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
 }
 
-ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
+ddpchar _ddp_string_index(ddpstring* str, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
 		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
@@ -31,7 +31,7 @@ ddpchar inbuilt_string_index(ddpstring* str, ddpint index) {
 	return utf8_string_to_char(str->str + i);
 }
 
-void inbuilt_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
+void _ddp_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
 		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
@@ -73,8 +73,8 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 	return t > max ? max : t;
 }
 
-ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
-	DBGLOG("inbuilt_string_slice: %p", str);
+ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
+	DBGLOG("_ddp_string_slice: %p", str);
 
 	if (str->cap <= 1) {
 		return str; // empty string can stay the same
@@ -113,8 +113,8 @@ ddpstring* inbuilt_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 	return str;
 }
 
-ddpstring* inbuilt_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
-	DBGLOG("inbuilt_string_string_verkettet: %p", str1);
+ddpstring* _ddp_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
+	DBGLOG("_ddp_string_string_verkettet: %p", str1);
 
 	size_t new_cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
 	str1->str = reallocate(str1->str, str1->cap, new_cap);	 // reallocate str1
@@ -124,8 +124,8 @@ ddpstring* inbuilt_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
 	return str1;
 }
 
-ddpstring* inbuilt_char_string_verkettet(ddpchar c, ddpstring* str) {
-	DBGLOG("inbuilt_char_string_verkettet: %p", str);
+ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
+	DBGLOG("_ddp_char_string_verkettet: %p", str);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -142,8 +142,8 @@ ddpstring* inbuilt_char_string_verkettet(ddpchar c, ddpstring* str) {
 	return str;
 }
 
-ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
-	DBGLOG("inbuilt_string_char_verkettet: %p", str);
+ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
+	DBGLOG("_ddp_string_char_verkettet: %p", str);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -159,21 +159,21 @@ ddpstring* inbuilt_string_char_verkettet(ddpstring* str, ddpchar c) {
 	return str;
 }
 
-ddpint inbuilt_string_to_int(ddpstring* str) {
+ddpint _ddp_string_to_int(ddpstring* str) {
 	if (str->cap == 0 || str->str[0] == '\0') return 0; // empty string
 
 	return strtoll(str->str, NULL, 10); // cast the copy to int
 }
 
-ddpfloat inbuilt_string_to_float(ddpstring* str) {
+ddpfloat _ddp_string_to_float(ddpstring* str) {
 	if (str->cap == 0 || str->str[0] == '\0') return 0; // empty string
 
 	return strtod(str->str, NULL); // maybe works with comma seperator? We'll see
 }
 
-ddpstring* inbuilt_int_to_string(ddpint i) {
+ddpstring* _ddp_int_to_string(ddpint i) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_int_to_string: %p", dstr);
+	DBGLOG("_ddp_int_to_string: %p", dstr);
 
 	char buffer[21];
 	int len = sprintf(buffer, "%lld", i);
@@ -188,9 +188,9 @@ ddpstring* inbuilt_int_to_string(ddpint i) {
 	return dstr;
 }
 
-ddpstring* inbuilt_float_to_string(ddpfloat f) {
+ddpstring* _ddp_float_to_string(ddpfloat f) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_float_to_string: %p", dstr);
+	DBGLOG("_ddp_float_to_string: %p", dstr);
 
 	char buffer[50];
 	int len = sprintf(buffer, "%.16g", f);
@@ -205,9 +205,9 @@ ddpstring* inbuilt_float_to_string(ddpfloat f) {
 	return dstr;
 }
 
-ddpstring* inbuilt_bool_to_string(ddpbool b) {
+ddpstring* _ddp_bool_to_string(ddpbool b) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_bool_to_string: %p", dstr);
+	DBGLOG("_ddp_bool_to_string: %p", dstr);
 
 	char* string;
 
@@ -224,9 +224,9 @@ ddpstring* inbuilt_bool_to_string(ddpbool b) {
 	return dstr;
 }
 
-ddpstring* inbuilt_char_to_string(ddpchar c) {
+ddpstring* _ddp_char_to_string(ddpchar c) {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("inbuilt_bool_to_string: %p", dstr);
+	DBGLOG("_ddp_bool_to_string: %p", dstr);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -243,7 +243,7 @@ ddpstring* inbuilt_char_to_string(ddpchar c) {
 	return dstr;
 }
 
-ddpbool inbuilt_string_equal(ddpstring* str1, ddpstring* str2) {
+ddpbool _ddp_string_equal(ddpstring* str1, ddpstring* str2) {
 	if (str1 == str2) return true;
 	if (strlen(str1->str) != strlen(str2->str)) return false; // if the length is different, it's a quick false return
 	return memcmp(str1->str, str2->str, str1->cap) == 0;
