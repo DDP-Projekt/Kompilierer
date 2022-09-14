@@ -1,0 +1,32 @@
+name: Buid DDP and run tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    env:
+      DDPPATH: /home/runner/work/Kompilierer/Kompilierer/build/kddp/
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+          go-version: "1.18.0"
+        
+    - name: Get german locale
+      run: sudo locale-gen de_DE.UTF-8
+      if: runner.os == 'Linux'
+        
+    - name: Build
+      run: make
+      
+    - name: Run tests
+      run: cd tests && go test -v
