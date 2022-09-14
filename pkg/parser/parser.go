@@ -392,7 +392,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v.Literal, Func: name.Literal, Args: argTypes})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: argTypes})
 				}
 			} else {
 				valid = false
@@ -538,7 +538,7 @@ func (p *Parser) aliasDecl() ast.Statement {
 			if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
 				p.err(aliasTok, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 			} else { // the alias is valid so we append it
-				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok.Literal, Func: funDecl.Name.Literal, Args: argTypes}
+				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: argTypes}
 			}
 		} else {
 			p.err(aliasTok, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")

@@ -24,7 +24,7 @@ func WalkAst(ast *Ast, visitor Visitor) {
 // wrapper for an alias
 type FuncAlias struct {
 	Tokens   []token.Token            // tokens of the alias
-	Original string                   // the original string
+	Original token.Token              // the original string
 	Func     string                   // the function it refers to (if it is used outside a FuncDecl)
 	Args     map[string]token.ArgType // types of the arguments (used for funcCall parsing)
 }
