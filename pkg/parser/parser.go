@@ -429,7 +429,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type})
+			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.Range{Start: token.NewStartPos(paramNames[i]), End: token.NewEndPos(paramNames[i])}})
 		}
 		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
 
