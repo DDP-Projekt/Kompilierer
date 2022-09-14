@@ -507,6 +507,7 @@ func (p *Parser) aliasExists(alias []token.Token) *string {
 }
 
 func (p *Parser) aliasDecl() ast.Statement {
+	begin := p.peekN(-2)
 	p.consume(token.STRING)
 	aliasTok := p.previous()
 	p.consumeN(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
@@ -527,18 +528,17 @@ func (p *Parser) aliasDecl() ast.Statement {
 	}
 
 	// scan the raw alias withouth the ""
-	if alias, err := scanner.ScanAlias(aliasTok, p.errorHandler); err != nil {
+	var alias *ast.FuncAlias
+	if aliasTokens, err := scanner.ScanAlias(aliasTok, p.errorHandler); err != nil {
 		p.err(aliasTok, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
 	} else {
-		if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 			p.err(aliasTok, "Ein Alias muss mindestens 1 Symbol enthalten")
-		} else if validateAlias(alias, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
-			if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
+		} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
+			if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
 				p.err(aliasTok, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 			} else { // the alias is valid so we append it
-				alias := ast.FuncAlias{Tokens: alias, Func: funDecl.Name.Literal, Args: argTypes}
-				p.funcAliases = append(p.funcAliases, alias)
-				funDecl.Aliases = append(funDecl.Aliases, alias)
+				alias = &ast.FuncAlias{Tokens: aliasTokens, Func: funDecl.Name.Literal, Args: argTypes}
 			}
 		} else {
 			p.err(aliasTok, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
@@ -546,6 +546,19 @@ func (p *Parser) aliasDecl() ast.Statement {
 	}
 
 	p.consume(token.DOT)
+
+	if begin.Indent > 0 {
+		msg := "Ein Alias darf nur im globalen Bereich deklariert werden!"
+		p.err(begin, msg)
+		return &ast.BadStmt{
+			Range:   token.NewRange(begin, p.previous()),
+			Tok:     begin,
+			Message: msg,
+		}
+	} else if alias != nil {
+		p.funcAliases = append(p.funcAliases, *alias)
+		funDecl.Aliases = append(funDecl.Aliases, *alias)
+	}
 	return nil
 }
 
