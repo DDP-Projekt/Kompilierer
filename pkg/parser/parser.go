@@ -15,20 +15,13 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
-// wrapper for an alias
-type funcAlias struct {
-	Tokens []token.Token            // tokens of the alias
-	Func   string                   // the function it refers to
-	Args   map[string]token.ArgType // types of the arguments (used for funcCall parsing)
-}
-
 // holds state when parsing a .ddp file into an AST
 type Parser struct {
 	tokens       []token.Token        // the tokens to parse
 	cur          int                  // index of the current token
 	errorHandler scanner.ErrorHandler // a function to which errors are passed
 
-	funcAliases     []funcAlias              // all found aliases (+ inbuild aliases)
+	funcAliases     []ast.FuncAlias          // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
 	panicMode       bool                     // flag to not report following errors
 	Errored         bool                     // wether the parser found an error
@@ -52,7 +45,7 @@ func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
-	aliases := make([]funcAlias, 0)
+	aliases := make([]ast.FuncAlias, 0)
 	parser := &Parser{
 		tokens:       tokens,
 		cur:          0,
@@ -387,7 +380,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// scan the raw aliases into tokens
-	funcAliases := make([]funcAlias, 0)
+	funcAliases := make([]ast.FuncAlias, 0)
 	for _, v := range aliases {
 		// scan the raw alias withouth the ""
 		if alias, err := scanner.ScanAlias(v, p.errorHandler); err != nil {
@@ -399,7 +392,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, funcAlias{Tokens: alias, Func: name.Literal, Args: argTypes})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Func: name.Literal, Args: argTypes})
 				}
 			} else {
 				valid = false
@@ -470,6 +463,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		Type:       Typ,
 		Body:       body,
 		ExternFile: definedIn,
+		Aliases:    funcAliases,
 	}
 }
 
@@ -542,7 +536,9 @@ func (p *Parser) aliasDecl() ast.Statement {
 			if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 				p.err(aliasTok, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 			} else { // the alias is valid so we append it
-				p.funcAliases = append(p.funcAliases, funcAlias{Tokens: alias, Func: funDecl.Name.Literal, Args: argTypes})
+				alias := ast.FuncAlias{Tokens: alias, Func: funDecl.Name.Literal, Args: argTypes}
+				p.funcAliases = append(p.funcAliases, alias)
+				funDecl.Aliases = append(funDecl.Aliases, alias)
 			}
 		} else {
 			p.err(aliasTok, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
@@ -1565,8 +1561,8 @@ func (p *Parser) grouping() ast.Expression {
 func (p *Parser) funcCall() ast.Expression {
 	// stores an alias with the actual length of all tokens (expanded token.ALIAS_EXPRESSIONs)
 	type matchedAlias struct {
-		alias        *funcAlias // original alias
-		actualLength int        // length of this occurence in the code (considers the token length of the passed arguments)
+		alias        *ast.FuncAlias // original alias
+		actualLength int            // length of this occurence in the code (considers the token length of the passed arguments)
 	}
 
 	start := p.cur                            // save start position to restore the state if no alias was recognized

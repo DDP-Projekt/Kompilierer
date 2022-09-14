@@ -21,6 +21,13 @@ func WalkAst(ast *Ast, visitor Visitor) {
 	}
 }
 
+// wrapper for an alias
+type FuncAlias struct {
+	Tokens []token.Token            // tokens of the alias
+	Func   string                   // the function it refers to (if it is used outside a FuncDecl)
+	Args   map[string]token.ArgType // types of the arguments (used for funcCall parsing)
+}
+
 // basic Node interfaces
 type (
 	Node interface {
@@ -79,6 +86,7 @@ type (
 		Type       token.DDPType   // Zahl Kommazahl nichts ...
 		Body       *BlockStmt      // nil for extern functions
 		ExternFile token.Token     // string literal with filepath (only pesent if Body is nil)
+		Aliases    []FuncAlias
 	}
 )
 
