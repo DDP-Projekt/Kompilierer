@@ -278,7 +278,9 @@ func (t TokenType) String() string {
 	return tokenStrings[t]
 }
 
-var keywordMap = map[string]TokenType{
+// maps all DDP-keywords to their token-type
+// should not be modified!
+var KeywordMap = map[string]TokenType{
 	"pi":             PI,
 	"e":              E,
 	"tau":            TAU,
@@ -398,7 +400,7 @@ var keywordMap = map[string]TokenType{
 }
 
 func KeywordToTokenType(keyword string) TokenType {
-	if v, ok := keywordMap[keyword]; ok {
+	if v, ok := KeywordMap[keyword]; ok {
 		return v
 	}
 	return IDENTIFIER
