@@ -267,7 +267,7 @@ func (expr *BadExpr) Accept(v Visitor) Visitor     { return v.VisitBadExpr(expr)
 func (expr *Ident) Accept(v Visitor) Visitor       { return v.VisitIdent(expr) }
 func (expr *Indexing) Accept(v Visitor) Visitor    { return v.VisitIndexing(expr) }
 func (expr *IntLit) Accept(v Visitor) Visitor      { return v.VisitIntLit(expr) }
-func (expr *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFLoatLit(expr) }
+func (expr *FloatLit) Accept(v Visitor) Visitor    { return v.VisitFloatLit(expr) }
 func (expr *BoolLit) Accept(v Visitor) Visitor     { return v.VisitBoolLit(expr) }
 func (expr *CharLit) Accept(v Visitor) Visitor     { return v.VisitCharLit(expr) }
 func (expr *StringLit) Accept(v Visitor) Visitor   { return v.VisitStringLit(expr) }

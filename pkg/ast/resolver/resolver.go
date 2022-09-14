@@ -110,7 +110,7 @@ func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.Visitor {
 func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.Visitor {
 	return r
 }
-func (r *Resolver) VisitFLoatLit(expr *ast.FloatLit) ast.Visitor {
+func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) ast.Visitor {
 	return r
 }
 func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.Visitor {

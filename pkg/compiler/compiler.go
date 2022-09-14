@@ -607,7 +607,7 @@ func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	c.latestReturn = newInt(e.Value)
 	return c
 }
-func (c *Compiler) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (c *Compiler) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	return c

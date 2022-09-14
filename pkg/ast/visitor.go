@@ -19,7 +19,7 @@ type Visitor interface {
 	VisitIdent(*Ident) Visitor
 	VisitIndexing(*Indexing) Visitor
 	VisitIntLit(*IntLit) Visitor
-	VisitFLoatLit(*FloatLit) Visitor
+	VisitFloatLit(*FloatLit) Visitor
 	VisitBoolLit(*BoolLit) Visitor
 	VisitCharLit(*CharLit) Visitor
 	VisitStringLit(*StringLit) Visitor

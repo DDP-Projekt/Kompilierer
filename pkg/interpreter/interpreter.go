@@ -124,7 +124,7 @@ func (i *Interpreter) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	i.lastReturn = ddpint(e.Value)
 	return i
 }
-func (i *Interpreter) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (i *Interpreter) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	i.lastReturn = ddpfloat(e.Value)
 	return i
 }

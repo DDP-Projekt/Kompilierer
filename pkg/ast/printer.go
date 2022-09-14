@@ -87,7 +87,7 @@ func (pr *printer) VisitIntLit(expr *IntLit) Visitor {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
 	return pr
 }
-func (pr *printer) VisitFLoatLit(expr *FloatLit) Visitor {
+func (pr *printer) VisitFloatLit(expr *FloatLit) Visitor {
 	pr.parenthesizeNode(fmt.Sprintf("FloatLit(%f)", expr.Value))
 	return pr
 }

@@ -152,7 +152,7 @@ func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.Visitor {
 	t.latestReturnedType = token.DDPIntType()
 	return t
 }
-func (t *Typechecker) VisitFLoatLit(expr *ast.FloatLit) ast.Visitor {
+func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) ast.Visitor {
 	t.latestReturnedType = token.DDPFloatType()
 	return t
 }
