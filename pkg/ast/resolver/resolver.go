@@ -81,7 +81,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 		decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
 		// add the function parameters to the scope of the function body
 		for i, l := 0, len(decl.ParamNames); i < l; i++ {
-			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, &ast.VarDecl{Name: decl.ParamNames[i], Type: decl.ParamTypes[i].Type, Range: token.Range{Start: token.NewStartPos(decl.ParamNames[i]), End: token.NewEndPos(decl.ParamNames[i])}})
+			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, &ast.VarDecl{Name: decl.ParamNames[i], Type: decl.ParamTypes[i].Type, Range: token.NewRange(decl.ParamNames[i], decl.ParamNames[i])})
 		}
 
 		return decl.Body.Accept(r) // resolve the function body

@@ -392,7 +392,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Func: name.Literal, Args: argTypes})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v.Literal, Func: name.Literal, Args: argTypes})
 				}
 			} else {
 				valid = false
@@ -429,7 +429,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.Range{Start: token.NewStartPos(paramNames[i]), End: token.NewEndPos(paramNames[i])}})
+			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i])})
 		}
 		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
 
@@ -538,7 +538,7 @@ func (p *Parser) aliasDecl() ast.Statement {
 			if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
 				p.err(aliasTok, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 			} else { // the alias is valid so we append it
-				alias = &ast.FuncAlias{Tokens: aliasTokens, Func: funDecl.Name.Literal, Args: argTypes}
+				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok.Literal, Func: funDecl.Name.Literal, Args: argTypes}
 			}
 		} else {
 			p.err(aliasTok, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
