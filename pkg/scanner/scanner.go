@@ -174,7 +174,7 @@ func (s *Scanner) string() token.Token {
 		if s.peek() == '"' {
 			break
 		} else if s.peek() == '\n' {
-			s.line++
+			s.increaseLineBeforeAdvance()
 		} else if s.peek() == '\\' {
 			s.scanEscape('"')
 		}
@@ -195,7 +195,7 @@ func (s *Scanner) char() token.Token {
 		if s.peek() == '\'' {
 			break
 		} else if s.peek() == '\n' {
-			s.line++
+			s.increaseLineBeforeAdvance()
 		} else if s.peek() == '\\' {
 			gotBackslash = true
 			s.scanEscape('\'')
@@ -372,10 +372,7 @@ func (s *Scanner) skipWhitespace() {
 			}
 			s.advance()
 		case '\n':
-			s.line++
-			s.indent = 0
-			s.column = 0
-			s.shouldIndent = true
+			s.increaseLineBeforeAdvance()
 			s.advance()
 		case '[':
 			s.advance()
@@ -388,7 +385,7 @@ func (s *Scanner) skipWhitespace() {
 				case ']':
 					bracketCount--
 				case '\n':
-					s.line++
+					s.increaseLineBeforeAdvance()
 				}
 				s.advance()
 			}
@@ -470,6 +467,13 @@ func (s *Scanner) err(msg string) {
 	} else {
 		s.errorHandler(tok, msg)
 	}
+}
+
+func (s *Scanner) increaseLineBeforeAdvance() {
+	s.line++
+	s.indent = 0
+	s.column = 0 // will be increased in advance()
+	s.shouldIndent = true
 }
 
 func (s *Scanner) Mode() Mode {

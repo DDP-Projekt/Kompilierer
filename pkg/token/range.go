@@ -3,6 +3,8 @@
 // by code-analysis tools
 package token
 
+import "unicode/utf8"
+
 // a position in a ddp source-file
 type Position struct {
 	Line   int
@@ -25,7 +27,7 @@ func NewRange(begin, end Token) Range {
 		},
 		End: Position{
 			Line:   end.Line,
-			Column: end.Column + len(end.Literal),
+			Column: end.Column + utf8.RuneCountInString(end.Literal),
 		},
 	}
 }
@@ -40,6 +42,6 @@ func NewStartPos(tok Token) Position {
 func NewEndPos(tok Token) Position {
 	return Position{
 		Line:   tok.Line,
-		Column: tok.Column + len(tok.Literal),
+		Column: tok.Column + utf8.RuneCountInString(tok.Literal),
 	}
 }
