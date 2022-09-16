@@ -194,9 +194,12 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Range:   token.NewRange(p.peekN(-2), p.peek()),
-			Tok:     p.peek(),
-			Message: "Es wurde ein Variablen Name erwartet",
+			Err: &ParserError{
+				rang: token.NewRange(p.peekN(-2), p.peek()),
+				file: p.peek().File,
+				msg:  "Es wurde ein Variablen Name erwartet",
+			},
+			Tok: p.peek(),
 		}
 	}
 
@@ -252,9 +255,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Range:   token.NewRange(begin, p.peek()),
-			Tok:     p.peek(),
-			Message: "Es wurde ein Funktions Name erwartet",
+			Err: &ParserError{
+				rang: token.NewRange(begin, p.peek()),
+				file: p.peek().File,
+				msg:  "Es wurde ein Funktions Name erwartet",
+			},
+			Tok: p.peek(),
 		}
 	}
 	name := p.previous()
@@ -413,9 +419,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		p.Errored = true
 		p.cur = aliasEnd
 		return &ast.BadDecl{
-			Range:   token.NewRange(begin, p.previous()),
-			Tok:     Funktion,
-			Message: errorMessage,
+			Err: &ParserError{
+				rang: token.NewRange(begin, p.previous()),
+				file: p.previous().File,
+				msg:  errorMessage,
+			},
+			Tok: Funktion,
 		}
 	}
 
@@ -552,9 +561,12 @@ func (p *Parser) aliasDecl() ast.Statement {
 		msg := "Ein Alias darf nur im globalen Bereich deklariert werden!"
 		p.err(begin, msg)
 		return &ast.BadStmt{
-			Range:   token.NewRange(begin, p.previous()),
-			Tok:     begin,
-			Message: msg,
+			Err: &ParserError{
+				rang: token.NewRange(begin, p.previous()),
+				file: begin.File,
+				msg:  msg,
+			},
+			Tok: begin,
 		}
 	} else if alias != nil {
 		p.funcAliases = append(p.funcAliases, *alias)
@@ -1001,9 +1013,12 @@ func (p *Parser) forStatement() ast.Statement {
 	msg := fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous())
 	p.err(p.previous(), msg)
 	return &ast.BadStmt{
-		Range:   token.NewRange(For, p.previous()),
-		Tok:     p.previous(),
-		Message: msg,
+		Err: &ParserError{
+			rang: token.NewRange(For, p.previous()),
+			file: p.previous().File,
+			msg:  msg,
+		},
+		Tok: p.previous(),
 	}
 }
 
@@ -1207,12 +1222,15 @@ func (p *Parser) bitShift() ast.Expression {
 			msg := fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)
 			return &ast.BadExpr{
-				Range: token.Range{
-					Start: expr.GetRange().Start,
-					End:   token.NewEndPos(p.peek()),
+				Err: &ParserError{
+					rang: token.Range{
+						Start: expr.GetRange().Start,
+						End:   token.NewEndPos(p.peek()),
+					},
+					file: expr.Token().File,
+					msg:  msg,
 				},
-				Tok:     expr.Token(),
-				Message: msg,
+				Tok: expr.Token(),
 			}
 		}
 		operator := p.previous()
@@ -1483,9 +1501,12 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			msg := fmt.Sprintf("Es wurde ein Ausdruck erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), msg)
 			lhs = &ast.BadExpr{
-				Range:   token.NewRange(tok, tok),
-				Tok:     tok,
-				Message: msg,
+				Err: &ParserError{
+					rang: tok.Range,
+					file: tok.File,
+					msg:  msg,
+				},
+				Tok: tok,
 			}
 		}
 	}

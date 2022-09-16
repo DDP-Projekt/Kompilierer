@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
@@ -66,9 +67,8 @@ type (
 type (
 	// an invalid Declaration
 	BadDecl struct {
-		Range   token.Range
-		Tok     token.Token // first token of the bad declaration
-		Message string      // error message
+		Tok token.Token
+		Err ddperror.Error
 	}
 
 	VarDecl struct {
@@ -99,7 +99,7 @@ func (decl *BadDecl) Token() token.Token  { return decl.Tok }
 func (decl *VarDecl) Token() token.Token  { return decl.Name }
 func (decl *FuncDecl) Token() token.Token { return decl.Tok }
 
-func (decl *BadDecl) GetRange() token.Range  { return decl.Range }
+func (decl *BadDecl) GetRange() token.Range  { return decl.Err.GetRange() }
 func (decl *VarDecl) GetRange() token.Range  { return decl.Range }
 func (decl *FuncDecl) GetRange() token.Range { return decl.Range }
 
@@ -114,9 +114,8 @@ func (decl *FuncDecl) declarationNode() {}
 // Expressions
 type (
 	BadExpr struct {
-		Range   token.Range
-		Tok     token.Token // first token of the bad expression
-		Message string      // error message
+		Tok token.Token
+		Err ddperror.Error
 	}
 
 	Ident struct {
@@ -245,7 +244,7 @@ func (expr *CastExpr) Token() token.Token    { return expr.Lhs.Token() }
 func (expr *Grouping) Token() token.Token    { return expr.LParen }
 func (expr *FuncCall) Token() token.Token    { return expr.Tok }
 
-func (expr *BadExpr) GetRange() token.Range { return expr.Range }
+func (expr *BadExpr) GetRange() token.Range { return expr.Err.GetRange() }
 func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
@@ -301,9 +300,8 @@ func (expr *Indexing) assigneable() {}
 // Statements
 type (
 	BadStmt struct {
-		Range   token.Range
-		Tok     token.Token
-		Message string // error message
+		Tok token.Token
+		Err ddperror.Error
 	}
 
 	DeclStmt struct {
@@ -396,7 +394,7 @@ func (stmt *ForRangeStmt) Token() token.Token { return stmt.For }
 func (stmt *FuncCallStmt) Token() token.Token { return stmt.Call.Token() }
 func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
 
-func (stmt *BadStmt) GetRange() token.Range      { return stmt.Range }
+func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.GetRange() }
 func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
 func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
 func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
