@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/llir/llvm/ir"
@@ -29,9 +29,9 @@ type funcWrapper struct {
 // holds state to compile a DDP AST into llvm ir
 type Compiler struct {
 	ast          *ast.Ast
-	mod          *ir.Module           // the ir module (basically the ir file)
-	errorHandler scanner.ErrorHandler // errors are passed to this function
-	result       *Result              // result of the compilation
+	mod          *ir.Module       // the ir module (basically the ir file)
+	errorHandler ddperror.Handler // errors are passed to this function
+	result       *Result          // result of the compilation
 
 	cbb          *ir.Block               // current basic block in the ir
 	cf           *ir.Func                // current function
@@ -41,9 +41,9 @@ type Compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Compiler {
+func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 	if errorHandler == nil { // default error handler does nothing
-		errorHandler = func(token.Token, string) {}
+		errorHandler = ddperror.EmptyHandler
 	}
 	return &Compiler{
 		ast:          Ast,
@@ -479,7 +479,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 		irFunc.Linkage = enum.LinkageExternal
 		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
 		if err != nil {
-			c.errorHandler(d.ExternFile, err.Error())
+			c.errorHandler(&CompilerError{file: d.ExternFile.File, rang: d.ExternFile.Range, msg: err.Error()})
 			return c
 		}
 		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
@@ -1782,19 +1782,4 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewRet(c.evaluate(s.Value))
 	return c
-}
-
-// helper functions
-
-func notimplemented() {
-	file, line, function := getTraceInfo(2)
-	panic(fmt.Errorf("%s, %d, %s: this function or a part of it is not implemented", filepath.Base(file), line, function))
-}
-
-func getTraceInfo(skip int) (file string, line int, function string) {
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(skip+1, pc)
-	frames := runtime.CallersFrames(pc[:n])
-	frame, _ := frames.Next()
-	return frame.File, frame.Line, frame.Function
 }

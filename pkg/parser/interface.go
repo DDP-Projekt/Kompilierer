@@ -2,12 +2,13 @@ package parser
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 // parse the provided file into an Ast
-func ParseFile(path string, errorHandler scanner.ErrorHandler) (*ast.Ast, error) {
+func ParseFile(path string, errorHandler ddperror.Handler) (*ast.Ast, error) {
 	file, err := scanner.ScanFile(path, errorHandler, scanner.ModeStrictCapitalization)
 	if err != nil {
 		return nil, err
@@ -20,7 +21,7 @@ func ParseFile(path string, errorHandler scanner.ErrorHandler) (*ast.Ast, error)
 
 // parse the provided source into an Ast
 // an optional file name can be provided for better error messages
-func ParseSource(name string, src []byte, errorHandler scanner.ErrorHandler) (*ast.Ast, error) {
+func ParseSource(name string, src []byte, errorHandler ddperror.Handler) (*ast.Ast, error) {
 	file, err := scanner.ScanSource(name, src, errorHandler, scanner.ModeStrictCapitalization)
 	if err != nil {
 		return nil, err
@@ -32,6 +33,6 @@ func ParseSource(name string, src []byte, errorHandler scanner.ErrorHandler) (*a
 }
 
 // parse the provided tokens into an Ast
-func ParseTokens(tokens []token.Token, errorHandler scanner.ErrorHandler) *ast.Ast {
+func ParseTokens(tokens []token.Token, errorHandler ddperror.Handler) *ast.Ast {
 	return New(tokens, errorHandler).Parse()
 }

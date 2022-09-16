@@ -11,15 +11,16 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast/resolver"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast/typechecker"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 // holds state when parsing a .ddp file into an AST
 type Parser struct {
-	tokens       []token.Token        // the tokens to parse
-	cur          int                  // index of the current token
-	errorHandler scanner.ErrorHandler // a function to which errors are passed
+	tokens       []token.Token    // the tokens to parse
+	cur          int              // index of the current token
+	errorHandler ddperror.Handler // a function to which errors are passed
 
 	funcAliases     []ast.FuncAlias          // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
@@ -30,10 +31,10 @@ type Parser struct {
 }
 
 // returns a new parser, ready to parse the provided tokens
-func New(tokens []token.Token, errorHandler scanner.ErrorHandler) *Parser {
+func New(tokens []token.Token, errorHandler ddperror.Handler) *Parser {
 	// default error handler does nothing
 	if errorHandler == nil {
-		errorHandler = func(token.Token, string) {}
+		errorHandler = ddperror.EmptyHandler
 	}
 
 	if len(tokens) == 0 {
@@ -1707,7 +1708,7 @@ outer:
 				// otherwise it doesn't matter
 				if typeSensitive {
 					typecheckErrored := p.typechecker.Errored
-					p.typechecker.ErrorHandler = func(token.Token, string) {} // silence errors
+					p.typechecker.ErrorHandler = ddperror.EmptyHandler // silence errors
 					typ := p.typechecker.Evaluate(arg)
 
 					if typ != argType.Type {
@@ -2053,7 +2054,11 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 func (p *Parser) err(token token.Token, msg string, args ...any) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(token, fmt.Sprintf(msg, args...))
+		p.errorHandler(&ParserError{
+			file: token.File,
+			rang: token.Range,
+			msg:  fmt.Sprintf(msg, args...),
+		})
 	}
 }
 

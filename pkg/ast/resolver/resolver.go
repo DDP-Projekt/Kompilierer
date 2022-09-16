@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
@@ -12,13 +12,16 @@ import (
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
 type Resolver struct {
-	ErrorHandler scanner.ErrorHandler // function to which errors are passed
-	CurrentTable *ast.SymbolTable     // needed state, public for the parser
-	Errored      bool                 // wether the resolver errored
+	ErrorHandler ddperror.Handler // function to which errors are passed
+	CurrentTable *ast.SymbolTable // needed state, public for the parser
+	Errored      bool             // wether the resolver errored
 }
 
 // create a new resolver to resolve the passed AST
-func New(ast *ast.Ast, errorHandler scanner.ErrorHandler) *Resolver {
+func New(ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
+	if errorHandler == nil {
+		errorHandler = ddperror.EmptyHandler
+	}
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: ast.Symbols,
@@ -27,7 +30,7 @@ func New(ast *ast.Ast, errorHandler scanner.ErrorHandler) *Resolver {
 }
 
 // fills out the asts SymbolTables and reports any errors on the way
-func ResolveAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
+func ResolveAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 	Ast.Symbols = ast.NewSymbolTable(nil) // reset the ASTs symbols
 
 	resolver := New(Ast, errorHandler)
@@ -56,7 +59,7 @@ func (r *Resolver) visit(node ast.Node) {
 // helper for errors
 func (r *Resolver) err(tok token.Token, msg string, args ...any) {
 	r.Errored = true
-	r.ErrorHandler(tok, fmt.Sprintf(msg, args...))
+	r.ErrorHandler(&ResolverError{file: tok.File, rang: tok.Range, msg: fmt.Sprintf(msg, args...)})
 }
 
 // if a BadDecl exists the AST is faulty

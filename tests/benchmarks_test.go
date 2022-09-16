@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 type BenchmarkFunction func(path string, d fs.DirEntry, b *testing.B) error
@@ -66,8 +66,8 @@ func BenchmarkParser(b *testing.B) {
 
 		b.Run(d.Name(), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				Ast, err := parser.ParseFile(ddpPath, func(tok token.Token, msg string) {
-					b.Errorf("Parser error: [%s %d:%d] %s", tok.File, tok.Line(), tok.Column(), msg)
+				Ast, err := parser.ParseFile(ddpPath, func(err ddperror.Error) {
+					b.Errorf("Parser error: [%s %d:%d] %s", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
 				})
 				if err != nil {
 					b.Errorf("Parser returned an error: %s", err)

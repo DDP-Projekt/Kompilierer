@@ -4,20 +4,23 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 // holds state to check if the types of an AST are valid
 type Typechecker struct {
-	ErrorHandler       scanner.ErrorHandler                // function to which errors are passed
+	ErrorHandler       ddperror.Handler                    // function to which errors are passed
 	CurrentTable       *ast.SymbolTable                    // SymbolTable of the current scope (needed for name type-checking)
 	Errored            bool                                // wether the typechecker found an error
 	latestReturnedType token.DDPType                       // type of the last visited expression
 	funcArgs           map[string]map[string]token.ArgType // for function parameter types
 }
 
-func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typechecker {
+func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
+	if errorHandler == nil {
+		errorHandler = ddperror.EmptyHandler
+	}
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
 		CurrentTable:       symbols,
@@ -28,7 +31,7 @@ func New(symbols *ast.SymbolTable, errorHandler scanner.ErrorHandler) *Typecheck
 }
 
 // checks that all ast nodes fulfill type requirements
-func TypecheckAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) {
+func TypecheckAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 	typechecker := New(Ast.Symbols, errorHandler)
 
 	for i, l := 0, len(Ast.Statements); i < l; i++ {
@@ -59,7 +62,7 @@ func (t *Typechecker) Evaluate(expr ast.Expression) token.DDPType {
 // helper for errors
 func (t *Typechecker) err(tok token.Token, msg string, args ...any) {
 	t.Errored = true
-	t.ErrorHandler(tok, fmt.Sprintf(msg, args...))
+	t.ErrorHandler(&TypecheckerError{file: tok.File, rang: tok.Range, msg: fmt.Sprintf(msg, args...)})
 }
 
 // helper for commmon error message

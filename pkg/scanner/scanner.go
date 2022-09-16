@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	"github.com/kardianos/osext"
 )
@@ -21,13 +22,11 @@ const (
 	ModeAlias                              // interpret the tokens as alias (enables *arg syntax)
 )
 
-type ErrorHandler func(tok token.Token, msg string)
-
 type Scanner struct {
 	file         string // Path to the file
 	src          []rune
-	errorHandler ErrorHandler // this function is called for all error messages
-	mode         Mode         // scanner mode (alias, initializing, ...)
+	errorHandler ddperror.Handler // this function is called for all error messages
+	mode         Mode             // scanner mode (alias, initializing, ...)
 
 	include       *Scanner            // include directives
 	includedFiles map[string]struct{} // files already included are in here
@@ -45,10 +44,10 @@ type Scanner struct {
 
 // returns a new scanner, or error if one could not be created
 // prefers src, but if src is nil it attempts to read the source-code from filePath
-func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Scanner, error) {
+func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) (*Scanner, error) {
 	// default errorHandler does nothing
 	if errorHandler == nil {
-		errorHandler = func(token.Token, string) {} // to avoid nil pointer dereference
+		errorHandler = ddperror.EmptyHandler
 	}
 
 	scan := &Scanner{
@@ -72,7 +71,7 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			scan.errorHandler(token.Token{Range: scan.currentRange()}, "Der angegebene Pfad ist keine .ddp Datei")
+			scan.err("Der angegebene Pfad ist keine .ddp Datei")
 			return nil, errors.New("ungültiger Datei Typ")
 		}
 
@@ -242,7 +241,11 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
-var DDPPATH string // path to the folder of the kddp executable
+// path to the folder of the kddp executable
+// it is defined in the scanner package
+// because that is the first package to need it in the
+// import chain, and it would be overkill to have its own package
+var DDPPATH string
 
 func init() {
 	// get the path to the ddp install directory
@@ -274,14 +277,14 @@ func (s *Scanner) identifier() token.Token {
 	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
 		lit := s.NextToken()
 		if lit.Type != token.STRING {
-			s.errorHandler(lit, "Nach 'Binde' muss ein Text Literal folgen")
+			s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: "Nach 'Binde' muss ein Text Literal folgen"})
 			return lit
 		}
 
 		if tok := s.NextToken(); tok.Type != token.EIN {
-			s.errorHandler(tok, "Es wurde 'ein' erwartet")
+			s.errorHandler(&ScannerError{rang: tok.Range, file: s.file, msg: "Es wurde 'ein' erwartet"})
 		} else if tok := s.NextToken(); tok.Type != token.DOT {
-			s.errorHandler(tok, "Nach 'ein' muss ein Punkt folgen")
+			s.errorHandler(&ScannerError{rang: tok.Range, file: s.file, msg: "Nach 'ein' muss ein Punkt folgen"})
 		}
 
 		literalContent := strings.Trim(lit.Literal, "\"")
@@ -293,10 +296,10 @@ func (s *Scanner) identifier() token.Token {
 			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
 		}
 		if err != nil {
-			s.errorHandler(lit, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error()))
+			s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error())})
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
 			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
-				s.errorHandler(lit, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error()))
+				s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error())})
 			} else {
 				// append the already included files
 				for k, v := range s.includedFiles {
@@ -470,17 +473,15 @@ func (s *Scanner) peekNext() rune {
 }
 
 func (s *Scanner) err(msg string) {
-	tok := token.Token{
-		File:    s.file,
-		Range:   s.currentRange(),
-		Indent:  s.indent,
-		Literal: msg,
+	e := &ScannerError{
+		rang: s.currentRange(),
+		file: s.file,
+		msg:  msg,
 	}
 	if s.aliasMode() {
-		s.errorHandler(tok, fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg))
-	} else {
-		s.errorHandler(tok, msg)
+		e.msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg)
 	}
+	s.errorHandler(e)
 }
 
 func (s *Scanner) increaseLineBeforeAdvance() {

@@ -8,9 +8,8 @@ import (
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
 type OutputType int
@@ -42,7 +41,7 @@ type Options struct {
 	OutputType OutputType
 	// ErrorHandler used for the scanner, parser, ...
 	// May be nil
-	ErrorHandler scanner.ErrorHandler
+	ErrorHandler ddperror.Handler
 	// optional Log function to print intermediate messages
 	Log func(string, ...any)
 	// wether or not to delete intermediate .ll files
@@ -65,7 +64,7 @@ func validateOptions(options *Options) error {
 		return errors.New("no source given in options")
 	}
 	if options.ErrorHandler == nil {
-		options.ErrorHandler = func(token.Token, string) {}
+		options.ErrorHandler = func(ddperror.Error) {}
 	}
 	if options.Log == nil {
 		options.Log = func(string, ...any) {}
@@ -88,7 +87,8 @@ func Compile(options Options) (*Result, error) {
 	if options.Source != nil {
 		Ast, err = parser.ParseSource(options.FileName, options.Source, options.ErrorHandler)
 	} else if options.From != nil {
-		src, err := io.ReadAll(options.From)
+		var src []byte
+		src, err = io.ReadAll(options.From)
 		if err != nil {
 			return nil, err
 		}

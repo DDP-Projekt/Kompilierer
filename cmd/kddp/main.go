@@ -4,13 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
-
-func errHndl(t token.Token, msg string) {
-	fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line(), t.Column(), msg)
-}
 
 func main() {
 	// run sub-commands like build or help

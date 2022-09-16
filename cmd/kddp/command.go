@@ -13,6 +13,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/interpreter"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
 )
@@ -66,12 +67,12 @@ func (cmd *InterpretCommand) Init(args []string) error {
 
 func (cmd *InterpretCommand) Run() error {
 	// parse the input file into a ast
-	ast, err := parser.ParseFile(cmd.filePath, errHndl)
+	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
 	if err != nil {
 		return err
 	}
 
-	interpreter := interpreter.New(ast, errHndl) // create the interpreter with the parsed ast
+	interpreter := interpreter.New(ast, ddperror.DefaultHandler) // create the interpreter with the parsed ast
 
 	// if a output file was specified, we set the interpreters stdout and stderr
 	if cmd.outPath != "" {
@@ -272,7 +273,7 @@ func (cmd *BuildCommand) Run() error {
 		From:                    nil,
 		To:                      to,
 		OutputType:              compOutType,
-		ErrorHandler:            errHndl,
+		ErrorHandler:            ddperror.DefaultHandler,
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 	})
@@ -359,7 +360,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.ParseFile(cmd.filePath, errHndl)
+	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
 	if err != nil {
 		return err
 	}

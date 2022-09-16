@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
@@ -18,7 +18,7 @@ type Interpreter struct {
 	ast                *ast.Ast
 	currentEnvironment *environment
 	lastReturn         value
-	errorHandler       scanner.ErrorHandler
+	errorHandler       ddperror.Handler
 
 	// standard data streams
 	Stdout io.Writer
@@ -27,9 +27,9 @@ type Interpreter struct {
 }
 
 // returns a new Interpreter ready to interpret it's Ast
-func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Interpreter {
+func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Interpreter {
 	if errorHandler == nil {
-		errorHandler = func(token.Token, string) {}
+		errorHandler = ddperror.EmptyHandler
 	}
 	i := &Interpreter{
 		ast:                Ast,

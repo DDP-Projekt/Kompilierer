@@ -2,12 +2,12 @@ package interpreter
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 )
 
 // interpret the given ddp file
-func InterpretFile(path string, errorHandler scanner.ErrorHandler) error {
+func InterpretFile(path string, errorHandler ddperror.Handler) error {
 	Ast, err := parser.ParseFile(path, errorHandler)
 	if err != nil {
 		return err
@@ -17,7 +17,7 @@ func InterpretFile(path string, errorHandler scanner.ErrorHandler) error {
 }
 
 // interpret the given ddp source code
-func InterpretSource(name string, src []byte, errorHandler scanner.ErrorHandler) error {
+func InterpretSource(name string, src []byte, errorHandler ddperror.Handler) error {
 	Ast, err := parser.ParseSource(name, src, errorHandler)
 	if err != nil {
 		return err
@@ -27,6 +27,6 @@ func InterpretSource(name string, src []byte, errorHandler scanner.ErrorHandler)
 }
 
 // interpret the given AST
-func InterpretAst(Ast *ast.Ast, errorHandler scanner.ErrorHandler) error {
+func InterpretAst(Ast *ast.Ast, errorHandler ddperror.Handler) error {
 	return New(Ast, errorHandler).Interpret()
 }
