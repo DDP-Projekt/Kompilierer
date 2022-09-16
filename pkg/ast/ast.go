@@ -250,11 +250,11 @@ func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }
-func (expr *IntLit) GetRange() token.Range      { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *FloatLit) GetRange() token.Range    { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *BoolLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *CharLit) GetRange() token.Range     { return token.NewRange(expr.Literal, expr.Literal) }
-func (expr *StringLit) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *IntLit) GetRange() token.Range      { return expr.Literal.Range }
+func (expr *FloatLit) GetRange() token.Range    { return expr.Literal.Range }
+func (expr *BoolLit) GetRange() token.Range     { return expr.Literal.Range }
+func (expr *CharLit) GetRange() token.Range     { return expr.Literal.Range }
+func (expr *StringLit) GetRange() token.Range   { return expr.Literal.Range }
 func (expr *ListLit) GetRange() token.Range     { return expr.Range }
 func (expr *UnaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *BinaryExpr) GetRange() token.Range  { return expr.Range }

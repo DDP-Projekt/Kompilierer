@@ -34,9 +34,11 @@ type Scanner struct {
 
 	start            int // start offset of the current token
 	cur              int // current read offset
-	line             int
-	column           int
-	indent           int
+	line             uint
+	column           uint
+	startLine        uint // to construct valid ranges
+	startColumn      uint // to construct valid ranges
+	indent           uint
 	shouldIndent     bool // check wether the next whitespace should be counted as indent
 	shouldCapitalize bool // check wether the next character should be capitalized
 }
@@ -60,6 +62,8 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 		cur:              0,
 		line:             1,
 		column:           1,
+		startLine:        1,
+		startColumn:      1,
 		indent:           0,
 		shouldIndent:     true,
 		shouldCapitalize: true,
@@ -68,7 +72,7 @@ func New(filePath string, src []byte, errorHandler ErrorHandler, mode Mode) (*Sc
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			scan.errorHandler(token.Token{Line: scan.line, Column: scan.column}, "Der angegebene Pfad ist keine .ddp Datei")
+			scan.errorHandler(token.Token{Range: scan.currentRange()}, "Der angegebene Pfad ist keine .ddp Datei")
 			return nil, errors.New("ungültiger Datei Typ")
 		}
 
@@ -117,7 +121,7 @@ func (s *Scanner) NextToken() token.Token {
 	}
 
 	s.skipWhitespace()
-	s.start = s.cur
+	s.start, s.startLine, s.startColumn = s.cur, s.line, s.column
 
 	if s.atEnd() {
 		return s.newToken(token.EOF)
@@ -411,8 +415,7 @@ func (s *Scanner) newToken(tokenType token.TokenType) token.Token {
 		Literal:   string(s.src[s.start:s.cur]),
 		Indent:    s.indent,
 		File:      s.file,
-		Line:      s.line,
-		Column:    s.column - (s.cur - s.start),
+		Range:     s.currentRange(),
 		AliasInfo: nil,
 	}
 }
@@ -423,9 +426,21 @@ func (s *Scanner) errorToken(msg string) token.Token {
 		Type:      token.ILLEGAL,
 		Literal:   msg,
 		File:      s.file,
-		Line:      s.line,
-		Column:    s.column,
+		Range:     s.currentRange(),
 		AliasInfo: nil,
+	}
+}
+
+func (s *Scanner) currentRange() token.Range {
+	return token.Range{
+		Start: token.Position{
+			Line:   s.startLine,
+			Column: s.startColumn,
+		},
+		End: token.Position{
+			Line:   s.line,
+			Column: s.column,
+		},
 	}
 }
 
@@ -457,8 +472,7 @@ func (s *Scanner) peekNext() rune {
 func (s *Scanner) err(msg string) {
 	tok := token.Token{
 		File:    s.file,
-		Line:    s.line,
-		Column:  s.column,
+		Range:   s.currentRange(),
 		Indent:  s.indent,
 		Literal: msg,
 	}

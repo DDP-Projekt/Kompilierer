@@ -44,7 +44,7 @@ func New(Ast *ast.Ast, errorHandler scanner.ErrorHandler) *Interpreter {
 }
 
 func err(tok token.Token, msg string) {
-	panic(fmt.Errorf("Laufzeit Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line, tok.Column, msg))
+	panic(fmt.Errorf("Laufzeit Fehler in %s in Zeile %d, Spalte %d: %s", tok.File, tok.Line(), tok.Column(), msg))
 }
 
 // interpret the Ast

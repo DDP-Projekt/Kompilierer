@@ -3,12 +3,12 @@
 // by code-analysis tools
 package token
 
-import "unicode/utf8"
-
 // a position in a ddp source-file
+// Line and Column are 1-based
+// and measured in utf8-characters not bytes
 type Position struct {
-	Line   int
-	Column int
+	Line   uint
+	Column uint
 }
 
 // a range in a ddp source-file
@@ -21,27 +21,15 @@ type Range struct {
 // to the last character of end
 func NewRange(begin, end Token) Range {
 	return Range{
-		Start: Position{
-			Line:   begin.Line,
-			Column: begin.Column,
-		},
-		End: Position{
-			Line:   end.Line,
-			Column: end.Column + utf8.RuneCountInString(end.Literal),
-		},
+		Start: begin.Range.Start,
+		End:   end.Range.End,
 	}
 }
 
 func NewStartPos(tok Token) Position {
-	return Position{
-		Line:   tok.Line,
-		Column: tok.Column,
-	}
+	return tok.Range.Start
 }
 
 func NewEndPos(tok Token) Position {
-	return Position{
-		Line:   tok.Line,
-		Column: tok.Column + utf8.RuneCountInString(tok.Literal),
-	}
+	return tok.Range.End
 }

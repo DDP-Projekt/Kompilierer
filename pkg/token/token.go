@@ -8,10 +8,9 @@ type TokenType int
 type Token struct {
 	Type      TokenType // type of the token
 	Literal   string    // the literal from which it was scanned
-	Indent    int       // how many levels it is indented
+	Indent    uint      // how many levels it is indented
 	File      string    // the file from which it was scanned
-	Line      int       // the line on which it appeared
-	Column    int       // the column it started
+	Range     Range     // the range the token spans
 	AliasInfo *ArgType  // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
 }
 
@@ -20,5 +19,15 @@ func (t Token) String() string {
 }
 
 func (t Token) StringVerbose() string {
-	return fmt.Sprintf("[F: %s L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.File, t.Line, t.Column, t.Indent, t.Literal, t.Type)
+	return fmt.Sprintf("[F: %s L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.File, t.Range.Start.Line, t.Range.Start.Column, t.Indent, t.Literal, t.Type)
+}
+
+// t.Range.Start.Line
+func (t Token) Line() uint {
+	return t.Range.Start.Line
+}
+
+// t.Range.Start.Column
+func (t Token) Column() uint {
+	return t.Range.Start.Column
 }

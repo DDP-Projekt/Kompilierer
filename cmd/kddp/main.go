@@ -9,7 +9,7 @@ import (
 )
 
 func errHndl(t token.Token, msg string) {
-	fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line, t.Column, msg)
+	fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", t.File, t.Line(), t.Column(), msg)
 }
 
 func main() {

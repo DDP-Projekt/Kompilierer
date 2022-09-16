@@ -67,7 +67,7 @@ func BenchmarkParser(b *testing.B) {
 		b.Run(d.Name(), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				Ast, err := parser.ParseFile(ddpPath, func(tok token.Token, msg string) {
-					b.Errorf("Parser error: [%s %d:%d] %s", tok.File, tok.Line, tok.Column, msg)
+					b.Errorf("Parser error: [%s %d:%d] %s", tok.File, tok.Line(), tok.Column(), msg)
 				})
 				if err != nil {
 					b.Errorf("Parser returned an error: %s", err)

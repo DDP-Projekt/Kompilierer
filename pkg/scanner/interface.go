@@ -30,7 +30,7 @@ func ScanAlias(alias token.Token, errorHandler ErrorHandler) ([]token.Token, err
 	if scan, err := New("Alias", []byte(strings.Trim(alias.Literal, "\"")), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
-		scan.file, scan.line, scan.column, scan.indent = alias.File, alias.Line, alias.Column, alias.Indent
+		scan.file, scan.line, scan.column, scan.indent = alias.File, alias.Line(), alias.Column(), alias.Indent
 		return scan.ScanAll(), nil
 	}
 }

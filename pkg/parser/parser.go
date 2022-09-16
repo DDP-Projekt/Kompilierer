@@ -1031,7 +1031,7 @@ func (p *Parser) voidReturn() ast.Statement {
 
 func (p *Parser) blockStatement() ast.Statement {
 	colon := p.previous()
-	if p.peek().Line <= colon.Line {
+	if p.peek().Line() <= colon.Line() {
 		p.err(p.peek(), "Nach einem Doppelpunkt muss eine neue Zeile beginnen")
 	}
 	statements := make([]ast.Statement, 0)
@@ -1683,7 +1683,7 @@ outer:
 				tokens := make([]token.Token, p.cur-exprStart)
 				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 				// append the EOF needed for the parser
-				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Line: tok.Line, Column: tok.Column, AliasInfo: nil}
+				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Range: tok.Range, AliasInfo: nil}
 				tokens = append(tokens, eof)
 				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
 				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
