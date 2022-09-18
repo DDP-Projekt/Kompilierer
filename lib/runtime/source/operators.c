@@ -156,6 +156,7 @@ ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
 	memcpy(&str->str[str->cap - 1], temp, num_bytes);
 
 	str->str[new_cap - 1] = '\0';
+	str->cap = new_cap;
 	return str;
 }
 

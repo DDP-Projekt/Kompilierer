@@ -33,7 +33,7 @@ ddpstring* _ddp_deep_copy_string(ddpstring* str) {
 	DBGLOG("_ddp_deep_copy_string: %p", str);
 	char* cpy = ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap); // copy the chars
-	ddpstring* cpystr = ALLOCATE(ddpstring, 1); // alocate the copy string
+	ddpstring* cpystr = ALLOCATE(ddpstring, 1); // allocate the copy string
 	// set the fields of the copy
 	cpystr->str = cpy;
 	cpystr->cap = str->cap;
