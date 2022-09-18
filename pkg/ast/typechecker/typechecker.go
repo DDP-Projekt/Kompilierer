@@ -13,6 +13,7 @@ type Typechecker struct {
 	ErrorHandler       ddperror.Handler                    // function to which errors are passed
 	CurrentTable       *ast.SymbolTable                    // SymbolTable of the current scope (needed for name type-checking)
 	Errored            bool                                // wether the typechecker found an error
+	CheckBlocks        bool                                // wether to typecheck blockStatements
 	latestReturnedType token.DDPType                       // type of the last visited expression
 	funcArgs           map[string]map[string]token.ArgType // for function parameter types
 }
@@ -25,6 +26,7 @@ func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
 		ErrorHandler:       errorHandler,
 		CurrentTable:       symbols,
 		Errored:            false,
+		CheckBlocks:        true,
 		latestReturnedType: token.DDPVoidType(),
 		funcArgs:           make(map[string]map[string]token.ArgType),
 	}
@@ -44,7 +46,8 @@ func TypecheckAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 }
 
 // typecheck a single node
-func (t *Typechecker) TypecheckNode(node ast.Node) *Typechecker {
+func (t *Typechecker) TypecheckNode(node ast.Node, checkBlocks bool) *Typechecker {
+	t.CheckBlocks = checkBlocks
 	return node.Accept(t).(*Typechecker)
 }
 
@@ -485,12 +488,14 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
-	t.CurrentTable = stmt.Symbols
-	for _, stmt := range stmt.Statements {
-		t.visit(stmt)
-	}
+	if t.CheckBlocks {
+		t.CurrentTable = stmt.Symbols
+		for _, stmt := range stmt.Statements {
+			t.visit(stmt)
+		}
 
-	t.CurrentTable = stmt.Symbols.Enclosing
+		t.CurrentTable = stmt.Symbols.Enclosing
+	}
 	return t
 }
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {

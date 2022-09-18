@@ -62,34 +62,3 @@ func (scope *SymbolTable) InsertFunc(name string, fun *FuncDecl) bool {
 	scope.Functions[name] = fun
 	return false
 }
-
-// merge other into scope, replacing already existing symbols
-func (scope *SymbolTable) Merge(other *SymbolTable) {
-	for k, val := range other.Functions {
-		scope.Functions[k] = val
-	}
-
-	for k, val := range other.Variables {
-		scope.Variables[k] = val
-	}
-}
-
-// return a copy of scope
-// not a deep copy, FuncDecl pointers stay the same
-func (scope *SymbolTable) Copy() *SymbolTable {
-	table := &SymbolTable{
-		Enclosing: scope.Enclosing,
-		Variables: make(map[string]*VarDecl),
-		Functions: make(map[string]*FuncDecl),
-	}
-
-	for k, val := range scope.Variables {
-		table.Variables[k] = val
-	}
-
-	for k, val := range scope.Functions {
-		table.Functions[k] = val
-	}
-
-	return table
-}

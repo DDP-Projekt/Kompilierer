@@ -27,6 +27,7 @@
 - [ ] Code Optimizer (Dead-Code-Removal, constexpr-evaluation, ...)
 - [ ] kddp command-argumente deutsch machen
 - [ ] on-release test-script (locales testen, etc.)
+- [ ] besseres Operator overloading
 
 # Feature Ideen
 - [x] Function overloading (muss noch getestet werden)

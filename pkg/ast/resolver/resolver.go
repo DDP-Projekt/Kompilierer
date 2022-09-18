@@ -12,9 +12,10 @@ import (
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
 type Resolver struct {
-	ErrorHandler ddperror.Handler // function to which errors are passed
-	CurrentTable *ast.SymbolTable // needed state, public for the parser
-	Errored      bool             // wether the resolver errored
+	ErrorHandler  ddperror.Handler // function to which errors are passed
+	CurrentTable  *ast.SymbolTable // needed state, public for the parser
+	Errored       bool             // wether the resolver errored
+	ResolveBlocks bool             // wether to resolve blockStatements
 }
 
 // create a new resolver to resolve the passed AST
@@ -23,9 +24,10 @@ func New(ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &Resolver{
-		ErrorHandler: errorHandler,
-		CurrentTable: ast.Symbols,
-		Errored:      false,
+		ErrorHandler:  errorHandler,
+		CurrentTable:  ast.Symbols,
+		Errored:       false,
+		ResolveBlocks: true,
 	}
 }
 
@@ -47,7 +49,8 @@ func ResolveAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 }
 
 // resolve a single node
-func (r *Resolver) ResolveNode(node ast.Node) *Resolver {
+func (r *Resolver) ResolveNode(node ast.Node, resolveBlocks bool) *Resolver {
+	r.ResolveBlocks = resolveBlocks
 	return node.Accept(r).(*Resolver)
 }
 
@@ -182,18 +185,20 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 	return stmt.Rhs.Accept(r)
 }
 func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
-	// a block needs a new scope
-	if stmt.Symbols == nil {
-		stmt.Symbols = ast.NewSymbolTable(r.CurrentTable)
-	}
-	r.CurrentTable = stmt.Symbols // set the current scope to the block
+	if r.ResolveBlocks {
+		// a block needs a new scope
+		if stmt.Symbols == nil {
+			stmt.Symbols = ast.NewSymbolTable(r.CurrentTable)
+		}
+		r.CurrentTable = stmt.Symbols // set the current scope to the block
 
-	// visit every statement in the block
-	for _, stmt := range stmt.Statements {
-		r.visit(stmt)
-	}
+		// visit every statement in the block
+		for _, stmt := range stmt.Statements {
+			r.visit(stmt)
+		}
 
-	r.CurrentTable = stmt.Symbols.Enclosing
+		r.CurrentTable = stmt.Symbols.Enclosing
+	}
 	return r
 }
 func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {

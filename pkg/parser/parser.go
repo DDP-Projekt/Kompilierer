@@ -78,8 +78,8 @@ func (p *Parser) Parse() *ast.Ast {
 	for !p.atEnd() {
 		stmt := p.declaration() // parse the node
 		if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
-			p.resolver.ResolveNode(stmt)                  // resolve symbols in it (variables, functions, ...)
-			p.typechecker.TypecheckNode(stmt)             // typecheck the node
+			p.resolver.ResolveNode(stmt, false)           // resolve symbols in it (variables, functions, ...)
+			p.typechecker.TypecheckNode(stmt, false)      // typecheck the node
 			Ast.Statements = append(Ast.Statements, stmt) // add it to the ast
 		}
 		if p.panicMode { // synchronize the parsing if we are in panic mode
@@ -436,7 +436,8 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		p.cur = bodyStart // go back to the body
 		p.currentFunction = name.Literal
 
-		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable) // temporary symbolTable for the function parameters
+		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                                                                      // temporary symbolTable for the function parameters
+		bodyTable.InsertFunc(p.currentFunction, &ast.FuncDecl{Name: name, ParamNames: paramNames, ParamTypes: paramTypes, Type: Typ}) // insert the name of the current function
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
 			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i])})
@@ -937,7 +938,10 @@ func (p *Parser) forStatement() ast.Statement {
 		}
 		p.consume(token.COMMA)
 		var Body ast.Statement
-		if p.match(token.MACHE) { // body is a block statement
+		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                   // temporary symbolTable for the loop variable
+		bodyTable.InsertVar(Ident.Literal, &ast.VarDecl{Name: Ident, Type: Typ})   // add the loop variable to the table
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
+		if p.match(token.MACHE) {                                                  // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement()
 		} else { // body is a single statement
@@ -954,6 +958,7 @@ func (p *Parser) forStatement() ast.Statement {
 				Symbols:    nil,
 			}
 		}
+		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
 		return &ast.ForStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -1052,12 +1057,22 @@ func (p *Parser) blockStatement() ast.Statement {
 	}
 	statements := make([]ast.Statement, 0)
 	indent := colon.Indent + 1
+
+	blockTable := ast.NewSymbolTable(p.resolver.CurrentTable)
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = blockTable, blockTable
 	for p.peek().Indent >= indent && !p.atEnd() {
-		statements = append(statements, p.declaration())
+		stmt := p.declaration()
+		if statements != nil { // nil check, for alias declarations that aren't Ast Nodes
+			p.resolver.ResolveNode(stmt, true)      // resolve symbols in it (variables, functions, ...)
+			p.typechecker.TypecheckNode(stmt, true) // typecheck the node
+			statements = append(statements, stmt)
+		}
 		if p.panicMode { // a loop calling declaration or sub-rules needs this
 			p.synchronize()
 		}
 	}
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.resolver.CurrentTable.Enclosing
+
 	return &ast.BlockStmt{
 		Range:      token.NewRange(colon, p.previous()),
 		Colon:      colon,
