@@ -133,6 +133,9 @@ func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.Visitor {
 		for _, v := range expr.Values {
 			r.visit(v)
 		}
+	} else if expr.Count != nil && expr.Value != nil {
+		r.visit(expr.Count)
+		r.visit(expr.Value)
 	}
 	return r
 }
