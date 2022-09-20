@@ -15,83 +15,73 @@ func VisitAst(ast *Ast, visitor BaseVisitor) {
 	}
 }
 
-func (b *helperVisitor) VisitBadDecl(decl *BadDecl) FullVisitor {
+func (b *helperVisitor) VisitBadDecl(decl *BadDecl) {
 	if vis, ok := b.actualVisitor.(BadDeclVisitor); ok {
 		vis.VisitBadDecl(decl)
 	}
-	return b
 }
-func (b *helperVisitor) VisitVarDecl(decl *VarDecl) FullVisitor {
+func (b *helperVisitor) VisitVarDecl(decl *VarDecl) {
 	if vis, ok := b.actualVisitor.(VarDeclVisitor); ok {
 		vis.VisitVarDecl(decl)
 	}
 	decl.InitVal.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitFuncDecl(decl *FuncDecl) FullVisitor {
+func (b *helperVisitor) VisitFuncDecl(decl *FuncDecl) {
 	if vis, ok := b.actualVisitor.(FuncDeclVisitor); ok {
 		vis.VisitFuncDecl(decl)
 	}
 	if decl.Body != nil {
 		decl.Body.Accept(b)
 	}
-	return b
 }
 
 // if a BadExpr exists the AST is faulty
-func (b *helperVisitor) VisitBadExpr(expr *BadExpr) FullVisitor {
+func (b *helperVisitor) VisitBadExpr(expr *BadExpr) {
 	if vis, ok := b.actualVisitor.(BadExprVisitor); ok {
 		vis.VisitBadExpr(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitIdent(expr *Ident) FullVisitor {
+func (b *helperVisitor) VisitIdent(expr *Ident) {
 	if vis, ok := b.actualVisitor.(IdentVisitor); ok {
 		vis.VisitIdent(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitIndexing(expr *Indexing) FullVisitor {
+func (b *helperVisitor) VisitIndexing(expr *Indexing) {
 	if vis, ok := b.actualVisitor.(IndexingVisitor); ok {
 		vis.VisitIndexing(expr)
 	}
 	expr.Lhs.Accept(b)
 	expr.Index.Accept(b)
-	return b
 }
 
 // nothing to do for literals
-func (b *helperVisitor) VisitIntLit(expr *IntLit) FullVisitor {
+func (b *helperVisitor) VisitIntLit(expr *IntLit) {
 	if vis, ok := b.actualVisitor.(IntLitVisitor); ok {
 		vis.VisitIntLit(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitFloatLit(expr *FloatLit) FullVisitor {
+func (b *helperVisitor) VisitFloatLit(expr *FloatLit) {
 	if vis, ok := b.actualVisitor.(FloatLitVisitor); ok {
 		vis.VisitFloatLit(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitBoolLit(expr *BoolLit) FullVisitor {
+func (b *helperVisitor) VisitBoolLit(expr *BoolLit) {
 	if vis, ok := b.actualVisitor.(BoolLitVisitor); ok {
 		vis.VisitBoolLit(expr)
 	}
-	return b
+
 }
-func (b *helperVisitor) VisitCharLit(expr *CharLit) FullVisitor {
+func (b *helperVisitor) VisitCharLit(expr *CharLit) {
 	if vis, ok := b.actualVisitor.(CharLitVisitor); ok {
 		vis.VisitCharLit(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitStringLit(expr *StringLit) FullVisitor {
+func (b *helperVisitor) VisitStringLit(expr *StringLit) {
 	if vis, ok := b.actualVisitor.(StringLitVisitor); ok {
 		vis.VisitStringLit(expr)
 	}
-	return b
 }
-func (b *helperVisitor) VisitListLit(expr *ListLit) FullVisitor {
+func (b *helperVisitor) VisitListLit(expr *ListLit) {
 	if vis, ok := b.actualVisitor.(ListLitVisitor); ok {
 		vis.VisitListLit(expr)
 	}
@@ -103,47 +93,41 @@ func (b *helperVisitor) VisitListLit(expr *ListLit) FullVisitor {
 		expr.Count.Accept(b)
 		expr.Value.Accept(b)
 	}
-	return b
 }
-func (b *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) FullVisitor {
+func (b *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) {
 	if vis, ok := b.actualVisitor.(UnaryExprVisitor); ok {
 		vis.VisitUnaryExpr(expr)
 	}
 	expr.Rhs.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) FullVisitor {
+func (b *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) {
 	if vis, ok := b.actualVisitor.(BinaryExprVisitor); ok {
 		vis.VisitBinaryExpr(expr)
 	}
 	expr.Lhs.Accept(b)
 	expr.Rhs.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) FullVisitor {
+func (b *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) {
 	if vis, ok := b.actualVisitor.(TernaryExprVisitor); ok {
 		vis.VisitTernaryExpr(expr)
 	}
 	expr.Lhs.Accept(b)
 	expr.Mid.Accept(b)
 	expr.Rhs.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitCastExpr(expr *CastExpr) FullVisitor {
+func (b *helperVisitor) VisitCastExpr(expr *CastExpr) {
 	if vis, ok := b.actualVisitor.(CastExprVisitor); ok {
 		vis.VisitCastExpr(expr)
 	}
 	expr.Lhs.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitGrouping(expr *Grouping) FullVisitor {
+func (b *helperVisitor) VisitGrouping(expr *Grouping) {
 	if vis, ok := b.actualVisitor.(GroupingVisitor); ok {
 		vis.VisitGrouping(expr)
 	}
 	expr.Expr.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitFuncCall(expr *FuncCall) FullVisitor {
+func (b *helperVisitor) VisitFuncCall(expr *FuncCall) {
 	if vis, ok := b.actualVisitor.(FuncCallVisitor); ok {
 		vis.VisitFuncCall(expr)
 	}
@@ -151,38 +135,33 @@ func (b *helperVisitor) VisitFuncCall(expr *FuncCall) FullVisitor {
 	for _, v := range expr.Args {
 		v.Accept(b)
 	}
-	return b
 }
 
-func (b *helperVisitor) VisitBadStmt(stmt *BadStmt) FullVisitor {
+func (b *helperVisitor) VisitBadStmt(stmt *BadStmt) {
 	if vis, ok := b.actualVisitor.(BadStmtVisitor); ok {
 		vis.VisitBadStmt(stmt)
 	}
-	return b
 }
-func (b *helperVisitor) VisitDeclStmt(stmt *DeclStmt) FullVisitor {
+func (b *helperVisitor) VisitDeclStmt(stmt *DeclStmt) {
 	if vis, ok := b.actualVisitor.(DeclStmtVisitor); ok {
 		vis.VisitDeclStmt(stmt)
 	}
 	stmt.Decl.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitExprStmt(stmt *ExprStmt) FullVisitor {
+func (b *helperVisitor) VisitExprStmt(stmt *ExprStmt) {
 	if vis, ok := b.actualVisitor.(ExprStmtVisitor); ok {
 		vis.VisitExprStmt(stmt)
 	}
 	stmt.Expr.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitAssignStmt(stmt *AssignStmt) FullVisitor {
+func (b *helperVisitor) VisitAssignStmt(stmt *AssignStmt) {
 	if vis, ok := b.actualVisitor.(AssignStmtVisitor); ok {
 		vis.VisitAssignStmt(stmt)
 	}
 	stmt.Var.Accept(b)
 	stmt.Rhs.Accept(b)
-	return b
 }
-func (b *helperVisitor) VisitBlockStmt(stmt *BlockStmt) FullVisitor {
+func (b *helperVisitor) VisitBlockStmt(stmt *BlockStmt) {
 	if vis, ok := b.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
 		vis.UpdateScope(stmt.Symbols)
 	}
@@ -197,9 +176,8 @@ func (b *helperVisitor) VisitBlockStmt(stmt *BlockStmt) FullVisitor {
 	if vis, ok := b.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
 		vis.UpdateScope(stmt.Symbols.Enclosing)
 	}
-	return b
 }
-func (b *helperVisitor) VisitIfStmt(stmt *IfStmt) FullVisitor {
+func (b *helperVisitor) VisitIfStmt(stmt *IfStmt) {
 	if vis, ok := b.actualVisitor.(IfStmtVisitor); ok {
 		vis.VisitIfStmt(stmt)
 	}
@@ -208,9 +186,8 @@ func (b *helperVisitor) VisitIfStmt(stmt *IfStmt) FullVisitor {
 	if stmt.Else != nil {
 		stmt.Else.Accept(b)
 	}
-	return b
 }
-func (b *helperVisitor) VisitWhileStmt(stmt *WhileStmt) FullVisitor {
+func (b *helperVisitor) VisitWhileStmt(stmt *WhileStmt) {
 	if vis, ok := b.actualVisitor.(WhileStmtVisitor); ok {
 		vis.VisitWhileStmt(stmt)
 	}
@@ -222,9 +199,8 @@ func (b *helperVisitor) VisitWhileStmt(stmt *WhileStmt) FullVisitor {
 		stmt.Body.Accept(b)
 		stmt.Condition.Accept(b)
 	}
-	return b
 }
-func (b *helperVisitor) VisitForStmt(stmt *ForStmt) FullVisitor {
+func (b *helperVisitor) VisitForStmt(stmt *ForStmt) {
 	if vis, ok := b.actualVisitor.(ForStmtVisitor); ok {
 		vis.VisitForStmt(stmt)
 	}
@@ -235,10 +211,8 @@ func (b *helperVisitor) VisitForStmt(stmt *ForStmt) FullVisitor {
 		stmt.StepSize.Accept(b)
 	}
 	stmt.Body.Accept(b)
-
-	return b
 }
-func (b *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) FullVisitor {
+func (b *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) {
 	if vis, ok := b.actualVisitor.(ForRangeStmtVisitor); ok {
 		vis.VisitForRangeStmt(stmt)
 	}
@@ -246,16 +220,13 @@ func (b *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) FullVisitor {
 	stmt.Initializer.Accept(b)
 	stmt.In.Accept(b)
 	stmt.Body.Accept(b)
-
-	return b
 }
-func (b *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) FullVisitor {
+func (b *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
 	if vis, ok := b.actualVisitor.(ReturnStmtVisitor); ok {
 		vis.VisitReturnStmt(stmt)
 	}
 	if stmt.Value == nil {
-		return b
+		return
 	}
 	stmt.Value.Accept(b)
-	return b
 }
