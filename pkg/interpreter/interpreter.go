@@ -72,17 +72,14 @@ func (i *Interpreter) visitNode(node ast.Node) {
 	node.Accept(i)
 }
 
-func (i *Interpreter) VisitBadDecl(d *ast.BadDecl) ast.FullVisitor {
+func (i *Interpreter) VisitBadDecl(d *ast.BadDecl) {
 	err(d.Token(), "Es wurde eine invalide Deklaration gefunden")
-	return i
 }
-func (i *Interpreter) VisitVarDecl(d *ast.VarDecl) ast.FullVisitor {
+func (i *Interpreter) VisitVarDecl(d *ast.VarDecl) {
 	i.currentEnvironment.addVar(d.Name.Literal, i.evaluate(d.InitVal))
-	return i
 }
-func (i *Interpreter) VisitFuncDecl(d *ast.FuncDecl) ast.FullVisitor {
+func (i *Interpreter) VisitFuncDecl(d *ast.FuncDecl) {
 	i.currentEnvironment.addFunc(d.Name.Literal, d)
-	return i
 }
 
 func (i *Interpreter) evaluate(expr ast.Expression) value {
@@ -98,19 +95,17 @@ func (i *Interpreter) exitEnvironment() {
 	i.currentEnvironment = i.currentEnvironment.enclosing
 }
 
-func (i *Interpreter) VisitBadExpr(e *ast.BadExpr) ast.FullVisitor {
+func (i *Interpreter) VisitBadExpr(e *ast.BadExpr) {
 	err(e.Token(), "Es wurde ein invalider Ausdruck gefunden")
-	return i
 }
-func (i *Interpreter) VisitIdent(e *ast.Ident) ast.FullVisitor {
+func (i *Interpreter) VisitIdent(e *ast.Ident) {
 	if v, exists := i.currentEnvironment.lookupVar(e.Literal.Literal); !exists {
 		err(e.Token(), fmt.Sprintf("Die Variable '%s' wurde noch nicht deklariert", e.Literal.Literal))
 	} else {
 		i.lastReturn = v
 	}
-	return i
 }
-func (i *Interpreter) VisitIndexing(e *ast.Indexing) ast.FullVisitor {
+func (i *Interpreter) VisitIndexing(e *ast.Indexing) {
 	/*if v, exists := i.currentEnvironment.lookupVar(e.Name.Literal.Literal); !exists {
 		err(e.Token(), fmt.Sprintf("Die Variable '%s' wurde noch nicht deklariert", e.Name.Literal.Literal))
 	} else {
@@ -118,32 +113,26 @@ func (i *Interpreter) VisitIndexing(e *ast.Indexing) ast.FullVisitor {
 		i.lastReturn = ddpchar(([]rune(v.(ddpstring)))[rhs.(ddpint)-1])
 	}*/
 	err(e.Token(), "indexing not implemented in the interpreter")
-	return i
 }
-func (i *Interpreter) VisitIntLit(e *ast.IntLit) ast.FullVisitor {
+func (i *Interpreter) VisitIntLit(e *ast.IntLit) {
 	i.lastReturn = ddpint(e.Value)
-	return i
 }
-func (i *Interpreter) VisitFloatLit(e *ast.FloatLit) ast.FullVisitor {
+func (i *Interpreter) VisitFloatLit(e *ast.FloatLit) {
 	i.lastReturn = ddpfloat(e.Value)
-	return i
 }
-func (i *Interpreter) VisitBoolLit(e *ast.BoolLit) ast.FullVisitor {
+func (i *Interpreter) VisitBoolLit(e *ast.BoolLit) {
 	i.lastReturn = ddpbool(e.Value)
-	return i
 }
-func (i *Interpreter) VisitCharLit(e *ast.CharLit) ast.FullVisitor {
+func (i *Interpreter) VisitCharLit(e *ast.CharLit) {
 	i.lastReturn = ddpchar(e.Value)
-	return i
 }
-func (i *Interpreter) VisitStringLit(e *ast.StringLit) ast.FullVisitor {
+func (i *Interpreter) VisitStringLit(e *ast.StringLit) {
 	i.lastReturn = ddpstring(e.Value)
-	return i
 }
-func (i *Interpreter) VisitListLit(e *ast.ListLit) ast.FullVisitor {
+func (i *Interpreter) VisitListLit(e *ast.ListLit) {
 	panic("lists not implemented")
 }
-func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.FullVisitor {
+func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) {
 	rhs := i.evaluate(e.Rhs)
 	switch e.Operator.Type {
 	case token.BETRAG:
@@ -193,26 +182,25 @@ func (i *Interpreter) VisitUnaryExpr(e *ast.UnaryExpr) ast.FullVisitor {
 	default:
 		err(e.Token(), fmt.Sprintf("Unbekannter Operator '%s'", e.Operator))
 	}
-	return i
 }
-func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
+func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) {
 	switch e.Operator.Type {
 	case token.UND:
 		lhs := i.evaluate(e.Lhs).(ddpbool)
 		if !lhs {
 			i.lastReturn = lhs
-			return i
+			return
 		}
 		i.lastReturn = lhs && i.evaluate(e.Rhs).(ddpbool)
-		return i
+		return
 	case token.ODER:
 		lhs := i.evaluate(e.Lhs).(ddpbool)
 		if lhs {
 			i.lastReturn = lhs
-			return i
+			return
 		}
 		i.lastReturn = lhs || i.evaluate(e.Rhs).(ddpbool)
-		return i
+		return
 	}
 
 	lhs := i.evaluate(e.Lhs)
@@ -424,9 +412,8 @@ func (i *Interpreter) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
 			}
 		}
 	}
-	return i
 }
-func (i *Interpreter) VisitTernaryExpr(e *ast.TernaryExpr) ast.FullVisitor {
+func (i *Interpreter) VisitTernaryExpr(e *ast.TernaryExpr) {
 	lhs := i.evaluate(e.Lhs)
 	mid := i.evaluate(e.Mid)
 	rhs := i.evaluate(e.Rhs)
@@ -436,9 +423,8 @@ func (i *Interpreter) VisitTernaryExpr(e *ast.TernaryExpr) ast.FullVisitor {
 		i.lastReturn = ddpstring(([]rune(lhs.(ddpstring)))[mid.(ddpint)-1 : rhs.(ddpint)])
 	}
 
-	return i
 }
-func (i *Interpreter) VisitCastExpr(e *ast.CastExpr) ast.FullVisitor {
+func (i *Interpreter) VisitCastExpr(e *ast.CastExpr) {
 	lhs := i.evaluate(e.Lhs)
 	if e.Type.IsList {
 		err(e.Token(), "Lists not implemented")
@@ -511,12 +497,11 @@ func (i *Interpreter) VisitCastExpr(e *ast.CastExpr) ast.FullVisitor {
 			err(e.Token(), "Inalide Typumwandlung")
 		}
 	}
-	return i
 }
-func (i *Interpreter) VisitGrouping(e *ast.Grouping) ast.FullVisitor {
-	return e.Expr.Accept(i)
+func (i *Interpreter) VisitGrouping(e *ast.Grouping) {
+	e.Expr.Accept(i)
 }
-func (i *Interpreter) VisitFuncCall(e *ast.FuncCall) ast.FullVisitor {
+func (i *Interpreter) VisitFuncCall(e *ast.FuncCall) {
 	if fun, exists := i.currentEnvironment.lookupFunc(e.Name); exists {
 		i.currentEnvironment = newEnvironment(i.currentEnvironment)
 		defer i.exitEnvironment() // we have to defer it due to return panic issues
@@ -549,20 +534,18 @@ func (i *Interpreter) VisitFuncCall(e *ast.FuncCall) ast.FullVisitor {
 	} else {
 		err(e.Token(), fmt.Sprintf("Die Funktion '%s' wurde noch nicht deklariert", e.Name))
 	}
-	return i
 }
 
-func (i *Interpreter) VisitBadStmt(s *ast.BadStmt) ast.FullVisitor {
+func (i *Interpreter) VisitBadStmt(s *ast.BadStmt) {
 	err(s.Token(), "Es wurde eine invalide Aussage gefunden")
-	return i
 }
-func (i *Interpreter) VisitDeclStmt(s *ast.DeclStmt) ast.FullVisitor {
-	return s.Decl.Accept(i)
+func (i *Interpreter) VisitDeclStmt(s *ast.DeclStmt) {
+	s.Decl.Accept(i)
 }
-func (i *Interpreter) VisitExprStmt(s *ast.ExprStmt) ast.FullVisitor {
-	return s.Expr.Accept(i)
+func (i *Interpreter) VisitExprStmt(s *ast.ExprStmt) {
+	s.Expr.Accept(i)
 }
-func (i *Interpreter) VisitAssignStmt(s *ast.AssignStmt) ast.FullVisitor {
+func (i *Interpreter) VisitAssignStmt(s *ast.AssignStmt) {
 	switch assign := s.Var.(type) {
 	case *ast.Ident:
 		i.currentEnvironment.updateVar(assign.Literal.Literal, i.evaluate(s.Rhs))
@@ -578,25 +561,22 @@ func (i *Interpreter) VisitAssignStmt(s *ast.AssignStmt) ast.FullVisitor {
 		}*/
 		err(assign.Token(), "indexing not implemented in the interpreter")
 	}
-	return i
 }
-func (i *Interpreter) VisitBlockStmt(s *ast.BlockStmt) ast.FullVisitor {
+func (i *Interpreter) VisitBlockStmt(s *ast.BlockStmt) {
 	i.currentEnvironment = newEnvironment(i.currentEnvironment)
 	defer i.exitEnvironment() // we have to defer it due to return panic issues
 	for _, stmt := range s.Statements {
 		i.execute(stmt)
 	}
-	return i
 }
-func (i *Interpreter) VisitIfStmt(s *ast.IfStmt) ast.FullVisitor {
+func (i *Interpreter) VisitIfStmt(s *ast.IfStmt) {
 	if i.evaluate(s.Condition).(ddpbool) {
 		i.execute(s.Then)
 	} else if s.Else != nil {
 		i.execute(s.Else)
 	}
-	return i
 }
-func (i *Interpreter) VisitWhileStmt(s *ast.WhileStmt) ast.FullVisitor {
+func (i *Interpreter) VisitWhileStmt(s *ast.WhileStmt) {
 	switch s.While.Type {
 	case token.SOLANGE:
 		for i.evaluate(s.Condition).(ddpbool) {
@@ -613,9 +593,8 @@ func (i *Interpreter) VisitWhileStmt(s *ast.WhileStmt) ast.FullVisitor {
 			i.execute(s.Body)
 		}
 	}
-	return i
 }
-func (i *Interpreter) VisitForStmt(s *ast.ForStmt) ast.FullVisitor {
+func (i *Interpreter) VisitForStmt(s *ast.ForStmt) {
 	i.currentEnvironment = newEnvironment(i.currentEnvironment)
 	defer i.exitEnvironment() // we have to defer it due to return panic issues
 
@@ -639,10 +618,8 @@ func (i *Interpreter) VisitForStmt(s *ast.ForStmt) ast.FullVisitor {
 		}
 	}
 	i.execute(s.Body)
-
-	return i
 }
-func (i *Interpreter) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
+func (i *Interpreter) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	i.currentEnvironment = newEnvironment(i.currentEnvironment)
 	defer i.exitEnvironment() // we have to defer it due to return panic issues
 
@@ -651,7 +628,7 @@ func (i *Interpreter) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
 	case ddpstring:
 		length := len(in)
 		if length == 0 {
-			return i
+			return
 		}
 		ch, size := utf8.DecodeRuneInString(string(in))
 		i.currentEnvironment.addVar(s.Initializer.Name.Literal, ddpchar(ch))
@@ -664,9 +641,7 @@ func (i *Interpreter) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
 	default:
 		panic("runtime error") // unreachable
 	}
-
-	return i
 }
-func (i *Interpreter) VisitReturnStmt(s *ast.ReturnStmt) ast.FullVisitor {
+func (i *Interpreter) VisitReturnStmt(s *ast.ReturnStmt) {
 	panic(i.evaluate(s.Value)) // we return a value by panicing
 }

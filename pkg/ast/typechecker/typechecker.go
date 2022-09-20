@@ -46,9 +46,9 @@ func TypecheckAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 }
 
 // typecheck a single node
-func (t *Typechecker) TypecheckNode(node ast.Node, checkBlocks bool) *Typechecker {
+func (t *Typechecker) TypecheckNode(node ast.Node, checkBlocks bool) {
 	t.CheckBlocks = checkBlocks
-	return node.Accept(t).(*Typechecker)
+	node.Accept(t)
 }
 
 // helper to visit a node
@@ -95,12 +95,11 @@ func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3 token.DDPType,
 	t.err(tok, "Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op)
 }
 
-func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.FullVisitor {
+func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) {
 	t.Errored = true
 	t.latestReturnedType = token.DDPVoidType()
-	return t
 }
-func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.FullVisitor {
+func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) {
 	initialType := t.Evaluate(decl.InitVal)
 	if initialType != decl.Type {
 		t.err(decl.InitVal.Token(),
@@ -109,35 +108,31 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.FullVisitor {
 			decl.Type,
 		)
 	}
-	return t
 }
-func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.FullVisitor {
+func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 	t.funcArgs[decl.Name.Literal] = make(map[string]token.ArgType)
 	for i, arg := range decl.ParamNames {
 		t.funcArgs[decl.Name.Literal][arg.Literal] = decl.ParamTypes[i]
 	}
 
 	if !ast.IsExternFunc(decl) {
-		return decl.Body.Accept(t)
+		decl.Body.Accept(t)
 	}
-	return t
 }
 
-func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.FullVisitor {
+func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
 	t.Errored = true
 	t.latestReturnedType = token.DDPVoidType()
-	return t
 }
-func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.FullVisitor {
+func (t *Typechecker) VisitIdent(expr *ast.Ident) {
 	decl, ok := t.CurrentTable.LookupVar(expr.Literal.Literal)
 	if !ok {
 		t.latestReturnedType = token.DDPVoidType()
 	} else {
 		t.latestReturnedType = decl.Type
 	}
-	return t
 }
-func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.FullVisitor {
+func (t *Typechecker) VisitIndexing(expr *ast.Indexing) {
 	if typ := t.Evaluate(expr.Index); typ != token.DDPIntType() {
 		t.err(expr.Index.Token(), "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 	}
@@ -152,29 +147,23 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.FullVisitor {
 	} else {
 		t.latestReturnedType = token.DDPCharType() // later on the list element type
 	}
-	return t
 }
-func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.FullVisitor {
+func (t *Typechecker) VisitIntLit(expr *ast.IntLit) {
 	t.latestReturnedType = token.DDPIntType()
-	return t
 }
-func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) ast.FullVisitor {
+func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) {
 	t.latestReturnedType = token.DDPFloatType()
-	return t
 }
-func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) ast.FullVisitor {
+func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) {
 	t.latestReturnedType = token.DDPBoolType()
-	return t
 }
-func (t *Typechecker) VisitCharLit(expr *ast.CharLit) ast.FullVisitor {
+func (t *Typechecker) VisitCharLit(expr *ast.CharLit) {
 	t.latestReturnedType = token.DDPCharType()
-	return t
 }
-func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.FullVisitor {
+func (t *Typechecker) VisitStringLit(expr *ast.StringLit) {
 	t.latestReturnedType = token.DDPStringType()
-	return t
 }
-func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.FullVisitor {
+func (t *Typechecker) VisitListLit(expr *ast.ListLit) {
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
@@ -192,9 +181,8 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.FullVisitor {
 		}
 	}
 	t.latestReturnedType = expr.Type
-	return t
 }
-func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.FullVisitor {
+func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
 	switch expr.Operator.Type {
@@ -229,9 +217,8 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.FullVisitor {
 	default:
 		t.err(expr.Operator, "Unbekannter unärer Operator '%s'", expr.Operator)
 	}
-	return t
 }
-func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.FullVisitor {
+func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 	lhs := t.Evaluate(expr.Lhs)
 	rhs := t.Evaluate(expr.Rhs)
 
@@ -315,9 +302,8 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.FullVisitor {
 	default:
 		t.err(expr.Operator, "Unbekannter binärer Operator '%s'", expr.Operator)
 	}
-	return t
 }
-func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.FullVisitor {
+func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) {
 	lhs := t.Evaluate(expr.Lhs)
 	mid := t.Evaluate(expr.Mid)
 	rhs := t.Evaluate(expr.Rhs)
@@ -344,9 +330,8 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.FullVisitor {
 	default:
 		t.err(expr.Operator, "Unbekannter ternärer Operator '%s'", expr.Operator)
 	}
-	return t
 }
-func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.FullVisitor {
+func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) {
 	lhs := t.Evaluate(expr.Lhs)
 	if expr.Type.IsList {
 		switch expr.Type.PrimitiveType {
@@ -406,12 +391,11 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.FullVisitor {
 		}
 	}
 	t.latestReturnedType = expr.Type
-	return t
 }
-func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.FullVisitor {
-	return expr.Expr.Accept(t)
+func (t *Typechecker) VisitGrouping(expr *ast.Grouping) {
+	expr.Expr.Accept(t)
 }
-func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.FullVisitor {
+func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 	for k, expr := range callExpr.Args {
 		tokenType := t.Evaluate(expr)
 
@@ -436,21 +420,19 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.FullVisitor {
 	}
 	fun, _ := t.CurrentTable.LookupFunc(callExpr.Name)
 	t.latestReturnedType = fun.Type
-	return t
 }
 
-func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) ast.FullVisitor {
+func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {
 	t.Errored = true
 	t.latestReturnedType = token.DDPVoidType()
-	return t
 }
-func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) ast.FullVisitor {
-	return stmt.Decl.Accept(t)
+func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) {
+	stmt.Decl.Accept(t)
 }
-func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) ast.FullVisitor {
-	return stmt.Expr.Accept(t)
+func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) {
+	stmt.Expr.Accept(t)
 }
-func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.FullVisitor {
+func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
@@ -484,10 +466,8 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.FullVisitor {
 			)
 		}
 	}
-
-	return t
 }
-func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.FullVisitor {
+func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) {
 	if t.CheckBlocks {
 		t.CurrentTable = stmt.Symbols
 		for _, stmt := range stmt.Statements {
@@ -496,9 +476,8 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.FullVisitor {
 
 		t.CurrentTable = stmt.Symbols.Enclosing
 	}
-	return t
 }
-func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.FullVisitor {
+func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) {
 	conditionType := t.Evaluate(stmt.Condition)
 	if conditionType != token.DDPBoolType() {
 		t.err(stmt.Condition.Token(),
@@ -510,9 +489,8 @@ func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.FullVisitor {
 	if stmt.Else != nil {
 		t.visit(stmt.Else)
 	}
-	return t
 }
-func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.FullVisitor {
+func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
@@ -530,9 +508,9 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.FullVisitor {
 			)
 		}
 	}
-	return stmt.Body.Accept(t)
+	stmt.Body.Accept(t)
 }
-func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.FullVisitor {
+func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) {
 	t.visit(stmt.Initializer)
 	toType := t.Evaluate(stmt.To)
 	if toType != token.DDPIntType() {
@@ -550,9 +528,9 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.FullVisitor {
 			)
 		}
 	}
-	return stmt.Body.Accept(t)
+	stmt.Body.Accept(t)
 }
-func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.FullVisitor {
+func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
 
@@ -571,10 +549,9 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.FullVisitor 
 			elementType,
 		)
 	}
-
-	return stmt.Body.Accept(t)
+	stmt.Body.Accept(t)
 }
-func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.FullVisitor {
+func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	returnType := token.DDPVoidType()
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
@@ -586,7 +563,6 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.FullVisitor {
 			returnType,
 		)
 	}
-	return t
 }
 
 // checks if t is contained in types

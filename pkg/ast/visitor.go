@@ -7,44 +7,44 @@ type FullVisitor interface {
 		Declarations
 	*/
 
-	VisitBadDecl(*BadDecl) FullVisitor
-	VisitVarDecl(*VarDecl) FullVisitor
-	VisitFuncDecl(*FuncDecl) FullVisitor
+	VisitBadDecl(*BadDecl)
+	VisitVarDecl(*VarDecl)
+	VisitFuncDecl(*FuncDecl)
 
 	/*
 		Expressions
 	*/
 
-	VisitBadExpr(*BadExpr) FullVisitor
-	VisitIdent(*Ident) FullVisitor
-	VisitIndexing(*Indexing) FullVisitor
-	VisitIntLit(*IntLit) FullVisitor
-	VisitFloatLit(*FloatLit) FullVisitor
-	VisitBoolLit(*BoolLit) FullVisitor
-	VisitCharLit(*CharLit) FullVisitor
-	VisitStringLit(*StringLit) FullVisitor
-	VisitListLit(*ListLit) FullVisitor
-	VisitUnaryExpr(*UnaryExpr) FullVisitor
-	VisitBinaryExpr(*BinaryExpr) FullVisitor
-	VisitTernaryExpr(*TernaryExpr) FullVisitor
-	VisitCastExpr(*CastExpr) FullVisitor
-	VisitGrouping(*Grouping) FullVisitor
-	VisitFuncCall(*FuncCall) FullVisitor
+	VisitBadExpr(*BadExpr)
+	VisitIdent(*Ident)
+	VisitIndexing(*Indexing)
+	VisitIntLit(*IntLit)
+	VisitFloatLit(*FloatLit)
+	VisitBoolLit(*BoolLit)
+	VisitCharLit(*CharLit)
+	VisitStringLit(*StringLit)
+	VisitListLit(*ListLit)
+	VisitUnaryExpr(*UnaryExpr)
+	VisitBinaryExpr(*BinaryExpr)
+	VisitTernaryExpr(*TernaryExpr)
+	VisitCastExpr(*CastExpr)
+	VisitGrouping(*Grouping)
+	VisitFuncCall(*FuncCall)
 
 	/*
 		Statements
 	*/
 
-	VisitBadStmt(*BadStmt) FullVisitor
-	VisitDeclStmt(*DeclStmt) FullVisitor
-	VisitExprStmt(*ExprStmt) FullVisitor
-	VisitAssignStmt(*AssignStmt) FullVisitor
-	VisitBlockStmt(*BlockStmt) FullVisitor
-	VisitIfStmt(*IfStmt) FullVisitor
-	VisitWhileStmt(*WhileStmt) FullVisitor
-	VisitForStmt(*ForStmt) FullVisitor
-	VisitForRangeStmt(*ForRangeStmt) FullVisitor
-	VisitReturnStmt(*ReturnStmt) FullVisitor
+	VisitBadStmt(*BadStmt)
+	VisitDeclStmt(*DeclStmt)
+	VisitExprStmt(*ExprStmt)
+	VisitAssignStmt(*AssignStmt)
+	VisitBlockStmt(*BlockStmt)
+	VisitIfStmt(*IfStmt)
+	VisitWhileStmt(*WhileStmt)
+	VisitForStmt(*ForStmt)
+	VisitForRangeStmt(*ForRangeStmt)
+	VisitReturnStmt(*ReturnStmt)
 }
 
 type (

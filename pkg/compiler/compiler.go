@@ -437,11 +437,10 @@ func (c *Compiler) exitScope(scp *scope) *scope {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.FullVisitor {
+func (c *Compiler) VisitBadDecl(d *ast.BadDecl) {
 	err("Es wurde eine invalide Deklaration gefunden")
-	return c
 }
-func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.FullVisitor {
+func (c *Compiler) VisitVarDecl(d *ast.VarDecl) {
 	Typ := toIRType(d.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
@@ -457,9 +456,8 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.FullVisitor {
 	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ, false)
 	initVal := c.evaluate(d.InitVal) // evaluate the initial value
 	c.cbb.NewStore(initVal, Var)     // store the initial value
-	return c
 }
-func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.FullVisitor {
+func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	retType := toIRType(d.Type)                       // get the llvm type
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
 
@@ -480,7 +478,6 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.FullVisitor {
 		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
 		if err != nil {
 			c.errorHandler(&CompilerError{file: d.ExternFile.File, rang: d.ExternFile.Range, msg: err.Error()})
-			return c
 		}
 		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {
@@ -526,16 +523,13 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.FullVisitor {
 		}
 		c.cf, c.cbb, c.scp = fun, block, c.exitScope(c.scp) // restore state before the function (to main)
 	}
-
-	return c
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.FullVisitor {
+func (c *Compiler) VisitBadExpr(e *ast.BadExpr) {
 	err("Es wurde ein invalider Ausdruck gefunden")
-	return c
 }
-func (c *Compiler) VisitIdent(e *ast.Ident) ast.FullVisitor {
+func (c *Compiler) VisitIdent(e *ast.Ident) {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 	if ok, vk := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
@@ -544,7 +538,6 @@ func (c *Compiler) VisitIdent(e *ast.Ident) ast.FullVisitor {
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
 	}
-	return c
 }
 
 // helper for list indexing
@@ -577,7 +570,7 @@ func (c *Compiler) getElementPointer(lhs, rhs value.Value, node ast.Node) *ir.In
 	return c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
 }
 
-func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.FullVisitor {
+func (c *Compiler) VisitIndexing(e *ast.Indexing) {
 	lhs := c.evaluate(e.Lhs)   // TODO: check if this works
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
 	switch lhs.Type() {
@@ -598,42 +591,36 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.FullVisitor {
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
-	return c
 }
 
 // literals are simple ir constants
-func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.FullVisitor {
+func (c *Compiler) VisitIntLit(e *ast.IntLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newInt(e.Value)
-	return c
 }
-func (c *Compiler) VisitFloatLit(e *ast.FloatLit) ast.FullVisitor {
+func (c *Compiler) VisitFloatLit(e *ast.FloatLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
-	return c
 }
-func (c *Compiler) VisitBoolLit(e *ast.BoolLit) ast.FullVisitor {
+func (c *Compiler) VisitBoolLit(e *ast.BoolLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
-	return c
 }
-func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.FullVisitor {
+func (c *Compiler) VisitCharLit(e *ast.CharLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newIntT(ddpchar, int64(e.Value))
-	return c
 }
 
 // string literals are created by the ddp-c-runtime
 // so we need to do some work here
-func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.FullVisitor {
+func (c *Compiler) VisitStringLit(e *ast.StringLit) {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
 	c.incrementRC(c.latestReturn, VK_STRING)
-	return c
 }
-func (c *Compiler) VisitListLit(e *ast.ListLit) ast.FullVisitor {
+func (c *Compiler) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
 		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
 		for i, v := range e.Values {
@@ -691,9 +678,8 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.FullVisitor {
 	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
 		c.incrementRC(c.latestReturn, vk)
 	}
-	return c
 }
-func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.FullVisitor {
+func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
@@ -763,9 +749,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.FullVisitor {
 	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
-	return c
 }
-func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
+func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	// for UND and ODER both operands are booleans, so no refcounting needs to be done
 	switch e.Operator.Type {
 	case token.UND:
@@ -783,7 +768,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
 		c.cbb = leaveBlock
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
-		return c
+		return
 	case token.ODER:
 		lhs := c.evaluate(e.Lhs)
 		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
@@ -799,7 +784,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
 		c.cbb = leaveBlock
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
-		return c
+		return
 	}
 
 	// compile the two expressions onto which the operator is applied
@@ -1275,9 +1260,8 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
 	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
-	return c
 }
-func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.FullVisitor {
+func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	lhs := c.evaluate(e.Lhs)
 	mid := c.evaluate(e.Mid)
 	rhs := c.evaluate(e.Rhs)
@@ -1316,9 +1300,8 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.FullVisitor {
 	if ok, _ := isRefCounted(rhs.Type()); ok {
 		c.decrementRC(rhs)
 	}
-	return c
 }
-func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.FullVisitor {
+func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 	lhs := c.evaluate(e.Lhs)
 	if e.Type.IsList {
 		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
@@ -1412,12 +1395,11 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.FullVisitor {
 	if ok, _ := isRefCounted(lhs.Type()); ok {
 		c.decrementRC(lhs)
 	}
-	return c
 }
-func (c *Compiler) VisitGrouping(e *ast.Grouping) ast.FullVisitor {
-	return e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
+func (c *Compiler) VisitGrouping(e *ast.Grouping) {
+	e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
 }
-func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.FullVisitor {
+func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames))
 
@@ -1466,24 +1448,21 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.FullVisitor {
 	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
 		c.incrementRC(c.latestReturn, vk)
 	}
-	return c
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadStmt(s *ast.BadStmt) ast.FullVisitor {
+func (c *Compiler) VisitBadStmt(s *ast.BadStmt) {
 	err("Es wurde eine invalide Aussage gefunden")
-	return c
 }
-func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.FullVisitor {
-	return s.Decl.Accept(c)
+func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) {
+	s.Decl.Accept(c)
 }
-func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.FullVisitor {
+func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) {
 	expr := c.evaluate(s.Expr)
 	// free garbage collected returns
 	if ok, _ := isRefCounted(expr.Type()); ok {
 		c.decrementRC(expr)
 	}
-	return c
 }
 
 // helper to resolve nested indexings for VisitAssignStmt
@@ -1509,7 +1488,7 @@ func (c *Compiler) evaluateAssignable(ass ast.Assigneable) value.Value {
 	return nil
 }
 
-func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.FullVisitor {
+func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 	val := c.evaluate(s.Rhs) // compile the expression
 	switch assign := s.Var.(type) {
 	case *ast.Ident:
@@ -1539,20 +1518,18 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.FullVisitor {
 			err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), index.Type())
 		}
 	}
-	return c
 }
-func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.FullVisitor {
+func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) {
 	c.scp = newScope(c.scp) // a block gets its own scope
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
 	}
 
 	c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
-	return c
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
-func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.FullVisitor {
+func (c *Compiler) VisitIfStmt(s *ast.IfStmt) {
 	cond := c.evaluate(s.Condition)
 	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.commentNode(c.cbb, s, "")
@@ -1583,12 +1560,10 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.FullVisitor {
 	}
 
 	c.cbb = leaveBlock
-
-	return c
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.FullVisitor {
+func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) {
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
 		condBlock := c.cf.NewBlock("")
@@ -1642,11 +1617,10 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.FullVisitor {
 
 		c.cbb = leaveBlock
 	}
-	return c
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.FullVisitor {
+func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
 	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
@@ -1714,9 +1688,8 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.FullVisitor {
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
-	return c
 }
-func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
+func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.scp = newScope(c.scp)
 	in := c.evaluate(s.In)
 
@@ -1768,15 +1741,13 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
 	c.decrementRC(in)
-	return c
 }
-func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.FullVisitor {
+func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
-		return c
+		return
 	}
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewRet(c.evaluate(s.Value))
-	return c
 }
