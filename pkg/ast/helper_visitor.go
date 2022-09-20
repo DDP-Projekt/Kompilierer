@@ -53,7 +53,7 @@ func VisitNode(visitor BaseVisitor, node Node, currentScope *SymbolTable) {
 func (h *helperVisitor) visit(node Node) {
 	if h.conditional && h.actualVisitor.(ConditionalVisitor).ShouldVisit(node) {
 		node.Accept(h)
-	} else {
+	} else if !h.conditional {
 		node.Accept(h)
 	}
 }
