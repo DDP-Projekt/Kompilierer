@@ -10,12 +10,11 @@ import (
 
 // holds state to check if the types of an AST are valid
 type Typechecker struct {
-	ErrorHandler       ddperror.Handler                    // function to which errors are passed
-	CurrentTable       *ast.SymbolTable                    // SymbolTable of the current scope (needed for name type-checking)
-	Errored            bool                                // wether the typechecker found an error
-	CheckBlocks        bool                                // wether to typecheck blockStatements
-	latestReturnedType token.DDPType                       // type of the last visited expression
-	funcArgs           map[string]map[string]token.ArgType // for function parameter types
+	ErrorHandler       ddperror.Handler // function to which errors are passed
+	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
+	Errored            bool             // wether the typechecker found an error
+	CheckBlocks        bool             // wether to typecheck blockStatements
+	latestReturnedType token.DDPType    // type of the last visited expression
 }
 
 func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
@@ -28,7 +27,6 @@ func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
 		Errored:            false,
 		CheckBlocks:        true,
 		latestReturnedType: token.DDPVoidType(),
-		funcArgs:           make(map[string]map[string]token.ArgType),
 	}
 }
 
@@ -112,11 +110,6 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	return t
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	t.funcArgs[decl.Name.Literal] = make(map[string]token.ArgType)
-	for i, arg := range decl.ParamNames {
-		t.funcArgs[decl.Name.Literal][arg.Literal] = decl.ParamTypes[i]
-	}
-
 	if !ast.IsExternFunc(decl) {
 		return decl.Body.Accept(t)
 	}
@@ -415,7 +408,16 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.Visitor {
 	for k, expr := range callExpr.Args {
 		tokenType := t.Evaluate(expr)
 
-		argType := t.funcArgs[callExpr.Name][k]
+		var argType token.ArgType
+		decl, _ := t.CurrentTable.LookupFunc(callExpr.Name)
+
+		for i, name := range decl.ParamNames {
+			if name.Literal == k {
+				argType = decl.ParamTypes[i]
+				break
+			}
+		}
+
 		if ass, ok := expr.(ast.Assigneable); argType.IsReference && !ok {
 			t.err(expr.Token(), "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
 		} else if ass, ok := ass.(*ast.Indexing); argType.IsReference && argType.Type == token.DDPCharType() && ok {
