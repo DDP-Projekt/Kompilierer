@@ -1,8 +1,13 @@
 package ast
 
+type BaseVisitor interface {
+	BaseVisitor() // dummy function for the interface
+}
+
 // interface for visiting DDP expressions, statements and declarations
 // see the Visitor pattern
 type FullVisitor interface {
+	BaseVisitor
 	/*
 		Declarations
 	*/
@@ -48,11 +53,11 @@ type FullVisitor interface {
 }
 
 type (
-	BaseVisitor interface {
-		VisitNode(Node)
-	}
 	ScopeVisitor interface {
 		UpdateScope(*SymbolTable)
+	}
+	ConditionalVisitor interface {
+		ShouldVisit(Node) bool
 	}
 )
 

@@ -72,6 +72,8 @@ func (i *Interpreter) visitNode(node ast.Node) {
 	node.Accept(i)
 }
 
+func (*Interpreter) BaseVisitor() {}
+
 func (i *Interpreter) VisitBadDecl(d *ast.BadDecl) {
 	err(d.Token(), "Es wurde eine invalide Deklaration gefunden")
 }

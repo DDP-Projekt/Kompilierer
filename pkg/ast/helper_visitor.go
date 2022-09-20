@@ -4,229 +4,255 @@ import "github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 type helperVisitor struct {
 	actualVisitor BaseVisitor
+	conditional   bool
 }
 
+// invokes visitor on each Node of ast
+// while checking if visitor implements
+// other *Visitor-Interfaces and invoking
+// them accordingly
 func VisitAst(ast *Ast, visitor BaseVisitor) {
-	vis := &helperVisitor{
+	h := &helperVisitor{
 		actualVisitor: visitor,
+		conditional:   false,
+	}
+	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
+		h.conditional = true
+	}
+	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok {
+		scpVis.UpdateScope(ast.Symbols)
 	}
 	for _, stmt := range ast.Statements {
-		stmt.Accept(vis)
+		h.visit(stmt)
 	}
 }
 
-func (b *helperVisitor) VisitBadDecl(decl *BadDecl) {
-	if vis, ok := b.actualVisitor.(BadDeclVisitor); ok {
+func (h *helperVisitor) visit(node Node) {
+	if h.conditional && h.actualVisitor.(ConditionalVisitor).ShouldVisit(node) {
+		node.Accept(h)
+	} else {
+		node.Accept(h)
+	}
+}
+
+func (*helperVisitor) BaseVisitor() {}
+
+func (h *helperVisitor) VisitBadDecl(decl *BadDecl) {
+	if vis, ok := h.actualVisitor.(BadDeclVisitor); ok {
 		vis.VisitBadDecl(decl)
 	}
 }
-func (b *helperVisitor) VisitVarDecl(decl *VarDecl) {
-	if vis, ok := b.actualVisitor.(VarDeclVisitor); ok {
+func (h *helperVisitor) VisitVarDecl(decl *VarDecl) {
+	if vis, ok := h.actualVisitor.(VarDeclVisitor); ok {
 		vis.VisitVarDecl(decl)
 	}
-	decl.InitVal.Accept(b)
+	h.visit(decl.InitVal)
 }
-func (b *helperVisitor) VisitFuncDecl(decl *FuncDecl) {
-	if vis, ok := b.actualVisitor.(FuncDeclVisitor); ok {
+func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) {
+	if vis, ok := h.actualVisitor.(FuncDeclVisitor); ok {
 		vis.VisitFuncDecl(decl)
 	}
 	if decl.Body != nil {
-		decl.Body.Accept(b)
+		h.visit(decl.Body)
 	}
 }
 
 // if a BadExpr exists the AST is faulty
-func (b *helperVisitor) VisitBadExpr(expr *BadExpr) {
-	if vis, ok := b.actualVisitor.(BadExprVisitor); ok {
+func (h *helperVisitor) VisitBadExpr(expr *BadExpr) {
+	if vis, ok := h.actualVisitor.(BadExprVisitor); ok {
 		vis.VisitBadExpr(expr)
 	}
 }
-func (b *helperVisitor) VisitIdent(expr *Ident) {
-	if vis, ok := b.actualVisitor.(IdentVisitor); ok {
+func (h *helperVisitor) VisitIdent(expr *Ident) {
+	if vis, ok := h.actualVisitor.(IdentVisitor); ok {
 		vis.VisitIdent(expr)
 	}
 }
-func (b *helperVisitor) VisitIndexing(expr *Indexing) {
-	if vis, ok := b.actualVisitor.(IndexingVisitor); ok {
+func (h *helperVisitor) VisitIndexing(expr *Indexing) {
+	if vis, ok := h.actualVisitor.(IndexingVisitor); ok {
 		vis.VisitIndexing(expr)
 	}
-	expr.Lhs.Accept(b)
-	expr.Index.Accept(b)
+	h.visit(expr.Lhs)
+	h.visit(expr.Index)
 }
 
 // nothing to do for literals
-func (b *helperVisitor) VisitIntLit(expr *IntLit) {
-	if vis, ok := b.actualVisitor.(IntLitVisitor); ok {
+func (h *helperVisitor) VisitIntLit(expr *IntLit) {
+	if vis, ok := h.actualVisitor.(IntLitVisitor); ok {
 		vis.VisitIntLit(expr)
 	}
 }
-func (b *helperVisitor) VisitFloatLit(expr *FloatLit) {
-	if vis, ok := b.actualVisitor.(FloatLitVisitor); ok {
+func (h *helperVisitor) VisitFloatLit(expr *FloatLit) {
+	if vis, ok := h.actualVisitor.(FloatLitVisitor); ok {
 		vis.VisitFloatLit(expr)
 	}
 }
-func (b *helperVisitor) VisitBoolLit(expr *BoolLit) {
-	if vis, ok := b.actualVisitor.(BoolLitVisitor); ok {
+func (h *helperVisitor) VisitBoolLit(expr *BoolLit) {
+	if vis, ok := h.actualVisitor.(BoolLitVisitor); ok {
 		vis.VisitBoolLit(expr)
 	}
-
 }
-func (b *helperVisitor) VisitCharLit(expr *CharLit) {
-	if vis, ok := b.actualVisitor.(CharLitVisitor); ok {
+func (h *helperVisitor) VisitCharLit(expr *CharLit) {
+	if vis, ok := h.actualVisitor.(CharLitVisitor); ok {
 		vis.VisitCharLit(expr)
 	}
 }
-func (b *helperVisitor) VisitStringLit(expr *StringLit) {
-	if vis, ok := b.actualVisitor.(StringLitVisitor); ok {
+func (h *helperVisitor) VisitStringLit(expr *StringLit) {
+	if vis, ok := h.actualVisitor.(StringLitVisitor); ok {
 		vis.VisitStringLit(expr)
 	}
 }
-func (b *helperVisitor) VisitListLit(expr *ListLit) {
-	if vis, ok := b.actualVisitor.(ListLitVisitor); ok {
+func (h *helperVisitor) VisitListLit(expr *ListLit) {
+	if vis, ok := h.actualVisitor.(ListLitVisitor); ok {
 		vis.VisitListLit(expr)
 	}
 	if expr.Values != nil {
 		for _, v := range expr.Values {
-			v.Accept(b)
+			h.visit(v)
 		}
 	} else if expr.Count != nil && expr.Value != nil {
-		expr.Count.Accept(b)
-		expr.Value.Accept(b)
+		h.visit(expr.Count)
+		h.visit(expr.Value)
 	}
 }
-func (b *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) {
-	if vis, ok := b.actualVisitor.(UnaryExprVisitor); ok {
+func (h *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) {
+	if vis, ok := h.actualVisitor.(UnaryExprVisitor); ok {
 		vis.VisitUnaryExpr(expr)
 	}
-	expr.Rhs.Accept(b)
+	h.visit(expr.Rhs)
 }
-func (b *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) {
-	if vis, ok := b.actualVisitor.(BinaryExprVisitor); ok {
+func (h *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) {
+	if vis, ok := h.actualVisitor.(BinaryExprVisitor); ok {
 		vis.VisitBinaryExpr(expr)
 	}
-	expr.Lhs.Accept(b)
-	expr.Rhs.Accept(b)
+	h.visit(expr.Lhs)
+	h.visit(expr.Rhs)
 }
-func (b *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) {
-	if vis, ok := b.actualVisitor.(TernaryExprVisitor); ok {
+func (h *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) {
+	if vis, ok := h.actualVisitor.(TernaryExprVisitor); ok {
 		vis.VisitTernaryExpr(expr)
 	}
-	expr.Lhs.Accept(b)
-	expr.Mid.Accept(b)
-	expr.Rhs.Accept(b)
+	h.visit(expr.Lhs)
+	h.visit(expr.Mid)
+	h.visit(expr.Rhs)
 }
-func (b *helperVisitor) VisitCastExpr(expr *CastExpr) {
-	if vis, ok := b.actualVisitor.(CastExprVisitor); ok {
+func (h *helperVisitor) VisitCastExpr(expr *CastExpr) {
+	if vis, ok := h.actualVisitor.(CastExprVisitor); ok {
 		vis.VisitCastExpr(expr)
 	}
-	expr.Lhs.Accept(b)
+	h.visit(expr.Lhs)
 }
-func (b *helperVisitor) VisitGrouping(expr *Grouping) {
-	if vis, ok := b.actualVisitor.(GroupingVisitor); ok {
+func (h *helperVisitor) VisitGrouping(expr *Grouping) {
+	if vis, ok := h.actualVisitor.(GroupingVisitor); ok {
 		vis.VisitGrouping(expr)
 	}
-	expr.Expr.Accept(b)
+	h.visit(expr.Expr)
 }
-func (b *helperVisitor) VisitFuncCall(expr *FuncCall) {
-	if vis, ok := b.actualVisitor.(FuncCallVisitor); ok {
+func (h *helperVisitor) VisitFuncCall(expr *FuncCall) {
+	if vis, ok := h.actualVisitor.(FuncCallVisitor); ok {
 		vis.VisitFuncCall(expr)
 	}
 	// visit the passed arguments
 	for _, v := range expr.Args {
-		v.Accept(b)
+		h.visit(v)
 	}
 }
 
-func (b *helperVisitor) VisitBadStmt(stmt *BadStmt) {
-	if vis, ok := b.actualVisitor.(BadStmtVisitor); ok {
+func (h *helperVisitor) VisitBadStmt(stmt *BadStmt) {
+	if vis, ok := h.actualVisitor.(BadStmtVisitor); ok {
 		vis.VisitBadStmt(stmt)
 	}
 }
-func (b *helperVisitor) VisitDeclStmt(stmt *DeclStmt) {
-	if vis, ok := b.actualVisitor.(DeclStmtVisitor); ok {
+func (h *helperVisitor) VisitDeclStmt(stmt *DeclStmt) {
+	if vis, ok := h.actualVisitor.(DeclStmtVisitor); ok {
 		vis.VisitDeclStmt(stmt)
 	}
-	stmt.Decl.Accept(b)
+	h.visit(stmt.Decl)
 }
-func (b *helperVisitor) VisitExprStmt(stmt *ExprStmt) {
-	if vis, ok := b.actualVisitor.(ExprStmtVisitor); ok {
+func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) {
+	if vis, ok := h.actualVisitor.(ExprStmtVisitor); ok {
 		vis.VisitExprStmt(stmt)
 	}
-	stmt.Expr.Accept(b)
+	h.visit(stmt.Expr)
 }
-func (b *helperVisitor) VisitAssignStmt(stmt *AssignStmt) {
-	if vis, ok := b.actualVisitor.(AssignStmtVisitor); ok {
+func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) {
+	if vis, ok := h.actualVisitor.(AssignStmtVisitor); ok {
 		vis.VisitAssignStmt(stmt)
 	}
-	stmt.Var.Accept(b)
-	stmt.Rhs.Accept(b)
+	if stmt.Token().Type == token.SPEICHERE {
+		h.visit(stmt.Rhs)
+		h.visit(stmt.Var)
+		return
+	}
+	h.visit(stmt.Var)
+	h.visit(stmt.Rhs)
 }
-func (b *helperVisitor) VisitBlockStmt(stmt *BlockStmt) {
-	if vis, ok := b.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
-		vis.UpdateScope(stmt.Symbols)
+func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) {
+	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
+		scpVis.UpdateScope(stmt.Symbols)
 	}
 
-	if vis, ok := b.actualVisitor.(BlockStmtVisitor); ok {
+	if vis, ok := h.actualVisitor.(BlockStmtVisitor); ok {
 		vis.VisitBlockStmt(stmt)
 	}
 	for _, stmt := range stmt.Statements {
-		stmt.Accept(b)
+		h.visit(stmt)
 	}
 
-	if vis, ok := b.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
-		vis.UpdateScope(stmt.Symbols.Enclosing)
+	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
+		scpVis.UpdateScope(stmt.Symbols.Enclosing)
 	}
 }
-func (b *helperVisitor) VisitIfStmt(stmt *IfStmt) {
-	if vis, ok := b.actualVisitor.(IfStmtVisitor); ok {
+func (h *helperVisitor) VisitIfStmt(stmt *IfStmt) {
+	if vis, ok := h.actualVisitor.(IfStmtVisitor); ok {
 		vis.VisitIfStmt(stmt)
 	}
-	stmt.Condition.Accept(b)
-	stmt.Then.Accept(b)
+	h.visit(stmt.Condition)
+	h.visit(stmt.Then)
 	if stmt.Else != nil {
-		stmt.Else.Accept(b)
+		h.visit(stmt.Else)
 	}
 }
-func (b *helperVisitor) VisitWhileStmt(stmt *WhileStmt) {
-	if vis, ok := b.actualVisitor.(WhileStmtVisitor); ok {
+func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) {
+	if vis, ok := h.actualVisitor.(WhileStmtVisitor); ok {
 		vis.VisitWhileStmt(stmt)
 	}
 	switch op := stmt.While.Type; op {
 	case token.SOLANGE, token.COUNT_MAL:
-		stmt.Condition.Accept(b)
-		stmt.Body.Accept(b)
+		h.visit(stmt.Condition)
+		h.visit(stmt.Body)
 	case token.MACHE:
-		stmt.Body.Accept(b)
-		stmt.Condition.Accept(b)
+		h.visit(stmt.Body)
+		h.visit(stmt.Condition)
 	}
 }
-func (b *helperVisitor) VisitForStmt(stmt *ForStmt) {
-	if vis, ok := b.actualVisitor.(ForStmtVisitor); ok {
+func (h *helperVisitor) VisitForStmt(stmt *ForStmt) {
+	if vis, ok := h.actualVisitor.(ForStmtVisitor); ok {
 		vis.VisitForStmt(stmt)
 	}
 
-	stmt.Initializer.Accept(b)
-	stmt.To.Accept(b)
+	h.visit(stmt.Initializer)
+	h.visit(stmt.To)
 	if stmt.StepSize != nil {
-		stmt.StepSize.Accept(b)
+		h.visit(stmt.StepSize)
 	}
-	stmt.Body.Accept(b)
+	h.visit(stmt.Body)
 }
-func (b *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) {
-	if vis, ok := b.actualVisitor.(ForRangeStmtVisitor); ok {
+func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) {
+	if vis, ok := h.actualVisitor.(ForRangeStmtVisitor); ok {
 		vis.VisitForRangeStmt(stmt)
 	}
 
-	stmt.Initializer.Accept(b)
-	stmt.In.Accept(b)
-	stmt.Body.Accept(b)
+	h.visit(stmt.Initializer)
+	h.visit(stmt.In)
+	h.visit(stmt.Body)
 }
-func (b *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
-	if vis, ok := b.actualVisitor.(ReturnStmtVisitor); ok {
+func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
+	if vis, ok := h.actualVisitor.(ReturnStmtVisitor); ok {
 		vis.VisitReturnStmt(stmt)
 	}
 	if stmt.Value == nil {
 		return
 	}
-	stmt.Value.Accept(b)
+	h.visit(stmt.Value)
 }
