@@ -1,6 +1,10 @@
 package ast
 
-import "github.com/DDP-Projekt/Kompilierer/pkg/token"
+import (
+	"sort"
+
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+)
 
 type helperVisitor struct {
 	actualVisitor BaseVisitor
@@ -25,6 +29,25 @@ func VisitAst(ast *Ast, visitor BaseVisitor) {
 	for _, stmt := range ast.Statements {
 		h.visit(stmt)
 	}
+}
+
+// invokes visitor on each Node of ast
+// while checking if visitor implements
+// other *Visitor-Interfaces and invoking
+// them accordingly
+// a optional SymbolTable may be passed if neccessery
+func VisitNode(visitor BaseVisitor, node Node, currentScope *SymbolTable) {
+	h := &helperVisitor{
+		actualVisitor: visitor,
+		conditional:   false,
+	}
+	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
+		h.conditional = true
+	}
+	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && currentScope != nil {
+		scpVis.UpdateScope(currentScope)
+	}
+	h.visit(node)
 }
 
 func (h *helperVisitor) visit(node Node) {
@@ -152,9 +175,26 @@ func (h *helperVisitor) VisitFuncCall(expr *FuncCall) {
 	if vis, ok := h.actualVisitor.(FuncCallVisitor); ok {
 		vis.VisitFuncCall(expr)
 	}
-	// visit the passed arguments
-	for _, v := range expr.Args {
-		h.visit(v)
+	if len(expr.Args) != 0 {
+		// sort the arguments to visit them in the order they appear
+		args := make([]Expression, 0, len(expr.Args))
+		for _, arg := range expr.Args {
+			args = append(args, arg)
+		}
+		sort.Slice(args, func(i, j int) bool {
+			iRange, jRange := args[i].GetRange(), args[j].GetRange()
+			if iRange.Start.Line < jRange.Start.Line {
+				return true
+			}
+			if iRange.Start.Line == jRange.Start.Line {
+				return iRange.Start.Column < jRange.Start.Column
+			}
+			return false
+		})
+
+		for _, arg := range args {
+			h.visit(arg)
+		}
 	}
 }
 
