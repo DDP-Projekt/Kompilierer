@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/DDP-Projekt/Kompilierer/pkg/token"
+
 type helperVisitor struct {
 	actualVisitor BaseVisitor
 }
@@ -212,8 +214,14 @@ func (b *helperVisitor) VisitWhileStmt(stmt *WhileStmt) FullVisitor {
 	if vis, ok := b.actualVisitor.(WhileStmtVisitor); ok {
 		vis.VisitWhileStmt(stmt)
 	}
-	stmt.Condition.Accept(b)
-	stmt.Body.Accept(b)
+	switch op := stmt.While.Type; op {
+	case token.SOLANGE, token.COUNT_MAL:
+		stmt.Condition.Accept(b)
+		stmt.Body.Accept(b)
+	case token.MACHE:
+		stmt.Body.Accept(b)
+		stmt.Condition.Accept(b)
+	}
 	return b
 }
 func (b *helperVisitor) VisitForStmt(stmt *ForStmt) FullVisitor {
@@ -236,6 +244,7 @@ func (b *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) FullVisitor {
 	}
 
 	stmt.Initializer.Accept(b)
+	stmt.In.Accept(b)
 	stmt.Body.Accept(b)
 
 	return b
