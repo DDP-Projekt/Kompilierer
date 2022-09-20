@@ -436,6 +436,8 @@ func (c *Compiler) exitScope(scp *scope) *scope {
 	return scp.enclosing
 }
 
+func (*Compiler) BaseVisitor() {}
+
 // should have been filtered by the resolver/typechecker, so err
 func (c *Compiler) VisitBadDecl(d *ast.BadDecl) {
 	err("Es wurde eine invalide Deklaration gefunden")

@@ -65,6 +65,8 @@ func (r *Resolver) err(tok token.Token, msg string, args ...any) {
 	r.ErrorHandler(&ResolverError{file: tok.File, rang: tok.Range, msg: fmt.Sprintf(msg, args...)})
 }
 
+func (*Resolver) BaseVisitor() {}
+
 // if a BadDecl exists the AST is faulty
 func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
 	r.Errored = true

@@ -95,6 +95,8 @@ func (t *Typechecker) errExpectedTern(tok token.Token, t1, t2, t3 token.DDPType,
 	t.err(tok, "Die Typen Kombination aus '%s', '%s' und '%s' passt nicht zu dem '%s' Operator", t1, t2, t3, op)
 }
 
+func (*Typechecker) BaseVisitor() {}
+
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) {
 	t.Errored = true
 	t.latestReturnedType = token.DDPVoidType()
