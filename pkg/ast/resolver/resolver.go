@@ -66,11 +66,11 @@ func (r *Resolver) err(tok token.Token, msg string, args ...any) {
 }
 
 // if a BadDecl exists the AST is faulty
-func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
+func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.FullVisitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
+func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.FullVisitor {
 	decl.InitVal.Accept(r) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl); existed {
@@ -79,7 +79,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 
 	return r
 }
-func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
+func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.FullVisitor {
 	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed {
 		r.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
 	}
@@ -96,39 +96,39 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 }
 
 // if a BadExpr exists the AST is faulty
-func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.Visitor {
+func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.FullVisitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitIdent(expr *ast.Ident) ast.Visitor {
+func (r *Resolver) VisitIdent(expr *ast.Ident) ast.FullVisitor {
 	// check if the variable exists
 	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
 		r.err(expr.Token(), "Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal)
 	}
 	return r
 }
-func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.Visitor {
+func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.FullVisitor {
 	r.visit(expr.Lhs)
 	return expr.Index.Accept(r)
 }
 
 // nothing to do for literals
-func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.Visitor {
+func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.FullVisitor {
 	return r
 }
-func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) ast.Visitor {
+func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) ast.FullVisitor {
 	return r
 }
-func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.Visitor {
+func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.FullVisitor {
 	return r
 }
-func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.Visitor {
+func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.FullVisitor {
 	return r
 }
-func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.Visitor {
+func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.FullVisitor {
 	return r
 }
-func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.Visitor {
+func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.FullVisitor {
 	if expr.Values != nil {
 		for _, v := range expr.Values {
 			r.visit(v)
@@ -139,22 +139,22 @@ func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.Visitor {
 	}
 	return r
 }
-func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.Visitor {
+func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.FullVisitor {
 	return expr.Rhs.Accept(r) // visit the actual expression
 }
-func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.Visitor {
+func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.FullVisitor {
 	return expr.Rhs.Accept(expr.Lhs.Accept(r)) // visit the actual expressions
 }
-func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.Visitor {
+func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.FullVisitor {
 	return expr.Rhs.Accept(expr.Mid.Accept(expr.Lhs.Accept(r))) // visit the actual expressions
 }
-func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.Visitor {
+func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.FullVisitor {
 	return expr.Lhs.Accept(r) // visit the actual expressions
 }
-func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.Visitor {
+func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.FullVisitor {
 	return expr.Expr.Accept(r)
 }
-func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.Visitor {
+func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.FullVisitor {
 	// visit the passed arguments
 	for _, v := range expr.Args {
 		r.visit(v)
@@ -163,17 +163,17 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.Visitor {
 }
 
 // if a BadStmt exists the AST is faulty
-func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) ast.Visitor {
+func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) ast.FullVisitor {
 	r.Errored = true
 	return r
 }
-func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) ast.Visitor {
+func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) ast.FullVisitor {
 	return stmt.Decl.Accept(r)
 }
-func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.Visitor {
+func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.FullVisitor {
 	return stmt.Expr.Accept(r)
 }
-func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
+func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.FullVisitor {
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
 		// check if the variable exists
@@ -187,7 +187,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.Visitor {
 
 	return stmt.Rhs.Accept(r)
 }
-func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
+func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.FullVisitor {
 	if r.ResolveBlocks {
 		// a block needs a new scope
 		if stmt.Symbols == nil {
@@ -204,7 +204,7 @@ func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.Visitor {
 	}
 	return r
 }
-func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {
+func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.FullVisitor {
 	r.visit(stmt.Condition)
 	r.visit(stmt.Then)
 	if stmt.Else != nil {
@@ -213,11 +213,11 @@ func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.Visitor {
 
 	return r
 }
-func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) ast.Visitor {
+func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) ast.FullVisitor {
 	r.visit(stmt.Condition)
 	return stmt.Body.Accept(r)
 }
-func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
+func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.FullVisitor {
 	var env *ast.SymbolTable // scope of the for loop
 	// if it contains a block statement, the counter variable needs to go in there
 	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
@@ -238,7 +238,7 @@ func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.Visitor {
 
 	return r
 }
-func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.Visitor {
+func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.FullVisitor {
 	var env *ast.SymbolTable // scope of the for loop
 	// if it contains a block statement, the counter variable needs to go in there
 	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
@@ -255,10 +255,7 @@ func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.Visitor {
 
 	return r
 }
-func (r *Resolver) VisitFuncCallStmt(stmt *ast.FuncCallStmt) ast.Visitor {
-	return stmt.Call.Accept(r)
-}
-func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.Visitor {
+func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.FullVisitor {
 	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
 		r.err(stmt.Token(), "Man kann nur aus Funktionen einen Wert zurückgeben")
 	}
