@@ -2,55 +2,59 @@ package ast
 
 // interface for visiting DDP expressions, statements and declarations
 // see the Visitor pattern
-type Visitor interface {
+type FullVisitor interface {
 	/*
 		Declarations
 	*/
 
-	VisitBadDecl(*BadDecl) Visitor
-	VisitVarDecl(*VarDecl) Visitor
-	VisitFuncDecl(*FuncDecl) Visitor
+	VisitBadDecl(*BadDecl) FullVisitor
+	VisitVarDecl(*VarDecl) FullVisitor
+	VisitFuncDecl(*FuncDecl) FullVisitor
 
 	/*
 		Expressions
 	*/
 
-	VisitBadExpr(*BadExpr) Visitor
-	VisitIdent(*Ident) Visitor
-	VisitIndexing(*Indexing) Visitor
-	VisitIntLit(*IntLit) Visitor
-	VisitFloatLit(*FloatLit) Visitor
-	VisitBoolLit(*BoolLit) Visitor
-	VisitCharLit(*CharLit) Visitor
-	VisitStringLit(*StringLit) Visitor
-	VisitListLit(*ListLit) Visitor
-	VisitUnaryExpr(*UnaryExpr) Visitor
-	VisitBinaryExpr(*BinaryExpr) Visitor
-	VisitTernaryExpr(*TernaryExpr) Visitor
-	VisitCastExpr(*CastExpr) Visitor
-	VisitGrouping(*Grouping) Visitor
-	VisitFuncCall(*FuncCall) Visitor
+	VisitBadExpr(*BadExpr) FullVisitor
+	VisitIdent(*Ident) FullVisitor
+	VisitIndexing(*Indexing) FullVisitor
+	VisitIntLit(*IntLit) FullVisitor
+	VisitFloatLit(*FloatLit) FullVisitor
+	VisitBoolLit(*BoolLit) FullVisitor
+	VisitCharLit(*CharLit) FullVisitor
+	VisitStringLit(*StringLit) FullVisitor
+	VisitListLit(*ListLit) FullVisitor
+	VisitUnaryExpr(*UnaryExpr) FullVisitor
+	VisitBinaryExpr(*BinaryExpr) FullVisitor
+	VisitTernaryExpr(*TernaryExpr) FullVisitor
+	VisitCastExpr(*CastExpr) FullVisitor
+	VisitGrouping(*Grouping) FullVisitor
+	VisitFuncCall(*FuncCall) FullVisitor
 
 	/*
 		Statements
 	*/
 
-	VisitBadStmt(*BadStmt) Visitor
-	VisitDeclStmt(*DeclStmt) Visitor
-	VisitExprStmt(*ExprStmt) Visitor
-	VisitAssignStmt(*AssignStmt) Visitor
-	VisitBlockStmt(*BlockStmt) Visitor
-	VisitIfStmt(*IfStmt) Visitor
-	VisitWhileStmt(*WhileStmt) Visitor
-	VisitForStmt(*ForStmt) Visitor
-	VisitForRangeStmt(*ForRangeStmt) Visitor
-	VisitFuncCallStmt(*FuncCallStmt) Visitor
-	VisitReturnStmt(*ReturnStmt) Visitor
+	VisitBadStmt(*BadStmt) FullVisitor
+	VisitDeclStmt(*DeclStmt) FullVisitor
+	VisitExprStmt(*ExprStmt) FullVisitor
+	VisitAssignStmt(*AssignStmt) FullVisitor
+	VisitBlockStmt(*BlockStmt) FullVisitor
+	VisitIfStmt(*IfStmt) FullVisitor
+	VisitWhileStmt(*WhileStmt) FullVisitor
+	VisitForStmt(*ForStmt) FullVisitor
+	VisitForRangeStmt(*ForRangeStmt) FullVisitor
+	VisitReturnStmt(*ReturnStmt) FullVisitor
 }
 
-type BaseVisitor interface {
-	BaseVisitor()
-}
+type (
+	BaseVisitor interface {
+		VisitNode(Node)
+	}
+	ScopeVisitor interface {
+		UpdateScope(*SymbolTable)
+	}
+)
 
 type (
 	BadDeclVisitor interface {
@@ -162,10 +166,6 @@ type (
 	ForRangeStmtVisitor interface {
 		BaseVisitor
 		VisitForRangeStmt(*ForRangeStmt)
-	}
-	FuncCallStmtVisitor interface {
-		BaseVisitor
-		VisitFuncCallStmt(*FuncCallStmt)
 	}
 	ReturnStmtVisitor interface {
 		BaseVisitor

@@ -437,11 +437,11 @@ func (c *Compiler) exitScope(scp *scope) *scope {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
+func (c *Compiler) VisitBadDecl(d *ast.BadDecl) ast.FullVisitor {
 	err("Es wurde eine invalide Deklaration gefunden")
 	return c
 }
-func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
+func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.FullVisitor {
 	Typ := toIRType(d.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
@@ -459,7 +459,7 @@ func (c *Compiler) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 	c.cbb.NewStore(initVal, Var)     // store the initial value
 	return c
 }
-func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
+func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.FullVisitor {
 	retType := toIRType(d.Type)                       // get the llvm type
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
 
@@ -531,11 +531,11 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
+func (c *Compiler) VisitBadExpr(e *ast.BadExpr) ast.FullVisitor {
 	err("Es wurde ein invalider Ausdruck gefunden")
 	return c
 }
-func (c *Compiler) VisitIdent(e *ast.Ident) ast.Visitor {
+func (c *Compiler) VisitIdent(e *ast.Ident) ast.FullVisitor {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 	if ok, vk := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
@@ -577,7 +577,7 @@ func (c *Compiler) getElementPointer(lhs, rhs value.Value, node ast.Node) *ir.In
 	return c.cbb.NewGetElementPtr(getElementType(lhs.Type()), arr, index)
 }
 
-func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
+func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.FullVisitor {
 	lhs := c.evaluate(e.Lhs)   // TODO: check if this works
 	rhs := c.evaluate(e.Index) // rhs is never refCounted
 	switch lhs.Type() {
@@ -602,22 +602,22 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) ast.Visitor {
 }
 
 // literals are simple ir constants
-func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.Visitor {
+func (c *Compiler) VisitIntLit(e *ast.IntLit) ast.FullVisitor {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newInt(e.Value)
 	return c
 }
-func (c *Compiler) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
+func (c *Compiler) VisitFloatLit(e *ast.FloatLit) ast.FullVisitor {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	return c
 }
-func (c *Compiler) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
+func (c *Compiler) VisitBoolLit(e *ast.BoolLit) ast.FullVisitor {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
 	return c
 }
-func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
+func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.FullVisitor {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newIntT(ddpchar, int64(e.Value))
 	return c
@@ -625,7 +625,7 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) ast.Visitor {
 
 // string literals are created by the ddp-c-runtime
 // so we need to do some work here
-func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
+func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.FullVisitor {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
@@ -633,7 +633,7 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	c.incrementRC(c.latestReturn, VK_STRING)
 	return c
 }
-func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
+func (c *Compiler) VisitListLit(e *ast.ListLit) ast.FullVisitor {
 	if e.Values != nil {
 		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(int64(len(e.Values))))
 		for i, v := range e.Values {
@@ -693,7 +693,7 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
+func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.FullVisitor {
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
@@ -765,7 +765,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.FullVisitor {
 	// for UND and ODER both operands are booleans, so no refcounting needs to be done
 	switch e.Operator.Type {
 	case token.UND:
@@ -1277,7 +1277,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.FullVisitor {
 	lhs := c.evaluate(e.Lhs)
 	mid := c.evaluate(e.Mid)
 	rhs := c.evaluate(e.Rhs)
@@ -1318,7 +1318,7 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.FullVisitor {
 	lhs := c.evaluate(e.Lhs)
 	if e.Type.IsList {
 		list := c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, newInt(1))
@@ -1414,10 +1414,10 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitGrouping(e *ast.Grouping) ast.Visitor {
+func (c *Compiler) VisitGrouping(e *ast.Grouping) ast.FullVisitor {
 	return e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
 }
-func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
+func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.FullVisitor {
 	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames))
 
@@ -1470,14 +1470,14 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
+func (c *Compiler) VisitBadStmt(s *ast.BadStmt) ast.FullVisitor {
 	err("Es wurde eine invalide Aussage gefunden")
 	return c
 }
-func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
+func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) ast.FullVisitor {
 	return s.Decl.Accept(c)
 }
-func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
+func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) ast.FullVisitor {
 	expr := c.evaluate(s.Expr)
 	// free garbage collected returns
 	if ok, _ := isRefCounted(expr.Type()); ok {
@@ -1509,7 +1509,7 @@ func (c *Compiler) evaluateAssignable(ass ast.Assigneable) value.Value {
 	return nil
 }
 
-func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.FullVisitor {
 	val := c.evaluate(s.Rhs) // compile the expression
 	switch assign := s.Var.(type) {
 	case *ast.Ident:
@@ -1541,7 +1541,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	}
 	return c
 }
-func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
+func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.FullVisitor {
 	c.scp = newScope(c.scp) // a block gets its own scope
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
@@ -1552,7 +1552,7 @@ func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
-func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
+func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.FullVisitor {
 	cond := c.evaluate(s.Condition)
 	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.commentNode(c.cbb, s, "")
@@ -1588,7 +1588,7 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
+func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.FullVisitor {
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
 		condBlock := c.cf.NewBlock("")
@@ -1646,7 +1646,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
+func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.FullVisitor {
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
 	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
@@ -1716,7 +1716,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
 	return c
 }
-func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.FullVisitor {
 	c.scp = newScope(c.scp)
 	in := c.evaluate(s.In)
 
@@ -1770,10 +1770,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
 	c.decrementRC(in)
 	return c
 }
-func (c *Compiler) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(c)
-}
-func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.FullVisitor {
 	if s.Value == nil {
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
