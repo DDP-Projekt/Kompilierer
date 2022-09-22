@@ -25,7 +25,7 @@
 - [x] Standardbibliothek (Duden)
 - [ ] Kommentare parsen (für LS und Docs)
 - [ ] Code Optimizer (Dead-Code-Removal, constexpr-evaluation, ...)
-- [ ] kddp command-argumente deutsch machen
+- [x] kddp command-argumente deutsch machen
 - [ ] on-release test-script (locales testen, etc.)
 - [ ] besseres Operator overloading
 

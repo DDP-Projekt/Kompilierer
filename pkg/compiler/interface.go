@@ -61,7 +61,7 @@ type Result struct {
 
 func validateOptions(options *Options) error {
 	if options.Source == nil && options.From == nil && options.FileName == "" {
-		return errors.New("no source given in options")
+		return errors.New("Kein Quellcode gegeben")
 	}
 	if options.ErrorHandler == nil {
 		options.ErrorHandler = func(ddperror.Error) {}
@@ -83,7 +83,7 @@ func Compile(options Options) (*Result, error) {
 
 	// compile the ddp-source into an Ast
 	var Ast *ast.Ast
-	options.Log("Parsing ddp-source-code")
+	options.Log("Parse DDP Quellcode")
 	if options.Source != nil {
 		Ast, err = parser.ParseSource(options.FileName, options.Source, options.ErrorHandler)
 	} else if options.From != nil {
@@ -102,7 +102,7 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	// if set, only compile to llvm ir and return
-	options.Log("compiling ast to llvm ir")
+	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 	if options.OutputType == OutputIR {
 		return New(Ast, options.ErrorHandler).Compile(options.To)
 	}
@@ -116,7 +116,7 @@ func Compile(options Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	options.Log("writing llvm ir to %s", tempFileName)
+	options.Log("Schreibe LLVM ir nach %s", tempFileName)
 	result, err := New(Ast, options.ErrorHandler).Compile(file)
 	if err != nil {
 		file.Close()
@@ -125,12 +125,12 @@ func Compile(options Options) (*Result, error) {
 	file.Close()
 
 	if options.DeleteIntermediateFiles {
-		defer options.Log("removing temporary file %s", tempFileName)
+		defer options.Log("Lösche die temporäre Datei '%s'", tempFileName)
 		defer os.Remove(tempFileName)
 	}
 
 	// object files are written to the given io.Writer (most commonly a file)
-	options.Log("compiling llvm ir to object file")
+	options.Log("Kompiliere LLVM ir zu einer Objektdatei")
 	if options.OutputType == OutputObj {
 		_, err = compileToObject(tempFileName, options.OutputType, options.To)
 		if err != nil {

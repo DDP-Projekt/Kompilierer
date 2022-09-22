@@ -18,8 +18,8 @@ func runCommands() error {
 	// if no sub-command is provided, error
 	if len(os.Args) < 2 {
 		return fmt.Errorf(
-			`usage: kddp <command> <options>
-for more information try: kddp help
+			`Nutzung: kddp <Befehl> <Optionen>
+Für mehr Informationen probiere $kddp hilfe
 `)
 	}
 
@@ -34,5 +34,5 @@ for more information try: kddp help
 		}
 	}
 
-	return fmt.Errorf("Unknown command '%s'\nFor a list of all commands try: kddp help", subcmd)
+	return fmt.Errorf("Unbekannter Befehl '%s'\nFür eine Liste aller Befehle probiere $kddp hilfe", subcmd)
 }
