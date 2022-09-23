@@ -1,3 +1,4 @@
 .vscode
 /build
 /llvm_build
+.idea
