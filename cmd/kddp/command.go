@@ -532,7 +532,7 @@ func (cmd *RunCommand) Name() string {
 }
 
 func (cmd *RunCommand) Usage() string {
-	return `starte <Eingabedatei> <Optionen>: compile and run the given .ddp file
+	return `starte <Eingabedatei> <Optionen>: Kompiliert und führt die gegebene .ddp Datei aus
 Optionen:
 	--wortreich: Gibt wortreiche Informationen während des Befehls
 	--gcc_optionen: Benutzerdefinierte Optionen, die gcc übergeben werden
