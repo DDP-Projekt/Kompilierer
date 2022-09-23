@@ -37,3 +37,4 @@
 - [ ] Single-function import
 - [X] Externe Funktionen (in C geschrieben)
 - [ ] Generics
+- [ ] Alias für Ausdrücke
