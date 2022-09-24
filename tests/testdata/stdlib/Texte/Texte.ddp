@@ -1,24 +1,74 @@
 Binde "Duden/Texte" ein.
 Binde "Duden/Ausgabe" ein.
 
-Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile.
-Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile.
-Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile.
+Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, guh??]
+Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
+Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, guh??]
 
-Schreibe ("Hello World" 'e' enthält) auf eine Zeile.
-Schreibe ("Hello World" '!' enthält) auf eine Zeile.
+Schreibe ("Hello World" 'e' enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
+Schreibe ("Hello World" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
 
-Schreibe ("Hello World" "ello" enthält) auf eine Zeile.
-Schreibe ("Hello World" "guh" enthält) auf eine Zeile.
+Schreibe ("Hello World" "ello" enthält) auf eine Zeile. [EnthältText, wahr]
+Schreibe ("Hello World" "guh" enthält) auf eine Zeile. [EnthältText, falsch]
 
-Schreibe ("Hello World" mit 'H' anfängt) auf eine Zeile.
-Schreibe ("Hello World" mit ' ' anfängt) auf eine Zeile.
+Schreibe ("Hello World" mit 'H' anfängt) auf eine Zeile. [BeginntMitBuchstabe, wahr]
+Schreibe ("Hello World" mit ' ' anfängt) auf eine Zeile. [BeginntMitBuchstabe, falsch]
 
-Schreibe ("Hello World" mit 'd' aufhört) auf eine Zeile.
-Schreibe ("Hello World" mit ' ' aufhört) auf eine Zeile.
+Schreibe ("Hello World" mit 'd' aufhört) auf eine Zeile. [EndetMitBuchstabe, wahr]
+Schreibe ("Hello World" mit ' ' aufhört) auf eine Zeile. [EndetMitBuchstabe, falsch]
 
-Schreibe ("Hello World" mit "Hell" anfängt) auf eine Zeile.
-Schreibe ("Hello World" mit "hi" anfängt) auf eine Zeile.
+Schreibe ("Hello World" mit "Hell" anfängt) auf eine Zeile.[BeginntMitText, wahr]
+Schreibe ("Hello World" mit "hi" anfängt) auf eine Zeile. [BeginntMitText, falsch]
 
-Schreibe ("Hello World" mit "orld" aufhört) auf eine Zeile.
-Schreibe ("Hello World" mit "orad" aufhört).
+Schreibe ("Hello World" mit "orld" aufhört) auf eine Zeile. [EndetMitText, wahr]
+Schreibe ("Hello World" mit "orad" aufhört) auf eine Zeile. [EndetMitText, falsch]
+
+Der Text text ist "Hello World!".
+
+[Buchstabe_an_Text_fügen]
+Füge ' ' an text an.
+Schreibe den Text text auf eine Zeile. [Hello World! ]
+
+[Text_an_Text_fügen]
+Füge "Hi." an text an.
+Schreibe den Text text auf eine Zeile. [Hello World! Hi.]
+
+[Text_leeren]
+Leere text.
+Schreibe den Text text auf eine Zeile. []
+
+[IstTextLeer]
+Schreibe den Boolean (text leer) auf eine Zeile. [wahr]
+
+text ist "test".
+
+[IndexVonText]
+Schreibe (der Index von 'e' in text) auf eine Zeile. [2]
+
+[Text_vor_Text_stellen]
+Stelle "ein " vor text.
+Schreibe text auf eine Zeile. [ein test]
+
+[Buchstabe_vor_Text_stellen]
+Stelle 'k' vor text.
+Schreibe text auf eine Zeile. [kein test]
+
+[Lösche_Text]
+Lösche das Element an der Stelle 5 aus text.
+Schreibe text auf eine Zeile. [keintest]
+
+[Lösche_Text_Bereich]
+Lösche alle Elemente von 1 bis 4 aus text.
+Schreibe text auf eine Zeile. [test]
+
+[Fülle_Text]
+Fülle text mit 'a'.
+Schreibe den Text text auf eine Zeile. [aaaa]
+
+[Buchstabe_in_Text_einfügen]
+Setze 'h' an die Stelle 2 von text.
+Schreibe text auf eine Zeile. [ahaaa]
+
+[Text_in_Text_einfügen]
+Setze "hah" an die Stelle 4 von text.
+Schreibe text. [ahahahaa]

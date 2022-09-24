@@ -13,3 +13,15 @@ wahr
 falsch
 wahr
 falsch
+Hello World! 
+Hello World! Hi.
+
+wahr
+2
+ein test
+kein test
+keintest
+test
+aaaa
+ahaaa
+ahahahaa
