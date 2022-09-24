@@ -295,3 +295,11 @@ Die Funktion IstLeer_T mit dem Parameter liste vom Typ Text Liste, gibt einen Bo
 	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
+
+Die Funktion Aneinandergehängt_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
+	Der Text t ist "".
+	Für jeden Buchstabe b in liste, mache:
+		Speichere t verkettet mit b in t.
+	Gib t zurück.
+Und kann so benutzt werden:
+	"<liste> aneinandergehängt"

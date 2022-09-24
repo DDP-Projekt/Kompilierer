@@ -8,8 +8,8 @@
 - [x] Index Operator (an der Stelle)
 - [x] Slice Operator (von bis)
 - [x] String/Listen Operatoren (basic)
-- [X] Listen Operatoren (stdlib)
-- [ ] String Operatoren (stdlib)
+- [x] Listen Operatoren (stdlib)
+- [x] String Operatoren (stdlib)
 
 ## Allgemein
 - [x] do-while loops
