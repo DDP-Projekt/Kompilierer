@@ -173,4 +173,8 @@ Schreibe den Boolean (listZ leer ist) auf eine Zeile.
 Schreibe den Boolean (listK leer ist) auf eine Zeile.
 Schreibe den Boolean (listB leer ist) auf eine Zeile.
 Schreibe den Boolean (listC leer ist) auf eine Zeile.
-Schreibe den Boolean (listT leer ist).
+Schreibe den Boolean (listT leer ist) auf eine Zeile.
+
+Schreibe den Text "-- Aneinandergehängt_C test --" auf eine Zeile.
+[Aneinandergehängt_C test]
+Schreibe den Text ((eine Liste, die aus 'h', 'a', 'l', 'l', 'o' besteht) aneinandergehängt).
