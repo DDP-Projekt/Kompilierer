@@ -63,6 +63,14 @@ func (r *Resolver) visit(node ast.Node) {
 	node.Accept(r)
 }
 
+func (r *Resolver) setScope(symbols *ast.SymbolTable) {
+	r.CurrentTable = symbols
+}
+
+func (r *Resolver) exitScope() {
+	r.CurrentTable = r.CurrentTable.Enclosing
+}
+
 // helper for errors
 func (r *Resolver) err(tok token.Token, msg string, args ...any) {
 	r.Errored = true
@@ -187,12 +195,12 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 }
 func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) {
 	if stmt.Symbols == nil {
-		r.CurrentTable = stmt.Symbols // set the current scope to the block
+		r.setScope(stmt.Symbols) // set the current scope to the block
 		// visit every statement in the block
 		for _, stmt := range stmt.Statements {
 			r.visit(stmt)
 		}
-		r.CurrentTable = stmt.Symbols.Enclosing // restore the enclosing scope
+		r.exitScope() // restore the enclosing scope
 	}
 }
 func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) {
@@ -211,21 +219,21 @@ func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) {
 	// r.visit(stmt.Body)
 }
 func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) {
-	r.CurrentTable = stmt.Body.Symbols
+	r.setScope(stmt.Body.Symbols)
 	// r.visit(stmt.Initializer)
 	r.visit(stmt.To)
 	if stmt.StepSize != nil {
 		r.visit(stmt.StepSize)
 	}
 	// r.visit(stmt.Body)
-	r.CurrentTable = r.CurrentTable.Enclosing
+	r.exitScope()
 }
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
-	r.CurrentTable = stmt.Body.Symbols
+	r.setScope(stmt.Body.Symbols)
 	// r.visit(stmt.Initializer) // also visits stmt.In
 	r.visit(stmt.In)
 	// r.visit(stmt.Body)
-	r.CurrentTable = stmt.Body.Symbols
+	r.exitScope()
 }
 func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
