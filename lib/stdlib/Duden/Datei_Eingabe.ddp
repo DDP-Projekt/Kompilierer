@@ -1,0 +1,4 @@
+Die Funktion Lies_Text_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Text in <Pfad>"

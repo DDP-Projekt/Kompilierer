@@ -147,3 +147,33 @@ ddpchar Lese_Buchstabe() {
 	}
 #endif
 }
+
+/*
+	File IO
+*/
+
+ddpstring* Lies_Text_Datei(ddpstring* Pfad) {
+	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the address in debug mode
+	dstr->str = NULL;
+	dstr->cap = 0;
+	DBGLOG("Lies_Text_Datei: %p", dstr);
+
+	FILE* file = fopen(Pfad->str, "r");
+	if (file) {
+		fseek(file, 0, SEEK_END); // seek the last byte in the file
+		size_t string_size = ftell(file) + 1; // file_size + '\0'
+		rewind(file); // go back to file start
+		dstr->str = ALLOCATE(char, string_size);
+		dstr->cap = string_size;
+		size_t read = fread(dstr->str, sizeof(char), string_size-1, file);
+		dstr->str[dstr->cap-1] = '\0';
+		if (read != string_size-1) {
+			dstr->str[read] = '\0';
+			// TODO: handle this error
+		}
+	} else {
+		runtime_error(1, "Fehler beim Lesen von '%s': %s\n", Pfad->str, strerror(errno));
+	}
+
+	return dstr;
+}
