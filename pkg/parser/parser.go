@@ -76,14 +76,8 @@ func (p *Parser) Parse() *ast.Ast {
 
 	// main parsing loop
 	for !p.atEnd() {
-		stmt := p.declaration() // parse the node
-		if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
-			p.resolver.ResolveNode(stmt, false)           // resolve symbols in it (variables, functions, ...)
-			p.typechecker.TypecheckNode(stmt, false)      // typecheck the node
-			Ast.Statements = append(Ast.Statements, stmt) // add it to the ast
-		}
-		if p.panicMode { // synchronize the parsing if we are in panic mode
-			p.synchronize()
+		if stmt := p.checkedDeclaration(); stmt != nil {
+			Ast.Statements = append(Ast.Statements, stmt)
 		}
 	}
 
@@ -114,6 +108,18 @@ func (p *Parser) synchronize() {
 	}
 }
 
+func (p *Parser) checkedDeclaration() ast.Statement {
+	stmt := p.declaration() // parse the node
+	if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
+		p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
+		p.typechecker.TypecheckNode(stmt) // typecheck the node
+	}
+	if p.panicMode { // synchronize the parsing if we are in panic mode
+		p.synchronize()
+	}
+	return stmt
+}
+
 // entry point for the recursive descent parsing
 func (p *Parser) declaration() ast.Statement {
 	if p.match(token.DER, token.DIE) { // might indicate a function or variable declaration
@@ -125,7 +131,7 @@ func (p *Parser) declaration() ast.Statement {
 				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			case token.ALIAS:
 				p.advance()
-				return p.aliasDecl()
+				return p.aliasDecl() // TODO: fix errors/crashes if this returns nil
 			default:
 				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
@@ -430,23 +436,35 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	p.funcAliases = append(p.funcAliases, funcAliases...)
 
+	decl := &ast.FuncDecl{
+		Range:      token.NewRange(begin, p.previous()),
+		Tok:        begin,
+		Name:       name,
+		ParamNames: paramNames,
+		ParamTypes: paramTypes,
+		Type:       Typ,
+		Body:       nil,
+		ExternFile: definedIn,
+		Aliases:    funcAliases,
+	}
+
 	// parse the body after the aliases to enable recursion
 	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
 		p.currentFunction = name.Literal
 
-		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                                                                      // temporary symbolTable for the function parameters
-		bodyTable.InsertFunc(p.currentFunction, &ast.FuncDecl{Name: name, ParamNames: paramNames, ParamTypes: paramTypes, Type: Typ}) // insert the name of the current function
+		bodyTable := p.newScope() // temporary symbolTable for the function parameters
+		globalScope := bodyTable.Enclosing
+		if existed := globalScope.InsertFunc(p.currentFunction, decl); existed { // insert the name of the current function
+			p.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
+		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
 			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i])})
 		}
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
-
-		body = p.blockStatement().(*ast.BlockStmt) // parse the body with the parameters in the current table
-
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
+		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
+		decl.Body = body
 
 		// check that the function has a return statement if it needs one
 		if Typ != token.DDPVoidType() { // only if the function does not return void
@@ -460,22 +478,16 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				}
 			}
 		}
+	} else {
+		if existed := p.resolver.CurrentTable.InsertFunc(name.Literal, decl); existed { // insert the name of the current function
+			p.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
+		}
 	}
 
 	p.currentFunction = ""
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
-	return &ast.FuncDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		Tok:        begin,
-		Name:       name,
-		ParamNames: paramNames,
-		ParamTypes: paramTypes,
-		Type:       Typ,
-		Body:       body,
-		ExternFile: definedIn,
-		Aliases:    funcAliases,
-	}
+	return decl
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
@@ -617,7 +629,7 @@ func (p *Parser) statement() ast.Statement {
 		return p.voidReturn()
 	case token.COLON:
 		p.consume(token.COLON)
-		return p.blockStatement()
+		return p.blockStatement(nil)
 	}
 
 	// no other statement was found, so interpret it as expression statement, whose result will be discarded
@@ -789,36 +801,42 @@ func (p *Parser) ifStatement() ast.Statement {
 	condition := p.expression()        // parse the condition
 	p.consumeN(token.IST, token.COMMA) // must be boolean, so an ist is required for grammar
 	var Then ast.Statement
+	thenScope := p.newScope()
 	if p.match(token.DANN) { // with dann: the body is a block statement
 		p.consume(token.COLON)
-		Then = p.blockStatement()
+		Then = p.blockStatement(thenScope)
 	} else { // otherwise it is a single statement
 		if p.peek().Type == token.COLON { // block statements are only allowed with the syntax above
 			p.err(p.peek(), "In einer Wenn Anweisung, muss ein 'dann' vor einem ':' stehen")
 		}
 		comma := p.previous()
-		Then = p.declaration() // parse the single (non-block) statement
+		p.setScope(thenScope)
+		Then = p.checkedDeclaration() // parse the single (non-block) statement
+		p.exitScope()
 		Then = &ast.BlockStmt{
 			Range:      Then.GetRange(),
 			Colon:      comma,
 			Statements: []ast.Statement{Then},
-			Symbols:    nil,
+			Symbols:    thenScope,
 		}
 	}
 	var Else ast.Statement = nil
 	// parse a possible sonst statement
 	if p.match(token.SONST) {
 		if p.previous().Indent == If.Indent {
+			elseScope := p.newScope()
 			if p.match(token.COLON) {
-				Else = p.blockStatement() // with colon it is a block statement
+				Else = p.blockStatement(elseScope) // with colon it is a block statement
 			} else { // without it we just parse a single statement
 				_else := p.previous()
-				Else = p.declaration()
+				p.setScope(elseScope)
+				Else = p.checkedDeclaration()
+				p.exitScope()
 				Else = &ast.BlockStmt{
 					Range:      Else.GetRange(),
 					Colon:      _else,
 					Statements: []ast.Statement{Else},
-					Symbols:    nil,
+					Symbols:    elseScope,
 				}
 			}
 		} else {
@@ -855,17 +873,20 @@ func (p *Parser) whileStatement() ast.Statement {
 	condition := p.expression()
 	p.consumeN(token.IST, token.COMMA)
 	var Body ast.Statement
+	bodyTable := p.newScope()
 	if p.match(token.MACHE) {
 		p.consume(token.COLON)
-		Body = p.blockStatement()
+		Body = p.blockStatement(bodyTable)
 	} else {
 		is := p.previous()
-		Body = p.declaration()
+		p.setScope(bodyTable)
+		Body = p.checkedDeclaration()
+		p.exitScope()
 		Body = &ast.BlockStmt{
 			Range:      Body.GetRange(),
 			Colon:      is,
 			Statements: []ast.Statement{Body},
-			Symbols:    nil,
+			Symbols:    bodyTable,
 		}
 	}
 	return &ast.WhileStmt{
@@ -882,7 +903,7 @@ func (p *Parser) whileStatement() ast.Statement {
 func (p *Parser) doRepeatStmt() ast.Statement {
 	Do := p.previous()
 	p.consume(token.COLON)
-	body := p.blockStatement()
+	body := p.blockStatement(nil)
 	if p.match(token.SOLANGE) {
 		condition := p.expression()
 		p.consumeN(token.IST, token.DOT)
@@ -937,28 +958,28 @@ func (p *Parser) forStatement() ast.Statement {
 			step = p.expression() // custom specified step-size
 		}
 		p.consume(token.COMMA)
-		var Body ast.Statement
-		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                   // temporary symbolTable for the loop variable
-		bodyTable.InsertVar(Ident.Literal, &ast.VarDecl{Name: Ident, Type: Typ})   // add the loop variable to the table
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
-		if p.match(token.MACHE) {                                                  // body is a block statement
+		var Body *ast.BlockStmt
+		bodyTable := p.newScope()                       // temporary symbolTable for the loop variable
+		bodyTable.InsertVar(Ident.Literal, initializer) // add the loop variable to the table
+		if p.match(token.MACHE) {                       // body is a block statement
 			p.consume(token.COLON)
-			Body = p.blockStatement()
+			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
-			Body = p.declaration()
+			p.setScope(bodyTable)
+			stmt := p.checkedDeclaration()
+			p.exitScope()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
 					Start: token.NewStartPos(Colon),
-					End:   Body.GetRange().End,
+					End:   stmt.GetRange().End,
 				},
 				Colon:      Colon,
-				Statements: []ast.Statement{Body},
-				Symbols:    nil,
+				Statements: []ast.Statement{stmt},
+				Symbols:    bodyTable,
 			}
 		}
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
 		return &ast.ForStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -982,28 +1003,28 @@ func (p *Parser) forStatement() ast.Statement {
 			InitVal: In,
 		}
 		p.consume(token.COMMA)
-		var Body ast.Statement
-		bodyTable := ast.NewSymbolTable(p.resolver.CurrentTable)                   // temporary symbolTable for the loop variable
-		bodyTable.InsertVar(Ident.Literal, &ast.VarDecl{Name: Ident, Type: Typ})   // add the loop variable to the table
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable, bodyTable // set the table
-		if p.match(token.MACHE) {                                                  // body is a block statement
+		var Body *ast.BlockStmt
+		bodyTable := p.newScope()                       // temporary symbolTable for the loop variable
+		bodyTable.InsertVar(Ident.Literal, initializer) // add the loop variable to the table
+		if p.match(token.MACHE) {                       // body is a block statement
 			p.consume(token.COLON)
-			Body = p.blockStatement()
+			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
-			Body = p.declaration()
+			p.setScope(bodyTable)
+			stmt := p.checkedDeclaration()
+			p.exitScope()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
 					Start: token.NewStartPos(Colon),
-					End:   Body.GetRange().End,
+					End:   stmt.GetRange().End,
 				},
 				Colon:      Colon,
-				Statements: []ast.Statement{Body},
-				Symbols:    nil,
+				Statements: []ast.Statement{stmt},
+				Symbols:    bodyTable,
 			}
 		}
-		p.resolver.CurrentTable, p.typechecker.CurrentTable = bodyTable.Enclosing, bodyTable.Enclosing // restore the previous table
 		return &ast.ForRangeStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -1050,7 +1071,7 @@ func (p *Parser) voidReturn() ast.Statement {
 	}
 }
 
-func (p *Parser) blockStatement() ast.Statement {
+func (p *Parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 	colon := p.previous()
 	if p.peek().Line() <= colon.Line() {
 		p.err(p.peek(), "Nach einem Doppelpunkt muss eine neue Zeile beginnen")
@@ -1058,26 +1079,22 @@ func (p *Parser) blockStatement() ast.Statement {
 	statements := make([]ast.Statement, 0)
 	indent := colon.Indent + 1
 
-	blockTable := ast.NewSymbolTable(p.resolver.CurrentTable)
-	p.resolver.CurrentTable, p.typechecker.CurrentTable = blockTable, blockTable
+	if symbols == nil {
+		symbols = p.newScope()
+	}
+	p.setScope(symbols)
 	for p.peek().Indent >= indent && !p.atEnd() {
-		stmt := p.declaration()
-		if statements != nil { // nil check, for alias declarations that aren't Ast Nodes
-			p.resolver.ResolveNode(stmt, true)      // resolve symbols in it (variables, functions, ...)
-			p.typechecker.TypecheckNode(stmt, true) // typecheck the node
+		if stmt := p.checkedDeclaration(); stmt != nil {
 			statements = append(statements, stmt)
 		}
-		if p.panicMode { // a loop calling declaration or sub-rules needs this
-			p.synchronize()
-		}
 	}
-	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.resolver.CurrentTable.Enclosing
+	p.exitScope()
 
 	return &ast.BlockStmt{
 		Range:      token.NewRange(colon, p.previous()),
 		Colon:      colon,
 		Statements: statements,
-		Symbols:    nil,
+		Symbols:    symbols,
 	}
 }
 
@@ -2012,6 +2029,21 @@ func (p *Parser) parseTypeOrVoid() token.DDPType {
 		return token.DDPVoidType()
 	}
 	return p.parseType()
+}
+
+// create a sub-scope of the current scope
+func (p *Parser) newScope() *ast.SymbolTable {
+	return ast.NewSymbolTable(p.resolver.CurrentTable)
+}
+
+// set the current scope for the resolver and typechecker
+func (p *Parser) setScope(symbols *ast.SymbolTable) {
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = symbols, symbols
+}
+
+// exit the current scope of the resolver and typechecker
+func (p *Parser) exitScope() {
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
 }
 
 // if the current tokenType is contained in types, advance

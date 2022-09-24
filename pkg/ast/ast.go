@@ -347,7 +347,7 @@ type (
 		Initializer *VarDecl    // Zahl (name) von (Initializer.InitVal)
 		To          Expression  // bis (To)
 		StepSize    Expression  // Schrittgröße
-		Body        Statement
+		Body        *BlockStmt
 	}
 
 	ForRangeStmt struct {
@@ -355,7 +355,7 @@ type (
 		For         token.Token // Für
 		Initializer *VarDecl    // InitVal is the same pointer as In
 		In          Expression  // the string/list to range over
-		Body        Statement
+		Body        *BlockStmt
 	}
 
 	ReturnStmt struct {

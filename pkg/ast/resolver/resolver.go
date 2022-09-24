@@ -1,3 +1,10 @@
+/*
+The resolver package should not be used independently from the parser.
+It is not a complete Visitor itself, but is rather used to resolve single
+Nodes while parsing to ensure correct parsing of function-calls etc.
+
+Because of this you will find many r.visit(x) calls to be commented out.
+*/
 package resolver
 
 import (
@@ -12,22 +19,20 @@ import (
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
 type Resolver struct {
-	ErrorHandler  ddperror.Handler // function to which errors are passed
-	CurrentTable  *ast.SymbolTable // needed state, public for the parser
-	Errored       bool             // wether the resolver errored
-	ResolveBlocks bool             // wether to resolve blockStatements
+	ErrorHandler ddperror.Handler // function to which errors are passed
+	CurrentTable *ast.SymbolTable // needed state, public for the parser
+	Errored      bool             // wether the resolver errored
 }
 
 // create a new resolver to resolve the passed AST
-func New(ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
+func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &Resolver{
-		ErrorHandler:  errorHandler,
-		CurrentTable:  ast.Symbols,
-		Errored:       false,
-		ResolveBlocks: true,
+		ErrorHandler: errorHandler,
+		CurrentTable: Ast.Symbols,
+		Errored:      false,
 	}
 }
 
@@ -39,7 +44,7 @@ func ResolveAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 
 	// visit all nodes of the AST
 	for i, l := 0, len(Ast.Statements); i < l; i++ {
-		Ast.Statements[i].Accept(resolver)
+		resolver.visit(Ast.Statements[i])
 	}
 
 	// if the resolver errored, the AST is not valid DDP code
@@ -49,9 +54,8 @@ func ResolveAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
 }
 
 // resolve a single node
-func (r *Resolver) ResolveNode(node ast.Node, resolveBlocks bool) {
-	r.ResolveBlocks = resolveBlocks
-	node.Accept(r)
+func (r *Resolver) ResolveNode(node ast.Node) {
+	r.visit(node)
 }
 
 // helper to visit a node
@@ -72,25 +76,29 @@ func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
 	r.Errored = true
 }
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
-	decl.InitVal.Accept(r) // resolve the initial value
+	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl); existed {
 		r.err(decl.Name, "Die Variable '%s' existiert bereits", decl.Name.Literal) // variables may only be declared once in the same scope
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
-	if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed {
-		r.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
-	}
-	if !ast.IsExternFunc(decl) {
-		decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
-		// add the function parameters to the scope of the function body
-		for i, l := 0, len(decl.ParamNames); i < l; i++ {
-			decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, &ast.VarDecl{Name: decl.ParamNames[i], Type: decl.ParamTypes[i].Type, Range: token.NewRange(decl.ParamNames[i], decl.ParamNames[i])})
-		}
+	// all of the below was already resolved by the parser
 
-		decl.Body.Accept(r) // resolve the function body
-	}
+	/*
+		if existed := r.CurrentTable.InsertFunc(decl.Name.Literal, decl); existed {
+			r.err(decl.Name, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
+		}
+		if !ast.IsExternFunc(decl) {
+			decl.Body.Symbols = ast.NewSymbolTable(r.CurrentTable) // create a new scope for the function body
+			// add the function parameters to the scope of the function body
+			for i, l := 0, len(decl.ParamNames); i < l; i++ {
+				decl.Body.Symbols.InsertVar(decl.ParamNames[i].Literal, &ast.VarDecl{Name: decl.ParamNames[i], Type: decl.ParamTypes[i].Type, Range: token.NewRange(decl.ParamNames[i], decl.ParamNames[i])})
+			}
+
+			r.visit(decl.Body) // resolve the function body
+		}
+	*/
 }
 
 // if a BadExpr exists the AST is faulty
@@ -105,7 +113,7 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) {
 }
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
 	r.visit(expr.Lhs)
-	expr.Index.Accept(r)
+	r.visit(expr.Index)
 }
 
 // nothing to do for literals
@@ -130,22 +138,22 @@ func (r *Resolver) VisitListLit(expr *ast.ListLit) {
 	}
 }
 func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) {
-	expr.Rhs.Accept(r)
+	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
-	expr.Lhs.Accept(r)
-	expr.Rhs.Accept(r)
+	r.visit(expr.Lhs)
+	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) {
-	expr.Lhs.Accept(r)
-	expr.Mid.Accept(r)
-	expr.Rhs.Accept(r) // visit the actual expressions
+	r.visit(expr.Lhs)
+	r.visit(expr.Mid)
+	r.visit(expr.Rhs) // visit the actual expressions
 }
 func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) {
-	expr.Lhs.Accept(r) // visit the actual expressions
+	r.visit(expr.Lhs) // visit the actual expressions
 }
 func (r *Resolver) VisitGrouping(expr *ast.Grouping) {
-	expr.Expr.Accept(r)
+	r.visit(expr.Expr)
 }
 func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
 	// visit the passed arguments
@@ -159,10 +167,10 @@ func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) {
 	r.Errored = true
 }
 func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) {
-	stmt.Decl.Accept(r)
+	r.visit(stmt.Decl)
 }
 func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) {
-	stmt.Expr.Accept(r)
+	r.visit(stmt.Expr)
 }
 func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	switch assign := stmt.Var.(type) {
@@ -175,68 +183,49 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 		r.visit(assign.Lhs)
 		r.visit(assign.Index)
 	}
-	stmt.Rhs.Accept(r)
+	r.visit(stmt.Rhs)
 }
 func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) {
-	if r.ResolveBlocks {
-		// a block needs a new scope
-		if stmt.Symbols == nil {
-			stmt.Symbols = ast.NewSymbolTable(r.CurrentTable)
-		}
+	if stmt.Symbols == nil {
 		r.CurrentTable = stmt.Symbols // set the current scope to the block
-
 		// visit every statement in the block
 		for _, stmt := range stmt.Statements {
 			r.visit(stmt)
 		}
-
-		r.CurrentTable = stmt.Symbols.Enclosing
+		r.CurrentTable = stmt.Symbols.Enclosing // restore the enclosing scope
 	}
 }
 func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) {
 	r.visit(stmt.Condition)
-	r.visit(stmt.Then)
+	if _, ok := stmt.Then.(*ast.BlockStmt); !ok {
+		r.visit(stmt.Then)
+	}
 	if stmt.Else != nil {
-		r.visit(stmt.Else)
+		if _, ok := stmt.Else.(*ast.BlockStmt); !ok {
+			r.visit(stmt.Else)
+		}
 	}
 }
 func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) {
 	r.visit(stmt.Condition)
-	stmt.Body.Accept(r)
+	// r.visit(stmt.Body)
 }
 func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) {
-	var env *ast.SymbolTable // scope of the for loop
-	// if it contains a block statement, the counter variable needs to go in there
-	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
-		body.Symbols = ast.NewSymbolTable(r.CurrentTable)
-		env = body.Symbols
-	} else { // otherwise, just a new scope
-		env = ast.NewSymbolTable(r.CurrentTable)
-	}
-
-	r.CurrentTable = env
-	r.visit(stmt.Initializer)
+	r.CurrentTable = stmt.Body.Symbols
+	// r.visit(stmt.Initializer)
 	r.visit(stmt.To)
 	if stmt.StepSize != nil {
 		r.visit(stmt.StepSize)
 	}
-	r.visit(stmt.Body)
-	r.CurrentTable = env.Enclosing
+	// r.visit(stmt.Body)
+	r.CurrentTable = r.CurrentTable.Enclosing
 }
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
-	var env *ast.SymbolTable // scope of the for loop
-	// if it contains a block statement, the counter variable needs to go in there
-	if body, ok := stmt.Body.(*ast.BlockStmt); ok {
-		body.Symbols = ast.NewSymbolTable(r.CurrentTable)
-		env = body.Symbols
-	} else { // otherwise, just a new scope
-		env = ast.NewSymbolTable(r.CurrentTable)
-	}
-
-	r.CurrentTable = env
-	r.visit(stmt.Initializer) // also visits stmt.In
-	r.visit(stmt.Body)
-	r.CurrentTable = env.Enclosing
+	r.CurrentTable = stmt.Body.Symbols
+	// r.visit(stmt.Initializer) // also visits stmt.In
+	r.visit(stmt.In)
+	// r.visit(stmt.Body)
+	r.CurrentTable = stmt.Body.Symbols
 }
 func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
@@ -245,5 +234,5 @@ func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	if stmt.Value == nil {
 		return
 	}
-	stmt.Value.Accept(r)
+	r.visit(stmt.Value)
 }
