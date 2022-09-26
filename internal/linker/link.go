@@ -125,7 +125,9 @@ func LinkDDPFiles(options Options) error {
 
 	cmd := exec.Command("gcc", args...)
 	options.Log("%s", cmd.String())
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	options.Log("%s", out)
+	return err
 }
 
 // helper for invokeGCC
