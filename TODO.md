@@ -20,6 +20,7 @@
 - [ ] Strukturen
 - [ ] Bessere Tests (vor allem für komplex verschachtelte Loops)
 - [ ] Bessere error-messages
+- [ ] break/continue
 
 ## Sonstiges
 - [x] Standardbibliothek (Duden)

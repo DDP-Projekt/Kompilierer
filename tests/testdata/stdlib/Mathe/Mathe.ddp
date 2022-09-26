@@ -20,4 +20,16 @@ Schreibe (das Vorzeichen von -1) auf eine Zeile.
 
 Schreibe (1,7 nach unten gerundet) auf eine Zeile.
 Schreibe (1,3 nach oben gerundet) auf eine Zeile.
-Schreibe (1,5 trunkiert).
+Schreibe (1,5 trunkiert) auf eine Zeile.
+
+[ ggT tests ]
+Schreibe (der größte gemeinsame Teiler von 30 und 40) auf eine Zeile. [ 10 ]
+
+[ kgV tests ]
+Schreibe (das kleinste gemeinsame Vielfache von 6 und 7) auf eine Zeile. [ 42 ]
+
+[ Primfaktorzerlegung tests ]
+Schreibe (alle Primfaktoren von 69) auf eine Zeile. [ 3, 23 ]
+
+[ Teilerzerlegung tests ]
+Schreibe (alle Teiler von 54). [ 54, 27, 18, 9, 6, 3, 2, 1 ]
