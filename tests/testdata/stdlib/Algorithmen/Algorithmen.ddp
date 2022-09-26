@@ -1,0 +1,20 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Algorithmen" ein.
+
+[ ggT tests ]
+Schreibe (der größte gemeinsame Teiler von 30 und 40) auf eine Zeile. [ 10 ]
+
+[ kgV tests ]
+Schreibe (das kleinste gemeinsame Vielfache von 6 und 7) auf eine Zeile. [ 42 ]
+
+[ Primfaktorzerlegung tests ]
+Schreibe (alle Primfaktoren von 69) auf eine Zeile. [ 3, 23 ]
+
+[ Teilerzerlegung tests ]
+Schreibe (alle Teiler von 54) auf eine Zeile. [ 54, 27, 18, 9, 6, 3, 2, 1 ]
+
+[ Quicksort tests ]
+Schreibe ((eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht) sortiert) auf eine Zeile. [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
+
+[ Fibonacci_schnell tests ]
+Schreibe (die 6. Fibonacci Nummer). [ 8 ]

@@ -2,7 +2,7 @@
 	Eine Funktion, die den größten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
-Die Funktion ggV mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die Funktion ggT mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Die Zahl t ist 0.
 	Solange b ungleich 0 ist, mache:
 		Speichere b in t.
@@ -10,14 +10,14 @@ Die Funktion ggV mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zah
 		Speichere t in a.
 	Gib a zurück.
 Und kann so benutzt werden:
-	"das größte gemeinsame Vielfache von <a> und <b>"
+	"der größte gemeinsame Teiler von <a> und <b>"
 
 [
 	Eine Funktion, die den kleinsten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
 Die Funktion kgV mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
-	Gib (der Betrag von (a mal b) durch (das größte gemeinsame Vielfache von a und b)) als Zahl zurück.
+	Gib (der Betrag von (a mal b) durch (der größte gemeinsame Teiler von a und b)) als Zahl zurück.
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
 
