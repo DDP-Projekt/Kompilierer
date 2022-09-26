@@ -100,7 +100,7 @@ func LinkDDPFiles(options Options) error {
 
 	libdir := filepath.Join(scanner.DDPPATH, "lib")
 
-	args := append(make([]string, 0), "-o", options.OutputFile, "-O2", "-Wl,-v", "-L"+libdir)
+	args := append(make([]string, 0), "-o", options.OutputFile, "-O2", "-L"+libdir)
 
 	// add all librarie-search-paths
 	for k := range link_objects {
@@ -125,9 +125,7 @@ func LinkDDPFiles(options Options) error {
 
 	cmd := exec.Command("gcc", args...)
 	options.Log("%s", cmd.String())
-	out, err := cmd.CombinedOutput()
-	options.Log("%s", out)
-	return err
+	return cmd.Run()
 }
 
 // helper for invokeGCC
