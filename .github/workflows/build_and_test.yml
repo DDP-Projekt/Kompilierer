@@ -23,6 +23,9 @@ jobs:
           check-latest: true
           cache: true
         
+    - name: Setup LLVM
+      run: sudo apt install llvm-12
+
     - name: Get german locale
       run: sudo locale-gen de_DE.UTF-8
       if: runner.os == 'Linux'
