@@ -9,6 +9,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <Windows.h>
+#include <stdarg.h>
 #endif // _WIN32
 
 /*
