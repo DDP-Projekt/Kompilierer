@@ -68,7 +68,6 @@ ddpstring* Lese_Zeile() {
 	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the address in debug mode
 	dstr->str = NULL;
 	dstr->cap = 0;
-	DBGLOG("Lese_Zeile: %p", dstr);
 
 #define MAX_INPUT_LENGTH 255
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
@@ -152,9 +151,23 @@ ddpchar Lese_Buchstabe() {
 	File IO
 */
 
-ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
-	DBGLOG("Lies_Text_Datei: %p", *ref);
+static void write_error(ddpstringref ref, const char* fmt, ...) {
+	char errbuff[1024];
 
+	va_list argptr;
+	va_start(argptr, fmt);
+
+	int len = vsprintf(errbuff, fmt, argptr);
+	
+	va_end(argptr);
+
+	(*ref)->str = reallocate((*ref)->str, (*ref)->cap, len+1);
+	memcpy((*ref)->str, errbuff, len);
+	(*ref)->cap = len+1;
+	(*ref)->str[(*ref)->cap-1] = '\0';
+}
+
+ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
 	FILE* file = fopen(Pfad->str, "r");
 	ddpint ret = -1;
 	if (file) {
@@ -167,24 +180,31 @@ ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
 		(*ref)->str[(*ref)->cap-1] = '\0';
 		if (read != string_size-1) {
 			ret = -1;
-			char errbuff[1024];
-			int len = sprintf(errbuff, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
-			(*ref)->str = reallocate((*ref)->str, (*ref)->cap, len+1);
-			(*ref)->cap = len+1;
-			memcpy((*ref)->str, errbuff, len);
-			(*ref)->str[(*ref)->cap-1] = '\0';
+			write_error(ref, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
 		} else {
 			ret = read;
 		}
+		fclose(file);
 	} else {
 		ret = -1;
-		char errbuff[1024];
-		int len = sprintf(errbuff, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
-			(*ref)->str = reallocate((*ref)->str, (*ref)->cap, len+1);
-		memcpy((*ref)->str, errbuff, len);
-		(*ref)->cap = len+1;
-		(*ref)->str[(*ref)->cap-1] = '\0';
+		write_error(ref, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
 	}
 
+	return ret;
+}
+
+ddpint Schreibe_Text_Datei(ddpstring* Pfad, ddpstring* text, ddpstringref fehler) {
+	FILE* file = fopen(Pfad->str, "w");
+	ddpint ret = -1;
+	if (file) {
+		ret = fprintf(file, text->str);
+		fclose(file);
+		if (ret < 0) {
+			ret = -1;
+			write_error(fehler, "Fehler beim Schreiben zu '%s': %s", Pfad->str, strerror(errno));
+		}
+	} else {
+		write_error(fehler, "Fehler beim Schreiben zu '%s': %s", Pfad->str, strerror(errno));
+	}
 	return ret;
 }
