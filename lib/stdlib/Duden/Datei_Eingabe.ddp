@@ -1,4 +1,5 @@
-Die Funktion Lies_Text_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+Die Funktion Lies_Text_Datei mit den Parametern Pfad und ref vom Typ Text und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"der Text in <Pfad>"
+	"Lies den Text in <Pfad> und speichere ihn in <ref>" oder
+	"die Anzahl der Bytes, die aus <Pfad> gelesen und in <ref> gespeichert wurden"

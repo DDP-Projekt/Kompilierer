@@ -152,28 +152,39 @@ ddpchar Lese_Buchstabe() {
 	File IO
 */
 
-ddpstring* Lies_Text_Datei(ddpstring* Pfad) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the address in debug mode
-	dstr->str = NULL;
-	dstr->cap = 0;
-	DBGLOG("Lies_Text_Datei: %p", dstr);
+ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
+	DBGLOG("Lies_Text_Datei: %p", *ref);
 
 	FILE* file = fopen(Pfad->str, "r");
+	ddpint ret = -1;
 	if (file) {
 		fseek(file, 0, SEEK_END); // seek the last byte in the file
 		size_t string_size = ftell(file) + 1; // file_size + '\0'
 		rewind(file); // go back to file start
-		dstr->str = ALLOCATE(char, string_size);
-		dstr->cap = string_size;
-		size_t read = fread(dstr->str, sizeof(char), string_size-1, file);
-		dstr->str[dstr->cap-1] = '\0';
+		(*ref)->str = reallocate((*ref)->str, (*ref)->cap, string_size);
+		(*ref)->cap = string_size;
+		size_t read = fread((*ref)->str, sizeof(char), string_size-1, file);
+		(*ref)->str[(*ref)->cap-1] = '\0';
 		if (read != string_size-1) {
-			dstr->str[read] = '\0';
-			// TODO: handle this error
+			ret = -1;
+			char errbuff[1024];
+			int len = sprintf(errbuff, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
+			(*ref)->str = reallocate((*ref)->str, (*ref)->cap, len+1);
+			(*ref)->cap = len+1;
+			memcpy((*ref)->str, errbuff, len);
+			(*ref)->str[(*ref)->cap-1] = '\0';
+		} else {
+			ret = read;
 		}
 	} else {
-		runtime_error(1, "Fehler beim Lesen von '%s': %s\n", Pfad->str, strerror(errno));
+		ret = -1;
+		char errbuff[1024];
+		int len = sprintf(errbuff, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
+			(*ref)->str = reallocate((*ref)->str, (*ref)->cap, len+1);
+		memcpy((*ref)->str, errbuff, len);
+		(*ref)->cap = len+1;
+		(*ref)->str[(*ref)->cap-1] = '\0';
 	}
 
-	return dstr;
+	return ret;
 }
