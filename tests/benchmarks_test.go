@@ -36,7 +36,7 @@ func BenchmarkExecutables(b *testing.B) {
 		ddpPath := filepath.Join(path, d.Name()) + ".ddp"
 		exePath := changeExtension(ddpPath, ".exe")
 
-		compileCmd := exec.Command("../build/kddp/bin/kddp", "build", ddpPath)
+		compileCmd := exec.Command("../build/kddp/bin/kddp", "kompiliere", ddpPath)
 		if out, err := compileCmd.CombinedOutput(); err != nil {
 			b.Errorf("Error compiling %s: %s\noutput:\n%s", ddpPath, err, out)
 			return err

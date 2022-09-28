@@ -56,7 +56,7 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
 
 		// build dpp file
-		cmd := exec.Command("../build/kddp/bin/kddp", "build", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--verbose")
+		cmd := exec.Command("../build/kddp/bin/kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
 		// get build output
 		if out, err := cmd.CombinedOutput(); err != nil {
 			// error if failed

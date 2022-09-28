@@ -28,7 +28,7 @@ type Command interface {
 
 var commands = []Command{
 	NewHelpCommand(),
-	NewInterpretCommand(),
+	// NewInterpretCommand(),
 	NewBuildCommand(),
 	NewParseCommand(),
 	NewVersionCommand(),
@@ -106,7 +106,7 @@ type HelpCommand struct {
 
 func NewHelpCommand() *HelpCommand {
 	return &HelpCommand{
-		fs: flag.NewFlagSet("help", flag.ExitOnError),
+		fs: flag.NewFlagSet("hilfe", flag.ExitOnError),
 	}
 }
 
@@ -130,7 +130,7 @@ func (cmd *HelpCommand) Run() error {
 	}
 
 	// otherwise, print the usage of every command
-	fmt.Println("available commands:")
+	fmt.Println("Verfügbare Befehle:")
 	for _, cmd := range commands {
 		fmt.Println(cmd.Usage() + "\n")
 	}
@@ -143,7 +143,7 @@ func (cmd *HelpCommand) Name() string {
 }
 
 func (cmd *HelpCommand) Usage() string {
-	return `help <command>: displays usage information`
+	return `hilfe <Befehl>: Zeigt Nutzungsinformationen über den Befehl`
 }
 
 // $kddp build is the main command which compiles a .ddp file into a executable
@@ -156,41 +156,38 @@ type BuildCommand struct {
 	extern_gcc_flags string // custom flags passed to extern .c files
 	nodeletes        bool   // should temp files be deleted, specified by the --nodeletes flag
 	verbose          bool   // print verbose output, specified by the --verbose flag
-	targetIR         bool   // only compile to llvm ir, specified by the -c flag
 }
 
 func NewBuildCommand() *BuildCommand {
 	return &BuildCommand{
-		fs:               flag.NewFlagSet("build", flag.ExitOnError),
+		fs:               flag.NewFlagSet("kompiliere", flag.ExitOnError),
 		filePath:         "",
 		outPath:          "",
 		gcc_flags:        "",
 		extern_gcc_flags: "",
 		nodeletes:        false,
 		verbose:          false,
-		targetIR:         false,
 	}
 }
 
 func (cmd *BuildCommand) Init(args []string) error {
 	// a input .ddp file is necessary
 	if len(args) < 1 {
-		return fmt.Errorf("build requires a file name")
+		return fmt.Errorf("Der kompiliere Befehl braucht eine Eingabedatei")
 	}
 
 	// the first argument must be the input file (.ddp)
 	cmd.filePath = args[0]
 	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("the provided file is not a .ddp file")
+		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
 	}
 
 	// set all the flags
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
-	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_flags", "", "custom flags that are passed to gcc")
-	cmd.fs.StringVar(&cmd.extern_gcc_flags, "extern_gcc_flags", "", "custom flags passed to extern .c files")
-	cmd.fs.BoolVar(&cmd.nodeletes, "nodeletes", false, "don't delete temporary files such as .ll or .obj files")
-	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose build output")
-	cmd.fs.BoolVar(&cmd.targetIR, "c", false, "only produce llvm ir")
+	cmd.fs.StringVar(&cmd.outPath, "o", "", "Optionaler Pfad der Ausgabedatei")
+	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
+	cmd.fs.BoolVar(&cmd.nodeletes, "nichts_loeschen", false, "Keine temporären Dateien löschen")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Gibt wortreiche Informationen während des Befehls")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -206,33 +203,31 @@ func (cmd *BuildCommand) Run() error {
 	// determine the final output type (by file extension)
 	compOutType := compiler.OutputIR
 	extension := ".ll" // assume the -c flag
-	targetExe := false
-	if !cmd.targetIR { // -c was not set
-		switch ext := filepath.Ext(cmd.outPath); ext {
-		case ".ll":
-			cmd.targetIR = true
-		case ".s", ".asm":
-			extension = ext
-			compOutType = compiler.OutputAsm
-		case ".o", ".obj":
-			extension = ext
-			compOutType = compiler.OutputObj
-		case ".exe":
-			extension = ext
-			targetExe = true
-			compOutType = compiler.OutputObj
-		case "":
-			extension = ext
-			targetExe = true
-			compOutType = compiler.OutputObj
-		default: // by default we create a executable
-			if runtime.GOOS == "windows" {
-				extension = ".exe"
-			} else if runtime.GOOS == "linux" {
-				extension = ""
-			}
-			targetExe = true
+	targetExe := false // -c was not set
+	switch ext := filepath.Ext(cmd.outPath); ext {
+	case ".ll":
+		compOutType = compiler.OutputIR
+	case ".s", ".asm":
+		extension = ext
+		compOutType = compiler.OutputAsm
+	case ".o", ".obj":
+		extension = ext
+		compOutType = compiler.OutputObj
+	case ".exe":
+		extension = ext
+		targetExe = true
+		compOutType = compiler.OutputObj
+	case "":
+		extension = ext
+		targetExe = true
+		compOutType = compiler.OutputObj
+	default: // by default we create a executable
+		if runtime.GOOS == "windows" {
+			extension = ".exe"
+		} else if runtime.GOOS == "linux" {
+			extension = ""
 		}
+		targetExe = true
 	}
 
 	// disable comments if the .ll files are deleted anyways
@@ -247,10 +242,10 @@ func (cmd *BuildCommand) Run() error {
 		cmd.outPath = changeExtension(cmd.outPath, extension)
 	}
 
-	print("creating output directory: %s", filepath.Dir(cmd.outPath))
+	print("Erstelle Ausgabeordner: %s", filepath.Dir(cmd.outPath))
 	// make the output file directory
 	if err := os.MkdirAll(filepath.Dir(cmd.outPath), os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create output directory: %s", err.Error())
+		return fmt.Errorf("Fehler beim Erstellen des Ausgabeordners: %s", err.Error())
 	}
 
 	objPath := changeExtension(cmd.outPath, ".o")
@@ -266,7 +261,7 @@ func (cmd *BuildCommand) Run() error {
 		return err
 	}
 
-	print("compiling ddp-source to %s", cmd.outPath)
+	print("Kompiliere DDP-Quellcode nach %s", cmd.outPath)
 	result, err := compiler.Compile(compiler.Options{
 		FileName:                cmd.filePath,
 		Source:                  nil,
@@ -288,13 +283,13 @@ func (cmd *BuildCommand) Run() error {
 
 	if !cmd.nodeletes {
 		defer func() {
-			print("removing %s", objPath)
+			print("Lösche %s", objPath)
 			os.Remove(objPath)
 		}()
 	}
 
 	// the target is an executable so we link the produced object file
-	print("linking objects")
+	print("Objekte werden gelinkt")
 	if err := linker.LinkDDPFiles(linker.Options{
 		InputFile:               objPath,
 		OutputFile:              cmd.outPath,
@@ -304,7 +299,7 @@ func (cmd *BuildCommand) Run() error {
 		GCCFlags:                cmd.gcc_flags,
 		ExternGCCFlags:          cmd.extern_gcc_flags,
 	}); err != nil {
-		return fmt.Errorf("linking failed: %s", err)
+		return fmt.Errorf("Fehler beim Linken: %s", err)
 	}
 
 	return nil
@@ -315,14 +310,13 @@ func (cmd *BuildCommand) Name() string {
 }
 
 func (cmd *BuildCommand) Usage() string {
-	return `build <filename> <options>: build the given .ddp file into a executable
-options:
-		-o <filepath>: specify the name of the output file
-		--verbose: print verbose output
-		--nodeletes: don't delete intermediate files
-		-c: compile to llvm ir but don't assemble or link
-		--gcc_flags: custom flags that are passed to gcc
-		--extern_gcc_flags: custom flags that are passed to gcc when compiling extern .c files`
+	return `kompiliere <Eingabedatei> <Optionen>: Kompiliert die gegebene .ddp Datei zu einer ausführbaren Datei
+Optionen:
+	-o <Ausgabepfad>: Optionaler Pfad der Ausgabedatei
+	--wortreich: Gibt wortreiche Informationen während des Befehls
+	--nichts_loeschen: Temporäre Dateien werden nicht gelöscht
+	--gcc_optionen: Benutzerdefinierte Optionen, die gcc übergeben werden
+	--externe_gcc_optionen: Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden`
 }
 
 // helper function
@@ -347,15 +341,15 @@ func NewParseCommand() *ParseCommand {
 
 func (cmd *ParseCommand) Init(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("parse requires a filepath")
+		return fmt.Errorf("Der parse Befehl braucht eine Eingabedatei")
 	}
 
 	cmd.filePath = args[0]
 	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("the provided file is not a .ddp file")
+		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
 	}
 
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
+	cmd.fs.StringVar(&cmd.outPath, "o", "", "Optionaler Pfad der Ausgabedatei")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -366,16 +360,16 @@ func (cmd *ParseCommand) Run() error {
 	}
 
 	if ast.Faulty {
-		fmt.Println("the generated ast is faulty")
+		fmt.Println("Der generierte Abstrakte Syntaxbaum ist fehlerhaft")
 	}
 
 	if cmd.outPath != "" {
 		if file, err := os.OpenFile(cmd.outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm); err != nil {
-			return fmt.Errorf("unable to open the output file")
+			return fmt.Errorf("Ausgabedatei konnte nicht geöffnet werden")
 		} else {
 			defer file.Close()
 			if _, err := file.WriteString(ast.String()); err != nil {
-				return fmt.Errorf("unable to write to the output file: %s", err.Error())
+				return fmt.Errorf("Ausgabedatei konnte nicht beschrieben werden: %s", err.Error())
 			}
 		}
 	} else {
@@ -390,9 +384,9 @@ func (cmd *ParseCommand) Name() string {
 }
 
 func (cmd *ParseCommand) Usage() string {
-	return `parse <filepath> <options>: parse the specified ddp file into a ddp ast
-options:
-	-o <filepath>: specify the name of the output file; if none is set output is written to the terminal`
+	return `parse <Eingabedatei> <Optionen>: Parse die Eingabedatei zu einem Abstrakten Syntaxbaum
+Optionen:
+	-o <Pfad>: Optionaler Pfad der Ausgabedatei`
 }
 
 // $kddp version provides information about the version of the used kddp build
@@ -409,8 +403,8 @@ func NewVersionCommand() *VersionCommand {
 }
 
 func (cmd *VersionCommand) Init(args []string) error {
-	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "show verbose output for all versions")
-	cmd.fs.BoolVar(&cmd.build_info, "build_info", false, "show go build info")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Zeige wortreiche Informationen")
+	cmd.fs.BoolVar(&cmd.build_info, "go_build_info", false, "Zeige Go build Informationen")
 	return cmd.fs.Parse(args)
 }
 
@@ -422,26 +416,26 @@ var (
 )
 
 func (cmd *VersionCommand) Run() error {
-	fmt.Printf("ddp version: %s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("DDP Version: %s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
 
 	if bi, ok := debug.ReadBuildInfo(); ok {
-		fmt.Printf("go version: %s\n", bi.GoVersion)
+		fmt.Printf("Go Version: %s\n", bi.GoVersion)
 		if cmd.build_info {
-			fmt.Printf("go build info:\n")
+			fmt.Printf("Go build info:\n")
 			for _, v := range bi.Settings {
 				fmt.Printf("%s: %s\n", v.Key, v.Value)
 			}
 		}
 	} else {
-		fmt.Println("No go version available")
+		fmt.Println("Keine go version gefunden")
 	}
 
 	if cmd.verbose && GCCVERSIONFULL != "undefined" {
-		fmt.Printf("gcc version: %s\n", GCCVERSIONFULL)
+		fmt.Printf("GCC Version: %s\n", GCCVERSIONFULL)
 	} else {
-		fmt.Printf("gcc version: %s\n", GCCVERSION)
+		fmt.Printf("GCC Version: %s\n", GCCVERSION)
 	}
-	fmt.Printf("llvm version: %s\n", LLVMVERSION)
+	fmt.Printf("LLVM Version: %s\n", LLVMVERSION)
 
 	return nil
 }
@@ -451,10 +445,10 @@ func (cmd *VersionCommand) Name() string {
 }
 
 func (cmd *VersionCommand) Usage() string {
-	return `version <options>: display version information for kddp
-options:
-	--verbose: show verbose output for all versions
-	--build_info: show go build info`
+	return `version <Optionen>: Zeige informationen zu dieser DDP Version
+Optionen:
+	--wortreich: Zeige wortreiche Informationen
+	--go_build_info: Zeige Go build Informationen`
 }
 
 // $kddp run compiles and runs the specified
@@ -469,7 +463,7 @@ type RunCommand struct {
 
 func NewRunCommand() *RunCommand {
 	return &RunCommand{
-		fs:               flag.NewFlagSet("run", flag.ExitOnError),
+		fs:               flag.NewFlagSet("starte", flag.ExitOnError),
 		filePath:         "",
 		gcc_flags:        "",
 		extern_gcc_flags: "",
@@ -480,19 +474,19 @@ func NewRunCommand() *RunCommand {
 func (cmd *RunCommand) Init(args []string) error {
 	// a input .ddp file is necessary
 	if len(args) < 1 {
-		return fmt.Errorf("run requires a file name")
+		return fmt.Errorf("Der starte Befehl braucht eine Eingabedatei")
 	}
 
 	// the first argument must be the input file (.ddp)
 	cmd.filePath = args[0]
 	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("the provided file is not a .ddp file")
+		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
 	}
 
 	// set all the flags
-	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_flags", "", "custom flags that are passed to gcc")
-	cmd.fs.StringVar(&cmd.extern_gcc_flags, "extern_gcc_flags", "", "custom flags passed to extern .c files")
-	cmd.fs.BoolVar(&cmd.verbose, "verbose", false, "print verbose build output")
+	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Gibt wortreiche Informationen während des Befehls")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -519,12 +513,12 @@ func (cmd *RunCommand) Run() error {
 	buildCmd.gcc_flags = cmd.gcc_flags
 	buildCmd.extern_gcc_flags = cmd.extern_gcc_flags
 
-	print("compiling the source code")
+	print("Kompiliere den Quellcode")
 	if err = buildCmd.Run(); err != nil {
 		return err
 	}
 
-	print("running the program")
+	print("Starte das Programm\n")
 	ddpExe := exec.Command(exePath, cmd.fs.Args()...)
 	ddpExe.Stdin = os.Stdin
 	ddpExe.Stdout = os.Stdout
@@ -538,9 +532,9 @@ func (cmd *RunCommand) Name() string {
 }
 
 func (cmd *RunCommand) Usage() string {
-	return `run <filename> <options>: compile and run the given .ddp file
-	options:
-			--verbose: print verbose output
-			--gcc_flags: custom flags that are passed to gcc
-			--extern_gcc_flags: custom flags that are passed to gcc when compiling extern .c files`
+	return `starte <Eingabedatei> <Optionen>: Kompiliert und führt die gegebene .ddp Datei aus
+Optionen:
+	--wortreich: Gibt wortreiche Informationen während des Befehls
+	--gcc_optionen: Benutzerdefinierte Optionen, die gcc übergeben werden
+	--externe_gcc_optionen: Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden`
 }

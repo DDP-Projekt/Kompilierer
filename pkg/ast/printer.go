@@ -54,56 +54,47 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 	return pr.returned
 }
 
-func (pr *printer) VisitBadDecl(decl *BadDecl) Visitor {
+func (*printer) BaseVisitor() {}
+
+func (pr *printer) VisitBadDecl(decl *BadDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
-	return pr
 }
-func (pr *printer) VisitVarDecl(decl *VarDecl) Visitor {
+func (pr *printer) VisitVarDecl(decl *VarDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("VarDecl[%s]", decl.Name.Literal), decl.InitVal)
-	return pr
 }
-func (pr *printer) VisitFuncDecl(decl *FuncDecl) Visitor {
+func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 	if IsExternFunc(decl) {
 		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s] Extern", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type))
 	} else {
 		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type), decl.Body)
 	}
-	return pr
 }
 
-func (pr *printer) VisitBadExpr(expr *BadExpr) Visitor {
+func (pr *printer) VisitBadExpr(expr *BadExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", expr.Tok))
-	return pr
 }
-func (pr *printer) VisitIdent(expr *Ident) Visitor {
+func (pr *printer) VisitIdent(expr *Ident) {
 	pr.parenthesizeNode(fmt.Sprintf("Ident[%s]", expr.Literal.Literal))
-	return pr
 }
-func (pr *printer) VisitIndexing(expr *Indexing) Visitor {
+func (pr *printer) VisitIndexing(expr *Indexing) {
 	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
-	return pr
 }
-func (pr *printer) VisitIntLit(expr *IntLit) Visitor {
+func (pr *printer) VisitIntLit(expr *IntLit) {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
-	return pr
 }
-func (pr *printer) VisitFloatLit(expr *FloatLit) Visitor {
+func (pr *printer) VisitFloatLit(expr *FloatLit) {
 	pr.parenthesizeNode(fmt.Sprintf("FloatLit(%f)", expr.Value))
-	return pr
 }
-func (pr *printer) VisitBoolLit(expr *BoolLit) Visitor {
+func (pr *printer) VisitBoolLit(expr *BoolLit) {
 	pr.parenthesizeNode(fmt.Sprintf("BoolLit(%v)", expr.Value))
-	return pr
 }
-func (pr *printer) VisitCharLit(expr *CharLit) Visitor {
+func (pr *printer) VisitCharLit(expr *CharLit) {
 	pr.parenthesizeNode(fmt.Sprintf("CharLit(%c)", expr.Value))
-	return pr
 }
-func (pr *printer) VisitStringLit(expr *StringLit) Visitor {
+func (pr *printer) VisitStringLit(expr *StringLit) {
 	pr.parenthesizeNode(fmt.Sprintf("StringLit[%s]", expr.Token().Literal))
-	return pr
 }
-func (pr *printer) VisitListLit(expr *ListLit) Visitor {
+func (pr *printer) VisitListLit(expr *ListLit) {
 	if expr.Values == nil {
 		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type))
 	} else {
@@ -113,92 +104,71 @@ func (pr *printer) VisitListLit(expr *ListLit) Visitor {
 		}
 		pr.parenthesizeNode("ListLit", nodes...)
 	}
-	return pr
 }
-func (pr *printer) VisitUnaryExpr(expr *UnaryExpr) Visitor {
+func (pr *printer) VisitUnaryExpr(expr *UnaryExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("UnaryExpr[%s]", expr.Operator), expr.Rhs)
-	return pr
 }
-func (pr *printer) VisitBinaryExpr(expr *BinaryExpr) Visitor {
+func (pr *printer) VisitBinaryExpr(expr *BinaryExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("BinaryExpr[%s]", expr.Operator), expr.Lhs, expr.Rhs)
-	return pr
 }
-func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) Visitor {
+func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", expr.Operator), expr.Lhs, expr.Mid, expr.Rhs)
-	return pr
 }
-func (pr *printer) VisitCastExpr(expr *CastExpr) Visitor {
+func (pr *printer) VisitCastExpr(expr *CastExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
-	return pr
 }
-func (pr *printer) VisitGrouping(expr *Grouping) Visitor {
+func (pr *printer) VisitGrouping(expr *Grouping) {
 	pr.parenthesizeNode("Grouping", expr.Expr)
-	return pr
 }
-func (pr *printer) VisitFuncCall(expr *FuncCall) Visitor {
+func (pr *printer) VisitFuncCall(expr *FuncCall) {
 	args := make([]Node, 0)
 	for _, v := range expr.Args {
 		args = append(args, v)
 	}
 	pr.parenthesizeNode(fmt.Sprintf("FuncCall(%s)", expr.Name), args...)
-	return pr
 }
 
-func (pr *printer) VisitBadStmt(stmt *BadStmt) Visitor {
+func (pr *printer) VisitBadStmt(stmt *BadStmt) {
 	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", stmt.Tok))
-	return pr
 }
-func (pr *printer) VisitDeclStmt(stmt *DeclStmt) Visitor {
+func (pr *printer) VisitDeclStmt(stmt *DeclStmt) {
 	pr.parenthesizeNode("DeclStmt", stmt.Decl)
-	return pr
 }
-func (pr *printer) VisitExprStmt(stmt *ExprStmt) Visitor {
+func (pr *printer) VisitExprStmt(stmt *ExprStmt) {
 	pr.parenthesizeNode("ExprStmt", stmt.Expr)
-	return pr
 }
-func (pr *printer) VisitAssignStmt(stmt *AssignStmt) Visitor {
+func (pr *printer) VisitAssignStmt(stmt *AssignStmt) {
 	pr.parenthesizeNode("AssignStmt", stmt.Var, stmt.Rhs)
-	return pr
 }
-func (pr *printer) VisitBlockStmt(stmt *BlockStmt) Visitor {
+func (pr *printer) VisitBlockStmt(stmt *BlockStmt) {
 	args := make([]Node, len(stmt.Statements))
 	for i, v := range stmt.Statements {
 		args[i] = v
 	}
 	pr.parenthesizeNode("BlockStmt", args...)
-	return pr
 }
-func (pr *printer) VisitIfStmt(stmt *IfStmt) Visitor {
+func (pr *printer) VisitIfStmt(stmt *IfStmt) {
 	if stmt.Else != nil {
 		pr.parenthesizeNode("IfStmt", stmt.Condition, stmt.Then, stmt.Else)
 	} else {
 		pr.parenthesizeNode("IfStmt", stmt.Condition, stmt.Then)
 	}
-	return pr
 }
-func (pr *printer) VisitWhileStmt(stmt *WhileStmt) Visitor {
+func (pr *printer) VisitWhileStmt(stmt *WhileStmt) {
 	pr.parenthesizeNode("WhileStmt", stmt.Condition, stmt.Body)
-	return pr
 }
-func (pr *printer) VisitForStmt(stmt *ForStmt) Visitor {
+func (pr *printer) VisitForStmt(stmt *ForStmt) {
 	pr.parenthesizeNode("ForStmt", stmt.Initializer, stmt.To, stmt.StepSize, stmt.Body)
-	return pr
 }
-func (pr *printer) VisitForRangeStmt(stmt *ForRangeStmt) Visitor {
+func (pr *printer) VisitForRangeStmt(stmt *ForRangeStmt) {
 	pr.parenthesizeNode("ForRangeStmt", stmt.Initializer, stmt.In, stmt.Body)
-	return pr
 }
-func (pr *printer) VisitFuncCallStmt(stmt *FuncCallStmt) Visitor {
-	pr.parenthesizeNode("FuncCallStmt", stmt.Call)
-	return pr
-}
-func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) Visitor {
+func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) {
 	if stmt.Value == nil {
 		pr.parenthesizeNode("ReturnStmt[void]")
 	} else {
 		pr.parenthesizeNode("ReturnStmt", stmt.Value)
 	}
-	return pr
 }
 
 type tokenSlice []token.Token

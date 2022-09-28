@@ -8,8 +8,8 @@
 - [x] Index Operator (an der Stelle)
 - [x] Slice Operator (von bis)
 - [x] String/Listen Operatoren (basic)
-- [X] Listen Operatoren (stdlib)
-- [ ] String Operatoren (stdlib)
+- [x] Listen Operatoren (stdlib)
+- [x] String Operatoren (stdlib)
 
 ## Allgemein
 - [x] do-while loops
@@ -20,12 +20,13 @@
 - [ ] Strukturen
 - [ ] Bessere Tests (vor allem für komplex verschachtelte Loops)
 - [ ] Bessere error-messages
+- [ ] break/continue
 
 ## Sonstiges
 - [x] Standardbibliothek (Duden)
 - [ ] Kommentare parsen (für LS und Docs)
 - [ ] Code Optimizer (Dead-Code-Removal, constexpr-evaluation, ...)
-- [ ] kddp command-argumente deutsch machen
+- [x] kddp command-argumente deutsch machen
 - [ ] on-release test-script (locales testen, etc.)
 - [ ] besseres Operator overloading
 
@@ -37,3 +38,4 @@
 - [ ] Single-function import
 - [X] Externe Funktionen (in C geschrieben)
 - [ ] Generics
+- [ ] Alias für Ausdrücke

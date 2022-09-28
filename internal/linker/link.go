@@ -32,7 +32,7 @@ type Options struct {
 
 func validateOptions(options *Options) error {
 	if options.InputFile == "" {
-		return fmt.Errorf("no input")
+		return fmt.Errorf("Keine Eingabedatei")
 	}
 	if options.Dependencies == nil {
 		options.Dependencies = &compiler.Result{Dependencies: map[string]struct{}{}}
@@ -64,7 +64,7 @@ func LinkDDPFiles(options Options) error {
 
 	// add external files to be linked
 	if options.DeleteIntermediateFiles {
-		defer options.Log("removing temporary files")
+		defer options.Log("Lösche temporäre Dateien")
 	}
 	for path := range options.Dependencies.Dependencies {
 		filename := filepath.Base(path)
@@ -94,7 +94,7 @@ func LinkDDPFiles(options Options) error {
 				}
 			}
 		default:
-			return fmt.Errorf("unexpected dependency '%s'", path)
+			return fmt.Errorf("Unerwartete Abhängigkeit '%s'", path)
 		}
 	}
 
@@ -138,7 +138,7 @@ func compileCFile(inputFile string, gcc_flags []string, Log func(string, ...any)
 		args = append(args, gcc_flags...)
 	}
 
-	Log("invoking gcc on %s", inputFile)
+	Log("Rufe gcc auf '%s' auf", inputFile)
 	cmd := exec.Command("gcc", args...)
 	Log(cmd.String())
 	return outPath, cmd.Run()
