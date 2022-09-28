@@ -113,6 +113,7 @@ func (s *Scanner) NextToken() token.Token {
 	// check if we are currently including a file
 	if s.include != nil {
 		if tok := s.include.NextToken(); tok.Type == token.EOF {
+			s.includedFiles = s.include.includedFiles
 			s.include = nil
 		} else {
 			return tok
