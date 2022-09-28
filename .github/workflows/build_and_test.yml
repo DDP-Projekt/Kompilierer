@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      DDPPATH: /home/runner/work/Kompilierer/Kompilierer/build/kddp/
+      DDPPATH: /home/runner/work/Kompilierer/Kompilierer/build/DDP/
 
     steps:
     - uses: actions/checkout@v3
