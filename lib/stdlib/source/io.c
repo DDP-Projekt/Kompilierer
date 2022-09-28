@@ -6,10 +6,10 @@
 #include "memory.h"
 #include "debug.h"
 #include <math.h>
+#include <stdarg.h>
 #ifdef _WIN32
 #include <io.h>
 #include <Windows.h>
-#include <stdarg.h>
 #endif // _WIN32
 
 /*
