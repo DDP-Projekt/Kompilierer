@@ -15,7 +15,7 @@ CXX=g++
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 
-OUT_DIR := build/kddp
+OUT_DIR := build/DDP
 
 .DEFAULT_GOAL := all
 
