@@ -5,6 +5,8 @@
 
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Eingabe" ein.
+Binde "Duden/Datei_Ausgabe" ein.
+Binde "Duden/Datei_Eingabe" ein.
 Binde "Duden/Extremwerte" ein.
 Binde "Duden/Laufzeit" ein.
 Binde "Duden/Listen" ein.
@@ -14,4 +16,3 @@ Binde "Duden/Zeichen" ein.
 Binde "Duden/Zeit" ein.
 Binde "Duden/Zufall" ein.
 Binde "Duden/Sortierung" ein.
-Binde "Duden/Datei_Eingabe" ein.

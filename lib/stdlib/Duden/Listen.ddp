@@ -10,12 +10,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <liste> an"
 
 Die Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 Die Funktion Einfügen_Bereich_Z mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -25,12 +25,12 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 Die Funktion Lösche_Bereich_Z mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -41,7 +41,7 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion IndexVon_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, wenn liste an der Stelle i gleich elm ist, gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von liste), wenn liste an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
@@ -70,12 +70,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <liste> an"
 
 Die Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 Die Funktion Einfügen_Bereich_K mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -85,12 +85,12 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 Die Funktion Lösche_Bereich_K mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -101,7 +101,7 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion IndexVon_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
@@ -129,12 +129,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <liste> an"
 
 Die Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 Die Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -144,12 +144,12 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 Die Funktion Lösche_Bereich_B mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -160,7 +160,7 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion IndexVon_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
@@ -189,12 +189,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <liste> an"
 
 Die Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 Die Funktion Einfügen_Bereich_C mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -204,12 +204,12 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 Die Funktion Lösche_Bereich_C mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -220,7 +220,7 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion IndexVon_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
@@ -249,12 +249,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <liste> an"
 
 Die Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 Die Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -264,12 +264,12 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 Die Funktion Lösche_Bereich_T mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis die Länge von liste in liste.
+	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -280,7 +280,7 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 Die Funktion IndexVon_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von liste, Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"

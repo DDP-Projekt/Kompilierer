@@ -69,7 +69,7 @@ Die Funktion Schreibe_Zahlen_Liste_Getrennt mit den Parametern liste und seperat
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
 				Schreibe (liste an der Stelle i).
 				Schreibe seperator.
-		Schreibe (liste an der Stelle die Länge von liste).
+		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
@@ -80,7 +80,7 @@ Die Funktion Schreibe_Kommazahlen_Liste_Getrennt mit den Parametern liste und se
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
 				Schreibe (liste an der Stelle i).
 				Schreibe seperator.
-		Schreibe (liste an der Stelle die Länge von liste).
+		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
@@ -91,7 +91,7 @@ Die Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern liste und sepera
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
 				Schreibe (liste an der Stelle i).
 				Schreibe seperator.
-		Schreibe (liste an der Stelle die Länge von liste).
+		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Boolean Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
@@ -102,7 +102,7 @@ Die Funktion Schreibe_Buchstaben_Liste_Getrennt mit den Parametern liste und sep
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
 				Schreibe (liste an der Stelle i).
 				Schreibe seperator.
-		Schreibe (liste an der Stelle die Länge von liste).
+		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Buchstaben Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
@@ -113,7 +113,7 @@ Die Funktion Schreibe_Text_Liste_Getrennt mit den Parametern liste und seperator
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
 				Schreibe (liste an der Stelle i).
 				Schreibe seperator.
-		Schreibe (liste an der Stelle die Länge von liste).
+		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Text Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"

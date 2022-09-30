@@ -1392,6 +1392,7 @@ func (p *Parser) negate() ast.Expression {
 }
 
 // when called from unary() lhs might be a funcCall
+// TODO: check precedence
 func (p *Parser) power(lhs ast.Expression) ast.Expression {
 	if p.match(token.DIE) {
 		lhs := p.unary()
@@ -1547,7 +1548,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
 		operator := p.previous()
-		rhs := p.unary()
+		rhs := p.primary(nil)
 		lhs = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
@@ -1563,7 +1564,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 		operand := lhs
 		mid := p.expression()
 		p.consume(token.BIS)
-		rhs := p.unary()
+		rhs := p.primary(nil)
 		lhs = &ast.TernaryExpr{
 			Range: token.Range{
 				Start: operand.GetRange().Start,

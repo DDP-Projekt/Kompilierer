@@ -66,17 +66,17 @@ Und kann so benutzt werden:
 	"<text> mit <buchstabe> anfängt"
 
 Die Funktion BeginntMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
-	Gib (text von 1 bis die Länge von suchText) gleich suchText zurück.
+	Gib (text von 1 bis (die Länge von suchText)) gleich suchText zurück.
 Und kann so benutzt werden:
 	"<text> mit <suchText> anfängt"
 
 Die Funktion EndetMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
-	Gib (text an der Stelle die Länge von text) gleich buchstabe zurück.
+	Gib (text an der Stelle (die Länge von text)) gleich buchstabe zurück.
 Und kann so benutzt werden:
 	"<text> mit <buchstabe> aufhört"
 
 Die Funktion EndetMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
-	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis die Länge von text) gleich suchText zurück.
+	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis (die Länge von text)) gleich suchText zurück.
 Und kann so benutzt werden:
 	"<text> mit <suchText> aufhört"
 
@@ -96,12 +96,12 @@ Und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
 Die Funktion Text_in_Text_einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Text, gibt nichts zurück, macht:
-	Speichere text von 1 bis (index minus 1) verkettet mit elm verkettet mit text von index bis die Länge von text in text.
+	Speichere text von 1 bis (index minus 1) verkettet mit elm verkettet mit text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
 Die Funktion Buchstabe_in_Text_einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
-	Speichere text von 1 bis (index minus 1) verkettet mit elm verkettet mit text von index bis die Länge von text in text.
+	Speichere text von 1 bis (index minus 1) verkettet mit elm verkettet mit text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
@@ -116,15 +116,15 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <text>"
 
 Die Funktion Lösche_Text mit den Parametern text und index vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis die Länge von text in text.
+	Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <text>"
 
 Die Funktion Lösche_Text_Bereich mit den Parametern text, start und end vom Typ Text Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Wenn start gleich 1 ist, dann:
-		Speichere text von end plus 1 bis die Länge von text in text.
+		Speichere text von end plus 1 bis (die Länge von text) in text.
 	Sonst:
-		Speichere text von 1 bis (start minus 1) verkettet mit text von (end plus 1) bis die Länge von text in text.
+		Speichere text von 1 bis (start minus 1) verkettet mit text von (end plus 1) bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <text>"
 
@@ -139,7 +139,7 @@ Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
 Die Funktion IndexVonText mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis die Länge von text, Wenn text an der Stelle i gleich elm ist, gib i zurück.
+	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <text>"

@@ -14,7 +14,7 @@ Die Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Z
 	
 	Die Zahl Teiler ist 0. [für später]
 	:
-		Die Zahl pivot ist liste an der Stelle die Länge von liste. [das pivot Element ist das letzte Element der Liste]
+		Die Zahl pivot ist liste an der Stelle (die Länge von liste). [das pivot Element ist das letzte Element der Liste]
 		[alle Elemente die größer als pivot sind kommen nach rechts, der Rest nach links, die Mitte wird in Teiler gespeichert]
 		Die Zahl _links ist 1.
 		Die Zahl _rechts ist die Länge von liste.
@@ -33,7 +33,7 @@ Die Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Z
 	
 	[sortiere die linke und rechte Hälfte rekursiv]
 	Die Zahlen Liste linkeHälfte ist (liste von 1 bis (Teiler minus 1)) mit quick-sort sortiert.
-	Die Zahlen Liste rechteHälfte ist (liste von Teiler bis die Länge von liste) mit quick-sort sortiert.
+	Die Zahlen Liste rechteHälfte ist (liste von Teiler bis (die Länge von liste)) mit quick-sort sortiert.
 
 	Gib linkeHälfte verkettet mit rechteHälfte zurück.
 Und kann so benutzt werden:
