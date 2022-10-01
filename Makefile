@@ -69,7 +69,7 @@ make_out_dir:
 	mkdir -p $(DDP_DIR_OUT)
 	mkdir -p $(LIB_DIR_OUT)
 	mkdir -p $(INCL_DIR_OUT)
-	cp LICENCE $(OUT_DIR)
+	cp LICENSE $(OUT_DIR)
 	cp README.md $(OUT_DIR)
 
 test:
@@ -77,6 +77,9 @@ test:
 
 benchmark:
 	go test -v ./tests -run ^a -bench . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+clean:
+	rm -r $(OUT_DIR)
 
 llvm:
 # clone the submodule
