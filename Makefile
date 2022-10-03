@@ -15,7 +15,7 @@ CXX=g++
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 
-OUT_DIR := build/DDP
+OUT_DIR := ./build/DDP
 
 .DEFAULT_GOAL := all
 
@@ -27,14 +27,13 @@ DUDEN_DIR = ./lib/stdlib/Duden
 
 DDP_DIR_OUT = $(OUT_DIR)/bin/
 LIB_DIR_OUT = $(OUT_DIR)/lib/
-INCL_DIR_OUT =  $(OUT_DIR)/include/DDP_Runtime
 
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug duden runtime-include ddpruntime ddpruntime-debug test benchmark llvm
+.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug duden ddpruntime ddpruntime-debug test benchmark llvm
 
-all: make_out_dir kddp ddpruntime ddpstdlib duden runtime-include
+all: make_out_dir kddp ddpruntime ddpstdlib
 
 debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug duden
 
@@ -45,30 +44,32 @@ kddp:
 ddpstdlib:
 	cd $(STD_DIR) ; $(MAKE)
 	mv $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
+	cp -r $(STD_DIR) $(LIB_DIR_OUT)
+	mv $(LIB_DIR_OUT)/stdlib/Duden $(OUT_DIR)
 
 ddpstdlib-debug:
 	cd $(STD_DIR) ; $(MAKE) debug
 	mv $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
+	cp -r $(STD_DIR) $(LIB_DIR_OUT)
+	mv $(OUT_DIR)/stdlib/Duden $(OUT_DIR)
 
 duden:
 	cp -r $(DUDEN_DIR) $(OUT_DIR)
 
-runtime-include:
-	cp -a $(INCL_DIR)/. $(INCL_DIR_OUT)
-
 ddpruntime:
 	cd $(RUN_DIR) ; $(MAKE)
 	mv $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
+	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
 
 ddpruntime-debug:
 	cd $(RUN_DIR) ; $(MAKE) debug
 	mv $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
+	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
 
 make_out_dir:
 	mkdir -p $(OUT_DIR)
 	mkdir -p $(DDP_DIR_OUT)
 	mkdir -p $(LIB_DIR_OUT)
-	mkdir -p $(INCL_DIR_OUT)
 	cp LICENSE $(OUT_DIR)
 	cp README.md $(OUT_DIR)
 
