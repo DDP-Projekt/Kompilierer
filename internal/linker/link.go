@@ -3,10 +3,10 @@ package linker
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/DDP-Projekt/Kompilierer/internal/gcc"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 )
@@ -123,7 +123,7 @@ func LinkDDPFiles(options Options) error {
 		args = append(args, flags...)
 	}
 
-	cmd := exec.Command("gcc", args...)
+	cmd := gcc.New(args...)
 	options.Log("%s", cmd.String())
 	return cmd.Run()
 }
@@ -139,7 +139,7 @@ func compileCFile(inputFile string, gcc_flags []string, Log func(string, ...any)
 	}
 
 	Log("Rufe gcc auf '%s' auf", inputFile)
-	cmd := exec.Command("gcc", args...)
+	cmd := gcc.New(args...)
 	Log(cmd.String())
 	return outPath, cmd.Run()
 }
