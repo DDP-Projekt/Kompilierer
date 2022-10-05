@@ -8,6 +8,8 @@ CCFLAGS := -c -Wall -Wno-format -O2
 DEBUGFLAGS := -DDDP_DEBUG
 INC := -I./include/ -I../runtime/include/
 
+AR = ar
+
 SRCS := $(shell find source -name '*.c')
 OBJS := $(notdir $(SRCS))
 OBJS := $(OBJS:%.c=%.o)
@@ -17,12 +19,12 @@ all: build clean
 
 build:
 	$(CC) $(CCFLAGS) $(INC) $(SRCS)
-	ar cr $(OUT_FILE_NAME) $(OBJS)
+	$(AR) cr $(OUT_FILE_NAME) $(OBJS)
 
 clean:
 	rm -rf $(OBJS)
 
 debug:
 	$(CC) $(CCFLAGS) $(INC) $(DEBUGFLAGS) $(SRCS)
-	ar cr $(OUT_FILE_NAME) $(OBJS)
+	$(AR) cr $(OUT_FILE_NAME) $(OBJS)
 	rm -rf $(OBJS)
