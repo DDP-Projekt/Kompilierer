@@ -31,7 +31,7 @@ LDFLAGS := "-X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) 
 
 build: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
 build: export CGO_CXXFLAGS = -std=c++14
-build: export CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
+build: export CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all) -static -static-libgcc -static-libstdc++
 
 all: build
 
