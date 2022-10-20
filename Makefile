@@ -39,31 +39,33 @@ debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug duden
 
 kddp:
 	cd $(DDP_DIR) ; $(MAKE)
-	mv $(DDP_DIR)/build/$(DDP_BIN) $(DDP_DIR_OUT)
+	mv -f $(DDP_DIR)/build/$(DDP_BIN) $(DDP_DIR_OUT)
 
 ddpstdlib:
 	cd $(STD_DIR) ; $(MAKE)
-	mv $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
+	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	mv $(LIB_DIR_OUT)/stdlib/Duden $(OUT_DIR)
+	rm -rf $(OUT_DIR)/Duden
+	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
 ddpstdlib-debug:
 	cd $(STD_DIR) ; $(MAKE) debug
-	mv $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
+	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	mv $(OUT_DIR)/stdlib/Duden $(OUT_DIR)
+	rm -rf $(OUT_DIR)/Duden
+	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
 duden:
 	cp -r $(DUDEN_DIR) $(OUT_DIR)
 
 ddpruntime:
 	cd $(RUN_DIR) ; $(MAKE)
-	mv $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
+	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
 	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
 
 ddpruntime-debug:
 	cd $(RUN_DIR) ; $(MAKE) debug
-	mv $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
+	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
 	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
 
 make_out_dir:

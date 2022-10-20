@@ -1,5 +1,6 @@
 OUT_FILE_NAME = ""
 LLVM_CONFIG = ""
+EXPORTED_CGO_LDFLAGS := ""
 ifeq ($(OS),Windows_NT)
 	OUT_FILE_NAME := kddp.exe
 	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config.exe)","")
@@ -7,6 +8,7 @@ ifeq ($(OS),Windows_NT)
 	else
 		LLVM_CONFIG := "llvm-config"
 	endif
+	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all) -static -static-libgcc -static-libstdc++
 else
 	OUT_FILE_NAME := kddp
 	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config)","")
@@ -14,6 +16,7 @@ else
 	else
 		LLVM_CONFIG := "llvm-config-12"
 	endif
+	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
 
 .PHONY = all build make_out_dir
@@ -31,7 +34,7 @@ LDFLAGS := "-X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) 
 
 build: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
 build: export CGO_CXXFLAGS = -std=c++14
-build: export CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all) -static -static-libgcc -static-libstdc++
+build: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS)
 
 all: build
 
