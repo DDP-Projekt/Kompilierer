@@ -44,7 +44,7 @@ static void handle_args(int argc, char** argv) {
 void init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
 #ifdef _WIN32
-	setlocale(LC_ALL, "German_Germany.1252");
+	setlocale(LC_ALL, "German_Germany.utf8");
 	// enable utf-8 printing on windows
 	// both of the functioncalls below are needed
 	SetConsoleCP(CP_UTF8);
