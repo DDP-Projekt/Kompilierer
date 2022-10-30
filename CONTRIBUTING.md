@@ -2,6 +2,7 @@
 DDP ist und wird immer Open-Source bleiben und alle Beiträge sind willkommen! Jeder kann durch Github Pull-Requests zu dem Projekt beitragen.
 
 # Den DDP Kompilierer bauen
+
 ## Vorrausetzungen
 Der DDP Kompilierer ist in Go geschrieben. Daher wird eine Go Version von 1.18 oder höher benötigt. Diese kann hier gedownloaded werden: https://go.dev/dl/.<br>
 Hinweis: Manche Packet-Manager installieren nicht die korrekte Version von Go. Bitte überprüfen Sie die Go Version mit dem Befehl: `go version`.
@@ -60,3 +61,12 @@ Alle befehle wurden im Root des Repositoriums ausgeführt.
 $ make llvm
 $ make
 ```
+
+# Am Kompilierer arbeiten
+
+## Den Kompilierer Debuggen
+
+Da der Kompilierer von den C-Bindings von LLVM abhängt kann er nicht wie ein normales Go-Programm debugget werden.
+Vorher müssen einige Umgebungsvariablen gesetzt werden. Um diesen Prozess zu vereinfachen kann das Shell-Skript `open_for_debug.sh` verwendet werden.
+Es setzt die enstprechenden Umgebungsvariablen und öffnet dann VSCode.
+Für andere IDEs kann das Skript angepasst werden.
