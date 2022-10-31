@@ -1,0 +1,10 @@
+Die Funktion Hole_Umgebungsvariable mit dem Parameter Name vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der Wert der Umgebungsvariable <Name>" oder
+	"den Wert der Umgebungsvariable <Name>"
+
+Die Funktion Setze_Umgebungsvariable mit den Parametern Name und Wert vom Typ Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Setze die Umgebungsvariable <Name> auf den Wert <Wert>"
