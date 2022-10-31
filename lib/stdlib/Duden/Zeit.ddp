@@ -6,12 +6,10 @@ und kann so benutzt werden:
 
 Die Funktion Zeit_Lokal gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
+und kann so benutzt werden:
 	"die Lokale Zeit"
 
-Die Funktion Warten mit dem Parameter sekunden vom Typ Kommazahl, gibt nichts zurück, macht:
-	Die Zahl start_zeit ist die Zeit seit Programmstart.
-	Solange (die Zeit seit Programmstart) kleiner als start_zeit plus (sekunden mal 1000) ist, mache:
-		[ nichts ]
-Und kann so benutzt werden:
+Die Funktion Warten mit dem Parameter sekunden vom Typ Kommazahl, gibt nichts zurück, 
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
 	"Warte <sekunden> Sekunden"

@@ -5,6 +5,12 @@
 #include "ddptypes.h"
 #include "memory.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+
+#endif // _WIN32
+
 ddpint Zeit_Seit_Programmstart() {
 	return clock();
 }
@@ -31,4 +37,19 @@ ddpstring* Zeit_Lokal() {
 	dstr->str[dstr->cap-1] = '\0'; // null terminator hinzufügen
 
 	return dstr;
+}
+
+// crossplatform sleep function
+void Warte(ddpfloat seconds)
+{
+    #ifdef _WIN32
+        Sleep(seconds * 1000);
+    #elif _POSIX_C_SOURCE >= 199309L
+        struct timespec ts;
+        ts.tv_sec = seconds;
+        ts.tv_nsec = seconds * 1000000000;
+        nanosleep(&ts, NULL);
+    #else
+        usleep(seconds * 1000);
+    #endif
 }
