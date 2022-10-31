@@ -2,3 +2,4 @@
 /build
 /llvm_build
 .idea
+*.exe
