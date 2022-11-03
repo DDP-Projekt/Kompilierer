@@ -73,11 +73,14 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 }
 
 ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
-	DBGLOG("_ddp_string_slice: %p", str);
+	ddpstring* new_str = ALLOCATE(ddpstring, 1);
+	DBGLOG("_ddp_string_slice: %p", new_str);
+	new_str->cap = 1;
+	new_str->str = ALLOCATE(char, 1);
+	new_str->str[0] = '\0';
 
-	if (str->cap <= 1) {
+	if (str->cap <= 1)
 		return str; // empty string can stay the same
-	}
 
 	size_t start_length = utf8_strlen(str->str);
 	index1 = clamp(index1, 1, start_length);
@@ -100,31 +103,30 @@ ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 		i2 += utf8_indicated_num_bytes(str->str[i2]);
 	}
 
-	size_t new_str_cap = (i2 - i1) + 2; // + 2 because null-terminator
-	char* string = ALLOCATE(char, new_str_cap);
-	memcpy(string, str->str + i1, new_str_cap - 1);
-	string[new_str_cap - 1] = '\0';
+	new_str->cap = (i2 - i1) + 2; // + 1 if indices are equal, + 2 because null-terminator
+	new_str->str = reallocate(new_str->str, sizeof(char) * 1, new_str->cap);
+	memcpy(new_str->str, str->str + i1, new_str->cap - 1);
+	new_str->str[new_str->cap - 1] = '\0';
 
-	FREE_ARRAY(char, str->str, str->cap); // free the old string
-	// assign the new string
-	str->cap = new_str_cap;
-	str->str = string;
-	return str;
+	return new_str;
 }
 
 ddpstring* _ddp_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
-	DBGLOG("_ddp_string_string_verkettet: %p", str1);
+	ddpstring* new_str = ALLOCATE(ddpstring, 1);
+	DBGLOG("_ddp_string_string_verkettet: %p", new_str);
 
-	size_t new_cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
-	str1->str = reallocate(str1->str, str1->cap, new_cap);	 // reallocate str1
-	memcpy(&str1->str[str1->cap - 1], str2->str, str2->cap); // append str2 and overwrite str1's null-terminator
+	new_str->cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
+	new_str->str = reallocate(str1->str, str1->cap, new_str->cap);	 // reallocate str1
+	memcpy(&new_str->str[str1->cap - 1], str2->str, str2->cap); // append str2 and overwrite str1's null-terminator
 
-	str1->cap = new_cap;
-	return str1;
+	str1->cap = 0;
+	str1->str = NULL;
+	return new_str;
 }
 
 ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
-	DBGLOG("_ddp_char_string_verkettet: %p", str);
+	ddpstring* new_str = ALLOCATE(ddpstring, 1);
+	DBGLOG("_ddp_char_string_verkettet: %p", new_str);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -132,17 +134,19 @@ ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
 		num_bytes = 0;
 	}
 
-	size_t new_cap = str->cap + num_bytes;
-	str->str = reallocate(str->str, str->cap, new_cap);
-	memmove(&str->str[num_bytes], str->str, str->cap);
-	memcpy(str->str, temp, num_bytes);
+	new_str->cap = str->cap + num_bytes;
+	new_str->str = reallocate(str->str, str->cap, new_str->cap);
+	memmove(&new_str->str[num_bytes], str->str, str->cap);
+	memcpy(new_str->str, temp, num_bytes);
 
-	str->cap = new_cap;
-	return str;
+	str->cap = 0;
+	str->str = NULL;
+	return new_str;
 }
 
 ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
-	DBGLOG("_ddp_string_char_verkettet: %p", str);
+	ddpstring* new_str = ALLOCATE(ddpstring, 1);
+	DBGLOG("_ddp_string_char_verkettet: %p", new_str);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -150,13 +154,14 @@ ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
 		num_bytes = 0;
 	}
 
-	size_t new_cap = str->cap + num_bytes;
-	str->str = reallocate(str->str, str->cap, new_cap);
-	memcpy(&str->str[str->cap - 1], temp, num_bytes);
+	new_str->cap = str->cap + num_bytes;
+	new_str->str = reallocate(str->str, str->cap, new_str->cap);
+	memcpy(&new_str->str[str->cap - 1], temp, num_bytes);
+	new_str->str[new_str->cap - 1] = '\0';
 
-	str->str[new_cap - 1] = '\0';
-	str->cap = new_cap;
-	return str;
+	str->str = NULL;
+	str->cap = 0;
+	return new_str;
 }
 
 ddpint _ddp_string_to_int(ddpstring* str) {

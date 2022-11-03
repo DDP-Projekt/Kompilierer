@@ -35,13 +35,6 @@ var (
 	ptr = types.NewPointer
 
 	zero = constant.NewInt(ddpint, 0)
-
-	VK_STRING      = constant.NewInt(i8, 0)
-	VK_INT_LIST    = constant.NewInt(i8, 1)
-	VK_FLOAT_LIST  = constant.NewInt(i8, 2)
-	VK_BOOL_LIST   = constant.NewInt(i8, 3)
-	VK_CHAR_LIST   = constant.NewInt(i8, 4)
-	VK_STRING_LIST = constant.NewInt(i8, 5)
 )
 
 const (
@@ -131,23 +124,12 @@ func getDefaultValue(ddpType token.DDPType) constant.Constant {
 	return zero // unreachable
 }
 
-// returns wether the given type is reference counted, and if so its associated ValueKind
-func isRefCounted(typ types.Type) (bool, *constant.Int) {
+func isDynamic(typ types.Type) bool {
 	switch typ {
-	case ddpstrptr:
-		return true, VK_STRING
-	case ddpintlistptr:
-		return true, VK_INT_LIST
-	case ddpfloatlistptr:
-		return true, VK_FLOAT_LIST
-	case ddpboollistptr:
-		return true, VK_BOOL_LIST
-	case ddpcharlistptr:
-		return true, VK_CHAR_LIST
-	case ddpstringlistptr:
-		return true, VK_STRING_LIST
+	case ddpstrptr, ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
+		return true
 	}
-	return false, zero
+	return false
 }
 
 func getTypeName(ddpType token.DDPType) string {

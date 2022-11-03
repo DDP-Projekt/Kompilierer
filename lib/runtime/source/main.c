@@ -45,7 +45,11 @@ static void handle_args(int argc, char** argv) {
 void init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
 #ifdef _WIN32
+	// the locales behaviour seems to change from time to time on windows
+	// so this might change later
 	setlocale(LC_ALL, "German_Germany.utf8");
+	setlocale(LC_NUMERIC, "French_Canada.1252"); // somehow this is needed to get , instead of . as decimal seperator
+
 	// enable utf-8 printing on windows
 	// both of the functioncalls below are needed
 	SetConsoleCP(CP_UTF8);

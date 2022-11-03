@@ -193,20 +193,12 @@ func (c *Compiler) setupStringType() {
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_string_from_constant", ddpstrptr, ir.NewParam("str", ptr(i8)))
 
+	// frees the given string
+	c.declareInbuiltFunction("_ddp_free_string", void, ir.NewParam("str", ddpstrptr))
+
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
-
-	// decrement the ref-count on a pointer and
-	// free the pointer if the ref-count becomes 0
-	// takes the pointer and the type to which it points
-	// (currently only string, but later lists and structs too)
-	c.declareInbuiltFunction("_ddp_decrement_ref_count", void, ir.NewParam("key", ptr(i8)))
-
-	// increment the ref-count on a pointer
-	// takes the pointer and the type to which it points
-	// (currently only string, but later lists and structs too)
-	c.declareInbuiltFunction("_ddp_increment_ref_count", void, ir.NewParam("key", ptr(i8)), ir.NewParam("kind", i8))
 }
 
 // declares some internal list functions
@@ -408,33 +400,45 @@ func (c *Compiler) setupOperators() {
 	c.declareInbuiltFunction("_ddp_string_slice", ddpstrptr, ir.NewParam("str", ddpstrptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 }
 
-// helper to call increment_ref_count
-func (c *Compiler) incrementRC(key value.Value, kind *constant.Int) {
-	c.cbb.NewCall(c.functions["_ddp_increment_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)), kind)
-}
-
-// helper to call decrement_ref_count
-func (c *Compiler) decrementRC(key value.Value) {
-	c.cbb.NewCall(c.functions["_ddp_decrement_ref_count"].irFunc, c.cbb.NewBitCast(key, ptr(i8)))
+// helper to call _ddp_free_<type>
+// which is a dynamically allocated type
+func (c *Compiler) freeDynamic(value_ptr value.Value) {
+	switch value_ptr.Type() {
+	case ddpstrptr:
+		c.cbb.NewCall(c.functions["_ddp_free_string"].irFunc, value_ptr)
+	case ddpintlistptr:
+		c.cbb.NewCall(c.functions["_ddp_free_ddpintlist"].irFunc, value_ptr)
+	case ddpfloatlistptr:
+		c.cbb.NewCall(c.functions["_ddp_free_ddpfloatlist"].irFunc, value_ptr)
+	case ddpboollistptr:
+		c.cbb.NewCall(c.functions["_ddp_free_ddpboollist"].irFunc, value_ptr)
+	case ddpcharlistptr:
+		c.cbb.NewCall(c.functions["_ddp_free_ddpcharlist"].irFunc, value_ptr)
+	case ddpstringlistptr:
+		c.cbb.NewCall(c.functions["_ddp_free_ddpstringlist"].irFunc, value_ptr)
+	default:
+		err("invalid type %s", value_ptr)
+	}
 }
 
 // helper to call _ddp_deep_copy_<type>
-func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
-	switch listptr.Type() {
+// which is a dynamically allocated type
+func (c *Compiler) deepCopyDynamic(value_ptr value.Value) value.Value {
+	switch value_ptr.Type() {
 	case ddpstrptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_string"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_string"].irFunc, value_ptr)
 	case ddpintlistptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpintlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpintlist"].irFunc, value_ptr)
 	case ddpfloatlistptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpfloatlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpfloatlist"].irFunc, value_ptr)
 	case ddpboollistptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpboollist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpboollist"].irFunc, value_ptr)
 	case ddpcharlistptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpcharlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpcharlist"].irFunc, value_ptr)
 	case ddpstringlistptr:
-		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpstringlist"].irFunc, listptr)
+		return c.cbb.NewCall(c.functions["_ddp_deep_copy_ddpstringlist"].irFunc, value_ptr)
 	}
-	err("invalid list type %s", listptr)
+	err("invalid type %s", value_ptr)
 	return zero // unreachable
 }
 
@@ -443,8 +447,8 @@ func (c *Compiler) deepCopyRefCounted(listptr value.Value) value.Value {
 // returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
 	for _, v := range c.scp.variables {
-		if ok, _ := isRefCounted(v.typ); ok && !v.isRef {
-			c.decrementRC(c.cbb.NewLoad(v.typ, v.val))
+		if isDynamic(v.typ) && !v.isRef {
+			c.freeDynamic(c.cbb.NewLoad(v.typ, v.val))
 		}
 	}
 	return scp.enclosing
@@ -508,14 +512,10 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 				// they basically just get another name in the function scope, which
 				// refers to the same variable allocation
 				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType, true)
-			} else if ok, vk := isRefCounted(irType); ok { // strings and lists need special handling
+			} else if isDynamic(irType) { // strings and lists need special handling
 				// add the local variable for the parameter
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType, false)
-				// we need to deep copy the passed string/list because the caller
-				// must call increment/decrement_ref_count on it
-				ptr := c.deepCopyRefCounted(params[i])
-				c.incrementRC(ptr, vk) // increment-ref-count on the new local variable
-				c.cbb.NewStore(ptr, v) // store the copy in the local variable
+				c.cbb.NewStore(params[i], v) // store the copy in the local variable
 			} else {
 				// non garbage-collected types are just declared as their ir type
 				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType), irType, false)
@@ -548,9 +548,8 @@ func (c *Compiler) VisitBadExpr(e *ast.BadExpr) {
 func (c *Compiler) VisitIdent(e *ast.Ident) {
 	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
-	if ok, vk := isRefCounted(Var.typ); ok { // strings must be copied in case the user of the expression modifies them
-		c.latestReturn = c.deepCopyRefCounted(c.cbb.NewLoad(Var.typ, Var.val))
-		c.incrementRC(c.latestReturn, vk)
+	if isDynamic(Var.typ) { // strings must be copied in case the user of the expression modifies them
+		c.latestReturn = c.deepCopyDynamic(c.cbb.NewLoad(Var.typ, Var.val))
 	} else { // other variables are simply copied
 		c.latestReturn = c.cbb.NewLoad(Var.typ, Var.val)
 	}
@@ -598,14 +597,13 @@ func (c *Compiler) VisitIndexing(e *ast.Indexing) {
 		c.latestReturn = c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr)
 		// copy strings
 		if lhs.Type() == ddpstringlistptr {
-			c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
-			c.incrementRC(c.latestReturn, VK_STRING)
+			c.latestReturn = c.deepCopyDynamic(c.latestReturn)
 		}
 	default:
 		err("invalid Parameter Types for STELLE (%s, %s)", lhs.Type(), rhs.Type())
 	}
-	if ok, _ := isRefCounted(lhs.Type()); ok {
-		c.decrementRC(lhs)
+	if isDynamic(lhs.Type()) {
+		c.freeDynamic(lhs)
 	}
 }
 
@@ -634,7 +632,6 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_from_constant"].irFunc, c.cbb.NewBitCast(constStr, ptr(i8)))
-	c.incrementRC(c.latestReturn, VK_STRING)
 }
 func (c *Compiler) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
@@ -668,9 +665,8 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) {
 		c.cbb = bodyBlock
 		index := c.cbb.NewLoad(ddpint, counter)
 		var val value.Value
-		if ok, vk := isRefCounted(Value.Type()); ok {
-			val = c.deepCopyRefCounted(Value)
-			c.incrementRC(val, vk)
+		if isDynamic(Value.Type()) {
+			val = c.deepCopyDynamic(Value)
 		} else {
 			val = Value
 		}
@@ -683,16 +679,13 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) {
 		c.cbb.NewBr(condBlock)
 
 		c.cbb = leaveBlock
-		if ok, _ := isRefCounted(Value.Type()); ok {
-			c.decrementRC(Value)
+		if isDynamic(Value.Type()) {
+			c.freeDynamic(Value)
 		}
 
 		c.latestReturn = list
 	} else {
 		c.latestReturn = c.cbb.NewCall(c.functions["_ddp_"+getTypeName(e.Type)+"_from_constants"].irFunc, zero)
-	}
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
 	}
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
@@ -759,11 +752,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	default:
 		err("Unbekannter Operator '%s'", e.Operator)
 	}
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
-	}
-	if ok, _ := isRefCounted(rhs.Type()); ok {
-		c.decrementRC(rhs)
+	if isDynamic(rhs.Type()) {
+		c.freeDynamic(rhs)
 	}
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
@@ -1043,8 +1033,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			c.latestReturn = c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr)
 			// copy strings
 			if lhs.Type() == ddpstringlistptr {
-				c.latestReturn = c.deepCopyRefCounted(c.latestReturn)
-				c.incrementRC(c.latestReturn, VK_STRING)
+				c.latestReturn = c.deepCopyDynamic(c.latestReturn)
 			}
 			c.commentNode(c.cbb, e, "")
 			c.cbb.NewBr(leaveBlock)
@@ -1267,14 +1256,11 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhs.Type(), rhs.Type())
 		}
 	}
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
+	if isDynamic(lhs.Type()) {
+		c.freeDynamic(lhs)
 	}
-	if ok, _ := isRefCounted(lhs.Type()); ok {
-		c.decrementRC(lhs)
-	}
-	if ok, _ := isRefCounted(rhs.Type()); ok {
-		c.decrementRC(rhs)
+	if isDynamic(rhs.Type()) {
+		c.freeDynamic(rhs)
 	}
 }
 func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
@@ -1303,18 +1289,15 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	default:
 		err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhs.Type(), mid.Type(), rhs.Type())
 	}
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
-	}
 
-	if ok, _ := isRefCounted(lhs.Type()); ok {
-		c.decrementRC(lhs)
+	if isDynamic(lhs.Type()) {
+		c.freeDynamic(lhs)
 	}
-	if ok, _ := isRefCounted(mid.Type()); ok {
-		c.decrementRC(mid)
+	if isDynamic(mid.Type()) {
+		c.freeDynamic(mid)
 	}
-	if ok, _ := isRefCounted(rhs.Type()); ok {
-		c.decrementRC(rhs)
+	if isDynamic(rhs.Type()) {
+		c.freeDynamic(rhs)
 	}
 }
 func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
@@ -1325,10 +1308,8 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 		arr := c.cbb.NewLoad(ptr(getElementType(list.Type())), arrptr)
 		elementPtr := c.cbb.NewGetElementPtr(getElementType(list.Type()), arr, newInt(0))
 		c.cbb.NewStore(lhs, elementPtr)
-		if ok, vk := isRefCounted(lhs.Type()); ok {
-			c.incrementRC(lhs, vk)
-		}
 		c.latestReturn = list
+		return // don't free lhs
 	} else {
 		switch e.Type.PrimitiveType {
 		case token.ZAHL:
@@ -1387,7 +1368,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			case ddpchar:
 				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_char_to_string"].irFunc, lhs)
 			case ddpstrptr:
-				c.latestReturn = c.deepCopyRefCounted(lhs)
+				c.latestReturn = c.deepCopyDynamic(lhs)
 			case ddpintlistptr:
 				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_ddpintlist_to_string"].irFunc, lhs)
 			case ddpfloatlistptr:
@@ -1405,11 +1386,8 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
-	}
-	if ok, _ := isRefCounted(lhs.Type()); ok {
-		c.decrementRC(lhs)
+	if isDynamic(lhs.Type()) {
+		c.freeDynamic(lhs)
 	}
 }
 func (c *Compiler) VisitGrouping(e *ast.Grouping) {
@@ -1419,10 +1397,6 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames))
 
-	// the caller of a function is responsible for managing the ref-count
-	// of passed garbage collected values, so we call increment_ref_count on any
-	// passed garbage collected argument
-	toBeFreed := make([]*value.Value, 0)
 	for i, param := range fun.funcDecl.ParamNames {
 		var val value.Value
 
@@ -1445,9 +1419,6 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 			}
 		} else {
 			val = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
-			if ok, _ := isRefCounted(val.Type()); ok {
-				toBeFreed = append(toBeFreed, &val)
-			}
 		}
 
 		args = append(args, val) // add the value to the arguments
@@ -1455,14 +1426,13 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = c.cbb.NewCall(fun.irFunc, args...) // compile the actual function call
-	// after the function returns, we decrement the ref-count on
-	// all passed arguments
-	for i := range toBeFreed {
-		c.decrementRC(*toBeFreed[i])
-	}
-	// increment the rc on the function return
-	if ok, vk := isRefCounted(c.latestReturn.Type()); ok {
-		c.incrementRC(c.latestReturn, vk)
+
+	if ast.IsExternFunc(fun.funcDecl) {
+		for i := range fun.funcDecl.ParamNames {
+			if !fun.funcDecl.ParamTypes[i].IsReference && isDynamic(toIRType(fun.funcDecl.ParamTypes[i].Type)) {
+				c.freeDynamic(args[i])
+			}
+		}
 	}
 }
 
@@ -1476,8 +1446,8 @@ func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) {
 func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) {
 	expr := c.evaluate(s.Expr)
 	// free garbage collected returns
-	if ok, _ := isRefCounted(expr.Type()); ok {
-		c.decrementRC(expr)
+	if isDynamic(expr.Type()) {
+		c.freeDynamic(expr)
 	}
 }
 
@@ -1510,8 +1480,8 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Literal.Literal) // get the variable
 		// free the value which was previously contained in the variable
-		if ok, _ := isRefCounted(Var.typ); ok {
-			c.decrementRC(c.cbb.NewLoad(Var.typ, Var.val))
+		if isDynamic(Var.typ) {
+			c.freeDynamic(c.cbb.NewLoad(Var.typ, Var.val))
 		}
 		c.commentNode(c.cbb, s, assign.Literal.Literal)
 		c.cbb.NewStore(val, Var.val) // store the new value
@@ -1527,7 +1497,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 			elementPtr := c.getElementPointer(lhs, index, s)
 			if lhs.Type() == ddpstringlistptr {
 				// free the old string
-				c.decrementRC(c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr))
+				c.freeDynamic(c.cbb.NewLoad(getElementType(lhs.Type()), elementPtr))
 			}
 			c.cbb.NewStore(val, elementPtr)
 		default:
@@ -1741,8 +1711,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 		loopVar = c.cbb.NewLoad(getElementType(in.Type()), elementPtr)
 		// copy strings
 		if in.Type() == ddpstringlistptr {
-			loopVar = c.deepCopyRefCounted(loopVar)
-			c.incrementRC(loopVar, VK_STRING)
+			loopVar = c.deepCopyDynamic(loopVar)
 		}
 	}
 	c.cbb.NewStore(loopVar, c.scp.lookupVar(s.Initializer.Name.Literal).val)
@@ -1756,7 +1725,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb.NewBr(condBlock)
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
-	c.decrementRC(in)
+	c.freeDynamic(in)
 }
 func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
