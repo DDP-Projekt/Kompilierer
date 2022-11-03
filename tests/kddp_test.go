@@ -5,12 +5,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"testing"
 )
 
 func TestKDDP(t *testing.T) {
 	err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
-		return runTests(t, "kddp", path, d, err)
+		return runTests(t, "kddp", path, d, err, false)
 	})
 
 	if err != nil {
@@ -20,7 +21,7 @@ func TestKDDP(t *testing.T) {
 
 func TestStdlib(t *testing.T) {
 	err := filepath.WalkDir("./testdata/stdlib", func(path string, d fs.DirEntry, err error) error {
-		return runTests(t, "stdlib", path, d, err)
+		return runTests(t, "stdlib", path, d, err, false)
 	})
 
 	if err != nil {
@@ -28,7 +29,25 @@ func TestStdlib(t *testing.T) {
 	}
 }
 
-func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err error) error {
+func TestMemory(t *testing.T) {
+	t.Run("KDDP", func(t *testing.T) {
+		if err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
+			return runTests(t, "kddp", path, d, err, true)
+		}); err != nil {
+			t.Errorf("Error walking the test directory: %s", err)
+		}
+	})
+
+	t.Run("Stdlib", func(t *testing.T) {
+		if err := filepath.WalkDir("./testdata/stdlib", func(path string, d fs.DirEntry, err error) error {
+			return runTests(t, "stdlib", path, d, err, true)
+		}); err != nil {
+			t.Errorf("Error walking the test directory: %s", err)
+		}
+	})
+}
+
+func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err error, testMemory bool) error {
 	if err != nil {
 		t.Errorf("Error walking %s: %s\nskipping this directory", path, err)
 		return fs.SkipDir
@@ -87,12 +106,29 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 
 		input.Close() // close input file
 
-		// error if 'out' was not the expected output
-		if out, expected := string(out), string(expected); out != expected {
-			t.Errorf("Test did not yield the expected output\n"+
-				"\x1b[1;32mExpected:\x1b[0m\n%s\n"+
-				"\x1b[1;31mGot:\x1b[0m\n%s", expected, out)
-			return
+		if testMemory {
+			now_at_zero := regexp.MustCompile("freed 24 bytes, now at 0 bytesAllocated")
+			if now_at_zero.Find(out) == nil {
+				now_at_x := regexp.MustCompile("(now at (?P<num_bytes>[0-9]+) bytesAllocated)$")
+				match := now_at_x.FindSubmatch(out)
+				if match != nil {
+					num_bytes := match[now_at_x.SubexpIndex("num_bytes")]
+					t.Errorf("Program exited with %s bytes still allocated!", num_bytes)
+				} else {
+					t.Errorf("Could not find number of bytes allocated, something bad happened!")
+				}
+				if err := os.WriteFile(filepath.Join(path, "output.dump.txt"), out, os.ModePerm); err != nil {
+					t.Errorf("Error dumping output: %s", err)
+				}
+			}
+		} else {
+			// error if 'out' was not the expected output
+			if out, expected := string(out), string(expected); out != expected {
+				t.Errorf("Test did not yield the expected output\n"+
+					"\x1b[1;32mExpected:\x1b[0m\n%s\n"+
+					"\x1b[1;31mGot:\x1b[0m\n%s", expected, out)
+				return
+			}
 		}
 	})
 
