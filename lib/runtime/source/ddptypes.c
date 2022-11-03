@@ -1,7 +1,6 @@
 #include "ddptypes.h"
 #include "memory.h"
 #include "debug.h"
-#include "gc.h"
 #include "utf8/utf8.h"
 #include <stdarg.h>
 
@@ -22,7 +21,7 @@ ddpstring* _ddp_string_from_constant(char* str) {
 }
 
 // free a ddpstring
-void free_string(ddpstring* str) {
+void _ddp_free_string(ddpstring* str) {
 	DBGLOG("free_string: %p", str);
 	FREE_ARRAY(char, str->str, str->cap); // free the character array
 	FREE(ddpstring, str); // free the string pointer
@@ -51,7 +50,7 @@ ddpintlist* _ddp_ddpintlist_from_constants(ddpint count) {
 	return list;
 }
 
-void free_ddpintlist(ddpintlist* list) {
+void _ddp_free_ddpintlist(ddpintlist* list) {
 	DBGLOG("free_ddpintlist: %p", list);
 	
 	FREE_ARRAY(ddpint, list->arr, list->cap); // free the element array
@@ -82,7 +81,7 @@ ddpfloatlist* _ddp_ddpfloatlist_from_constants(ddpint count) {
 	return list;
 }
 
-void free_ddpfloatlist(ddpfloatlist* list) {
+void _ddp_free_ddpfloatlist(ddpfloatlist* list) {
 	DBGLOG("free_ddpfloatlist: %p", list);
 	
 	FREE_ARRAY(ddpfloat, list->arr, list->cap); // free the element array
@@ -113,7 +112,7 @@ ddpboollist* _ddp_ddpboollist_from_constants(ddpint count) {
 	return list;
 }
 
-void free_ddpboollist(ddpboollist* list) {
+void _ddp_free_ddpboollist(ddpboollist* list) {
 	DBGLOG("free_ddpboollist: %p", list);
 	
 	FREE_ARRAY(ddpbool, list->arr, list->cap); // free the element array
@@ -144,7 +143,7 @@ ddpcharlist* _ddp_ddpcharlist_from_constants(ddpint count) {
 	return list;
 }
 
-void free_ddpcharlist(ddpcharlist* list) {
+void _ddp_free_ddpcharlist(ddpcharlist* list) {
 	DBGLOG("free_ddpcharlist: %p", list);
 	
 	FREE_ARRAY(ddpchar, list->arr, list->cap); // free the element array
@@ -175,11 +174,11 @@ ddpstringlist* _ddp_ddpstringlist_from_constants(ddpint count) {
 	return list;
 }
 
-void free_ddpstringlist(ddpstringlist* list) {
+void _ddp_free_ddpstringlist(ddpstringlist* list) {
 	DBGLOG("free_ddpstringlist: %p", list);
 	
 	for (size_t i = 0; i < list->len; i++) {
-		_ddp_decrement_ref_count(list->arr[i]);
+		_ddp_free_string(list->arr[i]);
 	}
 	
 	FREE_ARRAY(ddpstring*, list->arr, list->cap); // free the element array
@@ -193,7 +192,6 @@ ddpstringlist* _ddp_deep_copy_ddpstringlist(ddpstringlist* list) {
 	
 	for (size_t i = 0; i < list->len; i++) {
 		cpy[i] = _ddp_deep_copy_string(list->arr[i]);
-		_ddp_increment_ref_count(cpy[i], VK_STRING);
 	}
 	
 	ddpstringlist* cpylist = ALLOCATE(ddpstringlist, 1); // alocate the copy list

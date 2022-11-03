@@ -3,7 +3,6 @@
 */
 #include "ddptypes.h"
 #include "memory.h"
-#include "gc.h"
 #include "debug.h"
 #include "utf8/utf8.h"
 #include <math.h>

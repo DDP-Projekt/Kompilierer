@@ -224,6 +224,9 @@ func (c *Compiler) setupListTypes() {
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_ddpintlist_from_constants", ddpintlistptr, ir.NewParam("count", ddpint))
 
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_ddpintlist", void, ir.NewParam("list", ddpintlistptr))
+
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_deep_copy_ddpintlist", ddpintlistptr, ir.NewParam("list", ddpintlistptr))
@@ -249,6 +252,9 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpfloatlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_ddpfloatlist_from_constants", ddpfloatlistptr, ir.NewParam("count", ddpint))
+
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_ddpfloatlist", void, ir.NewParam("list", ddpfloatlistptr))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -276,6 +282,9 @@ func (c *Compiler) setupListTypes() {
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_ddpboollist_from_constants", ddpboollistptr, ir.NewParam("count", ddpint))
 
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_ddpboollist", void, ir.NewParam("list", ddpboollistptr))
+
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_deep_copy_ddpboollist", ddpboollistptr, ir.NewParam("list", ddpboollistptr))
@@ -301,6 +310,9 @@ func (c *Compiler) setupListTypes() {
 	// creates a ddpcharlist from the elements and returns a pointer to it
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_ddpcharlist_from_constants", ddpcharlistptr, ir.NewParam("count", ddpint))
+
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_ddpcharlist", void, ir.NewParam("list", ddpcharlistptr))
 
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
@@ -328,6 +340,9 @@ func (c *Compiler) setupListTypes() {
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_ddpstringlist_from_constants", ddpstringlistptr, ir.NewParam("count", ddpint))
 
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_ddpstringlist", void, ir.NewParam("list", ddpstringlistptr))
+
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_deep_copy_ddpstringlist", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr))
@@ -341,7 +356,6 @@ func (c *Compiler) setupListTypes() {
 	c.declareInbuiltFunction("_ddp_ddpstringlist_ddpstring_verkettet", ddpstringlistptr, ir.NewParam("list", ddpstringlistptr), ir.NewParam("el", ddpstrptr))
 
 	c.declareInbuiltFunction("_ddp_ddpstring_ddpstringlist_verkettet", ddpstringlistptr, ir.NewParam("str", ddpstrptr), ir.NewParam("list", ddpstringlistptr))
-
 }
 
 func (c *Compiler) setupOperators() {

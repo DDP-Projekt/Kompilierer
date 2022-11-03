@@ -8,11 +8,11 @@
 	return list;
 }
 
-void free_{{ .T }}({{ .T }}* list) {
+void _ddp_free_{{ .T }}({{ .T }}* list) {
 	DBGLOG("free_{{ .T }}: %p", list);
 	{{if .D}}
 	for (size_t i = 0; i < list->len; i++) {
-		_ddp_decrement_ref_count(list->arr[i]);
+		_ddp_free_string(list->arr[i]);
 	}
 	{{end}}
 	FREE_ARRAY({{ .E }}, list->arr, list->cap); // free the element array
@@ -28,7 +28,6 @@ void free_{{ .T }}({{ .T }}* list) {
 	{{if .D}}
 	for (size_t i = 0; i < list->len; i++) {
 		cpy[i] = _ddp_deep_copy_string(list->arr[i]);
-		_ddp_increment_ref_count(cpy[i], VK_STRING);
 	}
 	{{end}}
 	{{ .T }}* cpylist = ALLOCATE({{ .T }}, 1); // alocate the copy list

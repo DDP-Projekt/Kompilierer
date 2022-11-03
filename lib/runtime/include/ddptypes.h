@@ -19,7 +19,7 @@ typedef struct {
 } ddpstring;
 
 // free a ddpstring
-void free_string(ddpstring* str);
+void _ddp_free_string(ddpstring* str);
 
 /***** Partially generated code *****/
 
@@ -29,7 +29,7 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpintlist;
 
-void free_ddpintlist(ddpintlist* list);
+void _ddp_free_ddpintlist(ddpintlist* list);
 
 typedef struct {
 	ddpfloat* arr; // the element array
@@ -37,7 +37,7 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpfloatlist;
 
-void free_ddpfloatlist(ddpfloatlist* list);
+void _ddp_free_ddpfloatlist(ddpfloatlist* list);
 
 typedef struct {
 	ddpbool* arr; // the element array
@@ -45,7 +45,7 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpboollist;
 
-void free_ddpboollist(ddpboollist* list);
+void _ddp_free_ddpboollist(ddpboollist* list);
 
 typedef struct {
 	ddpchar* arr; // the element array
@@ -53,7 +53,7 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpcharlist;
 
-void free_ddpcharlist(ddpcharlist* list);
+void _ddp_free_ddpcharlist(ddpcharlist* list);
 
 typedef struct {
 	ddpstring** arr; // the element array
@@ -61,7 +61,7 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpstringlist;
 
-void free_ddpstringlist(ddpstringlist* list);
+void _ddp_free_ddpstringlist(ddpstringlist* list);
 
 /***** End of generated code *****/
 

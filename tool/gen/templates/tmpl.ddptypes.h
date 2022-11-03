@@ -5,5 +5,5 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } {{ .T }};
 
-void free_{{ .T }}({{ .T }}* list);
+void _ddp_free_{{ .T }}({{ .T }}* list);
 {{end}}

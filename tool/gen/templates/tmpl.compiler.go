@@ -13,6 +13,9 @@ func (c *Compiler) setupListTypes() {
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_{{ .T }}_from_constants", {{ .T }}ptr, ir.NewParam("count", ddpint))
 
+	// frees the given list
+	c.declareInbuiltFunction("_ddp_free_{{ .T }}", void, ir.NewParam("list", {{ .T }}ptr))
+
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	c.declareInbuiltFunction("_ddp_deep_copy_{{ .T }}", {{ .T }}ptr, ir.NewParam("list", {{ .T }}ptr))
