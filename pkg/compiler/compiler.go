@@ -36,6 +36,7 @@ type Compiler struct {
 	cbb          *ir.Block               // current basic block in the ir
 	cf           *ir.Func                // current function
 	scp          *scope                  // current scope in the ast (not in the ir)
+	cfscp        *scope                  // out-most scope of the current function
 	functions    map[string]*funcWrapper // all the global functions
 	latestReturn value.Value             // return of the latest evaluated expression (in the ir)
 }
@@ -56,6 +57,7 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 		cbb:          nil,
 		cf:           nil,
 		scp:          newScope(nil), // global scope
+		cfscp:        nil,
 		functions:    map[string]*funcWrapper{},
 		latestReturn: nil,
 	}
@@ -503,6 +505,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
+		c.cfscp = c.scp
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller of the function is responsible for managing the ref-count of garbage collected values
 		for i := range params {
@@ -525,10 +528,12 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 
 		// modified VisitBlockStmt
 		c.scp = newScope(c.scp) // a block gets its own scope
+		toplevelReturn := false
 		for _, stmt := range d.Body.Statements {
 			c.visitNode(stmt)
 			// on toplevel return statements, ignore anything that follows
 			if _, ok := stmt.(*ast.ReturnStmt); ok {
+				toplevelReturn = true
 				break
 			}
 		}
@@ -537,7 +542,13 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		if c.cbb.Term == nil {
 			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
 		}
-		c.cf, c.cbb, c.scp = fun, block, c.exitScope(c.scp) // restore state before the function (to main)
+		c.cf, c.cbb = fun, block // restore state before the function (to main)
+		if toplevelReturn {
+			c.scp = c.scp.enclosing
+		} else {
+			c.scp = c.exitScope(c.scp)
+		}
+		c.cfscp = nil
 	}
 }
 
@@ -1677,7 +1688,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
 }
 func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.scp = newScope(c.scp)
-	in := c.evaluate(s.In)
+	in := c.scp.addDynamic(c.evaluate(s.In))
 
 	var len value.Value
 	if in.Type() == ddpstrptr {
@@ -1729,10 +1740,22 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 }
 func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
+		c.exitNestedScopes()
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
 		return
 	}
+	val := c.evaluate(s.Value)
+	c.exitNestedScopes()
 	c.commentNode(c.cbb, s, "")
-	c.cbb.NewRet(c.evaluate(s.Value))
+	c.cbb.NewRet(val)
+}
+
+func (c *Compiler) exitNestedScopes() {
+	for scp := c.scp; scp != c.cfscp; scp = c.exitScope(scp) {
+		for i := range scp.dynamics {
+			c.freeDynamic(scp.dynamics[i])
+		}
+	}
+	c.exitScope(c.cfscp)
 }

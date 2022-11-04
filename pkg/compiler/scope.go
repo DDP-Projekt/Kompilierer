@@ -16,6 +16,7 @@ type varwrapper struct {
 type scope struct {
 	enclosing *scope                // enclosing scope, nil if it is the global scope
 	variables map[string]varwrapper // variables in this scope
+	dynamics  []value.Value         // in case of scope-nested returns, these have to be freed
 }
 
 // create a new scope in the enclosing scope
@@ -43,5 +44,10 @@ func (s *scope) lookupVar(name string) varwrapper {
 // add a variable to the scope
 func (scope *scope) addVar(name string, val value.Value, ty types.Type, isRef bool) value.Value {
 	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef}
+	return val
+}
+
+func (scope *scope) addDynamic(val value.Value) value.Value {
+	scope.dynamics = append(scope.dynamics, val)
 	return val
 }
