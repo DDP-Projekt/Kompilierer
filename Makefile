@@ -35,7 +35,7 @@ MAKE = make
 
 all: make_out_dir kddp ddpruntime ddpstdlib
 
-debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug duden
+debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug
 
 kddp:
 	cd $(DDP_DIR) ; $(MAKE)
@@ -54,9 +54,6 @@ ddpstdlib-debug:
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
 	rm -rf $(OUT_DIR)/Duden
 	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
-
-duden:
-	cp -r $(DUDEN_DIR) $(OUT_DIR)
 
 ddpruntime:
 	cd $(RUN_DIR) ; $(MAKE)

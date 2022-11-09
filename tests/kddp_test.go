@@ -100,18 +100,26 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		// get output
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Errorf("\nerror getting combined output: %s\noutput:\n%s", err, out)
+			if testMemory {
+				t.Errorf("\nerror getting combined output: %s\ndumping output", err)
+				if err := os.WriteFile(filepath.Join(path, "output.dump.txt"), out, os.ModePerm); err != nil {
+					t.Errorf("Error dumping output: %s", err)
+				}
+			} else {
+				t.Errorf("\nerror getting combined output: %s\noutput:\n%s", err, out)
+			}
 			return
 		}
 
 		input.Close() // close input file
 
 		if testMemory {
-			now_at_zero := regexp.MustCompile("freed 24 bytes, now at 0 bytesAllocated")
+			now_at_zero := regexp.MustCompile("freed [0-9]+ bytes, now at 0 bytesAllocated")
 			if now_at_zero.Find(out) == nil {
-				now_at_x := regexp.MustCompile("(now at (?P<num_bytes>[0-9]+) bytesAllocated)$")
-				match := now_at_x.FindSubmatch(out)
-				if match != nil {
+				now_at_x := regexp.MustCompile("freed [0-9]+ bytes, now at (?P<num_bytes>[0-9]+) bytesAllocated")
+				matches := now_at_x.FindAllSubmatch(out, -1)
+				if matches != nil {
+					match := matches[len(matches)-1]
 					num_bytes := match[now_at_x.SubexpIndex("num_bytes")]
 					t.Errorf("Program exited with %s bytes still allocated!", num_bytes)
 				} else {

@@ -448,7 +448,7 @@ func (c *Compiler) deepCopyDynamic(value_ptr value.Value) value.Value {
 // decrements the ref-count on all local variables
 // returns the enclosing scope
 func (c *Compiler) exitScope(scp *scope) *scope {
-	for _, v := range c.scp.variables {
+	for _, v := range scp.variables {
 		if isDynamic(v.typ) && !v.isRef {
 			c.freeDynamic(c.cbb.NewLoad(v.typ, v.val))
 		}
@@ -537,18 +537,24 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 				break
 			}
 		}
-		c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
-
-		if c.cbb.Term == nil {
-			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
-		}
-		c.cf, c.cbb = fun, block // restore state before the function (to main)
+		// free the local variables of the function
 		if toplevelReturn {
 			c.scp = c.scp.enclosing
 		} else {
 			c.scp = c.exitScope(c.scp)
 		}
-		c.cfscp = nil
+
+		if c.cbb.Term == nil {
+			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
+		}
+
+		// free the parameters of the function
+		if toplevelReturn {
+			c.scp = c.scp.enclosing
+		} else {
+			c.scp = c.exitScope(c.scp)
+		}
+		c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
 	}
 }
 
