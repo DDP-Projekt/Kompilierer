@@ -37,4 +37,4 @@ jobs:
       run: make test
     
     - name: Run memory tests
-    - run: make clean && make debug && make test-memory
+      run: make clean && make debug && make test-memory
