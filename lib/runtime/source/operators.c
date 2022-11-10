@@ -136,7 +136,7 @@ ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
 
 	new_str->cap = str->cap + num_bytes;
 	new_str->str = reallocate(str->str, str->cap, new_str->cap);
-	memmove(&new_str->str[num_bytes], str->str, str->cap);
+	memmove(&new_str->str[num_bytes], new_str->str, str->cap);
 	memcpy(new_str->str, temp, num_bytes);
 
 	str->cap = 0;
