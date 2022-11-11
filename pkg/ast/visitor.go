@@ -12,44 +12,44 @@ type FullVisitor interface {
 		Declarations
 	*/
 
-	VisitBadDecl(*BadDecl)
-	VisitVarDecl(*VarDecl)
-	VisitFuncDecl(*FuncDecl)
+	BadDeclVisitor
+	VarDeclVisitor
+	FuncDeclVisitor
 
 	/*
 		Expressions
 	*/
 
-	VisitBadExpr(*BadExpr)
-	VisitIdent(*Ident)
-	VisitIndexing(*Indexing)
-	VisitIntLit(*IntLit)
-	VisitFloatLit(*FloatLit)
-	VisitBoolLit(*BoolLit)
-	VisitCharLit(*CharLit)
-	VisitStringLit(*StringLit)
-	VisitListLit(*ListLit)
-	VisitUnaryExpr(*UnaryExpr)
-	VisitBinaryExpr(*BinaryExpr)
-	VisitTernaryExpr(*TernaryExpr)
-	VisitCastExpr(*CastExpr)
-	VisitGrouping(*Grouping)
-	VisitFuncCall(*FuncCall)
+	BadExprVisitor
+	IdentVisitor
+	IndexingVisitor
+	IntLitVisitor
+	FloatLitVisitor
+	BoolLitVisitor
+	CharLitVisitor
+	StringLitVisitor
+	ListLitVisitor
+	UnaryExprVisitor
+	BinaryExprVisitor
+	TernaryExprVisitor
+	CastExprVisitor
+	GroupingVisitor
+	FuncCallVisitor
 
 	/*
 		Statements
 	*/
 
-	VisitBadStmt(*BadStmt)
-	VisitDeclStmt(*DeclStmt)
-	VisitExprStmt(*ExprStmt)
-	VisitAssignStmt(*AssignStmt)
-	VisitBlockStmt(*BlockStmt)
-	VisitIfStmt(*IfStmt)
-	VisitWhileStmt(*WhileStmt)
-	VisitForStmt(*ForStmt)
-	VisitForRangeStmt(*ForRangeStmt)
-	VisitReturnStmt(*ReturnStmt)
+	BadStmtVisitor
+	DeclStmtVisitor
+	ExprStmtVisitor
+	AssignStmtVisitor
+	BlockStmtVisitor
+	IfStmtVisitor
+	WhileStmtVisitor
+	ForStmtVisitor
+	ForRangeStmtVisitor
+	ReturnStmtVisitor
 }
 
 type (

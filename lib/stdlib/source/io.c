@@ -71,7 +71,7 @@ ddpstring* Lese_Zeile() {
 	dstr->cap = 0;
 
 #define MAX_INPUT_LENGTH 255
-#ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
+#ifdef _WIN32 // if stdin is a terminal type on windows
 
 	if (_isatty(_fileno(stdin))) {
 		static CONSOLE_READCONSOLE_CONTROL crc = {
@@ -94,7 +94,7 @@ ddpstring* Lese_Zeile() {
 		if (read == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
 		dstr->str[dstr->cap-1] = '\0';
 	} else {
-#endif
+#endif // if this is on unix or stdin is a not a terminal type
 
 	char buff[MAX_INPUT_LENGTH]; // buffer for input
 	while (true) { // loop if the string is longer than MAX_INPUT_LENGTH
@@ -125,15 +125,15 @@ ddpstring* Lese_Zeile() {
 ddpchar Lese_Buchstabe() {
 #ifdef _WIN32 // TODO: change to ReadFile for redirected input, pipes, files, etc.
 	if (_isatty(_fileno(stdin))) {
-	wchar_t buff[2];
-	char mbStr[5];
-	unsigned long read;
-	if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
-	int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
-	if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
-	mbStr[size] = '\0';
-	flush_stdin();
-	return utf8_string_to_char(mbStr);
+		wchar_t buff[2];
+		char mbStr[5];
+		unsigned long read;
+		if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
+		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
+		if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
+		mbStr[size] = '\0';
+		flush_stdin();
+		return utf8_string_to_char(mbStr);
 	} else {
 #endif
 	char temp[5];

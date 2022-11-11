@@ -54,7 +54,19 @@ func compileToObject(inputFile string, outType OutputType, to io.Writer) (int, e
 	pass.AddLoopDeletionPass()
 	pass.AddLoopUnrollPass()
 	pass.AddStripDeadPrototypesPass()
-	pass.AddPromoteMemoryToRegisterPass() // promote as many allocas as possible to registers
+	pass.AddPromoteMemoryToRegisterPass()
+	pass.AddAggressiveDCEPass()
+	pass.AddArgumentPromotionPass()
+	pass.AddCFGSimplificationPass()
+	pass.AddConstantMergePass()
+	pass.AddDeadArgEliminationPass()
+	pass.AddDeadStoreEliminationPass()
+	pass.AddFunctionInliningPass()
+	pass.AddFunctionAttrsPass()
+	pass.AddGlobalDCEPass()
+	pass.AddGlobalOptimizerPass()
+	pass.AddIndVarSimplifyPass()
+
 	targetMachine.AddAnalysisPasses(pass)
 	pass.Run(mod)
 
