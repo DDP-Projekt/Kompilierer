@@ -81,6 +81,7 @@ void end_runtime() {
 extern int _ddp_ddpmain(); // implicitly defined by the ddp code
 
 // entry point of the final executable (needed by gcc)
+// TODO: outsource this into a seperate object file to allow embedding of DDP in C
 int main(int argc, char** argv) {
 	init_runtime(argc, argv); // initialize the runtime
 	int ret = _ddp_ddpmain(); // run the ddp code
