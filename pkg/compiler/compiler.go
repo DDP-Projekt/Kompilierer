@@ -1592,7 +1592,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) {
 		c.cbb.NewCondBr(cond, body, leaveBlock)
 
 		c.cbb = leaveBlock
-	case token.COUNT_MAL:
+	case token.WIEDERHOLE:
 		counter := c.cf.Blocks[0].NewAlloca(ddpint)
 		c.cbb.NewStore(c.evaluate(s.Condition), counter)
 		condBlock := c.cf.NewBlock("")

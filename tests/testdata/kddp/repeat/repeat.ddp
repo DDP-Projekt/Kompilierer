@@ -1,6 +1,6 @@
 Binde "Duden/Ausgabe" ein.
 
-Mache:
+Wiederhole:
 	Schreibe den Text "hier,".
 5 Mal.
 Schreibe den Buchstaben '\n'.
@@ -9,6 +9,6 @@ Schreibe den Text "hier," 5 Mal.
 Schreibe den Buchstaben '\n'.
 
 Die Zahl i ist 3.
-Mache:
+Wiederhole:
 	Schreibe den Text "hier,".
 i minus 1 Mal.

@@ -130,7 +130,7 @@ Und kann so benutzt werden:
 
 Die Funktion Fülle_Text mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Der Text neuerText ist "".
-	Mache:
+	Wiederhole:
 		Speichere neuerText verkettet mit elm in neuerText.
 	Die Länge von text Mal.
 

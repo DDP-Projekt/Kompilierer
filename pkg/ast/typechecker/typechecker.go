@@ -501,7 +501,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 				conditionType,
 			)
 		}
-	case token.MAL:
+	case token.WIEDERHOLE:
 		if conditionType != token.DDPIntType() {
 			t.err(stmt.Condition.Token(),
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",

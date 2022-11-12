@@ -589,7 +589,7 @@ func (i *Interpreter) VisitWhileStmt(s *ast.WhileStmt) {
 		for i.evaluate(s.Condition).(ddpbool) {
 			i.execute(s.Body)
 		}
-	case token.MAL:
+	case token.WIEDERHOLE:
 		count := i.evaluate(s.Condition).(ddpint)
 		for c := ddpint(0); c < count; c++ {
 			i.execute(s.Body)

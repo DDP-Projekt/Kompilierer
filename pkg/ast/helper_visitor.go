@@ -258,7 +258,7 @@ func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) {
 		vis.VisitWhileStmt(stmt)
 	}
 	switch op := stmt.While.Type; op {
-	case token.SOLANGE, token.COUNT_MAL:
+	case token.SOLANGE, token.WIEDERHOLE:
 		h.visit(stmt.Condition)
 		h.visit(stmt.Body)
 	case token.MACHE:

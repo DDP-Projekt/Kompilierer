@@ -31,7 +31,7 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug duden ddpruntime ddpruntime-debug test benchmark llvm
+.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug ddpruntime ddpruntime-debug test benchmark llvm
 
 all: make_out_dir kddp ddpruntime ddpstdlib
 

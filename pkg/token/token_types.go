@@ -98,6 +98,7 @@ const (
 	VERSCHOBEN
 	LOGISCH
 	MACHE
+	WIEDERHOLE
 	DEM
 	PARAMETER
 	DEN
@@ -235,6 +236,7 @@ var tokenStrings = [...]string{
 	VERSCHOBEN:   "VERSCHOBEN",
 	LOGISCH:      "LOGISCH",
 	MACHE:        "MACHE",
+	WIEDERHOLE:   "WIEDERHOLE",
 	DEM:          "DEM",
 	PARAMETER:    "PARAMETER",
 	DEN:          "DEN",
@@ -352,6 +354,7 @@ var KeywordMap = map[string]TokenType{
 	"kontra":         KONTRA,
 	"logisch":        LOGISCH,
 	"mache":          MACHE,
+	"wiederhole":     WIEDERHOLE,
 	"dem":            DEM,
 	"Parameter":      PARAMETER,
 	"den":            DEN,

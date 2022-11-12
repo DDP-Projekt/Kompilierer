@@ -101,7 +101,7 @@ func (p *Parser) synchronize() {
 		}
 		// these tokens typically begin statements which begin a new node
 		switch p.peek().Type {
-		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON, token.MACHE:
+		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON, token.MACHE, token.WIEDERHOLE:
 			return
 		}
 		p.advance()
@@ -617,7 +617,10 @@ func (p *Parser) statement() ast.Statement {
 		return p.whileStatement()
 	case token.MACHE:
 		p.consume(token.MACHE)
-		return p.doRepeatStmt()
+		return p.doWhileStmt()
+	case token.WIEDERHOLE:
+		p.consume(token.WIEDERHOLE)
+		return p.repeatStmt()
 	case token.FÜR:
 		p.consume(token.FÜR)
 		return p.forStatement()
@@ -644,6 +647,7 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 	count := p.expression()
 	p.consume(token.COUNT_MAL)
 	tok := p.previous()
+	tok.Type = token.WIEDERHOLE
 	p.consume(token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
@@ -900,33 +904,36 @@ func (p *Parser) whileStatement() ast.Statement {
 	}
 }
 
-func (p *Parser) doRepeatStmt() ast.Statement {
+func (p *Parser) doWhileStmt() ast.Statement {
 	Do := p.previous()
 	p.consume(token.COLON)
 	body := p.blockStatement(nil)
-	if p.match(token.SOLANGE) {
-		condition := p.expression()
-		p.consumeN(token.IST, token.DOT)
-		return &ast.WhileStmt{
-			Range: token.Range{
-				Start: token.NewStartPos(Do),
-				End:   token.NewEndPos(p.previous()),
-			},
-			While:     Do,
-			Condition: condition,
-			Body:      body,
-		}
-	}
-	count := p.expression()
-	p.consume(token.COUNT_MAL)
-	tok := p.previous()
-	p.consume(token.DOT)
+	p.consume(token.SOLANGE)
+	condition := p.expression()
+	p.consumeN(token.IST, token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(Do),
+			End:   token.NewEndPos(p.previous()),
+		},
+		While:     Do,
+		Condition: condition,
+		Body:      body,
+	}
+}
+
+func (p *Parser) repeatStmt() ast.Statement {
+	repeat := p.previous()
+	p.consume(token.COLON)
+	body := p.blockStatement(nil)
+	count := p.expression()
+	p.consumeN(token.COUNT_MAL, token.DOT)
+	return &ast.WhileStmt{
+		Range: token.Range{
+			Start: token.NewStartPos(repeat),
 			End:   body.GetRange().End,
 		},
-		While:     tok,
+		While:     repeat,
 		Condition: count,
 		Body:      body,
 	}
