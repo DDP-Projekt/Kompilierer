@@ -378,6 +378,9 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) {
 				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einem Buchstaben umgewandelt werden", lhs)
 			}
 		case token.TEXT:
+			if isOfType(lhs, token.DDPVoidType()) {
+				t.err(expr.Token(), "Ein Ausdruck vom Typ %s kann nicht zu einem Text umgewandelt werden", lhs)
+			}
 		default:
 			t.err(expr.Token(), "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
