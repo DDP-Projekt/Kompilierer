@@ -36,6 +36,6 @@ Und kann so benutzt werden:
 	[Wenn] "<b> eine Zahl" [ist]
 
 Die Funktion IstKontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b als Zahl größer als, oder 0 und b als Zahl kleiner als, oder 32 zurück.
+	Gib b als Zahl größer als, oder 0 und b als Zahl kleiner als, oder 31 zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Kontrollzeichen" [ist]

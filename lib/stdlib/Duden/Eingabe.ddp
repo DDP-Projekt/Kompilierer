@@ -1,9 +1,6 @@
-Die Funktion Lese_Zeile gibt einen Text zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
-	"die nächste Benutzereingabe"
+Binde "Duden/Zeichen" ein.
 
-Die Funktion Lese_Buchstabe gibt einen Buchstaben zurück,
+Die Funktion Lies_Buchstabe gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die nächste Taste"
+	"das nächste Zeichen"
