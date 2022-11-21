@@ -1,6 +1,52 @@
 Binde "Duden/Zeichen" ein.
 
-Die Funktion Lies_Buchstabe gibt einen Buchstaben zurück,
+Der Boolean __war_eof ist falsch.
+
+Die Funktion War_EOF gibt einen Boolean zurück, macht:
+	Gib __war_eof zurück.
+Und kann so benutzt werden:
+	"die Benutzereingabe zu Ende gewesen"
+
+Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
+	Gib nicht __war_eof zurück.
+Und kann so benutzt werden:
+	"die Benutzereingabe nicht vorbei"
+
+Die Funktion __Extern_Lies_Buchstabe mit dem Parameter __war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"das nächste Zeichen"
+	"__nächstes_Zeichen <__war_eof>"
+
+Die Funktion Lies_Buchstabe gibt einen Buchstaben zurück, macht:
+	Gib __nächstes_Zeichen __war_eof zurück.
+Und kann so benutzt werden:
+	"das nächste Zeichen" oder
+	"das naechste Zeichen"
+
+Die Funktion Lies_Token gibt einen Text zurück, macht:
+	[vorangehende Leerstellen überspringen]
+	Der Buchstabe b ist das nächste Zeichen.
+	Solange b ein Leerzeichen oder b ein Kontrollzeichen ist, mache:
+		Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
+		Speichere das nächste Zeichen in b.
+
+	[Text bis Leerstelle Lesen]
+	Der Text token ist "".
+	Solange nicht (b ein Leerzeichen oder b ein Kontrollzeichen) ist, mache:
+		Speichere token verkettet mit b in token.
+		Speichere das nächste Zeichen in b.
+
+	Gib token zurück.
+Und kann so benutzt werden:
+	"der nächste Text" oder
+	"der naechste Text" oder
+	"den nächsten Text" oder
+	"den naechsten Text"
+
+Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
+	__war_eof ist falsch.
+Und kann so benutzt werden:
+	"setzte die Benutzereingabe zurück" oder
+	"setzte die Benutzereingabe zurueck" oder
+	"Setzte die Benutzereingabe zurück" oder
+	"Setzte die Benutzereingabe zurueck"

@@ -1,3 +1,8 @@
+/*
+	This file implements extern functions from
+	Duden/Umbegungsvariablen.ddp
+*/
+
 #include <stdlib.h>
 #include "ddptypes.h"
 #include "memory.h"

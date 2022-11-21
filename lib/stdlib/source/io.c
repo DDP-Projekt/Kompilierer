@@ -1,5 +1,9 @@
 /*
-	defines inbuilt ddp functions to work with io
+	This file implements extern functions from 
+	Duden/Ausgabe.ddp
+	Duden/Eingabe.ddp
+	Duden/Datei_Ausgabe.ddp
+	Duden/Datei_Eingabe.ddp
 */
 #include "ddptypes.h"
 #include "utf8/utf8.h"
@@ -48,12 +52,17 @@ void Schreibe_Text(ddpstring* p1) {
 
 #ifdef _WIN32
 static HANDLE* get_stdin_handle() {
-	static HANDLE stdin_hndl = GetStdHandle(STD_INPUT_HANDLE);
+	static HANDLE stdin_hndl;
+	static bool initialized = false;
+	if (!initialized) {
+		stdin_hndl = GetStdHandle(STD_INPUT_HANDLE);
+		if (stdin_hndl == INVALID_HANDLE_VALUE) runtime_error(1, "GetStdHandle failed with code %ld", GetLastError());
+	}
 	return &stdin_hndl;
 }
 #endif // _WIN32
 
-ddpchar Lies_Buchstabe() {
+ddpchar __Extern_Lies_Buchstabe(ddpboolref __war_eof) {
 #ifdef _WIN32 // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];
@@ -63,13 +72,16 @@ ddpchar Lies_Buchstabe() {
 		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
 		if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
 		mbStr[size] = '\0';
-		return utf8_string_to_char(mbStr);
+		ddpchar ch = utf8_string_to_char(mbStr);
+		if (ch == 26) *__war_eof = true; // set eof for ctrl+Z
+		return ch;
 	} else {
 #endif
 	char temp[5];
 	temp[0] = getchar();
 	if (temp[0] == EOF)  {
 		clearerr(stdin);
+		*__war_eof = true;
 		return 0;
 	}
 	int i = utf8_indicated_num_bytes(temp[0]);

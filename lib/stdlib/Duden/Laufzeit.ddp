@@ -21,3 +21,15 @@ ist in "libddpruntime.a" definiert
 und kann so benutzt werden:
 	"die Befehlszeilenargumente" oder 
 	"den Befehlszeilenargumenten"
+
+["Windows" oder "Linux"]
+Die Funktion Betriebssystem gibt einen Text zurück,
+ist in "libddpruntime.a" definiert
+und kann so benutzt werden:
+	"das Betriebssystem"
+
+[Cs isatty]
+Die Funktion Ist_Befehlszeile gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Benutzereingabe eine Befehlszeile"

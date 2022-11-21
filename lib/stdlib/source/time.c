@@ -1,5 +1,6 @@
 /*
-	defines inbuilt ddp functions to work with time
+	This file implements extern functions from 
+	Duden/Zeit.ddp
 */
 #include <time.h>
 #include "ddptypes.h"

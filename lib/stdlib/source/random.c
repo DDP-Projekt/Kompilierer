@@ -1,3 +1,7 @@
+/*
+	This file implements extern functions from 
+	Duden/Zufall.ddp
+*/
 #include "ddptypes.h"
 #include "mt19937-64.h"
 #include <math.h>
