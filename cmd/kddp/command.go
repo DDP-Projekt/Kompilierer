@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
@@ -211,14 +212,21 @@ func (cmd *BuildCommand) Run() error {
 		if rnge.Start.Line == rnge.End.Line {
 			line := lines[rnge.Start.Line-1]
 			fmt.Printf("Fehler in %s (Z %d, S %d)\n\n", err.File(), rnge.Start.Line, rnge.Start.Column)
-			fmt.Printf("|  %s\n", line)
-			for i := 0; i < int(rnge.Start.Column-1+3); i++ {
+			head := fmt.Sprintf("%d |  ", rnge.Start.Line)
+			fmt.Printf("%s%s\n", head, line)
+			for i := 0; i < int(rnge.Start.Column-1+uint(utf8.RuneCountInString(head))); i++ {
 				fmt.Print(" ")
 			}
 			for i := int(rnge.Start.Column); i < int(rnge.End.Column); i++ {
 				fmt.Print("^")
 			}
 			fmt.Printf("\n%s.\n\n", err.Msg())
+			for i := 0; i < utf8.RuneCountInString(line); i++ {
+				fmt.Print("-")
+			}
+			fmt.Print("\n\n")
+		} else {
+			ddperror.DefaultHandler(err)
 		}
 	}
 
