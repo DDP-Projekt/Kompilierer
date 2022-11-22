@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
@@ -196,14 +197,39 @@ func (cmd *BuildCommand) Run() error {
 		return err
 	}
 
+	src, err := os.ReadFile(cmd.filePath)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(src), "\n")
+	errorHandler := func(err ddperror.Error) {
+		if err.File() != cmd.filePath {
+			return
+		}
+
+		rnge := err.GetRange()
+		if rnge.Start.Line == rnge.End.Line {
+			line := lines[rnge.Start.Line-1]
+			fmt.Printf("Fehler in %s (Z %d, S %d)\n\n", err.File(), rnge.Start.Line, rnge.Start.Column)
+			fmt.Printf("|  %s\n", line)
+			for i := 0; i < int(rnge.Start.Column-1+3); i++ {
+				fmt.Print(" ")
+			}
+			for i := int(rnge.Start.Column); i < int(rnge.End.Column); i++ {
+				fmt.Print("^")
+			}
+			fmt.Printf("\n%s.\n\n", err.Msg())
+		}
+	}
+
 	print("Kompiliere DDP-Quellcode nach %s", cmd.outPath)
 	result, err := compiler.Compile(compiler.Options{
 		FileName:                cmd.filePath,
-		Source:                  nil,
+		Source:                  src,
 		From:                    nil,
 		To:                      to,
 		OutputType:              compOutType,
-		ErrorHandler:            ddperror.DefaultHandler,
+		ErrorHandler:            errorHandler,
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 	})
