@@ -8,7 +8,7 @@ import (
 
 // interpret the given ddp file
 func InterpretFile(path string, errorHandler ddperror.Handler) error {
-	Ast, err := parser.ParseFile(path, errorHandler)
+	Ast, err := parser.Parse(parser.Options{FileName: path, ErrorHandler: errorHandler})
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func InterpretFile(path string, errorHandler ddperror.Handler) error {
 
 // interpret the given ddp source code
 func InterpretSource(name string, src []byte, errorHandler ddperror.Handler) error {
-	Ast, err := parser.ParseSource(name, src, errorHandler)
+	Ast, err := parser.Parse(parser.Options{FileName: name, Source: src, ErrorHandler: errorHandler})
 	if err != nil {
 		return err
 	}

@@ -67,7 +67,7 @@ func (cmd *InterpretCommand) Init(args []string) error {
 
 func (cmd *InterpretCommand) Run() error {
 	// parse the input file into a ast
-	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
+	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.DefaultHandler})
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
+	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.DefaultHandler})
 	if err != nil {
 		return err
 	}
