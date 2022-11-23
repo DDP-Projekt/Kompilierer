@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
@@ -202,33 +200,8 @@ func (cmd *BuildCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	lines := strings.Split(string(src), "\n")
-	errorHandler := func(err ddperror.Error) {
-		if err.File() != cmd.filePath {
-			return
-		}
 
-		rnge := err.GetRange()
-		if rnge.Start.Line == rnge.End.Line {
-			line := lines[rnge.Start.Line-1]
-			fmt.Printf("Fehler in %s (Z %d, S %d)\n\n", err.File(), rnge.Start.Line, rnge.Start.Column)
-			head := fmt.Sprintf("%d |  ", rnge.Start.Line)
-			fmt.Printf("%s%s\n", head, line)
-			for i := 0; i < int(rnge.Start.Column-1+uint(utf8.RuneCountInString(head))); i++ {
-				fmt.Print(" ")
-			}
-			for i := int(rnge.Start.Column); i < int(rnge.End.Column); i++ {
-				fmt.Print("^")
-			}
-			fmt.Printf("\n%s.\n\n", err.Msg())
-			for i := 0; i < utf8.RuneCountInString(line); i++ {
-				fmt.Print("-")
-			}
-			fmt.Print("\n\n")
-		} else {
-			ddperror.DefaultHandler(err)
-		}
-	}
+	errorHandler := ddperror.MakeAdvancedHandler(cmd.filePath, src, os.Stdout)
 
 	print("Kompiliere DDP-Quellcode nach %s", cmd.outPath)
 	result, err := compiler.Compile(compiler.Options{
@@ -323,7 +296,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.DefaultHandler})
+	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stdout)})
 	if err != nil {
 		return err
 	}
