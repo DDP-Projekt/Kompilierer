@@ -1524,11 +1524,19 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 }
 func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) {
 	c.scp = newScope(c.scp) // a block gets its own scope
+	wasReturn := false
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
+		if _, ok := stmt.(*ast.ReturnStmt); ok {
+			wasReturn = true
+			break
+		}
 	}
-
-	c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
+	if wasReturn {
+		c.scp = c.scp.enclosing
+	} else {
+		c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
+	}
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If

@@ -1,12 +1,14 @@
 package tests
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 )
 
 func TestKDDP(t *testing.T) {
@@ -75,9 +77,14 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
 
 		// build dpp file
-		cmd := exec.Command("../build/DDP/bin/kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
+		ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
+		defer cf()
+		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
 		// get build output
 		if out, err := cmd.CombinedOutput(); err != nil {
+			if err := ctx.Err(); err != nil {
+				t.Errorf("context error: %s", err)
+			}
 			// error if failed
 			t.Errorf("compilation failed: %s\ncompiler output: %s", err, string(out))
 			return
@@ -87,10 +94,13 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		}
 
 		// run ddp executeable
-		cmd = exec.Command(changeExtension(filename, ".exe"))
+		ctx, cf = context.WithTimeout(context.Background(), time.Second*10)
+		defer cf()
+		cmd = exec.CommandContext(ctx, changeExtension(filename, ".exe"))
 
 		// read input
 		input, err := os.Open(filepath.Join(path, "input.txt"))
+		defer input.Close() // close input file
 		// if input.txt exists
 		if err == nil {
 			// replace stdin with input.txt
@@ -100,6 +110,9 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		// get output
 		out, err := cmd.CombinedOutput()
 		if err != nil {
+			if err := ctx.Err(); err != nil {
+				t.Errorf("context error: %s", err)
+			}
 			if testMemory {
 				t.Errorf("\nerror getting combined output: %s\ndumping output", err)
 				if err := os.WriteFile(filepath.Join(path, "output.dump.txt"), out, os.ModePerm); err != nil {
@@ -110,8 +123,6 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 			}
 			return
 		}
-
-		input.Close() // close input file
 
 		if testMemory {
 			now_at_zero := regexp.MustCompile("freed [0-9]+ bytes, now at 0 bytesAllocated")

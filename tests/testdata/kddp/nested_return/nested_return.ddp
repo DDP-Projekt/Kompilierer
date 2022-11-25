@@ -1,0 +1,12 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion nested_return gibt einen Text zurück, macht:
+	Schreibe "nested_return" auf eine Zeile.
+	Wenn wahr ist, dann:
+		Der Text local ist "ein lokaler Text".
+		Gib local zurück.
+	Gib "dummy_return" zurück.
+Und kann so benutzt werden:
+	"nested_return"
+
+Schreibe nested_return auf eine Zeile.

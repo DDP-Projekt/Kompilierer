@@ -63,6 +63,7 @@ static HANDLE* get_stdin_handle() {
 #endif // _WIN32
 
 ddpchar __Extern_Lies_Buchstabe(ddpboolref __war_eof) {
+	DBGLOG("__Extern_Lies_Buchstabe");
 #ifdef _WIN32 // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];
