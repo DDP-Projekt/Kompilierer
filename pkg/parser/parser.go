@@ -396,9 +396,9 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	funcAliases := make([]ast.FuncAlias, 0)
 	for _, v := range aliases {
 		// scan the raw alias withouth the ""
-		if alias, err := scanner.ScanAlias(v, p.errorHandler); err != nil {
-			perr(v, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
-		} else {
+		didError := false
+		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				perr(v, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
