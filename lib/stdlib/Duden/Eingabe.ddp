@@ -1,4 +1,4 @@
-Binde "Duden/Zeichen" ein.
+Binde "Duden/Texte" ein.
 
 Der Boolean __war_eof ist falsch.
 
@@ -38,10 +38,8 @@ Die Funktion Lies_Token gibt einen Text zurück, macht:
 
 	Gib token zurück.
 Und kann so benutzt werden:
-	"der nächste Text" oder
-	"der naechste Text" oder
-	"den nächsten Text" oder
-	"den naechsten Text"
+	"die nächste Eingabe" oder
+	"die naechste Eingabe"
 
 Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
 	__war_eof ist falsch.
@@ -50,3 +48,41 @@ Und kann so benutzt werden:
 	"setzte die Benutzereingabe zurueck" oder
 	"Setzte die Benutzereingabe zurück" oder
 	"Setzte die Benutzereingabe zurueck"
+
+
+
+Der Text __Eingabe_Puffer ist "".
+
+Die Funktion Lies_Token_Gepuffert gibt einen Text zurück, macht:
+	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, dann:
+		Der Text Rückgabe ist __Eingabe_Puffer.
+		__Eingabe_Puffer ist "".
+		Gib Rückgabe zurück.
+
+	Wenn die Benutzereingabe nicht vorbei ist, gib die nächste Eingabe zurück.
+	Gib "" zurück.
+Und kann so benutzt werden:
+	"der nächste Text" oder
+	"den nächsten Text" oder
+	"der naechste Text" oder
+	"den naechsten Text"
+
+Die Funktion Lies_Zahl_Gepuffert gibt eine Zahl zurück, macht:
+	Gib den nächsten Text als Zahl zurück.
+Und kann so benutzt werden:
+	"die nächste Zahl" oder
+	"die naechste Zahl"
+
+Die Funktion Hat_Token gibt einen Boolean zurück, macht:
+	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, gib wahr zurück.
+	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
+	Speichere den nächsten Text in __Eingabe_Puffer.
+	Gib [wahr wenn] die Länge von __Eingabe_Puffer größer als 0 [ist] zurück.
+Und kann so benutzt werden:
+	"eine Eingabe vorhanden"
+
+Die Funktion Hat_Zahl gibt einen Boolean zurück, macht:
+	Gib eine Eingabe vorhanden und __Eingabe_Puffer eine Zahl [ist] zurück.
+Und kann so benutzt werden:
+	"die nächste Eingabe eine Zahl" oder
+	"die naechste Eingabe eine Zahl"
