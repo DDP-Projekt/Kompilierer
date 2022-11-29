@@ -31,36 +31,36 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp ddpstdlib ddpstdlib-debug ddpruntime ddpruntime-debug test benchmark llvm
+.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test benchmark llvm
 
-all: make_out_dir kddp ddpruntime ddpstdlib
+all: make_out_dir kddp runtime stdlib
 
-debug: make_out_dir kddp ddpruntime-debug ddpstdlib-debug
+debug: make_out_dir kddp runtime-debug stdlib-debug
 
 kddp:
 	cd $(DDP_DIR) ; $(MAKE)
 	mv -f $(DDP_DIR)/build/$(DDP_BIN) $(DDP_DIR_OUT)
 
-ddpstdlib:
+stdlib:
 	cd $(STD_DIR) ; $(MAKE)
 	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
 	rm -rf $(OUT_DIR)/Duden
 	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
-ddpstdlib-debug:
+stdlib-debug:
 	cd $(STD_DIR) ; $(MAKE) debug
 	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
 	rm -rf $(OUT_DIR)/Duden
 	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
-ddpruntime:
+runtime:
 	cd $(RUN_DIR) ; $(MAKE)
 	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
 	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
 
-ddpruntime-debug:
+runtime-debug:
 	cd $(RUN_DIR) ; $(MAKE) debug
 	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
 	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
