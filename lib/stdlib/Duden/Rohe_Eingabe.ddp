@@ -1,0 +1,31 @@
+Binde "Duden/Texte" ein.
+
+Der Boolean __war_eof ist falsch.
+
+Die Funktion War_EOF gibt einen Boolean zurück, macht:
+	Gib __war_eof zurück.
+Und kann so benutzt werden:
+	"die Benutzereingabe zu Ende gewesen"
+
+Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
+	Gib nicht __war_eof zurück.
+Und kann so benutzt werden:
+	"die Benutzereingabe nicht vorbei"
+
+Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
+	__war_eof ist falsch.
+Und kann so benutzt werden:
+	"setzte die Benutzereingabe zurück" oder
+	"setzte die Benutzereingabe zurueck" oder
+	"Setzte die Benutzereingabe zurück" oder
+	"Setzte die Benutzereingabe zurueck"
+
+Die Funktion __Extern_Lies_Buchstabe mit dem Parameter __war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"__nächstes_Zeichen <__war_eof>"
+
+Die Funktion __Lies_Buchstabe_Roh gibt einen Buchstaben zurück, macht:
+	Gib __nächstes_Zeichen __war_eof zurück.
+Und kann so benutzt werden:
+	"__nächstes_Zeichen"

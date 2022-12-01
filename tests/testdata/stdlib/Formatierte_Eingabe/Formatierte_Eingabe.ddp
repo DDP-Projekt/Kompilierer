@@ -1,8 +1,0 @@
-Binde "Duden/Ausgabe" ein.
-Binde "Duden/Formatierte_Eingabe" ein.
-
-Solange eine Eingabe vorhanden ist, mache:
-    Wenn die nächste Eingabe eine Zahl ist, dann:
-        Schreibe "Zahl: ".
-        Schreibe (die nächste Zahl) auf eine Zeile.
-    Sonst Schreibe (den nächsten Text) auf eine Zeile.
