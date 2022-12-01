@@ -1,7 +1,10 @@
 Binde "Duden/Eingabe" ein.
 Binde "Duden/Ausgabe" ein.
 
-Schreibe (eine Eingabe vorhanden) auf eine Zeile.
-Schreibe (den nächsten Text) auf eine Zeile.
-Schreibe (die nächste Eingabe eine Zahl) auf eine Zeile.
-Schreibe (die nächste Zahl) auf eine Zeile.
+Schreibe (die nächste Zeile) auf eine Zeile.
+Schreibe (die nächste Zeile) auf eine Zeile.
+Schreibe (die nächste Zeile) auf eine Zeile.
+Schreibe (die nächste Zeile) auf eine Zeile.
+
+Solange die Benutzereingabe nicht vorbei ist, mache:
+    Schreibe (das nächste Zeichen).
