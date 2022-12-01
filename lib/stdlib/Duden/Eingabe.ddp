@@ -41,6 +41,19 @@ Und kann so benutzt werden:
 	"die nächste Eingabe" oder
 	"die naechste Eingabe"
 
+Die Funktion Lies_Zeile gibt einen Text zurück, macht:
+	Der Text zeile ist "".
+	Der Buchstabe b ist das nächste Zeichen.
+	Solange b ungleich '\n' und die Benutzereingabe nicht vorbei ist, mache:
+		Speichere zeile verkettet mit b in zeile.
+		Speichere das nächste Zeichen in b.
+
+	Gib zeile zurück.
+Und kann so benutzt werden:
+	"die nächste Zeile" oder
+	"die naechste Zeile"
+
+
 Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
 	__war_eof ist falsch.
 Und kann so benutzt werden:
@@ -72,6 +85,12 @@ Die Funktion Lies_Zahl_Gepuffert gibt eine Zahl zurück, macht:
 Und kann so benutzt werden:
 	"die nächste Zahl" oder
 	"die naechste Zahl"
+
+Die Funktion Lies_Kommazahl_Gepuffert gibt eine Kommazahl zurück, macht:
+	Gib den nächsten Text als Kommazahl zurück.
+Und kann so benutzt werden:
+	"die nächste Kommazahl" oder
+	"die naechste Kommazahl"
 
 Die Funktion Hat_Token gibt einen Boolean zurück, macht:
 	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, gib wahr zurück.
