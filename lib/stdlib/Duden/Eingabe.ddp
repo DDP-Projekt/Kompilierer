@@ -169,7 +169,7 @@ Die Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
 		Wenn __Gepufferter_Buchstabe als Zahl ungleich 0 ist, Füge __Gepufferter_Buchstabe an zeile an.
 		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 	Sonst:
-		Solange __Gepufferter_Buchstabe ein Leerzeichen oder __Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
+		Solange __Gepufferter_Buchstabe ungleich '\n' und (__Gepufferter_Buchstabe ein Leerzeichen oder __Gepufferter_Buchstabe ein Kontrollzeichen) ist, mache:
 			Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
 			Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 
