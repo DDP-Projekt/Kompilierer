@@ -153,6 +153,21 @@ func (s *Scanner) NextToken() token.Token {
 		return s.string()
 	case '\'':
 		return s.char()
+	case '[':
+		bracketCount := 1
+
+		for bracketCount > 0 && !s.atEnd() {
+			switch s.peek() {
+			case '[':
+				bracketCount++
+			case ']':
+				bracketCount--
+			case '\n':
+				s.increaseLineBeforeAdvance()
+			}
+			s.advance()
+		}
+		return s.newToken(token.COMMENT)
 	case '<':
 		if s.aliasMode() {
 			return s.aliasParameter()
@@ -382,21 +397,6 @@ func (s *Scanner) skipWhitespace() {
 		case '\n':
 			s.increaseLineBeforeAdvance()
 			s.advance()
-		case '[':
-			s.advance()
-			bracketCount := 1
-
-			for bracketCount > 0 && !s.atEnd() {
-				switch s.peek() {
-				case '[':
-					bracketCount++
-				case ']':
-					bracketCount--
-				case '\n':
-					s.increaseLineBeforeAdvance()
-				}
-				s.advance()
-			}
 		default:
 			return
 		}

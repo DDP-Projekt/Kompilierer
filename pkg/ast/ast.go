@@ -10,7 +10,8 @@ import (
 
 // represents an Abstract Syntax Tree for a token.DDP program
 type Ast struct {
-	Statements []Statement // the top level statements
+	Statements []Statement   // the top level statements
+	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
 	Faulty     bool   // set if the ast has any errors (doesn't matter what from which phase they came)
 	File       string // the file from which this ast was produced
@@ -74,13 +75,15 @@ type (
 
 	VarDecl struct {
 		Range   token.Range
-		Type    ddptypes.Type
-		Name    token.Token // identifier name
-		InitVal Expression  // initial value
+		Comment *token.Token  // optional comment (also contained in ast.Comments)
+		Type    ddptypes.Type // type of the variable
+		Name    token.Token   // identifier name
+		InitVal Expression    // initial value
 	}
 
 	FuncDecl struct {
 		Range      token.Range
+		Comment    *token.Token             // optional comment (also contained in ast.Comments)
 		Tok        token.Token              // Die
 		Name       token.Token              // identifier name
 		ParamNames []token.Token            // x, y und z

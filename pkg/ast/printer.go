@@ -2,8 +2,14 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+)
+
+const (
+	commentCutset = "[ \r\n]"
+	commentFmt    = " [\n%s%.*s\n]"
 )
 
 // simple visitor to print an AST
@@ -60,13 +66,24 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
-	pr.parenthesizeNode(fmt.Sprintf("VarDecl[%s]", decl.Name.Literal), decl.InitVal)
+	msg := fmt.Sprintf("VarDecl[%s]", decl.Name.Literal)
+	if decl.Comment != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	}
+	pr.parenthesizeNode(msg, decl.InitVal)
 }
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
+	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, literals(decl.ParamNames), decl.ParamTypes, decl.Type)
 	if IsExternFunc(decl) {
-		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s] Extern", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type))
+		msg += " Extern"
+	}
+	if decl.Comment != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	}
+	if IsExternFunc(decl) {
+		pr.parenthesizeNode(msg)
 	} else {
-		pr.parenthesizeNode(fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, tokenSlice(decl.ParamNames).literals(), decl.ParamTypes, decl.Type), decl.Body)
+		pr.parenthesizeNode(msg, decl.Body)
 	}
 }
 
@@ -171,9 +188,7 @@ func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) {
 	}
 }
 
-type tokenSlice []token.Token
-
-func (tokens tokenSlice) literals() []string {
+func literals(tokens []token.Token) []string {
 	result := make([]string, 0, len(tokens))
 	for _, v := range tokens {
 		result = append(result, v.Literal)

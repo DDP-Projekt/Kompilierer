@@ -11,6 +11,22 @@ type Position struct {
 	Column uint // 1-based Column index in the corresponding file
 }
 
+// wether p comes before pos
+func (p Position) IsBefore(pos Position) bool {
+	if p.Line < pos.Line {
+		return true
+	}
+	return p.Line == pos.Line && p.Column < pos.Column
+}
+
+// wether p comes after pos
+func (p Position) IsBehind(pos Position) bool {
+	if p.Line > pos.Line {
+		return true
+	}
+	return p.Line == pos.Line && p.Column > pos.Column
+}
+
 // a range in a ddp source-file
 type Range struct {
 	Start Position // First Character position in the Range

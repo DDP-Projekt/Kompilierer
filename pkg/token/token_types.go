@@ -5,6 +5,7 @@ const (
 	EOF
 	IDENTIFIER
 	ALIAS_PARAMETER // <x> only found in function aliases
+	COMMENT         // [...]
 
 	INT    // 1 2
 	FLOAT  // 2,2 3,4
@@ -142,7 +143,8 @@ var tokenStrings = [...]string{
 	ILLEGAL:         "ILLEGAL",
 	EOF:             "EOF",
 	IDENTIFIER:      "ein Name",
-	ALIAS_PARAMETER: "ALIAS_PARAMETER",
+	ALIAS_PARAMETER: "ein Alias Parameter",
+	COMMENT:         "ein Kommentar",
 
 	INT:    "eine Zahl",
 	FLOAT:  "eine Kommazahl",

@@ -19,7 +19,8 @@ import (
 
 // holds state when parsing a .ddp file into an AST
 type Parser struct {
-	tokens       []token.Token    // the tokens to parse
+	tokens       []token.Token    // the tokens to parse (without comments)
+	comments     []token.Token    // all the comments from the original tokens slice
 	cur          int              // index of the current token
 	errorHandler ddperror.Handler // a function to which errors are passed
 
@@ -47,9 +48,21 @@ func New(tokens []token.Token, errorHandler ddperror.Handler) *Parser {
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
+	pTokens := make([]token.Token, 0, len(tokens))
+	pComments := make([]token.Token, 0)
+	// filter the comments out
+	for i := range tokens {
+		if tokens[i].Type == token.COMMENT {
+			pComments = append(pComments, tokens[i])
+		} else {
+			pTokens = append(pTokens, tokens[i])
+		}
+	}
+
 	aliases := make([]ast.FuncAlias, 0)
 	parser := &Parser{
-		tokens:       tokens,
+		tokens:       pTokens,
+		comments:     pComments,
 		cur:          0,
 		errorHandler: errorHandler,
 		funcAliases:  aliases,
@@ -195,6 +208,11 @@ func (p *Parser) assignRhs() ast.Expression {
 
 func (p *Parser) varDeclaration() ast.Declaration {
 	begin := p.peekN(-2)
+	comment := p.commentBeforePos(begin.Range.Start, begin.File)
+	// ignore the comment if it is not next to or directly above the declaration
+	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
+		comment = nil
+	}
 	p.decrease()
 	typ := p.parseType()
 
@@ -232,8 +250,13 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	}
 
 	p.consume(token.DOT)
+	// prefer trailing comments as long as they are on the same line
+	if trailingComment := p.commentAfterPos(p.previous().Range.End, p.previous().File); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
+		comment = trailingComment
+	}
 	return &ast.VarDecl{
 		Range:   token.NewRange(begin, p.previous()),
+		Comment: comment,
 		Type:    typ,
 		Name:    name,
 		InitVal: expr,
@@ -258,6 +281,11 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	begin := p.peekN(-2)
+	comment := p.commentBeforePos(begin.Range.Start, begin.File)
+	// ignore the comment if it is not next to or directly above the declaration
+	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
+		comment = nil
+	}
 	Funktion := p.previous() // save the token
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
@@ -439,6 +467,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	decl := &ast.FuncDecl{
 		Range:      token.NewRange(begin, p.previous()),
+		Comment:    comment,
 		Tok:        begin,
 		Name:       name,
 		ParamNames: paramNames,
@@ -2207,6 +2236,44 @@ func (p *Parser) decrease() {
 	if p.cur > 0 {
 		p.cur--
 	}
+}
+
+// retrives the last comment which comes before pos
+// if their are no comments before pos nil is returned
+func (p *Parser) commentBeforePos(pos token.Position, file string) (result *token.Token) {
+	if len(p.comments) == 0 {
+		return nil
+	}
+
+	for i := range p.comments {
+		if p.comments[i].File != file {
+			continue
+		}
+		if p.comments[i].Range.End.IsBefore(pos) {
+			result = &p.comments[i]
+		} else {
+			return result
+		}
+	}
+	return result
+}
+
+// retrives the first comment which comes after pos
+// if their are no comments after pos nil is returned
+func (p *Parser) commentAfterPos(pos token.Position, file string) (result *token.Token) {
+	if len(p.comments) == 0 {
+		return nil
+	}
+
+	for i := range p.comments {
+		if p.comments[i].File != file {
+			continue
+		}
+		if p.comments[i].Range.End.IsBehind(pos) {
+			return &p.comments[i]
+		}
+	}
+	return result
 }
 
 // check if a slice of tokens contains a literal
