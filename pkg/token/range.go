@@ -7,14 +7,14 @@ package token
 // Line and Column are 1-based
 // and measured in utf8-characters not bytes
 type Position struct {
-	Line   uint
-	Column uint
+	Line   uint // 1-based Line index in the corresponding file
+	Column uint // 1-based Column index in the corresponding file
 }
 
 // a range in a ddp source-file
 type Range struct {
-	Start Position
-	End   Position
+	Start Position // First Character position in the Range
+	End   Position // Last Character position in the Range
 }
 
 // creates a new range from the first character of begin
@@ -26,10 +26,12 @@ func NewRange(begin, end Token) Range {
 	}
 }
 
+// Get the starting position of a Token
 func NewStartPos(tok Token) Position {
 	return tok.Range.Start
 }
 
+// Get the ending position of a Token
 func NewEndPos(tok Token) Position {
 	return tok.Range.End
 }

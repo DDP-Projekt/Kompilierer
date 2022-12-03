@@ -15,13 +15,3 @@ type Error interface {
 	Msg() string           // the error message
 	File() string          // the filepath in which the error occured
 }
-
-type Handler func(Error) // used by most ddp packages
-
-// Prints the error on a line
-func DefaultHandler(err Error) {
-	fmt.Printf("Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
-}
-
-// does nothing
-func EmptyHandler(Error) {}

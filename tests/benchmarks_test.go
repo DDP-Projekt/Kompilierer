@@ -66,9 +66,9 @@ func BenchmarkParser(b *testing.B) {
 
 		b.Run(d.Name(), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				Ast, err := parser.ParseFile(ddpPath, func(err ddperror.Error) {
+				Ast, err := parser.Parse(parser.Options{FileName: ddpPath, ErrorHandler: func(err ddperror.Error) {
 					b.Errorf("Parser error: [%s %d:%d] %s", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
-				})
+				}})
 				if err != nil {
 					b.Errorf("Parser returned an error: %s", err)
 				}

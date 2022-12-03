@@ -14,7 +14,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/interpreter"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
 )
 
@@ -28,74 +27,10 @@ type Command interface {
 
 var commands = []Command{
 	NewHelpCommand(),
-	// NewInterpretCommand(),
 	NewBuildCommand(),
 	NewParseCommand(),
 	NewVersionCommand(),
 	NewRunCommand(),
-}
-
-// $kddp interpret walks the parsed ast and executes it
-// it is meant mainly for testing
-type InterpretCommand struct {
-	fs       *flag.FlagSet // FlagSet for the arguments
-	filePath string        // path to the input file
-	outPath  string        // path to the output file for stdout/stderr, may be empty
-}
-
-func NewInterpretCommand() *InterpretCommand {
-	return &InterpretCommand{
-		fs: flag.NewFlagSet("interpret", flag.ExitOnError),
-	}
-}
-
-func (cmd *InterpretCommand) Init(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("interpret requires a file name")
-	}
-
-	// first argument must be the input file
-	cmd.filePath = args[0]
-	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("the provided file is not a .ddp file")
-	}
-
-	// parse command flags
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "provide a optional filepath where the output is written to")
-	return cmd.fs.Parse(args[1:])
-}
-
-func (cmd *InterpretCommand) Run() error {
-	// parse the input file into a ast
-	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
-	if err != nil {
-		return err
-	}
-
-	interpreter := interpreter.New(ast, ddperror.DefaultHandler) // create the interpreter with the parsed ast
-
-	// if a output file was specified, we set the interpreters stdout and stderr
-	if cmd.outPath != "" {
-		file, err := os.OpenFile(cmd.outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("unable to open the output file")
-		}
-		defer file.Close()
-		interpreter.Stdout = file
-		interpreter.Stderr = file
-	}
-
-	return interpreter.Interpret() // interpret the ast
-}
-
-func (cmd *InterpretCommand) Name() string {
-	return cmd.fs.Name()
-}
-
-func (cmd *InterpretCommand) Usage() string {
-	return `interpret <filename> <options>: interprets the given .ddp file
-options:
-	-o <filepath>: writes the programs stdout to the given file`
 }
 
 // $kddp help prints some help information
@@ -261,14 +196,21 @@ func (cmd *BuildCommand) Run() error {
 		return err
 	}
 
+	src, err := os.ReadFile(cmd.filePath)
+	if err != nil {
+		return err
+	}
+
+	errorHandler := ddperror.MakeAdvancedHandler(cmd.filePath, src, os.Stdout)
+
 	print("Kompiliere DDP-Quellcode nach %s", cmd.outPath)
 	result, err := compiler.Compile(compiler.Options{
 		FileName:                cmd.filePath,
-		Source:                  nil,
+		Source:                  src,
 		From:                    nil,
 		To:                      to,
 		OutputType:              compOutType,
-		ErrorHandler:            ddperror.DefaultHandler,
+		ErrorHandler:            errorHandler,
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 	})
@@ -354,7 +296,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.ParseFile(cmd.filePath, ddperror.DefaultHandler)
+	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stdout)})
 	if err != nil {
 		return err
 	}

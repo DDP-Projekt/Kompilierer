@@ -48,6 +48,15 @@ type Options struct {
 	DeleteIntermediateFiles bool
 }
 
+func (options *Options) ToParserOptions() parser.Options {
+	return parser.Options{
+		FileName:     options.FileName,
+		Source:       options.Source,
+		Tokens:       nil,
+		ErrorHandler: options.ErrorHandler,
+	}
+}
+
 // the result of a compilation
 type Result struct {
 	// a set which contains all files needed
@@ -64,7 +73,7 @@ func validateOptions(options *Options) error {
 		return errors.New("Kein Quellcode gegeben")
 	}
 	if options.ErrorHandler == nil {
-		options.ErrorHandler = func(ddperror.Error) {}
+		options.ErrorHandler = ddperror.EmptyHandler
 	}
 	if options.Log == nil {
 		options.Log = func(string, ...any) {}
@@ -84,18 +93,13 @@ func Compile(options Options) (*Result, error) {
 	// compile the ddp-source into an Ast
 	var Ast *ast.Ast
 	options.Log("Parse DDP Quellcode")
-	if options.Source != nil {
-		Ast, err = parser.ParseSource(options.FileName, options.Source, options.ErrorHandler)
-	} else if options.From != nil {
-		var src []byte
-		src, err = io.ReadAll(options.From)
+	if options.Source == nil && options.From != nil {
+		options.Source, err = io.ReadAll(options.From)
 		if err != nil {
 			return nil, err
 		}
-		Ast, err = parser.ParseSource(options.FileName, src, options.ErrorHandler)
-	} else {
-		Ast, err = parser.ParseFile(options.FileName, options.ErrorHandler)
 	}
+	Ast, err = parser.Parse(options.ToParserOptions())
 
 	if err != nil {
 		return nil, err

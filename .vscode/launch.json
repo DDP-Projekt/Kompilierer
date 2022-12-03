@@ -1,0 +1,20 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Launch build/test.ddp",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/kddp/",
+			"args": [
+				"kompiliere",
+				"${workspaceFolder}/build/test.ddp",
+				"-o",
+				"${workspaceFolder}/build/test.exe",
+				"--wortreich",
+				"--nichts_loeschen"
+			]
+		}
+	]
+}
