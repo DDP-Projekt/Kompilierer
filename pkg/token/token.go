@@ -1,17 +1,21 @@
 package token
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
+)
 
 type TokenType int
 
 // a single ddp token
 type Token struct {
-	Type      TokenType // type of the token
-	Literal   string    // the literal from which it was scanned
-	Indent    uint      // how many levels it is indented
-	File      string    // the file from which it was scanned
-	Range     Range     // the range the token spans
-	AliasInfo *ArgType  // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
+	Type      TokenType               // type of the token
+	Literal   string                  // the literal from which it was scanned
+	Indent    uint                    // how many levels it is indented
+	File      string                  // the file from which it was scanned
+	Range     Range                   // the range the token spans
+	AliasInfo *ddptypes.ParameterType // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
 }
 
 func (t Token) String() string {

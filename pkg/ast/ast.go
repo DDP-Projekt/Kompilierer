@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
 
@@ -24,10 +25,10 @@ func WalkAst(ast *Ast, visitor FullVisitor) {
 
 // wrapper for an alias
 type FuncAlias struct {
-	Tokens   []token.Token            // tokens of the alias
-	Original token.Token              // the original string
-	Func     string                   // the function it refers to (if it is used outside a FuncDecl)
-	Args     map[string]token.ArgType // types of the arguments (used for funcCall parsing)
+	Tokens   []token.Token                     // tokens of the alias
+	Original token.Token                       // the original string
+	Func     string                            // the function it refers to (if it is used outside a FuncDecl)
+	Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
 }
 
 // basic Node interfaces
@@ -73,20 +74,20 @@ type (
 
 	VarDecl struct {
 		Range   token.Range
-		Type    token.DDPType
+		Type    ddptypes.Type
 		Name    token.Token // identifier name
 		InitVal Expression  // initial value
 	}
 
 	FuncDecl struct {
 		Range      token.Range
-		Tok        token.Token     // Die
-		Name       token.Token     // identifier name
-		ParamNames []token.Token   // x, y und z
-		ParamTypes []token.ArgType // type, and wether the argument is a reference
-		Type       token.DDPType   // Zahl Kommazahl nichts ...
-		Body       *BlockStmt      // nil for extern functions
-		ExternFile token.Token     // string literal with filepath (only pesent if Body is nil)
+		Tok        token.Token              // Die
+		Name       token.Token              // identifier name
+		ParamNames []token.Token            // x, y und z
+		ParamTypes []ddptypes.ParameterType // type, and wether the argument is a reference
+		Type       ddptypes.Type            // Zahl Kommazahl nichts ...
+		Body       *BlockStmt               // nil for extern functions
+		ExternFile token.Token              // string literal with filepath (only pesent if Body is nil)
 		Aliases    []FuncAlias
 	}
 )
@@ -160,7 +161,7 @@ type (
 		Range token.Range
 		// type of the empty list if Values is nil
 		// the typechecker fills this field if Values is non-nil
-		Type   token.DDPType
+		Type   ddptypes.Type
 		Values []Expression // the values in the Literal
 		// if Values, Count and Value are nil, the list is empty
 		Count Expression // for big list initializations
@@ -194,7 +195,7 @@ type (
 	// tokens long
 	CastExpr struct {
 		Range token.Range
-		Type  token.DDPType
+		Type  ddptypes.Type
 		Lhs   Expression
 	}
 

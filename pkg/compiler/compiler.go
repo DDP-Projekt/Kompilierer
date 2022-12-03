@@ -9,6 +9,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/llir/llvm/ir"
@@ -1328,8 +1329,8 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 		c.latestReturn = list
 		return // don't free lhs
 	} else {
-		switch e.Type.PrimitiveType {
-		case token.ZAHL:
+		switch e.Type.Primitive {
+		case ddptypes.ZAHL:
 			switch lhs.Type() {
 			case ddpint:
 				c.latestReturn = lhs
@@ -1345,7 +1346,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			default:
 				err("invalid Parameter Type for ZAHL: %s", lhs.Type())
 			}
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			switch lhs.Type() {
 			case ddpint:
 				c.latestReturn = c.cbb.NewSIToFP(lhs, ddpfloat)
@@ -1356,7 +1357,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			default:
 				err("invalid Parameter Type for KOMMAZAHL: %s", lhs.Type())
 			}
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			switch lhs.Type() {
 			case ddpint:
 				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
@@ -1365,7 +1366,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			default:
 				err("invalid Parameter Type for BOOLEAN: %s", lhs.Type())
 			}
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			switch lhs.Type() {
 			case ddpint:
 				c.latestReturn = c.cbb.NewTrunc(lhs, ddpchar)
@@ -1374,7 +1375,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			default:
 				err("invalid Parameter Type for BUCHSTABE: %s", lhs.Type())
 			}
-		case token.TEXT:
+		case ddptypes.TEXT:
 			switch lhs.Type() {
 			case ddpint:
 				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_int_to_string"].irFunc, lhs)

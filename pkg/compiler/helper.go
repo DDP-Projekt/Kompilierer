@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -50,33 +50,33 @@ func newIntT(typ *types.IntType, value int64) *constant.Int {
 }
 
 // turn a tokenType into the corresponding llvm type
-func toIRType(ddpType token.DDPType) types.Type {
+func toIRType(ddpType ddptypes.Type) types.Type {
 	if ddpType.IsList {
-		switch ddpType.PrimitiveType {
-		case token.ZAHL:
+		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
 			return ddpintlistptr
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return ddpfloatlistptr
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return ddpboollistptr
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return ddpcharlistptr
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return ddpstringlistptr
 		}
 	} else {
-		switch ddpType.PrimitiveType {
-		case token.NICHTS:
+		switch ddpType.Primitive {
+		case ddptypes.NICHTS:
 			return void
-		case token.ZAHL:
+		case ddptypes.ZAHL:
 			return ddpint
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return ddpfloat
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return ddpbool
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return ddpchar
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return ddpstrptr
 		}
 	}
@@ -84,7 +84,7 @@ func toIRType(ddpType token.DDPType) types.Type {
 	return i8 // unreachable
 }
 
-func toIRTypeRef(ty token.ArgType) types.Type {
+func toIRTypeRef(ty ddptypes.ParameterType) types.Type {
 	if !ty.IsReference {
 		return toIRType(ty.Type)
 	}
@@ -92,31 +92,31 @@ func toIRTypeRef(ty token.ArgType) types.Type {
 }
 
 // returns the default constant for global variables
-func getDefaultValue(ddpType token.DDPType) constant.Constant {
+func getDefaultValue(ddpType ddptypes.Type) constant.Constant {
 	if ddpType.IsList {
-		switch ddpType.PrimitiveType {
-		case token.ZAHL:
+		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
 			return constant.NewNull(ddpintlistptr)
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return constant.NewNull(ddpfloatlistptr)
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return constant.NewNull(ddpboollistptr)
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return constant.NewNull(ddpcharlistptr)
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return constant.NewNull(ddpstringlistptr)
 		}
 	} else {
-		switch ddpType.PrimitiveType {
-		case token.ZAHL:
+		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
 			return constant.NewInt(ddpint, 0)
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return constant.NewFloat(ddpfloat, 0.0)
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return constant.NewInt(ddpbool, 0)
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return constant.NewInt(ddpchar, 0)
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return constant.NewNull(ddpstrptr)
 		}
 	}
@@ -132,31 +132,31 @@ func isDynamic(typ types.Type) bool {
 	return false
 }
 
-func getTypeName(ddpType token.DDPType) string {
+func getTypeName(ddpType ddptypes.Type) string {
 	if ddpType.IsList {
-		switch ddpType.PrimitiveType {
-		case token.ZAHL:
+		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
 			return "ddpintlist"
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return "ddpfloatlist"
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return "ddpboollist"
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return "ddpcharlist"
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return "ddpstringlist"
 		}
 	} else {
-		switch ddpType.PrimitiveType {
-		case token.ZAHL:
+		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
 			return "ddpint"
-		case token.KOMMAZAHL:
+		case ddptypes.KOMMAZAHL:
 			return "ddpfloat"
-		case token.BOOLEAN:
+		case ddptypes.BOOLEAN:
 			return "ddpbool"
-		case token.BUCHSTABE:
+		case ddptypes.BUCHSTABE:
 			return "ddpchar"
-		case token.TEXT:
+		case ddptypes.TEXT:
 			return "ddpstring"
 		}
 	}

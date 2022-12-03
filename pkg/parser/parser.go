@@ -12,6 +12,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast/resolver"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
@@ -213,7 +214,7 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	p.consume(token.IST)
 	var expr ast.Expression
 
-	if typ != token.DDPBoolType() && typ.IsList { // TODO: fix this with function calls and groupings
+	if typ != ddptypes.Bool() && typ.IsList { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.match(token.COUNT_MAL) {
 			value := p.expression()
@@ -274,7 +275,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
-	var paramTypes []token.ArgType = nil
+	var paramTypes []ddptypes.ParameterType = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
 		if p.matchN(token.DEN, token.PARAMETERN) {
@@ -312,14 +313,14 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		// parse the types of the parameters
 		validate(p.consumeN(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
-		validate(firstType.PrimitiveType != token.ILLEGAL)
-		paramTypes = append(make([]token.ArgType, 0), token.ArgType{Type: firstType, IsReference: ref}) // append the first parameter type
+		validate(firstType.Primitive != ddptypes.ILLEGAL)
+		paramTypes = append(make([]ddptypes.ParameterType, 0), ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
 		if !singleParameter {
 			addType := func() {
 				// validate the parameter type and append it
 				typ, ref := p.parseReferenceType()
-				validate(typ.PrimitiveType != token.ILLEGAL)
-				paramTypes = append(paramTypes, token.ArgType{Type: typ, IsReference: ref})
+				validate(typ.Primitive != ddptypes.ILLEGAL)
+				paramTypes = append(paramTypes, ddptypes.ParameterType{Type: typ, IsReference: ref})
 			}
 			if p.match(token.UND) {
 				addType()
@@ -346,7 +347,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	validate(p.consume(token.GIBT))
 	p.match(token.EINE, token.EINEN) // not neccessary
 	Typ := p.parseTypeOrVoid()
-	if Typ.PrimitiveType == token.ILLEGAL {
+	if Typ.Primitive == ddptypes.ILLEGAL {
 		valid = false
 	}
 
@@ -385,10 +386,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	argTypes := map[string]token.ArgType{}
+	paramTypesMap := map[string]ddptypes.ParameterType{}
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			argTypes[v.Literal] = paramTypes[i]
+			paramTypesMap[v.Literal] = paramTypes[i]
 		}
 	}
 
@@ -405,7 +406,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					perr(v, v.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: argTypes})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: paramTypesMap})
 				}
 			} else {
 				valid = false
@@ -467,7 +468,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		decl.Body = body
 
 		// check that the function has a return statement if it needs one
-		if Typ != token.DDPVoidType() { // only if the function does not return void
+		if Typ != ddptypes.Void() { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
 				perr(Funktion, body.Range, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
 			} else {
@@ -491,12 +492,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []token.ArgType) bool {
+func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) bool {
 	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
 	}
-	nameSet := map[string]token.ArgType{} // set that holds the parameter names contained in the alias and their corresponding type
+	nameSet := map[string]ddptypes.ParameterType{} // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
 			nameSet[v.Literal] = paramTypes[i]
@@ -543,10 +544,10 @@ func (p *Parser) aliasDecl() ast.Statement {
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	argTypes := map[string]token.ArgType{}
+	paramTypes := map[string]ddptypes.ParameterType{}
 	for i, v := range funDecl.ParamNames {
 		if i < len(funDecl.ParamTypes) {
-			argTypes[v.Literal] = funDecl.ParamTypes[i]
+			paramTypes[v.Literal] = funDecl.ParamTypes[i]
 		}
 	}
 
@@ -561,7 +562,7 @@ func (p *Parser) aliasDecl() ast.Statement {
 			if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
 				p.err(aliasTok, aliasTok.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
 			} else { // the alias is valid so we append it
-				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: argTypes}
+				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: paramTypes}
 			}
 		} else {
 			p.err(aliasTok, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
@@ -771,7 +772,7 @@ func (p *Parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
-		if typ := p.typechecker.Evaluate(ident); typ != token.DDPBoolType() {
+		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.Bool() {
 			p.err(expr.Token(), expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -1715,11 +1716,11 @@ outer:
 
 			if tok.Type == token.ALIAS_PARAMETER {
 				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
-				argType := mAlias.alias.Args[argName]      // type of the current parameter
+				paramType := mAlias.alias.Args[argName]    // type of the current parameter
 
 				pType := p.peek().Type
 				// early return if a non-identifier expression is passed as reference
-				if typeSensitive && argType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
+				if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
 					return nil
 				}
 
@@ -1753,7 +1754,7 @@ outer:
 				argParser.resolver = p.resolver
 				argParser.typechecker = p.typechecker
 				var arg ast.Expression
-				if argType.IsReference {
+				if paramType.IsReference {
 					if tokens[0].Type == token.LPAREN {
 						tokens = append(tokens[1:len(tokens)-2], eof)
 						argParser.tokens = tokens
@@ -1773,14 +1774,14 @@ outer:
 					p.typechecker.ErrorHandler = ddperror.EmptyHandler // silence errors
 					typ := p.typechecker.Evaluate(arg)
 
-					if typ != argType.Type {
+					if typ != paramType.Type {
 						arg = nil // arg and param types don't match
 					} else if                                                     // string-indexings may not be passed as char-reference
 					ass, ok := arg.(*ast.Indexing);                               // evaluate the argunemt
-					argType.IsReference && argType.Type == token.DDPCharType() && // if the parameter is a char-reference
+					paramType.IsReference && paramType.Type == ddptypes.Char() && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
 						lhs := p.typechecker.Evaluate(ass.Lhs)
-						if lhs.PrimitiveType == token.TEXT { // check if the lhs is a string
+						if lhs.Primitive == ddptypes.TEXT { // check if the lhs is a string
 							arg = nil
 						}
 					}
@@ -1913,129 +1914,148 @@ func (p *Parser) parseIntLit() *ast.IntLit {
 	}
 }
 
+// converts a TokenType to a Type
+func tokenTypeToType(t token.TokenType) ddptypes.Type {
+	switch t {
+	case token.NICHTS:
+		return ddptypes.Void()
+	case token.ZAHL:
+		return ddptypes.Int()
+	case token.KOMMAZAHL:
+		return ddptypes.Float()
+	case token.BOOLEAN:
+		return ddptypes.Bool()
+	case token.BUCHSTABE:
+		return ddptypes.Char()
+	case token.TEXT:
+		return ddptypes.String()
+	}
+	panic(fmt.Sprintf("invalid TokenType (%d)", t))
+}
+
 // parses tokens into a DDPType
 // expects the next token to be the start of the type
 // returns ILLEGAL and errors if no typename was found
-func (p *Parser) parseType() token.DDPType {
+func (p *Parser) parseType() ddptypes.Type {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(p.peek(), p.peek().Range, "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
-		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
+		return ddptypes.Illegal() // void indicates error
 	}
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return token.NewPrimitiveType(p.previous().Type)
+		return tokenTypeToType(p.previous().Type)
 	case token.BOOLEAN, token.TEXT:
 		if !p.match(token.LISTE) {
-			return token.NewPrimitiveType(p.previous().Type)
+			return tokenTypeToType(p.previous().Type)
 		}
-		return token.NewListType(p.peekN(-2).Type)
+		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return token.NewListType(token.ZAHL)
+		return ddptypes.NewList(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return token.NewListType(token.KOMMAZAHL)
+		return ddptypes.NewList(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
-			return token.NewPrimitiveType(token.BUCHSTABE)
+			return ddptypes.Char()
 		}
 		p.consume(token.LISTE)
-		return token.NewListType(token.BUCHSTABE)
+		return ddptypes.NewList(ddptypes.BUCHSTABE)
 	}
 
-	return token.NewPrimitiveType(token.ILLEGAL) // unreachable
+	return ddptypes.Illegal() // unreachable
 }
 
 // parses tokens into a DDPType which must be a list type
 // expects the next token to be the start of the type
 // returns ILLEGAL and errors if no typename was found
-func (p *Parser) parseListType() token.DDPType {
+func (p *Parser) parseListType() ddptypes.Type {
 	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(p.peek(), p.peek().Range, "Es wurde ein Listen-Typname erwartet aber '%s' gefunden", p.peek().Literal)
-		return token.NewPrimitiveType(token.ILLEGAL) // void indicates error
+		return ddptypes.Illegal() // void indicates error
 	}
 
 	switch p.previous().Type {
 	case token.BOOLEAN, token.TEXT:
 		p.consume(token.LISTE)
-		return token.NewListType(p.peekN(-2).Type)
+		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return token.NewListType(token.ZAHL)
+		return ddptypes.NewList(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return token.NewListType(token.KOMMAZAHL)
+		return ddptypes.NewList(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		p.consume(token.LISTE)
-		return token.NewListType(token.BUCHSTABE)
+		return ddptypes.NewList(ddptypes.BUCHSTABE)
 	}
 
-	return token.NewPrimitiveType(token.ILLEGAL) // unreachable
+	return ddptypes.Illegal() // unreachable
 }
 
 // parses tokens into a DDPType and returns wether the type is a reference type
 // expects the next token to be the start of the type
 // returns ILLEGAL and errors if no typename was found
-func (p *Parser) parseReferenceType() (token.DDPType, bool) {
+func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(p.peek(), p.peek().Range, "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
-		return token.NewPrimitiveType(token.ILLEGAL), false // void indicates error
+		return ddptypes.Illegal(), false // void indicates error
 	}
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return token.NewPrimitiveType(p.previous().Type), false
+		return tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return token.NewListType(p.peekN(-2).Type), false
+			return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return token.NewListType(p.peekN(-3).Type), true
+			return ddptypes.NewList(tokenTypeToType(p.peekN(-3).Type).Primitive), true
 		} else if p.match(token.REFERENZ) {
-			return token.NewPrimitiveType(p.peekN(-2).Type), true
+			return ddptypes.NewPrimitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
 		}
-		return token.NewPrimitiveType(p.previous().Type), false
+		return tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
-			return token.NewListType(token.ZAHL), false
+			return ddptypes.NewList(ddptypes.ZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return token.NewListType(token.ZAHL), true
+			return ddptypes.NewList(ddptypes.ZAHL), true
 		}
 		p.consume(token.REFERENZ)
-		return token.NewPrimitiveType(token.ZAHL), true
+		return ddptypes.Int(), true
 	case token.KOMMAZAHLEN:
 		if p.match(token.LISTE) {
-			return token.NewListType(token.KOMMAZAHL), false
+			return ddptypes.NewList(ddptypes.KOMMAZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return token.NewListType(token.KOMMAZAHL), true
+			return ddptypes.NewList(ddptypes.KOMMAZAHL), true
 		}
 		p.consume(token.REFERENZ)
-		return token.NewPrimitiveType(token.KOMMAZAHL), true
+		return ddptypes.Float(), true
 	case token.BUCHSTABEN:
 		if p.match(token.LISTE) {
-			return token.NewListType(token.BUCHSTABE), false
+			return ddptypes.NewList(ddptypes.BUCHSTABE), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return token.NewListType(token.BUCHSTABE), true
+			return ddptypes.NewList(ddptypes.BUCHSTABE), true
 		}
 		p.consume(token.REFERENZ)
-		return token.NewPrimitiveType(token.BUCHSTABE), true
+		return ddptypes.Char(), true
 	}
 
-	return token.NewPrimitiveType(token.ILLEGAL), false // unreachable
+	return ddptypes.Illegal(), false // unreachable
 }
 
 // parses tokens into a DDPType
 // unlike parseType it may return void
 // the error return is ILLEGAL
-func (p *Parser) parseTypeOrVoid() token.DDPType {
+func (p *Parser) parseTypeOrVoid() ddptypes.Type {
 	if p.match(token.NICHTS) {
-		return token.DDPVoidType()
+		return ddptypes.Void()
 	}
 	return p.parseType()
 }
