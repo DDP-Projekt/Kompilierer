@@ -73,7 +73,7 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) {
 	pr.parenthesizeNode(msg, decl.InitVal)
 }
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
-	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %s]", decl.Name.Literal, literals(decl.ParamNames), decl.ParamTypes, decl.Type)
+	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %v, %s]", decl.Name.Literal, literals(decl.ParamNames), decl.ParamTypes, commentLiterals(decl.ParamComments), decl.Type)
 	if IsExternFunc(decl) {
 		msg += " Extern"
 	}
@@ -194,4 +194,16 @@ func literals(tokens []token.Token) []string {
 		result = append(result, v.Literal)
 	}
 	return result
+}
+
+func commentLiterals(comments []*token.Token) string {
+	result := make([]string, 0, len(comments))
+	for _, v := range comments {
+		if v == nil {
+			result = append(result, "nil")
+		} else {
+			result = append(result, strings.Trim(v.Literal, commentCutset))
+		}
+	}
+	return "[" + strings.Join(result, ", ") + "]"
 }

@@ -20,9 +20,9 @@ func (p PrimitiveType) String() string {
 	case NICHTS:
 		return "nichts"
 	case ZAHL:
-		return "Zahle"
+		return "Zahl"
 	case KOMMAZAHL:
-		return "Kommazahle"
+		return "Kommazahl"
 	case BOOLEAN:
 		return "Boolean"
 	case BUCHSTABE:
@@ -143,7 +143,7 @@ func (paramType ParameterType) String() string {
 	if paramType.Type.IsList {
 		switch paramType.Type.Primitive {
 		case ZAHL, KOMMAZAHL, BOOLEAN, BUCHSTABE, TEXT:
-			return paramType.Type.String() + "n Referenz"
+			return paramType.Type.String() + "en Referenz"
 		}
 	}
 	switch paramType.Type.Primitive {

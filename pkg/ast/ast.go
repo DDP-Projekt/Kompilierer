@@ -82,16 +82,17 @@ type (
 	}
 
 	FuncDecl struct {
-		Range      token.Range
-		Comment    *token.Token             // optional comment (also contained in ast.Comments)
-		Tok        token.Token              // Die
-		Name       token.Token              // identifier name
-		ParamNames []token.Token            // x, y und z
-		ParamTypes []ddptypes.ParameterType // type, and wether the argument is a reference
-		Type       ddptypes.Type            // Zahl Kommazahl nichts ...
-		Body       *BlockStmt               // nil for extern functions
-		ExternFile token.Token              // string literal with filepath (only pesent if Body is nil)
-		Aliases    []FuncAlias
+		Range         token.Range
+		Comment       *token.Token             // optional comment (also contained in ast.Comments)
+		Tok           token.Token              // Die
+		Name          token.Token              // identifier name
+		ParamNames    []token.Token            // x, y und z
+		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
+		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
+		Type          ddptypes.Type            // Zahl Kommazahl nichts ...
+		Body          *BlockStmt               // nil for extern functions
+		ExternFile    token.Token              // string literal with filepath (only pesent if Body is nil)
+		Aliases       []FuncAlias
 	}
 )
 

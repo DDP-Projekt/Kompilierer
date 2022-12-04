@@ -304,6 +304,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
 	var paramTypes []ddptypes.ParameterType = nil
+	var paramComments []*token.Token = nil
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
 		if p.matchN(token.DEN, token.PARAMETERN) {
@@ -314,13 +315,15 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
+		paramComments = append(make([]*token.Token, 0), p.getLeadingOrTrailingComment())
 		if !singleParameter {
 			addParamName := func(name token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
 					valid = false
 					perr(name, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
 				}
-				paramNames = append(paramNames, name) // append the parameter name
+				paramNames = append(paramNames, name)                                  // append the parameter name
+				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
 			}
 			if p.match(token.UND) {
 				validate(p.consume(token.IDENTIFIER))
@@ -466,16 +469,17 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	p.funcAliases = append(p.funcAliases, funcAliases...)
 
 	decl := &ast.FuncDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		Comment:    comment,
-		Tok:        begin,
-		Name:       name,
-		ParamNames: paramNames,
-		ParamTypes: paramTypes,
-		Type:       Typ,
-		Body:       nil,
-		ExternFile: definedIn,
-		Aliases:    funcAliases,
+		Range:         token.NewRange(begin, p.previous()),
+		Comment:       comment,
+		Tok:           begin,
+		Name:          name,
+		ParamNames:    paramNames,
+		ParamTypes:    paramTypes,
+		ParamComments: paramComments,
+		Type:          Typ,
+		Body:          nil,
+		ExternFile:    definedIn,
+		Aliases:       funcAliases,
 	}
 
 	// parse the body after the aliases to enable recursion
@@ -491,7 +495,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i])})
+			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -977,16 +981,7 @@ func (p *Parser) forStatement() ast.Statement {
 	Typ := p.parseType()
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
-	iteratorComment := p.commentBeforePos(Ident.Range.Start, Ident.File)
-	// the comment must be between the identifier and the last token of the type
-	if iteratorComment != nil && !iteratorComment.Range.Start.IsBehind(p.peekN(-2).Range.End) {
-		iteratorComment = nil
-	}
-	// a trailing comment must be the next token after the identifier
-	if trailingComment := p.commentAfterPos(Ident.Range.End, Ident.File); iteratorComment == nil && trailingComment != nil &&
-		trailingComment.Range.End.IsBefore(p.peek().Range.Start) {
-		iteratorComment = trailingComment
-	}
+	iteratorComment := p.getLeadingOrTrailingComment()
 	if p.match(token.VON) {
 		from := p.expression() // start of the counter
 		initializer := &ast.VarDecl{
@@ -2260,7 +2255,9 @@ func (p *Parser) commentBeforePos(pos token.Position, file string) (result *toke
 		if p.comments[i].File != file {
 			continue
 		}
-		if p.comments[i].Range.End.IsBefore(pos) {
+		// the scanner sets any tokens .Range.End.Column to 1 after the last char within the literal
+		end := token.Position{Line: p.comments[i].Range.End.Line, Column: p.comments[i].Range.End.Column - 1}
+		if end.IsBefore(pos) {
 			result = &p.comments[i]
 		} else {
 			return result
@@ -2285,6 +2282,25 @@ func (p *Parser) commentAfterPos(pos token.Position, file string) (result *token
 		}
 	}
 	return result
+}
+
+// retreives a leading or trailing comment of p.previous()
+// prefers leading comments
+// may return nil
+func (p *Parser) getLeadingOrTrailingComment() (result *token.Token) {
+	tok := p.previous()
+	comment := p.commentBeforePos(tok.Range.Start, tok.File)
+	// the comment must be between the identifier and the last token of the type
+	if comment != nil && !comment.Range.Start.IsBehind(p.peekN(-2).Range.End) {
+		comment = nil
+	}
+	// a trailing comment must be the next token after the identifier
+	if trailingComment := p.commentAfterPos(tok.Range.End, tok.File); comment == nil && trailingComment != nil &&
+		trailingComment.Range.End.IsBefore(p.peek().Range.Start) {
+		comment = trailingComment
+	}
+
+	return comment
 }
 
 // check if a slice of tokens contains a literal
