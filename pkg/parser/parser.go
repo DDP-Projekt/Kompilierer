@@ -977,6 +977,16 @@ func (p *Parser) forStatement() ast.Statement {
 	Typ := p.parseType()
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
+	iteratorComment := p.commentBeforePos(Ident.Range.Start, Ident.File)
+	// the comment must be between the identifier and the last token of the type
+	if iteratorComment != nil && !iteratorComment.Range.Start.IsBehind(p.peekN(-2).Range.End) {
+		iteratorComment = nil
+	}
+	// a trailing comment must be the next token after the identifier
+	if trailingComment := p.commentAfterPos(Ident.Range.End, Ident.File); iteratorComment == nil && trailingComment != nil &&
+		trailingComment.Range.End.IsBefore(p.peek().Range.Start) {
+		iteratorComment = trailingComment
+	}
 	if p.match(token.VON) {
 		from := p.expression() // start of the counter
 		initializer := &ast.VarDecl{
@@ -984,6 +994,7 @@ func (p *Parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(TypeTok),
 				End:   from.GetRange().End,
 			},
+			Comment: iteratorComment,
 			Type:    Typ,
 			Name:    Ident,
 			InitVal: from,
