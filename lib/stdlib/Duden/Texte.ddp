@@ -45,7 +45,7 @@ Die Funktion EnthältBuchstabe mit den Parametern text und zeichen vom Typ Text 
 	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
-	"<text> <zeichen> enthält"
+	"<zeichen> in <text> enthalten"
 
 Die Funktion EnthältText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Die Zahl startIndex ist 0.
@@ -60,27 +60,27 @@ Die Funktion EnthältText mit den Parametern text und suchText vom Typ Text und 
 		Erhöhe startIndex um 1.
 	Gib falsch zurück.
 Und kann so benutzt werden:
-	"<text> <suchText> enthält"
+	"<suchText> in <text> enthalten"
 
 Die Funktion BeginntMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Gib (text an der Stelle 1) gleich buchstabe zurück.
 Und kann so benutzt werden:
-	"<text> mit <buchstabe> anfängt"
+	"<buchstabe> am Anfang von <text>"
 
 Die Funktion BeginntMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Gib (text von 1 bis (die Länge von suchText)) gleich suchText zurück.
 Und kann so benutzt werden:
-	"<text> mit <suchText> anfängt"
+	"<suchText> am Anfang von <text>"
 
 Die Funktion EndetMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Gib (text an der Stelle (die Länge von text)) gleich buchstabe zurück.
 Und kann so benutzt werden:
-	"<text> mit <buchstabe> aufhört"
+	"<buchstabe> am Ende von <text>"
 
 Die Funktion EndetMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis (die Länge von text)) gleich suchText zurück.
 Und kann so benutzt werden:
-	"<text> mit <suchText> aufhört"
+	"<suchText> am Ende von <text>"
 
 Die Funktion Text_leeren mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
 	Speichere "" in text.

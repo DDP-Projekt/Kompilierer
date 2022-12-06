@@ -5,23 +5,23 @@ Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangW
 Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
 Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, guh??]
 
-Schreibe ("Hello World" 'e' enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
-Schreibe ("Hello World" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
+Schreibe ('e' in "Hello World" enthalten) auf eine Zeile. [EnthältBuchstabe, wahr]
+Schreibe ('!' in "Hello World" enthalten) auf eine Zeile. [EnthältBuchstabe, falsch]
 
-Schreibe ("Hello World" "ello" enthält) auf eine Zeile. [EnthältText, wahr]
-Schreibe ("Hello World" "guh" enthält) auf eine Zeile. [EnthältText, falsch]
+Schreibe ("ello" in "Hello World" enthalten) auf eine Zeile. [EnthältText, wahr]
+Schreibe ("guh" in "Hello World" enthalten) auf eine Zeile. [EnthältText, falsch]
 
-Schreibe ("Hello World" mit 'H' anfängt) auf eine Zeile. [BeginntMitBuchstabe, wahr]
-Schreibe ("Hello World" mit ' ' anfängt) auf eine Zeile. [BeginntMitBuchstabe, falsch]
+Schreibe ('H' am Anfang von "Hello World") auf eine Zeile. [BeginntMitBuchstabe, wahr]
+Schreibe (' ' am Anfang von "Hello World") auf eine Zeile. [BeginntMitBuchstabe, falsch]
 
-Schreibe ("Hello World" mit 'd' aufhört) auf eine Zeile. [EndetMitBuchstabe, wahr]
-Schreibe ("Hello World" mit ' ' aufhört) auf eine Zeile. [EndetMitBuchstabe, falsch]
+Schreibe ('d' am Ende von "Hello World") auf eine Zeile. [EndetMitBuchstabe, wahr]
+Schreibe (' ' am Ende von "Hello World") auf eine Zeile. [EndetMitBuchstabe, falsch]
 
-Schreibe ("Hello World" mit "Hell" anfängt) auf eine Zeile.[BeginntMitText, wahr]
-Schreibe ("Hello World" mit "hi" anfängt) auf eine Zeile. [BeginntMitText, falsch]
+Schreibe ("Hell" am Anfang von "Hello World") auf eine Zeile.[BeginntMitText, wahr]
+Schreibe ("hi" am Anfang von "Hello World") auf eine Zeile. [BeginntMitText, falsch]
 
-Schreibe ("Hello World" mit "orld" aufhört) auf eine Zeile. [EndetMitText, wahr]
-Schreibe ("Hello World" mit "orad" aufhört) auf eine Zeile. [EndetMitText, falsch]
+Schreibe ("orld" am Ende von "Hello World") auf eine Zeile. [EndetMitText, wahr]
+Schreibe ("orad" am Ende von "Hello World") auf eine Zeile. [EndetMitText, falsch]
 
 Der Text text ist "Hello World!".
 

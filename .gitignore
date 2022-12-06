@@ -2,3 +2,4 @@
 /llvm_build
 .idea
 *.exe
+/.vscode/*.log
