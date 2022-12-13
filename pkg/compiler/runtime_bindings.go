@@ -27,7 +27,13 @@ var (
 
 // initializes external functions defined in the ddp-runtime
 func (c *Compiler) initRuntimeFunctions() {
-	_ddp_reallocate_irfun = c.declareExternalRuntimeFunction("_ddp_reallocate", ptr(i8), ir.NewParam("pointer", ptr(i8)), ir.NewParam("oldSize", i64), ir.NewParam("newSize", i64))
+	_ddp_reallocate_irfun = c.declareExternalRuntimeFunction(
+		"_ddp_reallocate",
+		ptr(i8),
+		ir.NewParam("pointer", ptr(i8)),
+		ir.NewParam("oldSize", i64),
+		ir.NewParam("newSize", i64),
+	)
 }
 
 // helper functions to use the runtime-bindings
@@ -43,28 +49,28 @@ func (c *Compiler) allocate(typ types.Type) value.Value {
 }
 
 // allocates n elements of typ
-func (c *Compiler) allocateArr(typ types.Type, n value.Value) value.Value {
-	size := c.cbb.NewMul(n, c.sizeof(typ))
-	return c._ddp_reallocate(constant.NewNull(ptr(typ)), zero, size)
+func (c *Compiler) allocateArr(elementType types.Type, n value.Value) value.Value {
+	size := c.cbb.NewMul(n, c.sizeof(elementType))
+	return c._ddp_reallocate(constant.NewNull(ptr(elementType)), zero, size)
 }
 
 // reallocates the pointer val which points to an array
 // of oldCount elements of type typ to the newCount
-func (c *Compiler) growArr(val, oldCount, newCount value.Value, typ types.Type) value.Value {
-	elementSize := c.sizeof(typ)
+func (c *Compiler) growArr(ptr, oldCount, newCount value.Value, elementType types.Type) value.Value {
+	elementSize := c.sizeof(elementType)
 	oldSize := c.cbb.NewMul(oldCount, elementSize)
 	newSize := c.cbb.NewMul(newCount, elementSize)
-	return c._ddp_reallocate(val, oldSize, newSize)
+	return c._ddp_reallocate(ptr, oldSize, newSize)
 }
 
 // calls free on the passed pointer which points to an element
 // of type typ
-func (c *Compiler) free(val value.Value, typ types.Type) {
-	c._ddp_reallocate(val, c.sizeof(typ), zero)
+func (c *Compiler) free(ptr value.Value, elementType types.Type) {
+	c._ddp_reallocate(ptr, c.sizeof(elementType), zero)
 }
 
 // frees the pointer val which points to n elements of type typ
-func (c *Compiler) freeArr(val, n value.Value, typ types.Type) {
-	size := c.cbb.NewMul(n, c.sizeof(typ))
-	c._ddp_reallocate(val, size, zero)
+func (c *Compiler) freeArr(ptr, n value.Value, elementType types.Type) {
+	size := c.cbb.NewMul(n, c.sizeof(elementType))
+	c._ddp_reallocate(ptr, size, zero)
 }
