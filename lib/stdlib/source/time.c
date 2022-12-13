@@ -32,7 +32,7 @@ ddpstring* Zeit_Lokal() {
 	
 	// move buffer to dstr
 	size += 1; // make room for null terminator
-	dstr->str = reallocate(dstr->str, dstr->cap, dstr->cap + size); // add the read size to the string buffer
+	dstr->str = _ddp_reallocate(dstr->str, dstr->cap, dstr->cap + size); // add the read size to the string buffer
 	memcpy(dstr->str + dstr->cap, buff, size); // copy the read data into the string
 	dstr->cap += size;
 	dstr->str[dstr->cap-1] = '\0'; // null terminator hinzufügen

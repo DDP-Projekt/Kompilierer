@@ -5,7 +5,7 @@
 // to allocate call reallocate(NULL, 0, size)
 // to free call reallocate(ptr, oldsize, 0)
 // to reallocate call reallocate(ptr, oldsize, newsize)
-void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
+void* _ddp_reallocate(void* pointer, size_t oldSize, size_t newSize) {
 #ifdef DDP_DEBUG
 	static unsigned long long allocatedBytes = 0;
 #endif // DDP_DEBUG

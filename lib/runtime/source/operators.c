@@ -104,7 +104,7 @@ ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 	}
 
 	new_str->cap = (i2 - i1) + 2; // + 1 if indices are equal, + 2 because null-terminator
-	new_str->str = reallocate(new_str->str, sizeof(char) * 1, new_str->cap);
+	new_str->str = _ddp_reallocate(new_str->str, sizeof(char) * 1, new_str->cap);
 	memcpy(new_str->str, str->str + i1, new_str->cap - 1);
 	new_str->str[new_str->cap - 1] = '\0';
 
@@ -116,7 +116,7 @@ ddpstring* _ddp_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
 	DBGLOG("_ddp_string_string_verkettet: %p", new_str);
 
 	new_str->cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
-	new_str->str = reallocate(str1->str, str1->cap, new_str->cap);	 // reallocate str1
+	new_str->str = _ddp_reallocate(str1->str, str1->cap, new_str->cap);	 // reallocate str1
 	memcpy(&new_str->str[str1->cap - 1], str2->str, str2->cap); // append str2 and overwrite str1's null-terminator
 
 	str1->cap = 0;
@@ -135,7 +135,7 @@ ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
 	}
 
 	new_str->cap = str->cap + num_bytes;
-	new_str->str = reallocate(str->str, str->cap, new_str->cap);
+	new_str->str = _ddp_reallocate(str->str, str->cap, new_str->cap);
 	memmove(&new_str->str[num_bytes], new_str->str, str->cap);
 	memcpy(new_str->str, temp, num_bytes);
 
@@ -155,7 +155,7 @@ ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
 	}
 
 	new_str->cap = str->cap + num_bytes;
-	new_str->str = reallocate(str->str, str->cap, new_str->cap);
+	new_str->str = _ddp_reallocate(str->str, str->cap, new_str->cap);
 	memcpy(&new_str->str[str->cap - 1], temp, num_bytes);
 	new_str->str[new_str->cap - 1] = '\0';
 

@@ -18,13 +18,13 @@ ddpstring* _ddp_ddpintlist_to_string(ddpintlist* list) {
 	for (size_t i = 0; i < list->len-1; i++) {
 		int len = sprintf(buffer, "%lld, ", list->arr[i]);
 		ddpint new_cap = str->cap + len;
-		str->str = reallocate(str->str, str->cap, new_cap);
+		str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
 	int len = sprintf(buffer, "%lld", list->arr[list->len-1]);
 	ddpint new_cap = str->cap + len;
-	str->str = reallocate(str->str, str->cap, new_cap);
+	str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);
 	str->cap = new_cap;
 
@@ -46,13 +46,13 @@ ddpstring* _ddp_ddpfloatlist_to_string(ddpfloatlist* list) {
 	for (size_t i = 0; i < list->len-1; i++) {
 		int len = sprintf(buffer, isinf(list->arr[i]) ? "Unendlich, " : (isnan(list->arr[i]) ? "Keine Zahl (NaN), " : "%.16g, "), list->arr[i]);
 		ddpint new_cap = str->cap + len;
-		str->str = reallocate(str->str, str->cap, new_cap);
+		str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
 	int len = sprintf(buffer,  isinf(list->arr[list->len-1]) ? "Unendlich" : (isnan(list->arr[list->len-1]) ? "Keine Zahl (NaN)" : "%.16g"), list->arr[list->len-1]);
 	ddpint new_cap = str->cap + len;
-	str->str = reallocate(str->str, str->cap, new_cap);
+	str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);
 	str->cap = new_cap;
 
@@ -74,13 +74,13 @@ ddpstring* _ddp_ddpboollist_to_string(ddpboollist* list) {
 	for (size_t i = 0; i < list->len-1; i++) {
 		int len = sprintf(buffer, list->arr[i] ? "wahr, " : "falsch, ");
 		ddpint new_cap = str->cap + len;
-		str->str = reallocate(str->str, str->cap, new_cap);
+		str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
 	int len = sprintf(buffer, list->arr[list->len-1] ? "wahr" : "falsch");
 	ddpint new_cap = str->cap + len;
-	str->str = reallocate(str->str, str->cap, new_cap);
+	str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);
 	str->cap = new_cap;
 
@@ -104,14 +104,14 @@ ddpstring* _ddp_ddpcharlist_to_string(ddpcharlist* list) {
 		utf8_char_to_string(ch, list->arr[i]);
 		int len = sprintf(buffer, "%s, ", ch);
 		ddpint new_cap = str->cap + len;
-		str->str = reallocate(str->str, str->cap, new_cap);
+		str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 		memcpy(str->str + str->cap-1, buffer, len);
 		str->cap = new_cap;
 	}
 	utf8_char_to_string(ch, list->arr[list->len-1]);
 	int len = sprintf(buffer, "%s", ch);
 	ddpint new_cap = str->cap + len;
-	str->str = reallocate(str->str, str->cap, new_cap);
+	str->str = _ddp_reallocate(str->str, str->cap, new_cap);
 	memcpy(str->str + str->cap-1, buffer, len);
 	str->cap = new_cap;
 
@@ -203,7 +203,7 @@ ddpintlist* _ddp_ddpintlist_ddpintlist_verkettet(ddpintlist* list1, ddpintlist* 
 	new_list->len = list1->len + list2->len;
 	new_list->cap = list1->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list1->arr, sizeof(ddpint) * list1->cap, sizeof(ddpint) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list1->arr, sizeof(ddpint) * list1->cap, sizeof(ddpint) * new_list->cap);
 	
 	memcpy(&new_list->arr[list1->len], list2->arr, sizeof(ddpint) * list2->len);
 	
@@ -220,7 +220,7 @@ ddpintlist* _ddp_ddpintlist_ddpint_verkettet(ddpintlist* list, ddpint el) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_list->cap);
 	
 	new_list->arr[list->len] = el;
 	
@@ -250,7 +250,7 @@ ddpintlist* _ddp_ddpint_ddpintlist_verkettet(ddpint el, ddpintlist* list) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpint) * list->cap, sizeof(ddpint) * new_list->cap);
 	memmove(&new_list->arr[1], new_list->arr, sizeof(ddpint) * list->len);
 	new_list->arr[0] = el;
 
@@ -305,7 +305,7 @@ ddpfloatlist* _ddp_ddpfloatlist_ddpfloatlist_verkettet(ddpfloatlist* list1, ddpf
 	new_list->len = list1->len + list2->len;
 	new_list->cap = list1->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list1->arr, sizeof(ddpfloat) * list1->cap, sizeof(ddpfloat) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list1->arr, sizeof(ddpfloat) * list1->cap, sizeof(ddpfloat) * new_list->cap);
 	
 	memcpy(&new_list->arr[list1->len], list2->arr, sizeof(ddpfloat) * list2->len);
 	
@@ -322,7 +322,7 @@ ddpfloatlist* _ddp_ddpfloatlist_ddpfloat_verkettet(ddpfloatlist* list, ddpfloat 
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_list->cap);
 	
 	new_list->arr[list->len] = el;
 	
@@ -352,7 +352,7 @@ ddpfloatlist* _ddp_ddpfloat_ddpfloatlist_verkettet(ddpfloat el, ddpfloatlist* li
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpfloat) * list->cap, sizeof(ddpfloat) * new_list->cap);
 	memmove(&new_list->arr[1], new_list->arr, sizeof(ddpfloat) * list->len);
 	new_list->arr[0] = el;
 
@@ -407,7 +407,7 @@ ddpboollist* _ddp_ddpboollist_ddpboollist_verkettet(ddpboollist* list1, ddpbooll
 	new_list->len = list1->len + list2->len;
 	new_list->cap = list1->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list1->arr, sizeof(ddpbool) * list1->cap, sizeof(ddpbool) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list1->arr, sizeof(ddpbool) * list1->cap, sizeof(ddpbool) * new_list->cap);
 	
 	memcpy(&new_list->arr[list1->len], list2->arr, sizeof(ddpbool) * list2->len);
 	
@@ -424,7 +424,7 @@ ddpboollist* _ddp_ddpboollist_ddpbool_verkettet(ddpboollist* list, ddpbool el) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_list->cap);
 	
 	new_list->arr[list->len] = el;
 	
@@ -454,7 +454,7 @@ ddpboollist* _ddp_ddpbool_ddpboollist_verkettet(ddpbool el, ddpboollist* list) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpbool) * list->cap, sizeof(ddpbool) * new_list->cap);
 	memmove(&new_list->arr[1], new_list->arr, sizeof(ddpbool) * list->len);
 	new_list->arr[0] = el;
 
@@ -509,7 +509,7 @@ ddpcharlist* _ddp_ddpcharlist_ddpcharlist_verkettet(ddpcharlist* list1, ddpcharl
 	new_list->len = list1->len + list2->len;
 	new_list->cap = list1->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list1->arr, sizeof(ddpchar) * list1->cap, sizeof(ddpchar) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list1->arr, sizeof(ddpchar) * list1->cap, sizeof(ddpchar) * new_list->cap);
 	
 	memcpy(&new_list->arr[list1->len], list2->arr, sizeof(ddpchar) * list2->len);
 	
@@ -526,7 +526,7 @@ ddpcharlist* _ddp_ddpcharlist_ddpchar_verkettet(ddpcharlist* list, ddpchar el) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_list->cap);
 	
 	new_list->arr[list->len] = el;
 	
@@ -556,7 +556,7 @@ ddpcharlist* _ddp_ddpchar_ddpcharlist_verkettet(ddpchar el, ddpcharlist* list) {
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * new_list->cap);
 	memmove(&new_list->arr[1], new_list->arr, sizeof(ddpchar) * list->len);
 	new_list->arr[0] = el;
 
@@ -617,7 +617,7 @@ ddpstringlist* _ddp_ddpstringlist_ddpstringlist_verkettet(ddpstringlist* list1, 
 	new_list->len = list1->len + list2->len;
 	new_list->cap = list1->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list1->arr, sizeof(ddpstring*) * list1->cap, sizeof(ddpstring*) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list1->arr, sizeof(ddpstring*) * list1->cap, sizeof(ddpstring*) * new_list->cap);
 	
 	for (size_t i = 0; i < list2->len; i++) {
 		new_list->arr[i+list1->len] = _ddp_deep_copy_string(list2->arr[i]);
@@ -636,7 +636,7 @@ ddpstringlist* _ddp_ddpstringlist_ddpstring_verkettet(ddpstringlist* list, ddpst
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_list->cap);
 	
 	new_list->arr[list->len] = _ddp_deep_copy_string(el);
 	
@@ -654,7 +654,7 @@ ddpstringlist* _ddp_ddpstring_ddpstringlist_verkettet(ddpstring* str, ddpstringl
 	new_list->len = list->len + 1;
 	new_list->cap = list->cap;
 	while (new_list->cap < new_list->len) new_list->cap = GROW_CAPACITY(new_list->cap);
-	new_list->arr = reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_list->cap);
+	new_list->arr = _ddp_reallocate(list->arr, sizeof(ddpstring*) * list->cap, sizeof(ddpstring*) * new_list->cap);
 	memmove(&new_list->arr[1], new_list->arr, sizeof(ddpstring*) * list->len);
 	new_list->arr[0] = _ddp_deep_copy_string(str);
 
