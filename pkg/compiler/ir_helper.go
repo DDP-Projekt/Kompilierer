@@ -1,6 +1,6 @@
 /*
-	This file defines often used utility functions
-	to generate ir
+This file defines often used utility functions
+to generate ir
 */
 package compiler
 
