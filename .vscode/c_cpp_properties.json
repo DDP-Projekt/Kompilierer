@@ -15,9 +15,7 @@
 			"includePath": [
 				"lib/runtime/include",
 				"lib/stdlib/include"
-			],
-			"configurationProvider": "ms-vscode.makefile-tools",
-			"intelliSenseMode": "linux-gcc-x64"
+			]
 		}
 	]
 }

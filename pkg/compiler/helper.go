@@ -34,7 +34,8 @@ var (
 
 	ptr = types.NewPointer
 
-	zero = constant.NewInt(ddpint, 0)
+	zero   = newInt(0)       // 0: i64
+	zero32 = newIntT(i32, 0) // 0: i32
 )
 
 const (
