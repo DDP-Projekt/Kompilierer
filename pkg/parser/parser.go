@@ -188,8 +188,6 @@ func (p *Parser) assignRhs() ast.Expression {
 			} else {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
 			}
-
-			p.consume(token.IST) // ist, after wahr/falsch wenn for grammar
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
 			expr = p.expression()
@@ -836,9 +834,9 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 }
 
 func (p *Parser) ifStatement() ast.Statement {
-	If := p.previous()                 // the already consumed wenn token
-	condition := p.expression()        // parse the condition
-	p.consumeN(token.IST, token.COMMA) // must be boolean, so an ist is required for grammar
+	If := p.previous()          // the already consumed wenn token
+	condition := p.expression() // parse the condition
+	p.consume(token.COMMA)      // must be boolean, so an ist is required for grammar
 	var Then ast.Statement
 	thenScope := p.newScope()
 	if p.match(token.DANN) { // with dann: the body is a block statement
@@ -910,7 +908,7 @@ func (p *Parser) ifStatement() ast.Statement {
 func (p *Parser) whileStatement() ast.Statement {
 	While := p.previous()
 	condition := p.expression()
-	p.consumeN(token.IST, token.COMMA)
+	p.consume(token.COMMA)
 	var Body ast.Statement
 	bodyTable := p.newScope()
 	if p.match(token.MACHE) {
@@ -945,7 +943,7 @@ func (p *Parser) doWhileStmt() ast.Statement {
 	body := p.blockStatement(nil)
 	p.consume(token.SOLANGE)
 	condition := p.expression()
-	p.consumeN(token.IST, token.DOT)
+	p.consume(token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(Do),
@@ -1257,6 +1255,7 @@ func (p *Parser) equality() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		p.consume(token.IST)
 	}
 	return expr
 }
@@ -1285,6 +1284,7 @@ func (p *Parser) comparison() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		p.consume(token.IST)
 	}
 	return expr
 }
