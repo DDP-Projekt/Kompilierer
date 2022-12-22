@@ -22,8 +22,8 @@ Die Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Z
 		Die Zahl j ist _rechts.
 
 		Solange i kleiner als j ist, mache:
-			Solange i kleiner als j und liste an der Stelle i kleiner als, oder pivot ist, erhöhe i um 1.
-			Solange j größer als i und liste an der Stelle j größer als pivot ist, verringere j um 1.
+			Solange i kleiner als j ist und liste an der Stelle i kleiner als, oder pivot ist, erhöhe i um 1.
+			Solange j größer als i ist und liste an der Stelle j größer als pivot ist, verringere j um 1.
 			
 			Wenn liste an der Stelle i größer als liste an der Stelle j ist, tausche (liste an der Stelle j) und (liste an der Stelle i).
 

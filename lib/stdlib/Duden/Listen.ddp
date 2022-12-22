@@ -53,7 +53,7 @@ Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 Die Funktion IstLeer_Z mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -113,7 +113,7 @@ Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 Die Funktion IstLeer_K mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -172,7 +172,7 @@ Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 Die Funktion IstLeer_B mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -232,7 +232,7 @@ Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 Die Funktion IstLeer_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -292,7 +292,7 @@ Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 Die Funktion IstLeer_T mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
