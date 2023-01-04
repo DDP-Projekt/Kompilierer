@@ -1,0 +1,116 @@
+[
+    Dieses Programm nimmt eine Breite eine Höhe und eine Anzahl an maximalen Iterationen
+    und generiert eine Ascii-Bild des Mandelbrot Fractals in der angegebenen Größe.
+
+    Beispiel Ausgabe generiert mit $kddp starte Mandelbrot.ddp 27 18 100
+
+. . . . . . . . . . . . . . . . @ . . . . . . . . . . 
+. . . . . . . . . . . . . . . @ @ : . . . . . . . . . 
+. . . . . . . . . . . . : . : : @ : : . . . . . . . . 
+. . . . . . . . . . . . @ @ @ @ @ @ @ : # . . . . . . 
+. . . . . . . . . . . * @ @ @ @ @ @ @ @ : . . . . . . 
+. . . . . . : . : . . @ @ @ @ @ @ @ @ @ @ : . . . . . 
+. . . . . . : @ @ @ : @ @ @ @ @ @ @ @ @ @ : . . . . . 
+. . . . . : @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ . . . . . . 
+@ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ . . . . . . . 
+. . . . . : @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ . . . . . . 
+. . . . . . : @ @ @ : @ @ @ @ @ @ @ @ @ @ : . . . . . 
+. . . . . . : . : . . @ @ @ @ @ @ @ @ @ @ : . . . . . 
+. . . . . . . . . . . * @ @ @ @ @ @ @ @ : . . . . . . 
+. . . . . . . . . . . . @ @ @ @ @ @ @ : # . . . . . . 
+. . . . . . . . . . . . : . : : @ : : . . . . . . . . 
+. . . . . . . . . . . . . . . @ @ : . . . . . . . . . 
+. . . . . . . . . . . . . . . . @ . . . . . . . . . . 
+. . . . . . . . . . . . . . . . : @ . . . . . . . . . 
+
+]
+
+Binde "Duden/Texte" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
+
+[für den Alias]
+Die Funktion Kommazahl_Quadrat mit dem Parameter k vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+    Gib k mal k zurück.
+Und kann so benutzt werden:
+    "<k> quadriert"
+
+[für den Alias]
+Die Funktion Quadriere_Kommazahl mit dem Parameter k vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
+    Vervielfache k um k.
+Und kann so benutzt werden:
+    "Quadriere <k>"
+
+[
+    quadrat einer komplexen Zahl mit 3 Produkten
+    für den Alias
+]
+Die Funktion komplexes_quadrat mit den Parametern r und i vom Typ Kommazahlen Referenz und Kommazahlen Referenz, gibt nichts zurück, macht:
+    Die Kommazahl summe ist i plus r.
+    
+    Quadriere r.
+    Quadriere i.
+    Quadriere summe.
+
+    Die Kommazahl r2 ist r minus i.
+    Die Kommazahl i2 ist summe minus (r plus i).
+    Speichere r2 in r.
+    Speichere i2 in i.
+Und kann so benutzt werden:
+    "Quadriere <r>i<i>"
+
+
+[Projeziert den Wert s innerhalb des Intervalls [a1,a2] auf die Folge [b1,b2]]
+Die Funktion Intervall_Projektion mit den Parametern s, a1, a2, b1 und b2 vom Typ Kommazahl, Kommazahl, Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+    Gib b1 plus (((s minus a1) mal (b2 minus b1)) durch (a2 minus a1)) zurück.
+Und kann so benutzt werden:
+    "<s> von <a1> bis <a2> auf <b1> bis <b2> projeziert"
+
+Die Text Liste args ist die Befehlszeilenargumente.
+Wenn die Länge von args kleiner als 4 ist, dann:
+    Schreibe "Befehlszeilen Argumente bitte im Format \"<Breite> <Höhe> <Max_Iterationen>\" angeben \n".
+    Beende das Programm.
+
+Die Zahl Breite ist (args an der Stelle 2) als Zahl. [breite in ascii zeichen]
+Die Zahl Höhe ist (args an der Stelle 3) als Zahl. [höhe in ascii zeichen]
+
+Die Zahl Max_Iterationen ist (args an der Stelle 4) als Zahl. [maximale iterationen]
+
+
+Die Funktion finde_Anzahl_iterationen mit den Parametern c_r und c_i vom Typ Kommazahl und Kommazahl, gibt eine Zahl zurück, macht:
+    Die Zahl iterationen ist 1.
+    Die Kommazahl f_r ist c_r.
+    Die Kommazahl f_i ist c_i.
+
+    Solange f_r quadriert plus f_i quadriert kleiner als, oder 4,0 und iterationen kleiner als Max_Iterationen ist, mache:
+        Quadriere f_r i f_i.
+        [Komplexe addition]
+        Erhöhe f_r um c_r.
+        Erhöhe f_i um c_i.
+
+        Erhöhe iterationen um 1.
+
+    Gib iterationen zurück.
+Und kann so benutzt werden:
+    "die Anzahl der Mandelbrot-Iterationen von <c_r>i<c_i>"
+
+Die Funktion finde_Farbe mit dem Parameter iterationen vom Typ Zahl, gibt einen Buchstaben zurück, macht:
+    Wenn iterationen kleiner als 10 ist, gib '.' zurück.
+    Wenn aber iterationen kleiner als 20 ist, gib ':' zurück.
+    Wenn aber iterationen kleiner als 50 ist, gib '*' zurück.
+    Wenn aber iterationen kleiner als 80 ist, gib '#' zurück.
+    Gib '@' zurück.
+Und kann so benutzt werden:
+    "die Farbe bei <iterationen> Iterationen"
+
+Für jede Zahl y von 1 bis Höhe, mache:
+    Für jede Zahl x von 1 bis Breite, mache:
+        Die Kommazahl c_r ist (x als Kommazahl) von 0,0 bis (Breite als Kommazahl) auf -2,0 bis 1,0 projeziert.
+        Die Kommazahl c_i ist (y als Kommazahl) von 0,0 bis (Höhe als Kommazahl) auf -1,0 bis 1,0 projeziert.
+
+        Die Zahl iterationen ist die Anzahl der Mandelbrot-Iterationen von c_r i c_i.
+        [Speichere die Farbe bei iterationen Iterationen in Zeilen an der Stelle y, an der Stelle x.]
+        Schreibe (die Farbe bei iterationen Iterationen).
+        Schreibe ' '.
+    Schreibe '\n'.
