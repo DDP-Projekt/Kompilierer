@@ -508,7 +508,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				// the last statement must be a return statement
 				lastStmt := body.Statements[len(body.Statements)-1]
 				if _, ok := lastStmt.(*ast.ReturnStmt); !ok {
-					perr(lastStmt.Token(), lastStmt.GetRange(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+					perr(lastStmt.Token(), token.NewRange(p.previous(), p.previous()), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
 				}
 			}
 		}
