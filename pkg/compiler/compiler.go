@@ -80,7 +80,7 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Syntax Baum")
+		return nil, fmt.Errorf("")
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)

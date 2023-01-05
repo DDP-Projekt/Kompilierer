@@ -83,6 +83,8 @@ func validateOptions(options *Options) error {
 
 // compile ddp-source-code from the given Options
 // if an error occured, the result is nil
+// if the given source code is not valid ddp-code
+// an error with an empty message is returned
 func Compile(options Options) (*Result, error) {
 	// validate the options
 	err := validateOptions(&options)

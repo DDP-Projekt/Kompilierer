@@ -9,7 +9,9 @@ import (
 func main() {
 	// run sub-commands like build or help
 	if err := runCommands(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		if err.Error() != "" {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+		}
 		os.Exit(1)
 	}
 }
