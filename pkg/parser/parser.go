@@ -219,10 +219,10 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(p.peekN(-2), p.peek()),
-				file: p.peek().File,
-				msg:  "Es wurde ein Variablen Name erwartet",
+			Err: ddperror.Error{
+				Range: token.NewRange(p.peekN(-2), p.peek()),
+				File:  p.peek().File,
+				Msg:   "Es wurde ein Variablen Name erwartet",
 			},
 			Tok: p.peek(),
 		}
@@ -290,10 +290,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(begin, p.peek()),
-				file: p.peek().File,
-				msg:  "Es wurde ein Funktions Name erwartet",
+			Err: ddperror.Error{
+				Range: token.NewRange(begin, p.peek()),
+				File:  p.peek().File,
+				Msg:   "Es wurde ein Funktions Name erwartet",
 			},
 			Tok: p.peek(),
 		}
@@ -457,10 +457,10 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		p.Errored = true
 		p.cur = aliasEnd
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(begin, p.previous()),
-				file: p.previous().File,
-				msg:  errorMessage,
+			Err: ddperror.Error{
+				Range: token.NewRange(begin, p.previous()),
+				File:  p.previous().File,
+				Msg:   errorMessage,
 			},
 			Tok: Funktion,
 		}
@@ -609,10 +609,10 @@ func (p *Parser) aliasDecl() ast.Statement {
 		rnge := token.NewRange(begin, p.previous())
 		p.err(begin, rnge, msg)
 		return &ast.BadStmt{
-			Err: &ParserError{
-				rang: rnge,
-				file: begin.File,
-				msg:  msg,
+			Err: ddperror.Error{
+				Range: rnge,
+				File:  begin.File,
+				Msg:   msg,
 			},
 			Tok: begin,
 		}
@@ -1083,10 +1083,10 @@ func (p *Parser) forStatement() ast.Statement {
 	msg := fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous())
 	p.err(p.previous(), p.peek().Range, msg)
 	return &ast.BadStmt{
-		Err: &ParserError{
-			rang: token.NewRange(For, p.previous()),
-			file: p.previous().File,
-			msg:  msg,
+		Err: ddperror.Error{
+			Range: token.NewRange(For, p.previous()),
+			File:  p.previous().File,
+			Msg:   msg,
 		},
 		Tok: p.previous(),
 	}
@@ -1298,13 +1298,13 @@ func (p *Parser) bitShift() ast.Expression {
 			msg := fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), p.previous().Range, msg)
 			return &ast.BadExpr{
-				Err: &ParserError{
-					rang: token.Range{
+				Err: ddperror.Error{
+					Range: token.Range{
 						Start: expr.GetRange().Start,
 						End:   token.NewEndPos(p.peek()),
 					},
-					file: expr.Token().File,
-					msg:  msg,
+					File: expr.Token().File,
+					Msg:  msg,
 				},
 				Tok: expr.Token(),
 			}
@@ -1578,10 +1578,10 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			msg := fmt.Sprintf("Es wurde ein Literal oder ein Name erwartet aber '%s' gefunden", p.previous().Literal)
 			p.err(p.previous(), p.previous().Range, msg)
 			lhs = &ast.BadExpr{
-				Err: &ParserError{
-					rang: tok.Range,
-					file: tok.File,
-					msg:  msg,
+				Err: ddperror.Error{
+					Range: tok.Range,
+					File:  tok.File,
+					Msg:   msg,
 				},
 				Tok: tok,
 			}
@@ -2186,10 +2186,10 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 func (p *Parser) err(token token.Token, rnge token.Range, msg string, args ...any) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(&ParserError{
-			file: token.File,
-			rang: rnge,
-			msg:  fmt.Sprintf(msg, args...),
+		p.errorHandler(ddperror.Error{
+			File:  token.File,
+			Range: rnge,
+			Msg:   fmt.Sprintf(msg, args...),
 		})
 	}
 }

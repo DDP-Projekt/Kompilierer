@@ -61,7 +61,7 @@ func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 // helper for errors
 func (t *Typechecker) err(tok token.Token, rnge token.Range, msg string, args ...any) {
 	t.Errored = true
-	t.ErrorHandler(&TypecheckerError{file: tok.File, rang: rnge, msg: fmt.Sprintf(msg, args...)})
+	t.ErrorHandler(ddperror.Error{File: tok.File, Range: rnge, Msg: fmt.Sprintf(msg, args...)})
 }
 
 // helper for commmon error message

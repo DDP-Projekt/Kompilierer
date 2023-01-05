@@ -500,7 +500,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		irFunc.Linkage = enum.LinkageExternal
 		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
 		if err != nil {
-			c.errorHandler(&CompilerError{file: d.ExternFile.File, rang: d.ExternFile.Range, msg: err.Error()})
+			c.errorHandler(ddperror.Error{File: d.ExternFile.File, Range: d.ExternFile.Range, Msg: err.Error()})
 		}
 		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {

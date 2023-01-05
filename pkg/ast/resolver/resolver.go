@@ -74,7 +74,7 @@ func (r *Resolver) exitScope() {
 // helper for errors
 func (r *Resolver) err(tok token.Token, rnge token.Range, msg string, args ...any) {
 	r.Errored = true
-	r.ErrorHandler(&ResolverError{file: tok.File, rang: rnge, msg: fmt.Sprintf(msg, args...)})
+	r.ErrorHandler(ddperror.Error{File: tok.File, Range: rnge, Msg: fmt.Sprintf(msg, args...)})
 }
 
 func (*Resolver) BaseVisitor() {}

@@ -15,7 +15,7 @@ func EmptyHandler(Error) {}
 // basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
 	return func(err Error) {
-		fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
+		fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File, err.Range.Start.Line, err.Range.Start.Column, err.Msg)
 	}
 }
 
@@ -24,8 +24,8 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 	lines := strings.Split(string(src), "\n")
 
 	return func(err Error) {
-		if err.File() != file {
-			fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
+		if err.File != file {
+			fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File, err.Range.Start.Line, err.Range.Start.Column, err.Msg)
 			return
 		}
 
@@ -35,9 +35,9 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 			}
 		}
 
-		rnge := err.GetRange()
+		rnge := err.Range
 		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", uMax(rnge.Start.Line, rnge.End.Line)))
-		fmt.Fprintf(w, "Fehler in %s (Z %d, S %d)\n\n", err.File(), rnge.Start.Line, rnge.Start.Column)
+		fmt.Fprintf(w, "Fehler in %s (Z %d, S %d)\n\n", err.File, rnge.Start.Line, rnge.Start.Column)
 
 		for lineIndex := rnge.Start.Line - 1; lineIndex < rnge.End.Line; lineIndex++ {
 			replaceAndCount := func(slice []rune) int {
@@ -80,7 +80,7 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 			fmt.Fprint(w, "\n")
 		}
 
-		fmt.Fprintf(w, "\n%s.\n\n", err.Msg())
+		fmt.Fprintf(w, "\n%s.\n\n", err.Msg)
 		printN(maxLineCount, "-")
 		fmt.Fprint(w, "\n\n")
 	}

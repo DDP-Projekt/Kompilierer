@@ -104,7 +104,7 @@ func (decl *BadDecl) Token() token.Token  { return decl.Tok }
 func (decl *VarDecl) Token() token.Token  { return decl.Name }
 func (decl *FuncDecl) Token() token.Token { return decl.Tok }
 
-func (decl *BadDecl) GetRange() token.Range  { return decl.Err.GetRange() }
+func (decl *BadDecl) GetRange() token.Range  { return decl.Err.Range }
 func (decl *VarDecl) GetRange() token.Range  { return decl.Range }
 func (decl *FuncDecl) GetRange() token.Range { return decl.Range }
 
@@ -249,7 +249,7 @@ func (expr *CastExpr) Token() token.Token    { return expr.Lhs.Token() }
 func (expr *Grouping) Token() token.Token    { return expr.LParen }
 func (expr *FuncCall) Token() token.Token    { return expr.Tok }
 
-func (expr *BadExpr) GetRange() token.Range { return expr.Err.GetRange() }
+func (expr *BadExpr) GetRange() token.Range { return expr.Err.Range }
 func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
@@ -393,7 +393,7 @@ func (stmt *ForStmt) Token() token.Token      { return stmt.For }
 func (stmt *ForRangeStmt) Token() token.Token { return stmt.For }
 func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
 
-func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.GetRange() }
+func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.Range }
 func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
 func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
 func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
