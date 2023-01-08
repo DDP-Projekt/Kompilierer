@@ -115,7 +115,25 @@ func (p *Parser) synchronize() {
 		}
 		// these tokens typically begin statements which begin a new node
 		switch p.peek().Type {
-		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON, token.MACHE, token.WIEDERHOLE:
+		// DIE/DER does not always indicate a declaration
+		// so we only return if the next token fits
+		case token.DIE:
+			switch p.peekN(1).Type {
+			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN,
+				token.BUCHSTABEN, token.TEXT, token.BOOLEAN, token.FUNKTION:
+				{
+					return
+				}
+			}
+		case token.DER:
+			switch p.peekN(1).Type {
+			case token.BOOLEAN, token.TEXT, token.BUCHSTABE, token.ALIAS:
+				{
+					return
+				}
+			}
+		case token.WENN, token.FÜR, token.GIB, token.VERLASSE, token.SOLANGE,
+			token.COLON, token.MACHE, token.DANN, token.WIEDERHOLE:
 			return
 		}
 		p.advance()
@@ -2222,6 +2240,7 @@ func (p *Parser) peek() token.Token {
 }
 
 // returns the n'th token starting from current without advancing
+// p.peekN(0) is equal to p.peek()
 func (p *Parser) peekN(n int) token.Token {
 	if p.cur+n >= len(p.tokens) || p.cur+n < 0 {
 		return p.tokens[len(p.tokens)-1] // EOF
