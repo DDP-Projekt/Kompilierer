@@ -1083,8 +1083,12 @@ func (p *Parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	expr := p.expression()
 	p.consumeN(token.ZURÜCK, token.DOT)
+	rnge := token.NewRange(Return, p.previous())
+	if p.currentFunction == "" {
+		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN, Return.File)
+	}
 	return &ast.ReturnStmt{
-		Range:  token.NewRange(Return, p.previous()),
+		Range:  rnge,
 		Func:   p.currentFunction,
 		Return: Return,
 		Value:  expr,
@@ -1094,6 +1098,10 @@ func (p *Parser) returnStatement() ast.Statement {
 func (p *Parser) voidReturn() ast.Statement {
 	Leave := p.previous()
 	p.consumeN(token.DIE, token.FUNKTION, token.DOT)
+	rnge := token.NewRange(Leave, p.previous())
+	if p.currentFunction == "" {
+		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN, Leave.File)
+	}
 	return &ast.ReturnStmt{
 		Range:  token.NewRange(Leave, p.previous()),
 		Func:   p.currentFunction,

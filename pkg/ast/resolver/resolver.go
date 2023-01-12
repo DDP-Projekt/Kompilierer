@@ -72,9 +72,9 @@ func (r *Resolver) exitScope() {
 }
 
 // helper for errors
-func (r *Resolver) err(tok token.Token, rnge token.Range, msg string, args ...any) {
+func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string, file string) {
 	r.Errored = true
-	r.ErrorHandler(ddperror.Error{File: tok.File, Range: rnge, Msg: fmt.Sprintf(msg, args...)})
+	r.ErrorHandler(ddperror.New(code, Range, msg, file))
 }
 
 func (*Resolver) BaseVisitor() {}
@@ -87,7 +87,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl); existed {
-		r.err(decl.Name, decl.Name.Range, "Die Variable '%s' existiert bereits", decl.Name.Literal) // variables may only be declared once in the same scope
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Variable '%s' existiert bereits", decl.Name.Literal), decl.Name.File) // variables may only be declared once in the same scope
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
@@ -116,7 +116,7 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
 func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	// check if the variable exists
 	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
-		r.err(expr.Token(), expr.Token().Range, "Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal)
+		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal), expr.Literal.File)
 	}
 }
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
@@ -185,7 +185,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	case *ast.Ident:
 		// check if the variable exists
 		if _, exists := r.CurrentTable.LookupVar(assign.Literal.Literal); !exists {
-			r.err(stmt.Token(), assign.Literal.Range, "Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal)
+			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal), assign.Literal.File)
 		}
 	case *ast.Indexing:
 		r.visit(assign.Lhs)
@@ -236,9 +236,6 @@ func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	r.exitScope()
 }
 func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {
-	if _, exists := r.CurrentTable.LookupFunc(stmt.Func); !exists {
-		r.err(stmt.Token(), stmt.GetRange(), "Man kann nur aus Funktionen einen Wert zurückgeben")
-	}
 	if stmt.Value == nil {
 		return
 	}

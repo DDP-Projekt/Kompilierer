@@ -25,4 +25,5 @@ const (
 	MSG_CHAR_LITERAL_TOO_LARGE = "Ein Buchstaben Literal darf nur einen Buchstaben enthalten"
 	MSG_INVALID_UTF8           = "Der Quelltext entspricht nicht dem UTF-8 Standard"
 	MSG_INVALID_FILE_EXTENSION = "Ungültiger Datei Typ (nicht .ddp)"
+	MSG_GLOBAL_RETURN          = "Man kann nur aus Funktionen einen Wert zurückgeben"
 )
