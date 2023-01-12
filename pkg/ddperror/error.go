@@ -21,6 +21,10 @@ func (err Error) String() string {
 	return fmt.Sprintf("(%04d) %s (Z: %d, S: %d): %s", err.Code, err.File, err.Range.Start.Line, err.Range.Start.Column, err.Msg)
 }
 
+func (err Error) Error() string {
+	return err.Msg
+}
+
 // create a new Error from the given parameters
 func New(code Code, Range token.Range, msg, file string) Error {
 	return Error{
