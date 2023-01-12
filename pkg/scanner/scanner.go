@@ -77,6 +77,7 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 
 		file, err := os.ReadFile(filePath)
 		if err != nil {
+
 			return nil, err
 		}
 
@@ -293,14 +294,14 @@ func (s *Scanner) identifier() token.Token {
 	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
 		lit := s.NextToken()
 		if lit.Type != token.STRING {
-			s.errorHandler(ddperror.Error{Range: lit.Range, File: s.file, Msg: "Nach 'Binde' muss ein Text Literal folgen"})
+			s.errorHandler(ddperror.New(ddperror.SYN_UNEXPECTED_TOKEN, lit.Range, "Nach 'Binde' muss ein Text Literal folgen", s.file))
 			return lit
 		}
 
 		if tok := s.NextToken(); tok.Type != token.EIN {
-			s.errorHandler(ddperror.Error{Range: tok.Range, File: s.file, Msg: "Es wurde 'ein' erwartet"})
+			s.errorHandler(ddperror.New(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "ein"), s.file))
 		} else if tok := s.NextToken(); tok.Type != token.DOT {
-			s.errorHandler(ddperror.Error{Range: tok.Range, File: s.file, Msg: "Nach 'ein' muss ein Punkt folgen"})
+			s.errorHandler(ddperror.New(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "'.'"), s.file))
 		}
 
 		literalContent := strings.Trim(lit.Literal, "\"")
@@ -312,10 +313,10 @@ func (s *Scanner) identifier() token.Token {
 			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
 		}
 		if err != nil {
-			s.errorHandler(ddperror.Error{Range: lit.Range, File: s.file, Msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error())})
+			s.errorHandler(ddperror.New(ddperror.SYN_MALFORMED_INCLUDE_PATH, lit.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", literalContent+".ddp", err.Error()), s.file))
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
 			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
-				s.errorHandler(ddperror.Error{Range: lit.Range, File: s.file, Msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error())})
+				s.errorHandler(ddperror.New{Range: lit.Range, File: s.file, Msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error())})
 			} else {
 				// append the already included files
 				for k, v := range s.includedFiles {
@@ -473,14 +474,10 @@ func (s *Scanner) peekNext() rune {
 	return s.src[s.cur+1]
 }
 
-func (s *Scanner) err(msg string) {
-	e := ddperror.Error{
-		Range: s.currentRange(),
-		File:  s.file,
-		Msg:   msg,
-	}
+func (s *Scanner) err(code ddperror.Code, Range token.Range, msg string, file string) {
+	e := ddperror.New(code, Range, msg, file)
 	if s.aliasMode() {
-		e.Msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg)
+		e.Msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), e.Msg)
 	}
 	s.errorHandler(e)
 }
