@@ -1,41 +1,41 @@
 Die Funktion IstLeer mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b gleich ' ' oder b gleich '\n' oder b gleich '\t' oder b gleich '\r' zurück.
+	Gib b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein leeres Zeichen" [ist]
+	"<b> ein leeres Zeichen ist"
 
 Die Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
-		(z größer als, oder 65 und z kleiner als, oder 90) oder
-		(z größer als, oder 192 und z kleiner als, oder 214) oder
-		(z größer als, oder 216 und z kleiner als, oder 222).
+		(z größer als, oder 65 ist und z kleiner als, oder 90 ist) oder
+		(z größer als, oder 192 ist und z kleiner als, oder 214 ist) oder
+		(z größer als, oder 216 ist und z kleiner als, oder 222 ist).
 		[... es gibt noch viel mehr ...]
 	Gib erg zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein großer Buchstabe" [ist]
+	[Wenn] "<b> ein großer Buchstabe ist"
 
 Die Funktion IstKlein mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
-		(z größer als, oder 96 und z kleiner als, oder 122) oder
-		(z größer als, oder 223 und z kleiner als, oder 246) oder
-		(z größer als, oder 248 und z kleiner als, oder 255).
+		(z größer als, oder 96 ist und z kleiner als, oder 122 ist) oder
+		(z größer als, oder 223 ist und z kleiner als, oder 246 ist) oder
+		(z größer als, oder 248 ist und z kleiner als, oder 255 ist).
 		[... es gibt noch viel mehr ...]
 	Gib erg zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein kleiner Buchstabe" [ist]
+	[Wenn] "<b> ein kleiner Buchstabe ist"
 
 Die Funktion IstLeerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b gleich ' ' zurück.
+	Gib b gleich ' ' ist zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein Leerzeichen" [ist]
+	[Wenn] "<b> ein Leerzeichen ist"
 
 Die Funktion IstZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b als Zahl größer als, oder 48 und b als Zahl kleiner als, oder 57 zurück.
+	Gib b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> eine Zahl" [ist]
+	[Wenn] "<b> eine Zahl ist"
 
 Die Funktion IstKontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b als Zahl größer als, oder 0 und b als Zahl kleiner als, oder 31 zurück.
+	Gib b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein Kontrollzeichen" [ist]
+	[Wenn] "<b> ein Kontrollzeichen ist"
