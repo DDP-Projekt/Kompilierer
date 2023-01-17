@@ -5,11 +5,11 @@ Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangW
 Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
 Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, guh??]
 
-Schreibe ('e' "Hello World" enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
-Schreibe ('!' "Hello World" enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
+Schreibe ("Hello World" 'e' enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
+Schreibe ("Hello World" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
 
-Schreibe ("ello" "Hello World" enthält) auf eine Zeile. [EnthältText, wahr]
-Schreibe ("guh" "Hello World" enthält) auf eine Zeile. [EnthältText, falsch]
+Schreibe ("Hello World" "ello" enthält) auf eine Zeile. [EnthältText, wahr]
+Schreibe ("Hello World" "guh" enthält) auf eine Zeile. [EnthältText, falsch]
 
 Schreibe ('H' am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitBuchstabe, wahr]
 Schreibe (' ' am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitBuchstabe, falsch]
