@@ -68,16 +68,6 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
-	// catch panics and instead set the returned error
-	defer func() {
-		if err := recover(); err != nil {
-			rerr = fmt.Errorf("%v", err)
-			if result != nil {
-				result.Output = ""
-			}
-		}
-	}()
-
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
 		return nil, fmt.Errorf("")
