@@ -37,7 +37,16 @@ const (
 
 // type error codes
 const (
-	TYP_TYPE_MISMATCH Code = iota + 3000
+	TYP_TYPE_MISMATCH      Code = iota + 3000 // simple type mismatch in an operator
+	TYP_BAD_ASSIGNEMENT                       // invalid variable assignement
+	TYP_BAD_INDEXING                          // type error in index expression
+	TYP_BAD_LIST_LITERAL                      // wrong type in list literal
+	TYP_BAD_CAST                              // invalid type conversion
+	TYP_EXPECTED_REFERENCE                    // a variable (reference parameter) was expected
+	TYP_INVALID_REFERENCE                     // a char in a string was tried to be passed as refernce
+	TYP_BAD_CONDITION                         // condition value was not of type boolean
+	TYP_BAD_FOR                               // one of the expressions in a for loop was not of type int
+	TYP_WRONG_RETURN_TYPE                     // the return type did not match the function signature
 )
 
 func (code Code) IsMiscError() bool {

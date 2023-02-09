@@ -1966,19 +1966,19 @@ func (p *Parser) parseType() ddptypes.Type {
 		if !p.match(token.LISTE) {
 			return tokenTypeToType(p.previous().Type)
 		}
-		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.ZAHL)
+		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.KOMMAZAHL)
+		return ddptypes.List(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
 			return ddptypes.Char()
 		}
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.BUCHSTABE)
+		return ddptypes.List(ddptypes.BUCHSTABE)
 	}
 
 	return ddptypes.Illegal() // unreachable
@@ -1996,16 +1996,16 @@ func (p *Parser) parseListType() ddptypes.Type {
 	switch p.previous().Type {
 	case token.BOOLEAN, token.TEXT:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.ZAHL)
+		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.KOMMAZAHL)
+		return ddptypes.List(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.BUCHSTABE)
+		return ddptypes.List(ddptypes.BUCHSTABE)
 	}
 
 	return ddptypes.Illegal() // unreachable
@@ -2026,38 +2026,38 @@ func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 		return tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive), false
+			return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(tokenTypeToType(p.peekN(-3).Type).Primitive), true
+			return ddptypes.List(tokenTypeToType(p.peekN(-3).Type).Primitive), true
 		} else if p.match(token.REFERENZ) {
-			return ddptypes.NewPrimitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
+			return ddptypes.Primitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
 		}
 		return tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.ZAHL), false
+			return ddptypes.List(ddptypes.ZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.ZAHL), true
+			return ddptypes.List(ddptypes.ZAHL), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Int(), true
 	case token.KOMMAZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.KOMMAZAHL), false
+			return ddptypes.List(ddptypes.KOMMAZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.KOMMAZAHL), true
+			return ddptypes.List(ddptypes.KOMMAZAHL), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Float(), true
 	case token.BUCHSTABEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.BUCHSTABE), false
+			return ddptypes.List(ddptypes.BUCHSTABE), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.BUCHSTABE), true
+			return ddptypes.List(ddptypes.BUCHSTABE), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Char(), true

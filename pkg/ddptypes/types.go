@@ -75,12 +75,12 @@ func (ddpType Type) IsNumeric() bool {
 }
 
 // create a new DDPType from a tokenType
-func NewPrimitive(primitiveType PrimitiveType) Type {
+func Primitive(primitiveType PrimitiveType) Type {
 	return Type{Primitive: primitiveType, IsList: false}
 }
 
 // create a new DDPType from a element type
-func NewList(elementType PrimitiveType) Type {
+func List(elementType PrimitiveType) Type {
 	return Type{Primitive: elementType, IsList: true}
 }
 
@@ -97,7 +97,7 @@ var (
 )
 
 func Illegal() Type {
-	return NewPrimitive(ILLEGAL)
+	return Primitive(ILLEGAL)
 }
 
 // this function serves as constant variable for a void type
