@@ -51,12 +51,24 @@ void Schreibe_Text(ddpstring* p1) {
 }
 
 #ifdef _WIN32
+// wrapper to get an error message for GetLastError()
+// expects fmt to be of format "<message>%s"
+static void runtime_error_getlasterror(int exit_code, const char* fmt) {
+	char error_buffer[1024];
+	DWORD error_code = GetLastError();
+	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, 1024, NULL)) {
+		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", GetLastError());
+	}
+	runtime_error(exit_code, fmt, error_buffer);
+}
+
 static HANDLE* get_stdin_handle() {
 	static HANDLE stdin_hndl;
 	static bool initialized = false;
 	if (!initialized) {
 		stdin_hndl = GetStdHandle(STD_INPUT_HANDLE);
-		if (stdin_hndl == INVALID_HANDLE_VALUE) runtime_error(1, "GetStdHandle failed with code %ld", GetLastError());
+		if (stdin_hndl == INVALID_HANDLE_VALUE) runtime_error_getlasterror(1, "GetStdHandle failed: %s");
 	}
 	return &stdin_hndl;
 }
@@ -69,9 +81,9 @@ ddpchar __Extern_Lies_Buchstabe(ddpboolref __war_eof) {
 		wchar_t buff[2];
 		char mbStr[5];
 		unsigned long read;
-		if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error(1, "ReadConsoleW failed with code %ld", GetLastError());
+		if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error_getlasterror(1, "ReadConsoleW failed: %s");
 		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
-		if (size == 0) runtime_error(1, "WideCharToMultiByte (1) failed with code %ld", GetLastError());
+		if (size == 0) runtime_error_getlasterror(1, "WideCharToMultiByte (1) failed: %s");
 		mbStr[size] = '\0';
 		ddpchar ch = utf8_string_to_char(mbStr);
 		if (ch == 26) *__war_eof = true; // set eof for ctrl+Z
