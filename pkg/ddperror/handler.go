@@ -51,7 +51,7 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 
 		rnge := err.Range
 		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", uMax(rnge.Start.Line, rnge.End.Line)))
-		fmt.Fprintf(w, "%s", makeErrorHeader(err))
+		fmt.Fprintf(w, "%s\n\n", makeErrorHeader(err))
 
 		for lineIndex := rnge.Start.Line - 1; lineIndex < rnge.End.Line; lineIndex++ {
 			replaceAndCount := func(slice []rune) int {
