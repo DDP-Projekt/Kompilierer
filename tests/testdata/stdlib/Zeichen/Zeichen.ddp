@@ -2,44 +2,44 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/Zeichen" ein.
 
 Schreibe "--- IstLeer Test ---" auf eine Zeile.
-Schreibe (' ' ein leeres Zeichen) auf eine Zeile.
-Schreibe ('\n' ein leeres Zeichen) auf eine Zeile.
-Schreibe ('\t' ein leeres Zeichen) auf eine Zeile.
-Schreibe ('\r' ein leeres Zeichen) auf eine Zeile.
-Schreibe ('a' ein leeres Zeichen) auf eine Zeile.
+Schreibe (' ' ein leeres Zeichen ist) auf eine Zeile.
+Schreibe ('\n' ein leeres Zeichen ist) auf eine Zeile.
+Schreibe ('\t' ein leeres Zeichen ist) auf eine Zeile.
+Schreibe ('\r' ein leeres Zeichen ist) auf eine Zeile.
+Schreibe ('a' ein leeres Zeichen ist) auf eine Zeile.
 
 Schreibe "--- IstGroß Test ---" auf eine Zeile.
-Schreibe ('A' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('K' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('Z' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('Ö' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('Ä' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('Ü' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('a' ein großer Buchstabe) auf eine Zeile.
-Schreibe ('#' ein großer Buchstabe) auf eine Zeile.
+Schreibe ('A' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('K' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('Z' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('Ö' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('Ä' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('Ü' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('a' ein großer Buchstabe ist) auf eine Zeile.
+Schreibe ('#' ein großer Buchstabe ist) auf eine Zeile.
 
 Schreibe "--- IstKlein Test ---" auf eine Zeile.
-Schreibe ('a' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('k' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('z' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('ö' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('ä' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('ü' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('A' ein kleiner Buchstabe) auf eine Zeile.
-Schreibe ('#' ein kleiner Buchstabe) auf eine Zeile.
+Schreibe ('a' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('k' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('z' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('ö' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('ä' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('ü' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('A' ein kleiner Buchstabe ist) auf eine Zeile.
+Schreibe ('#' ein kleiner Buchstabe ist) auf eine Zeile.
 
 Schreibe "--- IstLeerzeichen Test ---" auf eine Zeile.
-Schreibe (' ' ein Leerzeichen) auf eine Zeile.
-Schreibe ('k' ein Leerzeichen) auf eine Zeile.
+Schreibe (' ' ein Leerzeichen ist) auf eine Zeile.
+Schreibe ('k' ein Leerzeichen ist) auf eine Zeile.
 
 Schreibe "--- IstZahl Test ---" auf eine Zeile.
-Schreibe ('0' eine Zahl) auf eine Zeile.
-Schreibe ('1' eine Zahl) auf eine Zeile.
-Schreibe ('2' eine Zahl) auf eine Zeile.
-Schreibe ('3' eine Zahl) auf eine Zeile.
-Schreibe ('4' eine Zahl) auf eine Zeile.
-Schreibe ('5' eine Zahl) auf eine Zeile.
-Schreibe ('6' eine Zahl) auf eine Zeile.
-Schreibe ('7' eine Zahl) auf eine Zeile.
-Schreibe ('8' eine Zahl) auf eine Zeile.
-Schreibe ('9' eine Zahl).
+Schreibe ('0' eine Zahl ist) auf eine Zeile.
+Schreibe ('1' eine Zahl ist) auf eine Zeile.
+Schreibe ('2' eine Zahl ist) auf eine Zeile.
+Schreibe ('3' eine Zahl ist) auf eine Zeile.
+Schreibe ('4' eine Zahl ist) auf eine Zeile.
+Schreibe ('5' eine Zahl ist) auf eine Zeile.
+Schreibe ('6' eine Zahl ist) auf eine Zeile.
+Schreibe ('7' eine Zahl ist) auf eine Zeile.
+Schreibe ('8' eine Zahl ist) auf eine Zeile.
+Schreibe ('9' eine Zahl ist).

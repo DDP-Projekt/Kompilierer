@@ -11,12 +11,12 @@ Der Boolean __war_eof ist falsch.
 Die Funktion War_EOF gibt einen Boolean zurück, macht:
 	Gib __war_eof zurück.
 Und kann so benutzt werden:
-	"die Benutzereingabe zu Ende gewesen"
+	"die Benutzereingabe zu Ende gewesen ist"
 
 Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
 	Gib nicht __war_eof zurück.
 Und kann so benutzt werden:
-	"die Benutzereingabe nicht vorbei"
+	"die Benutzereingabe nicht vorbei ist"
 
 Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
 	__war_eof ist falsch.
@@ -64,13 +64,13 @@ Der Buchstabe __Gepufferter_Buchstabe ist 0 als Buchstabe.
 Die Funktion Lies_Token_in_Puffer gibt einen Text zurück, macht:
 	[vorangehende Leerstellen überspringen]
 	Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
-	Solange __Gepufferter_Buchstabe ein Leerzeichen oder __Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
+	Solange __Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
 		Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
 		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 
 	[Text bis Leerstelle Lesen]
 	Der Text token ist "".
-	Solange nicht (__Gepufferter_Buchstabe ein Leerzeichen oder __Gepufferter_Buchstabe ein Kontrollzeichen) ist, mache:
+	Solange nicht (__Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
 		Speichere token verkettet mit __Gepufferter_Buchstabe in token.
 		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 
@@ -169,11 +169,11 @@ Die Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
 		Wenn __Gepufferter_Buchstabe als Zahl ungleich 0 ist, Füge __Gepufferter_Buchstabe an zeile an.
 		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 	Sonst:
-		Solange __Gepufferter_Buchstabe ungleich '\n' und (__Gepufferter_Buchstabe ein Leerzeichen oder __Gepufferter_Buchstabe ein Kontrollzeichen) ist, mache:
+		Solange __Gepufferter_Buchstabe ungleich '\n' ist und (__Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
 			Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
 			Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 
-	Solange __Gepufferter_Buchstabe ungleich '\n' und die Benutzereingabe nicht vorbei ist, mache:
+	Solange __Gepufferter_Buchstabe ungleich '\n' ist und die Benutzereingabe nicht vorbei ist, mache:
 		Speichere zeile verkettet mit __Gepufferter_Buchstabe in zeile.
 		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
 
@@ -191,7 +191,7 @@ Die Funktion Hat_Token gibt einen Boolean zurück, macht:
 	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
 	Speichere den nächsten Text in __Eingabe_Puffer.
-	Gib [wahr wenn] die Länge von __Eingabe_Puffer größer als 0 [ist] zurück.
+	Gib [wahr wenn] die Länge von __Eingabe_Puffer größer als 0 ist zurück.
 Und kann so benutzt werden:
 	"eine Eingabe vorhanden"
 
@@ -200,7 +200,7 @@ Und kann so benutzt werden:
 	zu einer Zahl umgewandelt werden kann.
 ]
 Die Funktion Hat_Zahl gibt einen Boolean zurück, macht:
-	Gib eine Eingabe vorhanden und __Eingabe_Puffer eine Zahl [ist] zurück.
+	Gib eine Eingabe vorhanden und __Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe eine Zahl" oder
 	"die naechste Eingabe eine Zahl"
@@ -210,6 +210,6 @@ Und kann so benutzt werden:
 	gelesen werden kann.
 ]
 Die Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
-	Gib nicht __war_eof oder die Länge von __Eingabe_Puffer ungleich 0 oder __Gepufferter_Buchstabe als Zahl ungleich 0 zurück.
+	Gib nicht __war_eof oder die Länge von __Eingabe_Puffer ungleich 0 ist oder __Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
 Und kann so benutzt werden:
 	"ein Buchstabe vorhanden"
