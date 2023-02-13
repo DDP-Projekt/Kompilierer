@@ -1,6 +1,6 @@
 /*
-	This file defines functions to generate llvm-ir
-	that interacts with the ddp-runtime
+This file defines functions to generate llvm-ir
+that interacts with the ddp-runtime
 */
 package compiler
 
@@ -18,6 +18,7 @@ func (c *Compiler) declareExternalRuntimeFunction(name string, returnType types.
 	fun := c.mod.NewFunc(name, returnType, params...)
 	fun.CallingConv = enum.CallingConvC
 	fun.Linkage = enum.LinkageExternal
+	c.insertFunction(name, nil, fun)
 	return fun
 }
 
@@ -49,7 +50,7 @@ func (c *Compiler) initRuntimeFunctions() {
 
 // calls _ddp_reallocate from the runtime
 func (c *Compiler) _ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {
-	return c.cbb.NewCall(_ddp_reallocate_irfun, pointer, oldSize, newSize)
+	return c.cbb.NewBitCast(c.cbb.NewCall(_ddp_reallocate_irfun, pointer, oldSize, newSize), pointer.Type())
 }
 
 // dynamically allocates a single value of type typ

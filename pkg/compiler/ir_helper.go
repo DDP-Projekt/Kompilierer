@@ -12,10 +12,10 @@ import (
 
 // takes a value of pointerType and returns the type it points to
 func getPointeeType(ptr value.Value) types.Type {
-	return ptr.Type().(*types.PointerType).ElemType
+	return getPointeeTypeT(ptr.Type())
 }
 
-// assumes ptr is a types.PointerType and returns it ElementType
+// assumes ptr is a types.PointerType and returns its ElementType
 func getPointeeTypeT(ptr types.Type) types.Type {
 	return ptr.(*types.PointerType).ElemType
 }
@@ -26,6 +26,19 @@ func (c *Compiler) sizeof(typ types.Type) value.Value {
 	size_ptr := c.cbb.NewGetElementPtr(typ, constant.NewNull(ptr(typ)), newIntT(i32, 1))
 	size_i := c.cbb.NewPtrToInt(size_ptr, i64)
 	return size_i
+}
+
+// uses the GetElementPtr instruction to index a pointer
+// returns a pointer to the value
+func (c *Compiler) indexArray(arr value.Value, index value.Value) value.Value {
+	gep := c.cbb.NewGetElementPtr(getPointeeType(arr), arr, index)
+	gep.InBounds = true
+	return gep
+}
+
+func (c *Compiler) loadArrayElement(arr value.Value, index value.Value) value.Value {
+	elementPtr := c.indexArray(arr, index)
+	return c.cbb.NewLoad(getPointeeType(arr), elementPtr)
 }
 
 // uses the GetElementPtr instruction to index struct fields

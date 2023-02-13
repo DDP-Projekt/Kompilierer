@@ -74,7 +74,8 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
-	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
+	c.test_new_runtime_functions()
+	c.setupRuntimeFunctions() // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
 		"_ddp_ddpmain",
