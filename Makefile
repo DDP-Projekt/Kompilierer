@@ -31,7 +31,7 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test benchmark llvm
+.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm
 
 all: make_out_dir kddp runtime stdlib
 
@@ -77,9 +77,6 @@ test:
 
 test-memory:
 	go test -v ./tests '-run=(TestMemory)' | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
-
-benchmark:
-	go test -v ./tests -run ^a -bench . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 clean:
 	rm -r $(OUT_DIR)

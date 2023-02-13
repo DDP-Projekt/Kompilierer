@@ -23,6 +23,7 @@ type Parser struct {
 	comments     []token.Token    // all the comments from the original tokens slice
 	cur          int              // index of the current token
 	errorHandler ddperror.Handler // a function to which errors are passed
+	lastError    ddperror.Error   // latest reported error
 
 	funcAliases     []ast.FuncAlias          // all found aliases (+ inbuild aliases)
 	currentFunction string                   // function which is currently being parsed
@@ -115,7 +116,25 @@ func (p *Parser) synchronize() {
 		}
 		// these tokens typically begin statements which begin a new node
 		switch p.peek().Type {
-		case token.DER, token.DIE, token.WENN, token.FÜR, token.GIB, token.SOLANGE, token.COLON, token.MACHE, token.WIEDERHOLE:
+		// DIE/DER does not always indicate a declaration
+		// so we only return if the next token fits
+		case token.DIE:
+			switch p.peekN(1).Type {
+			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN,
+				token.BUCHSTABEN, token.TEXT, token.BOOLEAN, token.FUNKTION:
+				{
+					return
+				}
+			}
+		case token.DER:
+			switch p.peekN(1).Type {
+			case token.BOOLEAN, token.TEXT, token.BUCHSTABE, token.ALIAS:
+				{
+					return
+				}
+			}
+		case token.WENN, token.FÜR, token.GIB, token.VERLASSE, token.SOLANGE,
+			token.COLON, token.MACHE, token.DANN, token.WIEDERHOLE:
 			return
 		}
 		p.advance()
@@ -188,15 +207,13 @@ func (p *Parser) assignRhs() ast.Expression {
 			} else {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
 			}
-
-			p.consume(token.IST) // ist, after wahr/falsch wenn for grammar
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
 			expr = p.expression()
 
 			// validate that nothing follows after the literal
 			if _, ok := expr.(*ast.BoolLit); !ok {
-				p.err(expr.Token(), expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+				p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), ddperror.MsgGotExpected("ein Ausdruck", "ein Literal"), expr.Token().File)
 			}
 		}
 	} else {
@@ -219,10 +236,10 @@ func (p *Parser) varDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(p.peekN(-2), p.peek()),
-				file: p.peek().File,
-				msg:  "Es wurde ein Variablen Name erwartet",
+			Err: ddperror.Error{
+				Range: token.NewRange(p.peekN(-2), p.peek()),
+				File:  p.peek().File,
+				Msg:   "Es wurde ein Variablen Name erwartet",
 			},
 			Tok: p.peek(),
 		}
@@ -271,13 +288,9 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		}
 	}
 
-	errorMessage := ""
-	perr := func(tok token.Token, rnge token.Range, msg string) {
-		p.err(tok, rnge, msg)
+	perr := func(code ddperror.Code, Range token.Range, msg string, file string) {
+		p.err(code, Range, msg, file)
 		valid = false
-		if errorMessage == "" {
-			errorMessage = msg
-		}
 	}
 
 	begin := p.peekN(-2)
@@ -290,11 +303,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(begin, p.peek()),
-				file: p.peek().File,
-				msg:  "Es wurde ein Funktions Name erwartet",
-			},
+			Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.peek().File),
 			Tok: p.peek(),
 		}
 	}
@@ -310,8 +319,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		if p.matchN(token.DEN, token.PARAMETERN) {
 			singleParameter = false
 		} else if !p.matchN(token.DEM, token.PARAMETER) {
-			valid = false
-			p.err(p.peek(), p.peek().Range, "Es wurde 'de[n/m] Parameter[n]' erwartet aber '%s' gefunden", p.peek())
+			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"), p.peek().File)
 		}
 		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
@@ -319,8 +327,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		if !singleParameter {
 			addParamName := func(name token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
-					valid = false
-					perr(name, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal), name.File)
 				}
 				paramNames = append(paramNames, name)                                  // append the parameter name
 				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
@@ -336,7 +343,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 					addParamName(p.previous())
 				}
 				if !p.consumeN(token.UND, token.IDENTIFIER) {
-					perr(p.peek(), p.peek().Range, fmt.Sprintf("Es wurde 'und <letzter Parameter>' erwartet aber %s gefunden\nMeintest du vielleicht 'dem Parameter' anstatt 'den Parametern'?", p.peek().Literal))
+					perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?", p.peek().File)
 				}
 				addParamName(p.previous())
 			}
@@ -370,8 +377,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 	// we need as many parmeter names as types
 	if len(paramNames) != len(paramTypes) {
-		valid = false
-		perr(p.previous(), p.previous().Range, fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)))
+		perr(ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH, token.NewRange(paramNames[0], p.previous()), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)), paramNames[0].File)
 	}
 
 	// parse the return type declaration
@@ -397,7 +403,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		switch filepath.Ext(strings.Trim(definedIn.Literal, "\"")) {
 		case ".c", ".lib", ".a", ".o":
 		default:
-			perr(definedIn, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal), definedIn.File)
 		}
 	}
 
@@ -432,16 +438,15 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				perr(v, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+				perr(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten", v.File)
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
-					perr(v, v.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
+					perr(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun), v.File)
 				} else { // the alias is valid so we append it
 					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: paramTypesMap})
 				}
 			} else {
-				valid = false
-				perr(v, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+				perr(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", v.File)
 			}
 		}
 	}
@@ -449,19 +454,14 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	aliasEnd := p.cur // save the end of the function declaration for later
 
 	if p.currentFunction != "" {
-		valid = false
-		perr(begin, begin.Range, "Es können nur globale Funktionen deklariert werden")
+		perr(ddperror.SEM_NON_GLOBAL_FUNCTION, begin.Range, "Es können nur globale Funktionen deklariert werden", begin.File)
 	}
 
 	if !valid {
 		p.Errored = true
 		p.cur = aliasEnd
 		return &ast.BadDecl{
-			Err: &ParserError{
-				rang: token.NewRange(begin, p.previous()),
-				file: p.previous().File,
-				msg:  errorMessage,
-			},
+			Err: p.lastError,
 			Tok: Funktion,
 		}
 	}
@@ -491,7 +491,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
 		if existed := globalScope.InsertFunc(p.currentFunction, decl); existed { // insert the name of the current function
-			p.err(decl.Name, decl.Name.Range, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
+			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal), decl.Tok.File)
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
@@ -503,18 +503,18 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		// check that the function has a return statement if it needs one
 		if Typ != ddptypes.Void() { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
-				perr(Funktion, body.Range, "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+				perr(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN, body.Token().File)
 			} else {
 				// the last statement must be a return statement
 				lastStmt := body.Statements[len(body.Statements)-1]
 				if _, ok := lastStmt.(*ast.ReturnStmt); !ok {
-					perr(lastStmt.Token(), lastStmt.GetRange(), "Am Ende einer Funktion die etwas zurück gibt muss eine Rückgabe stehen")
+					perr(ddperror.SEM_MISSING_RETURN, token.NewRange(p.previous(), p.previous()), ddperror.MSG_MISSING_RETURN, lastStmt.Token().File)
 				}
 			}
 		}
 	} else {
 		if existed := p.resolver.CurrentTable.InsertFunc(name.Literal, decl); existed { // insert the name of the current function
-			p.err(decl.Name, decl.Name.Range, "Die Funktion '%s' existiert bereits", decl.Name.Literal) // functions may only be declared once
+			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal), decl.Tok.File)
 		}
 	}
 
@@ -572,7 +572,7 @@ func (p *Parser) aliasDecl() ast.Statement {
 
 	funDecl, ok := p.resolver.CurrentTable.LookupFunc(fun.Literal)
 	if !ok {
-		p.err(fun, fun.Range, "Die Funktion %s existiert nicht", fun.Literal)
+		p.err(ddperror.SEM_NAME_UNDEFINED, fun.Range, fmt.Sprintf("Die Funktion %s existiert nicht", fun.Literal), fun.File)
 		return nil
 	}
 
@@ -586,34 +586,24 @@ func (p *Parser) aliasDecl() ast.Statement {
 
 	// scan the raw alias withouth the ""
 	var alias *ast.FuncAlias
-	if aliasTokens, err := scanner.ScanAlias(aliasTok, p.errorHandler); err != nil {
-		p.err(aliasTok, aliasTok.Range, fmt.Sprintf("Der Funktions Alias ist ungültig (%s)", err.Error()))
-	} else {
-		if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-			p.err(aliasTok, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-		} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
-			if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
-				p.err(aliasTok, aliasTok.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun))
-			} else { // the alias is valid so we append it
-				alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: paramTypes}
-			}
-		} else {
-			p.err(aliasTok, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+	if aliasTokens, err := scanner.ScanAlias(aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg, err.File) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", aliasTok.File)
+	} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
+		if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
+			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", *fun), aliasTok.File)
+		} else { // the alias is valid so we append it
+			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: paramTypes}
 		}
+	} else {
+		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", aliasTok.File)
 	}
 
 	p.consume(token.DOT)
 
 	if begin.Indent > 0 {
-		msg := "Ein Alias darf nur im globalen Bereich deklariert werden!"
-		rnge := token.NewRange(begin, p.previous())
-		p.err(begin, rnge, msg)
+		p.err(ddperror.SEM_ALIAS_MUST_BE_GLOBAL, token.NewRange(begin, p.previous()), "Ein Alias darf nur im globalen Bereich deklariert werden!", begin.File)
 		return &ast.BadStmt{
-			Err: &ParserError{
-				rang: rnge,
-				file: begin.File,
-				msg:  msg,
-			},
+			Err: p.lastError,
 			Tok: begin,
 		}
 	} else if alias != nil {
@@ -806,7 +796,7 @@ func (p *Parser) assignLiteral() ast.Statement {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
 		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.Bool() {
-			p.err(expr.Token(), expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden", expr.Token().File)
 		}
 	}
 	return p.finishStatement(
@@ -836,9 +826,9 @@ func (p *Parser) assignNoLiteral() ast.Statement {
 }
 
 func (p *Parser) ifStatement() ast.Statement {
-	If := p.previous()                 // the already consumed wenn token
-	condition := p.expression()        // parse the condition
-	p.consumeN(token.IST, token.COMMA) // must be boolean, so an ist is required for grammar
+	If := p.previous()          // the already consumed wenn token
+	condition := p.expression() // parse the condition
+	p.consume(token.COMMA)      // must be boolean, so an ist is required for grammar
 	var Then ast.Statement
 	thenScope := p.newScope()
 	if p.match(token.DANN) { // with dann: the body is a block statement
@@ -846,7 +836,7 @@ func (p *Parser) ifStatement() ast.Statement {
 		Then = p.blockStatement(thenScope)
 	} else { // otherwise it is a single statement
 		if p.peek().Type == token.COLON { // block statements are only allowed with the syntax above
-			p.err(p.peek(), p.peek().Range, "In einer Wenn Anweisung, muss ein 'dann' vor einem ':' stehen")
+			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, "In einer Wenn Anweisung, muss ein 'dann' vor dem ':' stehen", p.peek().File)
 		}
 		comma := p.previous()
 		p.setScope(thenScope)
@@ -910,7 +900,7 @@ func (p *Parser) ifStatement() ast.Statement {
 func (p *Parser) whileStatement() ast.Statement {
 	While := p.previous()
 	condition := p.expression()
-	p.consumeN(token.IST, token.COMMA)
+	p.consume(token.COMMA)
 	var Body ast.Statement
 	bodyTable := p.newScope()
 	if p.match(token.MACHE) {
@@ -945,7 +935,7 @@ func (p *Parser) doWhileStmt() ast.Statement {
 	body := p.blockStatement(nil)
 	p.consume(token.SOLANGE)
 	condition := p.expression()
-	p.consumeN(token.IST, token.DOT)
+	p.consume(token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(Do),
@@ -1080,14 +1070,9 @@ func (p *Parser) forStatement() ast.Statement {
 			Body:        Body,
 		}
 	}
-	msg := fmt.Sprintf("Es wurde VON oder IN erwartet, aber '%s' gefunden", p.previous())
-	p.err(p.previous(), p.peek().Range, msg)
+	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'von'", "'in'"), p.peek().File)
 	return &ast.BadStmt{
-		Err: &ParserError{
-			rang: token.NewRange(For, p.previous()),
-			file: p.previous().File,
-			msg:  msg,
-		},
+		Err: p.lastError,
 		Tok: p.previous(),
 	}
 }
@@ -1096,8 +1081,12 @@ func (p *Parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	expr := p.expression()
 	p.consumeN(token.ZURÜCK, token.DOT)
+	rnge := token.NewRange(Return, p.previous())
+	if p.currentFunction == "" {
+		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN, Return.File)
+	}
 	return &ast.ReturnStmt{
-		Range:  token.NewRange(Return, p.previous()),
+		Range:  rnge,
 		Func:   p.currentFunction,
 		Return: Return,
 		Value:  expr,
@@ -1107,6 +1096,10 @@ func (p *Parser) returnStatement() ast.Statement {
 func (p *Parser) voidReturn() ast.Statement {
 	Leave := p.previous()
 	p.consumeN(token.DIE, token.FUNKTION, token.DOT)
+	rnge := token.NewRange(Leave, p.previous())
+	if p.currentFunction == "" {
+		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN, Leave.File)
+	}
 	return &ast.ReturnStmt{
 		Range:  token.NewRange(Leave, p.previous()),
 		Func:   p.currentFunction,
@@ -1118,7 +1111,7 @@ func (p *Parser) voidReturn() ast.Statement {
 func (p *Parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 	colon := p.previous()
 	if p.peek().Line() <= colon.Line() {
-		p.err(p.peek(), p.peek().Range, "Nach einem Doppelpunkt muss eine neue Zeile beginnen")
+		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, "Nach einem Doppelpunkt muss eine neue Zeile beginnen", p.peek().File)
 	}
 	statements := make([]ast.Statement, 0)
 	indent := colon.Indent + 1
@@ -1257,6 +1250,7 @@ func (p *Parser) equality() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		p.consume(token.IST)
 	}
 	return expr
 }
@@ -1285,6 +1279,7 @@ func (p *Parser) comparison() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		p.consume(token.IST)
 	}
 	return expr
 }
@@ -1295,17 +1290,9 @@ func (p *Parser) bitShift() ast.Expression {
 		rhs := p.term()
 		p.consumeN(token.BIT, token.NACH)
 		if !p.match(token.LINKS, token.RECHTS) {
-			msg := fmt.Sprintf("Es wurde 'LINKS' oder 'RECHTS' erwartet aber '%s' gefunden", p.previous().Literal)
-			p.err(p.previous(), p.previous().Range, msg)
+			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"), p.peek().File)
 			return &ast.BadExpr{
-				Err: &ParserError{
-					rang: token.Range{
-						Start: expr.GetRange().Start,
-						End:   token.NewEndPos(p.peek()),
-					},
-					file: expr.Token().File,
-					msg:  msg,
-				},
+				Err: p.lastError,
 				Tok: expr.Token(),
 			}
 		}
@@ -1391,9 +1378,9 @@ func (p *Parser) unary() ast.Expression {
 		} else { // error handling
 			switch p.previous().Type {
 			case token.GRÖßE, token.LÄNGE:
-				p.err(p.previous(), p.previous().Range, fmt.Sprintf("Vor '%s' muss 'DIE' stehen", p.previous()))
+				p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, fmt.Sprintf("Vor '%s' muss 'die' stehen", p.previous()), p.previous().File)
 			case token.BETRAG:
-				p.err(p.previous(), p.previous().Range, "Vor 'BETRAG' muss 'DER' stehen")
+				p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, "Vor 'Betrag' muss 'der' stehen", p.previous().File)
 			}
 			start = p.previous()
 		}
@@ -1528,7 +1515,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
 				lhs = &ast.FloatLit{Literal: lit, Value: val}
 			} else {
-				p.err(lit, lit.Range, "Das Zahlen Literal kann nicht gelesen werden")
+				p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Kommazahlen Literal '%s' kann nicht gelesen werden", lit.Literal), lit.File)
 				lhs = &ast.FloatLit{Literal: lit, Value: 0}
 			}
 		case token.CHAR:
@@ -1575,14 +1562,9 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 				}
 			}
 		default:
-			msg := fmt.Sprintf("Es wurde ein Literal oder ein Name erwartet aber '%s' gefunden", p.previous().Literal)
-			p.err(p.previous(), p.previous().Range, msg)
+			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Literal", "ein Name"), p.previous().File)
 			lhs = &ast.BadExpr{
-				Err: &ParserError{
-					rang: tok.Range,
-					file: tok.File,
-					msg:  msg,
-				},
+				Err: p.lastError,
 				Tok: tok,
 			}
 		}
@@ -1897,11 +1879,10 @@ func (p *Parser) parseChar(s string) (r rune) {
 			r = '\''
 		case '\\':
 		default:
-			p.err(p.previous(), p.previous().Range, "Ungültige Escape Sequenz '\\%s' im Buchstaben Literal", string(r))
+			p.err(ddperror.SYN_MALFORMED_LITERAL, p.previous().Range, fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Buchstaben Literal", string(r)), p.previous().File)
 		}
 		return r
 	}
-	p.err(p.previous(), p.previous().Range, "Invalides Buchstaben Literal")
 	return -1
 }
 
@@ -1928,7 +1909,7 @@ func (p *Parser) parseString(s string) string {
 			case '"':
 			case '\\':
 			default:
-				p.err(p.previous(), p.previous().Range, "Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq))
+				p.err(ddperror.SYN_MALFORMED_LITERAL, p.previous().Range, fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq)), p.previous().File)
 				continue
 			}
 
@@ -1944,7 +1925,7 @@ func (p *Parser) parseIntLit() *ast.IntLit {
 	if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
 		return &ast.IntLit{Literal: lit, Value: val}
 	} else {
-		p.err(lit, lit.Range, "Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal)
+		p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal), lit.File)
 		return &ast.IntLit{Literal: lit, Value: 0}
 	}
 }
@@ -1974,7 +1955,7 @@ func tokenTypeToType(t token.TokenType) ddptypes.Type {
 func (p *Parser) parseType() ddptypes.Type {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), p.peek().Range, "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"), p.peek().File)
 		return ddptypes.Illegal() // void indicates error
 	}
 
@@ -1985,19 +1966,19 @@ func (p *Parser) parseType() ddptypes.Type {
 		if !p.match(token.LISTE) {
 			return tokenTypeToType(p.previous().Type)
 		}
-		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.ZAHL)
+		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.KOMMAZAHL)
+		return ddptypes.List(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
 			return ddptypes.Char()
 		}
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.BUCHSTABE)
+		return ddptypes.List(ddptypes.BUCHSTABE)
 	}
 
 	return ddptypes.Illegal() // unreachable
@@ -2008,23 +1989,23 @@ func (p *Parser) parseType() ddptypes.Type {
 // returns ILLEGAL and errors if no typename was found
 func (p *Parser) parseListType() ddptypes.Type {
 	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), p.peek().Range, "Es wurde ein Listen-Typname erwartet aber '%s' gefunden", p.peek().Literal)
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"), p.peek().File)
 		return ddptypes.Illegal() // void indicates error
 	}
 
 	switch p.previous().Type {
 	case token.BOOLEAN, token.TEXT:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.ZAHL)
+		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.KOMMAZAHL)
+		return ddptypes.List(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
 		p.consume(token.LISTE)
-		return ddptypes.NewList(ddptypes.BUCHSTABE)
+		return ddptypes.List(ddptypes.BUCHSTABE)
 	}
 
 	return ddptypes.Illegal() // unreachable
@@ -2036,7 +2017,7 @@ func (p *Parser) parseListType() ddptypes.Type {
 func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
-		p.err(p.peek(), p.peek().Range, "Es wurde ein Typname erwartet aber '%s' gefunden", p.peek().Literal)
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"), p.peek().File)
 		return ddptypes.Illegal(), false // void indicates error
 	}
 
@@ -2045,38 +2026,38 @@ func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 		return tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(tokenTypeToType(p.peekN(-2).Type).Primitive), false
+			return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(tokenTypeToType(p.peekN(-3).Type).Primitive), true
+			return ddptypes.List(tokenTypeToType(p.peekN(-3).Type).Primitive), true
 		} else if p.match(token.REFERENZ) {
-			return ddptypes.NewPrimitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
+			return ddptypes.Primitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
 		}
 		return tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.ZAHL), false
+			return ddptypes.List(ddptypes.ZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.ZAHL), true
+			return ddptypes.List(ddptypes.ZAHL), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Int(), true
 	case token.KOMMAZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.KOMMAZAHL), false
+			return ddptypes.List(ddptypes.KOMMAZAHL), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.KOMMAZAHL), true
+			return ddptypes.List(ddptypes.KOMMAZAHL), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Float(), true
 	case token.BUCHSTABEN:
 		if p.match(token.LISTE) {
-			return ddptypes.NewList(ddptypes.BUCHSTABE), false
+			return ddptypes.List(ddptypes.BUCHSTABE), false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.NewList(ddptypes.BUCHSTABE), true
+			return ddptypes.List(ddptypes.BUCHSTABE), true
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.Char(), true
@@ -2146,7 +2127,7 @@ func (p *Parser) consume(t token.TokenType) bool {
 		return true
 	}
 
-	p.err(p.peek(), p.peek().Range, "Es wurde '%s' erwartet aber '%s' gefunden", t, p.peek().Literal)
+	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, t), p.peek().File)
 	return false
 }
 
@@ -2169,28 +2150,16 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 		}
 	}
 
-	msg := "Es wurde "
-	for i, v := range tokenTypes {
-		if i >= len(tokenTypes)-1 {
-			break
-		}
-		msg += fmt.Sprintf("'%s', ", v)
-	}
-	msg += fmt.Sprintf("oder '%s' erwartet aber '%s' gefunden", tokenTypes[len(tokenTypes)-1], p.peek().Literal)
-
-	p.err(p.peek(), p.peek().Range, msg)
+	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, tokenTypes), p.peek().File)
 	return false
 }
 
 // helper to report errors and enter panic mode
-func (p *Parser) err(token token.Token, rnge token.Range, msg string, args ...any) {
+func (p *Parser) err(code ddperror.Code, Range token.Range, msg string, file string) {
 	if !p.panicMode {
 		p.panicMode = true
-		p.errorHandler(&ParserError{
-			file: token.File,
-			rang: rnge,
-			msg:  fmt.Sprintf(msg, args...),
-		})
+		p.lastError = ddperror.New(code, Range, msg, file)
+		p.errorHandler(p.lastError)
 	}
 }
 
@@ -2222,6 +2191,7 @@ func (p *Parser) peek() token.Token {
 }
 
 // returns the n'th token starting from current without advancing
+// p.peekN(0) is equal to p.peek()
 func (p *Parser) peekN(n int) token.Token {
 	if p.cur+n >= len(p.tokens) || p.cur+n < 0 {
 		return p.tokens[len(p.tokens)-1] // EOF

@@ -1,3 +1,7 @@
+[
+    Eine kleiner Version von TicTacToe, die in der Konsole gespielt wird
+]
+
 Binde "Duden/Eingabe" ein.
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
@@ -75,10 +79,10 @@ Solange (das Spiel nicht gewonnen) ist, mache:
     Schreibe den Text "Schreibe die Position, wo du dein Zeichen setzen willst. [1-9]" auf eine Zeile.
 
     [Nutzereingabe validieren]
-    Die Zahl Eingabe ist die nächste Benutzereingabe als Zahl.
+    Die Zahl Eingabe ist die nächste Zahl.
     Solange Eingabe kleiner als 1 oder Eingabe größer als 9 ist, mache:
         Schreibe den Text "\nUngültige Eingabe! Bitte schreibe nur Zahlen von 1 bis 9!" auf eine Zeile.
-        Speichere die nächste Benutzereingabe als Zahl in Eingabe.
+        Speichere die nächste Zahl in Eingabe.
 
     [Spielfeld aktualisieren und Spieler welchseln]
     Wenn Spielfeld an der Stelle Eingabe gleich 0 ist, dann:

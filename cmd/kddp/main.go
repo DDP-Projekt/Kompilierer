@@ -7,9 +7,14 @@ import (
 )
 
 func main() {
+	// catch panics and instead set the returned error
+	defer handle_panics()
+
 	// run sub-commands like build or help
 	if err := runCommands(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		if err.Error() != "" {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+		}
 		os.Exit(1)
 	}
 }
@@ -35,4 +40,13 @@ Für mehr Informationen probiere $kddp hilfe
 	}
 
 	return fmt.Errorf("Unbekannter Befehl '%s'\nFür eine Liste aller Befehle probiere $kddp hilfe", subcmd)
+}
+
+func handle_panics() {
+	if err := recover(); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"Unerwarteter Fehler: %v\nDieser Fehler ist vermutlich ein Bug im DDP-Kompilierer.\nBitte erstelle einen Issue unter https://github.com/DDP-Projekt/Kompilierer oder melde ihn anderweitig den Entwicklern.\n",
+			err)
+		os.Exit(1)
+	}
 }

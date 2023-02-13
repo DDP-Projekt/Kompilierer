@@ -68,19 +68,9 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
-	// catch panics and instead set the returned error
-	defer func() {
-		if err := recover(); err != nil {
-			rerr = fmt.Errorf("%v", err)
-			if result != nil {
-				result.Output = ""
-			}
-		}
-	}()
-
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Syntax Baum")
+		return nil, fmt.Errorf("")
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
@@ -500,7 +490,7 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		irFunc.Linkage = enum.LinkageExternal
 		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
 		if err != nil {
-			c.errorHandler(&CompilerError{file: d.ExternFile.File, rang: d.ExternFile.Range, msg: err.Error()})
+			c.errorHandler(ddperror.Error{File: d.ExternFile.File, Range: d.ExternFile.Range, Msg: err.Error()})
 		}
 		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {

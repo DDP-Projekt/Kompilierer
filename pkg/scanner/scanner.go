@@ -2,7 +2,6 @@
 package scanner
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,13 +70,12 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			scan.err("Der angegebene Pfad ist keine .ddp Datei")
-			return nil, errors.New("ungültiger Datei Typ")
+			return nil, ddperror.New(ddperror.SYN_MALFORMED_INCLUDE_PATH, scan.currentRange(), ddperror.MSG_INVALID_FILE_EXTENSION, scan.file)
 		}
 
 		file, err := os.ReadFile(filePath)
 		if err != nil {
-			return nil, err
+			return nil, ddperror.New(ddperror.MISC_INCLUDE_ERROR, scan.currentRange(), err.Error(), scan.file)
 		}
 
 		src = file
@@ -86,8 +84,7 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	}
 
 	if !utf8.Valid(src) {
-		scan.err("Der Quelltext entspricht nicht dem utf8 Standard")
-		return nil, errors.New("invalid utf8 source")
+		return nil, ddperror.New(ddperror.SYN_INVALID_UTF8, scan.currentRange(), ddperror.MSG_INVALID_UTF8, scan.file)
 	}
 
 	scan.src = []rune(string(src))
@@ -174,7 +171,9 @@ func (s *Scanner) NextToken() token.Token {
 		}
 	}
 
-	return s.errorToken(fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char)))
+	msg := fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char))
+	s.err(ddperror.SYN_UNEXPECTED_TOKEN, s.currentRange(), msg)
+	return s.errorToken(msg)
 }
 
 func (s *Scanner) scanEscape(quote rune) bool {
@@ -183,7 +182,20 @@ func (s *Scanner) scanEscape(quote rune) bool {
 		s.advance()
 		return true
 	default:
-		s.err(fmt.Sprintf("Unbekannte Escape Sequenz '\\%v'", s.peekNext()))
+		s.err(
+			ddperror.SYN_MALFORMED_LITERAL,
+			token.Range{
+				Start: token.Position{
+					Line:   s.line,
+					Column: s.column,
+				},
+				End: token.Position{
+					Line:   s.line,
+					Column: s.column + 2,
+				},
+			},
+			fmt.Sprintf("Unbekannte Escape Sequenz '\\%v'", s.peekNext()),
+		)
 		return false
 	}
 }
@@ -201,7 +213,9 @@ func (s *Scanner) string() token.Token {
 	}
 
 	if s.atEnd() {
-		return s.errorToken("Offenes Text Literal")
+		msg := "Offenes Text Literal"
+		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
+		return s.errorToken(msg)
 	}
 
 	s.advance()
@@ -223,7 +237,9 @@ func (s *Scanner) char() token.Token {
 	}
 
 	if s.atEnd() {
-		return s.errorToken("Offenes Buchstaben Literal")
+		msg := "Offenes Buchstaben Literal"
+		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
+		return s.errorToken(msg)
 	}
 
 	s.advance()
@@ -232,10 +248,10 @@ func (s *Scanner) char() token.Token {
 	case 3:
 	case 4:
 		if !gotBackslash {
-			s.err("Ein Buchstaben Literal darf nur einen Buchstaben enthalten")
+			s.err(ddperror.SYN_MALFORMED_LITERAL, tok.Range, ddperror.MSG_CHAR_LITERAL_TOO_LARGE)
 		}
 	default:
-		s.err("Ein Buchstaben Literal darf nur einen Buchstaben enthalten")
+		s.err(ddperror.SYN_MALFORMED_LITERAL, tok.Range, ddperror.MSG_CHAR_LITERAL_TOO_LARGE)
 	}
 	return tok
 }
@@ -276,8 +292,10 @@ func init() {
 
 func (s *Scanner) identifier() token.Token {
 	shouldReportCapitailzation := false // we don't report capitalization errors on aliases but don't know the tokenType yet, so this flag is used
+	var capitalRange token.Range
 	if s.strictCapitalizationMode() && s.shouldCapitalize && !isUpper(s.src[s.cur-1]) {
 		shouldReportCapitailzation = true
+		capitalRange = s.currentRange()
 	}
 
 	for isAlphaNumeric(s.peek()) {
@@ -287,20 +305,20 @@ func (s *Scanner) identifier() token.Token {
 	tokenType := s.identifierType()
 
 	if shouldReportCapitailzation && tokenType != token.IDENTIFIER {
-		s.err("Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
+		s.err(ddperror.SYN_EXPECTED_CAPITAL, capitalRange, "Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
 	}
 
 	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
 		lit := s.NextToken()
 		if lit.Type != token.STRING {
-			s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: "Nach 'Binde' muss ein Text Literal folgen"})
+			s.err(ddperror.SYN_UNEXPECTED_TOKEN, lit.Range, "Nach 'Binde' muss ein Text Literal folgen")
 			return lit
 		}
 
 		if tok := s.NextToken(); tok.Type != token.EIN {
-			s.errorHandler(&ScannerError{rang: tok.Range, file: s.file, msg: "Es wurde 'ein' erwartet"})
+			s.err(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "ein"))
 		} else if tok := s.NextToken(); tok.Type != token.DOT {
-			s.errorHandler(&ScannerError{rang: tok.Range, file: s.file, msg: "Nach 'ein' muss ein Punkt folgen"})
+			s.err(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "'.'"))
 		}
 
 		literalContent := strings.Trim(lit.Literal, "\"")
@@ -312,10 +330,14 @@ func (s *Scanner) identifier() token.Token {
 			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
 		}
 		if err != nil {
-			s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", literalContent+".ddp", err.Error())})
+			s.err(ddperror.SYN_MALFORMED_INCLUDE_PATH, lit.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", literalContent+".ddp", err.Error()))
 		} else if _, ok := s.includedFiles[inclPath]; !ok {
 			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
-				s.errorHandler(&ScannerError{rang: lit.Range, file: s.file, msg: fmt.Sprintf("Fehler beim Einbinden der Datei '%s': \"%s\"", inclPath, err.Error())})
+				if derr, ok := err.(ddperror.Error); ok {
+					s.err(derr.Code, lit.Range, derr.Error())
+				} else {
+					s.err(ddperror.MISC_INCLUDE_ERROR, lit.Range, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': %s", inclPath, err.Error()))
+				}
 			} else {
 				// append the already included files
 				for k, v := range s.includedFiles {
@@ -344,27 +366,28 @@ func (s *Scanner) identifierType() token.TokenType {
 	return tokenType
 }
 
-// helper to scan the *argname in aliases
+// helper to scan the <argname> in aliases
+// TODO: replace s.currentRange() with better ranges in this function
 func (s *Scanner) aliasParameter() token.Token {
 	if !isAlpha(s.peek()) {
-		s.err("Invalider Parameter Name")
+		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 	}
 	for !s.atEnd() && s.peek() != '>' {
 		if !isAlphaNumeric(s.advance()) {
-			s.err("Invalider Parameter Name")
+			s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 		}
 	}
 	if s.atEnd() {
-		s.err("Offener Parameter")
+		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Offener Parameter")
 	} else {
 		s.advance() // consume the closing >
 	}
 	if s.cur-s.start <= 2 && !s.atEnd() {
-		s.err("Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten!")
+		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten")
 	}
 
 	if tokenType := s.identifierType(); tokenType != token.IDENTIFIER {
-		s.err("Es wurde ein Name als Alias-Parameter erwartet")
+		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Es wurde ein Name als Alias-Parameter erwartet")
 	}
 
 	return s.newToken(token.ALIAS_PARAMETER)
@@ -425,10 +448,10 @@ func (s *Scanner) newToken(tokenType token.TokenType) token.Token {
 }
 
 func (s *Scanner) errorToken(msg string) token.Token {
-	s.err(msg)
 	return token.Token{
 		Type:      token.ILLEGAL,
 		Literal:   msg,
+		Indent:    s.indent,
 		File:      s.file,
 		Range:     s.currentRange(),
 		AliasInfo: nil,
@@ -473,14 +496,10 @@ func (s *Scanner) peekNext() rune {
 	return s.src[s.cur+1]
 }
 
-func (s *Scanner) err(msg string) {
-	e := &ScannerError{
-		rang: s.currentRange(),
-		file: s.file,
-		msg:  msg,
-	}
+func (s *Scanner) err(code ddperror.Code, Range token.Range, msg string) {
+	e := ddperror.New(code, Range, msg, s.file)
 	if s.aliasMode() {
-		e.msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), msg)
+		e.Msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), e.Msg)
 	}
 	s.errorHandler(e)
 }

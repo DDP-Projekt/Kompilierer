@@ -12,32 +12,46 @@ type Handler func(Error) // used by most ddp packages
 // does nothing
 func EmptyHandler(Error) {}
 
-// basic handler that prints the formatted error on a line
+// creates a basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
 	return func(err Error) {
-		fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
+		fmt.Fprintf(w, "%s: %s", makeErrorHeader(err), err.Msg)
 	}
 }
 
-// creates a rust-like error handler with src writing to w
+// creates a rust-like error handler writing to w
+// where src is the source-code from which the errors come
+// and file is the filename where src comes from
 func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 	lines := strings.Split(string(src), "\n")
+	basicHandler := MakeBasicHandler(w)
 
 	return func(err Error) {
-		if err.File() != file {
-			fmt.Fprintf(w, "Fehler in %s in Zeile %d, Spalte %d: %s\n", err.File(), err.GetRange().Start.Line, err.GetRange().Start.Column, err.Msg())
+		// we don't have the text of included files
+		// so we handle them with the basic error handler
+		if err.File != file {
+			basicHandler(err)
 			return
 		}
 
+		// helper function to print s n-times
 		printN := func(n int, s string) {
 			for i := 0; i < n; i++ {
 				fmt.Fprint(w, s)
 			}
 		}
 
-		rnge := err.GetRange()
+		// helper to find the maximum of two uints
+		uMax := func(a, b uint) uint {
+			if a > b {
+				return a
+			}
+			return b
+		}
+
+		rnge := err.Range
 		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", uMax(rnge.Start.Line, rnge.End.Line)))
-		fmt.Fprintf(w, "Fehler in %s (Z %d, S %d)\n\n", err.File(), rnge.Start.Line, rnge.Start.Column)
+		fmt.Fprintf(w, "%s\n\n", makeErrorHeader(err))
 
 		for lineIndex := rnge.Start.Line - 1; lineIndex < rnge.End.Line; lineIndex++ {
 			replaceAndCount := func(slice []rune) int {
@@ -80,15 +94,27 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 			fmt.Fprint(w, "\n")
 		}
 
-		fmt.Fprintf(w, "\n%s.\n\n", err.Msg())
+		fmt.Fprintf(w, "\n%s.\n\n", err.Msg)
 		printN(maxLineCount, "-")
 		fmt.Fprint(w, "\n\n")
 	}
 }
 
-func uMax(a, b uint) uint {
-	if a > b {
-		return a
+// creates a Handler that panics with the passed ddperror.Error if called
+func MakePanicHandler() Handler {
+	return func(err Error) {
+		panic(err)
 	}
-	return b
+}
+
+// helper to create the common error header of all handlers
+// prints the error type, code and place
+func makeErrorHeader(err Error) string {
+	return fmt.Sprintf("%s Fehler (%04d) in %s (Z: %d, S: %d)",
+		err.Code.ErrorPrefix(),
+		err.Code,
+		err.File,
+		err.Range.Start.Line,
+		err.Range.Start.Column,
+	)
 }
