@@ -29,7 +29,10 @@ type ddpIrListType struct {
 	fromConstantsIrFun *ir.Func   // the fromConstans ir func
 	freeIrFun          *ir.Func   // the free ir func
 	deepCopyIrFun      *ir.Func   // the deepCopy ir func
+	equalsIrFun        *ir.Func   // the equals ir func
 }
+
+var _ ddpIrType = (*ddpIrListType)(nil)
 
 func (t *ddpIrListType) IrType() types.Type {
 	return t.typ
@@ -55,6 +58,10 @@ func (t *ddpIrListType) DeepCopyFunc() *ir.Func {
 	return t.deepCopyIrFun
 }
 
+func (t *ddpIrListType) EqualsFunc() *ir.Func {
+	return t.equalsIrFun
+}
+
 // defines the struct of a list type
 // and all the necessery functions
 // from the given elementType and name
@@ -70,6 +77,7 @@ func (c *Compiler) defineListType(name string, elementType ddpIrType) *ddpIrList
 	list.fromConstantsIrFun = c.defineFromConstants(list.typ)
 	list.freeIrFun = c.defineFree(list)
 	list.deepCopyIrFun = c.defineDeepCopy(list)
+	list.equalsIrFun = c.defineEquals(list)
 
 	return list
 }
@@ -265,6 +273,91 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 	c.cbb.NewStore(origCap, capFieldPtr) // ret->cap = list->cap
 
 	c.cbb.NewRet(nil)
+
+	c.cbb = cbb // restore the block
+
+	c.insertFunction(irFunc.Name(), nil, irFunc)
+	return irFunc
+}
+
+/*
+defines the _ddp_x_equal function for a listType
+
+_ddp_x_equal checks wether the two lists are equal
+*/
+func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
+	list1, list2 := ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+
+	irFunc := c.mod.NewFunc(
+		fmt.Sprintf("_ddp_%s_equal", listType.typ.Name()),
+		ddpbool,
+		list1,
+		list2,
+	)
+	irFunc.CallingConv = enum.CallingConvC
+
+	cbb := c.cbb // save the current block
+
+	c.cbb = irFunc.NewBlock("")
+
+	// if (list1 == list2) return true;
+	ptrs_equal_trueBlock, ptrs_equal_leaveBlock := irFunc.NewBlock(""), irFunc.NewBlock("")
+	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, list1, list2)
+	c.cbb.NewCondBr(ptrs_equal, ptrs_equal_trueBlock, ptrs_equal_leaveBlock)
+
+	c.cbb = ptrs_equal_trueBlock
+	c.cbb.NewRet(constant.True)
+
+	// if (list1->len != list2->len) return false;
+	c.cbb = ptrs_equal_leaveBlock
+	len_unequal_trueBlock, len_unequal_leaveBlock := irFunc.NewBlock(""), irFunc.NewBlock("")
+	list1_len := c.loadStructField(list1, 1)
+	len_unequal := c.cbb.NewICmp(enum.IPredNE, list1_len, c.loadStructField(list2, 1))
+	c.cbb.NewCondBr(len_unequal, len_unequal_trueBlock, len_unequal_leaveBlock)
+
+	c.cbb = len_unequal_trueBlock
+	c.cbb.NewRet(constant.False)
+
+	// compare single elements
+	c.cbb = len_unequal_leaveBlock
+	// primitive types can easily be compared
+	if listType.elementType.IsPrimitive() {
+		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len);
+		size := c.cbb.NewMul(c.sizeof(listType.elementType.IrType()), list1_len)
+		c.cbb.NewRet(c.memcmp(c.loadStructField(list1, 0), c.loadStructField(list2, 0), size))
+	} else { // non-primitive types need to be seperately compared
+		// initialize counter to 0 (ddpint counter = 0)
+		counter := c.cbb.NewAlloca(i64)
+		c.cbb.NewStore(zero, counter)
+
+		// initialize the 4 blocks
+		condBlock, bodyBlock, incrBlock, endBlock := irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock("")
+		c.cbb.NewBr(condBlock)
+
+		c.cbb = condBlock
+		cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(counter.ElemType, counter), list1_len) // check the condition (counter < list1->len)
+		c.cbb.NewCondBr(cond, bodyBlock, endBlock)
+
+		// if (!_ddp_T_equal(list1->arr[i], list2->arr[i])) return false;
+		c.cbb = bodyBlock
+		currentCount := c.cbb.NewLoad(counter.ElemType, counter)
+		list1_arr, list2_arr := c.loadStructField(list1, 0), c.loadStructField(list2, 0)
+		list1_at_count, list2_at_count := c.loadArrayElement(list1_arr, currentCount), c.loadArrayElement(list2_arr, currentCount)
+		elements_unequal := c.cbb.NewXor(c.cbb.NewCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), newInt(1))
+		elements_uneq_trueBlock := irFunc.NewBlock("")
+		c.cbb.NewCondBr(elements_unequal, elements_uneq_trueBlock, incrBlock)
+
+		c.cbb = elements_uneq_trueBlock
+		c.cbb.NewRet(constant.False)
+
+		// counter++
+		c.cbb = incrBlock
+		c.cbb.NewStore(c.cbb.NewAdd(newInt(1), currentCount), counter)
+		c.cbb.NewBr(condBlock)
+
+		c.cbb = endBlock
+		c.cbb.NewRet(constant.True)
+	}
 
 	c.cbb = cbb // restore the block
 

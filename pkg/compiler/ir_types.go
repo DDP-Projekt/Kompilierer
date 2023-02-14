@@ -17,6 +17,7 @@ type ddpIrType interface {
 	DefaultValue() value.Value // returns a default value for the type
 	FreeFunc() *ir.Func        // returns the irFunc used to free this type, nil if IsPrimitive == true
 	DeepCopyFunc() *ir.Func    // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
+	EqualsFunc() *ir.Func      // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
 }
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
@@ -24,6 +25,8 @@ type ddpIrPrimitiveType struct {
 	typ          types.Type
 	defaultValue value.Value
 }
+
+var _ ddpIrType = (*ddpIrPrimitiveType)(nil)
 
 func (t *ddpIrPrimitiveType) IrType() types.Type {
 	return t.typ
@@ -42,6 +45,10 @@ func (*ddpIrPrimitiveType) FreeFunc() *ir.Func {
 }
 
 func (*ddpIrPrimitiveType) DeepCopyFunc() *ir.Func {
+	return nil
+}
+
+func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
 	return nil
 }
 

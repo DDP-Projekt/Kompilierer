@@ -16,7 +16,10 @@ type ddpIrStringType struct {
 	fromConstantsIrFun *ir.Func // the fromConstans ir func
 	freeIrFun          *ir.Func // the free ir func
 	deepCopyIrFun      *ir.Func // the deepCopy ir func
+	equalsIrFun        *ir.Func // the equals ir func
 }
+
+var _ ddpIrType = (*ddpIrStringType)(nil)
 
 func (t *ddpIrStringType) IrType() types.Type {
 	return t.typ
@@ -41,6 +44,10 @@ func (t *ddpIrStringType) DeepCopyFunc() *ir.Func {
 	return t.deepCopyIrFun
 }
 
+func (t *ddpIrStringType) EqualsFunc() *ir.Func {
+	return t.equalsIrFun
+}
+
 func (c *Compiler) defineStringType() *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
@@ -60,6 +67,9 @@ func (c *Compiler) defineStringType() *ddpIrStringType {
 	// returns a copy of the passed string as a new pointer
 	// the caller is responsible for calling increment_ref_count on this pointer
 	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("_ddp_deep_copy_string", ddpstrptr, ir.NewParam("str", ddpstrptr))
+
+	// checks wether the two strings are equal
+	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("_ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstrptr), ir.NewParam("str2", ddpstrptr))
 
 	return ddpstring
 }

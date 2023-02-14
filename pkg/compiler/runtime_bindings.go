@@ -25,6 +25,7 @@ func (c *Compiler) declareExternalRuntimeFunction(name string, returnType types.
 var (
 	_ddp_reallocate_irfun *ir.Func
 	_libc_memcpy_irfun    *ir.Func
+	_libc_memcmp_irfun    *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -43,6 +44,14 @@ func (c *Compiler) initRuntimeFunctions() {
 		ir.NewParam("dest", ptr(i8)),
 		ir.NewParam("src", ptr(i8)),
 		ir.NewParam("n", i64),
+	)
+
+	_libc_memcmp_irfun = c.declareExternalRuntimeFunction(
+		"memcmp",
+		ddpbool,
+		ir.NewParam("buf1", ptr(i8)),
+		ir.NewParam("buf2", ptr(i8)),
+		ir.NewParam("size", i64),
 	)
 }
 
@@ -98,4 +107,8 @@ func (c *Compiler) memcpyArr(dest, src, n value.Value) value.Value {
 	elementType := getPointeeType(src)
 	size := c.cbb.NewMul(n, c.sizeof(elementType))
 	return c.memcpy(dest, src, size)
+}
+
+func (c *Compiler) memcmp(buf1, buf2, size value.Value) value.Value {
+	return c.cbb.NewCall(_libc_memcmp_irfun, buf1, buf2, size)
 }
