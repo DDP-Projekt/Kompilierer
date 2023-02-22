@@ -201,7 +201,7 @@ func (cmd *BuildCommand) Run() error {
 		return err
 	}
 
-	errorHandler := ddperror.MakeAdvancedHandler(cmd.filePath, src, os.Stdout)
+	errorHandler := ddperror.MakeAdvancedHandler(cmd.filePath, src, os.Stderr)
 
 	print("Kompiliere DDP-Quellcode nach %s", cmd.outPath)
 	result, err := compiler.Compile(compiler.Options{
@@ -296,7 +296,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stdout)})
+	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
 	if err != nil {
 		return err
 	}

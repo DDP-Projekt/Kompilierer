@@ -65,12 +65,19 @@ func New(tokens []token.Token, errorHandler ddperror.Handler) *Parser {
 		tokens:       pTokens,
 		comments:     pComments,
 		cur:          0,
-		errorHandler: errorHandler,
+		errorHandler: nil,
 		funcAliases:  aliases,
 		panicMode:    false,
 		Errored:      false,
 		resolver:     &resolver.Resolver{},
 		typechecker:  &typechecker.Typechecker{},
+	}
+
+	// wrap the errorHandler to set the parsers Errored variable
+	// if it is called
+	parser.errorHandler = func(err ddperror.Error) {
+		parser.Errored = true
+		errorHandler(err)
 	}
 
 	return parser
@@ -107,7 +114,6 @@ func (p *Parser) Parse() *ast.Ast {
 // if an error was encountered we synchronize to a point where correct parsing is possible again
 func (p *Parser) synchronize() {
 	p.panicMode = false
-	p.Errored = true
 
 	//p.advance() // maybe this needs to stay?
 	for !p.atEnd() {
@@ -412,8 +418,6 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	aliases := make([]token.Token, 0)
 	if p.previous().Type == token.STRING {
 		aliases = append(aliases, p.previous())
-	} else {
-		valid = false
 	}
 	// append the raw aliases
 	for (p.match(token.COMMA) || p.match(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
@@ -458,7 +462,6 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 	}
 
 	if !valid {
-		p.Errored = true
 		p.cur = aliasEnd
 		return &ast.BadDecl{
 			Err: p.lastError,
@@ -1574,6 +1577,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
 		operator := p.previous()
+		operator.Type = token.STELLE // if consumeN returned false
 		rhs := p.primary(nil)
 		lhs = &ast.BinaryExpr{
 			Range: token.Range{
@@ -1724,9 +1728,15 @@ outer:
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
-	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) map[string]ast.Expression {
+	// it also returns all errors that might have occured while doing so
+	checkAlias := func(mAlias *matchedAlias, typeSensitive bool) (map[string]ast.Expression, []ddperror.Error) {
 		p.cur = start
 		args := map[string]ast.Expression{}
+		reported_errors := make([]ddperror.Error, 0)
+		// this error handler collects its errors in reported_errors
+		error_collector := func(err ddperror.Error) {
+			reported_errors = append(reported_errors, err)
+		}
 
 		for i, l := 0, len(mAlias.alias.Tokens); i < l && mAlias.alias.Tokens[i].Type != token.EOF; i++ {
 			tok := &mAlias.alias.Tokens[i]
@@ -1738,7 +1748,7 @@ outer:
 				pType := p.peek().Type
 				// early return if a non-identifier expression is passed as reference
 				if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
-					return nil
+					return nil, reported_errors
 				}
 
 				exprStart := p.cur
@@ -1766,8 +1776,8 @@ outer:
 				// append the EOF needed for the parser
 				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, File: tok.File, Range: tok.Range, AliasInfo: nil}
 				tokens = append(tokens, eof)
-				argParser := New(tokens, p.errorHandler) // create a new parser for this expression
-				argParser.funcAliases = p.funcAliases    // it needs the functions aliases
+				argParser := New(tokens, error_collector) // create a new parser for this expression
+				argParser.funcAliases = p.funcAliases     // it needs the functions aliases
 				argParser.resolver = p.resolver
 				argParser.typechecker = p.typechecker
 				var arg ast.Expression
@@ -1787,27 +1797,21 @@ outer:
 				// we are in the for loop below, so the types must match
 				// otherwise it doesn't matter
 				if typeSensitive {
-					typecheckErrored := p.typechecker.Errored
-					p.typechecker.ErrorHandler = ddperror.EmptyHandler // silence errors
-					typ := p.typechecker.Evaluate(arg)
+					typ := p.typechecker.EvaluateSilent(arg) // evaluate the argument
 
 					if typ != paramType.Type {
 						arg = nil // arg and param types don't match
-					} else if                                                     // string-indexings may not be passed as char-reference
-					ass, ok := arg.(*ast.Indexing);                               // evaluate the argunemt
+					} else if ass, ok := arg.(*ast.Indexing);                     // string-indexings may not be passed as char-reference
 					paramType.IsReference && paramType.Type == ddptypes.Char() && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
-						lhs := p.typechecker.Evaluate(ass.Lhs)
+						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
 						if lhs.Primitive == ddptypes.TEXT { // check if the lhs is a string
 							arg = nil
 						}
 					}
 
-					p.typechecker.ErrorHandler = p.errorHandler // turn errors on again
-					p.typechecker.Errored = typecheckErrored
-
 					if arg == nil {
-						return nil
+						return nil, reported_errors
 					}
 				}
 
@@ -1817,7 +1821,7 @@ outer:
 			p.advance() // ignore non-argument tokens
 		}
 		p.cur = start + mAlias.actualLength
-		return args
+		return args, reported_errors
 	}
 
 	// sort the aliases in descending order
@@ -1828,7 +1832,9 @@ outer:
 
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		if args := checkAlias(&matchedAliases[i], true); args != nil {
+		if args, errs := checkAlias(&matchedAliases[i], true); args != nil {
+			// log the errors that occured while parsing
+			apply(p.errorHandler, errs)
 			return &ast.FuncCall{
 				Range: token.NewRange(p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
@@ -1843,7 +1849,10 @@ outer:
 	// and "call" it so that the typechecker will report
 	// errors for the arguments
 	mostFitting := &matchedAliases[0]
-	args := checkAlias(mostFitting, false)
+	args, errs := checkAlias(mostFitting, false)
+
+	// log the errors that occured while parsing
+	apply(p.errorHandler, errs)
 
 	return &ast.FuncCall{
 		Range: token.NewRange(p.tokens[start], p.previous()),
@@ -2301,10 +2310,10 @@ func tokenEqual(t1 token.Token, t2 token.Token) bool {
 	return true
 }
 
-// counts all elements in the slice which fulfill the provided test function
-func countElements[T any](elements []T, test func(T) bool) (count int) {
+// counts all elements in the slice which fulfill the provided predicate function
+func countElements[T any](elements []T, pred func(T) bool) (count int) {
 	for _, v := range elements {
-		if test(v) {
+		if pred(v) {
 			count++
 		}
 	}
@@ -2324,4 +2333,11 @@ func slicesEqual[T any](s1 []T, s2 []T, equal func(T, T) bool) bool {
 	}
 
 	return true
+}
+
+// applies fun to every element in slice
+func apply[T any](fun func(T), slice []T) {
+	for i := range slice {
+		fun(slice[i])
+	}
 }

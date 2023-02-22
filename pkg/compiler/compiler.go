@@ -70,7 +70,7 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if c.ast.Faulty {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("Fehlerhafter Quellcode, Kompilierung abgebrochen")
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
