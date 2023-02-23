@@ -8,14 +8,16 @@
 				"lib/stdlib/include"
 			],
 			"configurationProvider": "ms-vscode.makefile-tools",
-			"intelliSenseMode": "windows-gcc-x64"
+			"intelliSenseMode": "windows-gcc-x64",
+			"cStandard": "c11"
 		},
 		{
 			"name": "Linux",
 			"includePath": [
 				"lib/runtime/include",
 				"lib/stdlib/include"
-			]
+			],
+			"cStandard": "c11"
 		}
 	]
 }

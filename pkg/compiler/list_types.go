@@ -24,12 +24,16 @@ import (
 
 // holds the ir-definitions of a ddp-list-type
 type ddpIrListType struct {
-	typ                types.Type // the typedef
-	elementType        ddpIrType  // the ir-type of the list elements
-	fromConstantsIrFun *ir.Func   // the fromConstans ir func
-	freeIrFun          *ir.Func   // the free ir func
-	deepCopyIrFun      *ir.Func   // the deepCopy ir func
-	equalsIrFun        *ir.Func   // the equals ir func
+	typ                         types.Type // the typedef
+	elementType                 ddpIrType  // the ir-type of the list elements
+	fromConstantsIrFun          *ir.Func   // the fromConstans ir func
+	freeIrFun                   *ir.Func   // the free ir func
+	deepCopyIrFun               *ir.Func   // the deepCopy ir func
+	equalsIrFun                 *ir.Func   // the equals ir func
+	list_list_concat_IrFunc     *ir.Func   // the list_list_verkettet ir func
+	list_scalar_concat_IrFunc   *ir.Func   // the list_scalar_verkettet ir func
+	scalar_scalar_concat_IrFunc *ir.Func   // the scalar_scalar_verkettet ir func
+	scalar_list_concat_IrFunc   *ir.Func   // the scalar_list_verkettet ir func
 }
 
 var _ ddpIrType = (*ddpIrListType)(nil)
@@ -79,6 +83,11 @@ func (c *Compiler) defineListType(name string, elementType ddpIrType) *ddpIrList
 	list.deepCopyIrFun = c.defineDeepCopy(list)
 	list.equalsIrFun = c.defineEquals(list)
 
+	list.list_list_concat_IrFunc,
+		list.list_scalar_concat_IrFunc,
+		list.scalar_scalar_concat_IrFunc,
+		list.scalar_list_concat_IrFunc = c.defineConcats(list)
+
 	return list
 }
 
@@ -110,26 +119,17 @@ func (c *Compiler) defineFromConstants(listType types.Type) *ir.Func {
 	elementType := getListElementType(listType)
 	arrType := ptr(elementType)
 
-	cbb := c.cbb // save the current block
+	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
 	// start block
-	c.cbb = irFunc.NewBlock("")
-	comp := c.cbb.NewICmp(enum.IPredSGT, count, zero) // count > 0
-	trueLabel, falseLabel, endBlock := irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock("")
-	c.cbb.NewCondBr(comp, trueLabel, falseLabel)
+	c.cf = irFunc
+	c.cbb = c.cf.NewBlock("")
+	cond := c.cbb.NewICmp(enum.IPredSGT, count, zero) // count > 0
 
-	// count > 0 -> allocate the array
-	c.cbb = trueLabel
-	arr := c.allocateArr(elementType, count)
-	c.cbb.NewBr(endBlock)
-
-	// count <= 0 -> do nothing for the phi
-	c.cbb = falseLabel
-	c.cbb.NewBr(endBlock)
-
-	// phi based on count
-	c.cbb = endBlock
-	result := c.cbb.NewLoad(arrType, c.cbb.NewPhi(ir.NewIncoming(arr, trueLabel), ir.NewIncoming(constant.NewNull(arrType), falseLabel)))
+	result := c.createTernary(cond,
+		func() value.Value { return c.allocateArr(elementType, count) },
+		func() value.Value { return constant.NewNull(arrType) },
+	)
 
 	// get pointers to the struct fields
 	retArr, retLen, retCap := c.indexStruct(ret, 0), c.indexStruct(ret, 1), c.indexStruct(ret, 2)
@@ -141,7 +141,7 @@ func (c *Compiler) defineFromConstants(listType types.Type) *ir.Func {
 
 	c.cbb.NewRet(nil)
 
-	c.cbb = cbb // restore the block
+	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
 
 	c.insertFunction(irFunc.Name(), nil, irFunc)
 	return irFunc
@@ -164,9 +164,10 @@ func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 	)
 	irFunc.CallingConv = enum.CallingConvC
 
-	cbb := c.cbb // save the current block
+	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
-	c.cbb = irFunc.NewBlock("")
+	c.cf = irFunc
+	c.cbb = c.cf.NewBlock("")
 
 	if listType.elementType.IsPrimitive() {
 		listArr, listCap := c.loadStructField(list, 0), c.loadStructField(list, 2)
@@ -174,36 +175,17 @@ func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 	} else {
 		listArr, listLen := c.loadStructField(list, 0), c.loadStructField(list, 1)
 
-		// initialize counter to 0 (ddpint counter = 0)
-		counter := c.cbb.NewAlloca(i64)
-		c.cbb.NewStore(zero, counter)
-
-		// initialize the 4 blocks
-		condBlock, bodyBlock, incrBlock, endBlock := irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock("")
-		c.cbb.NewBr(condBlock)
-
-		c.cbb = condBlock
-		cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(counter.ElemType, counter), listLen) // check the condition (counter < list->len)
-		c.cbb.NewCondBr(cond, bodyBlock, endBlock)
-
-		// _ddp_free_x(list->arr[counter])
-		c.cbb = bodyBlock
-		currentCount := c.cbb.NewLoad(counter.ElemType, counter)
-		val := c.loadArrayElement(listArr, currentCount)
-		c.cbb.NewCall(listType.elementType.FreeFunc(), val)
-		c.cbb.NewBr(incrBlock)
-
-		// counter++
-		c.cbb = incrBlock
-		c.cbb.NewStore(c.cbb.NewAdd(newInt(1), currentCount), counter)
-		c.cbb.NewBr(condBlock)
-
-		c.cbb = endBlock
+		c.createFor(func() value.Value { return zero }, func() value.Value { return listLen },
+			func(index value.Value) {
+				val := c.loadArrayElement(listArr, index)
+				c.cbb.NewCall(listType.elementType.FreeFunc(), val)
+			},
+		)
 	}
 
 	c.cbb.NewRet(nil)
 
-	c.cbb = cbb // restore the block
+	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
 
 	c.insertFunction(irFunc.Name(), nil, irFunc)
 	return irFunc
@@ -227,9 +209,10 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 	)
 	irFunc.CallingConv = enum.CallingConvC
 
-	cbb := c.cbb // save the current block
+	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
-	c.cbb = irFunc.NewBlock("")
+	c.cf = irFunc
+	c.cbb = c.cf.NewBlock("")
 	arrFieldPtr, lenFieldPtr, capFieldPtr := c.indexStruct(ret, 0), c.indexStruct(ret, 1), c.indexStruct(ret, 2)
 	origArr, origLen, origCap := c.loadStructField(list, 0), c.loadStructField(list, 1), c.loadStructField(list, 2)
 
@@ -239,33 +222,14 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 	if listType.elementType.IsPrimitive() {
 		c.memcpyArr(arr, origArr, origLen)
 	} else { // non-primitive types need to be seperately deep-copied
-		// initialize counter to 0 (ddpint counter = 0)
-		counter := c.cbb.NewAlloca(i64)
-		c.cbb.NewStore(zero, counter)
-
-		// initialize the 4 blocks
-		condBlock, bodyBlock, incrBlock, endBlock := irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock("")
-		c.cbb.NewBr(condBlock)
-
-		c.cbb = condBlock
-		cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(counter.ElemType, counter), origLen) // check the condition (counter < list->len)
-		c.cbb.NewCondBr(cond, bodyBlock, endBlock)
-
-		// arr[counter] = _ddp_deep_copy_x(list->arr[counter])
-		c.cbb = bodyBlock
-		currentCount := c.cbb.NewLoad(counter.ElemType, counter)
-		oldVal := c.loadArrayElement(origArr, currentCount)
-		deepCopy := c.cbb.NewAlloca(listType.elementType.IrType())
-		c.cbb.NewCall(listType.elementType.DeepCopyFunc(), deepCopy, oldVal)
-		c.cbb.NewStore(c.cbb.NewLoad(deepCopy.ElemType, deepCopy), c.indexArray(arr, currentCount))
-		c.cbb.NewBr(incrBlock)
-
-		// counter++
-		c.cbb = incrBlock
-		c.cbb.NewStore(c.cbb.NewAdd(newInt(1), currentCount), counter)
-		c.cbb.NewBr(condBlock)
-
-		c.cbb = endBlock
+		c.createFor(func() value.Value { return zero }, func() value.Value { return origLen },
+			func(index value.Value) {
+				oldVal := c.loadArrayElement(origArr, index)
+				deepCopy := c.cbb.NewAlloca(listType.elementType.IrType())
+				c.cbb.NewCall(listType.elementType.DeepCopyFunc(), deepCopy, oldVal)
+				c.cbb.NewStore(c.cbb.NewLoad(deepCopy.ElemType, deepCopy), c.indexArray(arr, index))
+			},
+		)
 	}
 
 	c.cbb.NewStore(arr, arrFieldPtr)     // ret->arr = new_arr
@@ -274,7 +238,7 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 
 	c.cbb.NewRet(nil)
 
-	c.cbb = cbb // restore the block
+	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
 
 	c.insertFunction(irFunc.Name(), nil, irFunc)
 	return irFunc
@@ -296,71 +260,114 @@ func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 	)
 	irFunc.CallingConv = enum.CallingConvC
 
-	cbb := c.cbb // save the current block
+	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
-	c.cbb = irFunc.NewBlock("")
+	c.cf = irFunc
+	c.cbb = c.cf.NewBlock("")
 
 	// if (list1 == list2) return true;
-	ptrs_equal_trueBlock, ptrs_equal_leaveBlock := irFunc.NewBlock(""), irFunc.NewBlock("")
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, list1, list2)
-	c.cbb.NewCondBr(ptrs_equal, ptrs_equal_trueBlock, ptrs_equal_leaveBlock)
-
-	c.cbb = ptrs_equal_trueBlock
-	c.cbb.NewRet(constant.True)
+	c.createIfElese(ptrs_equal, func() {
+		c.cbb.NewRet(constant.True)
+	},
+		nil,
+	)
 
 	// if (list1->len != list2->len) return false;
-	c.cbb = ptrs_equal_leaveBlock
-	len_unequal_trueBlock, len_unequal_leaveBlock := irFunc.NewBlock(""), irFunc.NewBlock("")
 	list1_len := c.loadStructField(list1, 1)
 	len_unequal := c.cbb.NewICmp(enum.IPredNE, list1_len, c.loadStructField(list2, 1))
-	c.cbb.NewCondBr(len_unequal, len_unequal_trueBlock, len_unequal_leaveBlock)
 
-	c.cbb = len_unequal_trueBlock
-	c.cbb.NewRet(constant.False)
+	c.createIfElese(len_unequal, func() {
+		c.cbb.NewRet(constant.False)
+	},
+		nil,
+	)
 
 	// compare single elements
-	c.cbb = len_unequal_leaveBlock
 	// primitive types can easily be compared
 	if listType.elementType.IsPrimitive() {
 		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len);
 		size := c.cbb.NewMul(c.sizeof(listType.elementType.IrType()), list1_len)
 		c.cbb.NewRet(c.memcmp(c.loadStructField(list1, 0), c.loadStructField(list2, 0), size))
 	} else { // non-primitive types need to be seperately compared
-		// initialize counter to 0 (ddpint counter = 0)
-		counter := c.cbb.NewAlloca(i64)
-		c.cbb.NewStore(zero, counter)
+		c.createFor(func() value.Value { return zero }, func() value.Value { return list1_len },
+			func(index value.Value) {
+				list1_arr, list2_arr := c.loadStructField(list1, 0), c.loadStructField(list2, 0)
+				list1_at_count, list2_at_count := c.loadArrayElement(list1_arr, index), c.loadArrayElement(list2_arr, index)
+				elements_unequal := c.cbb.NewXor(c.cbb.NewCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), newInt(1))
 
-		// initialize the 4 blocks
-		condBlock, bodyBlock, incrBlock, endBlock := irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock(""), irFunc.NewBlock("")
-		c.cbb.NewBr(condBlock)
+				c.createIfElese(elements_unequal, func() {
+					c.cbb.NewRet(constant.False)
+				},
+					nil,
+				)
+			},
+		)
 
-		c.cbb = condBlock
-		cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(counter.ElemType, counter), list1_len) // check the condition (counter < list1->len)
-		c.cbb.NewCondBr(cond, bodyBlock, endBlock)
-
-		// if (!_ddp_T_equal(list1->arr[i], list2->arr[i])) return false;
-		c.cbb = bodyBlock
-		currentCount := c.cbb.NewLoad(counter.ElemType, counter)
-		list1_arr, list2_arr := c.loadStructField(list1, 0), c.loadStructField(list2, 0)
-		list1_at_count, list2_at_count := c.loadArrayElement(list1_arr, currentCount), c.loadArrayElement(list2_arr, currentCount)
-		elements_unequal := c.cbb.NewXor(c.cbb.NewCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), newInt(1))
-		elements_uneq_trueBlock := irFunc.NewBlock("")
-		c.cbb.NewCondBr(elements_unequal, elements_uneq_trueBlock, incrBlock)
-
-		c.cbb = elements_uneq_trueBlock
-		c.cbb.NewRet(constant.False)
-
-		// counter++
-		c.cbb = incrBlock
-		c.cbb.NewStore(c.cbb.NewAdd(newInt(1), currentCount), counter)
-		c.cbb.NewBr(condBlock)
-
-		c.cbb = endBlock
 		c.cbb.NewRet(constant.True)
 	}
 
-	c.cbb = cbb // restore the block
+	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
 
 	c.insertFunction(irFunc.Name(), nil, irFunc)
 	return irFunc
+}
+
+/*
+defines the _ddp_x_y_verkettet functions for a listType
+and returns them in the order:
+list_list, list_scalar, scalar_scalar, scalar_list
+
+TODO: create the missing concat functions
+*/
+func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
+	ret, list1, list2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+
+	concListList := c.mod.NewFunc(
+		fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
+		void,
+		ret, list1, list2,
+	)
+
+	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
+
+	c.cf = concListList
+	c.cbb = c.cf.NewBlock("")
+
+	retLenPtr, retCapPtr := c.indexStruct(ret, 1), c.indexStruct(ret, 2)
+	// ret->len = list1->len + list2->len
+	c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list1, 1), c.loadStructField(list2, 1)), retLenPtr)
+	// ret->cap = list1->cap
+	c.cbb.NewStore(c.loadStructField(list1, 2), retCapPtr)
+
+	c.createWhile(func() value.Value {
+		return c.cbb.NewICmp(enum.IPredSLT, c.loadStructField(ret, 2), c.loadStructField(ret, 1))
+	}, func() {
+		c.cbb.NewStore(retCapPtr, c.growCapacity(c.loadStructField(ret, 2)))
+	})
+
+	new_arr := c.growArr(c.loadStructField(list1, 0), c.loadStructField(list1, 2), c.loadStructField(ret, 2))
+	c.cbb.NewStore(new_arr, c.indexStruct(ret, 0))
+
+	if listType.elementType.IsPrimitive() {
+		c.memcpy(c.indexArray(new_arr, c.loadStructField(list1, 1)), c.loadStructField(list2, 0), c.loadStructField(list2, 1))
+	} else {
+		list1Len, list2Len := c.loadStructField(list1, 1), c.loadStructField(list2, 1)
+		list2Arr := c.loadStructField(list2, 0)
+		c.createFor(func() value.Value { return zero }, func() value.Value { return list2Len },
+			func(index value.Value) {
+				elementPtr := c.indexArray(new_arr, c.cbb.NewAdd(list1Len, index))
+				c.cbb.NewCall(listType.elementType.DeepCopyFunc(), elementPtr, c.loadArrayElement(list2Arr, index))
+			},
+		)
+	}
+
+	c.cbb.NewStore(constant.NewNull(ptr(listType.elementType.IrType())), c.indexStruct(list1, 0))
+	c.cbb.NewStore(zero, c.indexStruct(list1, 1))
+	c.cbb.NewStore(zero, c.indexStruct(list1, 2))
+
+	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
+
+	c.insertFunction(concListList.Name(), nil, concListList)
+	return concListList, nil, nil, nil
 }
