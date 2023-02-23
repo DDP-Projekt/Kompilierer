@@ -1,3 +1,6 @@
+[
+	Tauscht die Werte von a und b.
+]
 Die Funktion Tausche_Zahl mit den Parametern a und b vom Typ Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
 	Die Zahl temp ist a.
 	Speichere b in a.
