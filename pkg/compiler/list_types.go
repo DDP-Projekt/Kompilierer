@@ -364,63 +364,219 @@ list_list, list_scalar, scalar_scalar, scalar_list
 TODO: create the missing concat functions
 */
 func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
-	ret, list1, list2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+	// reusable parts for all 4 functions
 
-	concListList := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
-		void,
-		ret, list1, list2,
-	)
-
-	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
-
-	c.cf = concListList
-	c.cbb = c.cf.NewBlock("")
-
-	retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
-	// ret->len = list1->len + list2->len
-	c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)), retLenPtr)
-	// ret->cap = list1->cap
-	c.cbb.NewStore(c.loadStructField(list1, cap_field_index), retCapPtr)
-
-	// while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
-	c.createWhile(func() value.Value {
-		return c.cbb.NewICmp(enum.IPredSLT, c.loadStructField(ret, cap_field_index), c.loadStructField(ret, len_field_index))
-	}, func() {
-		c.cbb.NewStore(c.growCapacity(c.loadStructField(ret, cap_field_index)), retCapPtr)
-	})
-
-	// ret->arr = _ddp_reallocate(list1->arr, sizeof(elementType) * list1->cap, sizeof(elementType) * ret->cap)
-	new_arr := c.growArr(c.loadStructField(list1, arr_field_index), c.loadStructField(list1, cap_field_index), c.loadStructField(ret, cap_field_index))
-	c.cbb.NewStore(new_arr, c.indexStruct(ret, arr_field_index))
-
-	if listType.elementType.IsPrimitive() {
-		// memcpy(&ret->arr[list1->len], list2->arr, sizeof(elementType) * list2->len)
-		c.memcpyArr(c.indexArray(new_arr, c.loadStructField(list1, len_field_index)), c.loadStructField(list2, arr_field_index), c.loadStructField(list2, len_field_index))
-	} else {
-		list1Len, list2Len := c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)
-		list2Arr := c.loadStructField(list2, arr_field_index)
-		/*
-			for (int i = 0; i < list->len; i++) {
-				_ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
-			}
-		*/
-		c.createFor(func() value.Value { return zero }, func() value.Value { return list2Len },
-			func(index value.Value) {
-				elementPtr := c.indexArray(new_arr, c.cbb.NewAdd(list1Len, index))
-				c.cbb.NewCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(list2Arr, index))
-			},
-		)
+	// non-primitive types are passed as pointers
+	// until I can pass structs correctly
+	scal_param_type := listType.elementType.IrType()
+	if !listType.elementType.IsPrimitive() {
+		scal_param_type = ptr(scal_param_type)
 	}
 
-	c.cbb.NewStore(constant.NewNull(ptr(listType.elementType.IrType())), c.indexStruct(list1, arr_field_index))
-	c.cbb.NewStore(zero, c.indexStruct(list1, len_field_index))
-	c.cbb.NewStore(zero, c.indexStruct(list1, cap_field_index))
+	var (
+		cbb *ir.Block
+		cf  *ir.Func
+	)
+	setup := func(irfun *ir.Func) {
+		cbb, cf = c.cbb, c.cf // save the current basic block and ir function
+		c.cf = irfun
+		c.cbb = c.cf.NewBlock("")
+	}
 
-	c.cbb.NewRet(nil)
+	/*
+		list->len = 0;
+		list->cap = 0;
+		list->arr = NULL;
+	*/
+	empty_list := func(list value.Value) {
+		c.cbb.NewStore(constant.NewNull(ptr(listType.elementType.IrType())), c.indexStruct(list, arr_field_index))
+		c.cbb.NewStore(zero, c.indexStruct(list, len_field_index))
+		c.cbb.NewStore(zero, c.indexStruct(list, cap_field_index))
+	}
 
-	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
+	/*
+		while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
+		ret->arr = _ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * ret->cap);
+	*/
+	grow_capacity_and_set_arr := func(ret, list value.Value) {
+		retCapPtr := c.indexStruct(ret, cap_field_index)
+		// while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
+		c.createWhile(func() value.Value {
+			return c.cbb.NewICmp(enum.IPredSLT, c.loadStructField(ret, cap_field_index), c.loadStructField(ret, len_field_index))
+		}, func() {
+			c.cbb.NewStore(c.growCapacity(c.loadStructField(ret, cap_field_index)), retCapPtr)
+		})
 
-	c.insertFunction(concListList.Name(), nil, concListList)
-	return concListList, nil, nil, nil
+		// ret->arr = _ddp_reallocate(list1->arr, sizeof(elementType) * list1->cap, sizeof(elementType) * ret->cap)
+		new_arr := c.growArr(c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index), c.loadStructField(ret, cap_field_index))
+		c.cbb.NewStore(new_arr, c.indexStruct(ret, arr_field_index))
+	}
+
+	finish := func(irfun *ir.Func) *ir.Func {
+		c.cbb.NewRet(nil)
+
+		c.cbb, c.cf = cbb, cf // restore the basic block and ir function
+
+		c.insertFunction(irfun.Name(), nil, irfun)
+		return irfun
+	}
+
+	// defines the list_list_verkettet function
+	list_list_concat := func() *ir.Func {
+		ret, list1, list2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+		concListList := c.mod.NewFunc(
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
+			void,
+			ret, list1, list2,
+		)
+
+		setup(concListList)
+
+		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		// ret->len = list1->len + list2->len
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)), retLenPtr)
+		// ret->cap = list1->cap
+		c.cbb.NewStore(c.loadStructField(list1, cap_field_index), retCapPtr)
+
+		grow_capacity_and_set_arr(ret, list1)
+
+		new_arr := c.loadStructField(ret, arr_field_index)
+
+		if listType.elementType.IsPrimitive() {
+			// memcpy(&ret->arr[list1->len], list2->arr, sizeof(elementType) * list2->len)
+			c.memcpyArr(c.indexArray(new_arr, c.loadStructField(list1, len_field_index)), c.loadStructField(list2, arr_field_index), c.loadStructField(list2, len_field_index))
+		} else {
+			list1Len, list2Len := c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)
+			list2Arr := c.loadStructField(list2, arr_field_index)
+			/*
+				for (int i = 0; i < list->len; i++) {
+					_ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
+				}
+			*/
+			c.createFor(func() value.Value { return zero }, func() value.Value { return list2Len },
+				func(index value.Value) {
+					elementPtr := c.indexArray(new_arr, c.cbb.NewAdd(list1Len, index))
+					c.cbb.NewCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(list2Arr, index))
+				},
+			)
+		}
+
+		empty_list(list1)
+
+		return finish(concListList)
+	}
+
+	list_scalar_concat := func() *ir.Func {
+		ret, list, scal := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list", ptr(listType.typ)), ir.NewParam("scal", scal_param_type)
+		concListScal := c.mod.NewFunc(
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.IrType().Name()),
+			void,
+			ret, list, scal,
+		)
+
+		setup(concListScal)
+
+		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		// ret->len = list->len + 1
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, len_field_index), newInt(1)), retLenPtr)
+		// ret->cap = list->cap
+		c.cbb.NewStore(c.loadStructField(list, cap_field_index), retCapPtr)
+
+		grow_capacity_and_set_arr(ret, list)
+
+		retArr := c.loadStructField(ret, arr_field_index)
+		listLen := c.loadStructField(list, len_field_index)
+		if listType.elementType.IsPrimitive() {
+			// ret->arr[list->len] = scal
+			c.cbb.NewStore(scal, c.indexArray(retArr, listLen))
+		} else {
+			// _ddp_deep_copy_scal(&ret->arr[list->len], scal)
+			dst := c.indexArray(retArr, listLen)
+			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), dst, scal)
+		}
+
+		empty_list(list)
+
+		return finish(concListScal)
+	}
+
+	scalar_scalar_concat := func() *ir.Func {
+		// string concatenations result in a new string
+		// TODO: uncomment this when ready
+		/*
+			if listType.elementType == ddpstring {
+				return nil
+			}
+		*/
+
+		ret, scal1, scal2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("scal1", scal_param_type), ir.NewParam("scal2", scal_param_type)
+		concScalScal := c.mod.NewFunc(
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.IrType().Name(), listType.elementType.IrType().Name()),
+			void,
+			ret, scal1, scal2,
+		)
+
+		setup(concScalScal)
+
+		retArrPtr, retLenPtr, retCapPtr := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		// ret->len = list->len + 1
+		c.cbb.NewStore(newInt(2), retLenPtr)
+		// ret->cap = list->cap
+		c.cbb.NewStore(c.growCapacity(newInt(2)), retCapPtr)
+		// ret->arr = ALLOCATE(elementType, 2)
+		c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), newInt(2)), retArrPtr)
+
+		retArr := c.loadStructField(ret, arr_field_index)
+		retArr0Ptr, retArr1Ptr := c.indexArray(retArr, newInt(0)), c.indexArray(retArr, newInt(1))
+		if listType.elementType.IsPrimitive() {
+			// ret->arr[0] = scal1;
+			// ret->arr[1] = scal1;
+			c.cbb.NewStore(scal1, retArr0Ptr)
+			c.cbb.NewStore(scal2, retArr1Ptr)
+		} else {
+			// _ddp_deep_copy_scalar(&ret->arr[0], scal1);
+			// _ddp_deep_copy_scalar(&ret->arr[0], scal1);
+			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr0Ptr, scal1)
+			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr0Ptr, scal2)
+		}
+
+		return finish(concScalScal)
+	}
+
+	scalar_list_concat := func() *ir.Func {
+		ret, scal, list := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("scal", scal_param_type), ir.NewParam("list", ptr(listType.typ))
+		concScalList := c.mod.NewFunc(
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.IrType().Name(), listType.typ.Name()),
+			void,
+			ret, scal, list,
+		)
+
+		setup(concScalList)
+
+		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		// ret->len = list->len + 1
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, len_field_index), newInt(1)), retLenPtr)
+		// ret->cap = list->cap
+		c.cbb.NewStore(c.loadStructField(list, cap_field_index), retCapPtr)
+
+		grow_capacity_and_set_arr(ret, list)
+
+		// memmove(&ret->arr[1], ret->arr, sizeof(elementType) * list->len);
+		retArr := c.loadStructField(ret, arr_field_index)
+		c.memmoveArr(c.indexArray(ret, newInt(1)), retArr, c.loadStructField(list, len_field_index))
+
+		if listType.elementType.IsPrimitive() {
+			// ret->arr[0] = scal;
+			c.cbb.NewStore(scal, retArr)
+		} else {
+			// _ddp_deep_copy(&ret->arr[0], scal)
+			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr, scal)
+		}
+
+		empty_list(list)
+
+		return finish(concScalList)
+	}
+
+	return list_list_concat(), list_scalar_concat(), scalar_scalar_concat(), scalar_list_concat()
 }

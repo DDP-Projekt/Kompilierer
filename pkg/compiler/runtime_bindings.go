@@ -26,6 +26,7 @@ var (
 	_ddp_reallocate_irfun *ir.Func
 	_libc_memcpy_irfun    *ir.Func
 	_libc_memcmp_irfun    *ir.Func
+	_libc_memmove_irfun   *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -52,6 +53,14 @@ func (c *Compiler) initRuntimeFunctions() {
 		ir.NewParam("buf1", ptr(i8)),
 		ir.NewParam("buf2", ptr(i8)),
 		ir.NewParam("size", i64),
+	)
+
+	_libc_memmove_irfun = c.declareExternalRuntimeFunction(
+		"memmove",
+		ptr(i8),
+		ir.NewParam("dest", ptr(i8)),
+		ir.NewParam("src", ptr(i8)),
+		ir.NewParam("n", i64),
 	)
 }
 
@@ -107,6 +116,19 @@ func (c *Compiler) memcpyArr(dest, src, n value.Value) value.Value {
 	elementType := getPointeeType(src)
 	size := c.cbb.NewMul(n, c.sizeof(elementType))
 	return c.memcpy(dest, src, size)
+}
+
+// wraps the memmove function from libc
+// dest and src must be pointer types, n is the size to copy in bytes
+func (c *Compiler) memmove(dest, src, n value.Value) value.Value {
+	return c.cbb.NewCall(_libc_memmove_irfun, dest, src, n)
+}
+
+// wraps memmove for a array, where n is the length of the array in src
+func (c *Compiler) memmoveArr(dest, src, n value.Value) value.Value {
+	elementType := getPointeeType(src)
+	size := c.cbb.NewMul(n, c.sizeof(elementType))
+	return c.memmove(dest, src, size)
 }
 
 func (c *Compiler) memcmp(buf1, buf2, size value.Value) value.Value {
