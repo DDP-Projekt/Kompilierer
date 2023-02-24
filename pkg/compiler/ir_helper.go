@@ -40,7 +40,7 @@ func (c *Compiler) growCapacity(cap value.Value) value.Value {
 	c.cbb.NewBr(endBlock)
 
 	c.cbb = falseBlock
-	newCap := c.cbb.NewMul(cap, newInt(8))
+	newCap := c.cbb.NewMul(cap, newInt(2))
 	c.cbb.NewBr(endBlock)
 
 	c.cbb = endBlock
