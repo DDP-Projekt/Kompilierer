@@ -43,6 +43,10 @@ func (t *ddpIrListType) IrType() types.Type {
 	return t.typ
 }
 
+func (t *ddpIrListType) Name() string {
+	return t.typ.Name()
+}
+
 func (*ddpIrListType) IsPrimitive() bool {
 	return false
 }
@@ -319,9 +323,10 @@ func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 	// compare single elements
 	// primitive types can easily be compared
 	if listType.elementType.IsPrimitive() {
-		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len);
+		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len) == 0;
 		size := c.cbb.NewMul(c.sizeof(listType.elementType.IrType()), list1_len)
-		c.cbb.NewRet(c.memcmp(c.loadStructField(list1, arr_field_index), c.loadStructField(list2, arr_field_index), size))
+		memcmp := c.memcmp(c.loadStructField(list1, arr_field_index), c.loadStructField(list2, arr_field_index), size)
+		c.cbb.NewRet(c.cbb.NewICmp(enum.IPredEQ, memcmp, zero))
 	} else { // non-primitive types need to be seperately compared
 		/*
 			for (int i = 0; i < list1->len; i++) {

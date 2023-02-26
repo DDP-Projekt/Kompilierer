@@ -6,37 +6,32 @@
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
-ddpstring* _ddp_string_from_constant(char* str) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("_ddp_string_from_constant: %p", dstr);
+void _ddp_string_from_constant(ddpstring* ret, char* str) {
+	DBGLOG("_ddp_string_from_constant: ret: %p", ret);
 	size_t size = strlen(str) + 1;
 	char* string = ALLOCATE(char, size); // the char array of the string (plus null terminator)
 	// copy the passed char array
 	memcpy(string, str, size);
 
 	// set the string fields
-	dstr->str = string;
-	dstr->cap = size;
-	return dstr;
+	ret->str = string;
+	ret->cap = size;
 }
 
 // free a ddpstring
 void _ddp_free_string(ddpstring* str) {
 	DBGLOG("free_string: %p", str);
 	FREE_ARRAY(char, str->str, str->cap); // free the character array
-	FREE(ddpstring, str); // free the string pointer
 }
 
 // allocate a new ddpstring as copy of str
-ddpstring* _ddp_deep_copy_string(ddpstring* str) {
-	DBGLOG("_ddp_deep_copy_string: %p", str);
+void _ddp_deep_copy_string(ddpstring* ret, ddpstring* str) {
+	DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
 	char* cpy = ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap); // copy the chars
-	ddpstring* cpystr = ALLOCATE(ddpstring, 1); // allocate the copy string
 	// set the fields of the copy
-	cpystr->str = cpy;
-	cpystr->cap = str->cap;
-	return cpystr;
+	ret->str = cpy;
+	ret->cap = str->cap;
 }
 
 /***** Partially generated code *****/

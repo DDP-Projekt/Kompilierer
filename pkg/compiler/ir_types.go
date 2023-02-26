@@ -13,6 +13,7 @@ import (
 // interface for the ir-representation of a ddptype
 type ddpIrType interface {
 	IrType() types.Type        // retreives the corresponding types.Type
+	Name() string              // name of the type
 	IsPrimitive() bool         // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
 	DefaultValue() value.Value // returns a default value for the type
 	FreeFunc() *ir.Func        // returns the irFunc used to free this type, nil if IsPrimitive == true
@@ -24,12 +25,17 @@ type ddpIrType interface {
 type ddpIrPrimitiveType struct {
 	typ          types.Type
 	defaultValue value.Value
+	name         string
 }
 
 var _ ddpIrType = (*ddpIrPrimitiveType)(nil)
 
 func (t *ddpIrPrimitiveType) IrType() types.Type {
 	return t.typ
+}
+
+func (t *ddpIrPrimitiveType) Name() string {
+	return t.name
 }
 
 func (*ddpIrPrimitiveType) IsPrimitive() bool {
@@ -52,10 +58,11 @@ func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
 	return nil
 }
 
-func (c *Compiler) definePrimitiveType(typ types.Type, defaultValue value.Value) *ddpIrPrimitiveType {
+func (c *Compiler) definePrimitiveType(typ types.Type, defaultValue value.Value, name string) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		typ:          typ,
 		defaultValue: defaultValue,
+		name:         name,
 	}
 	return primitive
 }

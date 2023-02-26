@@ -74,8 +74,7 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	}
 
 	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
-	c.test_new_runtime_functions()
-	c.setupRuntimeFunctions() // setup internal functions to interact with the ddp-c-runtime
+	c.setupRuntimeFunctions()         // setup internal functions to interact with the ddp-c-runtime
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
 		"_ddp_ddpmain",
@@ -698,6 +697,8 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) {
 	}
 }
 func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
+	const all_ones int64 = ^0 // int with all bits set to 1
+
 	rhs := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())

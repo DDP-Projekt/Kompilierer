@@ -72,12 +72,11 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 	return t > max ? max : t;
 }
 
-ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
-	ddpstring* new_str = ALLOCATE(ddpstring, 1);
-	DBGLOG("_ddp_string_slice: %p", new_str);
-	new_str->cap = 1;
-	new_str->str = ALLOCATE(char, 1);
-	new_str->str[0] = '\0';
+void _ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint index2) {
+	DBGLOG("_ddp_string_slice: %p, ret: %p", str, ret);
+	ret->cap = 1;
+	ret->str = ALLOCATE(char, 1);
+	ret->str[0] = '\0';
 
 	if (str->cap <= 1)
 		return str; // empty string can stay the same
@@ -103,30 +102,25 @@ ddpstring* _ddp_string_slice(ddpstring* str, ddpint index1, ddpint index2) {
 		i2 += utf8_indicated_num_bytes(str->str[i2]);
 	}
 
-	new_str->cap = (i2 - i1) + 2; // + 1 if indices are equal, + 2 because null-terminator
-	new_str->str = _ddp_reallocate(new_str->str, sizeof(char) * 1, new_str->cap);
-	memcpy(new_str->str, str->str + i1, new_str->cap - 1);
-	new_str->str[new_str->cap - 1] = '\0';
-
-	return new_str;
+	ret->cap = (i2 - i1) + 2; // + 1 if indices are equal, + 2 because null-terminator
+	ret->str = _ddp_reallocate(ret->str, sizeof(char) * 1, ret->cap);
+	memcpy(ret->str, str->str + i1, ret->cap - 1);
+	ret->str[ret->cap - 1] = '\0';
 }
 
-ddpstring* _ddp_string_string_verkettet(ddpstring* str1, ddpstring* str2) {
-	ddpstring* new_str = ALLOCATE(ddpstring, 1);
-	DBGLOG("_ddp_string_string_verkettet: %p", new_str);
+void _ddp_string_string_verkettet(ddpstring* ret, ddpstring* str1, ddpstring* str2) {
+	DBGLOG("_ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
 
-	new_str->cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
-	new_str->str = _ddp_reallocate(str1->str, str1->cap, new_str->cap);	 // reallocate str1
-	memcpy(&new_str->str[str1->cap - 1], str2->str, str2->cap); // append str2 and overwrite str1's null-terminator
+	ret->cap = str1->cap - 1 + str2->cap;				 // remove 1 null-terminator
+	ret->str = _ddp_reallocate(str1->str, str1->cap, ret->cap);	 // reallocate str1
+	memcpy(&ret->str[str1->cap - 1], str2->str, str2->cap); // append str2 and overwrite str1's null-terminator
 
 	str1->cap = 0;
 	str1->str = NULL;
-	return new_str;
 }
 
-ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
-	ddpstring* new_str = ALLOCATE(ddpstring, 1);
-	DBGLOG("_ddp_char_string_verkettet: %p", new_str);
+void _ddp_char_string_verkettet(ddpstring* ret, ddpchar c, ddpstring* str) {
+	DBGLOG("_ddp_char_string_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -134,19 +128,17 @@ ddpstring* _ddp_char_string_verkettet(ddpchar c, ddpstring* str) {
 		num_bytes = 0;
 	}
 
-	new_str->cap = str->cap + num_bytes;
-	new_str->str = _ddp_reallocate(str->str, str->cap, new_str->cap);
-	memmove(&new_str->str[num_bytes], new_str->str, str->cap);
-	memcpy(new_str->str, temp, num_bytes);
+	ret->cap = str->cap + num_bytes;
+	ret->str = _ddp_reallocate(str->str, str->cap, ret->cap);
+	memmove(&ret->str[num_bytes], ret->str, str->cap);
+	memcpy(ret->str, temp, num_bytes);
 
 	str->cap = 0;
 	str->str = NULL;
-	return new_str;
 }
 
-ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
-	ddpstring* new_str = ALLOCATE(ddpstring, 1);
-	DBGLOG("_ddp_string_char_verkettet: %p", new_str);
+void _ddp_string_char_verkettet(ddpstring* ret, ddpstring* str, ddpchar c) {
+	DBGLOG("_ddp_string_char_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -154,14 +146,13 @@ ddpstring* _ddp_string_char_verkettet(ddpstring* str, ddpchar c) {
 		num_bytes = 0;
 	}
 
-	new_str->cap = str->cap + num_bytes;
-	new_str->str = _ddp_reallocate(str->str, str->cap, new_str->cap);
-	memcpy(&new_str->str[str->cap - 1], temp, num_bytes);
-	new_str->str[new_str->cap - 1] = '\0';
+	ret->cap = str->cap + num_bytes;
+	ret->str = _ddp_reallocate(str->str, str->cap, ret->cap);
+	memcpy(&ret->str[str->cap - 1], temp, num_bytes);
+	ret->str[ret->cap - 1] = '\0';
 
 	str->str = NULL;
 	str->cap = 0;
-	return new_str;
 }
 
 ddpint _ddp_string_to_int(ddpstring* str) {
@@ -176,9 +167,8 @@ ddpfloat _ddp_string_to_float(ddpstring* str) {
 	return strtod(str->str, NULL); // maybe works with comma seperator? We'll see
 }
 
-ddpstring* _ddp_int_to_string(ddpint i) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("_ddp_int_to_string: %p", dstr);
+void _ddp_int_to_string(ddpstring* ret, ddpint i) {
+	DBGLOG("_ddp_int_to_string: %p", ret);
 
 	char buffer[21];
 	int len = sprintf(buffer, "%lld", i);
@@ -188,14 +178,12 @@ ddpstring* _ddp_int_to_string(ddpint i) {
 	string[len] = '\0';
 
 	// set the string fields
-	dstr->str = string;
-	dstr->cap = len + 1;
-	return dstr;
+	ret->str = string;
+	ret->cap = len + 1;
 }
 
-ddpstring* _ddp_float_to_string(ddpfloat f) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("_ddp_float_to_string: %p", dstr);
+void _ddp_float_to_string(ddpstring* ret, ddpfloat f) {
+	DBGLOG("_ddp_float_to_string: %p", ret);
 
 	char buffer[50];
 	int len = sprintf(buffer, "%.16g", f);
@@ -205,33 +193,29 @@ ddpstring* _ddp_float_to_string(ddpfloat f) {
 	string[len] = '\0';
 
 	// set the string fields
-	dstr->str = string;
-	dstr->cap = len + 1;
-	return dstr;
+	ret->str = string;
+	ret->cap = len + 1;
 }
 
-ddpstring* _ddp_bool_to_string(ddpbool b) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("_ddp_bool_to_string: %p", dstr);
+void _ddp_bool_to_string(ddpstring* ret, ddpbool b) {
+	DBGLOG("_ddp_bool_to_string: %p", ret);
 
 	char* string;
 
 	if (b) {
-		dstr->cap = 5;
+		ret->cap = 5;
 		string = ALLOCATE(char, 5);
 		memcpy(string, "wahr", 5);
 	} else {
-		dstr->cap = 7;
+		ret->cap = 7;
 		string = ALLOCATE(char, 7);
 		memcpy(string, "falsch", 7);
 	}
-	dstr->str = string;
-	return dstr;
+	ret->str = string;
 }
 
-ddpstring* _ddp_char_to_string(ddpchar c) {
-	ddpstring* dstr = ALLOCATE(ddpstring, 1); // up here to log the adress in debug mode
-	DBGLOG("_ddp_bool_to_string: %p", dstr);
+void _ddp_char_to_string(ddpstring* ret, ddpchar c) {
+	DBGLOG("_ddp_bool_to_string: %p", ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -243,9 +227,8 @@ ddpstring* _ddp_char_to_string(ddpchar c) {
 	memcpy(string, temp, num_bytes);
 	string[num_bytes] = '\0';
 
-	dstr->cap = num_bytes + 1;
-	dstr->str = string;
-	return dstr;
+	ret->cap = num_bytes + 1;
+	ret->str = string;
 }
 
 ddpbool _ddp_string_equal(ddpstring* str1, ddpstring* str2) {

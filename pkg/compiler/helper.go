@@ -34,12 +34,7 @@ var (
 
 	ptr = types.NewPointer
 
-	zero   = newInt(0)       // 0: i64
-	zero32 = newIntT(i32, 0) // 0: i32
-)
-
-const (
-	all_ones = ^0 // int with all bits set to 1
+	zero = newInt(0) // 0: i64
 )
 
 func newInt(value int64) *constant.Int {
