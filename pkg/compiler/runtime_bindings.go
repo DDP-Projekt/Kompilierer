@@ -23,10 +23,11 @@ func (c *Compiler) declareExternalRuntimeFunction(name string, returnType types.
 }
 
 var (
-	_ddp_reallocate_irfun *ir.Func
-	_libc_memcpy_irfun    *ir.Func
-	_libc_memcmp_irfun    *ir.Func
-	_libc_memmove_irfun   *ir.Func
+	_ddp_reallocate_irfun    *ir.Func
+	_ddp_runtime_error_irfun *ir.Func
+	_libc_memcpy_irfun       *ir.Func
+	_libc_memcmp_irfun       *ir.Func
+	_libc_memmove_irfun      *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -38,6 +39,14 @@ func (c *Compiler) initRuntimeFunctions() {
 		ir.NewParam("oldSize", i64),
 		ir.NewParam("newSize", i64),
 	)
+
+	_ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
+		"runtime_error",
+		void,
+		ir.NewParam("exit_code", ddpint),
+		ir.NewParam("fmt", ptr(i8)),
+	)
+	_ddp_runtime_error_irfun.Sig.Variadic = true
 
 	_libc_memcpy_irfun = c.declareExternalRuntimeFunction(
 		"memcpy",
@@ -65,6 +74,11 @@ func (c *Compiler) initRuntimeFunctions() {
 }
 
 // helper functions to use the runtime-bindings
+
+func (c *Compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
+	args = append([]value.Value{exit_code, fmt}, args...)
+	c.cbb.NewCall(_ddp_runtime_error_irfun, args...)
+}
 
 // calls _ddp_reallocate from the runtime
 func (c *Compiler) _ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {

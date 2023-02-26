@@ -137,17 +137,18 @@ func (c *Compiler) createWhile(cond func() value.Value, genBody func()) {
 // generates a new for-loop using iterStart/End to get the start and end value (should return i64)
 // and genBody to generate what should be done in the body-Block
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *Compiler) createFor(iterStart, iterEnd func() value.Value, genBody func(index value.Value)) {
+func (c *Compiler) createFor(iterStart value.Value, genCond func(index value.Value) value.Value, genBody func(index value.Value)) {
 	// initialize counter to 0 (ddpint counter = 0)
 	counter := c.cbb.NewAlloca(i64)
-	c.cbb.NewStore(iterStart(), counter)
+	c.cbb.NewStore(iterStart, counter)
 
 	// initialize the 4 blocks
 	condBlock, bodyBlock, incrBlock, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
-	cond := c.cbb.NewICmp(enum.IPredSLT, c.cbb.NewLoad(counter.ElemType, counter), iterEnd()) // check the condition (counter < list->len)
+	current_count := c.cbb.NewLoad(counter.ElemType, counter)
+	cond := genCond(current_count) // check the condition (counter < list->len)
 	c.cbb.NewCondBr(cond, bodyBlock, endBlock)
 
 	// arr[counter] = _ddp_deep_copy_x(list->arr[counter])
@@ -161,4 +162,12 @@ func (c *Compiler) createFor(iterStart, iterEnd func() value.Value, genBody func
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = endBlock
+}
+
+// helper to be used together with createFor
+// creates a default condition to loop up to a certain value
+func (c *Compiler) forDefaultCond(limit value.Value) func(value.Value) value.Value {
+	return func(index value.Value) value.Value {
+		return c.cbb.NewICmp(enum.IPredSLT, index, limit)
+	}
 }
