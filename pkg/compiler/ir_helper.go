@@ -64,7 +64,7 @@ func (c *Compiler) loadArrayElement(arr value.Value, index value.Value) value.Va
 // returns a pointer to the field
 func (c *Compiler) indexStruct(structPtr value.Value, index int64) value.Value {
 	structType := getPointeeType(structPtr)
-	return c.cbb.NewGetElementPtr(structType, structPtr, zero32, newIntT(i32, index))
+	return c.cbb.NewGetElementPtr(structType, structPtr, newIntT(i32, 0), newIntT(i32, index))
 }
 
 // indexStruct followed by a load on the result

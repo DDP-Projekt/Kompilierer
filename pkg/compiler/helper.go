@@ -9,28 +9,15 @@ import (
 
 // often used types declared here to shorten their names
 var (
-	void = types.Void
-
 	i8  = types.I8
 	i32 = types.I32
 	i64 = types.I64
 
-	ddpint           = i64
-	ddpfloat         = types.Double
-	ddpbool          = types.I1
-	ddpchar          = i32
-	ddpstring        = types.NewStruct() // defined in setupStringType
-	ddpintlist       = types.NewStruct() // defined in setupListTypes
-	ddpfloatlist     = types.NewStruct() // defined in setupListTypes
-	ddpboollist      = types.NewStruct() // defined in setupListTypes
-	ddpcharlist      = types.NewStruct() // defined in setupListTypes
-	ddpstringlist    = types.NewStruct() // defined in setupListTypes
-	ddpstrptr        = types.NewPointer(ddpstring)
-	ddpintlistptr    = types.NewPointer(ddpintlist)
-	ddpfloatlistptr  = types.NewPointer(ddpfloatlist)
-	ddpboollistptr   = types.NewPointer(ddpboollist)
-	ddpcharlistptr   = types.NewPointer(ddpcharlist)
-	ddpstringlistptr = types.NewPointer(ddpstringlist)
+	// convenience declarations for often used types
+	ddpint   = i64
+	ddpfloat = types.Double
+	ddpbool  = types.I1
+	ddpchar  = i32
 
 	ptr = types.NewPointer
 
@@ -45,151 +32,65 @@ func newIntT(typ *types.IntType, value int64) *constant.Int {
 	return constant.NewInt(typ, value)
 }
 
-// turn a tokenType into the corresponding llvm type
-func toIRType(ddpType ddptypes.Type) types.Type {
+// turn a ddptypes.Type into the corresponding llvm type
+func (c *Compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	if ddpType.IsList {
 		switch ddpType.Primitive {
 		case ddptypes.ZAHL:
-			return ddpintlistptr
+			return c.ddpintlist
 		case ddptypes.KOMMAZAHL:
-			return ddpfloatlistptr
+			return c.ddpfloatlist
 		case ddptypes.BOOLEAN:
-			return ddpboollistptr
+			return c.ddpboollist
 		case ddptypes.BUCHSTABE:
-			return ddpcharlistptr
+			return c.ddpcharlist
 		case ddptypes.TEXT:
-			return ddpstringlistptr
+			return c.ddpstringlist
 		}
 	} else {
 		switch ddpType.Primitive {
+		case ddptypes.ZAHL:
+			return c.ddpinttyp
+		case ddptypes.KOMMAZAHL:
+			return c.ddpfloattyp
+		case ddptypes.BOOLEAN:
+			return c.ddpbooltyp
+		case ddptypes.BUCHSTABE:
+			return c.ddpchartyp
+		case ddptypes.TEXT:
+			return c.ddpstring
 		case ddptypes.NICHTS:
-			return void
-		case ddptypes.ZAHL:
-			return ddpint
-		case ddptypes.KOMMAZAHL:
-			return ddpfloat
-		case ddptypes.BOOLEAN:
-			return ddpbool
-		case ddptypes.BUCHSTABE:
-			return ddpchar
-		case ddptypes.TEXT:
-			return ddpstrptr
+			return c.void
 		}
 	}
 	err("illegal ddp type to ir type conversion (%s)", ddpType)
-	return i8 // unreachable
+	return nil // unreachable
 }
 
-func toIRTypeRef(ty ddptypes.ParameterType) types.Type {
-	if !ty.IsReference {
-		return toIRType(ty.Type)
+// used to handle possible reference parameters
+func (c *Compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
+	irType := c.toIrType(ty.Type)
+
+	if !ty.IsReference && irType.IsPrimitive() {
+		return irType.IrType()
 	}
-	return ptr(toIRType(ty.Type))
+
+	return irType.PtrType()
 }
 
-// returns the default constant for global variables
-func getDefaultValue(ddpType ddptypes.Type) constant.Constant {
-	if ddpType.IsList {
-		switch ddpType.Primitive {
-		case ddptypes.ZAHL:
-			return constant.NewNull(ddpintlistptr)
-		case ddptypes.KOMMAZAHL:
-			return constant.NewNull(ddpfloatlistptr)
-		case ddptypes.BOOLEAN:
-			return constant.NewNull(ddpboollistptr)
-		case ddptypes.BUCHSTABE:
-			return constant.NewNull(ddpcharlistptr)
-		case ddptypes.TEXT:
-			return constant.NewNull(ddpstringlistptr)
-		}
-	} else {
-		switch ddpType.Primitive {
-		case ddptypes.ZAHL:
-			return constant.NewInt(ddpint, 0)
-		case ddptypes.KOMMAZAHL:
-			return constant.NewFloat(ddpfloat, 0.0)
-		case ddptypes.BOOLEAN:
-			return constant.NewInt(ddpbool, 0)
-		case ddptypes.BUCHSTABE:
-			return constant.NewInt(ddpchar, 0)
-		case ddptypes.TEXT:
-			return constant.NewNull(ddpstrptr)
-		}
+func (c *Compiler) getListType(ty ddpIrType) *ddpIrListType {
+	switch ty {
+	case c.ddpinttyp:
+		return c.ddpintlist
+	case c.ddpfloattyp:
+		return c.ddpfloatlist
+	case c.ddpbooltyp:
+		return c.ddpboollist
+	case c.ddpchartyp:
+		return c.ddpcharlist
+	case c.ddpstring:
+		return c.ddpstringlist
 	}
-	err("illegal ddp type to ir type conversion (%s)", ddpType)
-	return zero // unreachable
-}
-
-func isDynamic(typ types.Type) bool {
-	switch typ {
-	case ddpstrptr, ddpintlistptr, ddpfloatlistptr, ddpboollistptr, ddpcharlistptr, ddpstringlistptr:
-		return true
-	}
-	return false
-}
-
-func getTypeName(ddpType ddptypes.Type) string {
-	if ddpType.IsList {
-		switch ddpType.Primitive {
-		case ddptypes.ZAHL:
-			return "ddpintlist"
-		case ddptypes.KOMMAZAHL:
-			return "ddpfloatlist"
-		case ddptypes.BOOLEAN:
-			return "ddpboollist"
-		case ddptypes.BUCHSTABE:
-			return "ddpcharlist"
-		case ddptypes.TEXT:
-			return "ddpstringlist"
-		}
-	} else {
-		switch ddpType.Primitive {
-		case ddptypes.ZAHL:
-			return "ddpint"
-		case ddptypes.KOMMAZAHL:
-			return "ddpfloat"
-		case ddptypes.BOOLEAN:
-			return "ddpbool"
-		case ddptypes.BUCHSTABE:
-			return "ddpchar"
-		case ddptypes.TEXT:
-			return "ddpstring"
-		}
-	}
-	err("illegal ddp type to ir type conversion (%s)", ddpType)
-	return "" // unreachable
-}
-
-func derefListPtr(typ types.Type) types.Type {
-	switch typ {
-	case ddpintlistptr:
-		return ddpintlist
-	case ddpfloatlistptr:
-		return ddpfloatlist
-	case ddpboollistptr:
-		return ddpboollist
-	case ddpcharlistptr:
-		return ddpcharlist
-	case ddpstringlistptr:
-		return ddpstringlist
-	}
-	err("bad argument")
-	return void // unreachable
-}
-
-func getElementType(typ types.Type) types.Type {
-	switch typ {
-	case ddpintlistptr:
-		return ddpint
-	case ddpfloatlistptr:
-		return ddpfloat
-	case ddpboollistptr:
-		return ddpbool
-	case ddpcharlistptr:
-		return ddpchar
-	case ddpstringlistptr:
-		return ddpstrptr
-	}
-	err("bad argument")
-	return void // unreachable
+	err("no list type found for elementType %s", ty.Name())
+	return nil // unreachable
 }

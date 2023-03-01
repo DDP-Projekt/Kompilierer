@@ -79,7 +79,7 @@ void _ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint ind
 	ret->str[0] = '\0';
 
 	if (str->cap <= 1)
-		return str; // empty string can stay the same
+		return; // empty string can stay the same
 
 	size_t start_length = utf8_strlen(str->str);
 	index1 = clamp(index1, 1, start_length);

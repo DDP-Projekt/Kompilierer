@@ -23,24 +23,32 @@ import (
 )
 
 // holds the ir-definitions of a ddp-list-type
+// for each list-type such a struct
+// should be instantiated by a Compiler
+// exactly once
 type ddpIrListType struct {
-	typ                         types.Type // the typedef
-	elementType                 ddpIrType  // the ir-type of the list elements
-	fromConstantsIrFun          *ir.Func   // the fromConstans ir func
-	freeIrFun                   *ir.Func   // the free ir func
-	deepCopyIrFun               *ir.Func   // the deepCopy ir func
-	equalsIrFun                 *ir.Func   // the equals ir func
-	sliceIrFun                  *ir.Func   // the clice ir func
-	list_list_concat_IrFunc     *ir.Func   // the list_list_verkettet ir func
-	list_scalar_concat_IrFunc   *ir.Func   // the list_scalar_verkettet ir func
-	scalar_scalar_concat_IrFunc *ir.Func   // the scalar_scalar_verkettet ir func
-	scalar_list_concat_IrFunc   *ir.Func   // the scalar_list_verkettet ir func
+	typ                         types.Type         // the typedef
+	ptr                         *types.PointerType // ptr(typ)
+	elementType                 ddpIrType          // the ir-type of the list elements
+	fromConstantsIrFun          *ir.Func           // the fromConstans ir func
+	freeIrFun                   *ir.Func           // the free ir func
+	deepCopyIrFun               *ir.Func           // the deepCopy ir func
+	equalsIrFun                 *ir.Func           // the equals ir func
+	sliceIrFun                  *ir.Func           // the clice ir func
+	list_list_concat_IrFunc     *ir.Func           // the list_list_verkettet ir func
+	list_scalar_concat_IrFunc   *ir.Func           // the list_scalar_verkettet ir func
+	scalar_scalar_concat_IrFunc *ir.Func           // the scalar_scalar_verkettet ir func
+	scalar_list_concat_IrFunc   *ir.Func           // the scalar_list_verkettet ir func
 }
 
 var _ ddpIrType = (*ddpIrListType)(nil)
 
 func (t *ddpIrListType) IrType() types.Type {
 	return t.typ
+}
+
+func (t *ddpIrListType) PtrType() *types.PointerType {
+	return t.ptr
 }
 
 func (t *ddpIrListType) Name() string {
@@ -51,9 +59,9 @@ func (*ddpIrListType) IsPrimitive() bool {
 	return false
 }
 
-func (t *ddpIrListType) DefaultValue() value.Value {
+func (t *ddpIrListType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
-		constant.NewNull(ptr(t.elementType.IrType())),
+		constant.NewNull(t.elementType.PtrType()),
 		zero,
 		zero,
 	)
@@ -86,10 +94,11 @@ func (c *Compiler) defineListType(name string, elementType ddpIrType) *ddpIrList
 	list := &ddpIrListType{}
 	list.elementType = elementType
 	list.typ = c.mod.NewTypeDef(name, types.NewStruct(
-		ptr(list.elementType.IrType()), // underlying array
-		ddpint,                         // length
-		ddpint,                         // capacity
+		list.elementType.PtrType(), // underlying array
+		ddpint,                     // length
+		ddpint,                     // capacity
 	))
+	list.ptr = ptr(list.typ)
 
 	list.fromConstantsIrFun = c.defineFromConstants(list)
 	list.freeIrFun = c.defineFree(list)
@@ -119,22 +128,21 @@ elements and stores it inside ret->arr.
 It also sets ret->len and ret->cap accordingly
 
 signature:
-void _ddp_x_from_constants(x* ret, ddpint count)
+c.void.IrType() _ddp_x_from_constants(x* ret, ddpint count)
 */
 func (c *Compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 	// declare the parameters to use them as values
-	ret, count := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("count", ddpint)
+	ret, count := ir.NewParam("ret", listType.ptr), ir.NewParam("count", ddpint)
 	// declare the function
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("_ddp_%s_from_constants", listType.typ.Name()),
-		void,
+		c.void.IrType(),
 		ret,
 		count,
 	)
 	irFunc.CallingConv = enum.CallingConvC
 
-	elementType := listType.elementType.IrType()
-	arrType := ptr(elementType)
+	arrType := listType.elementType.PtrType()
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -145,7 +153,7 @@ func (c *Compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 
 	// count > 0 ? allocate(sizeof(t) * count) : NULL
 	result := c.createTernary(cond,
-		func() value.Value { return c.allocateArr(elementType, count) },
+		func() value.Value { return c.allocateArr(listType.elementType.IrType(), count) },
 		func() value.Value { return constant.NewNull(arrType) },
 	)
 
@@ -173,14 +181,14 @@ It does not change list->len or list->cap, as list
 should not be used after being freed.
 
 signature:
-void _ddp_free_x(x* list)
+c.void.IrType() _ddp_free_x(x* list)
 */
 func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
-	list := ir.NewParam("list", ptr(listType.typ))
+	list := ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("_ddp_free_%s", listType.typ.Name()),
-		void,
+		c.void.IrType(),
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
@@ -225,14 +233,14 @@ as list->cap and copies list->arr in there.
 For non-primitive types deepCopies are created
 
 signature:
-void _ddp_deep_copy_x(x* ret, x* list)
+c.void.IrType() _ddp_deep_copy_x(x* ret, x* list)
 */
 func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
-	ret, list := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list", ptr(listType.typ))
+	ret, list := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("_ddp_deep_copy_%s", listType.typ.Name()),
-		void,
+		c.void.IrType(),
 		ret,
 		list,
 	)
@@ -287,7 +295,7 @@ signature:
 bool _ddp_x_equal(x* list1, x* list2)
 */
 func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
-	list1, list2 := ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+	list1, list2 := ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("_ddp_%s_equal", listType.typ.Name()),
@@ -369,8 +377,8 @@ bool _ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	var (
-		ret  *ir.Param = ir.NewParam("ret", ptr(listType.typ))
-		list *ir.Param = ir.NewParam("list", ptr(listType.typ))
+		ret  *ir.Param = ir.NewParam("ret", listType.ptr)
+		list *ir.Param = ir.NewParam("list", listType.ptr)
 		// index1/2 are values for later reassignement of the variables
 		// for readybility
 		index1 value.Value = ir.NewParam("index1", ddpint)
@@ -378,7 +386,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	)
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("_ddp_%s_slice", listType.typ.Name()),
-		void,
+		c.void.IrType(),
 		ret,
 		list,
 		index1.(*ir.Param),
@@ -392,7 +400,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	c.cbb = c.cf.NewBlock("")
 
 	// empty the ret
-	c.cbb.NewStore(constant.NewNull(ptr(listType.elementType.IrType())), c.indexStruct(ret, arr_field_index))
+	c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(ret, arr_field_index))
 	c.cbb.NewStore(zero, c.indexStruct(ret, len_field_index))
 	c.cbb.NewStore(zero, c.indexStruct(ret, cap_field_index))
 
@@ -429,7 +437,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	c.createIfElese(i2_less_i1,
 		func() {
 			if slice_error_string == nil {
-				slice_error_string = c.mod.NewGlobalDef("_ddp_slice_error_string", constant.NewCharArrayFromString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n"))
+				slice_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n"))
 				slice_error_string.Visibility = enum.VisibilityHidden
 				slice_error_string.Immutable = true
 			}
@@ -528,7 +536,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 		list->arr = NULL;
 	*/
 	empty_list := func(list value.Value) {
-		c.cbb.NewStore(constant.NewNull(ptr(listType.elementType.IrType())), c.indexStruct(list, arr_field_index))
+		c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(list, arr_field_index))
 		c.cbb.NewStore(zero, c.indexStruct(list, len_field_index))
 		c.cbb.NewStore(zero, c.indexStruct(list, cap_field_index))
 	}
@@ -562,10 +570,10 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 
 	// defines the list_list_verkettet function
 	list_list_concat := func() *ir.Func {
-		ret, list1, list2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list1", ptr(listType.typ)), ir.NewParam("list2", ptr(listType.typ))
+		ret, list1, list2 := ir.NewParam("ret", listType.ptr), ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 		concListList := c.mod.NewFunc(
 			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
-			void,
+			c.void.IrType(),
 			ret, list1, list2,
 		)
 		concListList.CallingConv = enum.CallingConvC
@@ -607,10 +615,10 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 	}
 
 	list_scalar_concat := func() *ir.Func {
-		ret, list, scal := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("list", ptr(listType.typ)), ir.NewParam("scal", scal_param_type)
+		ret, list, scal := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr), ir.NewParam("scal", scal_param_type)
 		concListScal := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.IrType().Name()),
-			void,
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.Name()),
+			c.void.IrType(),
 			ret, list, scal,
 		)
 		concListScal.CallingConv = enum.CallingConvC
@@ -643,17 +651,14 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 
 	scalar_scalar_concat := func() *ir.Func {
 		// string concatenations result in a new string
-		// TODO: uncomment this when ready
-		/*
-			if listType.elementType == ddpstring {
-				return nil
-			}
-		*/
+		if listType.elementType == c.ddpstring {
+			return nil
+		}
 
-		ret, scal1, scal2 := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("scal1", scal_param_type), ir.NewParam("scal2", scal_param_type)
+		ret, scal1, scal2 := ir.NewParam("ret", listType.ptr), ir.NewParam("scal1", scal_param_type), ir.NewParam("scal2", scal_param_type)
 		concScalScal := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.IrType().Name(), listType.elementType.IrType().Name()),
-			void,
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()),
+			c.void.IrType(),
 			ret, scal1, scal2,
 		)
 		concScalScal.CallingConv = enum.CallingConvC
@@ -686,10 +691,10 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 	}
 
 	scalar_list_concat := func() *ir.Func {
-		ret, scal, list := ir.NewParam("ret", ptr(listType.typ)), ir.NewParam("scal", scal_param_type), ir.NewParam("list", ptr(listType.typ))
+		ret, scal, list := ir.NewParam("ret", listType.ptr), ir.NewParam("scal", scal_param_type), ir.NewParam("list", listType.ptr)
 		concScalList := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.IrType().Name(), listType.typ.Name()),
-			void,
+			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.Name(), listType.typ.Name()),
+			c.void.IrType(),
 			ret, scal, list,
 		)
 		concScalList.CallingConv = enum.CallingConvC

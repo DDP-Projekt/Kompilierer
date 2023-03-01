@@ -42,7 +42,7 @@ func (c *Compiler) initRuntimeFunctions() {
 
 	_ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
 		"runtime_error",
-		void,
+		c.void.IrType(),
 		ir.NewParam("exit_code", ddpint),
 		ir.NewParam("fmt", ptr(i8)),
 	)
@@ -76,13 +76,25 @@ func (c *Compiler) initRuntimeFunctions() {
 // helper functions to use the runtime-bindings
 
 func (c *Compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
-	args = append([]value.Value{exit_code, fmt}, args...)
+	args = append([]value.Value{exit_code, c.cbb.NewBitCast(fmt, ptr(i8))}, args...)
 	c.cbb.NewCall(_ddp_runtime_error_irfun, args...)
+}
+
+var out_of_bounds_error_string *ir.Global
+
+func (c *Compiler) out_of_bounds_error(index, len value.Value) {
+	if out_of_bounds_error_string == nil {
+		out_of_bounds_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n"))
+		out_of_bounds_error_string.Visibility = enum.VisibilityHidden
+		out_of_bounds_error_string.Immutable = true
+	}
+	c.runtime_error(newInt(1), out_of_bounds_error_string, index, len)
 }
 
 // calls _ddp_reallocate from the runtime
 func (c *Compiler) _ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {
-	return c.cbb.NewBitCast(c.cbb.NewCall(_ddp_reallocate_irfun, pointer, oldSize, newSize), pointer.Type())
+	pointer_param := c.cbb.NewBitCast(pointer, ptr(i8))
+	return c.cbb.NewBitCast(c.cbb.NewCall(_ddp_reallocate_irfun, pointer_param, oldSize, newSize), pointer.Type())
 }
 
 // dynamically allocates a single value of type typ
@@ -122,7 +134,8 @@ func (c *Compiler) freeArr(ptr, n value.Value) {
 // wraps the memcpy function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *Compiler) memcpy(dest, src, n value.Value) value.Value {
-	return c.cbb.NewCall(_libc_memcpy_irfun, dest, src, n)
+	dest_param, src_param := c.cbb.NewBitCast(dest, ptr(i8)), c.cbb.NewBitCast(src, ptr(i8))
+	return c.cbb.NewCall(_libc_memcpy_irfun, dest_param, src_param, n)
 }
 
 // wraps memcpy for a array, where n is the length of the array in src
@@ -135,7 +148,8 @@ func (c *Compiler) memcpyArr(dest, src, n value.Value) value.Value {
 // wraps the memmove function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *Compiler) memmove(dest, src, n value.Value) value.Value {
-	return c.cbb.NewCall(_libc_memmove_irfun, dest, src, n)
+	dest_param, src_param := c.cbb.NewBitCast(dest, ptr(i8)), c.cbb.NewBitCast(src, ptr(i8))
+	return c.cbb.NewCall(_libc_memmove_irfun, dest_param, src_param, n)
 }
 
 // wraps memmove for a array, where n is the length of the array in src
@@ -146,5 +160,6 @@ func (c *Compiler) memmoveArr(dest, src, n value.Value) value.Value {
 }
 
 func (c *Compiler) memcmp(buf1, buf2, size value.Value) value.Value {
-	return c.cbb.NewCall(_libc_memcmp_irfun, buf1, buf2, size)
+	buf1_param, buf2_param := c.cbb.NewBitCast(buf1, ptr(i8)), c.cbb.NewBitCast(buf2, ptr(i8))
+	return c.cbb.NewCall(_libc_memcmp_irfun, buf1_param, buf2_param, size)
 }

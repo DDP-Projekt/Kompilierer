@@ -15,7 +15,3 @@ void runtime_error(int exit_code, const char* fmt, ...) {
 	end_runtime();
 	exit(exit_code);
 }
-
-void out_of_bounds(int64_t index, int64_t len) {
-	runtime_error(1, "Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n", index, len);
-}

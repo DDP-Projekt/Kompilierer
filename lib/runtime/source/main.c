@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
 	return ret; // return the exit status of the ddp-code
 }
 
-extern ddpstringlist* _ddp_deep_copy_ddpstringlist(ddpstringlist* list);
+extern void _ddp_deep_copy_ddpstringlist(ddpstringlist* ret, ddpstringlist* list);
 
-ddpstringlist* Befehlszeilenargumente() {
-	return _ddp_deep_copy_ddpstringlist(cmd_args);
+void Befehlszeilenargumente(ddpstringlist* ret) {
+	_ddp_deep_copy_ddpstringlist(ret, cmd_args);
 }
