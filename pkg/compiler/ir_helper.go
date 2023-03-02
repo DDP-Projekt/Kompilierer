@@ -85,13 +85,17 @@ func (c *Compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody fun
 
 	c.cbb = trueBlock
 	genTrueBody()
-	c.cbb.NewBr(leaveBlock)
+	if c.cbb.Term == nil {
+		c.cbb.NewBr(leaveBlock)
+	}
 
 	c.cbb = falseBlock
 	if genFalseBody != nil {
 		genFalseBody()
 	}
-	c.cbb.NewBr(leaveBlock)
+	if c.cbb.Term == nil {
+		c.cbb.NewBr(leaveBlock)
+	}
 
 	c.cbb = leaveBlock
 }
@@ -129,7 +133,9 @@ func (c *Compiler) createWhile(cond func() value.Value, genBody func()) {
 
 	c.cbb = bodyBlock
 	genBody()
-	c.cbb.NewBr(condBlock)
+	if c.cbb.Term == nil {
+		c.cbb.NewBr(condBlock)
+	}
 
 	c.cbb = leaveBlock
 }
@@ -154,7 +160,9 @@ func (c *Compiler) createFor(iterStart value.Value, genCond func(index value.Val
 	// arr[counter] = _ddp_deep_copy_x(list->arr[counter])
 	c.cbb = bodyBlock
 	genBody(c.cbb.NewLoad(i64, counter))
-	c.cbb.NewBr(incrBlock)
+	if c.cbb.Term == nil {
+		c.cbb.NewBr(incrBlock)
+	}
 
 	// counter++
 	c.cbb = incrBlock

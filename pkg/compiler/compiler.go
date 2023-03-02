@@ -453,8 +453,11 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil { // we got some values to copy
 		// evaluate every value and copy it into the array
 		for i, v := range e.Values {
-			val, _ := c.evaluate(v)
+			val, valTyp := c.evaluate(v)
 			elementPtr := c.indexArray(listArr, newInt(int64(i)))
+			if !valTyp.IsPrimitive() {
+				val = c.cbb.NewLoad(valTyp.IrType(), val)
+			}
 			c.cbb.NewStore(val, elementPtr)
 		}
 	} else if e.Count != nil && e.Value != nil { // single Value multiple times
@@ -635,14 +638,16 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 
 		// list concatenations
-		if lhsIsList && rhsIsList {
-			concat_func = lhsListTyp.list_list_concat_IrFunc
-		} else if lhsIsList && !rhsIsList {
-			concat_func = lhsListTyp.list_scalar_concat_IrFunc
-		} else if !lhsIsList && !rhsIsList {
-			concat_func = c.getListType(lhsListTyp).scalar_scalar_concat_IrFunc
-		} else if !lhsIsList && rhsIsList {
-			concat_func = rhsListTyp.scalar_list_concat_IrFunc
+		if concat_func == nil {
+			if lhsIsList && rhsIsList {
+				concat_func = lhsListTyp.list_list_concat_IrFunc
+			} else if lhsIsList && !rhsIsList {
+				concat_func = lhsListTyp.list_scalar_concat_IrFunc
+			} else if !lhsIsList && !rhsIsList {
+				concat_func = c.getListType(lhsTyp).scalar_scalar_concat_IrFunc
+			} else if !lhsIsList && rhsIsList {
+				concat_func = rhsListTyp.scalar_list_concat_IrFunc
+			}
 		}
 
 		c.cbb.NewCall(concat_func, result, lhs, rhs)
@@ -993,7 +998,7 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 			c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-				c.cbb.NewCall(listTyp.sliceIrFun, lhs, mid, rhs)
+				c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, mid, rhs)
 			} else {
 				err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}

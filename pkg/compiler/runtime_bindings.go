@@ -78,6 +78,7 @@ func (c *Compiler) initRuntimeFunctions() {
 func (c *Compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
 	args = append([]value.Value{exit_code, c.cbb.NewBitCast(fmt, ptr(i8))}, args...)
 	c.cbb.NewCall(_ddp_runtime_error_irfun, args...)
+	c.cbb.NewUnreachable()
 }
 
 var out_of_bounds_error_string *ir.Global
