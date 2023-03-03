@@ -14,7 +14,7 @@ ddpint _ddp_string_length(ddpstring* str) {
 
 ddpchar _ddp_string_index(ddpstring* str, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		_ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 
 	size_t i = 0, len = index;
@@ -24,7 +24,7 @@ ddpchar _ddp_string_index(ddpstring* str, ddpint index) {
 	}
 
 	if (str->str[i] == 0) {
-		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		_ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 
 	return utf8_string_to_char(str->str + i);
@@ -32,7 +32,7 @@ ddpchar _ddp_string_index(ddpstring* str, ddpint index) {
 
 void _ddp_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		_ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 
 	size_t i = 0, len = index;
@@ -42,7 +42,7 @@ void _ddp_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
 	}
 
 	if (str->str[i] == 0) {
-		runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		_ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
 	}
 
 	size_t oldCharLen = utf8_num_bytes(str->str + i);
@@ -85,7 +85,7 @@ void _ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint ind
 	index1 = clamp(index1, 1, start_length);
 	index2 = clamp(index2, 1, start_length);
 	if (index2 < index1) {
-		runtime_error(1, "Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n", index1, index2);
+		_ddp_runtime_error(1, "Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n", index1, index2);
 	}
 
 	index1--, index2--; // ddp indices start at 1, c indices at 0

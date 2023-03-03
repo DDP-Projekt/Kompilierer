@@ -60,7 +60,7 @@ static void runtime_error_getlasterror(int exit_code, const char* fmt) {
 	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, 1024, NULL)) {
 		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", GetLastError());
 	}
-	runtime_error(exit_code, fmt, error_buffer);
+	_ddp_runtime_error(exit_code, fmt, error_buffer);
 }
 
 static HANDLE* get_stdin_handle() {

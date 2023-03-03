@@ -10,6 +10,6 @@
 #include <errno.h>
 
 // print the error message to stderr and exit with exit_code and calling end_runtime before exit
-void runtime_error(int exit_code, const char* fmt, ...);
+void _ddp_runtime_error(int exit_code, const char* fmt, ...);
 
 #endif // DDP_COMMON_H

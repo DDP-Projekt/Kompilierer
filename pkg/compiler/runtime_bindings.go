@@ -41,7 +41,7 @@ func (c *Compiler) initRuntimeFunctions() {
 	)
 
 	_ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
-		"runtime_error",
+		"_ddp_runtime_error",
 		c.void.IrType(),
 		ir.NewParam("exit_code", ddpint),
 		ir.NewParam("fmt", ptr(i8)),

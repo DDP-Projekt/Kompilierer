@@ -32,7 +32,7 @@ void* _ddp_reallocate(void* pointer, size_t oldSize, size_t newSize) {
 		DBGLOG("allocated %lu bytes, now at %llu bytesAllocated", newSize - oldSize, allocatedBytes);
 #endif // DDP_DEBUG
 	if (result == NULL) { // out of memory
-		runtime_error(1, "out of memory\n");
+		_ddp_runtime_error(1, "out of memory\n");
 	}
 
 	return result;

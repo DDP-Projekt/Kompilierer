@@ -17,8 +17,8 @@
 // should not be needed in production
 // mainly for debugging
 static void SegfaultHandler(int signal) {
-	end_runtime();
-	runtime_error(1, "Segmentation fault\n");
+	_ddp_end_runtime();
+	_ddp_runtime_error(1, "Segmentation fault\n");
 }
 
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
@@ -34,7 +34,7 @@ static void handle_args(int argc, char** argv) {
 }
 
 // initialize runtime stuff
-void init_runtime(int argc, char** argv) {
+void _ddp_init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
 #ifdef _WIN32
 	// the locales behaviour seems to change from time to time on windows
@@ -56,7 +56,7 @@ void init_runtime(int argc, char** argv) {
 }
 
 // end the runtime
-void end_runtime() {
+void _ddp_end_runtime() {
 	// to avoid stack overflows if a runtime_error causes another runtime_error
 	static bool ending = false;
 	if (ending) {
@@ -75,13 +75,11 @@ extern int _ddp_ddpmain(); // implicitly defined by the ddp code
 // entry point of the final executable (needed by gcc)
 // TODO: outsource this into a seperate object file to allow embedding of DDP in C
 int main(int argc, char** argv) {
-	init_runtime(argc, argv); // initialize the runtime
+	_ddp_init_runtime(argc, argv); // initialize the runtime
 	int ret = _ddp_ddpmain(); // run the ddp code
-	end_runtime(); // end the runtime
+	_ddp_end_runtime(); // end the runtime
 	return ret; // return the exit status of the ddp-code
 }
-
-extern void _ddp_deep_copy_ddpstringlist(ddpstringlist* ret, ddpstringlist* list);
 
 void Befehlszeilenargumente(ddpstringlist* ret) {
 	_ddp_deep_copy_ddpstringlist(ret, &cmd_args);

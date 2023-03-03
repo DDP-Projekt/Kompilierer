@@ -1,7 +1,7 @@
 #ifndef DDP_MAIN_H
 #define DDP_MAIN_H
 
-void init_runtime(int argc, char** argv);
-void end_runtime();
+void _ddp_init_runtime(int argc, char** argv);
+void _ddp_end_runtime();
 
 #endif // DDP_MAIN_H
