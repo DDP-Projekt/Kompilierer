@@ -464,7 +464,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 
 	if listType.elementType.IsPrimitive() {
 		// memcpy primitive types
-		c.memcpy(c.loadStructField(ret, arr_field_index), c.indexArray(c.loadStructField(list, arr_field_index), index1), new_len)
+		c.memcpyArr(c.loadStructField(ret, arr_field_index), c.indexArray(c.loadStructField(list, arr_field_index), index1), new_len)
 	} else {
 		/*
 			size_t j = 0;
@@ -711,7 +711,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 
 		// memmove(&ret->arr[1], ret->arr, sizeof(elementType) * list->len);
 		retArr := c.loadStructField(ret, arr_field_index)
-		c.memmoveArr(c.indexArray(ret, newInt(1)), retArr, c.loadStructField(list, len_field_index))
+		c.memmoveArr(c.indexArray(retArr, newInt(1)), retArr, c.loadStructField(list, len_field_index))
 
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[0] = scal;

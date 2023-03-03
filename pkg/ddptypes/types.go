@@ -30,7 +30,7 @@ func (p PrimitiveType) String() string {
 	case TEXT:
 		return "Text"
 	}
-	panic(fmt.Sprintf("invalid type (%d)", p))
+	return fmt.Sprintf("invalid type (%d)", p)
 }
 
 // holds information about a DDP-Type
@@ -45,7 +45,7 @@ func (ddpType Type) String() string {
 	if ddpType.IsList {
 		switch ddpType.Primitive {
 		case NICHTS:
-			panic("invalid list type (void list)")
+			return "invalid list type (void list)"
 		case ZAHL:
 			return "Zahlen Liste"
 		case KOMMAZAHL:
@@ -57,7 +57,7 @@ func (ddpType Type) String() string {
 		case TEXT:
 			return "Text Liste"
 		default:
-			panic(fmt.Sprintf("invalid primitive type (%d)", ddpType.Primitive))
+			return fmt.Sprintf("invalid primitive type (%d)", ddpType.Primitive)
 		}
 	}
 	return ddpType.Primitive.String()
@@ -143,7 +143,7 @@ func (paramType ParameterType) String() string {
 	if paramType.Type.IsList {
 		switch paramType.Type.Primitive {
 		case ZAHL, KOMMAZAHL, BOOLEAN, BUCHSTABE, TEXT:
-			return paramType.Type.String() + "en Referenz"
+			return paramType.Type.String() + "n Referenz"
 		}
 	}
 	switch paramType.Type.Primitive {

@@ -288,8 +288,9 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
 
+	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
-	if !retType.IsPrimitive() {
+	if hasReturnParam {
 		params = append(params, ir.NewParam("", retType.PtrType()))
 		retTypeIr = c.void.IrType()
 	}
@@ -319,13 +320,12 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		c.cfscp = c.scp
 
 		// we want to skip the possible return-parameter
-		loopParams := params
-		if !retType.IsPrimitive() {
-			loopParams = params[1:]
+		if hasReturnParam {
+			params = params[1:]
 		}
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller has to take care of possible deep-copies
-		for i := range loopParams {
+		for i := range params {
 			irType := c.toIrType(d.ParamTypes[i].Type)
 			if d.ParamTypes[i].IsReference {
 				// references are implemented similar to name-shadowing
@@ -1119,6 +1119,7 @@ func (c *Compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 			index, _ := c.evaluate(assign.Index)
+			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
 			listArr := c.loadStructField(lhs, arr_field_index)
 			elementPtr := c.indexArray(listArr, index)
 			return elementPtr, listTyp.elementType, nil
