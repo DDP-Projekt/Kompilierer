@@ -30,16 +30,14 @@ ddpbool Ist_Befehlszeile() {
 #endif
 }
 
-ddpstring* Betriebssystem() {
+void Betriebssystem(ddpstring* ret) {
 #ifdef _WIN32 
 	#define OS "Windows"
 #else 
 	#define OS "Linux"
 #endif
-	ddpstring* os = ALLOCATE(ddpstring, 1);
-	os->cap = sizeof(OS);
-	os->str = ALLOCATE(char, sizeof(OS));
-	memcpy(os->str, OS, sizeof(OS));
-	return os;
+	ret->cap = sizeof(OS);
+	ret->str = ALLOCATE(char, sizeof(OS));
+	memcpy(ret->str, OS, sizeof(OS));
 #undef OS
 }

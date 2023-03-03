@@ -16,15 +16,14 @@ ddpint Zeit_Seit_Programmstart() {
 	return clock();
 }
 
-ddpstring* Zeit_Lokal() {
+void Zeit_Lokal(ddpstring* ret) {
 	// get time
 	time_t t = time(NULL);
  	struct tm tm = *localtime(&t);
 
 	// make string
-	ddpstring* dstr = ALLOCATE(ddpstring, 1);
-	dstr->str = NULL;
-	dstr->cap = 0;
+	ret->str = NULL;
+	ret->cap = 0;
 
 	// format string
 	char buff[30];
@@ -32,12 +31,10 @@ ddpstring* Zeit_Lokal() {
 	
 	// move buffer to dstr
 	size += 1; // make room for null terminator
-	dstr->str = _ddp_reallocate(dstr->str, dstr->cap, dstr->cap + size); // add the read size to the string buffer
-	memcpy(dstr->str + dstr->cap, buff, size); // copy the read data into the string
-	dstr->cap += size;
-	dstr->str[dstr->cap-1] = '\0'; // null terminator hinzufügen
-
-	return dstr;
+	ret->str = _ddp_reallocate(ret->str, ret->cap, ret->cap + size); // add the read size to the string buffer
+	memcpy(ret->str + ret->cap, buff, size); // copy the read data into the string
+	ret->cap += size;
+	ret->str[ret->cap-1] = '\0'; // null terminator hinzufügen
 }
 
 // crossplatform sleep function

@@ -198,11 +198,7 @@ func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 	c.cf = irFunc
 	c.cbb = c.cf.NewBlock("")
 
-	if listType.elementType.IsPrimitive() {
-		// free(list->arr)
-		listArr, listCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index)
-		c.freeArr(listArr, listCap)
-	} else {
+	if !listType.elementType.IsPrimitive() {
 		/*
 			for (int i = 0; i < list->len; i++) {
 				free(list->arr[i]);
@@ -216,6 +212,9 @@ func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 			},
 		)
 	}
+
+	listArr, listCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index)
+	c.freeArr(listArr, listCap)
 
 	c.cbb.NewRet(nil)
 
@@ -671,7 +670,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 		// ret->cap = list->cap
 		c.cbb.NewStore(c.growCapacity(newInt(2)), retCapPtr)
 		// ret->arr = ALLOCATE(elementType, 2)
-		c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), newInt(2)), retArrPtr)
+		c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), c.cbb.NewLoad(ddpint, retCapPtr)), retArrPtr)
 
 		retArr := c.loadStructField(ret, arr_field_index)
 		retArr0Ptr, retArr1Ptr := c.indexArray(retArr, newInt(0)), c.indexArray(retArr, newInt(1))

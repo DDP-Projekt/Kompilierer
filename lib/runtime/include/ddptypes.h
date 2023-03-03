@@ -18,10 +18,12 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpstring;
 
+
+// allocate and create a ddpstring from a constant char array
+// str must be null-terminated
+void _ddp_string_from_constant(ddpstring* ret, char* str);
 // free a ddpstring
 void _ddp_free_string(ddpstring* str);
-
-/***** Partially generated code *****/
 
 typedef struct {
 	ddpint* arr; // the element array
@@ -56,7 +58,7 @@ typedef struct {
 void _ddp_free_ddpcharlist(ddpcharlist* list);
 
 typedef struct {
-	ddpstring** arr; // the element array
+	ddpstring* arr; // the element array
 	ddpint len; // the length of the array
 	ddpint cap; // the capacity of the array
 } ddpstringlist;
@@ -69,12 +71,12 @@ typedef ddpint* ddpintref;
 typedef ddpfloat* ddpfloatref;
 typedef ddpbool* ddpboolref;
 typedef ddpchar* ddpcharref;
-typedef ddpstring** ddpstringref;
+typedef ddpstring* ddpstringref;
 
-typedef ddpintlist** ddpintlistref;
-typedef ddpfloatlist** ddpfloatlistref;
-typedef ddpboollist** ddpboollistref;
-typedef ddpcharlist** ddpcharlistref;
-typedef ddpstringlist** ddpstringlistref;
+typedef ddpintlist* ddpintlistref;
+typedef ddpfloatlist* ddpfloatlistref;
+typedef ddpboollist* ddpboollistref;
+typedef ddpcharlist* ddpcharlistref;
+typedef ddpstringlist* ddpstringlistref;
 
 #endif // DDP_TYPES_H

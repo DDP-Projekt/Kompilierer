@@ -10,24 +10,21 @@
 #include <Windows.h>
 #endif // _WIN32
 
-ddpstring* Hole_Umgebungsvariable(ddpstring* Name) {
-	ddpstring* value = ALLOCATE(ddpstring, 1);
-	value->str = NULL;
-	value->cap = 0;
+void Hole_Umgebungsvariable(ddpstring* ret, ddpstring* Name) {
+	ret->str = NULL;
+	ret->cap = 0;
 
 	const char* env = getenv(Name->str);
 	if (env) {
-		value->cap = strlen(env) + 1;
-		value->str = ALLOCATE(char, value->cap);
-		strcpy(value->str, env);
-		value->str[value->cap-1] = '\0';
+		ret->cap = strlen(env) + 1;
+		ret->str = ALLOCATE(char, ret->cap);
+		strcpy(ret->str, env);
+		ret->str[ret->cap-1] = '\0';
 	} else {
-		value->cap = 1;
-		value->str = ALLOCATE(char, 1);
-		value->str[0] = '\0';
+		ret->cap = 1;
+		ret->str = ALLOCATE(char, 1);
+		ret->str[0] = '\0';
 	}
-
-	return value;
 }
 
 void Setze_Umgebungsvariable(ddpstring* Name, ddpstring* Wert) {

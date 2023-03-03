@@ -21,23 +21,15 @@ static void SegfaultHandler(int signal) {
 	runtime_error(1, "Segmentation fault\n");
 }
 
-static ddpstringlist* cmd_args = NULL; // holds the command line arguments as ddptype
+static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 
 // converts the command line arguments into a ddpstringlist
 static void handle_args(int argc, char** argv) {
-	cmd_args = ALLOCATE(ddpstringlist, 1);
-	DBGLOG("handle_args: %p", cmd_args);
-
-	cmd_args->cap = argc;
-	cmd_args->len = cmd_args->cap;
-	cmd_args->arr = ALLOCATE(ddpstring*, cmd_args->cap);
+	cmd_args = (ddpstringlist){ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
+	DBGLOG("handle_args: %p", &cmd_args);
 
 	for (size_t i = 0; i < argc; i++) {
-		cmd_args->arr[i] = ALLOCATE(ddpstring, 1);
-		cmd_args->arr[i]->cap = strlen(argv[i]) + 1;
-		cmd_args->arr[i]->str = ALLOCATE(char, cmd_args->arr[i]->cap);
-		cmd_args->arr[i]->str[cmd_args->arr[i]->cap-1] = '\0';
-		strcpy(cmd_args->arr[i]->str, argv[i]);
+		_ddp_string_from_constant(&cmd_args.arr[i], argv[i]);
 	}
 }
 
@@ -75,7 +67,7 @@ void end_runtime() {
 	DBGLOG("end_runtime");
 
 	// free the cmd_args
-	_ddp_free_ddpstringlist(cmd_args);
+	_ddp_free_ddpstringlist(&cmd_args);
 }
 
 extern int _ddp_ddpmain(); // implicitly defined by the ddp code
@@ -92,5 +84,5 @@ int main(int argc, char** argv) {
 extern void _ddp_deep_copy_ddpstringlist(ddpstringlist* ret, ddpstringlist* list);
 
 void Befehlszeilenargumente(ddpstringlist* ret) {
-	_ddp_deep_copy_ddpstringlist(ret, cmd_args);
+	_ddp_deep_copy_ddpstringlist(ret, &cmd_args);
 }

@@ -120,10 +120,10 @@ static void write_error(ddpstringref ref, const char* fmt, ...) {
 	
 	va_end(argptr);
 
-	(*ref)->str = _ddp_reallocate((*ref)->str, (*ref)->cap, len+1);
-	memcpy((*ref)->str, errbuff, len);
-	(*ref)->cap = len+1;
-	(*ref)->str[(*ref)->cap-1] = '\0';
+	ref->str = _ddp_reallocate(ref->str, ref->cap, len+1);
+	memcpy(ref->str, errbuff, len);
+	ref->cap = len+1;
+	ref->str[ref->cap-1] = '\0';
 }
 
 ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
@@ -133,10 +133,10 @@ ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
 		fseek(file, 0, SEEK_END); // seek the last byte in the file
 		size_t string_size = ftell(file) + 1; // file_size + '\0'
 		rewind(file); // go back to file start
-		(*ref)->str = _ddp_reallocate((*ref)->str, (*ref)->cap, string_size);
-		(*ref)->cap = string_size;
-		size_t read = fread((*ref)->str, sizeof(char), string_size-1, file);
-		(*ref)->str[(*ref)->cap-1] = '\0';
+		ref->str = _ddp_reallocate(ref->str, ref->cap, string_size);
+		ref->cap = string_size;
+		size_t read = fread(ref->str, sizeof(char), string_size-1, file);
+		ref->str[ref->cap-1] = '\0';
 		if (read != string_size-1) {
 			ret = -1;
 			write_error(ref, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
