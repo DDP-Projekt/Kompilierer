@@ -357,7 +357,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) {
 				castErr()
 			}
 		case ddptypes.TEXT:
-			if isOfType(lhs, ddptypes.Void()) {
+			if lhs.IsList || isOfType(lhs, ddptypes.Void()) {
 				castErr()
 			}
 		default:

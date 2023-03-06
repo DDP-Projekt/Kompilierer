@@ -4,8 +4,3 @@
 69;Ü
 42;42,222
 2;2,2;wahr;Ü;Hallo
-1, 2, 3, 4
-1,2, 2,2, 3,2, 4,2
-wahr, falsch, wahr, falsch
-A, B, C, Ü
-Hallo, du, da, .
