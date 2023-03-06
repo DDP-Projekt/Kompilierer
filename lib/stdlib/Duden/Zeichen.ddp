@@ -1,3 +1,6 @@
+[
+	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' '), eine neue Zeile ('\n'), ein Tabulator ('\t') oder ein Wagenrücklauf ('\r') ist.
+]
 Die Funktion IstLeer mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
 Und kann so benutzt werden:
@@ -25,17 +28,72 @@ Die Funktion IstKlein mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean 
 Und kann so benutzt werden:
 	[Wenn] "<b> ein kleiner Buchstabe ist"
 
+[
+	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' ') ist. 
+]
 Die Funktion IstLeerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b gleich ' ' ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Leerzeichen ist"
 
+[
+	Gibt wahr zurück wenn der Buchstabe b eine Zahl (Code 48-57) ist. 
+]
 Die Funktion IstZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> eine Zahl ist"
 
+[
+	Gibt wahr zurück wenn der Buchstabe b ein Kontrollzeichen (Code 0-31) ist. 
+]
 Die Funktion IstKontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Kontrollzeichen ist"
+
+[
+	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe (a-Z, äöü, ÄÖÜ und ß) ist. 
+]
+Die Funktion IstDeutscherBuchstabe mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+	Die Zahl z ist b als Zahl.
+	Gib 
+		(z größer als, oder 65 ist und z kleiner als, oder 90 ist) [a-z] oder
+		(z größer als, oder 97 ist und z kleiner als, oder 122 ist) [A-Z] oder
+		(z gleich 196 ist oder z gleich 228 ist) [Ää] oder 
+		(z gleich 214 ist oder z gleich 246 ist) [Öö] oder
+		(z gleich 220 ist oder z gleich 252 ist) [Üü] oder
+		(z gleich 223 ist) [ß]
+		zurück.
+Und kann so benutzt werden:
+	"<b> ein deutscher Buchstabe ist"
+
+[
+	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe oder eine Zahl ist. 
+]
+Die Funktion IstDeutscherBuchstabeOderZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+	Gib b ein deutscher Buchstabe ist oder b eine Zahl ist zurück.
+Und kann so benutzt werden:
+	"<b> ein deutscher Buchstabe oder eine Zahl ist"
+
+[
+	Gibt wahr zurück wenn der Buchstabe b ein großer deutscher Buchstabe ist.
+]
+Die Funktion Großgeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
+	Wenn nicht b ein deutscher Buchstabe ist, dann:
+		Gib b zurück.
+
+	Gib (b als Zahl logisch und 223) als Buchstabe zurück.
+Und kann so benutzt werden:
+	"<b> als großer Buchstabe"
+
+[
+	Gibt wahr zurück wenn der Buchstabe b ein kleiner deutscher Buchstabe ist.
+]
+Die Funktion Kleingeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
+	Wenn nicht b ein deutscher Buchstabe ist oder b ein kleiner Buchstabe ist, dann:
+		Gib b zurück.
+
+	Gib (b als Zahl plus 32) als Buchstabe zurück.
+Und kann so benutzt werden:
+	"<b> als kleiner Buchstabe"

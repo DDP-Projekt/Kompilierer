@@ -1,33 +1,51 @@
+[
+	Die Funktion Schreibe_Zahl schreibt eine gegebene Zahl (p1) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe die Zahl <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Kommazahl schreibt eine gegebene Kommazahl (p1) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe die Kommazahl <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Boolean schreibt einen gegebenen Boolean (p1) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Boolean <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Buchstabe schreibt einen gegebenen Buchstaben (p1) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Buchstaben <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Text schreibt einen gegebenen Text (p1) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Text <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion SchreibeZeile_Zahl schreibt eine gegebene Zahl (p1) gefolgt von einer neuen Zeile in den Standart Output Steam.
+]
 Die Funktion SchreibeZeile_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
@@ -35,6 +53,9 @@ Und kann so benutzt werden:
 	"Schreibe die Zahl <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion SchreibeZeile_Kommazahl schreibt eine gegebene Kommazahl (p1) gefolgt von einer neuen Zeile in den Standart Output Steam.
+]
 Die Funktion SchreibeZeile_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
@@ -42,6 +63,9 @@ Und kann so benutzt werden:
 	"Schreibe die Kommazahl <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion SchreibeZeile_Boolean schreibt einen gegebenen Boolean (p1) gefolgt von einer neuen Zeile in den Standart Output Steam.
+]
 Die Funktion SchreibeZeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
@@ -49,6 +73,9 @@ Und kann so benutzt werden:
 	"Schreibe den Boolean <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion SchreibeZeile_Buchstabe schreibt einen gegebenen Buchstaben (p1) gefolgt von einer neuen Zeile in den Standart Output Steam.
+]
 Die Funktion SchreibeZeile_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
@@ -56,6 +83,9 @@ Und kann so benutzt werden:
 	"Schreibe den Buchstaben <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion SchreibeZeile_Text schreibt einen gegebenen Text (p1) gefolgt von einer neuen Zeile in den Standart Output Steam.
+]
 Die Funktion SchreibeZeile_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
@@ -63,6 +93,9 @@ Und kann so benutzt werden:
 	"Schreibe den Text <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion Schreibe_Zahlen_Liste_Getrennt schreibt alle Elemente einer gegebenen Zahlen Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Zahlen_Liste_Getrennt mit den Parametern liste und seperator vom Typ Zahlen Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
@@ -74,6 +107,9 @@ Und kann so benutzt werden:
 	"Schreibe die Zahlen Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
+[
+	Die Funktion Schreibe_Kommazahlen_Liste_Getrennt schreibt alle Elemente einer gegebenen Kommazahlen Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Kommazahlen_Liste_Getrennt mit den Parametern liste und seperator vom Typ Kommazahlen Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
@@ -85,6 +121,9 @@ Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
+[
+	Die Funktion Schreibe_Boolean_Liste_Getrennt schreibt alle Elemente einer gegebenen Boolean Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern liste und seperator vom Typ Boolean Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
@@ -96,6 +135,9 @@ Und kann so benutzt werden:
 	"Schreibe die Boolean Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
+[
+	Die Funktion Schreibe_Buchstaben_Liste_Getrennt schreibt alle Elemente einer gegebenen Buchstaben Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Buchstaben_Liste_Getrennt mit den Parametern liste und seperator vom Typ Buchstaben Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
@@ -107,6 +149,9 @@ Und kann so benutzt werden:
 	"Schreibe die Buchstaben Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
+[
+	Die Funktion Schreibe_Text_Liste_Getrennt schreibt alle Elemente einer gegebenen Text Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Steam.
+]
 Die Funktion Schreibe_Text_Liste_Getrennt mit den Parametern liste und seperator vom Typ Text Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
@@ -118,36 +163,54 @@ Und kann so benutzt werden:
 	"Schreibe die Text Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
+[
+	Die Funktion Schreibe_Zahlen_Liste schreibt alle Elemente einer Zahlen Liste getrennt mit einem Komma in den Standart Output Stream.
+]
 Die Funktion Schreibe_Zahlen_Liste mit dem Parameter p1 vom Typ Zahlen Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
 	"Schreibe die Zahlen Liste <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Kommazahlen_Liste schreibt alle Elemente einer Kommazahlen Liste getrennt mit einem Komma in den Standart Output Stream.
+]
 Die Funktion Schreibe_Kommazahlen_Liste mit dem Parameter p1 vom Typ Kommazahlen Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Boolean_Liste schreibt alle Elemente einer Boolean Liste getrennt mit einem Komma in den Standart Output Stream.
+]
 Die Funktion Schreibe_Boolean_Liste mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
 	"Schreibe die Boolean Liste <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Buchstaben_Liste schreibt alle Elemente einer Buchstaben Liste getrennt mit einem Komma in den Standart Output Stream.
+]
 Die Funktion Schreibe_Buchstaben_Liste mit dem Parameter p1 vom Typ Buchstaben Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
 	"Schreibe die Buchstaben Liste <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Text_Liste schreibt alle Elemente einer Text Liste getrennt mit einem Komma in den Standart Output Stream.
+]
 Die Funktion Schreibe_Text_Liste mit dem Parameter p1 vom Typ Text Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
 	"Schreibe die Text Liste <p1>" oder
 	"Schreibe <p1>"
 
+[
+	Die Funktion Schreibe_Zahlen_Liste schreibt alle Elemente einer Zahlen Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
 Die Funktion Schreibe_Zahlen_Liste_Zeile mit dem Parameter p1 vom Typ Zahlen Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.
@@ -155,6 +218,9 @@ Und kann so benutzt werden:
 	"Schreibe die Zahlen Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion Schreibe_Kommazahlen_Liste schreibt alle Elemente einer Kommazahlen Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
 Die Funktion Schreibe_Kommazahlen_Liste_Zeile mit dem Parameter p1 vom Typ Kommazahlen Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.
@@ -162,6 +228,9 @@ Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion Schreibe_Boolean_Liste schreibt alle Elemente einer Boolean Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
 Die Funktion Schreibe_Boolean_Liste_Zeile mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.
@@ -169,6 +238,9 @@ Und kann so benutzt werden:
 	"Schreibe die Boolean Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion Schreibe_Buchstaben_Liste schreibt alle Elemente einer Buchstaben Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
 Die Funktion Schreibe_Buchstaben_Liste_Zeile mit dem Parameter p1 vom Typ Buchstaben Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.
@@ -176,6 +248,9 @@ Und kann so benutzt werden:
 	"Schreibe die Buchstaben Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
+[
+	Die Funktion Schreibe_Text_Liste schreibt alle Elemente einer Text Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
 Die Funktion Schreibe_Text_Liste_Zeile mit dem Parameter p1 vom Typ Text Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.

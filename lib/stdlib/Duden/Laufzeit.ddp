@@ -1,34 +1,50 @@
+[
+	Beendet das Programm mit dem gegebenen Code.
+]
 Die Funktion Programm_Beenden mit dem Parameter Code vom Typ Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Beende das Programm mit Code <Code>" oder
 	"beende das Programm mit Code <Code>"
 
+[
+	Beendet das Programm mit Code 0.
+]
 Die Funktion Programm_Beenden_Standard gibt nichts zurück, macht:
 	Beende das Programm mit Code 0.
 Und kann so benutzt werden:
 	"Beende das Programm" oder
 	"beende das Programm"
 
+[
+	Wirft einen Laufzeitfehler mit einer Nachricht und einem Code.
+]
 Die Funktion Laufzeitfehler mit den Parametern Nachricht und Code vom Typ Text und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Löse einen Laufzeitfehler mit der Nachricht <Nachricht> und dem Code <Code> aus" oder 
 	"löse einen Laufzeitfehler mit der Nachricht <Nachricht> und dem Code <Code> aus"
 
+[
+	Gibt eine Text Liste zurück die alle übergebenen Befehlszeilenargumente enthält.
+]
 Die Funktion Befehlszeilenargumente gibt eine Text Liste zurück,
 ist in "libddpruntime.a" definiert
 und kann so benutzt werden:
 	"die Befehlszeilenargumente" oder 
 	"den Befehlszeilenargumenten"
 
-["Windows" oder "Linux"]
+[
+	Gibt je nach Betriebssystem entweder "Windows" oder "Linux" zurück.
+]
 Die Funktion Betriebssystem gibt einen Text zurück,
 ist in "libddpruntime.a" definiert
 und kann so benutzt werden:
 	"das Betriebssystem"
 
-[Cs isatty]
+[
+	Entspricht C's `isatty` funktion.
+]
 Die Funktion Ist_Befehlszeile gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:

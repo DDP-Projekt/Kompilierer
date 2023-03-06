@@ -163,3 +163,74 @@ Die Funktion Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurü
 	Gib wahr zurück.
 Und kann so benutzt werden:
 	"<t> eine Zahl ist"
+
+Die Funktion GroßschreibenWert mit dem Parameter text vom Typ Text, gibt Text zurück, macht:
+	Der Text neuerText ist "".
+	Für jeden Buchstaben b in text, mache:
+		Füge (b als großer Buchstabe) an neuerText an.
+	Gib neuerText zurück.
+Und kann so benutzt werden:
+	"<text> groß geschrieben"
+
+Die Funktion Großschreiben mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
+	Speichere text groß geschrieben in text.
+Und kann so benutzt werden:
+	"Schreibe <text> groß"
+
+Die Funktion KleinschreibenWert mit dem Parameter text vom Typ Text, gibt Text zurück, macht:
+	Der Text neuerText ist "".
+	Für jeden Buchstaben b in text, mache:
+		Füge (b als kleiner Buchstabe) an neuerText an.
+	Gib neuerText zurück.
+Und kann so benutzt werden:
+	"<text> klein geschrieben"
+
+Die Funktion Kleinschreiben mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
+	Speichere text klein geschrieben in text.
+Und kann so benutzt werden:
+	"Schreibe <text> klein"
+
+Die Funktion PolsterLinks mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
+	Die Zahl länge ist die Länge von text.
+	Die Zahl gesuchteLänge ist endlänge minus länge.
+	Wenn gesuchteLänge kleiner als, oder 0 ist, dann:
+		Gib text zurück.
+	
+	Wiederhole:
+		Stelle zeichen vor text.
+	gesuchteLänge Mal.
+
+	Gib text zurück.
+Und kann so benutzt werden:
+	"polster <text> mit <endlänge> <zeichen> links"
+
+Die Funktion PolsterRechts mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
+	Die Zahl länge ist die Länge von text.
+	Die Zahl gesuchteLänge ist endlänge minus länge.
+	Wenn gesuchteLänge kleiner als, oder 0 ist, dann:
+		Gib text zurück.
+	
+	Wiederhole:
+		Füge zeichen an text an.
+	gesuchteLänge Mal.
+	
+	Gib text zurück.
+Und kann so benutzt werden:
+	"polster <text> mit <endlänge> <zeichen> rechts"
+
+Die Funktion Spalte mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Text Liste zurück, macht:
+	Die Text Liste endliste ist eine leere Text Liste.
+	Die Zahl endIndex ist der Index von zeichen in text.
+	Solange endIndex ungleich -1 ist und endIndex ungleich die Länge von text ist, mache:
+		Wenn endIndex ungleich 1 ist, dann:
+			Speichere endliste verkettet mit text von 1 bis (endIndex minus 1) in endliste.
+			Speichere text von endIndex plus 1 bis (die Länge von text) in text.
+		Sonst:
+			Speichere endliste verkettet mit "" in endliste.
+			Speichere text von 2 bis (die Länge von text) in text.
+		Speichere der Index von zeichen in text in endIndex.
+	
+	Speichere endliste verkettet mit text in endliste.
+	Gib endliste zurück.
+Und kann so benutzt werden:
+	"<text> an <zeichen> gespalten"

@@ -58,6 +58,15 @@ func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 	return t.latestReturnedType
 }
 
+// calls Evaluate but uses ddperror.EmptyHandler as error handler
+func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
+	errHndl, errored := t.ErrorHandler, t.Errored
+	t.ErrorHandler = ddperror.EmptyHandler
+	ty := t.Evaluate(expr)
+	t.ErrorHandler, t.Errored = errHndl, errored
+	return ty
+}
+
 // helper for errors
 func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string, file string) {
 	t.Errored = true
@@ -89,7 +98,6 @@ func (t *Typechecker) errExpected(tok token.Token, expr ast.Expression, got ddpt
 func (*Typechecker) BaseVisitor() {}
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) {
-	t.Errored = true
 	t.latestReturnedType = ddptypes.Void()
 }
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) {
@@ -109,7 +117,6 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 }
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
-	t.Errored = true
 	t.latestReturnedType = ddptypes.Void()
 }
 func (t *Typechecker) VisitIdent(expr *ast.Ident) {
@@ -406,7 +413,6 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {
-	t.Errored = true
 	t.latestReturnedType = ddptypes.Void()
 }
 func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) {

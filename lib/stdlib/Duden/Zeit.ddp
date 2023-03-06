@@ -1,14 +1,23 @@
+[
+	Gibt die Zeit seit Programmstart in Millisekunden zurück.
+]
 Die Funktion Zeit_Seit_Programmstart gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Zeit seit Programmstart" oder
 	"die Millisekunden seit Programmstart"
 
+[
+	Gibt die akuelle Lokale Zeit als Text im Format "hh:mm:ss DD.MM.YY" zurück.
+]
 Die Funktion Zeit_Lokal gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Lokale Zeit"
 
+[
+	Pausiert das Programm für eine bestimmte Dauer in Sekunden.
+]
 Die Funktion Warten mit dem Parameter sekunden vom Typ Kommazahl, gibt nichts zurück, 
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:

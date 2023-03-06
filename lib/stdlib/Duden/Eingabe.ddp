@@ -8,16 +8,25 @@ Der Boolean __war_eof ist falsch.
 	ohne die Variable direkt zu benutzen.
 ]
 
+[
+	Gibt wahr zurück wenn ein EOF Zeichen gelesen wurde.
+]
 Die Funktion War_EOF gibt einen Boolean zurück, macht:
 	Gib __war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe zu Ende gewesen ist"
 
+[
+	Gibt wahr zurück wenn noch kein EOF Zeichen gelesen wurde.
+]
 Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
 	Gib nicht __war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe nicht vorbei ist"
 
+[
+	Setzt die interne __war_eof variable auf falsch.
+]
 Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
 	__war_eof ist falsch.
 Und kann so benutzt werden:
