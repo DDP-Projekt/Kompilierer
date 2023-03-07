@@ -164,7 +164,7 @@ Die Funktion Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurü
 Und kann so benutzt werden:
 	"<t> eine Zahl ist"
 
-Die Funktion GroßschreibenWert mit dem Parameter text vom Typ Text, gibt Text zurück, macht:
+Die Funktion GroßschreibenWert mit dem Parameter text vom Typ Text, gibt einen Text zurück, macht:
 	Der Text neuerText ist "".
 	Für jeden Buchstaben b in text, mache:
 		Füge (b als großer Buchstabe) an neuerText an.
