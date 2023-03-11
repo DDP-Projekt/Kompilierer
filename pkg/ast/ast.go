@@ -174,24 +174,27 @@ type (
 
 	UnaryExpr struct {
 		Range    token.Range
-		Operator token.Token
+		Tok      token.Token
+		Operator UnaryOperator
 		Rhs      Expression
 	}
 
 	BinaryExpr struct {
 		Range    token.Range
+		Tok      token.Token
 		Lhs      Expression
-		Operator token.Token
+		Operator BinaryOperator
 		Rhs      Expression
 	}
 
 	// currently only used for von bis
 	TernaryExpr struct {
 		Range    token.Range
+		Tok      token.Token
 		Lhs      Expression
 		Mid      Expression
 		Rhs      Expression
-		Operator token.Token
+		Operator TernaryOperator
 	}
 
 	// als Expressions cannot be unary
@@ -242,9 +245,9 @@ func (expr *BoolLit) Token() token.Token     { return expr.Literal }
 func (expr *CharLit) Token() token.Token     { return expr.Literal }
 func (expr *StringLit) Token() token.Token   { return expr.Literal }
 func (expr *ListLit) Token() token.Token     { return expr.Tok }
-func (expr *UnaryExpr) Token() token.Token   { return expr.Operator }
-func (expr *BinaryExpr) Token() token.Token  { return expr.Operator }
-func (expr *TernaryExpr) Token() token.Token { return expr.Operator }
+func (expr *UnaryExpr) Token() token.Token   { return expr.Tok }
+func (expr *BinaryExpr) Token() token.Token  { return expr.Tok }
+func (expr *TernaryExpr) Token() token.Token { return expr.Tok }
 func (expr *CastExpr) Token() token.Token    { return expr.Lhs.Token() }
 func (expr *Grouping) Token() token.Token    { return expr.LParen }
 func (expr *FuncCall) Token() token.Token    { return expr.Tok }

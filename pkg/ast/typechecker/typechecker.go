@@ -79,10 +79,10 @@ func (t *Typechecker) errExpr(code ddperror.Code, expr ast.Expression, msgfmt st
 }
 
 // helper for commmon error message
-func (t *Typechecker) errExpected(tok token.Token, expr ast.Expression, got ddptypes.Type, expected ...ddptypes.Type) {
-	msg := fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ ", tok)
+func (t *Typechecker) errExpected(operator ast.Operator, expr ast.Expression, got ddptypes.Type, expected ...ddptypes.Type) {
+	msg := fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ ", operator)
 	if len(expected) == 1 {
-		msg = fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ %s", tok, expected[0])
+		msg = fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ %s", operator, expected[0])
 	} else {
 		for i, v := range expected {
 			if i >= len(expected)-1 {
@@ -181,34 +181,30 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) {
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
-	switch expr.Operator.Type {
-	case token.BETRAG, token.NEGATE:
+	switch expr.Operator {
+	case ast.UN_ABS, ast.UN_NEGATE:
 		if !rhs.IsNumeric() {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Int(), ddptypes.Float())
 		}
-	case token.NICHT:
+	case ast.UN_NOT:
 		if !isOfType(rhs, ddptypes.Bool()) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Bool())
 		}
 
 		t.latestReturnedType = ddptypes.Bool()
-	case token.NEGIERE:
-		if !isOfType(rhs, ddptypes.Bool(), ddptypes.Int()) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Bool(), ddptypes.Int())
-		}
-	case token.LOGISCHNICHT:
+	case ast.UN_LOGIC_NOT:
 		if !isOfType(rhs, ddptypes.Int()) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Int())
 		}
 
 		t.latestReturnedType = ddptypes.Int()
-	case token.LÄNGE:
+	case ast.UN_LEN:
 		if !rhs.IsList && rhs.Primitive != ddptypes.TEXT {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der LÄNGE Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", rhs)
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
 		}
 
 		t.latestReturnedType = ddptypes.Int()
-	case token.GRÖßE:
+	case ast.UN_SIZE:
 		t.latestReturnedType = ddptypes.Int()
 	default:
 		panic(fmt.Errorf("unbekannter unärer Operator '%s'", expr.Operator))
@@ -228,8 +224,8 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		}
 	}
 
-	switch op := expr.Operator.Type; op {
-	case token.VERKETTET:
+	switch expr.Operator {
+	case ast.BIN_CONCAT:
 		if (!lhs.IsList && !rhs.IsList) && (lhs == ddptypes.String() || rhs == ddptypes.String()) { // string, char edge case
 			validate(ddptypes.String(), ddptypes.Char())
 			t.latestReturnedType = ddptypes.String()
@@ -239,9 +235,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 			}
 			t.latestReturnedType = ddptypes.List(lhs.Primitive)
 		}
-	case token.PLUS, token.ADDIERE, token.ERHÖHE,
-		token.MINUS, token.SUBTRAHIERE, token.VERRINGERE,
-		token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
+	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
 		validate(ddptypes.Int(), ddptypes.Float())
 
 		if lhs == ddptypes.Int() && rhs == ddptypes.Int() {
@@ -249,7 +243,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		} else {
 			t.latestReturnedType = ddptypes.Float()
 		}
-	case token.STELLE:
+	case ast.BIN_INDEX:
 		if !lhs.IsList && lhs != ddptypes.String() {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
@@ -262,38 +256,27 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		} else if lhs == ddptypes.String() {
 			t.latestReturnedType = ddptypes.Char() // later on the list element type
 		}
-	case token.DURCH, token.DIVIDIERE, token.TEILE, token.HOCH, token.LOGARITHMUS:
+	case ast.BIN_DIV, ast.BIN_POW, ast.BIN_LOG:
 		validate(ddptypes.Int(), ddptypes.Float())
 		t.latestReturnedType = ddptypes.Float()
-	case token.MODULO:
+	case ast.BIN_MOD:
 		validate(ddptypes.Int())
 		t.latestReturnedType = ddptypes.Int()
-	case token.UND:
+	case ast.BIN_AND, ast.BIN_OR:
 		validate(ddptypes.Bool())
 		t.latestReturnedType = ddptypes.Bool()
-	case token.ODER:
-		validate(ddptypes.Bool())
-		t.latestReturnedType = ddptypes.Bool()
-	case token.LINKS:
+	case ast.BIN_LEFT_SHIFT, ast.BIN_RIGHT_SHIFT:
 		validate(ddptypes.Int())
 		t.latestReturnedType = ddptypes.Int()
-	case token.RECHTS:
-		validate(ddptypes.Int())
-		t.latestReturnedType = ddptypes.Int()
-	case token.GLEICH:
+	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
 		if lhs != rhs {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
 		t.latestReturnedType = ddptypes.Bool()
-	case token.UNGLEICH:
-		if lhs != rhs {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
-		}
-		t.latestReturnedType = ddptypes.Bool()
-	case token.GRÖßERODER, token.KLEINER, token.KLEINERODER, token.GRÖßER:
+	case ast.BIN_GREATER, ast.BIN_LESS, ast.BIN_GREATER_EQ, ast.BIN_LESS_EQ:
 		validate(ddptypes.Int(), ddptypes.Float())
 		t.latestReturnedType = ddptypes.Bool()
-	case token.LOGISCHODER, token.LOGISCHUND, token.KONTRA:
+	case ast.BIN_LOGIC_AND, ast.BIN_LOGIC_OR, ast.BIN_LOGIC_XOR:
 		validate(ddptypes.Int())
 		t.latestReturnedType = ddptypes.Int()
 	default:
@@ -305,8 +288,8 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) {
 	mid := t.Evaluate(expr.Mid)
 	rhs := t.Evaluate(expr.Rhs)
 
-	switch expr.Operator.Type {
-	case token.VONBIS:
+	switch expr.Operator {
+	case ast.TER_SLICE:
 		if !lhs.IsList && lhs != ddptypes.String() {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}

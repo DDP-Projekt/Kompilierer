@@ -177,7 +177,7 @@ Die Funktion Großschreiben mit dem Parameter text vom Typ Text Referenz, gibt n
 Und kann so benutzt werden:
 	"Schreibe <text> groß"
 
-Die Funktion KleinschreibenWert mit dem Parameter text vom Typ Text, gibt Text zurück, macht:
+Die Funktion KleinschreibenWert mit dem Parameter text vom Typ Text, gibt einen Text zurück, macht:
 	Der Text neuerText ist "".
 	Für jeden Buchstaben b in text, mache:
 		Füge (b als kleiner Buchstabe) an neuerText an.

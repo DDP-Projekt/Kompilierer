@@ -483,8 +483,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	rhs, typ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
-	switch e.Operator.Type {
-	case token.BETRAG:
+	switch e.Operator {
+	case ast.UN_ABS:
 		switch typ {
 		case c.ddpfloattyp:
 			c.latestReturn = c.cbb.NewCall(c.functions["fabs"].irFunc, rhs)
@@ -495,7 +495,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 		default:
 			err("invalid Parameter Type for BETRAG: %s", typ.Name())
 		}
-	case token.NEGATE:
+	case ast.UN_NEGATE:
 		switch typ {
 		case c.ddpfloattyp:
 			c.latestReturn = c.cbb.NewFNeg(rhs)
@@ -506,22 +506,13 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 		default:
 			err("invalid Parameter Type for NEGATE: %s", typ.Name())
 		}
-	case token.NICHT:
+	case ast.UN_NOT:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
 		c.latestReturnType = c.ddpbooltyp
-	case token.NEGIERE:
-		switch typ {
-		case c.ddpbooltyp:
-			c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
-			c.latestReturnType = c.ddpbooltyp
-		case c.ddpinttyp:
-			c.latestReturn = c.cbb.NewXor(rhs, newInt(all_ones))
-			c.latestReturnType = c.ddpinttyp
-		}
-	case token.LOGISCHNICHT:
+	case ast.UN_LOGIC_NOT:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(all_ones))
 		c.latestReturnType = c.ddpinttyp
-	case token.LÄNGE:
+	case ast.UN_LEN:
 		switch typ {
 		case c.ddpstring:
 			c.latestReturn = c.cbb.NewCall(c.ddpstring.lengthIrFun, rhs)
@@ -533,7 +524,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 			}
 		}
 		c.latestReturnType = c.ddpinttyp
-	case token.GRÖßE:
+	case ast.UN_SIZE:
 		switch typ {
 		case c.ddpinttyp, c.ddpfloattyp:
 			c.latestReturn = newInt(8)
@@ -561,8 +552,8 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 }
 func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
-	switch e.Operator.Type {
-	case token.UND:
+	switch e.Operator {
+	case ast.BIN_AND:
 		lhs, _ := c.evaluate(e.Lhs)
 		startBlock, trueBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
 		c.commentNode(c.cbb, e, e.Operator.String())
@@ -579,7 +570,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
 		c.latestReturnType = c.ddpbooltyp
 		return
-	case token.ODER:
+	case ast.BIN_OR:
 		lhs, _ := c.evaluate(e.Lhs)
 		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
 		c.commentNode(c.cbb, e, e.Operator.String())
@@ -603,8 +594,8 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	rhs, rhsTyp := c.evaluate(e.Rhs)
 	// big switches on the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
-	switch e.Operator.Type {
-	case token.VERKETTET:
+	switch e.Operator {
+	case ast.BIN_CONCAT:
 		var (
 			result    value.Value
 			resultTyp ddpIrType
@@ -653,7 +644,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.cbb.NewCall(concat_func, result, lhs, rhs)
 		c.latestReturn = result
 		c.latestReturnType = resultTyp
-	case token.PLUS, token.ADDIERE, token.ERHÖHE:
+	case ast.BIN_PLUS:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -681,7 +672,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		default:
 			err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
-	case token.MINUS, token.SUBTRAHIERE, token.VERRINGERE:
+	case ast.BIN_MINUS:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -709,7 +700,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		default:
 			err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
-	case token.MAL, token.MULTIPLIZIERE, token.VERVIELFACHE:
+	case ast.BIN_MULT:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -737,7 +728,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		default:
 			err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
-	case token.DURCH, token.DIVIDIERE, token.TEILE:
+	case ast.BIN_DIV:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -765,7 +756,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpfloattyp
-	case token.STELLE:
+	case ast.BIN_INDEX:
 		switch lhsTyp {
 		case c.ddpstring:
 			c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, rhs)
@@ -794,7 +785,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-	case token.HOCH:
+	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -816,7 +807,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["pow"].irFunc, lhs, rhs)
 		c.latestReturnType = c.ddpfloattyp
-	case token.LOGARITHMUS:
+	case ast.BIN_LOG:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -840,25 +831,25 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		log10_base := c.cbb.NewCall(c.functions["log10"].irFunc, rhs)
 		c.latestReturn = c.cbb.NewFDiv(log10_num, log10_base)
 		c.latestReturnType = c.ddpfloattyp
-	case token.LOGISCHUND:
+	case ast.BIN_LOGIC_AND:
 		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.LOGISCHODER:
+	case ast.BIN_LOGIC_OR:
 		c.latestReturn = c.cbb.NewOr(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.KONTRA:
+	case ast.BIN_LOGIC_XOR:
 		c.latestReturn = c.cbb.NewXor(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.MODULO:
+	case ast.BIN_MOD:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.LINKS:
+	case ast.BIN_LEFT_SHIFT:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.RECHTS:
+	case ast.BIN_RIGHT_SHIFT:
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
-	case token.GLEICH:
+	case ast.BIN_EQUAL:
 		switch lhsTyp {
 		case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
@@ -868,7 +859,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			c.latestReturn = c.cbb.NewCall(lhsTyp.EqualsFunc(), lhs, rhs)
 		}
 		c.latestReturnType = c.ddpbooltyp
-	case token.UNGLEICH:
+	case ast.BIN_UNEQUAL:
 		switch lhsTyp {
 		case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
 			c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, rhs)
@@ -879,7 +870,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			c.latestReturn = c.cbb.NewXor(equal, newInt(1))
 		}
 		c.latestReturnType = c.ddpbooltyp
-	case token.KLEINER:
+	case ast.BIN_LESS:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -903,7 +894,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			}
 		}
 		c.latestReturnType = c.ddpbooltyp
-	case token.KLEINERODER:
+	case ast.BIN_LESS_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -929,7 +920,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
-	case token.GRÖßER:
+	case ast.BIN_GREATER:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -955,7 +946,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
-	case token.GRÖßERODER:
+	case ast.BIN_GREATER_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
@@ -990,8 +981,8 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	mid, midTyp := c.evaluate(e.Mid)
 	rhs, rhsTyp := c.evaluate(e.Rhs)
 
-	switch e.Operator.Type {
-	case token.VONBIS:
+	switch e.Operator {
+	case ast.TER_SLICE:
 		dest := c.cbb.NewAlloca(lhsTyp.IrType())
 		switch lhsTyp {
 		case c.ddpstring:
