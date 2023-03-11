@@ -331,6 +331,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
 		paramComments = append(make([]*token.Token, 0), p.getLeadingOrTrailingComment())
 		if !singleParameter {
+			// helper function to avoid too much repitition
 			addParamName := func(name token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
 					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal), name.File)
@@ -338,6 +339,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 				paramNames = append(paramNames, name)                                  // append the parameter name
 				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
 			}
+
 			if p.match(token.UND) {
 				validate(p.consume(token.IDENTIFIER))
 				addParamName(p.previous())
@@ -360,12 +362,14 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 		validate(firstType.Primitive != ddptypes.ILLEGAL)
 		paramTypes = append(make([]ddptypes.ParameterType, 0), ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
 		if !singleParameter {
+			// helper function to avoid too much repitition
 			addType := func() {
 				// validate the parameter type and append it
 				typ, ref := p.parseReferenceType()
 				validate(typ.Primitive != ddptypes.ILLEGAL)
 				paramTypes = append(paramTypes, ddptypes.ParameterType{Type: typ, IsReference: ref})
 			}
+
 			if p.match(token.UND) {
 				addType()
 			} else {
@@ -388,8 +392,7 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 	// parse the return type declaration
 	validate(p.consume(token.GIBT))
-	p.match(token.EINE, token.EINEN) // not neccessary
-	Typ := p.parseTypeOrVoid()
+	Typ := p.parseReturnType()
 	if Typ.Primitive == ddptypes.ILLEGAL {
 		valid = false
 	}
@@ -2078,10 +2081,11 @@ func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 // parses tokens into a DDPType
 // unlike parseType it may return void
 // the error return is ILLEGAL
-func (p *Parser) parseTypeOrVoid() ddptypes.Type {
+func (p *Parser) parseReturnType() ddptypes.Type {
 	if p.match(token.NICHTS) {
 		return ddptypes.Void()
 	}
+	p.consumeAny(token.EINEN, token.EINE)
 	return p.parseType()
 }
 
@@ -2159,7 +2163,7 @@ func (p *Parser) consumeAny(tokenTypes ...token.TokenType) bool {
 		}
 	}
 
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, tokenTypes), p.peek().File)
+	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, toAnySlice(tokenTypes)...), p.peek().File)
 	return false
 }
 
@@ -2340,4 +2344,12 @@ func apply[T any](fun func(T), slice []T) {
 	for i := range slice {
 		fun(slice[i])
 	}
+}
+
+func toAnySlice[T any](slice []T) []any {
+	result := make([]any, len(slice))
+	for i := range slice {
+		result[i] = slice[i]
+	}
+	return result
 }

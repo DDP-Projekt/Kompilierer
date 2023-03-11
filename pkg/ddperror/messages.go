@@ -15,7 +15,7 @@ func MsgGotExpected(got any, expected ...any) string {
 		for _, v := range expected[1 : len(expected)-1] {
 			msg += fmt.Sprintf(", %v", v)
 		}
-		msg += fmt.Sprintf("oder %v erwartet aber %v gefunden", expected[len(expected)-1], got)
+		msg += fmt.Sprintf(" oder %v erwartet aber %v gefunden", expected[len(expected)-1], got)
 		return msg
 	}
 }
