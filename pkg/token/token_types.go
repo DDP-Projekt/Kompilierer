@@ -19,44 +19,35 @@ const (
 	TAU // tau
 	PHI // phi
 
-	PLUS     // plus
-	MINUS    // minus
-	MAL      // mal
-	DURCH    // durch
-	MODULO   // modulo
-	HOCH     // hoch
-	WURZEL   // (n.) Wurzel (von)
-	BETRAG   // Betrag (von)
-	UND      // und
-	ODER     // oder
-	NICHT    // nicht
-	GLEICH   // gleich
-	UNGLEICH // ungleich
-	KLEINER  // kleiner (als)
-	GRÖßER   // größer (als)(, oder) groesser (als)(, oder)
-	KLEINERODER
-	GRÖßERODER
-	NEGATE // -
-	IST    // ist
-	LINKS  // links
-	RECHTS // rechts
-	GRÖßE  // Größe von
-	LÄNGE  // Länge von
-	KONTRA // kontra
-	LOGISCHODER
-	LOGISCHUND
-	LOGISCHNICHT
-	VERKETTET     // verkettet mit
-	ADDIERE       // +=
-	ERHÖHE        // +=
-	SUBTRAHIERE   // -=
-	VERRINGERE    // -=
-	MULTIPLIZIERE // *=
-	VERVIELFACHE  // *=
-	DIVIDIERE     // /=
-	TEILE         // /=
-	VERSCHIEBE    // >>= <<=
-	NEGIERE       // x = !x ~=
+	PLUS         // plus
+	MINUS        // minus
+	MAL          // mal
+	DURCH        // durch
+	MODULO       // modulo
+	HOCH         // hoch
+	WURZEL       // (n.) Wurzel (von)
+	BETRAG       // Betrag (von)
+	UND          // und
+	ODER         // oder
+	NICHT        // nicht
+	GLEICH       // gleich
+	UNGLEICH     // ungleich
+	KLEINER      // kleiner (als)
+	GRÖßER       // größer (als)(, oder) groesser (als)(, oder)
+	NEGATE       // -
+	IST          // ist
+	LINKS        // links
+	RECHTS       // rechts
+	GRÖßE        // Größe von
+	LÄNGE        // Länge von
+	KONTRA       // kontra
+	VERKETTET    // verkettet mit
+	ERHÖHE       // +=
+	VERRINGERE   // -=
+	VERVIELFACHE // *=
+	TEILE        // /=
+	VERSCHIEBE   // >>= <<=
+	NEGIERE      // x = !x ~=
 	LOGARITHMUS
 	ZUR
 	BASIS
@@ -158,47 +149,38 @@ var tokenStrings = [...]string{
 	TAU: "tau",
 	PHI: "phi",
 
-	PLUS:          "plus",
-	MINUS:         "minus",
-	MAL:           "mal",
-	DURCH:         "durch",
-	MODULO:        "modulo",
-	HOCH:          "hoch",
-	WURZEL:        "Wurzel",
-	BETRAG:        "Betrag",
-	UND:           "und",
-	ODER:          "oder",
-	NICHT:         "nicht",
-	GLEICH:        "gleich",
-	UNGLEICH:      "ungleich",
-	KLEINER:       "kleiner",
-	GRÖßER:        "größer",
-	KLEINERODER:   "kleiner oder",
-	GRÖßERODER:    "größer oder",
-	NEGATE:        "-",
-	IST:           "ist",
-	LINKS:         "Links",
-	RECHTS:        "Rechts",
-	GRÖßE:         "Größe",
-	LÄNGE:         "Länge",
-	KONTRA:        "kontr",
-	LOGISCHUND:    "logisch und",
-	LOGISCHNICHT:  "logisch nicht",
-	LOGISCHODER:   "logisch oder",
-	VERKETTET:     "verkettet",
-	ADDIERE:       "Addiere",
-	ERHÖHE:        "Erhöhe",
-	SUBTRAHIERE:   "Subtrahiere",
-	VERRINGERE:    "Verringere",
-	MULTIPLIZIERE: "Multipliziere",
-	VERVIELFACHE:  "Vervielfache",
-	DIVIDIERE:     "Dividiere",
-	TEILE:         "Teile",
-	VERSCHIEBE:    "Verschiebe",
-	NEGIERE:       "Negiere",
-	LOGARITHMUS:   "Logarithmus",
-	ZUR:           "zur",
-	BASIS:         "Basis",
+	PLUS:         "plus",
+	MINUS:        "minus",
+	MAL:          "mal",
+	DURCH:        "durch",
+	MODULO:       "modulo",
+	HOCH:         "hoch",
+	WURZEL:       "Wurzel",
+	BETRAG:       "Betrag",
+	UND:          "und",
+	ODER:         "oder",
+	NICHT:        "nicht",
+	GLEICH:       "gleich",
+	UNGLEICH:     "ungleich",
+	KLEINER:      "kleiner",
+	GRÖßER:       "größer",
+	NEGATE:       "-",
+	IST:          "ist",
+	LINKS:        "Links",
+	RECHTS:       "Rechts",
+	GRÖßE:        "Größe",
+	LÄNGE:        "Länge",
+	KONTRA:       "kontr",
+	VERKETTET:    "verkettet",
+	ERHÖHE:       "Erhöhe",
+	VERRINGERE:   "Verringere",
+	VERVIELFACHE: "Vervielfache",
+	TEILE:        "Teile",
+	VERSCHIEBE:   "Verschiebe",
+	NEGIERE:      "Negiere",
+	LOGARITHMUS:  "Logarithmus",
+	ZUR:          "zur",
+	BASIS:        "Basis",
 
 	DER:          "der",
 	DIE:          "die",
@@ -376,14 +358,10 @@ var KeywordMap = map[string]TokenType{
 	"Ergebnis":       ERGEBNIS,
 	"in":             IN,
 	"verkettet":      VERKETTET,
-	"addiere":        ADDIERE,
 	"erhöhe":         ERHÖHE,
 	"erhoehe":        ERHÖHE,
-	"subtrahiere":    SUBTRAHIERE,
 	"verringere":     VERRINGERE,
-	"multipliziere":  MULTIPLIZIERE,
 	"vervielfache":   VERVIELFACHE,
-	"dividiere":      DIVIDIERE,
 	"teile":          TEILE,
 	"verschiebe":     VERSCHIEBE,
 	"negiere":        NEGIERE,

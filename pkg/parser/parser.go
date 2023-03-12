@@ -632,8 +632,8 @@ func (p *Parser) statement() ast.Statement {
 
 	// parse all possible statements
 	switch p.peek().Type {
-	case token.ADDIERE, token.ERHÖHE, token.SUBTRAHIERE, token.VERRINGERE,
-		token.MULTIPLIZIERE, token.VERVIELFACHE, token.DIVIDIERE, token.TEILE,
+	case token.ERHÖHE, token.VERRINGERE,
+		token.VERVIELFACHE, token.TEILE,
 		token.VERSCHIEBE, token.NEGIERE:
 		p.advance()
 		return p.compoundAssignement()
@@ -699,104 +699,64 @@ func (p *Parser) compoundAssignement() ast.Statement {
 	tok := p.previous()
 	operator := ast.BIN_INVALID
 	switch tok.Type {
-	case token.ADDIERE, token.ERHÖHE:
+	case token.ERHÖHE:
 		operator = ast.BIN_PLUS
-	case token.SUBTRAHIERE, token.VERRINGERE:
+	case token.VERRINGERE:
 		operator = ast.BIN_MINUS
-	case token.MULTIPLIZIERE, token.VERVIELFACHE:
+	case token.VERVIELFACHE:
 		operator = ast.BIN_MULT
-	case token.DIVIDIERE, token.TEILE:
+	case token.TEILE:
 		operator = ast.BIN_DIV
 	}
 
 	var operand ast.Expression
 	var varName ast.Assigneable
-	if tok.Type == token.SUBTRAHIERE { // subtrahiere VON, so the operands are reversed
-		operand = p.expression()
-	} else {
-		p.consume(token.IDENTIFIER)
-		if p.match(token.LPAREN) { // indexings may be enclosed in parens to prevent the 'um' from being interpretetd as bitshift
-			varName = p.assigneable()
-			p.consume(token.RPAREN)
-		} else {
-			varName = p.assigneable()
-		}
-
-		// early return for negate
-		if tok.Type == token.NEGIERE {
-			p.consume(token.DOT)
-
-			typ := p.typechecker.EvaluateSilent(varName)
-			operator := ast.UN_NEGATE
-			if typ == ddptypes.Bool() {
-				operator = ast.UN_NOT
-			}
-			return &ast.AssignStmt{
-				Range: token.NewRange(tok, p.previous()),
-				Tok:   tok,
-				Var:   varName,
-				Rhs: &ast.UnaryExpr{
-					Range:    token.NewRange(tok, p.previous()),
-					Tok:      tok,
-					Operator: operator,
-					Rhs:      varName,
-				},
-			}
-		}
-	}
-	switch tok.Type {
-	case token.ADDIERE, token.MULTIPLIZIERE:
-		p.consume(token.MIT)
-	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.VERSCHIEBE:
-		p.consume(token.UM)
-	case token.SUBTRAHIERE:
-		p.consume(token.VON)
-	case token.DIVIDIERE, token.TEILE:
-		p.consume(token.DURCH)
-	}
-	if tok.Type == token.SUBTRAHIERE { // order of operands is reversed
-		p.consume(token.IDENTIFIER)
+	p.consume(token.IDENTIFIER)
+	if p.match(token.LPAREN) { // indexings may be enclosed in parens to prevent the 'um' from being interpretetd as bitshift
 		varName = p.assigneable()
+		p.consume(token.RPAREN)
 	} else {
-		operand = p.primary(nil)
+		varName = p.assigneable()
 	}
 
-	switch tok.Type {
-	case token.ADDIERE, token.SUBTRAHIERE, token.MULTIPLIZIERE, token.DIVIDIERE:
-		p.consumeN(token.UND, token.SPEICHERE, token.DAS, token.ERGEBNIS, token.IN, token.IDENTIFIER)
-		targetName := p.assigneable()
+	// early return for negate as it does not need a second operand
+	if tok.Type == token.NEGIERE {
 		p.consume(token.DOT)
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
-			Tok:   tok,
-			Var:   targetName,
-			Rhs: &ast.BinaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
-				Tok:      tok,
-				Lhs:      varName,
-				Operator: operator,
-				Rhs:      operand,
-			},
+		typ := p.typechecker.EvaluateSilent(varName)
+		operator := ast.UN_NEGATE
+		if typ == ddptypes.Bool() {
+			operator = ast.UN_NOT
 		}
-	case token.ERHÖHE, token.VERRINGERE, token.VERVIELFACHE, token.TEILE:
-		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   tok,
 			Var:   varName,
-			Rhs: &ast.BinaryExpr{
+			Rhs: &ast.UnaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
 				Tok:      tok,
-				Lhs:      varName,
 				Operator: operator,
-				Rhs:      operand,
+				Rhs:      varName,
 			},
 		}
-	case token.VERSCHIEBE:
+	}
+
+	if tok.Type == token.TEILE {
+		p.consume(token.DURCH)
+	} else {
+		p.consume(token.UM)
+	}
+
+	operand = p.expression()
+
+	if tok.Type == token.VERSCHIEBE {
 		p.consumeN(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		assign_token := tok
 		tok = p.previous()
+		operator := ast.BIN_LEFT_SHIFT
+		if tok.Type == token.RECHTS {
+			operator = ast.BIN_RIGHT_SHIFT
+		}
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
@@ -810,8 +770,20 @@ func (p *Parser) compoundAssignement() ast.Statement {
 				Rhs:      operand,
 			},
 		}
-	default: // unreachable
-		return &ast.BadStmt{}
+	} else {
+		p.consume(token.DOT)
+		return &ast.AssignStmt{
+			Range: token.NewRange(tok, p.previous()),
+			Tok:   tok,
+			Var:   varName,
+			Rhs: &ast.BinaryExpr{
+				Range:    token.NewRange(tok, p.previous()),
+				Tok:      tok,
+				Lhs:      varName,
+				Operator: operator,
+				Rhs:      operand,
+			},
+		}
 	}
 }
 
