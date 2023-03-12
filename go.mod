@@ -7,6 +7,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/llir/irutil v0.0.0-20230226050352-c20f75c375f9
 	github.com/llir/llvm v0.3.5-0.20210831075850-f8d0325a931a
+	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 )
 
 require (

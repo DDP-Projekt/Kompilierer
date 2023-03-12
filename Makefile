@@ -72,12 +72,6 @@ make_out_dir:
 	cp LICENSE $(OUT_DIR)
 	cp README.md $(OUT_DIR)
 
-test:
-	go test -v ./tests '-run=(TestKDDP|TestStdlib)' | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
-
-test-memory:
-	go test -v ./tests '-run=(TestMemory)' | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
-
 clean:
 	rm -r $(OUT_DIR)
 
@@ -94,3 +88,14 @@ llvm:
 
 # build llvm
 	cd $(LLVM_BUILD_DIR) ; $(MAKE)
+
+
+# will hold the directories to run in the tests
+# if empty, all directories are run
+TEST_DIRS = 
+
+test:
+	go test -v ./tests '-run=(TestKDDP|TestStdlib)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+test-memory:
+	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''

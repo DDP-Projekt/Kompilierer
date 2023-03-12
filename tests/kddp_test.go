@@ -2,14 +2,32 @@ package tests
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
+
+var test_dirs_flag = flag.String("test_dirs", "", "")
+var test_dirs []string
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	test_dirs = strings.Split(*test_dirs_flag, " ")
+	if *test_dirs_flag == "" {
+		test_dirs = []string{}
+	}
+	fmt.Printf("%d test_dirs %v\n", len(test_dirs), test_dirs)
+	os.Exit(m.Run())
+}
 
 func TestKDDP(t *testing.T) {
 	err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
@@ -59,7 +77,7 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		return nil
 	}
 
-	if d.Name() == ignoreFile {
+	if d.Name() == ignoreFile || (len(test_dirs) > 0 && !slices.Contains(test_dirs, d.Name())) {
 		return nil
 	}
 
