@@ -15,7 +15,6 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 
 	"github.com/llir/irutil"
@@ -130,7 +129,7 @@ func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 		if details != "" {
 			comment += " (" + details + ")"
 		}
-		block.Insts = append(block.Insts, irutil.NewComment(comment))
+		c.comment(comment, block)
 	}
 }
 
@@ -160,16 +159,6 @@ func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 		irFunc:   irFunc,
 	}
 	return irFunc
-}
-
-// helper to declare a inbuilt function
-// sets the linkage to external, callingconvention to ccc
-// and inserts the function into the compiler
-func (c *Compiler) declareInbuiltFunction(name string, retType types.Type, params ...*ir.Param) {
-	fun := c.mod.NewFunc(name, retType, params...)
-	fun.CallingConv = enum.CallingConvC
-	fun.Linkage = enum.LinkageExternal
-	c.insertFunction(name, nil, fun)
 }
 
 func (c *Compiler) setup() {
@@ -205,18 +194,18 @@ func (c *Compiler) setupListTypes() {
 // used in setup()
 func (c *Compiler) setupOperators() {
 	// betrag operator for different types
-	c.declareInbuiltFunction("llabs", ddpint, ir.NewParam("i", ddpint))
-	c.declareInbuiltFunction("fabs", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareExternalRuntimeFunction("llabs", ddpint, ir.NewParam("i", ddpint))
+	c.declareExternalRuntimeFunction("fabs", ddpfloat, ir.NewParam("f", ddpfloat))
 
 	// hoch operator for different type combinations
-	c.declareInbuiltFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
+	c.declareExternalRuntimeFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
 	// logarithm
-	c.declareInbuiltFunction("log10", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareExternalRuntimeFunction("log10", ddpfloat, ir.NewParam("f", ddpfloat))
 
 	// ddpstring to type cast
-	c.declareInbuiltFunction("ddp_string_to_int", ddpint, ir.NewParam("str", c.ddpstring.ptr))
-	c.declareInbuiltFunction("ddp_string_to_float", ddpfloat, ir.NewParam("str", c.ddpstring.ptr))
+	c.declareExternalRuntimeFunction("ddp_string_to_int", ddpint, ir.NewParam("str", c.ddpstring.ptr))
+	c.declareExternalRuntimeFunction("ddp_string_to_float", ddpfloat, ir.NewParam("str", c.ddpstring.ptr))
 }
 
 // deep copies the value pointed to by src into dest
