@@ -121,21 +121,21 @@ const (
 )
 
 /*
-defines the _ddp_x_from_constants function for a listType
+defines the ddp_x_from_constants function for a listType
 
-_ddp_x_from_constants allocates an array big enough to hold count
+ddp_x_from_constants allocates an array big enough to hold count
 elements and stores it inside ret->arr.
 It also sets ret->len and ret->cap accordingly
 
 signature:
-c.void.IrType() _ddp_x_from_constants(x* ret, ddpint count)
+c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
 func (c *Compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 	// declare the parameters to use them as values
 	ret, count := ir.NewParam("ret", listType.ptr), ir.NewParam("count", ddpint)
 	// declare the function
 	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_%s_from_constants", listType.typ.Name()),
+		fmt.Sprintf("ddp_%s_from_constants", listType.typ.Name()),
 		c.void.IrType(),
 		ret,
 		count,
@@ -174,20 +174,20 @@ func (c *Compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 }
 
 /*
-defines the _ddp_free_x function for a listType
+defines the ddp_free_x function for a listType
 
-_ddp_free_x frees the array in list->arr.
+ddp_free_x frees the array in list->arr.
 It does not change list->len or list->cap, as list
 should not be used after being freed.
 
 signature:
-c.void.IrType() _ddp_free_x(x* list)
+c.void.IrType() ddp_free_x(x* list)
 */
 func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 	list := ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_free_%s", listType.typ.Name()),
+		fmt.Sprintf("ddp_free_%s", listType.typ.Name()),
 		c.void.IrType(),
 		list,
 	)
@@ -225,20 +225,20 @@ func (c *Compiler) defineFree(listType *ddpIrListType) *ir.Func {
 }
 
 /*
-defines the _ddp_deep_copy_x function for a listType
+defines the ddp_deep_copy_x function for a listType
 
-_ddp_deep_copy_x allocates a new array of the same capacity
+ddp_deep_copy_x allocates a new array of the same capacity
 as list->cap and copies list->arr in there.
 For non-primitive types deepCopies are created
 
 signature:
-c.void.IrType() _ddp_deep_copy_x(x* ret, x* list)
+c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
 func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 	ret, list := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_deep_copy_%s", listType.typ.Name()),
+		fmt.Sprintf("ddp_deep_copy_%s", listType.typ.Name()),
 		c.void.IrType(),
 		ret,
 		list,
@@ -262,7 +262,7 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 	} else { // non-primitive types need to be seperately deep-copied
 		/*
 			for (int i = 0; i < list->len; i++) {
-				_ddp_deep_copy(&ret->arr[i], &list->arr[i])
+				ddp_deep_copy(&ret->arr[i], &list->arr[i])
 			}
 		*/
 		c.createFor(zero, c.forDefaultCond(origLen),
@@ -286,18 +286,18 @@ func (c *Compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 }
 
 /*
-defines the _ddp_x_equal function for a listType
+defines the ddp_x_equal function for a listType
 
-_ddp_x_equal checks wether the two lists are equal
+ddp_x_equal checks wether the two lists are equal
 
 signature:
-bool _ddp_x_equal(x* list1, x* list2)
+bool ddp_x_equal(x* list1, x* list2)
 */
 func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 	list1, list2 := ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_%s_equal", listType.typ.Name()),
+		fmt.Sprintf("ddp_%s_equal", listType.typ.Name()),
 		ddpbool,
 		list1,
 		list2,
@@ -337,7 +337,7 @@ func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 	} else { // non-primitive types need to be seperately compared
 		/*
 			for (int i = 0; i < list1->len; i++) {
-				if (!_ddp_element_equal(&list1->arr[i], &list2->arr[i]))
+				if (!ddp_element_equal(&list1->arr[i], &list2->arr[i]))
 					return false;
 			}
 		*/
@@ -367,12 +367,12 @@ func (c *Compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 var slice_error_string *ir.Global
 
 /*
-defines the _ddp_x_slice function for a listType
+defines the ddp_x_slice function for a listType
 
-_ddp_x_slice slices a list by two indices
+ddp_x_slice slices a list by two indices
 
 signature:
-bool _ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
+bool ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	var (
@@ -384,7 +384,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 		index2 value.Value = ir.NewParam("index2", ddpint)
 	)
 	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("_ddp_%s_slice", listType.typ.Name()),
+		fmt.Sprintf("ddp_%s_slice", listType.typ.Name()),
 		c.void.IrType(),
 		ret,
 		list,
@@ -468,7 +468,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 		/*
 			size_t j = 0;
 			for (size_t i = index1; i <= index2 && i < list->len; i++, j++) {
-				_ddp_deep_copy_x(&ret->arr[j], list->arr[i]);
+				ddp_deep_copy_x(&ret->arr[j], list->arr[i]);
 			}
 		*/
 
@@ -503,7 +503,7 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 }
 
 /*
-defines the _ddp_x_y_verkettet functions for a listType
+defines the ddp_x_y_verkettet functions for a listType
 and returns them in the order:
 list_list, list_scalar, scalar_scalar, scalar_list
 
@@ -542,7 +542,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 
 	/*
 		while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
-		ret->arr = _ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * ret->cap);
+		ret->arr = ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * ret->cap);
 	*/
 	grow_capacity_and_set_arr := func(ret, list value.Value) {
 		retCapPtr := c.indexStruct(ret, cap_field_index)
@@ -553,7 +553,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			c.cbb.NewStore(c.growCapacity(c.loadStructField(ret, cap_field_index)), retCapPtr)
 		})
 
-		// ret->arr = _ddp_reallocate(list1->arr, sizeof(elementType) * list1->cap, sizeof(elementType) * ret->cap)
+		// ret->arr = ddp_reallocate(list1->arr, sizeof(elementType) * list1->cap, sizeof(elementType) * ret->cap)
 		new_arr := c.growArr(c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index), c.loadStructField(ret, cap_field_index))
 		c.cbb.NewStore(new_arr, c.indexStruct(ret, arr_field_index))
 	}
@@ -571,7 +571,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 	list_list_concat := func() *ir.Func {
 		ret, list1, list2 := ir.NewParam("ret", listType.ptr), ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 		concListList := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
+			fmt.Sprintf("ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
 			c.void.IrType(),
 			ret, list1, list2,
 		)
@@ -597,7 +597,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			list2Arr := c.loadStructField(list2, arr_field_index)
 			/*
 				for (int i = 0; i < list->len; i++) {
-					_ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
+					ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
 				}
 			*/
 			c.createFor(zero, c.forDefaultCond(list2Len),
@@ -616,7 +616,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 	list_scalar_concat := func() *ir.Func {
 		ret, list, scal := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr), ir.NewParam("scal", scal_param_type)
 		concListScal := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.Name()),
+			fmt.Sprintf("ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.Name()),
 			c.void.IrType(),
 			ret, list, scal,
 		)
@@ -638,7 +638,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			// ret->arr[list->len] = scal
 			c.cbb.NewStore(scal, c.indexArray(retArr, listLen))
 		} else {
-			// _ddp_deep_copy_scal(&ret->arr[list->len], scal)
+			// ddp_deep_copy_scal(&ret->arr[list->len], scal)
 			dst := c.indexArray(retArr, listLen)
 			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), dst, scal)
 		}
@@ -656,7 +656,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 
 		ret, scal1, scal2 := ir.NewParam("ret", listType.ptr), ir.NewParam("scal1", scal_param_type), ir.NewParam("scal2", scal_param_type)
 		concScalScal := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()),
+			fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()),
 			c.void.IrType(),
 			ret, scal1, scal2,
 		)
@@ -680,8 +680,8 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			c.cbb.NewStore(scal1, retArr0Ptr)
 			c.cbb.NewStore(scal2, retArr1Ptr)
 		} else {
-			// _ddp_deep_copy_scalar(&ret->arr[0], scal1);
-			// _ddp_deep_copy_scalar(&ret->arr[0], scal1);
+			// ddp_deep_copy_scalar(&ret->arr[0], scal1);
+			// ddp_deep_copy_scalar(&ret->arr[0], scal1);
 			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr0Ptr, scal1)
 			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr0Ptr, scal2)
 		}
@@ -692,7 +692,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 	scalar_list_concat := func() *ir.Func {
 		ret, scal, list := ir.NewParam("ret", listType.ptr), ir.NewParam("scal", scal_param_type), ir.NewParam("list", listType.ptr)
 		concScalList := c.mod.NewFunc(
-			fmt.Sprintf("_ddp_%s_%s_verkettet", listType.elementType.Name(), listType.typ.Name()),
+			fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.typ.Name()),
 			c.void.IrType(),
 			ret, scal, list,
 		)
@@ -716,7 +716,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			// ret->arr[0] = scal;
 			c.cbb.NewStore(scal, retArr)
 		} else {
-			// _ddp_deep_copy(&ret->arr[0], scal)
+			// ddp_deep_copy(&ret->arr[0], scal)
 			c.cbb.NewCall(listType.elementType.DeepCopyFunc(), retArr, scal)
 		}
 

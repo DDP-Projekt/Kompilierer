@@ -82,36 +82,36 @@ func (c *Compiler) defineStringType() *ddpIrStringType {
 	// declare all the external functions to work with strings
 
 	// allocates a buffer for ret and copies str into it
-	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("_ddp_string_from_constant", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ptr(i8)))
+	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ptr(i8)))
 
 	// frees the given string
-	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("_ddp_free_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr))
+	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr))
 
 	// places a copy of str in ret allocating new buffers
-	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("_ddp_deep_copy_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr))
+	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr))
 
 	// checks wether the two strings are equal
-	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("_ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
+	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
 
 	// returns the number of utf8 runes in str
-	ddpstring.lengthIrFun = c.declareExternalRuntimeFunction("_ddp_string_length", ddpint, ir.NewParam("str", ddpstring.ptr))
+	ddpstring.lengthIrFun = c.declareExternalRuntimeFunction("ddp_string_length", ddpint, ir.NewParam("str", ddpstring.ptr))
 
 	// returns the utf8-char at index
-	ddpstring.indexIrFun = c.declareExternalRuntimeFunction("_ddp_string_index", ddpchar, ir.NewParam("str", ddpstring.ptr), ir.NewParam("index", ddpint))
+	ddpstring.indexIrFun = c.declareExternalRuntimeFunction("ddp_string_index", ddpchar, ir.NewParam("str", ddpstring.ptr), ir.NewParam("index", ddpint))
 
 	// replaces the utf8-char at the index with ch
-	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("_ddp_replace_char_in_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
+	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("ddp_replace_char_in_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
 
-	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("_ddp_string_slice", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("ddp_string_slice", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
 
-	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("_ddp_string_string_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
-	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("_ddp_char_string_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstring.ptr))
-	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("_ddp_string_char_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("c", ddpchar))
+	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_string_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
+	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_char_string_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstring.ptr))
+	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_char_verkettet", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("c", ddpchar))
 
-	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("_ddp_int_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("i", ddpint))
-	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("_ddp_float_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("f", ddpfloat))
-	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("_ddp_bool_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
-	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("_ddp_char_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
+	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("i", ddpint))
+	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("f", ddpfloat))
+	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
+	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
 
 	return ddpstring
 }

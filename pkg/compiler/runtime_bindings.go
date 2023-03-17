@@ -23,30 +23,30 @@ func (c *Compiler) declareExternalRuntimeFunction(name string, returnType types.
 }
 
 var (
-	_ddp_reallocate_irfun    *ir.Func
-	_ddp_runtime_error_irfun *ir.Func
-	_libc_memcpy_irfun       *ir.Func
-	_libc_memcmp_irfun       *ir.Func
-	_libc_memmove_irfun      *ir.Func
+	ddp_reallocate_irfun    *ir.Func
+	ddp_runtime_error_irfun *ir.Func
+	_libc_memcpy_irfun      *ir.Func
+	_libc_memcmp_irfun      *ir.Func
+	_libc_memmove_irfun     *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
 func (c *Compiler) initRuntimeFunctions() {
-	_ddp_reallocate_irfun = c.declareExternalRuntimeFunction(
-		"_ddp_reallocate",
+	ddp_reallocate_irfun = c.declareExternalRuntimeFunction(
+		"ddp_reallocate",
 		ptr(i8),
 		ir.NewParam("pointer", ptr(i8)),
 		ir.NewParam("oldSize", i64),
 		ir.NewParam("newSize", i64),
 	)
 
-	_ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
-		"_ddp_runtime_error",
+	ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
+		"ddp_runtime_error",
 		c.void.IrType(),
 		ir.NewParam("exit_code", ddpint),
 		ir.NewParam("fmt", ptr(i8)),
 	)
-	_ddp_runtime_error_irfun.Sig.Variadic = true
+	ddp_runtime_error_irfun.Sig.Variadic = true
 
 	_libc_memcpy_irfun = c.declareExternalRuntimeFunction(
 		"memcpy",
@@ -77,7 +77,7 @@ func (c *Compiler) initRuntimeFunctions() {
 
 func (c *Compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
 	args = append([]value.Value{exit_code, c.cbb.NewBitCast(fmt, ptr(i8))}, args...)
-	c.cbb.NewCall(_ddp_runtime_error_irfun, args...)
+	c.cbb.NewCall(ddp_runtime_error_irfun, args...)
 	c.cbb.NewUnreachable()
 }
 
@@ -92,21 +92,21 @@ func (c *Compiler) out_of_bounds_error(index, len value.Value) {
 	c.runtime_error(newInt(1), out_of_bounds_error_string, index, len)
 }
 
-// calls _ddp_reallocate from the runtime
-func (c *Compiler) _ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {
+// calls ddp_reallocate from the runtime
+func (c *Compiler) ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {
 	pointer_param := c.cbb.NewBitCast(pointer, ptr(i8))
-	return c.cbb.NewBitCast(c.cbb.NewCall(_ddp_reallocate_irfun, pointer_param, oldSize, newSize), pointer.Type())
+	return c.cbb.NewBitCast(c.cbb.NewCall(ddp_reallocate_irfun, pointer_param, oldSize, newSize), pointer.Type())
 }
 
 // dynamically allocates a single value of type typ
 func (c *Compiler) allocate(typ types.Type) value.Value {
-	return c._ddp_reallocate(constant.NewNull(ptr(typ)), zero, c.sizeof(typ))
+	return c.ddp_reallocate(constant.NewNull(ptr(typ)), zero, c.sizeof(typ))
 }
 
 // allocates n elements of elementType
 func (c *Compiler) allocateArr(elementType types.Type, n value.Value) value.Value {
 	size := c.cbb.NewMul(n, c.sizeof(elementType))
-	return c._ddp_reallocate(constant.NewNull(ptr(elementType)), zero, size)
+	return c.ddp_reallocate(constant.NewNull(ptr(elementType)), zero, size)
 }
 
 // reallocates the pointer val which points to an array
@@ -116,20 +116,20 @@ func (c *Compiler) growArr(ptr, oldCount, newCount value.Value) value.Value {
 	elementSize := c.sizeof(elementType)
 	oldSize := c.cbb.NewMul(oldCount, elementSize)
 	newSize := c.cbb.NewMul(newCount, elementSize)
-	return c._ddp_reallocate(ptr, oldSize, newSize)
+	return c.ddp_reallocate(ptr, oldSize, newSize)
 }
 
 // calls free on the passed pointer
 func (c *Compiler) free(ptr value.Value) {
 	elementType := getPointeeType(ptr)
-	c._ddp_reallocate(ptr, c.sizeof(elementType), zero)
+	c.ddp_reallocate(ptr, c.sizeof(elementType), zero)
 }
 
 // frees the pointer val which points to n elements
 func (c *Compiler) freeArr(ptr, n value.Value) {
 	elementType := getPointeeType(ptr)
 	size := c.cbb.NewMul(n, c.sizeof(elementType))
-	c._ddp_reallocate(ptr, size, zero)
+	c.ddp_reallocate(ptr, size, zero)
 }
 
 // wraps the memcpy function from libc

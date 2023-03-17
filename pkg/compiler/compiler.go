@@ -86,9 +86,9 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 
 	// called from the ddp-c-runtime after initialization
 	ddpmain := c.insertFunction(
-		"_ddp_ddpmain",
+		"ddp_ddpmain",
 		nil,
-		c.mod.NewFunc("_ddp_ddpmain", ddpint),
+		c.mod.NewFunc("ddp_ddpmain", ddpint),
 	)
 	c.cf = ddpmain               // first function is ddpmain
 	c.cbb = ddpmain.NewBlock("") // first block
@@ -211,23 +211,12 @@ func (c *Compiler) setupOperators() {
 	// hoch operator for different type combinations
 	c.declareInbuiltFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
-	// trigonometric functions
-	c.declareInbuiltFunction("_ddp_sin", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_cos", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_tan", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_asin", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_acos", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_atan", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_sinh", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_cosh", ddpfloat, ir.NewParam("f", ddpfloat))
-	c.declareInbuiltFunction("_ddp_tanh", ddpfloat, ir.NewParam("f", ddpfloat))
-
 	// logarithm
 	c.declareInbuiltFunction("log10", ddpfloat, ir.NewParam("f", ddpfloat))
 
 	// ddpstring to type cast
-	c.declareInbuiltFunction("_ddp_string_to_int", ddpint, ir.NewParam("str", c.ddpstring.ptr))
-	c.declareInbuiltFunction("_ddp_string_to_float", ddpfloat, ir.NewParam("str", c.ddpstring.ptr))
+	c.declareInbuiltFunction("ddp_string_to_int", ddpint, ir.NewParam("str", c.ddpstring.ptr))
+	c.declareInbuiltFunction("ddp_string_to_float", ddpfloat, ir.NewParam("str", c.ddpstring.ptr))
 }
 
 // deep copies the value pointed to by src into dest
@@ -1032,7 +1021,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpchartyp:
 				c.latestReturn = c.cbb.NewSExt(lhs, ddpint)
 			case c.ddpstring:
-				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_to_int"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
 			default:
 				err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
 			}
@@ -1043,7 +1032,7 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = lhs
 			case c.ddpstring:
-				c.latestReturn = c.cbb.NewCall(c.functions["_ddp_string_to_float"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			default:
 				err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}

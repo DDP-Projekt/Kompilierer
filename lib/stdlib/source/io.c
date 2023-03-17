@@ -60,7 +60,7 @@ static void runtime_error_getlasterror(int exit_code, const char* fmt) {
 	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, 1024, NULL)) {
 		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", GetLastError());
 	}
-	_ddp_runtime_error(exit_code, fmt, error_buffer);
+	ddp_runtime_error(exit_code, fmt, error_buffer);
 }
 
 static HANDLE* get_stdin_handle() {
@@ -74,8 +74,8 @@ static HANDLE* get_stdin_handle() {
 }
 #endif // _WIN32
 
-ddpchar __Extern_Lies_Buchstabe(ddpboolref __war_eof) {
-	DBGLOG("__Extern_Lies_Buchstabe");
+ddpchar Extern_Lies_Buchstabe(ddpboolref __war_eof) {
+	DBGLOG("Extern_Lies_Buchstabe");
 #ifdef _WIN32 // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];
@@ -120,7 +120,7 @@ static void write_error(ddpstringref ref, const char* fmt, ...) {
 	
 	va_end(argptr);
 
-	ref->str = _ddp_reallocate(ref->str, ref->cap, len+1);
+	ref->str = ddp_reallocate(ref->str, ref->cap, len+1);
 	memcpy(ref->str, errbuff, len);
 	ref->cap = len+1;
 	ref->str[ref->cap-1] = '\0';
@@ -133,7 +133,7 @@ ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
 		fseek(file, 0, SEEK_END); // seek the last byte in the file
 		size_t string_size = ftell(file) + 1; // file_size + '\0'
 		rewind(file); // go back to file start
-		ref->str = _ddp_reallocate(ref->str, ref->cap, string_size);
+		ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
 		ref->cap = string_size;
 		size_t read = fread(ref->str, sizeof(char), string_size-1, file);
 		ref->str[ref->cap-1] = '\0';

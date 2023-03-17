@@ -17,8 +17,8 @@
 // should not be needed in production
 // mainly for debugging
 static void SegfaultHandler(int signal) {
-	_ddp_end_runtime();
-	_ddp_runtime_error(1, "Segmentation fault\n");
+	ddp_end_runtime();
+	ddp_runtime_error(1, "Segmentation fault\n");
 }
 
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
@@ -29,12 +29,12 @@ static void handle_args(int argc, char** argv) {
 	DBGLOG("handle_args: %p", &cmd_args);
 
 	for (size_t i = 0; i < argc; i++) {
-		_ddp_string_from_constant(&cmd_args.arr[i], argv[i]);
+		ddp_string_from_constant(&cmd_args.arr[i], argv[i]);
 	}
 }
 
 // initialize runtime stuff
-void _ddp_init_runtime(int argc, char** argv) {
+void ddp_init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
 #ifdef _WIN32
 	// the locales behaviour seems to change from time to time on windows
@@ -56,7 +56,7 @@ void _ddp_init_runtime(int argc, char** argv) {
 }
 
 // end the runtime
-void _ddp_end_runtime() {
+void ddp_end_runtime() {
 	// to avoid stack overflows if a runtime_error causes another runtime_error
 	static bool ending = false;
 	if (ending) {
@@ -67,20 +67,20 @@ void _ddp_end_runtime() {
 	DBGLOG("end_runtime");
 
 	// free the cmd_args
-	_ddp_free_ddpstringlist(&cmd_args);
+	ddp_free_ddpstringlist(&cmd_args);
 }
 
-extern int _ddp_ddpmain(); // implicitly defined by the ddp code
+extern int ddp_ddpmain(); // implicitly defined by the ddp code
 
 // entry point of the final executable (needed by gcc)
 // TODO: outsource this into a seperate object file to allow embedding of DDP in C
 int main(int argc, char** argv) {
-	_ddp_init_runtime(argc, argv); // initialize the runtime
-	int ret = _ddp_ddpmain(); // run the ddp code
-	_ddp_end_runtime(); // end the runtime
+	ddp_init_runtime(argc, argv); // initialize the runtime
+	int ret = ddp_ddpmain(); // run the ddp code
+	ddp_end_runtime(); // end the runtime
 	return ret; // return the exit status of the ddp-code
 }
 
 void Befehlszeilenargumente(ddpstringlist* ret) {
-	_ddp_deep_copy_ddpstringlist(ret, &cmd_args);
+	ddp_deep_copy_ddpstringlist(ret, &cmd_args);
 }

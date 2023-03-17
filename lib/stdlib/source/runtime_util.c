@@ -14,12 +14,12 @@
 #endif // _WIN32
 
 void Programm_Beenden(ddpint code) {
-	_ddp_end_runtime();
+	ddp_end_runtime();
 	exit(code);
 }
 
 void Laufzeitfehler(ddpstring* Nachricht, ddpint code) {
-	_ddp_runtime_error(code, Nachricht->str);
+	ddp_runtime_error(code, Nachricht->str);
 }
 
 ddpbool Ist_Befehlszeile() {

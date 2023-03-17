@@ -4,7 +4,7 @@ OUT_FILE_NAME = libddpstdlib.a
 .DEFAULT_GOAL := all
 
 CC = gcc
-CCFLAGS := -c -Wall -Wno-format -O2
+CCFLAGS := -c -Wall -Wno-format -pedantic -O2
 DEBUGFLAGS := -DDDP_DEBUG
 INC := -I./include/ -I../runtime/include/
 

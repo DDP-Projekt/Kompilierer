@@ -1,10 +1,10 @@
 Binde "Duden/Texte" ein.
 
-[wird von __Extern_Lies_Buchstabe gesetzt falls während des Lesens EOF auftrat]
-Der Boolean __war_eof ist falsch.
+[wird von Extern_Lies_Buchstabe gesetzt falls während des Lesens EOF auftrat]
+Der Boolean war_eof ist falsch.
 
 [
-	Bessere Aliase um mit __war_eof zu arbeiten 
+	Bessere Aliase um mit war_eof zu arbeiten 
 	ohne die Variable direkt zu benutzen.
 ]
 
@@ -12,7 +12,7 @@ Der Boolean __war_eof ist falsch.
 	Gibt wahr zurück wenn ein EOF Zeichen gelesen wurde.
 ]
 Die Funktion War_EOF gibt einen Boolean zurück, macht:
-	Gib __war_eof zurück.
+	Gib war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe zu Ende gewesen ist"
 
@@ -20,15 +20,15 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn noch kein EOF Zeichen gelesen wurde.
 ]
 Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
-	Gib nicht __war_eof zurück.
+	Gib nicht war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe nicht vorbei ist"
 
 [
-	Setzt die interne __war_eof variable auf falsch.
+	Setzt die interne war_eof variable auf falsch.
 ]
 Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
-	__war_eof ist falsch.
+	war_eof ist falsch.
 Und kann so benutzt werden:
 	"setzte die Benutzereingabe zurück" oder
 	"setzte die Benutzereingabe zurueck" oder
@@ -38,50 +38,50 @@ Und kann so benutzt werden:
 
 [
 	Lies einen einzelnen Buchstaben aus der Standardeingabe
-	und setzt gegebenenfalls die __war_eof Variable.
+	und setzt gegebenenfalls die war_eof Variable.
 ]
-Die Funktion __Extern_Lies_Buchstabe mit dem Parameter __war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
+Die Funktion Extern_Lies_Buchstabe mit dem Parameter war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"__nächstes_Zeichen <__war_eof>"
+	"_nächstes_Zeichen <war_eof>"
 
 [
-	Besserer Alias für __Extern_Lies_Buchstabe
-	um nicht immer __war_eof übergeben zu müssen.
+	Besserer Alias für Extern_Lies_Buchstabe
+	um nicht immer war_eof übergeben zu müssen.
 ]
-Die Funktion __Lies_Buchstabe_Roh gibt einen Buchstaben zurück, macht:
-	Gib __nächstes_Zeichen __war_eof zurück.
+Die Funktion Lies_Buchstabe_Roh gibt einen Buchstaben zurück, macht:
+	Gib _nächstes_Zeichen war_eof zurück.
 Und kann so benutzt werden:
-	"__nächstes_Zeichen"
+	"_nächstes_Zeichen"
 
 
 [Puffer für eine einzelne Eingabe ohne Leerzeichen]
-Der Text __Eingabe_Puffer ist "".
+Der Text Eingabe_Puffer ist "".
 [
-	Puffer um beim Lesen von __Eingabe_Puffer
+	Puffer um beim Lesen von Eingabe_Puffer
 	nichts zu verlieren
 ]
-Der Buchstabe __Gepufferter_Buchstabe ist 0 als Buchstabe.
+Der Buchstabe Gepufferter_Buchstabe ist 0 als Buchstabe.
 
 [
-	Liest eine einzelne Eingabe in __Eingabe_Puffer.
+	Liest eine einzelne Eingabe in Eingabe_Puffer.
 
 	Dabei werden vorrangehende Leerzeichen ignoriert
 	und ein einzelnes darrauffolgendes Leerzeichen in
-	__Gepufferter_Buchstabe gespeichert
+	Gepufferter_Buchstabe gespeichert
 ]
 Die Funktion Lies_Token_in_Puffer gibt einen Text zurück, macht:
 	[vorangehende Leerstellen überspringen]
-	Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
-	Solange __Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
+	Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+	Solange Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
 		Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
-		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
+		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 
 	[Text bis Leerstelle Lesen]
 	Der Text token ist "".
-	Solange nicht (__Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
-		Speichere token verkettet mit __Gepufferter_Buchstabe in token.
-		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
+	Solange nicht (Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
+		Speichere token verkettet mit Gepufferter_Buchstabe in token.
+		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 
 	Gib token zurück.
 Und kann so benutzt werden:
@@ -95,14 +95,14 @@ Und kann so benutzt werden:
 ]
 
 [
-	Wenn __Eingabe_Puffer eine Eingabe enthält
-	wird diese zurückgegeben und __Eingabe_Puffer geleert.
+	Wenn Eingabe_Puffer eine Eingabe enthält
+	wird diese zurückgegeben und Eingabe_Puffer geleert.
 	Ansonsten wird die nächste Eingabe direkt zurückgegeben.
 ]
 Die Funktion Lies_Token_Gepuffert gibt einen Text zurück, macht:
-	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, dann:
-		Der Text Rückgabe ist __Eingabe_Puffer.
-		__Eingabe_Puffer ist "".
+	Wenn die Länge von Eingabe_Puffer größer als 0 ist, dann:
+		Der Text Rückgabe ist Eingabe_Puffer.
+		Eingabe_Puffer ist "".
 		Gib Rückgabe zurück.
 
 	Wenn die Benutzereingabe nicht vorbei ist, gib die nächste Eingabe zurück.
@@ -136,27 +136,27 @@ Und kann so benutzt werden:
 	"die naechste Kommazahl"
 
 [
-	Wenn __Eingabe_Puffer eine Eingabe enthält wird
-	der erste Buchstabe davon zurückgegeben und __Eingabe_Puffer
+	Wenn Eingabe_Puffer eine Eingabe enthält wird
+	der erste Buchstabe davon zurückgegeben und Eingabe_Puffer
 	entsprechend angepasst.
 
-	Wenn __Gepufferter_Buchstabe einen Buchstaben enthält wird dieser
-	zurückgeben und __Gepufferter_Buchstabe auf 0 gesetzt.
+	Wenn Gepufferter_Buchstabe einen Buchstaben enthält wird dieser
+	zurückgeben und Gepufferter_Buchstabe auf 0 gesetzt.
 
 	Ansonsten wird das nächste Zeichen direkt gelesen.
 ]
 Die Funktion Lies_Buchstabe_Gepuffert gibt einen Buchstaben zurück, macht:
-	Wenn die Länge von __Eingabe_Puffer ungleich 0 ist, dann:
-		Der Buchstabe Rückgabe ist __Eingabe_Puffer an der Stelle 1.
-		Speichere __Eingabe_Puffer von 2 bis (die Länge von __Eingabe_Puffer) in __Eingabe_Puffer.
+	Wenn die Länge von Eingabe_Puffer ungleich 0 ist, dann:
+		Der Buchstabe Rückgabe ist Eingabe_Puffer an der Stelle 1.
+		Speichere Eingabe_Puffer von 2 bis (die Länge von Eingabe_Puffer) in Eingabe_Puffer.
 		Gib Rückgabe zurück.
 	
-	Wenn __Gepufferter_Buchstabe als Zahl ungleich 0 ist, dann:
-		Der Buchstabe Rückgabe ist __Gepufferter_Buchstabe.
-		Speichere 0 als Buchstabe in __Gepufferter_Buchstabe.
+	Wenn Gepufferter_Buchstabe als Zahl ungleich 0 ist, dann:
+		Der Buchstabe Rückgabe ist Gepufferter_Buchstabe.
+		Speichere 0 als Buchstabe in Gepufferter_Buchstabe.
 		Gib Rückgabe zurück.
 
-	Gib __nächstes_Zeichen zurück.
+	Gib _nächstes_Zeichen zurück.
 Und kann so benutzt werden:
 	"der nächste Buchstabe" oder
 	"der naechste Buchstabe" oder
@@ -172,21 +172,21 @@ Und kann so benutzt werden:
 ]
 Die Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
 	Der Text zeile ist "".
-	Wenn die Länge von __Eingabe_Puffer ungleich 0 ist, dann:
-		Füge __Eingabe_Puffer an zeile an.
-		__Eingabe_Puffer ist "".
-		Wenn __Gepufferter_Buchstabe als Zahl ungleich 0 ist, Füge __Gepufferter_Buchstabe an zeile an.
-		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
+	Wenn die Länge von Eingabe_Puffer ungleich 0 ist, dann:
+		Füge Eingabe_Puffer an zeile an.
+		Eingabe_Puffer ist "".
+		Wenn Gepufferter_Buchstabe als Zahl ungleich 0 ist, Füge Gepufferter_Buchstabe an zeile an.
+		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 	Sonst:
-		Solange __Gepufferter_Buchstabe ungleich '\n' ist und (__Gepufferter_Buchstabe ein Leerzeichen ist oder __Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
+		Solange Gepufferter_Buchstabe ungleich '\n' ist und (Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
 			Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
-			Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
+			Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 
-	Solange __Gepufferter_Buchstabe ungleich '\n' ist und die Benutzereingabe nicht vorbei ist, mache:
-		Speichere zeile verkettet mit __Gepufferter_Buchstabe in zeile.
-		Speichere __nächstes_Zeichen in __Gepufferter_Buchstabe.
+	Solange Gepufferter_Buchstabe ungleich '\n' ist und die Benutzereingabe nicht vorbei ist, mache:
+		Speichere zeile verkettet mit Gepufferter_Buchstabe in zeile.
+		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 
-	Speichere 0 als Buchstabe in __Gepufferter_Buchstabe.
+	Speichere 0 als Buchstabe in Gepufferter_Buchstabe.
 	Gib zeile zurück.
 Und kann so benutzt werden:
 	"die nächste Zeile" oder
@@ -197,10 +197,10 @@ Und kann so benutzt werden:
 	gelesen werden kann.
 ]
 Die Funktion Hat_Token gibt einen Boolean zurück, macht:
-	Wenn die Länge von __Eingabe_Puffer größer als 0 ist, gib wahr zurück.
+	Wenn die Länge von Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
-	Speichere den nächsten Text in __Eingabe_Puffer.
-	Gib [wahr wenn] die Länge von __Eingabe_Puffer größer als 0 ist zurück.
+	Speichere den nächsten Text in Eingabe_Puffer.
+	Gib [wahr wenn] die Länge von Eingabe_Puffer größer als 0 ist zurück.
 Und kann so benutzt werden:
 	"eine Eingabe vorhanden"
 
@@ -209,7 +209,7 @@ Und kann so benutzt werden:
 	zu einer Zahl umgewandelt werden kann.
 ]
 Die Funktion Hat_Zahl gibt einen Boolean zurück, macht:
-	Gib eine Eingabe vorhanden und __Eingabe_Puffer eine Zahl ist zurück.
+	Gib eine Eingabe vorhanden und Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe eine Zahl" oder
 	"die naechste Eingabe eine Zahl"
@@ -219,6 +219,6 @@ Und kann so benutzt werden:
 	gelesen werden kann.
 ]
 Die Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
-	Gib nicht __war_eof oder die Länge von __Eingabe_Puffer ungleich 0 ist oder __Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
+	Gib nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
 Und kann so benutzt werden:
 	"ein Buchstabe vorhanden"
