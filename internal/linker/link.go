@@ -45,10 +45,10 @@ func validateOptions(options *Options) error {
 
 // link the given input file (a .o file compiled from ddp-source-code) with the given dependencies and flags
 // to the ddpruntime and stdlib into a executable
-func LinkDDPFiles(options Options) error {
+func LinkDDPFiles(options Options) ([]byte, error) {
 	err := validateOptions(&options)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// split the flags passed to gcc when compiling extern .c files
@@ -85,8 +85,8 @@ func LinkDDPFiles(options Options) error {
 		case ".o": // object files are simple input files
 			input_files = append(input_files, path)
 		case ".c": // .c files must be compiled first
-			if outPath, err := compileCFile(path, extern_gcc_flags, options.Log); err != nil {
-				return err
+			if outPath, output, err := compileCFile(path, extern_gcc_flags, options.Log); err != nil {
+				return output, err
 			} else {
 				input_files = append(input_files, outPath)
 				if options.DeleteIntermediateFiles {
@@ -94,7 +94,7 @@ func LinkDDPFiles(options Options) error {
 				}
 			}
 		default:
-			return fmt.Errorf("Unerwartete Abhängigkeit '%s'", path)
+			return nil, fmt.Errorf("Unerwartete Abhängigkeit '%s'", path)
 		}
 	}
 
@@ -125,12 +125,12 @@ func LinkDDPFiles(options Options) error {
 
 	cmd := gcc.New(args...)
 	options.Log("%s", cmd.String())
-	return cmd.Run()
+	return cmd.CombinedOutput()
 }
 
 // helper for invokeGCC
-// returns the path to the output file
-func compileCFile(inputFile string, gcc_flags []string, Log func(string, ...any)) (string, error) {
+// returns the path to the output file, and the result of cmd.CombinedOutput()
+func compileCFile(inputFile string, gcc_flags []string, Log func(string, ...any)) (string, []byte, error) {
 	outPath := changeExtension(changeFilename(inputFile, "ddpextern_"+filepath.Base(inputFile)), ".o")
 
 	args := append(make([]string, 0, 5), "-O2", "-c", "-Wall", "-o", outPath, inputFile)
@@ -141,7 +141,8 @@ func compileCFile(inputFile string, gcc_flags []string, Log func(string, ...any)
 	Log("Rufe gcc auf '%s' auf", inputFile)
 	cmd := gcc.New(args...)
 	Log(cmd.String())
-	return outPath, cmd.Run()
+	out, err := cmd.CombinedOutput()
+	return outPath, out, err
 }
 
 // helper to change a filename in a filepath
