@@ -185,16 +185,25 @@ func (cmd *BuildCommand) Run() error {
 
 	objPath := changeExtension(cmd.outPath, ".o")
 
-	var to *os.File
-	var err error
+	var (
+		to  *os.File
+		err error
+	)
 	if targetExe {
 		to, err = os.OpenFile(objPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+		if !cmd.nodeletes {
+			defer func() {
+				print("Lösche %s", objPath)
+				os.Remove(objPath)
+			}()
+		}
 	} else {
 		to, err = os.OpenFile(cmd.outPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	}
 	if err != nil {
 		return err
 	}
+	defer to.Close()
 
 	src, err := os.ReadFile(cmd.filePath)
 	if err != nil {
@@ -214,20 +223,12 @@ func (cmd *BuildCommand) Run() error {
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 	})
-	to.Close()
 	if err != nil {
 		return err
 	}
 
 	if !targetExe {
 		return nil
-	}
-
-	if !cmd.nodeletes {
-		defer func() {
-			print("Lösche %s", objPath)
-			os.Remove(objPath)
-		}()
 	}
 
 	// the target is an executable so we link the produced object file

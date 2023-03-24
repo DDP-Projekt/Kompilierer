@@ -122,17 +122,16 @@ func Compile(options Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	options.Log("Schreibe LLVM ir nach %s", tempFileName)
-	result, err := New(Ast, options.ErrorHandler).Compile(file)
-	if err != nil {
-		file.Close()
-		return nil, err
-	}
-	file.Close()
-
 	if options.DeleteIntermediateFiles {
 		defer options.Log("Lösche die temporäre Datei '%s'", tempFileName)
 		defer os.Remove(tempFileName)
+	}
+
+	options.Log("Schreibe LLVM ir nach %s", tempFileName)
+	result, err := New(Ast, options.ErrorHandler).Compile(file)
+	file.Close()
+	if err != nil {
+		return nil, err
 	}
 
 	// object files are written to the given io.Writer (most commonly a file)
