@@ -11,3 +11,16 @@ Schreibe die Zahl z.
 Schreibe den Buchstaben ','.]
 Speichere 55 in z.
 Schreibe die Zahl z.
+Schreibe den Buchstaben '\n'.
+
+Der Boolean b ist wahr.
+Schreibe den Boolean b.
+Schreibe den Buchstaben ','.
+b ist falsch.
+Schreibe den Boolean b.
+Schreibe den Buchstaben ','.
+b ist wahr, wenn 1 gleich 1 ist.
+Schreibe den Boolean b.
+Schreibe den Buchstaben ','.
+b ist falsch, wenn 1 ungleich 2 ist.
+Schreibe den Boolean b.
