@@ -232,7 +232,7 @@ func (cmd *BuildCommand) Run() error {
 
 	// the target is an executable so we link the produced object file
 	print("Objekte werden gelinkt")
-	if err := linker.LinkDDPFiles(linker.Options{
+	if output, err := linker.LinkDDPFiles(linker.Options{
 		InputFile:               objPath,
 		OutputFile:              cmd.outPath,
 		Dependencies:            result,
@@ -241,7 +241,7 @@ func (cmd *BuildCommand) Run() error {
 		GCCFlags:                cmd.gcc_flags,
 		ExternGCCFlags:          cmd.extern_gcc_flags,
 	}); err != nil {
-		return fmt.Errorf("Fehler beim Linken: %s", err)
+		return fmt.Errorf("Fehler beim Linken: %s (%s)", err, string(output))
 	}
 
 	return nil
