@@ -149,7 +149,8 @@ func (p *Parser) synchronize() {
 
 func (p *Parser) checkedDeclaration() ast.Statement {
 	stmt := p.declaration() // parse the node
-	if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
+	// TODO: maybe introduce a NOOP node to handle such cases
+	if stmt != nil { // nil check, for alias declarations that aren't Ast Nodes
 		p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
 		p.typechecker.TypecheckNode(stmt) // typecheck the node
 	}
@@ -170,7 +171,7 @@ func (p *Parser) declaration() ast.Statement {
 				return &ast.DeclStmt{Decl: p.varDeclaration()} // parse the declaration
 			case token.ALIAS:
 				p.advance()
-				return p.aliasDecl() // TODO: fix errors/crashes if this returns nil
+				return p.aliasDecl()
 			default:
 				p.decrease() // decrease, so expressionStatement() can recognize it as expression
 			}
@@ -694,7 +695,6 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 
 // += -= *= /=
 // TODO: fix indexings as assignebles with 'um' after the index
-// TODO: fix this with the new operators enum
 func (p *Parser) compoundAssignement() ast.Statement {
 	// the many branches are here mostly because of different prepositons
 	tok := p.previous()

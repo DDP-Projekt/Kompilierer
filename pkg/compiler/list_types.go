@@ -506,8 +506,6 @@ func (c *Compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 defines the ddp_x_y_verkettet functions for a listType
 and returns them in the order:
 list_list, list_scalar, scalar_scalar, scalar_list
-
-TODO: create the missing concat functions
 */
 func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
 	// reusable parts for all 4 functions
