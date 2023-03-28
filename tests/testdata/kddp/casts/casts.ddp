@@ -46,3 +46,8 @@ Schreibe den Buchstaben ';'.
 Schreibe die Buchstaben Liste ('Ü' als Buchstaben Liste).
 Schreibe den Buchstaben ';'.
 Schreibe die Text Liste ("Hallo" als Text Liste).
+Schreibe den Buchstaben '\n'.
+
+Schreibe die Zahl ("123" als Zahl als Kommazahl als Text als Zahl).
+Schreibe den Buchstaben ';'.
+Schreibe den Boolean ("0" als Kommazahl als Zahl als Text als Zahl als Boolean).

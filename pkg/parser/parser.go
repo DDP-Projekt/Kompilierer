@@ -1651,7 +1651,7 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 	}
 
 	// type-casting
-	if p.match(token.ALS) { // TODO: enable nested casting
+	for p.match(token.ALS) {
 		Type := p.parseType()
 		lhs = &ast.CastExpr{
 			Range: token.Range{
