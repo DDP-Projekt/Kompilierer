@@ -673,7 +673,7 @@ func (c *Compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 		c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), c.cbb.NewLoad(ddpint, retCapPtr)), retArrPtr)
 
 		retArr := c.loadStructField(ret, arr_field_index)
-		retArr0Ptr, retArr1Ptr := c.indexArray(retArr, newInt(0)), c.indexArray(retArr, newInt(1))
+		retArr0Ptr, retArr1Ptr := c.indexArray(retArr, zero), c.indexArray(retArr, newInt(1))
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[0] = scal1;
 			// ret->arr[1] = scal1;

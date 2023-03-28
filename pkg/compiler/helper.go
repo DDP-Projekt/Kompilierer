@@ -21,7 +21,8 @@ var (
 
 	ptr = types.NewPointer
 
-	zero = newInt(0) // 0: i64
+	zero  = newInt(0) // 0: i64
+	zerof = constant.NewFloat(ddpfloat, 0)
 )
 
 func newInt(value int64) *constant.Int {

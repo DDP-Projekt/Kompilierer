@@ -100,7 +100,7 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	c.scp = c.exitScope(c.scp) // exit the main scope
 
 	// on success ddpmain returns 0
-	c.cbb.NewRet(newInt(0))
+	c.cbb.NewRet(zero)
 	if w != nil {
 		_, err := c.mod.WriteTo(w)
 		return c.result, err
@@ -176,8 +176,8 @@ func (c *Compiler) setup() {
 
 // used in setup()
 func (c *Compiler) setupPrimitiveTypes() {
-	c.ddpinttyp = c.definePrimitiveType(ddpint, newInt(0), "ddpint")
-	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, constant.NewFloat(ddpfloat, 0), "ddpfloat")
+	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, "ddpint")
+	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, "ddpfloat")
 	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, "ddpbool")
 	c.ddpchartyp = c.definePrimitiveType(ddpchar, newIntT(ddpchar, 0), "ddpchar")
 }
@@ -193,10 +193,6 @@ func (c *Compiler) setupListTypes() {
 
 // used in setup()
 func (c *Compiler) setupOperators() {
-	// betrag operator for different types
-	c.declareExternalRuntimeFunction("llabs", ddpint, ir.NewParam("i", ddpint))
-	c.declareExternalRuntimeFunction("fabs", ddpfloat, ir.NewParam("f", ddpfloat))
-
 	// hoch operator for different type combinations
 	c.declareExternalRuntimeFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
@@ -465,10 +461,18 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	case ast.UN_ABS:
 		switch typ {
 		case c.ddpfloattyp:
-			c.latestReturn = c.cbb.NewCall(c.functions["fabs"].irFunc, rhs)
+			// c.latestReturn = rhs < 0 ? 0 - rhs : rhs;
+			c.latestReturn = c.createTernary(c.cbb.NewFCmp(enum.FPredOLT, rhs, zerof),
+				func() value.Value { return c.cbb.NewFSub(zerof, rhs) },
+				func() value.Value { return rhs },
+			)
 			c.latestReturnType = c.ddpfloattyp
 		case c.ddpinttyp:
-			c.latestReturn = c.cbb.NewCall(c.functions["llabs"].irFunc, rhs)
+			// c.latestReturn = rhs < 0 ? 0 - rhs : rhs;
+			c.latestReturn = c.createTernary(c.cbb.NewICmp(enum.IPredSLT, rhs, zero),
+				func() value.Value { return c.cbb.NewSub(zero, rhs) },
+				func() value.Value { return rhs },
+			)
 			c.latestReturnType = c.ddpinttyp
 		default:
 			err("invalid Parameter Type for BETRAG: %s", typ.Name())

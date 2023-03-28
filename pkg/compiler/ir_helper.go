@@ -77,10 +77,17 @@ func (c *Compiler) loadStructField(structPtr value.Value, index int64) value.Val
 // generates a new if-else statement
 // cond is the condition
 // genTrueBody generates the then-body
-// genFalseBody may be nil of no else is required
+// genFalseBody may be nil if no else is required
 // c.cbb and c.cf must be set/restored correctly by the caller
 func (c *Compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody func()) {
-	trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+	trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), (*ir.Block)(nil), c.cf.NewBlock("")
+	if genFalseBody == nil {
+		falseBlock = leaveBlock // no else, so we jump directly to leave
+	} else {
+		// to keep the order of blocks in the ir correct
+		falseBlock = leaveBlock
+		leaveBlock = c.cf.NewBlock("")
+	}
 	c.cbb.NewCondBr(cond, trueBlock, falseBlock)
 
 	c.cbb = trueBlock
@@ -92,9 +99,9 @@ func (c *Compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody fun
 	c.cbb = falseBlock
 	if genFalseBody != nil {
 		genFalseBody()
-	}
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(leaveBlock)
+		if c.cbb.Term == nil {
+			c.cbb.NewBr(leaveBlock)
+		}
 	}
 
 	c.cbb = leaveBlock
@@ -107,17 +114,17 @@ func (c *Compiler) createTernary(cond value.Value, trueVal, falseVal func() valu
 	trueLabel, falseLabel, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.cbb.NewCondBr(cond, trueLabel, falseLabel)
 
-	// count > 0 -> allocate the array
+	// cond == true
 	c.cbb = trueLabel
 	trVal := trueVal()
 	c.cbb.NewBr(endBlock)
 
-	// count <= 0 -> do nothing for the phi
+	// cond == false
 	c.cbb = falseLabel
 	falVal := falseVal()
 	c.cbb.NewBr(endBlock)
 
-	// phi based on count
+	// phi based on cond
 	c.cbb = endBlock
 	return c.cbb.NewPhi(ir.NewIncoming(trVal, trueLabel), ir.NewIncoming(falVal, falseLabel))
 }
