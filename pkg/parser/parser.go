@@ -1616,6 +1616,9 @@ func (p *Parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
+	// TODO: check this with precedence and the else-if
+	// 		 parsing might be incorrect
+	// 		 remember to also check p.assigneable()
 	// indexing
 	if p.match(token.AN) {
 		p.consumeN(token.DER, token.STELLE)
