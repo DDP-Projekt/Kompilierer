@@ -7,7 +7,8 @@ Und kann so benutzt werden:
 Die Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
-	"Füge <elm> an <liste> an"
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
 
 Die Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -67,7 +68,8 @@ Und kann so benutzt werden:
 Die Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
-	"Füge <elm> an <liste> an"
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
 
 Die Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -126,7 +128,8 @@ Und kann so benutzt werden:
 Die Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
-	"Füge <elm> an <liste> an"
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
 
 Die Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -186,7 +189,8 @@ Und kann so benutzt werden:
 Die Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
-	"Füge <elm> an <liste> an"
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
 
 Die Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -246,7 +250,8 @@ Und kann so benutzt werden:
 Die Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
-	"Füge <elm> an <liste> an"
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
 
 Die Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.

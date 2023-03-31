@@ -760,7 +760,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 						c.latestReturn = dest
 					}
 				}, func() { // runtime error
-					c.out_of_bounds_error(index, listLen)
+					c.out_of_bounds_error(rhs, listLen)
 				})
 				c.latestReturnType = listType.elementType
 			} else {

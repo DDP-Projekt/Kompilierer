@@ -678,7 +678,12 @@ func (p *Parser) finishStatement(stmt ast.Statement) ast.Statement {
 		return stmt
 	}
 	count := p.expression()
-	p.consume(token.COUNT_MAL)
+	if !p.match(token.COUNT_MAL) {
+		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
+			fmt.Sprintf("%s\nWolltest du vor %s vielleicht einen Punkt setzten?", ddperror.MsgGotExpected(p.previous(), token.COUNT_MAL), count.Token()),
+			count.Token().File,
+		)
+	}
 	tok := p.previous()
 	tok.Type = token.WIEDERHOLE
 	p.consume(token.DOT)
@@ -2048,18 +2053,19 @@ func (p *Parser) parseListType() ddptypes.Type {
 		return ddptypes.Illegal()
 	}
 
-	switch p.previous().Type {
+	if !p.consume(token.LISTE) {
+		// report the error on the LISTE token, but still advance
+		// because there is a valid token afterwards
+		p.advance()
+	}
+	switch p.peekN(-2).Type {
 	case token.BOOLEAN, token.TEXT:
-		p.consume(token.LISTE)
 		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
-		p.consume(token.LISTE)
 		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
-		p.consume(token.LISTE)
 		return ddptypes.List(ddptypes.KOMMAZAHL)
 	case token.BUCHSTABEN:
-		p.consume(token.LISTE)
 		return ddptypes.List(ddptypes.BUCHSTABE)
 	}
 
@@ -2083,7 +2089,11 @@ func (p *Parser) parseReferenceType() (ddptypes.Type, bool) {
 		if p.match(token.LISTE) {
 			return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive), false
 		} else if p.match(token.LISTEN) {
-			p.consume(token.REFERENZ)
+			if !p.consume(token.REFERENZ) {
+				// report the error on the REFERENZ token, but still advance
+				// because there is a valid token afterwards
+				p.advance()
+			}
 			return ddptypes.List(tokenTypeToType(p.peekN(-3).Type).Primitive), true
 		} else if p.match(token.REFERENZ) {
 			return ddptypes.Primitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
