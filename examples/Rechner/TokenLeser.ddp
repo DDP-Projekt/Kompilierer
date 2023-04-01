@@ -1,0 +1,36 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Texte" ein.
+
+Die Text Liste Schlüsselwörter ist eine Liste, die aus "(", ")", "$", "+", "*", "^" besteht.
+
+Die Funktion AlsAusdruck mit dem Parameter ausdruck vom Typ Text, gibt eine Text Liste zurück, macht:
+	Die Text Liste symbole ist eine leere Text Liste.
+	Entferne alle '\r' nach ausdruck. [Windows]
+	Füge "$" an ausdruck an.
+
+	Für jede Zahl i von 1 bis die Länge von ausdruck, mache:
+		Der Buchstabe b ist ausdruck an der Stelle i.
+		Der Text symbol ist b als Text.
+
+		Wenn Schlüsselwörter symbol enthält, füge symbol an symbole an.
+		Wenn aber b eine Zahl ist, dann:
+			Solange i kleiner als die Länge von ausdruck ist und
+			(ausdruck an der Stelle (i plus 1)) eine Zahl ist, mache:
+				Erhöhe i um 1.
+				Füge (ausdruck an der Stelle i) an symbol an.
+			Füge symbol an symbole an.
+		Sonst:
+			Schreibe ("Unzulässiges Symbol: " verkettet mit symbol) auf eine Zeile.
+
+	Gib symbole zurück. 
+Und kann so benutzt werden:
+	"<ausdruck> als Mathematischer Ausdruck",
+	"<ausdruck> als Mathematischen Ausdruck"
+
+
+Die Funktion IstOperator mit dem Parameter symbol vom Typ Text, gibt einen Boolean zurück, macht:
+	Wenn der Index von symbol in Schlüsselwörter größer als 3 ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<symbol> ein Operator ist"

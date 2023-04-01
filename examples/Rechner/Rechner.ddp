@@ -1,0 +1,133 @@
+Binde "TokenLeser" ein.
+Binde "TextKeller" ein.
+Binde "Duden/Eingabe" ein.
+Binde "Duden/Laufzeit" ein.
+
+Die Funktion MachWeiter gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"mach weiter"
+
+Die Text Liste symbole ist eine leere Text Liste.
+Die Zahl symbolIndex ist 1.
+Der Text dasAktuelleSymbol ist "".
+
+Die Funktion SymbolAktualisieren gibt nichts zurück, macht:
+	Wenn symbolIndex gleich die Länge von symbole ist, dann:
+		dasAktuelleSymbol ist "".
+		Verlasse die Funktion.
+	Erhöhe symbolIndex um 1.
+	Speichere symbole an der Stelle symbolIndex in dasAktuelleSymbol.
+Und kann so benutzt werden:
+	"gehe ein Symbol weiter",
+	"Gehe ein Symbol weiter",
+
+Die Funktion OperatorAuswerten gibt nichts zurück, macht:
+	Die Zahl rechterOperand ist das oberste Element vom Keller entfernt als Zahl.
+	Der Text Operator ist das oberste Element vom Keller entfernt.
+	Die Zahl linkerOperand ist das oberste Element vom Keller entfernt als Zahl.
+
+	Wenn Operator gleich "+" ist, dann:
+		Lege ((rechterOperand plus linkerOperand) als Text) auf den Keller.
+	Wenn aber Operator gleich "*" ist, dann:
+		Lege ((rechterOperand mal linkerOperand) als Text) auf den Keller.
+	Wenn aber Operator gleich "^" ist, dann:
+		Lege ((linkerOperand hoch rechterOperand) als Zahl als Text) auf den Keller.
+Und kann so benutzt werden:
+	"Werte den obersten Ausdruck aus",
+	"werte den obersten Ausdruck aus"
+
+Die Funktion RegelnAuswerten gibt einen Boolean zurück, macht:
+	Wenn dasAktuelleSymbol leer ist, gib falsch zurück.
+
+	Der Boolean KLAufOderWert ist wahr, wenn dasAktuelleSymbol gleich "(" ist oder dasAktuelleSymbol eine Zahl ist.
+	Der Boolean DollarVal ist wahr, wenn (das 1. Element des Kellers gleich "$" ist und
+	(das oberste Element des Kellers) eine Zahl ist).
+	Der Boolean ValOpVal ist wahr, wenn (das 2. Element des Kellers) eine Zahl ist und
+	(das 1. Element des Kellers) ein Operator ist und (das oberste Element des Kellers) eine Zahl ist.
+
+	[Regel 1-3]
+	Wenn (das oberste Element des Kellers gleich "$" ist oder
+	das oberste Element des Kellers gleich "(" ist oder
+	(das oberste Element des Kellers) ein Operator ist)
+	und KLAufOderWert,
+		lege dasAktuelleSymbol auf den Keller.
+	[Regel 4]
+	Wenn aber (das 2. Element des Kellers gleich "(" ist und
+	(das 1.Element des Kellers) eine Zahl ist und
+	das oberste Element des Kellers gleich ")" ist) und 
+	(dasAktuelleSymbol gleich ")" ist oder
+	dasAktuelleSymbol ein Operator ist oder
+	dasAktuelleSymbol gleich "$" ist), dann:
+		Entferne das oberste Element vom Keller.
+		Der Text t ist das oberste Element vom Keller entfernt.
+		Entferne das oberste Element vom Keller.
+		Lege t auf den Keller.
+		Gib wahr zurück.
+	[Regel 5]
+	Wenn aber DollarVal und dasAktuelleSymbol gleich "$" ist, dann:
+		Gib falsch zurück.
+	[Regel 6]
+	Wenn aber DollarVal und dasAktuelleSymbol ein Operator ist,
+		lege dasAktuelleSymbol auf den Keller.
+	[Regel 7]
+	Wenn aber (das 1. Element des Kellers gleich "(" ist und
+	(das oberste Element des Kellers) eine Zahl ist) und (
+	dasAktuelleSymbol gleich ")" ist oder
+	dasAktuelleSymbol ein Operator ist),
+		lege dasAktuelleSymbol auf den Keller.
+	[Regel 8]
+	Wenn aber ValOpVal und (dasAktuelleSymbol gleich ")" ist oder dasAktuelleSymbol gleich "$" ist), dann:
+		Werte den obersten Ausdruck aus.
+		Gib wahr zurück.
+	[Regel 9]
+	Wenn aber ValOpVal und dasAktuelleSymbol ein Operator ist, dann:
+		Wenn der Index von dasAktuelleSymbol in Schlüsselwörter kleiner als der Index von (dem 1. Element des Kellers) in Schlüsselwörter ist, dann:
+			Werte den obersten Ausdruck aus.
+			Gib wahr zurück.
+		Sonst lege dasAktuelleSymbol auf den Keller.
+	Sonst:
+		Lege "" auf den Keller.
+		Gib falsch zurück.
+
+	Gehe ein Symbol weiter.
+	Gib wahr zurück.
+Und kann so benutzt werden:
+	[Solange] "die nächste Regel kein Ergebnis erzeugt hat"
+
+
+Die Funktion Berechne mit dem Parameter ausdruck vom Typ Text, gibt eine Zahl zurück, macht:
+	Leere den Keller.
+	Lege "$" auf den Keller.
+
+	Speichere ausdruck als Mathematischer Ausdruck in symbole.
+	symbolIndex ist 0.
+	Gehe ein Symbol weiter.
+
+	Solange die nächste Regel kein Ergebnis erzeugt hat, mach weiter.
+
+	Wenn (das oberste Element des Kellers) eine Zahl ist,
+		gib das oberste Element des Kellers als Zahl zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"das Ergebnis von <ausdruck>"
+
+Die Text Liste Ausdrücke ist eine Liste, die aus
+		"1+2",
+		"2^10+5",
+		"5+2^10",
+        "(2+3*4+4)^2",
+        "(2+3*4+4))*2",
+        "2+3**4",
+        "2^3^2",
+        "2^2*5",
+        "1+(2+(3+(4+(5+6))))",
+        "1+2+3+4+5+6" 
+besteht.
+
+
+Der Alias "der nächsten Zeile" steht für die Funktion Lies_Zeile_Gepuffert.
+Die Text Liste argumente ist die Befehlszeilenargumente.
+Wenn argumente "-test" enthält, für jeden Text ausdruck in Ausdrücke, mache:
+		Schreibe (das Ergebnis von ausdruck) auf eine Zeile.
+Sonst:
+	Solange die Benutzereingabe nicht vorbei ist, Schreibe (das Ergebnis von (der nächsten Zeile)) auf eine Zeile.

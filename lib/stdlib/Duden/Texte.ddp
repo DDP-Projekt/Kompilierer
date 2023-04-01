@@ -1,6 +1,7 @@
 Binde "Duden/Zeichen" ein.
 
 Die Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
+	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
 	Die Zahl index ist 1.
 	Solange (text an der Stelle index) gleich zeichen ist, erhöhe index um 1.
 	Speichere text von index bis (die Länge von text) in text.
@@ -15,6 +16,7 @@ Und kann so benutzt werden:
 
 Die Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist die Länge von text.
+	Wenn index gleich 0 ist, verlasse die Funktion.
 	Solange (text an der Stelle index) gleich zeichen ist, verringere index um 1.
 	Speichere text von 1 bis index in text.
 Und kann so benutzt werden:
