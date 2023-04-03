@@ -86,8 +86,8 @@ func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
-	if existed := r.CurrentTable.InsertVar(decl.Name.Literal, decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Variable '%s' existiert bereits", decl.Name.Literal), decl.Name.File) // variables may only be declared once in the same scope
+	if existed := r.CurrentTable.InsertDecl(decl.Name.Literal, decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Name.File) // variables may only be declared once in the same scope
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
@@ -115,8 +115,10 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
 }
 func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	// check if the variable exists
-	if _, exists := r.CurrentTable.LookupVar(expr.Literal.Literal); !exists {
-		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable oder Funktions-Alias deklariert", expr.Literal.Literal), expr.Literal.File)
+	if _, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
+		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal), expr.Literal.File)
+	} else if !isVar {
+		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal), expr.Literal.File)
 	}
 }
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
@@ -184,8 +186,10 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
 		// check if the variable exists
-		if _, exists := r.CurrentTable.LookupVar(assign.Literal.Literal); !exists {
+		if _, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
 			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal), assign.Literal.File)
+		} else if !isVar {
+			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal), assign.Literal.File)
 		}
 	case *ast.Indexing:
 		r.visit(assign.Lhs)

@@ -20,6 +20,10 @@ func MsgGotExpected(got any, expected ...any) string {
 	}
 }
 
+func MsgNameAlreadyExists(name string) string {
+	return fmt.Sprintf("Der Name %s steht bereits für eine andere Variable oder Funktion", name)
+}
+
 const (
 	MSG_MISSING_RETURN         = "Am Ende einer Funktion, die etwas zurück gibt, muss eine Rückgabe Anweisung stehen"
 	MSG_CHAR_LITERAL_TOO_LARGE = "Ein Buchstaben Literal darf nur einen Buchstaben enthalten"

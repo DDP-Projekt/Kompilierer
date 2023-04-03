@@ -33,6 +33,7 @@ const (
 	SEM_ALIAS_ALREADY_DEFINED                             // the alias already stands for a different function
 	SEM_ALIAS_MUST_BE_GLOBAL                              // a non-global alias declaration was found
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
+	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 )
 
 // type error codes

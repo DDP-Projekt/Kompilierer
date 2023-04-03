@@ -498,12 +498,12 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
-		if existed := globalScope.InsertFunc(p.currentFunction, decl); existed { // insert the name of the current function
-			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal), decl.Tok.File)
+		if existed := globalScope.InsertDecl(p.currentFunction, decl); existed { // insert the name of the current function
+			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Tok.File)
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertVar(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -521,8 +521,8 @@ func (p *Parser) funcDeclaration() ast.Declaration {
 			}
 		}
 	} else {
-		if existed := p.resolver.CurrentTable.InsertFunc(name.Literal, decl); existed { // insert the name of the current function
-			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, fmt.Sprintf("Die Funktion '%s' existiert bereits", decl.Name.Literal), decl.Tok.File)
+		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); existed { // insert the name of the current function
+			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Tok.File)
 		}
 	}
 
@@ -578,11 +578,15 @@ func (p *Parser) aliasDecl() ast.Statement {
 	p.consumeN(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
 	fun := p.previous()
 
-	funDecl, ok := p.resolver.CurrentTable.LookupFunc(fun.Literal)
+	decl, ok, isVar := p.resolver.CurrentTable.LookupDecl(fun.Literal)
 	if !ok {
-		p.err(ddperror.SEM_NAME_UNDEFINED, fun.Range, fmt.Sprintf("Die Funktion %s existiert nicht", fun.Literal), fun.File)
+		p.err(ddperror.SEM_NAME_UNDEFINED, fun.Range, fmt.Sprintf("Der Name %s wurde noch nicht deklariert", fun.Literal), fun.File)
+		return nil
+	} else if isVar {
+		p.err(ddperror.SEM_BAD_NAME_CONTEXT, fun.Range, fmt.Sprintf("Der Name %s steht für eine Variable und nicht für eine Funktion", fun.Literal), fun.File)
 		return nil
 	}
+	funDecl := decl.(*ast.FuncDecl)
 
 	// map function parameters to their type (given to the alias if it is valid)
 	paramTypes := map[string]ddptypes.ParameterType{}
@@ -1000,9 +1004,9 @@ func (p *Parser) forStatement() ast.Statement {
 		}
 		p.consume(token.COMMA)
 		var Body *ast.BlockStmt
-		bodyTable := p.newScope()                       // temporary symbolTable for the loop variable
-		bodyTable.InsertVar(Ident.Literal, initializer) // add the loop variable to the table
-		if p.match(token.MACHE) {                       // body is a block statement
+		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
+		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
+		if p.match(token.MACHE) {                        // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
@@ -1045,9 +1049,9 @@ func (p *Parser) forStatement() ast.Statement {
 		}
 		p.consume(token.COMMA)
 		var Body *ast.BlockStmt
-		bodyTable := p.newScope()                       // temporary symbolTable for the loop variable
-		bodyTable.InsertVar(Ident.Literal, initializer) // add the loop variable to the table
-		if p.match(token.MACHE) {                       // body is a block statement
+		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
+		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
+		if p.match(token.MACHE) {                        // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
