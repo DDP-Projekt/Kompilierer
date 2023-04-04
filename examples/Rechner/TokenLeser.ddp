@@ -2,6 +2,10 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Texte" ein.
 
+Die Funktion MachWeiter gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"mach weiter"
+
 Die Text Liste Schlüsselwörter ist eine Liste, die aus "(", ")", "$", "+", "*", "^" besteht.
 
 Die Funktion AlsAusdruck mit dem Parameter ausdruck vom Typ Text, gibt eine Text Liste zurück, macht:
@@ -20,6 +24,7 @@ Die Funktion AlsAusdruck mit dem Parameter ausdruck vom Typ Text, gibt eine Text
 				Erhöhe i um 1.
 				Füge (ausdruck an der Stelle i) an symbol an.
 			Füge symbol an symbole an.
+		Wenn aber b ein leeres Zeichen ist, mach weiter.
 		Sonst:
 			Schreibe ("Unzulässiges Symbol: " verkettet mit symbol) auf eine Zeile.
 

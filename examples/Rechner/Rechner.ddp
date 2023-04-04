@@ -3,10 +3,6 @@ Binde "TextKeller" ein.
 Binde "Duden/Eingabe" ein.
 Binde "Duden/Laufzeit" ein.
 
-Die Funktion MachWeiter gibt nichts zurück, macht:
-Und kann so benutzt werden:
-	"mach weiter"
-
 Die Text Liste symbole ist eine leere Text Liste.
 Die Zahl symbolIndex ist 1.
 Der Text dasAktuelleSymbol ist "".
@@ -130,4 +126,6 @@ Die Text Liste argumente ist die Befehlszeilenargumente.
 Wenn argumente "-test" enthält, für jeden Text ausdruck in Ausdrücke, mache:
 		Schreibe (das Ergebnis von ausdruck) auf eine Zeile.
 Sonst:
-	Solange die Benutzereingabe nicht vorbei ist, Schreibe (das Ergebnis von (der nächsten Zeile)) auf eine Zeile.
+	Solange die Benutzereingabe nicht vorbei ist, mache:
+		Schreibe ">> ".
+		Schreibe (das Ergebnis von (der nächsten Zeile)) auf eine Zeile.
