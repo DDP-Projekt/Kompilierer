@@ -297,12 +297,12 @@ func (cmd *ParseCommand) Init(args []string) error {
 }
 
 func (cmd *ParseCommand) Run() error {
-	ast, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
+	module, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
 	if err != nil {
 		return err
 	}
 
-	if ast.Faulty {
+	if module.Ast.Faulty {
 		fmt.Println("Der generierte Abstrakte Syntaxbaum ist fehlerhaft")
 	}
 
@@ -311,12 +311,12 @@ func (cmd *ParseCommand) Run() error {
 			return fmt.Errorf("Ausgabedatei konnte nicht geöffnet werden")
 		} else {
 			defer file.Close()
-			if _, err := file.WriteString(ast.String()); err != nil {
+			if _, err := file.WriteString(module.Ast.String()); err != nil {
 				return fmt.Errorf("Ausgabedatei konnte nicht beschrieben werden: %s", err.Error())
 			}
 		}
 	} else {
-		fmt.Println(ast.String())
+		fmt.Println(module.Ast.String())
 	}
 
 	return nil

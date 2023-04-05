@@ -406,6 +406,7 @@ func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) {
 func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) {
 	stmt.Expr.Accept(t)
 }
+func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) {}
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {

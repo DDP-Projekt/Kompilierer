@@ -154,6 +154,14 @@ func (pr *printer) VisitDeclStmt(stmt *DeclStmt) {
 func (pr *printer) VisitExprStmt(stmt *ExprStmt) {
 	pr.parenthesizeNode("ExprStmt", stmt.Expr)
 }
+func (pr *printer) VisitImportStmt(stmt *ImportStmt) {
+	// TODO: pretty print imports
+	nodes := make([]Node, 0)
+	for _, decl := range stmt.Module.PublicDecls {
+		nodes = append(nodes, decl)
+	}
+	pr.parenthesizeNode("ImportStmt", nodes...)
+}
 func (pr *printer) VisitAssignStmt(stmt *AssignStmt) {
 	pr.parenthesizeNode("AssignStmt", stmt.Var, stmt.Rhs)
 }

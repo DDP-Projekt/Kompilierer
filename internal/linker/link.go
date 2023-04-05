@@ -8,7 +8,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/internal/gcc"
 	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddppath"
 )
 
 type Options struct {
@@ -98,9 +98,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 		}
 	}
 
-	libdir := filepath.Join(scanner.DDPPATH, "lib")
-
-	args := append(make([]string, 0), "-o", options.OutputFile, "-O2", "-L"+libdir)
+	args := append(make([]string, 0), "-o", options.OutputFile, "-O2", "-L"+ddppath.Lib)
 
 	// add all librarie-search-paths
 	for k := range link_objects {

@@ -13,8 +13,7 @@ type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
-	Faulty     bool   // set if the ast has any errors (doesn't matter what from which phase they came)
-	File       string // the file from which this ast was produced
+	Faulty     bool // set if the ast has any errors (doesn't matter what from which phase they came)
 }
 
 // invoke the Visitor for each top level statement in the Ast
@@ -74,11 +73,12 @@ type (
 	}
 
 	VarDecl struct {
-		Range   token.Range
-		Comment *token.Token  // optional comment (also contained in ast.Comments)
-		Type    ddptypes.Type // type of the variable
-		Name    token.Token   // identifier name
-		InitVal Expression    // initial value
+		Range    token.Range
+		Comment  *token.Token  // optional comment (also contained in ast.Comments)
+		Type     ddptypes.Type // type of the variable
+		Name     token.Token   // identifier name
+		IsPublic bool          // wether the function is marked with öffentliche
+		InitVal  Expression    // initial value
 	}
 
 	FuncDecl struct {
@@ -86,6 +86,7 @@ type (
 		Comment       *token.Token             // optional comment (also contained in ast.Comments)
 		Tok           token.Token              // Die
 		Name          token.Token              // identifier name
+		IsPublic      bool                     // wether the function is marked with öffentliche
 		ParamNames    []token.Token            // x, y und z
 		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
 		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
@@ -320,6 +321,21 @@ type (
 		Expr Expression
 	}
 
+	// import statement for meta-information in the ast
+	// will be already resolved by the parser
+	ImportStmt struct {
+		Range token.Range
+		// the string literal which specified the filename
+		FileName token.Token
+		// the module that was imported because of this
+		// nil if it does not exist or a similar error occured while importing
+		Module *Module
+		// slice of identifiers which specify
+		// the individual symbols imported
+		// if nil, all symbols are imported
+		ImportedSymbols []token.Token
+	}
+
 	AssignStmt struct {
 		Range token.Range
 		Tok   token.Token
@@ -377,6 +393,7 @@ type (
 func (stmt *BadStmt) String() string      { return "BadStmt" }
 func (stmt *DeclStmt) String() string     { return "DeclStmt" }
 func (stmt *ExprStmt) String() string     { return "ExprStmt" }
+func (stmt *ImportStmt) String() string   { return "ImportStmt" }
 func (stmt *AssignStmt) String() string   { return "AssignStmt" }
 func (stmt *BlockStmt) String() string    { return "BlockStmt" }
 func (stmt *IfStmt) String() string       { return "IfStmt" }
@@ -388,6 +405,7 @@ func (stmt *ReturnStmt) String() string   { return "ReturnStmt" }
 func (stmt *BadStmt) Token() token.Token      { return stmt.Tok }
 func (stmt *DeclStmt) Token() token.Token     { return stmt.Decl.Token() }
 func (stmt *ExprStmt) Token() token.Token     { return stmt.Expr.Token() }
+func (stmt *ImportStmt) Token() token.Token   { return stmt.FileName }
 func (stmt *AssignStmt) Token() token.Token   { return stmt.Tok }
 func (stmt *BlockStmt) Token() token.Token    { return stmt.Colon }
 func (stmt *IfStmt) Token() token.Token       { return stmt.If }
@@ -399,6 +417,7 @@ func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
 func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.Range }
 func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
 func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
+func (stmt *ImportStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *BlockStmt) GetRange() token.Range    { return stmt.Range }
 func (stmt *IfStmt) GetRange() token.Range       { return stmt.Range }
@@ -410,6 +429,7 @@ func (stmt *ReturnStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *BadStmt) Accept(v FullVisitor)      { v.VisitBadStmt(stmt) }
 func (stmt *DeclStmt) Accept(v FullVisitor)     { v.VisitDeclStmt(stmt) }
 func (stmt *ExprStmt) Accept(v FullVisitor)     { v.VisitExprStmt(stmt) }
+func (stmt *ImportStmt) Accept(v FullVisitor)   { v.VisitImportStmt(stmt) }
 func (stmt *AssignStmt) Accept(v FullVisitor)   { v.VisitAssignStmt(stmt) }
 func (stmt *BlockStmt) Accept(v FullVisitor)    { v.VisitBlockStmt(stmt) }
 func (stmt *IfStmt) Accept(v FullVisitor)       { v.VisitIfStmt(stmt) }
@@ -421,6 +441,7 @@ func (stmt *ReturnStmt) Accept(v FullVisitor)   { v.VisitReturnStmt(stmt) }
 func (stmt *BadStmt) statementNode()      {}
 func (stmt *DeclStmt) statementNode()     {}
 func (stmt *ExprStmt) statementNode()     {}
+func (stmt *ImportStmt) statementNode()   {}
 func (stmt *AssignStmt) statementNode()   {}
 func (stmt *BlockStmt) statementNode()    {}
 func (stmt *IfStmt) statementNode()       {}

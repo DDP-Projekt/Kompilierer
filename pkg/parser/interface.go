@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"path/filepath"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
@@ -20,6 +21,11 @@ type Options struct {
 	// Optional scanned token slice
 	// if nil, Source is used
 	Tokens []token.Token
+	// maps modules that have already been passed by their filenames
+	// the the parser may add new imported modules to this map
+	// so that after passing it contains *at least* all modules
+	// that the resulting module depends on
+	Modules map[string]*ast.Module
 	// ErrorHandler used during scanning and parsing
 	// May be nil
 	ErrorHandler ddperror.Handler
@@ -38,6 +44,9 @@ func validateOptions(options *Options) error {
 	if options.Source == nil && options.Tokens == nil && options.FileName == "" {
 		return errors.New("Kein Quellcode gegeben")
 	}
+	if options.Modules == nil {
+		options.Modules = make(map[string]*ast.Module)
+	}
 	if options.ErrorHandler == nil {
 		options.ErrorHandler = ddperror.EmptyHandler
 	}
@@ -46,7 +55,7 @@ func validateOptions(options *Options) error {
 
 // parse the provided ddp-source-code from the given Options
 // if an error occured the resulting Ast is nil
-func Parse(options Options) (*ast.Ast, error) {
+func Parse(options Options) (*ast.Module, error) {
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
@@ -60,10 +69,13 @@ func Parse(options Options) (*ast.Ast, error) {
 		}
 	}
 
-	Ast := New(options.Tokens, options.ErrorHandler).Parse()
+	module := newParser(options.Tokens, options.Modules, options.ErrorHandler).Parse()
 	if options.FileName != "" {
-		Ast.File = options.FileName
+		path, err := filepath.Abs(options.FileName)
+		if err != nil {
+			return nil, err
+		}
+		module.FileName = path
 	}
-	return Ast, nil
-
+	return module, nil
 }

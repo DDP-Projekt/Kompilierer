@@ -1,7 +1,7 @@
 [
 	Die Funktion Schreibe_Zahl schreibt eine gegebene Zahl (p1) in den Standart Output Steam.
 ]
-Die Funktion Schreibe_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück,
+Die öffentliche Funktion Schreibe_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe die Zahl <p1>" oder

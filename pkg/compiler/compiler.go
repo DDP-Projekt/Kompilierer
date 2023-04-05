@@ -5,7 +5,6 @@ import (
 	"io"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
@@ -28,10 +27,11 @@ type funcWrapper struct {
 
 // holds state to compile a DDP AST into llvm ir
 type Compiler struct {
-	ast          *ast.Ast
-	mod          *ir.Module       // the ir module (basically the ir file)
-	errorHandler ddperror.Handler // errors are passed to this function
-	result       *Result          // result of the compilation
+	module                 *ast.Module
+	alreadyCompiledModules map[string]struct{} // set of modules that have already been compiled
+	mod                    *ir.Module          // the ir module (basically the ir file)
+	errorHandler           ddperror.Handler    // errors are passed to this function
+	result                 *Result             // result of the compilation
 
 	cbb              *ir.Block               // current basic block in the ir
 	cf               *ir.Func                // current function
@@ -49,14 +49,15 @@ type Compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
+func New(module *ast.Module, errorHandler ddperror.Handler) *Compiler {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &Compiler{
-		ast:          Ast,
-		mod:          ir.NewModule(),
-		errorHandler: errorHandler,
+		module:                 module,
+		alreadyCompiledModules: make(map[string]struct{}),
+		mod:                    ir.NewModule(),
+		errorHandler:           errorHandler,
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 			Output:       "",
@@ -75,11 +76,11 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
 // otherwise a string representation is returned in result
 func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
-	if c.ast.Faulty {
+	if c.module.Ast.Faulty {
 		return nil, fmt.Errorf("Fehlerhafter Quellcode, Kompilierung abgebrochen")
 	}
 
-	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
+	c.mod.SourceFilename = c.module.FileName // set the module filename (optional metadata)
 
 	c.setup()
 
@@ -92,10 +93,7 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	c.cf = ddpmain               // first function is ddpmain
 	c.cbb = ddpmain.NewBlock("") // first block
 
-	// visit every statement in the AST and compile it
-	for _, stmt := range c.ast.Statements {
-		c.visitNode(stmt)
-	}
+	c.compileModule(c.module, true) // compile the main module
 
 	c.scp = c.exitScope(c.scp) // exit the main scope
 
@@ -136,6 +134,36 @@ func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 func (c *Compiler) comment(comment string, block *ir.Block) {
 	if Comments_Enabled {
 		block.Insts = append(block.Insts, irutil.NewComment(comment))
+	}
+}
+
+// compiles a single module
+func (c *Compiler) compileModule(module *ast.Module, isMainModule bool) {
+	// check if the module was already compiled
+	if _, alreadyCompiled := c.alreadyCompiledModules[module.FileName]; !alreadyCompiled {
+		c.alreadyCompiledModules[module.FileName] = struct{}{}
+	} else {
+		return
+	}
+
+	// add the external dependencies
+	for path, _ := range module.ExternalDependencies {
+		c.result.Dependencies[path] = struct{}{}
+	}
+
+	// add the other dependencies
+	for _, imprt := range module.Imports {
+		c.compileModule(imprt.Module, false)
+	}
+
+	// visit every statement in the modules AST and compile it
+	// in imports we only visit declarations and ignore other top-level statements
+	for _, stmt := range module.Ast.Statements {
+		if _, isDecl := stmt.(*ast.DeclStmt); !isMainModule && isDecl {
+			c.visitNode(stmt)
+		} else {
+			c.visitNode(stmt)
+		}
 	}
 }
 
@@ -283,11 +311,6 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(d) {
 		irFunc.Linkage = enum.LinkageExternal
-		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
-		if err != nil {
-			c.errorHandler(ddperror.Error{File: d.ExternFile.File, Range: d.ExternFile.Range, Msg: err.Error()})
-		}
-		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
@@ -1165,6 +1188,7 @@ func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) {
 	expr, exprTyp := c.evaluate(s.Expr)
 	c.freeNonPrimitive(expr, exprTyp)
 }
+func (c *Compiler) VisitImportStmt(s *ast.ImportStmt) {}
 func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 	rhs, rhsTyp := c.evaluate(s.Rhs) // compile the expression
 
