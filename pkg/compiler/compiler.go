@@ -159,9 +159,9 @@ func (c *Compiler) compileModule(module *ast.Module, isMainModule bool) {
 	// visit every statement in the modules AST and compile it
 	// in imports we only visit declarations and ignore other top-level statements
 	for _, stmt := range module.Ast.Statements {
-		if _, isDecl := stmt.(*ast.DeclStmt); !isMainModule && isDecl {
+		if isMainModule {
 			c.visitNode(stmt)
-		} else {
+		} else if _, isDecl := stmt.(*ast.DeclStmt); isDecl {
 			c.visitNode(stmt)
 		}
 	}
