@@ -1,16 +1,16 @@
-Die Funktion ZufallsKommazahl mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion ZufallsKommazahl mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"eine zufällige Kommazahl zwischen <a> und <b>" oder
 	"einer zufälligen Kommazahl zwischen <a> und <b>"
 
-Die Funktion ZufallsZahl mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück,
+Die öffentliche Funktion ZufallsZahl mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"eine zufällige Zahl zwischen <a> und <b>" oder
 	"einer zufälligen Zahl zwischen <a> und <b>"
 
-Die Funktion ZufallsBoolean mit dem Parameter p vom Typ Kommazahl, gibt einen Boolean zurück,
+Die öffentliche Funktion ZufallsBoolean mit dem Parameter p vom Typ Kommazahl, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"ein Ereignis mit Wahrscheinlichkeit <p> Prozent eingetroffen"

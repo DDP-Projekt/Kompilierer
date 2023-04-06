@@ -3,7 +3,8 @@ package ddperror
 import "fmt"
 
 // generates a error message in the format
-// 		Es wurde ..., ... oder ... erwartet aber ... gefunden
+//
+//	Es wurde ..., ... oder ... erwartet aber ... gefunden
 func MsgGotExpected(got any, expected ...any) string {
 	switch len(expected) {
 	case 0:
@@ -24,8 +25,8 @@ func MsgNameAlreadyExists(name string) string {
 	return fmt.Sprintf("Der Name %s steht bereits für eine andere Variable oder Funktion", name)
 }
 
-func MsgAliasAlreadyExists(funcName string) string {
-	return fmt.Sprintf("Der Alias steht bereits für die Funktion '%s'", funcName)
+func MsgAliasAlreadyExists(alias, funcName string) string {
+	return fmt.Sprintf("Der Alias %s steht bereits für die Funktion '%s'", alias, funcName)
 }
 
 const (

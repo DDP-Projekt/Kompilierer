@@ -1,94 +1,94 @@
-Die Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
-Die Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
 
-Die Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert größer als max ist, gib max zurück.
 	Wenn wert kleiner als min ist, gib min zurück.
 	Gib wert zurück.
 Und kann so benutzt werden:
 	"<wert> zwischen <min> und <max>"
 
-Die Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
 	Gib 0 zurück.
 Und kann so benutzt werden:
 	"das Vorzeichen von <wert>"
 
-Die Funktion floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert minus (wert minus wert als Zahl) zurück.
 Und kann so benutzt werden:
 	"<wert> nach unten gerundet"
 
-Die Funktion ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert plus (1 minus (wert minus wert als Zahl)) zurück.
 Und kann so benutzt werden:
 	"<wert> nach oben gerundet"
 
-Die Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib (wert als Zahl) als Kommazahl zurück.
 Und kann so benutzt werden:
 	"<wert> trunkiert"
 
 [ Trigonometrische Funktionen ]
-Die Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Sinus von <v>" oder 
 	"den Sinus von <v>"
 
-Die Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Kosinus von <v>" oder
 	"den Kosinus von <v>"
 
-Die Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Tangens von <v>" oder
 	"den Tangens von <v>"
 
-Die Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkussinus von <v>" oder
 	"den Arkussinus von <v>"
 
-Die Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkuskosinus von <v>" oder
 	"den Arkuskosinus von <v>"
 
-Die Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkustangens von <v>" oder 
 	"den Arkustangens von <v>"
 
-Die Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelsinus von <v>" oder
 	"den Hyperbelsinus von <v>"
 
-Die Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelkosinus von <v>" oder
 	"den Hyperbelkosinus von <v>"
 
-Die Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbeltangens von <v>" oder
@@ -98,7 +98,7 @@ und kann so benutzt werden:
 	Eine Funktion, die den größten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
-Die Funktion groesster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion groesster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Die Zahl t ist 0.
 	Solange b ungleich 0 ist, mache:
 		Speichere b in t.
@@ -112,7 +112,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die den kleinsten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
-Die Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Gib (der Betrag von (a mal b) durch (der größte gemeinsame Teiler von a und b)) als Zahl zurück.
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
@@ -121,7 +121,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die eine Zahlen Liste von allen Primfaktoren der Zahl <z> gibt.  
 	Zeitkomplexität: O(sqrt(n))
 ]
-Die Funktion Primfaktorzerlegung mit dem Parameter z vom Typ Zahl, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche Funktion Primfaktorzerlegung mit dem Parameter z vom Typ Zahl, gibt eine Zahlen Liste zurück, macht:
 	Die Zahlen Liste faktoren ist eine leere Zahlen Liste.
 
 	Solange z modulo 2 gleich 0 ist, mache:
@@ -147,7 +147,7 @@ Und kann so benutzt werden:
 	Gibt eine Zahlen Liste von alle Zahlen, die durch <z> geteilt werden können.
 	Zeitkomplexität: O(n)
 ]
-Die Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt eine Zahlen Liste zurück, macht:
 	Die Zahlen Liste teiler ist eine leere Zahlen Liste.
 
 	Für jede Zahl i von z bis 1 mit Schrittgröße -1, mache:

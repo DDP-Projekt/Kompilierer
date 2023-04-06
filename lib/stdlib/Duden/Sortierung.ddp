@@ -12,7 +12,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert und die sortierte Liste zurück gibt.
 	Zeitkomplexität: O(n * log(n))
 ]
-Die Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
 	Wenn die Länge von liste kleiner als, oder 1 ist, gib liste zurück. [End-Bedingung der Rekursion]
 	
 	Die Zahl Teiler ist 0. [für später]

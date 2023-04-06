@@ -1,7 +1,7 @@
 [
 	Gibt -9223372036854775807 zurück.
 ]
-Die Funktion MinZahl gibt eine Zahl zurück, macht:
+Die öffentliche Funktion MinZahl gibt eine Zahl zurück, macht:
 	Gib -9223372036854775807 zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Zahl"
@@ -9,7 +9,7 @@ Und kann so benutzt werden:
 [
 	Gibt 9223372036854775807 zurück.
 ]
-Die Funktion MaxZahl gibt eine Zahl zurück, macht:
+Die öffentliche Funktion MaxZahl gibt eine Zahl zurück, macht:
 	Gib 9223372036854775807 zurück.
 Und kann so benutzt werden:
 	"der maximale Wert einer Zahl"
@@ -18,7 +18,7 @@ Und kann so benutzt werden:
 	Gibt 4,9406564584124654 * 10^-323,6 zurück.
 	ACHTUNG: nicht der echte minimale Wert wegen Rundungsfehler
 ]
-Die Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
 	Gib 4,9406564584124654 mal 10 hoch -323,6[4] zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Kommazahl"
@@ -27,7 +27,7 @@ Und kann so benutzt werden:
 	Gibt 1,79769313486231 * 10^308 zurück.
 	ACHTUNG: nicht der echte maximale Wert wegen Rundungsfehler
 ]
-Die Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
 	Gib 1,79769313486231[57] mal 10 hoch 308 zurück.
 Und kann so benutzt werden:
 	"der maximale Wert einer Kommazahl"
@@ -35,7 +35,7 @@ Und kann so benutzt werden:
 [
 	Gibt Unendlich (1 durch 0) zurück.
 ]
-Die Funktion Unendlich gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Unendlich gibt eine Kommazahl zurück, macht:
 	Gib 1 durch 0 zurück.
 Und kann so benutzt werden:
 	"Unendlich"
@@ -43,7 +43,7 @@ Und kann so benutzt werden:
 [
 	Gibt NaN (0 durch 0) zurück.
 ]
-Die Funktion KeineZahl gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion KeineZahl gibt eine Kommazahl zurück, macht:
 	Gib 0,0 durch 0,0 zurück.
 Und kann so benutzt werden:
 	"keine Zahl"

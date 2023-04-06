@@ -216,7 +216,9 @@ func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) {
 	h.visit(stmt.Expr)
 }
 func (h *helperVisitor) VisitImportStmt(stmt *ImportStmt) {
-	// TODO: decide what to do here
+	for _, imprt := range stmt.Module.Imports {
+		h.visit(imprt)
+	}
 }
 func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) {
 	if vis, ok := h.actualVisitor.(AssignStmtVisitor); ok {

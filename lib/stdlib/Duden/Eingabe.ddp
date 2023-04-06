@@ -1,4 +1,5 @@
 Binde "Duden/Texte" ein.
+Binde "Duden/Zeichen" ein.
 
 [wird von Extern_Lies_Buchstabe gesetzt falls während des Lesens EOF auftrat]
 Der Boolean war_eof ist falsch.
@@ -11,7 +12,7 @@ Der Boolean war_eof ist falsch.
 [
 	Gibt wahr zurück wenn ein EOF Zeichen gelesen wurde.
 ]
-Die Funktion War_EOF gibt einen Boolean zurück, macht:
+Die öffentliche Funktion War_EOF gibt einen Boolean zurück, macht:
 	Gib war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe zu Ende gewesen ist"
@@ -19,7 +20,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn noch kein EOF Zeichen gelesen wurde.
 ]
-Die Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
 	Gib nicht war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe nicht vorbei ist"
@@ -27,13 +28,11 @@ Und kann so benutzt werden:
 [
 	Setzt die interne war_eof variable auf falsch.
 ]
-Die Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
+Die öffentliche Funktion Benutzereingabe_Zuruecksetzten gibt nichts zurück, macht:
 	war_eof ist falsch.
 Und kann so benutzt werden:
 	"setzte die Benutzereingabe zurück" oder
-	"setzte die Benutzereingabe zurueck" oder
-	"Setzte die Benutzereingabe zurück" oder
-	"Setzte die Benutzereingabe zurueck"
+	"Setzte die Benutzereingabe zurück"
 
 
 [
@@ -70,7 +69,7 @@ Der Buchstabe Gepufferter_Buchstabe ist 0 als Buchstabe.
 	und ein einzelnes darrauffolgendes Leerzeichen in
 	Gepufferter_Buchstabe gespeichert
 ]
-Die Funktion Lies_Token_in_Puffer gibt einen Text zurück, macht:
+Die öffentliche Funktion Lies_Token_in_Puffer gibt einen Text zurück, macht:
 	[vorangehende Leerstellen überspringen]
 	Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
 	Solange Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
@@ -99,7 +98,7 @@ Und kann so benutzt werden:
 	wird diese zurückgegeben und Eingabe_Puffer geleert.
 	Ansonsten wird die nächste Eingabe direkt zurückgegeben.
 ]
-Die Funktion Lies_Token_Gepuffert gibt einen Text zurück, macht:
+Die öffentliche Funktion Lies_Token_Gepuffert gibt einen Text zurück, macht:
 	Wenn die Länge von Eingabe_Puffer größer als 0 ist, dann:
 		Der Text Rückgabe ist Eingabe_Puffer.
 		Eingabe_Puffer ist "".
@@ -118,7 +117,7 @@ Und kann so benutzt werden:
 
 	Vorher sollte Hat_Zahl überprüft werden.
 ]
-Die Funktion Lies_Zahl_Gepuffert gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Lies_Zahl_Gepuffert gibt eine Zahl zurück, macht:
 	Gib den nächsten Text als Zahl zurück.
 Und kann so benutzt werden:
 	"die nächste Zahl" oder
@@ -129,7 +128,7 @@ Und kann so benutzt werden:
 
 	Vorher sollte Hat_Zahl überprüft werden.
 ]
-Die Funktion Lies_Kommazahl_Gepuffert gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Lies_Kommazahl_Gepuffert gibt eine Kommazahl zurück, macht:
 	Gib den nächsten Text als Kommazahl zurück.
 Und kann so benutzt werden:
 	"die nächste Kommazahl" oder
@@ -145,7 +144,7 @@ Und kann so benutzt werden:
 
 	Ansonsten wird das nächste Zeichen direkt gelesen.
 ]
-Die Funktion Lies_Buchstabe_Gepuffert gibt einen Buchstaben zurück, macht:
+Die öffentliche Funktion Lies_Buchstabe_Gepuffert gibt einen Buchstaben zurück, macht:
 	Wenn die Länge von Eingabe_Puffer ungleich 0 ist, dann:
 		Der Buchstabe Rückgabe ist Eingabe_Puffer an der Stelle 1.
 		Speichere Eingabe_Puffer von 2 bis (die Länge von Eingabe_Puffer) in Eingabe_Puffer.
@@ -170,7 +169,7 @@ Und kann so benutzt werden:
 	'\n' bzw. EOF wird dabei nicht nicht in einen Puffer gelegt
 	sondern verworfen.
 ]
-Die Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
+Die öffentliche Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
 	Der Text zeile ist "".
 	Wenn die Länge von Eingabe_Puffer ungleich 0 ist, dann:
 		Füge Eingabe_Puffer an zeile an.
@@ -196,7 +195,7 @@ Und kann so benutzt werden:
 	Gibt an ob etwas mit einer der obigen Funktionen
 	gelesen werden kann.
 ]
-Die Funktion Hat_Token gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Token gibt einen Boolean zurück, macht:
 	Wenn die Länge von Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
 	Speichere den nächsten Text in Eingabe_Puffer.
@@ -208,7 +207,7 @@ Und kann so benutzt werden:
 	Gibt an ob die nächste Eingabe (direkt oder im Puffer)
 	zu einer Zahl umgewandelt werden kann.
 ]
-Die Funktion Hat_Zahl gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Zahl gibt einen Boolean zurück, macht:
 	Gib eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe eine Zahl" oder
@@ -218,7 +217,7 @@ Und kann so benutzt werden:
 	Gibt an ob ein Buchstabe (direkt oder aus dem Puffer)
 	gelesen werden kann.
 ]
-Die Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
 	Gib nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
 Und kann so benutzt werden:
 	"ein Buchstabe vorhanden ist"

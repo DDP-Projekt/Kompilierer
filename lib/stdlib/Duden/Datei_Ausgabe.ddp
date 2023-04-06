@@ -2,7 +2,7 @@
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
 	Falls möglich Fehler auftreten, werden diese in fehler gespeichert. 
 ]
-Die Funktion Schreibe_Text_Datei mit den Parametern Pfad, text und fehler vom Typ Text, Text und Text Referenz, gibt eine Zahl zurück,
+Die öffentliche Funktion Schreibe_Text_Datei mit den Parametern Pfad, text und fehler vom Typ Text, Text und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Schreibe den Text <text> in die Datei <Pfad> und speichere einen möglichen Fehler in <fehler>" oder
