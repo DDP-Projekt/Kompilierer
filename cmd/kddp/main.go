@@ -13,7 +13,7 @@ func main() {
 	// run sub-commands like build or help
 	if err := runCommands(); err != nil {
 		if err.Error() != "" {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
+			fmt.Fprintf(os.Stderr, "\n%s\n", err)
 		}
 		os.Exit(1)
 	}

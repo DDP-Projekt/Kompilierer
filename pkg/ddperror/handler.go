@@ -3,6 +3,7 @@ package ddperror
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 )
@@ -15,7 +16,7 @@ func EmptyHandler(Error) {}
 // creates a basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
 	return func(err Error) {
-		fmt.Fprintf(w, "%s: %s", makeErrorHeader(err), err.Msg)
+		fmt.Fprintf(w, "%s: %s", makeErrorHeader(err, ""), err.Msg)
 	}
 }
 
@@ -24,13 +25,13 @@ func MakeBasicHandler(w io.Writer) Handler {
 // and file is the filename where src comes from
 func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 	lines := strings.Split(string(src), "\n")
-	basicHandler := MakeBasicHandler(w)
+	file = filepath.Clean(file)
 
 	return func(err Error) {
 		// we don't have the text of included files
 		// so we handle them with the basic error handler
-		if err.File != file {
-			basicHandler(err)
+		if filepath.Clean(err.File) != file {
+			fmt.Fprintf(w, "%s: %s", makeErrorHeader(err, file), err.Msg)
 			return
 		}
 
@@ -51,7 +52,7 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 
 		rnge := err.Range
 		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", uMax(rnge.Start.Line, rnge.End.Line)))
-		fmt.Fprintf(w, "%s\n\n", makeErrorHeader(err))
+		fmt.Fprintf(w, "%s\n\n", makeErrorHeader(err, filepath.Dir(file)))
 
 		for lineIndex := rnge.Start.Line - 1; lineIndex < rnge.End.Line; lineIndex++ {
 			replaceAndCount := func(slice []rune) int {
@@ -109,11 +110,16 @@ func MakePanicHandler() Handler {
 
 // helper to create the common error header of all handlers
 // prints the error type, code and place
-func makeErrorHeader(err Error) string {
+func makeErrorHeader(err Error, file string) string {
+	if path, e := filepath.Rel(file, err.File); e != nil {
+		file = err.File
+	} else {
+		file = path
+	}
 	return fmt.Sprintf("%s Fehler (%04d) in %s (Z: %d, S: %d)",
 		err.Code.ErrorPrefix(),
 		err.Code,
-		err.File,
+		file,
 		err.Range.Start.Line,
 		err.Range.Start.Column,
 	)

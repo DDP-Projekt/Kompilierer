@@ -80,7 +80,7 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 		return nil, fmt.Errorf("Fehlerhafter Quellcode, Kompilierung abgebrochen")
 	}
 
-	c.mod.SourceFilename = c.module.FileName // set the module filename (optional metadata)
+	c.mod.SourceFilename = c.module.GetIncludeFilename() // set the module filename (optional metadata)
 
 	c.setup()
 

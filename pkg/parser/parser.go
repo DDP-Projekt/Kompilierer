@@ -193,12 +193,19 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		// add the module to the list and to the importStmt
 		// or report the error
 		if err != nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath, err.Error()), importStmt.FileName.File)
+			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()), importStmt.FileName.File)
 			return // return early on error
 		} else {
+			importStmt.Module.FileNameToken = &importStmt.FileName
 			p.predefinedModules[inclPath] = importStmt.Module
 		}
 	} else { // we already included the module
+		// circular import error
+		if module == nil {
+			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"), importStmt.FileName.File)
+			return // return early on error
+		}
+
 		importStmt.Module = module
 	}
 

@@ -71,7 +71,7 @@ func (code Code) IsTypeError() bool {
 // Syntax, Semantischer, Typ or nothing for MISC
 func (code Code) ErrorPrefix() string {
 	if code.IsMiscError() {
-		return ""
+		return "Sonstiger"
 	} else if code.IsSyntaxError() {
 		return "Syntax"
 	} else if code.IsSemanticError() {

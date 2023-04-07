@@ -190,7 +190,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if len(stmt.ImportedSymbols) == 0 {
 		for name, decl := range stmt.Module.PublicDecls {
 			if existed := r.CurrentTable.InsertDecl(name, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.FileName), stmt.FileName.File)
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.GetIncludeFilename()), stmt.FileName.File)
 			}
 		}
 		return
