@@ -42,16 +42,16 @@ Und kann so benutzt werden:
 Die Funktion Extern_Lies_Buchstabe mit dem Parameter war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"_nächstes_Zeichen <war_eof>"
+	"das nächste Zeichen mit <war_eof> aktualisiert"
 
 [
 	Besserer Alias für Extern_Lies_Buchstabe
 	um nicht immer war_eof übergeben zu müssen.
 ]
 Die Funktion Lies_Buchstabe_Roh gibt einen Buchstaben zurück, macht:
-	Gib _nächstes_Zeichen war_eof zurück.
+	Gib das nächste Zeichen mit war_eof aktualisiert zurück.
 Und kann so benutzt werden:
-	"_nächstes_Zeichen"
+	"das nächste Zeichen aus der Standardeingabe"
 
 
 [Puffer für eine einzelne Eingabe ohne Leerzeichen]
@@ -71,16 +71,16 @@ Der Buchstabe Gepufferter_Buchstabe ist 0 als Buchstabe.
 ]
 Die öffentliche Funktion Lies_Token_in_Puffer gibt einen Text zurück, macht:
 	[vorangehende Leerstellen überspringen]
-	Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+	Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 	Solange Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist, mache:
 		Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
-		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+		Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 
 	[Text bis Leerstelle Lesen]
 	Der Text token ist "".
 	Solange nicht (Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
 		Speichere token verkettet mit Gepufferter_Buchstabe in token.
-		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+		Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 
 	Gib token zurück.
 Und kann so benutzt werden:
@@ -155,7 +155,7 @@ Die öffentliche Funktion Lies_Buchstabe_Gepuffert gibt einen Buchstaben zurück
 		Speichere 0 als Buchstabe in Gepufferter_Buchstabe.
 		Gib Rückgabe zurück.
 
-	Gib _nächstes_Zeichen zurück.
+	Gib das nächste Zeichen aus der Standardeingabe zurück.
 Und kann so benutzt werden:
 	"der nächste Buchstabe" oder
 	"der naechste Buchstabe" oder
@@ -175,15 +175,15 @@ Die öffentliche Funktion Lies_Zeile_Gepuffert gibt einen Text zurück, macht:
 		Füge Eingabe_Puffer an zeile an.
 		Eingabe_Puffer ist "".
 		Wenn Gepufferter_Buchstabe als Zahl ungleich 0 ist, Füge Gepufferter_Buchstabe an zeile an.
-		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+		Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 	Sonst:
 		Solange Gepufferter_Buchstabe ungleich '\n' ist und (Gepufferter_Buchstabe ein Leerzeichen ist oder Gepufferter_Buchstabe ein Kontrollzeichen ist), mache:
 			Wenn die Benutzereingabe zu Ende gewesen ist, gib "" zurück.
-			Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+			Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 
 	Solange Gepufferter_Buchstabe ungleich '\n' ist und die Benutzereingabe nicht vorbei ist, mache:
 		Speichere zeile verkettet mit Gepufferter_Buchstabe in zeile.
-		Speichere _nächstes_Zeichen in Gepufferter_Buchstabe.
+		Speichere das nächste Zeichen aus der Standardeingabe in Gepufferter_Buchstabe.
 
 	Speichere 0 als Buchstabe in Gepufferter_Buchstabe.
 	Gib zeile zurück.
@@ -210,8 +210,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Hat_Zahl gibt einen Boolean zurück, macht:
 	Gib eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
-	"die nächste Eingabe eine Zahl" oder
-	"die naechste Eingabe eine Zahl"
+	"die nächste Eingabe eine Zahl ist" oder
+	"die naechste Eingabe eine Zahl ist"
 
 [
 	Gibt an ob ein Buchstabe (direkt oder aus dem Puffer)
