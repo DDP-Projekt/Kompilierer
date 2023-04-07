@@ -448,6 +448,11 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 	name := p.previous()
 
+	// early error report if the name is already used
+	if _, existed, _ := p.resolver.CurrentTable.LookupDecl(name.Literal); existed { // insert the name of the current function
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal), name.File)
+	}
+
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
 	var paramNames []token.Token = nil
@@ -578,15 +583,15 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				perr(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten", v.File)
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten", v.File)
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
-					perr(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, *fun), v.File)
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, *fun), v.File)
 				} else { // the alias is valid so we append it
 					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: paramTypesMap})
 				}
 			} else {
-				perr(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", v.File)
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", v.File)
 			}
 		}
 	}
@@ -630,9 +635,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
-		if existed := globalScope.InsertDecl(p.currentFunction, decl); existed { // insert the name of the current function
-			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Tok.File)
-		} else if decl.IsPublic {
+		// insert the name of the current function
+		if existed := globalScope.InsertDecl(p.currentFunction, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name.Literal] = decl
 		}
 		// add the parameters to the table
@@ -655,9 +659,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			}
 		}
 	} else { // the function is defined in an extern file
-		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); existed { // insert the name of the current function
-			p.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Tok.File)
-		} else if decl.IsPublic {
+		// insert the name of the current function
+		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name.Literal] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration

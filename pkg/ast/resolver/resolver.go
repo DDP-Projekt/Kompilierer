@@ -199,10 +199,10 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	for _, name := range stmt.ImportedSymbols {
 		if decl, ok := stmt.Module.PublicDecls[name.Literal]; ok {
 			if existed := r.CurrentTable.InsertDecl(name.Literal, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, stmt.FileName.Literal), name.File)
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, ast.TrimStringLit(stmt.FileName)), name.File)
 			}
 		} else {
-			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, stmt.FileName.Literal), stmt.FileName.File)
+			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)), stmt.FileName.File)
 		}
 	}
 }
