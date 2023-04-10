@@ -215,8 +215,8 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	addAliases := func(aliases []ast.FuncAlias, errRange token.Range) {
 		// add all the aliases
 		for _, alias := range aliases {
-			if funcName := p.aliasExists(alias.Tokens); funcName != nil {
-				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.Original.Literal, *funcName), importStmt.FileName.File)
+			if fun := p.aliasExists(alias.Tokens); fun != nil {
+				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.Original.Literal, fun.Name()), importStmt.FileName.File)
 			} else {
 				p.funcAliases = append(p.funcAliases, alias)
 			}
@@ -359,6 +359,9 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		comment = nil
 	}
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	if isPublic && p.resolver.CurrentTable.Enclosing != nil {
+		p.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, p.peekN(startDepth+1).Range, "Nur globale Variablen können öffentlich sein", begin.File)
+	}
 	p.decrease()
 	typ := p.parseType()
 
@@ -404,12 +407,13 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		Range:    token.NewRange(begin, p.previous()),
 		Comment:  comment,
 		Type:     typ,
-		Name:     name,
+		NameTok:  name,
 		IsPublic: isPublic,
+		IsGlobal: p.resolver.CurrentTable.Enclosing == nil,
 		InitVal:  expr,
 	}
-	if _, alreadyExists := p.module.PublicDecls[decl.Name.Literal]; decl.IsPublic && !alreadyExists {
-		p.module.PublicDecls[decl.Name.Literal] = decl
+	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		p.module.PublicDecls[decl.Name()] = decl
 	}
 	return decl
 }
@@ -586,9 +590,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten", v.File)
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, *fun), v.File)
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, fun.Name()), v.File)
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: name.Literal, Args: paramTypesMap})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: nil, Args: paramTypesMap})
 				}
 			} else {
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", v.File)
@@ -610,13 +614,11 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	}
 
-	p.funcAliases = append(p.funcAliases, funcAliases...)
-
 	decl := &ast.FuncDecl{
 		Range:         token.NewRange(begin, p.previous()),
 		Comment:       comment,
 		Tok:           begin,
-		Name:          name,
+		NameTok:       name,
 		IsPublic:      isPublic,
 		ParamNames:    paramNames,
 		ParamTypes:    paramTypes,
@@ -626,6 +628,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		ExternFile:    definedIn,
 		Aliases:       funcAliases,
 	}
+
+	for i := range funcAliases {
+		funcAliases[i].Func = decl
+	}
+
+	p.funcAliases = append(p.funcAliases, funcAliases...)
 
 	// parse the body after the aliases to enable recursion
 	var body *ast.BlockStmt = nil
@@ -637,11 +645,11 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		globalScope := bodyTable.Enclosing
 		// insert the name of the current function
 		if existed := globalScope.InsertDecl(p.currentFunction, decl); !existed && decl.IsPublic {
-			p.module.PublicDecls[decl.Name.Literal] = decl
+			p.module.PublicDecls[decl.Name()] = decl
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{Name: paramNames[i], Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -661,7 +669,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	} else { // the function is defined in an extern file
 		// insert the name of the current function
 		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
-			p.module.PublicDecls[decl.Name.Literal] = decl
+			p.module.PublicDecls[decl.Name()] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration
 	}
@@ -701,11 +709,11 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []d
 }
 
 // helper to check if an alias already exists for a function
-// returns functions name or nil
-func (p *parser) aliasExists(alias []token.Token) *string {
+// returns functions declaration or nil
+func (p *parser) aliasExists(alias []token.Token) *ast.FuncDecl {
 	for i := range p.funcAliases {
 		if slicesEqual(alias, p.funcAliases[i].Tokens, tokenEqual) {
-			return &p.funcAliases[i].Func
+			return p.funcAliases[i].Func
 		}
 	}
 	return nil
@@ -742,9 +750,9 @@ func (p *parser) aliasDecl() ast.Statement {
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", aliasTok.File)
 	} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
 		if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
-			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, *fun), aliasTok.File)
+			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, fun.Name()), aliasTok.File)
 		} else { // the alias is valid so we append it
-			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl.Name.Literal, Args: paramTypes}
+			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl, Args: paramTypes}
 		}
 	} else {
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten", aliasTok.File)
@@ -1174,10 +1182,12 @@ func (p *parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(TypeTok),
 				End:   from.GetRange().End,
 			},
-			Comment: iteratorComment,
-			Type:    Typ,
-			Name:    Ident,
-			InitVal: from,
+			Comment:  iteratorComment,
+			Type:     Typ,
+			NameTok:  Ident,
+			IsPublic: false,
+			IsGlobal: false,
+			InitVal:  from,
 		}
 		p.consume(token.BIS)
 		to := p.expression()                            // end of the counter
@@ -1227,9 +1237,11 @@ func (p *parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(TypeTok),
 				End:   In.GetRange().End,
 			},
-			Type:    Typ,
-			Name:    Ident,
-			InitVal: In,
+			Type:     Typ,
+			NameTok:  Ident,
+			IsPublic: false,
+			IsGlobal: false,
+			InitVal:  In,
 		}
 		p.consume(token.COMMA)
 		var Body *ast.BlockStmt
@@ -2077,7 +2089,8 @@ outer:
 			return &ast.FuncCall{
 				Range: token.NewRange(p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
-				Name:  matchedAliases[i].alias.Func,
+				Name:  matchedAliases[i].alias.Func.Name(),
+				Func:  matchedAliases[i].alias.Func,
 				Args:  args,
 			}
 		}
@@ -2096,7 +2109,8 @@ outer:
 	return &ast.FuncCall{
 		Range: token.NewRange(p.tokens[start], p.previous()),
 		Tok:   p.tokens[start],
-		Name:  mostFitting.alias.Func,
+		Name:  mostFitting.alias.Func.Name(),
+		Func:  mostFitting.alias.Func,
 		Args:  args,
 	}
 }

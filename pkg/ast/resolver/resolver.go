@@ -86,8 +86,8 @@ func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
-	if existed := r.CurrentTable.InsertDecl(decl.Name.Literal, decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.Name.Range, ddperror.MsgNameAlreadyExists(decl.Name.Literal), decl.Name.File) // variables may only be declared once in the same scope
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name()), decl.NameTok.File) // variables may only be declared once in the same scope
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
@@ -115,10 +115,12 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
 }
 func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	// check if the variable exists
-	if _, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
+	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
 		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal), expr.Literal.File)
 	} else if !isVar {
 		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal), expr.Literal.File)
+	} else { // set the reference to the declaration
+		expr.Declaration = decl.(*ast.VarDecl)
 	}
 }
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
@@ -210,10 +212,12 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
 		// check if the variable exists
-		if _, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
+		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
 			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal), assign.Literal.File)
 		} else if !isVar {
 			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal), assign.Literal.File)
+		} else { // set the reference to the declaration
+			assign.Declaration = varDecl.(*ast.VarDecl)
 		}
 	case *ast.Indexing:
 		r.visit(assign.Lhs)
@@ -248,19 +252,21 @@ func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) {
 }
 func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) {
 	r.setScope(stmt.Body.Symbols)
-	// r.visit(stmt.Initializer)
+	// only visit the InitVal because the variable is already in the scope
+	r.visit(stmt.Initializer.InitVal)
 	r.visit(stmt.To)
 	if stmt.StepSize != nil {
 		r.visit(stmt.StepSize)
 	}
-	// r.visit(stmt.Body)
+	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
 	r.exitScope()
 }
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	r.setScope(stmt.Body.Symbols)
-	// r.visit(stmt.Initializer) // also visits stmt.In
+	// only visit the InitVal because the variable is already in the scope
+	r.visit(stmt.Initializer.InitVal)
 	r.visit(stmt.In)
-	// r.visit(stmt.Body)
+	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
 	r.exitScope()
 }
 func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {

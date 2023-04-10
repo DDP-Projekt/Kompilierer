@@ -66,14 +66,14 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
-	msg := fmt.Sprintf("VarDecl[%s]", decl.Name.Literal)
+	msg := fmt.Sprintf("VarDecl[%s]", decl.Name())
 	if decl.Comment != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
 	}
 	pr.parenthesizeNode(msg, decl.InitVal)
 }
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
-	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %v, %s]", decl.Name.Literal, literals(decl.ParamNames), decl.ParamTypes, commentLiterals(decl.ParamComments), decl.Type)
+	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %v, %s]", decl.Name(), literals(decl.ParamNames), decl.ParamTypes, commentLiterals(decl.ParamComments), decl.Type)
 	if IsExternFunc(decl) {
 		msg += " Extern"
 	}

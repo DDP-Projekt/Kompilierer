@@ -3,8 +3,10 @@ package compiler
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
@@ -27,7 +29,8 @@ type funcWrapper struct {
 
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
-	module                 *ast.Module
+	mainModule             *ast.Module         // the module that was passed in to compile
+	currentModule          *ast.Module         // the module that is currently being compiled
 	alreadyCompiledModules map[string]struct{} // set of modules that have already been compiled
 	mod                    *ir.Module          // the ir module (basically the ir file)
 	errorHandler           ddperror.Handler    // errors are passed to this function
@@ -40,6 +43,7 @@ type compiler struct {
 	functions        map[string]*funcWrapper // all the global functions
 	latestReturn     value.Value             // return of the latest evaluated expression (in the ir)
 	latestReturnType ddpIrType               // the type of latestReturn
+	curModulePrefix  string                  // the current prefix for private functions and variables
 
 	// all the type definitions of inbuilt types used by the compiler
 	void                                                              *ddpIrVoidType
@@ -54,7 +58,8 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &compiler{
-		module:                 module,
+		mainModule:             module,
+		currentModule:          module,
 		alreadyCompiledModules: make(map[string]struct{}),
 		mod:                    ir.NewModule(),
 		errorHandler:           errorHandler,
@@ -75,12 +80,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
-	// the ast must be valid (and should have been resolved and typechecked beforehand)
-	if c.module.Ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Quellcode, Kompilierung abgebrochen")
-	}
-
-	c.mod.SourceFilename = c.module.GetIncludeFilename() // set the module filename (optional metadata)
+	c.mod.SourceFilename = c.mainModule.GetIncludeFilename() // set the module filename (optional metadata)
 
 	c.setup()
 
@@ -93,7 +93,10 @@ func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
 	c.cf = ddpmain               // first function is ddpmain
 	c.cbb = ddpmain.NewBlock("") // first block
 
-	c.compileModule(c.module, true) // compile the main module
+	// compile the main module and its imports recursively
+	if err := c.compileModule(c.mainModule, true); err != nil {
+		return nil, err
+	}
 
 	c.scp = c.exitScope(c.scp) // exit the main scope
 
@@ -105,6 +108,84 @@ func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
 	} else {
 		c.result.Output = c.mod.String()
 		return c.result, nil // return the module as string
+	}
+}
+
+// recursively compiles a single module and its imports
+func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
+	// the ast must be valid (and should have been resolved and typechecked beforehand)
+	if c.mainModule.Ast.Faulty {
+		return fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", module.GetIncludeFilename())
+	}
+
+	// check if the module was already compiled
+	if _, alreadyCompiled := c.alreadyCompiledModules[module.FileName]; !alreadyCompiled {
+		c.alreadyCompiledModules[module.FileName] = struct{}{} // add the module to the set
+	} else {
+		return nil // break the recursion if the module was already compiled
+	}
+
+	// add the external dependencies
+	for path := range module.ExternalDependencies {
+		c.result.Dependencies[path] = struct{}{}
+	}
+
+	// recursively add the other dependencies
+	for _, imprt := range module.Imports {
+		// set the correct module for nodes that need information about their module
+		cmod := c.currentModule
+		c.currentModule = imprt.Module
+		// compile the imported module
+		if err := c.compileModule(imprt.Module, false); err != nil {
+			return err
+		}
+		// restore the module
+		c.currentModule = cmod
+	}
+
+	c.curModulePrefix = c.createModulePrefix(isMainModule) // set the module prefix
+
+	// visit every statement in the modules AST and compile it
+	// in imports we only visit declarations and ignore other top-level statements
+	for _, stmt := range module.Ast.Statements {
+		if isMainModule {
+			c.visitNode(stmt)
+		} else if _, isDecl := stmt.(*ast.DeclStmt); isDecl {
+			c.visitNode(stmt)
+		}
+	}
+
+	return nil
+}
+
+// creates the prefix that is applied to all private functions in the current module
+func (c *compiler) createModulePrefix(isMainModule bool) string {
+	if isMainModule { // no prefix for the main module
+		return ""
+	} else {
+		// get the relative path from the main module to the current module without the file extension (.ddp)
+		relPath, err := filepath.Rel(filepath.Dir(c.mainModule.FileName), strings.TrimSuffix(c.currentModule.FileName, filepath.Ext(c.currentModule.FileName)))
+		if err != nil {
+			// on error fallback on the absolute path
+			relPath = filepath.Dir(c.currentModule.FileName)
+		}
+		// replace all filepath seperators with underscores
+		prefix := strings.ReplaceAll(
+			relPath,
+			string(os.PathSeparator),
+			"_",
+		)
+		// on absolute paths replace the volume : for windows
+		if filepath.IsAbs(relPath) {
+			if vol := filepath.VolumeName(relPath); vol != "" {
+				prefix = strings.ReplaceAll(
+					c.curModulePrefix,
+					vol,
+					strings.ReplaceAll(vol, ":", "_"),
+				)
+			}
+		}
+		return prefix + "_"
 	}
 }
 
@@ -134,36 +215,6 @@ func (c *compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 func (c *compiler) comment(comment string, block *ir.Block) {
 	if Comments_Enabled {
 		block.Insts = append(block.Insts, irutil.NewComment(comment))
-	}
-}
-
-// compiles a single module
-func (c *compiler) compileModule(module *ast.Module, isMainModule bool) {
-	// check if the module was already compiled
-	if _, alreadyCompiled := c.alreadyCompiledModules[module.FileName]; !alreadyCompiled {
-		c.alreadyCompiledModules[module.FileName] = struct{}{}
-	} else {
-		return
-	}
-
-	// add the external dependencies
-	for path, _ := range module.ExternalDependencies {
-		c.result.Dependencies[path] = struct{}{}
-	}
-
-	// add the other dependencies
-	for _, imprt := range module.Imports {
-		c.compileModule(imprt.Module, false)
-	}
-
-	// visit every statement in the modules AST and compile it
-	// in imports we only visit declarations and ignore other top-level statements
-	for _, stmt := range module.Ast.Statements {
-		if isMainModule {
-			c.visitNode(stmt)
-		} else if _, isDecl := stmt.(*ast.DeclStmt); isDecl {
-			c.visitNode(stmt)
-		}
 	}
 }
 
@@ -271,14 +322,20 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 	// global variables are allocated in the ddpmain function
-	c.commentNode(c.cbb, d, d.Name.Literal)
+	c.commentNode(c.cbb, d, d.Name())
 	var varLocation value.Value
 	if c.scp.enclosing == nil { // global scope
-		varLocation = c.mod.NewGlobalDef("", Typ.DefaultValue())
+		globalDef := c.mod.NewGlobalDef("", Typ.DefaultValue())
+		// make private variables static like in C
+		if !d.IsPublic {
+			globalDef.Linkage = enum.LinkageInternal
+			globalDef.Visibility = enum.VisibilityDefault
+		}
+		varLocation = globalDef
 	} else {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ.IrType())
 	}
-	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ, false)
+	Var := c.scp.addVar(c.getDeclIrName(d), varLocation, Typ, false)
 	initVal, _ := c.evaluate(d.InitVal) // evaluate the initial value
 	if !Typ.IsPrimitive() {
 		initVal = c.cbb.NewLoad(Typ.IrType(), initVal)
@@ -303,10 +360,17 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(d.Name.Literal, retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                        // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	name := c.getDeclIrName(d)
 
-	c.insertFunction(d.Name.Literal, d, irFunc)
+	irFunc := c.mod.NewFunc(name, retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC              // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	// make private functions static like in C
+	if !d.IsPublic {
+		irFunc.Linkage = enum.LinkageInternal
+		irFunc.Visibility = enum.VisibilityDefault
+	}
+
+	c.insertFunction(name, d, irFunc)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(d) {
@@ -376,7 +440,7 @@ func (c *compiler) VisitBadExpr(e *ast.BadExpr) {
 	err("Es wurde ein invalider Ausdruck gefunden")
 }
 func (c *compiler) VisitIdent(e *ast.Ident) {
-	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
+	Var := c.scp.lookupVar(c.getDeclIrName(e.Declaration)) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
@@ -1109,7 +1173,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) {
 func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Literal.Literal)
+		Var := c.scp.lookupVar(c.getDeclIrName(assign.Declaration))
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -1129,7 +1193,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	return nil, nil, nil
 }
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
-	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
+	fun := c.functions[c.getDeclIrName(e.Func)] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
 
 	irReturnType := c.toIrType(fun.funcDecl.Type)
@@ -1147,7 +1211,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 			if assign, ok := e.Args[param.Literal].(ast.Assigneable); ok {
 				val, _, _ = c.evaluateAssignableOrReference(assign, true)
 			} else {
-				err("non-assignable passed as reference to %s", fun.funcDecl.Name)
+				err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
 		} else {
 			val, _ = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
@@ -1338,7 +1402,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	}
 
 	// compile the incrementBlock
-	Var := c.scp.lookupVar(s.Initializer.Name.Literal)
+	Var := c.scp.lookupVar(s.Initializer.Name())
 	indexVar := incrementBlock.NewLoad(Var.typ.IrType(), Var.val)
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
@@ -1352,7 +1416,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.cbb = incrementBlock
 	// add the incrementer to the counter variable
 	add := c.cbb.NewAdd(indexVar, incrementer)
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -1405,14 +1469,14 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	index := c.cf.Blocks[0].NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
+	c.scp.addVar(s.Initializer.Name(), c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
 
 	c.cbb = bodyBlock
-	loopVar := c.scp.lookupVar(s.Initializer.Name.Literal)
+	loopVar := c.scp.lookupVar(s.Initializer.Name())
 	if inTyp == c.ddpstring {
 		char := c.cbb.NewCall(c.ddpstring.indexIrFun, in, c.cbb.NewLoad(ddpint, index))
 		c.cbb.NewStore(char, loopVar.val)

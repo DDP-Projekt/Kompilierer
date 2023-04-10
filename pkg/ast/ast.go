@@ -27,7 +27,7 @@ func WalkAst(ast *Ast, visitor FullVisitor) {
 type FuncAlias struct {
 	Tokens   []token.Token                     // tokens of the alias
 	Original token.Token                       // the original string
-	Func     string                            // the function it refers to (if it is used outside a FuncDecl)
+	Func     *FuncDecl                         // the function it refers to (if it is used outside a FuncDecl)
 	Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
 }
 
@@ -53,6 +53,8 @@ type (
 	Declaration interface {
 		Node
 		declarationNode() // dummy function for the interface
+		Name() string     // returns the name of the declaration or "" for BadDecls
+		Public() bool     // returns wether the declaration is public. always false for BadDecls
 	}
 
 	// *Ident or *Indexing
@@ -76,16 +78,19 @@ type (
 		Range    token.Range
 		Comment  *token.Token  // optional comment (also contained in ast.Comments)
 		Type     ddptypes.Type // type of the variable
-		Name     token.Token   // identifier name
+		NameTok  token.Token   // identifier name
 		IsPublic bool          // wether the function is marked with öffentliche
-		InitVal  Expression    // initial value
+		// wether the variable was declared in the global scope
+		// used pretty much only in the compiler
+		IsGlobal bool
+		InitVal  Expression // initial value
 	}
 
 	FuncDecl struct {
 		Range         token.Range
 		Comment       *token.Token             // optional comment (also contained in ast.Comments)
 		Tok           token.Token              // Die
-		Name          token.Token              // identifier name
+		NameTok       token.Token              // token of the name
 		IsPublic      bool                     // wether the function is marked with öffentliche
 		ParamNames    []token.Token            // x, y und z
 		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
@@ -102,7 +107,7 @@ func (decl *VarDecl) String() string  { return "VarDecl" }
 func (decl *FuncDecl) String() string { return "FuncDecl" }
 
 func (decl *BadDecl) Token() token.Token  { return decl.Tok }
-func (decl *VarDecl) Token() token.Token  { return decl.Name }
+func (decl *VarDecl) Token() token.Token  { return decl.NameTok }
 func (decl *FuncDecl) Token() token.Token { return decl.Tok }
 
 func (decl *BadDecl) GetRange() token.Range  { return decl.Err.Range }
@@ -117,6 +122,14 @@ func (decl *BadDecl) declarationNode()  {}
 func (decl *VarDecl) declarationNode()  {}
 func (decl *FuncDecl) declarationNode() {}
 
+func (decl *BadDecl) Name() string  { return "" }
+func (decl *VarDecl) Name() string  { return decl.NameTok.Literal }
+func (decl *FuncDecl) Name() string { return decl.NameTok.Literal }
+
+func (decl *BadDecl) Public() bool  { return false }
+func (decl *VarDecl) Public() bool  { return decl.IsPublic }
+func (decl *FuncDecl) Public() bool { return decl.IsPublic }
+
 // Expressions
 type (
 	BadExpr struct {
@@ -126,6 +139,9 @@ type (
 
 	Ident struct {
 		Literal token.Token
+		// the variable declaration this identifier refers to
+		// is set by the resolver, or nil if the name was not found
+		Declaration *VarDecl
 	}
 
 	// also exists as Binary expression for Literals
@@ -217,7 +233,10 @@ type (
 		Range token.Range
 		Tok   token.Token // first token of the call
 		Name  string      // name of the function
-		Args  map[string]Expression
+		// the function declaration this call refers to
+		// is set by the parser, or nil if the name was not found
+		Func *FuncDecl
+		Args map[string]Expression
 	}
 )
 
