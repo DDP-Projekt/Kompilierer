@@ -109,7 +109,7 @@ func Compile(options Options) (*Result, error) {
 	// if set, only compile to llvm ir and return
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 	if options.OutputType == OutputIR {
-		return New(module, options.ErrorHandler).Compile(options.To)
+		return newCompiler(module, options.ErrorHandler).compile(options.To)
 	}
 
 	// wrtite the llvm ir to an intermediate file
@@ -127,7 +127,7 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	options.Log("Schreibe LLVM ir nach %s", tempFileName)
-	result, err := New(module, options.ErrorHandler).Compile(file)
+	result, err := newCompiler(module, options.ErrorHandler).compile(file)
 	file.Close()
 	if err != nil {
 		return nil, err

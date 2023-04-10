@@ -34,7 +34,7 @@ func newIntT(typ *types.IntType, value int64) *constant.Int {
 }
 
 // turn a ddptypes.Type into the corresponding llvm type
-func (c *Compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
+func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	if ddpType.IsList {
 		switch ddpType.Primitive {
 		case ddptypes.ZAHL:
@@ -69,7 +69,7 @@ func (c *Compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 }
 
 // used to handle possible reference parameters
-func (c *Compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
+func (c *compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
 	irType := c.toIrType(ty.Type)
 
 	if !ty.IsReference && irType.IsPrimitive() {
@@ -79,7 +79,7 @@ func (c *Compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
 	return irType.PtrType()
 }
 
-func (c *Compiler) getListType(ty ddpIrType) *ddpIrListType {
+func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	switch ty {
 	case c.ddpinttyp:
 		return c.ddpintlist

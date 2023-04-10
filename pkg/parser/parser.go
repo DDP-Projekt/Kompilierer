@@ -109,7 +109,7 @@ func newParser(tokens []token.Token, modules map[string]*ast.Module, errorHandle
 }
 
 // parse the provided tokens into an Ast
-func (p *parser) Parse() *ast.Module {
+func (p *parser) parse() *ast.Module {
 	// main parsing loop
 	for !p.atEnd() {
 		if stmt := p.checkedDeclaration(); stmt != nil {
