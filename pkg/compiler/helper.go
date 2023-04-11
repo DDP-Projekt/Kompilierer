@@ -110,8 +110,8 @@ func (c *compiler) getDeclIrName(decl ast.Declaration) string {
 
 	name := decl.Name()
 	// add the prefix for the current module if the conditions are met
-	if !decl.Public() && isGlobal && !isExtern {
-		name = c.curModulePrefix + name
+	if isGlobal && !isExtern {
+		name = c.getModulePrefix(decl.Module()) + name
 	}
 	return name
 }

@@ -55,6 +55,7 @@ type (
 		declarationNode() // dummy function for the interface
 		Name() string     // returns the name of the declaration or "" for BadDecls
 		Public() bool     // returns wether the declaration is public. always false for BadDecls
+		Module() *Module  // returns the module from which the declaration comes
 	}
 
 	// *Ident or *Indexing
@@ -72,6 +73,7 @@ type (
 	BadDecl struct {
 		Tok token.Token
 		Err ddperror.Error
+		Mod *Module
 	}
 
 	VarDecl struct {
@@ -83,6 +85,7 @@ type (
 		// wether the variable was declared in the global scope
 		// used pretty much only in the compiler
 		IsGlobal bool
+		Mod      *Module    // the module in which the variable was declared
 		InitVal  Expression // initial value
 	}
 
@@ -92,6 +95,7 @@ type (
 		Tok           token.Token              // Die
 		NameTok       token.Token              // token of the name
 		IsPublic      bool                     // wether the function is marked with öffentliche
+		Mod           *Module                  // the module in which the function was declared
 		ParamNames    []token.Token            // x, y und z
 		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
 		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
@@ -129,6 +133,10 @@ func (decl *FuncDecl) Name() string { return decl.NameTok.Literal }
 func (decl *BadDecl) Public() bool  { return false }
 func (decl *VarDecl) Public() bool  { return decl.IsPublic }
 func (decl *FuncDecl) Public() bool { return decl.IsPublic }
+
+func (decl *BadDecl) Module() *Module  { return decl.Mod }
+func (decl *VarDecl) Module() *Module  { return decl.Mod }
+func (decl *FuncDecl) Module() *Module { return decl.Mod }
 
 // Expressions
 type (

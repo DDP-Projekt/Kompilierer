@@ -43,7 +43,7 @@ type compiler struct {
 	functions        map[string]*funcWrapper // all the global functions
 	latestReturn     value.Value             // return of the latest evaluated expression (in the ir)
 	latestReturnType ddpIrType               // the type of latestReturn
-	curModulePrefix  string                  // the current prefix for private functions and variables
+	modulePrefixes   map[*ast.Module]string
 
 	// all the type definitions of inbuilt types used by the compiler
 	void                                                              *ddpIrVoidType
@@ -67,12 +67,13 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 			Dependencies: make(map[string]struct{}),
 			Output:       "",
 		},
-		cbb:          nil,
-		cf:           nil,
-		scp:          newScope(nil), // global scope
-		cfscp:        nil,
-		functions:    map[string]*funcWrapper{},
-		latestReturn: nil,
+		cbb:            nil,
+		cf:             nil,
+		scp:            newScope(nil), // global scope
+		cfscp:          nil,
+		functions:      make(map[string]*funcWrapper),
+		modulePrefixes: make(map[*ast.Module]string),
+		latestReturn:   nil,
 	}
 }
 
@@ -143,8 +144,6 @@ func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
 		c.currentModule = cmod
 	}
 
-	c.curModulePrefix = c.createModulePrefix(isMainModule) // set the module prefix
-
 	// visit every statement in the modules AST and compile it
 	// in imports we only visit declarations and ignore other top-level statements
 	for _, stmt := range module.Ast.Statements {
@@ -158,35 +157,43 @@ func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
 	return nil
 }
 
-// creates the prefix that is applied to all private functions in the current module
-func (c *compiler) createModulePrefix(isMainModule bool) string {
-	if isMainModule { // no prefix for the main module
-		return ""
-	} else {
-		// get the relative path from the main module to the current module without the file extension (.ddp)
-		relPath, err := filepath.Rel(filepath.Dir(c.mainModule.FileName), strings.TrimSuffix(c.currentModule.FileName, filepath.Ext(c.currentModule.FileName)))
-		if err != nil {
-			// on error fallback on the absolute path
-			relPath = filepath.Dir(c.currentModule.FileName)
-		}
-		// replace all filepath seperators with underscores
-		prefix := strings.ReplaceAll(
-			relPath,
-			string(os.PathSeparator),
-			"_",
-		)
-		// on absolute paths replace the volume : for windows
-		if filepath.IsAbs(relPath) {
-			if vol := filepath.VolumeName(relPath); vol != "" {
-				prefix = strings.ReplaceAll(
-					c.curModulePrefix,
-					vol,
-					strings.ReplaceAll(vol, ":", "_"),
-				)
-			}
-		}
-		return prefix + "_"
+// creates and caches name prefixes for the given module
+func (c *compiler) getModulePrefix(module *ast.Module) string {
+	if prefix, exists := c.modulePrefixes[module]; exists {
+		return prefix
 	}
+
+	// get the relative path from the main module to the current module without the file extension (.ddp)
+	relPath, err := filepath.Rel(filepath.Dir(c.mainModule.FileName), strings.TrimSuffix(c.currentModule.FileName, filepath.Ext(c.currentModule.FileName)))
+	if err != nil {
+		// on error fallback on the absolute path
+		relPath = filepath.Dir(c.currentModule.FileName)
+	}
+	// replace all filepath seperators with underscores
+	prefix := strings.ReplaceAll(
+		relPath,
+		string(os.PathSeparator),
+		"_",
+	)
+	// replace (leading) .. path elements with DirUp (placeholder as I don't know if . is a good character to have in a function name)
+	prefix = strings.ReplaceAll(
+		prefix,
+		"..",
+		"DirUp",
+	)
+	// on absolute paths replace the volume : for windows
+	if filepath.IsAbs(relPath) {
+		if vol := filepath.VolumeName(relPath); vol != "" {
+			prefix = strings.ReplaceAll(
+				prefix,
+				vol,
+				strings.ReplaceAll(vol, ":", "_"),
+			)
+		}
+	}
+	prefix += "_"
+	c.modulePrefixes[module] = prefix
+	return prefix
 }
 
 // helper that might be extended later

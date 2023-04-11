@@ -1,0 +1,8 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Zahl z ist 2.
+
+Die öffentliche Funktion foo gibt nichts zurück, macht:
+	Schreibe "foo aus modul2" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo"

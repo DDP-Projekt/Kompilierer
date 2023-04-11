@@ -374,6 +374,7 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 				Msg:   "Es wurde ein Variablen Name erwartet",
 			},
 			Tok: p.peek(),
+			Mod: p.module,
 		}
 	}
 
@@ -410,6 +411,7 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		NameTok:  name,
 		IsPublic: isPublic,
 		IsGlobal: p.resolver.CurrentTable.Enclosing == nil,
+		Mod:      p.module,
 		InitVal:  expr,
 	}
 	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
@@ -448,6 +450,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		return &ast.BadDecl{
 			Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.peek().File),
 			Tok: p.peek(),
+			Mod: p.module,
 		}
 	}
 	name := p.previous()
@@ -611,6 +614,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		return &ast.BadDecl{
 			Err: p.lastError,
 			Tok: Funktion,
+			Mod: p.module,
 		}
 	}
 
@@ -620,6 +624,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Tok:           begin,
 		NameTok:       name,
 		IsPublic:      isPublic,
+		Mod:           p.module,
 		ParamNames:    paramNames,
 		ParamTypes:    paramTypes,
 		ParamComments: paramComments,
@@ -649,7 +654,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -1187,6 +1192,7 @@ func (p *parser) forStatement() ast.Statement {
 			NameTok:  Ident,
 			IsPublic: false,
 			IsGlobal: false,
+			Mod:      p.module,
 			InitVal:  from,
 		}
 		p.consume(token.BIS)
@@ -1241,6 +1247,7 @@ func (p *parser) forStatement() ast.Statement {
 			NameTok:  Ident,
 			IsPublic: false,
 			IsGlobal: false,
+			Mod:      p.module,
 			InitVal:  In,
 		}
 		p.consume(token.COMMA)
