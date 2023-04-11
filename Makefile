@@ -31,7 +31,7 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 CMAKE = cmake
 MAKE = make
 
-.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer
+.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer test-complete
 
 display_help_disclaimer:
 	@echo "compiling the whole project"
@@ -115,6 +115,8 @@ test-memory:
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 
+test-complete: clean all test clean debug test-memory
+
 help:
 	@echo "Targets:"
 	@echo "    all (default target): compile kddp the runtime and the stdlib into $(OUT_DIR)"
@@ -132,3 +134,5 @@ help:
 	@echo '          example: make test TEST_DIRS="slicing assignement if"'
 	@echo "    test-memory: run the ddp tests and test for memory leaks"
 	@echo '          the runtime and stdlib have to be compiled in debug mode beforehand'
+	@echo "    test-complete: runs test and test-memory and automatically"
+	@echo '          compiles everything correctly beforehand'
