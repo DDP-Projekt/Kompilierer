@@ -120,11 +120,11 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
 	t.latestReturnedType = ddptypes.Void()
 }
 func (t *Typechecker) VisitIdent(expr *ast.Ident) {
-	decl, ok := t.CurrentTable.LookupVar(expr.Literal.Literal)
-	if !ok {
+	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
+	if !ok || !isVar {
 		t.latestReturnedType = ddptypes.Void()
 	} else {
-		t.latestReturnedType = decl.Type
+		t.latestReturnedType = decl.(*ast.VarDecl).Type
 	}
 }
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) {
@@ -360,11 +360,13 @@ func (t *Typechecker) VisitGrouping(expr *ast.Grouping) {
 	expr.Expr.Accept(t)
 }
 func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
+	symbol, _, _ := t.CurrentTable.LookupDecl(callExpr.Name)
+	decl := symbol.(*ast.FuncDecl)
+
 	for k, expr := range callExpr.Args {
 		argType := t.Evaluate(expr)
 
 		var paramType ddptypes.ParameterType
-		decl, _ := t.CurrentTable.LookupFunc(callExpr.Name)
 
 		for i, name := range decl.ParamNames {
 			if name.Literal == k {
@@ -391,8 +393,8 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 			)
 		}
 	}
-	fun, _ := t.CurrentTable.LookupFunc(callExpr.Name)
-	t.latestReturnedType = fun.Type
+
+	t.latestReturnedType = decl.Type
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {
@@ -404,15 +406,16 @@ func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) {
 func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) {
 	stmt.Expr.Accept(t)
 }
+func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) {}
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists := t.CurrentTable.LookupVar(assign.Literal.Literal); exists && decl.Type != rhs {
+		if decl, exists, _ := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && decl.(*ast.VarDecl).Type != rhs {
 			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 				rhs,
-				decl.Type,
+				decl.(*ast.VarDecl).Type,
 			)
 		}
 	case *ast.Indexing:
@@ -526,10 +529,10 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists := t.CurrentTable.LookupFunc(stmt.Func); exists && fun.Type != returnType {
+	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && fun.(*ast.FuncDecl).Type != returnType {
 		t.errExpr(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Value,
 			"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-			fun.Type,
+			fun.(*ast.FuncDecl).Type,
 			returnType,
 		)
 	}

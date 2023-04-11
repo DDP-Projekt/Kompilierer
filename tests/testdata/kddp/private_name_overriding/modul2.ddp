@@ -1,0 +1,8 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Zahl private_zahl ist 0.
+
+Die Funktion foo gibt nichts zurück, macht:
+	Schreibe "foo aus module2" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo"

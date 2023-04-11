@@ -6,17 +6,16 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddppath"
 )
 
 var gcc = "gcc"
 
 func init() {
 	if runtime.GOOS == "windows" {
-		DDPPATH := scanner.DDPPATH
-		_, err := os.Stat(filepath.Join(DDPPATH, "mingw64"))
+		_, err := os.Stat(ddppath.Mingw64)
 		if err == nil || !os.IsNotExist(err) {
-			gcc = filepath.Join(DDPPATH, "mingw64", "bin", "gcc.exe")
+			gcc = filepath.Join(ddppath.Mingw64, "bin", "gcc.exe")
 		}
 	}
 }

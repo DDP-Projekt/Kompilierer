@@ -2,63 +2,42 @@ package ast
 
 // stores symbols for one scope of an ast
 type SymbolTable struct {
-	Enclosing *SymbolTable         // enclosing scope (nil in the global scope)
-	Variables map[string]*VarDecl  // tokenType is used as type identifier (e.g. token.ZAHL -> int)
-	Functions map[string]*FuncDecl // same here, but token.NICHTS stands for void (also, only the global-scope can have function declarations)
+	Enclosing    *SymbolTable           // enclosing scope (nil in the global scope)
+	declarations map[string]Declaration // map of all variables and functions
 }
 
 func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
 	return &SymbolTable{
-		Enclosing: enclosing,
-		Variables: make(map[string]*VarDecl),
-		Functions: make(map[string]*FuncDecl),
+		Enclosing:    enclosing,
+		declarations: make(map[string]Declaration),
 	}
 }
 
-// returns the type of the variable name and if it exists in the table or it's enclosing scopes
-func (scope *SymbolTable) LookupVar(name string) (*VarDecl, bool) {
-	if val, ok := scope.Variables[name]; !ok {
-		// if the variable was not found here we recursively check the enclosing scopes
+// returns the declaration corresponding to name and wether it exists
+// if the symbol existed, the second bool is true, if it is a variable and false if it is a funciton
+// call like this: decl, exists, isVar := LookupDecl(name)
+func (scope *SymbolTable) LookupDecl(name string) (Declaration, bool, bool) {
+	if decl, ok := scope.declarations[name]; !ok {
 		if scope.Enclosing != nil {
-			return scope.Enclosing.LookupVar(name)
+			return scope.Enclosing.LookupDecl(name)
 		}
-		return nil, false // variable doesn't exist
+		return nil, false, false
 	} else {
-		return val, true
+		_, isVar := decl.(*VarDecl)
+		return decl, true, isVar
 	}
 }
 
-// returns the type of the variable name and if it exists in the table or it's enclosing scopes
-func (scope *SymbolTable) LookupFunc(name string) (*FuncDecl, bool) {
-	if val, ok := scope.Functions[name]; !ok {
-		// if the function was not found here we recursively check the enclosing scopes
-		if scope.Enclosing != nil {
-			return scope.Enclosing.LookupFunc(name)
-		}
-		return nil, false // function doesn't exist
-	} else {
-		return val, true
-	}
-}
-
-// inserts a variable into the scope if it didn't exist yet
+// inserts a declaration into the scope if it didn't exist yet
 // and returns wether it already existed
-func (scope *SymbolTable) InsertVar(name string, decl *VarDecl) bool {
-	if _, ok := scope.Variables[name]; ok {
+// BadDecls are ignored
+func (scope *SymbolTable) InsertDecl(name string, decl Declaration) bool {
+	if _, ok := scope.declarations[name]; ok {
 		return true
 	}
-
-	scope.Variables[name] = decl
-	return false
-}
-
-// inserts a function into the scope if it didn't exist yet
-// and returns wether it already existed
-func (scope *SymbolTable) InsertFunc(name string, fun *FuncDecl) bool {
-	if _, ok := scope.Functions[name]; ok {
-		return true
+	if _, ok := decl.(*BadDecl); ok {
+		return false
 	}
-
-	scope.Functions[name] = fun
+	scope.declarations[name] = decl
 	return false
 }

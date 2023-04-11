@@ -1,307 +1,307 @@
 [ Zahlen Listen Funktionen]
-Die Funktion Leere_Z mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Z mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Zahlen Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-Die Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
-Die Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion Einfügen_Bereich_Z mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Z mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
-Die Funktion Voranstellen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere elm verkettet mit liste in liste.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-Die Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
-Die Funktion Lösche_Bereich_Z mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Z mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
-Die Funktion Füllen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Die Zahlen Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
-Die Funktion IndexVon_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion IndexVon_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), wenn liste an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
-Die Funktion Enthält_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
 	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
-Die Funktion IstLeer_Z mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer_Z mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
 
 [ Kommazahlen Listen Funktionen]
-Die Funktion Leere_K mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_K mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Kommazahlen Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-Die Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
-Die Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion Einfügen_Bereich_K mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_K mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
-Die Funktion Voranstellen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	Speichere elm verkettet mit liste in liste.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-Die Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
-Die Funktion Lösche_Bereich_K mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_K mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
-Die Funktion Füllen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	Die Kommazahlen Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
-Die Funktion IndexVon_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion IndexVon_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
-Die Funktion Enthält_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
 	Für jede Kommazahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
-Die Funktion IstLeer_K mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer_K mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
 [ Boolean Listen Funktionen ]
-Die Funktion Leere_B mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_B mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Boolean Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-Die Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
-Die Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
-Die Funktion Voranstellen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	Speichere elm verkettet mit liste in liste.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-Die Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
-Die Funktion Lösche_Bereich_B mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_B mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
-Die Funktion Füllen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	Die Boolean Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
-Die Funktion IndexVon_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion IndexVon_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
-Die Funktion Enthält_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
 	Für jeden Boolean b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
-Die Funktion IstLeer_B mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer_B mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
 
 [ Buchstaben Listen Funktionen ]
-Die Funktion Leere_C mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_C mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Buchstaben Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-Die Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
-Die Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion Einfügen_Bereich_C mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_C mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
-Die Funktion Voranstellen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	Speichere elm verkettet mit liste in liste.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-Die Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
-Die Funktion Lösche_Bereich_C mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_C mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
-Die Funktion Füllen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Buchstaben Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
-Die Funktion IndexVon_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion IndexVon_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
-Die Funktion Enthält_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
 	Für jeden Buchstaben b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
-Die Funktion IstLeer_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
 
 [ Text Listen Funktionen ]
-Die Funktion Leere_T mit dem Parameter liste vom Typ Text Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_T mit dem Parameter liste vom Typ Text Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Text Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-Die Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	Speichere liste verkettet mit elm in liste.
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
-Die Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
-Die Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
-Die Funktion Voranstellen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	Speichere elm verkettet mit liste in liste.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-Die Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
-Die Funktion Lösche_Bereich_T mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_T mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
-Die Funktion Füllen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	Die Text Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
-Die Funktion IndexVon_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion IndexVon_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
-Die Funktion Enthält_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
 	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
-Die Funktion IstLeer_T mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer_T mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
-Die Funktion Aneinandergehängt_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
+Die öffentliche Funktion Aneinandergehängt_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
 	Der Text t ist "".
 	Für jeden Buchstabe b in liste, mache:
 		Speichere t verkettet mit b in t.

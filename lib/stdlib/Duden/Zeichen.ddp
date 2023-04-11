@@ -1,12 +1,12 @@
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' '), eine neue Zeile ('\n'), ein Tabulator ('\t') oder ein Wagenrücklauf ('\r') ist.
 ]
-Die Funktion IstLeer mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeer mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
 Und kann so benutzt werden:
 	"<b> ein leeres Zeichen ist"
 
-Die Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
 		(z größer als, oder 65 ist und z kleiner als, oder 90 ist) oder
@@ -17,7 +17,7 @@ Die Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean 
 Und kann so benutzt werden:
 	[Wenn] "<b> ein großer Buchstabe ist"
 
-Die Funktion IstKlein mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstKlein mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
 		(z größer als, oder 96 ist und z kleiner als, oder 122 ist) oder
@@ -31,7 +31,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' ') ist. 
 ]
-Die Funktion IstLeerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstLeerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b gleich ' ' ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Leerzeichen ist"
@@ -39,7 +39,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b eine Zahl (Code 48-57) ist. 
 ]
-Die Funktion IstZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> eine Zahl ist"
@@ -47,7 +47,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Kontrollzeichen (Code 0-31) ist. 
 ]
-Die Funktion IstKontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstKontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Kontrollzeichen ist"
@@ -55,7 +55,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe (a-Z, äöü, ÄÖÜ und ß) ist. 
 ]
-Die Funktion IstDeutscherBuchstabe mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstDeutscherBuchstabe mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Gib 
 		(z größer als, oder 65 ist und z kleiner als, oder 90 ist) [a-z] oder
@@ -71,7 +71,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe oder eine Zahl ist. 
 ]
-Die Funktion IstDeutscherBuchstabeOderZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstDeutscherBuchstabeOderZahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b ein deutscher Buchstabe ist oder b eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"<b> ein deutscher Buchstabe oder eine Zahl ist"
@@ -79,7 +79,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein großer deutscher Buchstabe ist.
 ]
-Die Funktion Großgeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
+Die öffentliche Funktion Großgeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
 	Wenn nicht b ein deutscher Buchstabe ist, dann:
 		Gib b zurück.
 
@@ -90,7 +90,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b ein kleiner deutscher Buchstabe ist.
 ]
-Die Funktion Kleingeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
+Die öffentliche Funktion Kleingeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
 	Wenn nicht b ein deutscher Buchstabe ist oder b ein kleiner Buchstabe ist, dann:
 		Gib b zurück.
 

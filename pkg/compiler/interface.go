@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
 )
@@ -53,6 +52,7 @@ func (options *Options) ToParserOptions() parser.Options {
 		FileName:     options.FileName,
 		Source:       options.Source,
 		Tokens:       nil,
+		Modules:      nil,
 		ErrorHandler: options.ErrorHandler,
 	}
 }
@@ -93,7 +93,6 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	// compile the ddp-source into an Ast
-	var Ast *ast.Ast
 	options.Log("Parse DDP Quellcode")
 	if options.Source == nil && options.From != nil {
 		options.Source, err = io.ReadAll(options.From)
@@ -101,7 +100,7 @@ func Compile(options Options) (*Result, error) {
 			return nil, err
 		}
 	}
-	Ast, err = parser.Parse(options.ToParserOptions())
+	module, err := parser.Parse(options.ToParserOptions())
 
 	if err != nil {
 		return nil, err
@@ -110,7 +109,7 @@ func Compile(options Options) (*Result, error) {
 	// if set, only compile to llvm ir and return
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 	if options.OutputType == OutputIR {
-		return New(Ast, options.ErrorHandler).Compile(options.To)
+		return newCompiler(module, options.ErrorHandler).compile(options.To)
 	}
 
 	// wrtite the llvm ir to an intermediate file
@@ -128,7 +127,7 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	options.Log("Schreibe LLVM ir nach %s", tempFileName)
-	result, err := New(Ast, options.ErrorHandler).Compile(file)
+	result, err := newCompiler(module, options.ErrorHandler).compile(file)
 	file.Close()
 	if err != nil {
 		return nil, err

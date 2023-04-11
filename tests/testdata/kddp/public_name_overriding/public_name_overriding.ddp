@@ -1,0 +1,9 @@
+Binde "Duden/Ausgabe" ein.
+Binde z aus "modul2" ein.
+
+Die Funktion foo gibt nichts zurück, macht:
+	Schreibe "foo aus modul1" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo"
+
+foo.

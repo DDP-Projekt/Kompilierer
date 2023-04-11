@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -27,11 +28,13 @@ type funcWrapper struct {
 }
 
 // holds state to compile a DDP AST into llvm ir
-type Compiler struct {
-	ast          *ast.Ast
-	mod          *ir.Module       // the ir module (basically the ir file)
-	errorHandler ddperror.Handler // errors are passed to this function
-	result       *Result          // result of the compilation
+type compiler struct {
+	mainModule             *ast.Module         // the module that was passed in to compile
+	currentModule          *ast.Module         // the module that is currently being compiled
+	alreadyCompiledModules map[string]struct{} // set of modules that have already been compiled
+	mod                    *ir.Module          // the ir module (basically the ir file)
+	errorHandler           ddperror.Handler    // errors are passed to this function
+	result                 *Result             // result of the compilation
 
 	cbb              *ir.Block               // current basic block in the ir
 	cf               *ir.Func                // current function
@@ -40,6 +43,7 @@ type Compiler struct {
 	functions        map[string]*funcWrapper // all the global functions
 	latestReturn     value.Value             // return of the latest evaluated expression (in the ir)
 	latestReturnType ddpIrType               // the type of latestReturn
+	modulePrefixes   map[*ast.Module]string
 
 	// all the type definitions of inbuilt types used by the compiler
 	void                                                              *ddpIrVoidType
@@ -49,37 +53,35 @@ type Compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Compiler {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
-	return &Compiler{
-		ast:          Ast,
-		mod:          ir.NewModule(),
-		errorHandler: errorHandler,
+	return &compiler{
+		mainModule:             module,
+		currentModule:          module,
+		alreadyCompiledModules: make(map[string]struct{}),
+		mod:                    ir.NewModule(),
+		errorHandler:           errorHandler,
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 			Output:       "",
 		},
-		cbb:          nil,
-		cf:           nil,
-		scp:          newScope(nil), // global scope
-		cfscp:        nil,
-		functions:    map[string]*funcWrapper{},
-		latestReturn: nil,
+		cbb:            nil,
+		cf:             nil,
+		scp:            newScope(nil), // global scope
+		cfscp:          nil,
+		functions:      make(map[string]*funcWrapper),
+		modulePrefixes: make(map[*ast.Module]string),
+		latestReturn:   nil,
 	}
 }
 
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
-func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
-	// the ast must be valid (and should have been resolved and typechecked beforehand)
-	if c.ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Quellcode, Kompilierung abgebrochen")
-	}
-
-	c.mod.SourceFilename = c.ast.File // set the module filename (optional metadata)
+func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
+	c.mod.SourceFilename = c.mainModule.GetIncludeFilename() // set the module filename (optional metadata)
 
 	c.setup()
 
@@ -92,9 +94,9 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	c.cf = ddpmain               // first function is ddpmain
 	c.cbb = ddpmain.NewBlock("") // first block
 
-	// visit every statement in the AST and compile it
-	for _, stmt := range c.ast.Statements {
-		c.visitNode(stmt)
+	// compile the main module and its imports recursively
+	if err := c.compileModule(c.mainModule, true); err != nil {
+		return nil, err
 	}
 
 	c.scp = c.exitScope(c.scp) // exit the main scope
@@ -110,6 +112,90 @@ func (c *Compiler) Compile(w io.Writer) (result *Result, rerr error) {
 	}
 }
 
+// recursively compiles a single module and its imports
+func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
+	// the ast must be valid (and should have been resolved and typechecked beforehand)
+	if c.mainModule.Ast.Faulty {
+		return fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", module.GetIncludeFilename())
+	}
+
+	// check if the module was already compiled
+	if _, alreadyCompiled := c.alreadyCompiledModules[module.FileName]; !alreadyCompiled {
+		c.alreadyCompiledModules[module.FileName] = struct{}{} // add the module to the set
+	} else {
+		return nil // break the recursion if the module was already compiled
+	}
+
+	// add the external dependencies
+	for path := range module.ExternalDependencies {
+		c.result.Dependencies[path] = struct{}{}
+	}
+
+	// recursively add the other dependencies
+	for _, imprt := range module.Imports {
+		// set the correct module for nodes that need information about their module
+		cmod := c.currentModule
+		c.currentModule = imprt.Module
+		// compile the imported module
+		if err := c.compileModule(imprt.Module, false); err != nil {
+			return err
+		}
+		// restore the module
+		c.currentModule = cmod
+	}
+
+	// visit every statement in the modules AST and compile it
+	// in imports we only visit declarations and ignore other top-level statements
+	for _, stmt := range module.Ast.Statements {
+		if isMainModule {
+			c.visitNode(stmt)
+		} else if _, isDecl := stmt.(*ast.DeclStmt); isDecl {
+			c.visitNode(stmt)
+		}
+	}
+
+	return nil
+}
+
+// creates and caches name prefixes for the given module
+func (c *compiler) getModulePrefix(module *ast.Module) string {
+	if prefix, exists := c.modulePrefixes[module]; exists {
+		return prefix
+	}
+
+	// get the relative path from the main module to the current module without the file extension (.ddp)
+	relPath, err := filepath.Rel(filepath.Dir(c.mainModule.FileName), strings.TrimSuffix(c.currentModule.FileName, filepath.Ext(c.currentModule.FileName)))
+	if err != nil {
+		// on error fallback on the absolute path
+		relPath = filepath.Dir(c.currentModule.FileName)
+	}
+	// replace all filepath seperators with underscores
+	prefix := strings.ReplaceAll(
+		relPath,
+		string(os.PathSeparator),
+		"_",
+	)
+	// replace (leading) .. path elements with DirUp (placeholder as I don't know if . is a good character to have in a function name)
+	prefix = strings.ReplaceAll(
+		prefix,
+		"..",
+		"DirUp",
+	)
+	// on absolute paths replace the volume : for windows
+	if filepath.IsAbs(relPath) {
+		if vol := filepath.VolumeName(relPath); vol != "" {
+			prefix = strings.ReplaceAll(
+				prefix,
+				vol,
+				strings.ReplaceAll(vol, ":", "_"),
+			)
+		}
+	}
+	prefix += "_"
+	c.modulePrefixes[module] = prefix
+	return prefix
+}
+
 // helper that might be extended later
 // it is not intended for the end user to see these errors, as they are compiler bugs
 // the errors in the ddp-code were already reported by the parser/typechecker/resolver
@@ -123,7 +209,7 @@ func err(msg string, args ...any) {
 // increases the intermediate file size
 var Comments_Enabled = true
 
-func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
+func (c *compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 	if Comments_Enabled {
 		comment := fmt.Sprintf("F %s, %d:%d: %s", node.Token().File, node.Token().Line(), node.Token().Column(), node)
 		if details != "" {
@@ -133,27 +219,27 @@ func (c *Compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 	}
 }
 
-func (c *Compiler) comment(comment string, block *ir.Block) {
+func (c *compiler) comment(comment string, block *ir.Block) {
 	if Comments_Enabled {
 		block.Insts = append(block.Insts, irutil.NewComment(comment))
 	}
 }
 
 // helper to visit a single node
-func (c *Compiler) visitNode(node ast.Node) {
+func (c *compiler) visitNode(node ast.Node) {
 	node.Accept(c)
 }
 
 // helper to evalueate an expression and return its ir value
 // if the result is refCounted it's refcount is usually 1
-func (c *Compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType) {
+func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType) {
 	c.visitNode(expr)
 	return c.latestReturn, c.latestReturnType
 }
 
 // helper to insert a function into the global function map
 // returns the ir function
-func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *ir.Func) *ir.Func {
+func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *ir.Func) *ir.Func {
 	c.functions[name] = &funcWrapper{
 		funcDecl: funcDecl,
 		irFunc:   irFunc,
@@ -161,7 +247,7 @@ func (c *Compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 	return irFunc
 }
 
-func (c *Compiler) setup() {
+func (c *compiler) setup() {
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
@@ -175,7 +261,7 @@ func (c *Compiler) setup() {
 }
 
 // used in setup()
-func (c *Compiler) setupPrimitiveTypes() {
+func (c *compiler) setupPrimitiveTypes() {
 	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, "ddpint")
 	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, "ddpfloat")
 	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, "ddpbool")
@@ -183,7 +269,7 @@ func (c *Compiler) setupPrimitiveTypes() {
 }
 
 // used in setup()
-func (c *Compiler) setupListTypes() {
+func (c *compiler) setupListTypes() {
 	c.ddpintlist = c.defineListType("ddpintlist", c.ddpinttyp)
 	c.ddpfloatlist = c.defineListType("ddpfloatlist", c.ddpfloattyp)
 	c.ddpboollist = c.defineListType("ddpboollist", c.ddpbooltyp)
@@ -192,7 +278,7 @@ func (c *Compiler) setupListTypes() {
 }
 
 // used in setup()
-func (c *Compiler) setupOperators() {
+func (c *compiler) setupOperators() {
 	// hoch operator for different type combinations
 	c.declareExternalRuntimeFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
 
@@ -206,14 +292,14 @@ func (c *Compiler) setupOperators() {
 
 // deep copies the value pointed to by src into dest
 // and returns dest
-func (c *Compiler) deepCopyInto(dest, src value.Value, typ ddpIrType) value.Value {
+func (c *compiler) deepCopyInto(dest, src value.Value, typ ddpIrType) value.Value {
 	c.cbb.NewCall(typ.DeepCopyFunc(), dest, src)
 	return dest
 }
 
 // calls the corresponding free function on val
 // if typ.IsPrimitive() == false
-func (c *Compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
+func (c *compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
 	if !typ.IsPrimitive() {
 		c.cbb.NewCall(typ.FreeFunc(), val)
 	}
@@ -222,7 +308,7 @@ func (c *Compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
 // helper to exit a scope
 // decrements the ref-count on all local variables
 // returns the enclosing scope
-func (c *Compiler) exitScope(scp *scope) *scope {
+func (c *compiler) exitScope(scp *scope) *scope {
 	for _, v := range scp.variables {
 		if !v.isRef {
 			c.freeNonPrimitive(v.val, v.typ)
@@ -231,33 +317,39 @@ func (c *Compiler) exitScope(scp *scope) *scope {
 	return scp.enclosing
 }
 
-func (*Compiler) BaseVisitor() {}
+func (*compiler) BaseVisitor() {}
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadDecl(d *ast.BadDecl) {
+func (c *compiler) VisitBadDecl(d *ast.BadDecl) {
 	err("Es wurde eine invalide Deklaration gefunden")
 }
-func (c *Compiler) VisitVarDecl(d *ast.VarDecl) {
+func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 	Typ := c.toIrType(d.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 	// global variables are allocated in the ddpmain function
-	c.commentNode(c.cbb, d, d.Name.Literal)
+	c.commentNode(c.cbb, d, d.Name())
 	var varLocation value.Value
 	if c.scp.enclosing == nil { // global scope
-		varLocation = c.mod.NewGlobalDef("", Typ.DefaultValue())
+		globalDef := c.mod.NewGlobalDef("", Typ.DefaultValue())
+		// make private variables static like in C
+		if !d.IsPublic {
+			globalDef.Linkage = enum.LinkageInternal
+			globalDef.Visibility = enum.VisibilityDefault
+		}
+		varLocation = globalDef
 	} else {
 		varLocation = c.cf.Blocks[0].NewAlloca(Typ.IrType())
 	}
-	Var := c.scp.addVar(d.Name.Literal, varLocation, Typ, false)
+	Var := c.scp.addVar(c.getDeclIrName(d), varLocation, Typ, false)
 	initVal, _ := c.evaluate(d.InitVal) // evaluate the initial value
 	if !Typ.IsPrimitive() {
 		initVal = c.cbb.NewLoad(Typ.IrType(), initVal)
 	}
 	c.cbb.NewStore(initVal, Var) // store the initial value
 }
-func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
+func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	retType := c.toIrType(d.Type) // get the llvm type
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
@@ -275,19 +367,21 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(d.Name.Literal, retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                        // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	name := c.getDeclIrName(d)
 
-	c.insertFunction(d.Name.Literal, d, irFunc)
+	irFunc := c.mod.NewFunc(name, retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC              // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	// make private functions static like in C
+	if !d.IsPublic {
+		irFunc.Linkage = enum.LinkageInternal
+		irFunc.Visibility = enum.VisibilityDefault
+	}
+
+	c.insertFunction(name, d, irFunc)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(d) {
 		irFunc.Linkage = enum.LinkageExternal
-		path, err := filepath.Abs(filepath.Join(filepath.Dir(d.Token().File), strings.Trim(d.ExternFile.Literal, "\"")))
-		if err != nil {
-			c.errorHandler(ddperror.Error{File: d.ExternFile.File, Range: d.ExternFile.Range, Msg: err.Error()})
-		}
-		c.result.Dependencies[path] = struct{}{} // add the file-path where the function is defined to the dependencies set
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
 		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
@@ -349,11 +443,11 @@ func (c *Compiler) VisitFuncDecl(d *ast.FuncDecl) {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadExpr(e *ast.BadExpr) {
+func (c *compiler) VisitBadExpr(e *ast.BadExpr) {
 	err("Es wurde ein invalider Ausdruck gefunden")
 }
-func (c *Compiler) VisitIdent(e *ast.Ident) {
-	Var := c.scp.lookupVar(e.Literal.Literal) // get the alloca in the ir
+func (c *compiler) VisitIdent(e *ast.Ident) {
+	Var := c.scp.lookupVar(c.getDeclIrName(e.Declaration)) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
@@ -365,27 +459,27 @@ func (c *Compiler) VisitIdent(e *ast.Ident) {
 	c.latestReturnType = Var.typ
 }
 
-func (c *Compiler) VisitIndexing(e *ast.Indexing) {
+func (c *compiler) VisitIndexing(e *ast.Indexing) {
 	err("Indexings are only meant to be used as assignables")
 }
 
 // literals are simple ir constants
-func (c *Compiler) VisitIntLit(e *ast.IntLit) {
+func (c *compiler) VisitIntLit(e *ast.IntLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newInt(e.Value)
 	c.latestReturnType = c.ddpinttyp
 }
-func (c *Compiler) VisitFloatLit(e *ast.FloatLit) {
+func (c *compiler) VisitFloatLit(e *ast.FloatLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	c.latestReturnType = c.ddpfloattyp
 }
-func (c *Compiler) VisitBoolLit(e *ast.BoolLit) {
+func (c *compiler) VisitBoolLit(e *ast.BoolLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
 	c.latestReturnType = c.ddpbooltyp
 }
-func (c *Compiler) VisitCharLit(e *ast.CharLit) {
+func (c *compiler) VisitCharLit(e *ast.CharLit) {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newIntT(ddpchar, int64(e.Value))
 	c.latestReturnType = c.ddpchartyp
@@ -393,7 +487,7 @@ func (c *Compiler) VisitCharLit(e *ast.CharLit) {
 
 // string literals are created by the runtime
 // so we need to do some work here
-func (c *Compiler) VisitStringLit(e *ast.StringLit) {
+func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
@@ -402,7 +496,7 @@ func (c *Compiler) VisitStringLit(e *ast.StringLit) {
 	c.latestReturn = dest
 	c.latestReturnType = c.ddpstring
 }
-func (c *Compiler) VisitListLit(e *ast.ListLit) {
+func (c *compiler) VisitListLit(e *ast.ListLit) {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
 	list := c.cbb.NewAlloca(listType.IrType())
 
@@ -451,7 +545,7 @@ func (c *Compiler) VisitListLit(e *ast.ListLit) {
 	c.latestReturn = list
 	c.latestReturnType = listType
 }
-func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
+func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	const all_ones int64 = ^0 // int with all bits set to 1
 
 	rhs, typ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
@@ -532,7 +626,7 @@ func (c *Compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 
 	c.freeNonPrimitive(rhs, typ)
 }
-func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
+func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	switch e.Operator {
 	case ast.BIN_AND:
@@ -958,7 +1052,7 @@ func (c *Compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	c.freeNonPrimitive(lhs, lhsTyp)
 	c.freeNonPrimitive(rhs, rhsTyp)
 }
-func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
+func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	lhs, lhsTyp := c.evaluate(e.Lhs)
 	mid, midTyp := c.evaluate(e.Mid)
 	rhs, rhsTyp := c.evaluate(e.Rhs)
@@ -986,7 +1080,7 @@ func (c *Compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	c.freeNonPrimitive(mid, midTyp)
 	c.freeNonPrimitive(rhs, rhsTyp)
 }
-func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
+func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 	lhs, lhsTyp := c.evaluate(e.Lhs)
 	if e.Type.IsList {
 		listType := c.getListType(lhsTyp)
@@ -1076,17 +1170,17 @@ func (c *Compiler) VisitCastExpr(e *ast.CastExpr) {
 	c.latestReturnType = c.toIrType(e.Type)
 	c.freeNonPrimitive(lhs, lhsTyp)
 }
-func (c *Compiler) VisitGrouping(e *ast.Grouping) {
+func (c *compiler) VisitGrouping(e *ast.Grouping) {
 	e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
 }
 
 // helper for VisitAssignStmt and VisitFuncCall
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
-func (c *Compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
+func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Literal.Literal)
+		Var := c.scp.lookupVar(c.getDeclIrName(assign.Declaration))
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -1105,8 +1199,8 @@ func (c *Compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil
 }
-func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
-	fun := c.functions[e.Name] // retreive the function (the resolver took care that it is present)
+func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
+	fun := c.functions[c.getDeclIrName(e.Func)] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
 
 	irReturnType := c.toIrType(fun.funcDecl.Type)
@@ -1124,7 +1218,7 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 			if assign, ok := e.Args[param.Literal].(ast.Assigneable); ok {
 				val, _, _ = c.evaluateAssignableOrReference(assign, true)
 			} else {
-				err("non-assignable passed as reference to %s", fun.funcDecl.Name)
+				err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
 		} else {
 			val, _ = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
@@ -1155,17 +1249,18 @@ func (c *Compiler) VisitFuncCall(e *ast.FuncCall) {
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *Compiler) VisitBadStmt(s *ast.BadStmt) {
+func (c *compiler) VisitBadStmt(s *ast.BadStmt) {
 	err("Es wurde eine invalide Aussage gefunden")
 }
-func (c *Compiler) VisitDeclStmt(s *ast.DeclStmt) {
+func (c *compiler) VisitDeclStmt(s *ast.DeclStmt) {
 	s.Decl.Accept(c)
 }
-func (c *Compiler) VisitExprStmt(s *ast.ExprStmt) {
+func (c *compiler) VisitExprStmt(s *ast.ExprStmt) {
 	expr, exprTyp := c.evaluate(s.Expr)
 	c.freeNonPrimitive(expr, exprTyp)
 }
-func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
+func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {}
+func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) {
 	rhs, rhsTyp := c.evaluate(s.Rhs) // compile the expression
 
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
@@ -1181,7 +1276,7 @@ func (c *Compiler) VisitAssignStmt(s *ast.AssignStmt) {
 		c.cbb.NewStore(rhs, lhs) // store the new value
 	}
 }
-func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) {
+func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) {
 	c.scp = newScope(c.scp) // a block gets its own scope
 	wasReturn := false
 	for _, stmt := range s.Statements {
@@ -1199,7 +1294,7 @@ func (c *Compiler) VisitBlockStmt(s *ast.BlockStmt) {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
-func (c *Compiler) VisitIfStmt(s *ast.IfStmt) {
+func (c *compiler) VisitIfStmt(s *ast.IfStmt) {
 	cond, _ := c.evaluate(s.Condition)
 	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.commentNode(c.cbb, s, "")
@@ -1233,7 +1328,7 @@ func (c *Compiler) VisitIfStmt(s *ast.IfStmt) {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) {
+func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
 		condBlock := c.cf.NewBlock("")
@@ -1291,7 +1386,7 @@ func (c *Compiler) VisitWhileStmt(s *ast.WhileStmt) {
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
+func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
 	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
@@ -1314,7 +1409,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
 	}
 
 	// compile the incrementBlock
-	Var := c.scp.lookupVar(s.Initializer.Name.Literal)
+	Var := c.scp.lookupVar(s.Initializer.Name())
 	indexVar := incrementBlock.NewLoad(Var.typ.IrType(), Var.val)
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
@@ -1328,7 +1423,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
 	c.cbb = incrementBlock
 	// add the incrementer to the counter variable
 	add := c.cbb.NewAdd(indexVar, incrementer)
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name.Literal).val)
+	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -1363,7 +1458,7 @@ func (c *Compiler) VisitForStmt(s *ast.ForStmt) {
 
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
 }
-func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
+func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.scp = newScope(c.scp)
 	in, inTyp := c.evaluate(s.In)
 	c.scp.addNonPrimitive(in, inTyp)
@@ -1381,14 +1476,14 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	index := c.cf.Blocks[0].NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name.Literal, c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
+	c.scp.addVar(s.Initializer.Name(), c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
 
 	c.cbb = bodyBlock
-	loopVar := c.scp.lookupVar(s.Initializer.Name.Literal)
+	loopVar := c.scp.lookupVar(s.Initializer.Name())
 	if inTyp == c.ddpstring {
 		char := c.cbb.NewCall(c.ddpstring.indexIrFun, in, c.cbb.NewLoad(ddpint, index))
 		c.cbb.NewStore(char, loopVar.val)
@@ -1416,7 +1511,7 @@ func (c *Compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
 	c.freeNonPrimitive(in, inTyp)
 }
-func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) {
+func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
 		c.exitNestedScopes()
 		c.commentNode(c.cbb, s, "")
@@ -1434,7 +1529,7 @@ func (c *Compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	}
 }
 
-func (c *Compiler) exitNestedScopes() {
+func (c *compiler) exitNestedScopes() {
 	for scp := c.scp; scp != c.cfscp; scp = c.exitScope(scp) {
 		for _, v := range scp.non_primitives {
 			c.freeNonPrimitive(v.val, v.typ)

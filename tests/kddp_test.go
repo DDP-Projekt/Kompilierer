@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"flag"
-	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -25,7 +24,6 @@ func TestMain(m *testing.M) {
 	if *test_dirs_flag == "" {
 		test_dirs = []string{}
 	}
-	fmt.Printf("%d test_dirs %v\n", len(test_dirs), test_dirs)
 	os.Exit(m.Run())
 }
 

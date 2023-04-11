@@ -24,14 +24,14 @@ func getPointeeTypeT(ptr types.Type) types.Type {
 
 // calculates the size of the given type
 // and returns it as i64
-func (c *Compiler) sizeof(typ types.Type) value.Value {
+func (c *compiler) sizeof(typ types.Type) value.Value {
 	size_ptr := c.cbb.NewGetElementPtr(typ, constant.NewNull(ptr(typ)), newIntT(i32, 1))
 	size_i := c.cbb.NewPtrToInt(size_ptr, i64)
 	return size_i
 }
 
 // the GROW_CAPACITY macro from the runtime
-func (c *Compiler) growCapacity(cap value.Value) value.Value {
+func (c *compiler) growCapacity(cap value.Value) value.Value {
 	trueBlock, falseBlock, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	cond := c.cbb.NewICmp(enum.IPredSLT, cap, newInt(8))
 	c.cbb.NewCondBr(cond, trueBlock, falseBlock)
@@ -49,27 +49,27 @@ func (c *Compiler) growCapacity(cap value.Value) value.Value {
 
 // uses the GetElementPtr instruction to index a pointer
 // returns a pointer to the value
-func (c *Compiler) indexArray(arr value.Value, index value.Value) value.Value {
+func (c *compiler) indexArray(arr value.Value, index value.Value) value.Value {
 	gep := c.cbb.NewGetElementPtr(getPointeeType(arr), arr, index)
 	gep.InBounds = true
 	return gep
 }
 
-func (c *Compiler) loadArrayElement(arr value.Value, index value.Value) value.Value {
+func (c *compiler) loadArrayElement(arr value.Value, index value.Value) value.Value {
 	elementPtr := c.indexArray(arr, index)
 	return c.cbb.NewLoad(getPointeeType(arr), elementPtr)
 }
 
 // uses the GetElementPtr instruction to index struct fields
 // returns a pointer to the field
-func (c *Compiler) indexStruct(structPtr value.Value, index int64) value.Value {
+func (c *compiler) indexStruct(structPtr value.Value, index int64) value.Value {
 	structType := getPointeeType(structPtr)
 	return c.cbb.NewGetElementPtr(structType, structPtr, newIntT(i32, 0), newIntT(i32, index))
 }
 
 // indexStruct followed by a load on the result
 // returns the value of the field
-func (c *Compiler) loadStructField(structPtr value.Value, index int64) value.Value {
+func (c *compiler) loadStructField(structPtr value.Value, index int64) value.Value {
 	fieldPtr := c.indexStruct(structPtr, index)
 	return c.cbb.NewLoad(getPointeeType(fieldPtr), fieldPtr)
 }
@@ -79,7 +79,7 @@ func (c *Compiler) loadStructField(structPtr value.Value, index int64) value.Val
 // genTrueBody generates the then-body
 // genFalseBody may be nil if no else is required
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *Compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody func()) {
+func (c *compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody func()) {
 	trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), (*ir.Block)(nil), c.cf.NewBlock("")
 	if genFalseBody == nil {
 		falseBlock = leaveBlock // no else, so we jump directly to leave
@@ -110,7 +110,7 @@ func (c *Compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody fun
 // generates a new ternary-operator expression using phi-nodes
 // cond is the condition, true/falseVal should produce values of the same type
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *Compiler) createTernary(cond value.Value, trueVal, falseVal func() value.Value) value.Value {
+func (c *compiler) createTernary(cond value.Value, trueVal, falseVal func() value.Value) value.Value {
 	trueLabel, falseLabel, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.cbb.NewCondBr(cond, trueLabel, falseLabel)
 
@@ -131,7 +131,7 @@ func (c *Compiler) createTernary(cond value.Value, trueVal, falseVal func() valu
 
 // generates a new while-loop using cond as condition
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *Compiler) createWhile(cond func() value.Value, genBody func()) {
+func (c *compiler) createWhile(cond func() value.Value, genBody func()) {
 	condBlock, bodyBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.cbb.NewBr(condBlock)
 
@@ -150,7 +150,7 @@ func (c *Compiler) createWhile(cond func() value.Value, genBody func()) {
 // generates a new for-loop using iterStart/End to get the start and end value (should return i64)
 // and genBody to generate what should be done in the body-Block
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *Compiler) createFor(iterStart value.Value, genCond func(index value.Value) value.Value, genBody func(index value.Value)) {
+func (c *compiler) createFor(iterStart value.Value, genCond func(index value.Value) value.Value, genBody func(index value.Value)) {
 	// initialize counter to 0 (ddpint counter = 0)
 	counter := c.cbb.NewAlloca(i64)
 	c.cbb.NewStore(iterStart, counter)
@@ -181,7 +181,7 @@ func (c *Compiler) createFor(iterStart value.Value, genCond func(index value.Val
 
 // helper to be used together with createFor
 // creates a default condition to loop up to a certain value
-func (c *Compiler) forDefaultCond(limit value.Value) func(value.Value) value.Value {
+func (c *compiler) forDefaultCond(limit value.Value) func(value.Value) value.Value {
 	return func(index value.Value) value.Value {
 		return c.cbb.NewICmp(enum.IPredSLT, index, limit)
 	}

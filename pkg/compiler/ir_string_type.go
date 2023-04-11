@@ -71,7 +71,7 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
-func (c *Compiler) defineStringType() *ddpIrStringType {
+func (c *compiler) defineStringType() *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
 		ptr(i8), // char* str

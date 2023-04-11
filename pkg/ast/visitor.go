@@ -43,6 +43,7 @@ type FullVisitor interface {
 	BadStmtVisitor
 	DeclStmtVisitor
 	ExprStmtVisitor
+	ImportStmtVisitor
 	AssignStmtVisitor
 	BlockStmtVisitor
 	IfStmtVisitor
@@ -147,6 +148,10 @@ type (
 	ExprStmtVisitor interface {
 		BaseVisitor
 		VisitExprStmt(*ExprStmt)
+	}
+	ImportStmtVisitor interface {
+		BaseVisitor
+		VisitImportStmt(*ImportStmt)
 	}
 	AssignStmtVisitor interface {
 		BaseVisitor

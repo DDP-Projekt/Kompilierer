@@ -122,6 +122,7 @@ const (
 	COUNT_MAL
 	ALIAS
 	STEHT
+	OEFFENTLICHE
 
 	DOT    // .
 	COMMA  // ,
@@ -252,6 +253,7 @@ var tokenStrings = [...]string{
 	COUNT_MAL:    "Mal",
 	ALIAS:        "Alias",
 	STEHT:        "Steht",
+	OEFFENTLICHE: "öffentliche",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -380,6 +382,8 @@ var KeywordMap = map[string]TokenType{
 	"Mal":            COUNT_MAL,
 	"Alias":          ALIAS,
 	"steht":          STEHT,
+	"öffentliche":    OEFFENTLICHE,
+	"oeffentliche":   OEFFENTLICHE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

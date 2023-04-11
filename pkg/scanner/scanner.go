@@ -10,7 +10,6 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
-	"github.com/kardianos/osext"
 )
 
 type Mode uint32
@@ -26,9 +25,6 @@ type Scanner struct {
 	src          []rune
 	errorHandler ddperror.Handler // this function is called for all error messages
 	mode         Mode             // scanner mode (alias, initializing, ...)
-
-	include       *Scanner            // include directives
-	includedFiles map[string]struct{} // files already included are in here
 
 	start            int // start offset of the current token
 	cur              int // current read offset
@@ -54,8 +50,6 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 		src:              nil,
 		errorHandler:     errorHandler,
 		mode:             mode,
-		include:          nil,
-		includedFiles:    make(map[string]struct{}),
 		start:            0,
 		cur:              0,
 		line:             1,
@@ -79,8 +73,6 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 		}
 
 		src = file
-		filePath, _ = filepath.Abs(filePath) // if src was loaded from file, add the absolute path to the set, not the one that was passed
-		scan.includedFiles[filePath] = struct{}{}
 	}
 
 	if !utf8.Valid(src) {
@@ -107,16 +99,6 @@ func (s *Scanner) ScanAll() []token.Token {
 // scan the next token from source
 // if all tokens were scanned it returns EOF
 func (s *Scanner) NextToken() token.Token {
-	// check if we are currently including a file
-	if s.include != nil {
-		if tok := s.include.NextToken(); tok.Type == token.EOF {
-			s.includedFiles = s.include.includedFiles
-			s.include = nil
-		} else {
-			return tok
-		}
-	}
-
 	s.skipWhitespace()
 	s.start, s.startLine, s.startColumn = s.cur, s.line, s.column
 
@@ -273,23 +255,6 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
-// path to the folder of the kddp executable
-// it is defined in the scanner package
-// because that is the first package to need it in the
-// import chain, and it would be overkill to have its own package
-var DDPPATH string
-
-func init() {
-	// get the path to the ddp install directory
-	if ddppath := os.Getenv("DDPPATH"); ddppath != "" {
-		DDPPATH = ddppath
-	} else if exeFolder, err := osext.ExecutableFolder(); err != nil { // fallback if the environment variable is not set, might fail though
-		panic(err)
-	} else {
-		DDPPATH = exeFolder
-	}
-}
-
 func (s *Scanner) identifier() token.Token {
 	shouldReportCapitailzation := false // we don't report capitalization errors on aliases but don't know the tokenType yet, so this flag is used
 	var capitalRange token.Range
@@ -306,47 +271,6 @@ func (s *Scanner) identifier() token.Token {
 
 	if shouldReportCapitailzation && tokenType != token.IDENTIFIER {
 		s.err(ddperror.SYN_EXPECTED_CAPITAL, capitalRange, "Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
-	}
-
-	if tokenType == token.BINDE && !s.aliasMode() { // don't resolve includes in alias mode (they would lead to garbage anyways)
-		lit := s.NextToken()
-		if lit.Type != token.STRING {
-			s.err(ddperror.SYN_UNEXPECTED_TOKEN, lit.Range, "Nach 'Binde' muss ein Text Literal folgen")
-			return lit
-		}
-
-		if tok := s.NextToken(); tok.Type != token.EIN {
-			s.err(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "ein"))
-		} else if tok := s.NextToken(); tok.Type != token.DOT {
-			s.err(ddperror.SYN_UNEXPECTED_TOKEN, tok.Range, ddperror.MsgGotExpected(tok.Literal, "'.'"))
-		}
-
-		literalContent := strings.Trim(lit.Literal, "\"")
-		inclPath := ""
-		var err error
-		if strings.HasPrefix(literalContent, "Duden") {
-			inclPath = filepath.Join(DDPPATH, literalContent) + ".ddp"
-		} else {
-			inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(s.file), literalContent+".ddp"))
-		}
-		if err != nil {
-			s.err(ddperror.SYN_MALFORMED_INCLUDE_PATH, lit.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", literalContent+".ddp", err.Error()))
-		} else if _, ok := s.includedFiles[inclPath]; !ok {
-			if s.include, err = New(inclPath, nil, s.errorHandler, s.mode); err != nil {
-				if derr, ok := err.(ddperror.Error); ok {
-					s.err(derr.Code, lit.Range, derr.Error())
-				} else {
-					s.err(ddperror.MISC_INCLUDE_ERROR, lit.Range, fmt.Sprintf("Fehler beim Einbinden der Datei '%s': %s", inclPath, err.Error()))
-				}
-			} else {
-				// append the already included files
-				for k, v := range s.includedFiles {
-					s.include.includedFiles[k] = v
-				}
-			}
-		}
-
-		return s.NextToken()
 	}
 
 	return s.newToken(tokenType)

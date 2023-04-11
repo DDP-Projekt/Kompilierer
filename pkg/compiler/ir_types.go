@@ -65,7 +65,7 @@ func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
 	return nil
 }
 
-func (c *Compiler) definePrimitiveType(typ types.Type, defaultValue constant.Constant, name string) *ddpIrPrimitiveType {
+func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Constant, name string) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		typ:          typ,
 		ptr:          ptr(typ),

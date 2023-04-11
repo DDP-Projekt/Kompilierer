@@ -13,8 +13,7 @@ type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
-	Faulty     bool   // set if the ast has any errors (doesn't matter what from which phase they came)
-	File       string // the file from which this ast was produced
+	Faulty     bool // set if the ast has any errors (doesn't matter what from which phase they came)
 }
 
 // invoke the Visitor for each top level statement in the Ast
@@ -28,7 +27,7 @@ func WalkAst(ast *Ast, visitor FullVisitor) {
 type FuncAlias struct {
 	Tokens   []token.Token                     // tokens of the alias
 	Original token.Token                       // the original string
-	Func     string                            // the function it refers to (if it is used outside a FuncDecl)
+	Func     *FuncDecl                         // the function it refers to (if it is used outside a FuncDecl)
 	Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
 }
 
@@ -54,6 +53,9 @@ type (
 	Declaration interface {
 		Node
 		declarationNode() // dummy function for the interface
+		Name() string     // returns the name of the declaration or "" for BadDecls
+		Public() bool     // returns wether the declaration is public. always false for BadDecls
+		Module() *Module  // returns the module from which the declaration comes
 	}
 
 	// *Ident or *Indexing
@@ -71,21 +73,29 @@ type (
 	BadDecl struct {
 		Tok token.Token
 		Err ddperror.Error
+		Mod *Module
 	}
 
 	VarDecl struct {
-		Range   token.Range
-		Comment *token.Token  // optional comment (also contained in ast.Comments)
-		Type    ddptypes.Type // type of the variable
-		Name    token.Token   // identifier name
-		InitVal Expression    // initial value
+		Range    token.Range
+		Comment  *token.Token  // optional comment (also contained in ast.Comments)
+		Type     ddptypes.Type // type of the variable
+		NameTok  token.Token   // identifier name
+		IsPublic bool          // wether the function is marked with öffentliche
+		// wether the variable was declared in the global scope
+		// used pretty much only in the compiler
+		IsGlobal bool
+		Mod      *Module    // the module in which the variable was declared
+		InitVal  Expression // initial value
 	}
 
 	FuncDecl struct {
 		Range         token.Range
 		Comment       *token.Token             // optional comment (also contained in ast.Comments)
 		Tok           token.Token              // Die
-		Name          token.Token              // identifier name
+		NameTok       token.Token              // token of the name
+		IsPublic      bool                     // wether the function is marked with öffentliche
+		Mod           *Module                  // the module in which the function was declared
 		ParamNames    []token.Token            // x, y und z
 		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
 		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
@@ -101,7 +111,7 @@ func (decl *VarDecl) String() string  { return "VarDecl" }
 func (decl *FuncDecl) String() string { return "FuncDecl" }
 
 func (decl *BadDecl) Token() token.Token  { return decl.Tok }
-func (decl *VarDecl) Token() token.Token  { return decl.Name }
+func (decl *VarDecl) Token() token.Token  { return decl.NameTok }
 func (decl *FuncDecl) Token() token.Token { return decl.Tok }
 
 func (decl *BadDecl) GetRange() token.Range  { return decl.Err.Range }
@@ -116,6 +126,18 @@ func (decl *BadDecl) declarationNode()  {}
 func (decl *VarDecl) declarationNode()  {}
 func (decl *FuncDecl) declarationNode() {}
 
+func (decl *BadDecl) Name() string  { return "" }
+func (decl *VarDecl) Name() string  { return decl.NameTok.Literal }
+func (decl *FuncDecl) Name() string { return decl.NameTok.Literal }
+
+func (decl *BadDecl) Public() bool  { return false }
+func (decl *VarDecl) Public() bool  { return decl.IsPublic }
+func (decl *FuncDecl) Public() bool { return decl.IsPublic }
+
+func (decl *BadDecl) Module() *Module  { return decl.Mod }
+func (decl *VarDecl) Module() *Module  { return decl.Mod }
+func (decl *FuncDecl) Module() *Module { return decl.Mod }
+
 // Expressions
 type (
 	BadExpr struct {
@@ -125,6 +147,9 @@ type (
 
 	Ident struct {
 		Literal token.Token
+		// the variable declaration this identifier refers to
+		// is set by the resolver, or nil if the name was not found
+		Declaration *VarDecl
 	}
 
 	// also exists as Binary expression for Literals
@@ -216,7 +241,10 @@ type (
 		Range token.Range
 		Tok   token.Token // first token of the call
 		Name  string      // name of the function
-		Args  map[string]Expression
+		// the function declaration this call refers to
+		// is set by the parser, or nil if the name was not found
+		Func *FuncDecl
+		Args map[string]Expression
 	}
 )
 
@@ -320,6 +348,21 @@ type (
 		Expr Expression
 	}
 
+	// import statement for meta-information in the ast
+	// will be already resolved by the parser
+	ImportStmt struct {
+		Range token.Range
+		// the string literal which specified the filename
+		FileName token.Token
+		// the module that was imported because of this
+		// nil if it does not exist or a similar error occured while importing
+		Module *Module
+		// slice of identifiers which specify
+		// the individual symbols imported
+		// if nil, all symbols are imported
+		ImportedSymbols []token.Token
+	}
+
 	AssignStmt struct {
 		Range token.Range
 		Tok   token.Token
@@ -377,6 +420,7 @@ type (
 func (stmt *BadStmt) String() string      { return "BadStmt" }
 func (stmt *DeclStmt) String() string     { return "DeclStmt" }
 func (stmt *ExprStmt) String() string     { return "ExprStmt" }
+func (stmt *ImportStmt) String() string   { return "ImportStmt" }
 func (stmt *AssignStmt) String() string   { return "AssignStmt" }
 func (stmt *BlockStmt) String() string    { return "BlockStmt" }
 func (stmt *IfStmt) String() string       { return "IfStmt" }
@@ -388,6 +432,7 @@ func (stmt *ReturnStmt) String() string   { return "ReturnStmt" }
 func (stmt *BadStmt) Token() token.Token      { return stmt.Tok }
 func (stmt *DeclStmt) Token() token.Token     { return stmt.Decl.Token() }
 func (stmt *ExprStmt) Token() token.Token     { return stmt.Expr.Token() }
+func (stmt *ImportStmt) Token() token.Token   { return stmt.FileName }
 func (stmt *AssignStmt) Token() token.Token   { return stmt.Tok }
 func (stmt *BlockStmt) Token() token.Token    { return stmt.Colon }
 func (stmt *IfStmt) Token() token.Token       { return stmt.If }
@@ -399,6 +444,7 @@ func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
 func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.Range }
 func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
 func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
+func (stmt *ImportStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *BlockStmt) GetRange() token.Range    { return stmt.Range }
 func (stmt *IfStmt) GetRange() token.Range       { return stmt.Range }
@@ -410,6 +456,7 @@ func (stmt *ReturnStmt) GetRange() token.Range   { return stmt.Range }
 func (stmt *BadStmt) Accept(v FullVisitor)      { v.VisitBadStmt(stmt) }
 func (stmt *DeclStmt) Accept(v FullVisitor)     { v.VisitDeclStmt(stmt) }
 func (stmt *ExprStmt) Accept(v FullVisitor)     { v.VisitExprStmt(stmt) }
+func (stmt *ImportStmt) Accept(v FullVisitor)   { v.VisitImportStmt(stmt) }
 func (stmt *AssignStmt) Accept(v FullVisitor)   { v.VisitAssignStmt(stmt) }
 func (stmt *BlockStmt) Accept(v FullVisitor)    { v.VisitBlockStmt(stmt) }
 func (stmt *IfStmt) Accept(v FullVisitor)       { v.VisitIfStmt(stmt) }
@@ -421,6 +468,7 @@ func (stmt *ReturnStmt) Accept(v FullVisitor)   { v.VisitReturnStmt(stmt) }
 func (stmt *BadStmt) statementNode()      {}
 func (stmt *DeclStmt) statementNode()     {}
 func (stmt *ExprStmt) statementNode()     {}
+func (stmt *ImportStmt) statementNode()   {}
 func (stmt *AssignStmt) statementNode()   {}
 func (stmt *BlockStmt) statementNode()    {}
 func (stmt *IfStmt) statementNode()       {}

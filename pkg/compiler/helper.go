@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
 
 	"github.com/llir/llvm/ir/constant"
@@ -34,7 +35,7 @@ func newIntT(typ *types.IntType, value int64) *constant.Int {
 }
 
 // turn a ddptypes.Type into the corresponding llvm type
-func (c *Compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
+func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	if ddpType.IsList {
 		switch ddpType.Primitive {
 		case ddptypes.ZAHL:
@@ -69,7 +70,7 @@ func (c *Compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 }
 
 // used to handle possible reference parameters
-func (c *Compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
+func (c *compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
 	irType := c.toIrType(ty.Type)
 
 	if !ty.IsReference && irType.IsPrimitive() {
@@ -79,7 +80,7 @@ func (c *Compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
 	return irType.PtrType()
 }
 
-func (c *Compiler) getListType(ty ddpIrType) *ddpIrListType {
+func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	switch ty {
 	case c.ddpinttyp:
 		return c.ddpintlist
@@ -94,4 +95,23 @@ func (c *Compiler) getListType(ty ddpIrType) *ddpIrListType {
 	}
 	err("no list type found for elementType %s", ty.Name())
 	return nil // unreachable
+}
+
+// prepends the decl.Name() with the current module prefix if necessery
+func (c *compiler) getDeclIrName(decl ast.Declaration) string {
+	isGlobal, isExtern := true, false
+	// only apply this to global variables/functions
+	if varDecl, ok := decl.(*ast.VarDecl); ok {
+		isGlobal = varDecl.IsGlobal
+	} else { // don't apply name mangling to extern functions as their name is important in linking
+		funDecl := decl.(*ast.FuncDecl)
+		isExtern = ast.IsExternFunc(funDecl)
+	}
+
+	name := decl.Name()
+	// add the prefix for the current module if the conditions are met
+	if isGlobal && !isExtern {
+		name = c.getModulePrefix(decl.Module()) + name
+	}
+	return name
 }

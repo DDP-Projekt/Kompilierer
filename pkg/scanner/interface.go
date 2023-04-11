@@ -2,8 +2,8 @@ package scanner
 
 import (
 	"errors"
-	"strings"
 
+	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 )
@@ -53,7 +53,7 @@ func Scan(options Options) ([]token.Token, error) {
 // scans the provided source as a function alias
 // expects the alias without the enclosing ""
 func ScanAlias(alias token.Token, errorHandler ddperror.Handler) ([]token.Token, error) {
-	if scan, err := New("Alias", []byte(strings.Trim(alias.Literal, "\"")), errorHandler, ModeAlias); err != nil {
+	if scan, err := New("Alias", []byte(ast.TrimStringLit(alias)), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
 		scan.file, scan.line, scan.column, scan.indent = alias.File, alias.Line(), alias.Column(), alias.Indent
