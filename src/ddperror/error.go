@@ -3,7 +3,7 @@ package ddperror
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // Error type for ddp-errors

@@ -1,8 +1,8 @@
 package compiler
 
 import (
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"

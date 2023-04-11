@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/parser"
 )
 
 type OutputType int

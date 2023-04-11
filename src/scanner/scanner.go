@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 type Mode uint32

@@ -11,10 +11,10 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/DDP-Projekt/Kompilierer/internal/linker"
-	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
+	"github.com/DDP-Projekt/Kompilierer/cmd/internal/linker"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/parser"
 )
 
 // interface for a sub-command

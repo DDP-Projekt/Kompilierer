@@ -4,10 +4,10 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/scanner"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // Options on where to get the source-tokens from

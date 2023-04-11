@@ -8,14 +8,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast/resolver"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast/typechecker"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddppath"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast/resolver"
+	"github.com/DDP-Projekt/Kompilierer/src/ast/typechecker"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/scanner"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // holds state when parsing a .ddp file into an AST

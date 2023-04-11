@@ -3,9 +3,9 @@ package ast
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // represents an Abstract Syntax Tree for a token.DDP program

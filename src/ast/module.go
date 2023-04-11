@@ -3,7 +3,7 @@ package ast
 import (
 	"path/filepath"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // represents a single DDP Module (source file),

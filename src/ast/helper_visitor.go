@@ -3,7 +3,7 @@ package ast
 import (
 	"sort"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 type helperVisitor struct {

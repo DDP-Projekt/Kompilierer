@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
 var gcc = "gcc"

@@ -3,10 +3,10 @@ package typechecker
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // holds state to check if the types of an AST are valid

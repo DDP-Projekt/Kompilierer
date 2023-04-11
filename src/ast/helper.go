@@ -3,7 +3,7 @@ package ast
 import (
 	"strings"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // check if the function is defined externally

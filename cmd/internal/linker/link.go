@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DDP-Projekt/Kompilierer/internal/gcc"
-	"github.com/DDP-Projekt/Kompilierer/pkg/compiler"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/cmd/internal/gcc"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
 type Options struct {

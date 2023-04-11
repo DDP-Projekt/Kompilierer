@@ -3,7 +3,7 @@ package token
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/pkg/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 type TokenType int
