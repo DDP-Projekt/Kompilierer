@@ -14,7 +14,7 @@ type Module struct {
 	// the token which specified the relative FileName
 	// if the module was imported and not the main Module
 	FileNameToken *token.Token
-	// all the imported modules mapped by Module.FileName
+	// all the imported modules
 	Imports []*ImportStmt
 	// a set which contains all files needed
 	// to link the final executable
@@ -33,4 +33,23 @@ func (module *Module) GetIncludeFilename() string {
 		return filepath.Base(module.FileName)
 	}
 	return TrimStringLit(*module.FileNameToken)
+}
+
+// calls VisitAst on all Asts of module and it's imports
+func VisitModuleRec(module *Module, visitor BaseVisitor) {
+	visitModuleRec(module, visitor, make(map[*Module]struct{}))
+}
+
+func visitModuleRec(module *Module, visitor BaseVisitor, visited map[*Module]struct{}) {
+	// return if already visited
+	if _, ok := visited[module]; ok {
+		return
+	}
+	visited[module] = struct{}{}
+	for _, imprt := range module.Imports {
+		if imprt.Module != nil {
+			visitModuleRec(imprt.Module, visitor, visited)
+		}
+	}
+	VisitAst(module.Ast, visitor)
 }
