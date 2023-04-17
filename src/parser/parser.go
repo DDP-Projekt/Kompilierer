@@ -168,6 +168,11 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	rawPath := ast.TrimStringLit(importStmt.FileName)
 	inclPath := ""
 
+	if rawPath == "" {
+		p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.FileName.Range, "Bei Einbindungen muss ein Dateipfad angegeben werden", importStmt.FileName.File)
+		return
+	}
+
 	// resolve the actual file path
 	var err error
 	if strings.HasPrefix(rawPath, "Duden") {
