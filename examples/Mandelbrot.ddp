@@ -83,7 +83,7 @@ Die Funktion finde_Anzahl_iterationen mit den Parametern c_r und c_i vom Typ Kom
     Die Kommazahl f_r ist c_r.
     Die Kommazahl f_i ist c_i.
 
-    Solange f_r quadriert plus f_i quadriert kleiner als, oder 4,0 und iterationen kleiner als Max_Iterationen ist, mache:
+    Solange f_r quadriert plus f_i quadriert kleiner als, oder 4,0 ist und iterationen kleiner als Max_Iterationen ist, mache:
         Quadriere f_r i f_i.
         [Komplexe addition]
         Erhöhe f_r um c_r.

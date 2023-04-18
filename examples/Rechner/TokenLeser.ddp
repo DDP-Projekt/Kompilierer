@@ -1,14 +1,15 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Texte" ein.
+Binde "Duden/Zeichen" ein.
 
-Die Funktion MachWeiter gibt nichts zurück, macht:
+Die öffentliche Funktion MachWeiter gibt nichts zurück, macht:
 Und kann so benutzt werden:
 	"mach weiter"
 
-Die Text Liste Schlüsselwörter ist eine Liste, die aus "(", ")", "$", "+", "*", "^" besteht.
+Die öffentliche Text Liste Schlüsselwörter ist eine Liste, die aus "(", ")", "$", "+", "*", "^" besteht.
 
-Die Funktion AlsAusdruck mit dem Parameter ausdruck vom Typ Text, gibt eine Text Liste zurück, macht:
+Die öffentliche Funktion AlsAusdruck mit dem Parameter ausdruck vom Typ Text, gibt eine Text Liste zurück, macht:
 	Die Text Liste symbole ist eine leere Text Liste.
 	Entferne alle '\r' nach ausdruck. [Windows]
 	Füge "$" an ausdruck an.
@@ -34,7 +35,7 @@ Und kann so benutzt werden:
 	"<ausdruck> als Mathematischen Ausdruck"
 
 
-Die Funktion IstOperator mit dem Parameter symbol vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstOperator mit dem Parameter symbol vom Typ Text, gibt einen Boolean zurück, macht:
 	Wenn der Index von symbol in Schlüsselwörter größer als 3 ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:

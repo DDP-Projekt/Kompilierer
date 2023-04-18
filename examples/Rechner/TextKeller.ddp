@@ -3,7 +3,7 @@ Binde "Duden/Listen" ein.
 Die Text Liste Keller ist 10 Mal "".
 Die Zahl KellerIndex ist 0.
 
-Die Funktion Auflegen mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Auflegen mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
 	Erhöhe KellerIndex um 1.
 	Wenn KellerIndex größer als die Länge von Keller ist, dann:
 		Füge t an Keller an.
@@ -13,19 +13,19 @@ Und kann so benutzt werden:
 	"lege <t> auf den Keller",
 	"Lege <t> auf den Keller"
 
-Die Funktion NElement mit dem Parameter n vom Typ Zahl, gibt einen Text zurück, macht:
+Die öffentliche Funktion NElement mit dem Parameter n vom Typ Zahl, gibt einen Text zurück, macht:
 	Wenn KellerIndex minus n kleiner als 1 ist, gib "" zurück.
 	Gib Keller an der Stelle (KellerIndex minus n) zurück.
 Und kann so benutzt werden:
 	"das <n>. Element des Kellers",
 	"dem <n>. Element des Kellers"
 
-Die Funktion OberstesElement gibt einen Text zurück, macht:
+Die öffentliche Funktion OberstesElement gibt einen Text zurück, macht:
 	Gib Keller an der Stelle KellerIndex zurück.
 Und kann so benutzt werden:
 	"das oberste Element des Kellers"
 
-Die Funktion Herunternehmen gibt einen Text zurück, macht:
+Die öffentliche Funktion Herunternehmen gibt einen Text zurück, macht:
 	Verringere KellerIndex um 1.
 	Gib Keller an der Stelle (KellerIndex plus 1) zurück.
 Und kann so benutzt werden:
@@ -33,8 +33,7 @@ Und kann so benutzt werden:
 	"entferne das oberste Element vom Keller",
 	"das oberste Element vom Keller entfernt"
 
-Die Funktion LeereKeller gibt nichts zurück, macht:
+Die öffentliche Funktion LeereKeller gibt nichts zurück, macht:
 	KellerIndex ist 0.
 Und kann so benutzt werden:
-	"Leere den Keller",
-	"leere den Keller"
+	"Leere den Keller"

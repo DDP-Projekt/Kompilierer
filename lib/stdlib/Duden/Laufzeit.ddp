@@ -28,7 +28,7 @@ und kann so benutzt werden:
 [
 	Gibt eine Text Liste zurück die alle übergebenen Befehlszeilenargumente enthält.
 ]
-Die Funktion Befehlszeilenargumente gibt eine Text Liste zurück,
+Die öffentliche Funktion Befehlszeilenargumente gibt eine Text Liste zurück,
 ist in "libddpruntime.a" definiert
 und kann so benutzt werden:
 	"die Befehlszeilenargumente" oder 

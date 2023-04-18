@@ -1,7 +1,7 @@
 Binde "Duden/Ausgabe" ein.
 
 Für jede Zahl i von 1 bis 100, mache:
-    Wenn i modulo 3 gleich 0 und i modulo 5 gleich 0 ist, Schreibe den Text "FizzBuzz" auf eine Zeile.
+    Wenn i modulo 3 gleich 0 ist und i modulo 5 gleich 0 ist, Schreibe den Text "FizzBuzz" auf eine Zeile.
     Sonst:
         Wenn i modulo 3 gleich 0 ist, Schreibe den Text "Fizz" auf eine Zeile.
         Wenn aber i modulo 5 gleich 0 ist, Schreibe den Text "Buzz" auf eine Zeile.

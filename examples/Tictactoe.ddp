@@ -12,7 +12,7 @@ Die Zahlen Liste Spielfeld ist 9 Mal 0.
 Die Funktion spieler1dran gibt einen Boolean zurück, macht:
     Gib ist_Spieler_1_dran zurück.
 Und kann so benutzt werden:
-    "Spieler 1 dran"
+    "Spieler 1 dran ist"
 
 Die Funktion wechsel_spieler gibt nichts zurück, macht:
     Negiere ist_Spieler_1_dran.
@@ -20,35 +20,35 @@ Und kann so benutzt werden:
     "Wechsel den Spieler"
 
 Die Funktion momentane_Spieler gibt eine Zahl zurück, macht:
-    Wenn (Spieler 1 dran) ist, gib 1 zurück.
+    Wenn Spieler 1 dran ist, gib 1 zurück.
     [Ansonsten] Gib 2 zurück.
 Und kann so benutzt werden:
     "die Zahl für den aktuellen Spieler"
 
 Die Funktion spiel_nicht_gewonnen gibt einen Boolean zurück, macht:
     Die Zahl Spieler_zahl ist 0.
-    Wenn (Spieler 1 dran) ist, speichere 2 in Spieler_zahl.
+    Wenn Spieler 1 dran ist, speichere 2 in Spieler_zahl.
     Sonst speichere 1 in Spieler_zahl.
 
-    Der Boolean Gewonnen ist wahr wenn
-        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 2 und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 3 und Spielfeld an der Stelle 1 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 5 und Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 6 und Spielfeld an der Stelle 4 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 8 und Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 9 und Spielfeld an der Stelle 7 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 4 und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 7 und Spielfeld an der Stelle 1 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 2 gleich Spielfeld an der Stelle 5 und Spielfeld an der Stelle 2 gleich Spielfeld an der Stelle 8 und Spielfeld an der Stelle 2 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 6 und Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 9 und Spielfeld an der Stelle 3 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 5 und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 9 und Spielfeld an der Stelle 1 gleich Spieler_zahl oder
-        Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 5 und Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 7 und Spielfeld an der Stelle 3 gleich Spieler_zahl ist.
+    Der Boolean Gewonnen ist wahr, wenn
+        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 2 ist und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 3 ist und Spielfeld an der Stelle 1 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 5 ist und Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 6 ist und Spielfeld an der Stelle 4 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 8 ist und Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 9 ist und Spielfeld an der Stelle 7 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 4 ist und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 7 ist und Spielfeld an der Stelle 1 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 2 gleich Spielfeld an der Stelle 5 ist und Spielfeld an der Stelle 2 gleich Spielfeld an der Stelle 8 ist und Spielfeld an der Stelle 2 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 6 ist und Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 9 ist und Spielfeld an der Stelle 3 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 5 ist und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 9 ist und Spielfeld an der Stelle 1 gleich Spieler_zahl ist oder
+        Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 5 ist und Spielfeld an der Stelle 3 gleich Spielfeld an der Stelle 7 ist und Spielfeld an der Stelle 3 gleich Spieler_zahl ist.
     
     Gib nicht Gewonnen zurück.
 Und kann so benutzt werden:
-    "das Spiel nicht gewonnen"
+    "das Spiel nicht gewonnen ist"
 
 Die Funktion spiel_unentschieden gibt einen Boolean zurück, macht:
     Für jede Zahl feld in Spielfeld, wenn feld gleich 0 ist, gib falsch zurück.
     [ Falls alle felder belegt sind ] Gib wahr zurück.
 Und kann so benutzt werden:
-    "das Spiel unentschieden"
+    "das Spiel unentschieden ist"
 
 Die Funktion schreibe_spielfeld gibt nichts zurück, macht:
     Für jede Zahl i von 0 bis 2, mache:
@@ -66,8 +66,8 @@ Und kann so benutzt werden:
     "Zeige das Spielfeld"
 
 [ Programm anfang ]
-Solange (das Spiel nicht gewonnen) ist, mache:
-    Wenn (das Spiel unentschieden) ist, dann:
+Solange das Spiel nicht gewonnen ist, mache:
+    Wenn das Spiel unentschieden ist, dann:
         Zeige das Spielfeld.
         Schreibe den Text "Das Spiel ist unentschieden" auf eine Zeile.
         Beende das Programm.
@@ -80,7 +80,7 @@ Solange (das Spiel nicht gewonnen) ist, mache:
 
     [Nutzereingabe validieren]
     Die Zahl Eingabe ist die nächste Zahl.
-    Solange Eingabe kleiner als 1 oder Eingabe größer als 9 ist, mache:
+    Solange Eingabe kleiner als 1 ist oder Eingabe größer als 9 ist, mache:
         Schreibe den Text "\nUngültige Eingabe! Bitte schreibe nur Zahlen von 1 bis 9!" auf eine Zeile.
         Speichere die nächste Zahl in Eingabe.
 

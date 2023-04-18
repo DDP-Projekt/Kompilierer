@@ -2,6 +2,9 @@ Binde "TokenLeser" ein.
 Binde "TextKeller" ein.
 Binde "Duden/Eingabe" ein.
 Binde "Duden/Laufzeit" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Ausgabe" ein.
 
 Die Text Liste symbole ist eine leere Text Liste.
 Die Zahl symbolIndex ist 1.
