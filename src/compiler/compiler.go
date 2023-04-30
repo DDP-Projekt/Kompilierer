@@ -128,6 +128,12 @@ func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
 
 	// add the external dependencies
 	for path := range module.ExternalDependencies {
+		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(module.FileName), path)); err != nil {
+			c.errorHandler(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
+				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), module.FileName))
+		} else {
+			path = abspath
+		}
 		c.result.Dependencies[path] = struct{}{}
 	}
 
