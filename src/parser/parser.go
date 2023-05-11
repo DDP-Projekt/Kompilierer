@@ -1763,14 +1763,6 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.BoolLit{Literal: p.previous(), Value: false}
 		case token.TRUE:
 			lhs = &ast.BoolLit{Literal: p.previous(), Value: true}
-		case token.PI:
-			lhs = &ast.FloatLit{Literal: p.previous(), Value: 3.141592654}
-		case token.E:
-			lhs = &ast.FloatLit{Literal: p.previous(), Value: 2.718281828}
-		case token.TAU:
-			lhs = &ast.FloatLit{Literal: p.previous(), Value: 6.283185307}
-		case token.PHI:
-			lhs = &ast.FloatLit{Literal: p.previous(), Value: 1.618033989}
 		case token.INT:
 			lhs = p.parseIntLit()
 		case token.FLOAT:
@@ -1942,13 +1934,12 @@ outer:
 			// expand arguments
 			if tok.Type == token.ALIAS_PARAMETER {
 				switch t := p.peek(); t.Type {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
-					token.PI, token.E, token.TAU, token.PHI:
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
 					p.advance() // single-token so skip it
 					continue
 				case token.NEGATE:
 					p.advance()
-					if !p.match(token.INT, token.FLOAT, token.PI, token.E, token.TAU, token.PHI, token.IDENTIFIER) {
+					if !p.match(token.INT, token.FLOAT, token.IDENTIFIER) {
 						p.cur = start
 						continue outer
 					}
@@ -2016,12 +2007,11 @@ outer:
 
 				exprStart := p.cur
 				switch pType {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER,
-					token.PI, token.E, token.TAU, token.PHI:
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
 					p.advance() // single-token argument
 				case token.NEGATE:
 					p.advance()
-					p.match(token.INT, token.FLOAT, token.PI, token.E, token.TAU, token.PHI, token.IDENTIFIER)
+					p.match(token.INT, token.FLOAT, token.IDENTIFIER)
 				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 					p.advance()
 					numLparens := 1
