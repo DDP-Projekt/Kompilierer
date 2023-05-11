@@ -35,7 +35,7 @@ MAKE = make
 
 display_help_disclaimer:
 	@echo "compiling the whole project"
-	@echo '"run "make help" to get a list of all available targets'
+	@echo 'run "make help" to get a list of all available targets'
 	@echo ""
 
 all: display_help_disclaimer make_out_dir kddp runtime stdlib
