@@ -14,11 +14,6 @@ const (
 	TRUE   // wahr
 	FALSE  // falsch
 
-	PI  // pi
-	E   // e
-	TAU // tau
-	PHI // phi
-
 	PLUS         // plus
 	MINUS        // minus
 	MAL          // mal
@@ -145,11 +140,6 @@ var tokenStrings = [...]string{
 	TRUE:   "wahr",
 	FALSE:  "falsch",
 
-	PI:  "pi",
-	E:   "e",
-	TAU: "tau",
-	PHI: "phi",
-
 	PLUS:         "plus",
 	MINUS:        "minus",
 	MAL:          "mal",
@@ -269,10 +259,6 @@ func (t TokenType) String() string {
 // maps all DDP-keywords to their token-type
 // should not be modified!
 var KeywordMap = map[string]TokenType{
-	"pi":             PI,
-	"e":              E,
-	"tau":            TAU,
-	"phi":            PHI,
 	"wahr":           TRUE,
 	"falsch":         FALSE,
 	"plus":           PLUS,
