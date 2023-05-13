@@ -14,6 +14,15 @@ CC=gcc
 CXX=g++
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
+LLVM_CMAKE_BUILD_TOOL=$(MAKE)
+
+# check if ninja is installed and use it
+ifeq (, $(shell which ninja))
+	$(error "ninja not found, using (MinGW) Makefiles to build llvm")
+else
+	LLVM_CMAKE_GENERATOR=Ninja
+	LLVM_CMAKE_BUILD_TOOL=ninja
+endif
 
 OUT_DIR := ./build/DDP
 
@@ -29,7 +38,6 @@ DDP_DIR_OUT = $(OUT_DIR)/bin/
 LIB_DIR_OUT = $(OUT_DIR)/lib/
 
 CMAKE = cmake
-MAKE = make
 
 .PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer test-complete
 
@@ -52,7 +60,7 @@ stdlib:
 	cd $(STD_DIR) ; $(MAKE)
 	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	rm -rf $(OUT_DIR)/Duden
+	rm -rf $(OUT_DIR)/Duden || true
 	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
 stdlib-debug:
@@ -60,7 +68,7 @@ stdlib-debug:
 	cd $(STD_DIR) ; $(MAKE) debug
 	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
 	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	rm -rf $(OUT_DIR)/Duden
+	rm -rf $(OUT_DIR)/Duden || true
 	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
 
 runtime:
@@ -85,7 +93,7 @@ make_out_dir:
 
 clean:
 	@echo "deleting output directorie"
-	rm -r $(OUT_DIR)
+	rm -r $(OUT_DIR) || true
 
 llvm:
 # clone the submodule
@@ -101,7 +109,7 @@ llvm:
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; $(MAKE)
+	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL)
 
 
 # will hold the directories to run in the tests
