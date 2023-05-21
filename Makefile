@@ -17,9 +17,7 @@ LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
 
 # check if ninja is installed and use it
-ifeq (, $(shell which ninja))
-	$(error "ninja not found, using (MinGW) Makefiles to build llvm")
-else
+ifneq (, $(shell which ninja))
 	LLVM_CMAKE_GENERATOR=Ninja
 	LLVM_CMAKE_BUILD_TOOL=ninja
 endif
@@ -106,6 +104,9 @@ llvm:
 
 # generate cmake build files
 	@echo "building llvm"
+ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)
+	@echo "found ninja, using it as cmake generator"
+endif
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
 
 # build llvm
