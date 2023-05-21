@@ -853,18 +853,25 @@ func (p *parser) importStatement() ast.Statement {
 				importedSymbols = append(importedSymbols, p.previous())
 			} else {
 				for p.match(token.COMMA) {
-					p.consume(token.IDENTIFIER)
+					if p.consume(token.IDENTIFIER) {
+						importedSymbols = append(importedSymbols, p.previous())
+					}
+				}
+				if p.consume(token.UND) && p.consume(token.IDENTIFIER) {
 					importedSymbols = append(importedSymbols, p.previous())
 				}
-				p.consume(token.UND)
-				p.consume(token.IDENTIFIER)
-				importedSymbols = append(importedSymbols, p.previous())
 			}
 		}
-		p.consumeN(token.AUS, token.STRING)
-		stmt = &ast.ImportStmt{
-			FileName:        p.previous(),
-			ImportedSymbols: importedSymbols,
+		if p.consumeN(token.AUS, token.STRING) {
+			stmt = &ast.ImportStmt{
+				FileName:        p.previous(),
+				ImportedSymbols: importedSymbols,
+			}
+		} else {
+			return &ast.BadStmt{
+				Tok: p.peek(),
+				Err: p.lastError,
+			}
 		}
 	} else {
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "ein Text Literal oder ein Name"), p.peek().File)
