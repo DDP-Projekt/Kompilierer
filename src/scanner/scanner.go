@@ -46,7 +46,6 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	}
 
 	scan := &Scanner{
-		file:             filePath,
 		src:              nil,
 		errorHandler:     errorHandler,
 		mode:             mode,
@@ -365,7 +364,6 @@ func (s *Scanner) newToken(tokenType token.TokenType) token.Token {
 		Type:      tokenType,
 		Literal:   string(s.src[s.start:s.cur]),
 		Indent:    s.indent,
-		File:      s.file,
 		Range:     s.currentRange(),
 		AliasInfo: nil,
 	}
@@ -376,7 +374,6 @@ func (s *Scanner) errorToken(msg string) token.Token {
 		Type:      token.ILLEGAL,
 		Literal:   msg,
 		Indent:    s.indent,
-		File:      s.file,
 		Range:     s.currentRange(),
 		AliasInfo: nil,
 	}

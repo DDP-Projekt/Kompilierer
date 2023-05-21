@@ -22,10 +22,11 @@ type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
 	Errored      bool             // wether the resolver errored
+	file         string           // the filename of the module that is typechecked (used for error reporting)
 }
 
 // create a new resolver to resolve the passed AST
-func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
+func New(Ast *ast.Ast, errorHandler ddperror.Handler, file string) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -33,23 +34,7 @@ func New(Ast *ast.Ast, errorHandler ddperror.Handler) *Resolver {
 		ErrorHandler: errorHandler,
 		CurrentTable: Ast.Symbols,
 		Errored:      false,
-	}
-}
-
-// fills out the asts SymbolTables and reports any errors on the way
-func ResolveAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
-	Ast.Symbols = ast.NewSymbolTable(nil) // reset the ASTs symbols
-
-	resolver := New(Ast, errorHandler)
-
-	// visit all nodes of the AST
-	for i, l := 0, len(Ast.Statements); i < l; i++ {
-		resolver.visit(Ast.Statements[i])
-	}
-
-	// if the resolver errored, the AST is not valid DDP code
-	if resolver.Errored {
-		Ast.Faulty = true
+		file:         file,
 	}
 }
 
@@ -72,9 +57,9 @@ func (r *Resolver) exitScope() {
 }
 
 // helper for errors
-func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string, file string) {
+func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 	r.Errored = true
-	r.ErrorHandler(ddperror.New(code, Range, msg, file))
+	r.ErrorHandler(ddperror.New(code, Range, msg, r.file))
 }
 
 func (*Resolver) BaseVisitor() {}
@@ -87,7 +72,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name()), decl.NameTok.File) // variables may only be declared once in the same scope
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
@@ -116,9 +101,9 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
 func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	// check if the variable exists
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
-		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal), expr.Literal.File)
+		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
 	} else if !isVar {
-		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal), expr.Literal.File)
+		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal))
 	} else { // set the reference to the declaration
 		expr.Declaration = decl.(*ast.VarDecl)
 	}
@@ -192,7 +177,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if len(stmt.ImportedSymbols) == 0 {
 		for name, decl := range stmt.Module.PublicDecls {
 			if existed := r.CurrentTable.InsertDecl(name, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.GetIncludeFilename()), stmt.FileName.File)
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.GetIncludeFilename()))
 			}
 		}
 		return
@@ -201,10 +186,10 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	for _, name := range stmt.ImportedSymbols {
 		if decl, ok := stmt.Module.PublicDecls[name.Literal]; ok {
 			if existed := r.CurrentTable.InsertDecl(name.Literal, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, ast.TrimStringLit(stmt.FileName)), name.File)
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, ast.TrimStringLit(stmt.FileName)))
 			}
 		} else {
-			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)), stmt.FileName.File)
+			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)))
 		}
 	}
 }
@@ -213,9 +198,9 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	case *ast.Ident:
 		// check if the variable exists
 		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
-			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal), assign.Literal.File)
+			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
 		} else if !isVar {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal), assign.Literal.File)
+			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal))
 		} else { // set the reference to the declaration
 			assign.Declaration = varDecl.(*ast.VarDecl)
 		}

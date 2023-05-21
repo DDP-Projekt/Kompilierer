@@ -69,7 +69,7 @@ func Parse(options Options) (*ast.Module, error) {
 		}
 	}
 
-	module := newParser(options.Tokens, options.Modules, options.ErrorHandler).parse()
+	module := newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler).parse()
 	if options.FileName != "" {
 		path, err := filepath.Abs(options.FileName)
 		if err != nil {

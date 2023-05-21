@@ -15,9 +15,10 @@ type Typechecker struct {
 	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
 	Errored            bool             // wether the typechecker found an error
 	latestReturnedType ddptypes.Type    // type of the last visited expression
+	file               string           // the filename of the module that is typechecked (used for error reporting)
 }
 
-func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
+func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler, file string) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -26,19 +27,7 @@ func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler) *Typechecker {
 		CurrentTable:       symbols,
 		Errored:            false,
 		latestReturnedType: ddptypes.Void(),
-	}
-}
-
-// checks that all ast nodes fulfill type requirements
-func TypecheckAst(Ast *ast.Ast, errorHandler ddperror.Handler) {
-	typechecker := New(Ast.Symbols, errorHandler)
-
-	for i, l := 0, len(Ast.Statements); i < l; i++ {
-		Ast.Statements[i].Accept(typechecker)
-	}
-
-	if typechecker.Errored {
-		Ast.Faulty = true
+		file:               file,
 	}
 }
 
@@ -68,14 +57,14 @@ func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
 }
 
 // helper for errors
-func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string, file string) {
+func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string) {
 	t.Errored = true
-	t.ErrorHandler(ddperror.New(code, Range, msg, file))
+	t.ErrorHandler(ddperror.New(code, Range, msg, t.file))
 }
 
 // helper to not always pass range and file
 func (t *Typechecker) errExpr(code ddperror.Code, expr ast.Expression, msgfmt string, fmtargs ...any) {
-	t.err(code, expr.GetRange(), fmt.Sprintf(msgfmt, fmtargs...), expr.Token().File)
+	t.err(code, expr.GetRange(), fmt.Sprintf(msgfmt, fmtargs...))
 }
 
 // helper for commmon error message
@@ -513,13 +502,11 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
 				ddptypes.List(elementType.Primitive), inType),
-			stmt.Initializer.Token().File,
 		)
 	} else if inType == ddptypes.String() && elementType != ddptypes.Char() {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
 				elementType),
-			stmt.Initializer.Token().File,
 		)
 	}
 	stmt.Body.Accept(t)

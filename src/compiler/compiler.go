@@ -217,7 +217,7 @@ var Comments_Enabled = true
 
 func (c *compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 	if Comments_Enabled {
-		comment := fmt.Sprintf("F %s, %d:%d: %s", node.Token().File, node.Token().Line(), node.Token().Column(), node)
+		comment := fmt.Sprintf("F %s, %d:%d: %s", c.currentModule.FileName, node.Token().Line(), node.Token().Column(), node)
 		if details != "" {
 			comment += " (" + details + ")"
 		}

@@ -56,7 +56,7 @@ func ScanAlias(alias token.Token, errorHandler ddperror.Handler) ([]token.Token,
 	if scan, err := New("Alias", []byte(ast.TrimStringLit(alias)), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
-		scan.file, scan.line, scan.column, scan.indent = alias.File, alias.Line(), alias.Column(), alias.Indent
+		scan.line, scan.column, scan.indent = alias.Line(), alias.Column(), alias.Indent
 		return scan.ScanAll(), nil
 	}
 }
