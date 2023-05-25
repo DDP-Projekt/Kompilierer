@@ -38,6 +38,9 @@ build: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS)
 
 all: build
 
+clean:
+	rm -rf $(OUT_DIR)
+
 build: make_out_dir
 	go build -o $(OUT_DIR)$(OUT_FILE_NAME) -tags byollvm -ldflags $(LDFLAGS)
 

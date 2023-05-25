@@ -1,28 +1,31 @@
 OUT_FILE_NAME = libddpruntime.a
 
 .PHONY = all build clean debug
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL = all
 
 CC = gcc
-CCFLAGS := -c -Wall -Wno-format -O2
-DEBUGFLAGS := -DDDP_DEBUG
-INC := -I./include/
+CCFLAGS = -c -Wall -Wno-format -O2
+DEBUGFLAGS = -DDDP_DEBUG
+INC = -I./include/
 
 AR = ar
 
-SRCS := $(shell find source -name '*.c')
+SRCS = $(shell find source -name '*.c')
 OBJS := $(notdir $(SRCS))
 OBJS := $(OBJS:%.c=%.o)
 
 
-all: build clean
+all: build clean-objs
 
 build:
 	$(CC) $(CCFLAGS) $(INC) $(SRCS)
 	$(AR) cr $(OUT_FILE_NAME) $(OBJS)
 
-clean:
+clean-objs:
 	rm -rf $(OBJS)
+
+clean:
+	rm -rf $(OBJS) $(OUT_FILE_NAME)
 
 debug:
 	$(CC) $(CCFLAGS) $(INC) $(DEBUGFLAGS) $(SRCS)

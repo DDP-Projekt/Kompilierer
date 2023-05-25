@@ -2,9 +2,9 @@ DDP_BIN = ""
 STD_BIN = libddpstdlib.a
 RUN_BIN = libddpruntime.a
 ifeq ($(OS),Windows_NT)
-	DDP_BIN := kddp.exe
+	DDP_BIN = kddp.exe
 else
-	DDP_BIN := kddp
+	DDP_BIN = kddp
 endif
 
 LLVM_SRC_DIR=./llvm-project/llvm
@@ -22,9 +22,9 @@ ifneq (, $(shell which ninja))
 	LLVM_CMAKE_BUILD_TOOL=ninja
 endif
 
-OUT_DIR := ./build/DDP
+OUT_DIR = ./build/DDP
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL = all
 
 DDP_DIR = ./cmd/kddp
 STD_DIR = ./lib/stdlib
@@ -37,7 +37,7 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 
 CMAKE = cmake
 
-SHELL := /bin/bash
+SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
 .PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer test-complete
@@ -95,6 +95,8 @@ make_out_dir:
 clean:
 	@echo "deleting output directorie"
 	rm -r $(OUT_DIR) || true
+	cd $(STD_DIR) ; $(MAKE) clean
+	cd $(RUN_DIR) ; $(MAKE) clean
 
 llvm:
 # clone the submodule
