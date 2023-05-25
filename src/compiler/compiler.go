@@ -465,43 +465,34 @@ func (c *compiler) VisitIdent(e *ast.Ident) {
 	c.latestReturnType = Var.typ
 }
 
-func (c *compiler) evaluateIndexing(lhs, rhs value.Value, lhsTyp, rhsTyp ddpIrType) {
-	switch lhsTyp {
-	case c.ddpstring:
-		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, rhs)
-		c.latestReturnType = c.ddpchartyp
-	default:
-		if listType, isList := lhsTyp.(*ddpIrListType); isList {
-			listLen := c.loadStructField(lhs, len_field_index)
-			index := c.cbb.NewSub(rhs, newInt(1)) // ddp indices start at 1, so subtract 1
-			// index bounds check
-			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
-			c.createIfElese(cond, func() {
-				listArr := c.loadStructField(lhs, arr_field_index)
-				elementPtr := c.indexArray(listArr, index)
-				if listType.elementType.IsPrimitive() { // primitives are simply loaded
-					c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
-				} else {
-					dest := c.cbb.NewAlloca(listType.elementType.IrType())
-					c.deepCopyInto(dest, elementPtr, listType.elementType)
-					c.latestReturn = dest
-				}
-			}, func() { // runtime error
-				c.out_of_bounds_error(rhs, listLen)
-			})
-			c.latestReturnType = listType.elementType
-		} else {
-			err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
-		}
-	}
-}
-
 func (c *compiler) VisitIndexing(e *ast.Indexing) {
 	// compile the two expressions onto which the operator is applied
-	lhs, lhsTyp := c.evaluate(e.Lhs)
+	/*lhs, lhsTyp := c.evaluate(e.Lhs)
 	rhs, rhsTyp := c.evaluate(e.Index)
 
 	c.evaluateIndexing(lhs, rhs, lhsTyp, rhsTyp)
+
+	c.freeNonPrimitive(lhs, lhsTyp)
+	c.freeNonPrimitive(rhs, rhsTyp)*/
+
+	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
+
+	if stringIndexing != nil {
+		lhs, lhsTyp := c.evaluate(stringIndexing.Lhs)
+		index, _ := c.evaluate(stringIndexing.Index)
+		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, index)
+		c.latestReturnType = c.ddpchartyp
+		c.freeNonPrimitive(lhs, lhsTyp)
+		return
+	} else {
+		if elementType.IsPrimitive() {
+			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
+		} else {
+			dest := c.cbb.NewAlloca(elementType.IrType())
+			c.latestReturn = c.deepCopyInto(dest, elementPtr, elementType)
+		}
+	}
+	c.latestReturnType = elementType
 }
 
 // literals are simple ir constants
@@ -874,7 +865,34 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 		c.latestReturnType = c.ddpfloattyp
 	case ast.BIN_INDEX:
-		c.evaluateIndexing(lhs, rhs, lhsTyp, rhsTyp)
+		switch lhsTyp {
+		case c.ddpstring:
+			c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, rhs)
+			c.latestReturnType = c.ddpchartyp
+		default:
+			if listType, isList := lhsTyp.(*ddpIrListType); isList {
+				listLen := c.loadStructField(lhs, len_field_index)
+				index := c.cbb.NewSub(rhs, newInt(1)) // ddp indices start at 1, so subtract 1
+				// index bounds check
+				cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
+				c.createIfElese(cond, func() {
+					listArr := c.loadStructField(lhs, arr_field_index)
+					elementPtr := c.indexArray(listArr, index)
+					if listType.elementType.IsPrimitive() { // primitives are simply loaded
+						c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+					} else {
+						dest := c.cbb.NewAlloca(listType.elementType.IrType())
+						c.deepCopyInto(dest, elementPtr, listType.elementType)
+						c.latestReturn = dest
+					}
+				}, func() { // runtime error
+					c.out_of_bounds_error(rhs, listLen)
+				})
+				c.latestReturnType = listType.elementType
+			} else {
+				err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
+		}
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
