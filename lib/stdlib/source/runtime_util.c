@@ -6,12 +6,13 @@
 #include "ddptypes.h"
 #include "memory.h"
 
-#ifdef _WIN32
+#include "ddpwindows.h"
+
+#ifdef DDPOS_WINDOWS
 #include <io.h>
-#include <Windows.h>
 #else
 #include <unistd.h>
-#endif // _WIN32
+#endif // DDPOS_WINDOWS
 
 void Programm_Beenden(ddpint code) {
 	ddp_end_runtime();
@@ -23,7 +24,7 @@ void Laufzeitfehler(ddpstring* Nachricht, ddpint code) {
 }
 
 ddpbool Ist_Befehlszeile() {
-#ifdef _WIN32
+#ifdef DDPOS_WINDOWS
 	return _isatty(_fileno(stdin));
 #else
 	return isatty(STDOUT_FILENO);
@@ -31,7 +32,7 @@ ddpbool Ist_Befehlszeile() {
 }
 
 void Betriebssystem(ddpstring* ret) {
-#ifdef _WIN32 
+#ifdef DDPOS_WINDOWS 
 	#define OS "Windows"
 #else 
 	#define OS "Linux"

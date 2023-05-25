@@ -6,9 +6,7 @@
 #include <stdlib.h>
 #include "ddptypes.h"
 #include "memory.h"
-#ifdef _WIN32
-#include <Windows.h>
-#endif // _WIN32
+#include "ddpwindows.h"
 
 void Hole_Umgebungsvariable(ddpstring* ret, ddpstring* Name) {
 	ret->str = NULL;
@@ -28,9 +26,9 @@ void Hole_Umgebungsvariable(ddpstring* ret, ddpstring* Name) {
 }
 
 void Setze_Umgebungsvariable(ddpstring* Name, ddpstring* Wert) {
-#ifdef _WIN32
+#ifdef DDPOS_WINDOWS
 	_putenv_s(Name->str, Wert->str);
 #else
 	setenv(Name->str, Wert->str, 1);
-#endif // _WIN32
+#endif // DDPOS_WINDOWS
 }

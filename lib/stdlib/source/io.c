@@ -11,10 +11,10 @@
 #include "debug.h"
 #include <math.h>
 #include <stdarg.h>
-#ifdef _WIN32
+#include "ddpwindows.h"
+#ifdef DDPOS_WINDOWS
 #include <io.h>
-#include <Windows.h>
-#endif // _WIN32
+#endif // DDPOS_WINDOWS
 
 /*
 	print functions
@@ -50,7 +50,7 @@ void Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
 
-#ifdef _WIN32
+#ifdef DDPOS_WINDOWS
 // wrapper to get an error message for GetLastError()
 // expects fmt to be of format "<message>%s"
 static void runtime_error_getlasterror(int exit_code, const char* fmt) {
@@ -72,11 +72,11 @@ static HANDLE* get_stdin_handle() {
 	}
 	return &stdin_hndl;
 }
-#endif // _WIN32
+#endif // DDPOS_WINDOWS
 
-ddpchar Extern_Lies_Buchstabe(ddpboolref __war_eof) {
+ddpchar Extern_Lies_Buchstabe(ddpboolref war_eof) {
 	DBGLOG("Extern_Lies_Buchstabe");
-#ifdef _WIN32 // if stdin is a terminal type on windows
+#ifdef DDPOS_WINDOWS // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];
 		char mbStr[5];
@@ -86,24 +86,24 @@ ddpchar Extern_Lies_Buchstabe(ddpboolref __war_eof) {
 		if (size == 0) runtime_error_getlasterror(1, "WideCharToMultiByte (1) failed: %s");
 		mbStr[size] = '\0';
 		ddpchar ch = utf8_string_to_char(mbStr);
-		if (ch == 26) *__war_eof = true; // set eof for ctrl+Z
+		if (ch == 26) *war_eof = true; // set eof for ctrl+Z
 		return ch;
 	} else {
-#endif
+#endif // DDPOS_WINDOWS
 	char temp[5];
 	temp[0] = getchar();
 	if (temp[0] == EOF)  {
 		clearerr(stdin);
-		*__war_eof = true;
+		*war_eof = true;
 		return 0;
 	}
 	int i = utf8_indicated_num_bytes(temp[0]);
 	for (int j = 1; j < i; j++) temp[j] = getchar();
 	temp[i] = '\0';
 	return utf8_string_to_char(temp);
-#ifdef _WIN32
+#ifdef DDPOS_WINDOWS
 	}
-#endif
+#endif // DDPOS_WINDOWS
 }
 
 /*

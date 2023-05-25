@@ -6,9 +6,7 @@
 #include <locale.h>
 #include <signal.h>
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif // _WIN32
+#include "ddpwindows.h"
 
 #include "debug.h"
 #include "ddptypes.h"
@@ -36,7 +34,7 @@ static void handle_args(int argc, char** argv) {
 // initialize runtime stuff
 void ddp_init_runtime(int argc, char** argv) {
 	DBGLOG("init_runtime");
-#ifdef _WIN32
+#ifdef DDPOS_WINDOWS
 	// the locales behaviour seems to change from time to time on windows
 	// so this might change later
 	setlocale(LC_ALL, "German_Germany.utf8");
@@ -48,7 +46,7 @@ void ddp_init_runtime(int argc, char** argv) {
 	SetConsoleOutputCP(CP_UTF8); 
 #else
 	setlocale(LC_ALL, "de_DE.UTF-8");
-#endif // _WIN32
+#endif // DDPOS_WINDOWS
 
 	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
 
