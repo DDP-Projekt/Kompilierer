@@ -37,6 +37,7 @@ LIB_DIR_OUT = $(OUT_DIR)/lib/
 
 CMAKE = cmake
 
+SHELL := /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
 .PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer test-complete
