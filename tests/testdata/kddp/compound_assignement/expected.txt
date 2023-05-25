@@ -8,3 +8,13 @@
 -9
 falsch
 wahr
+7
+6
+18
+72
+18
+-18
+9
+-9
+falsch
+wahr

@@ -31,3 +31,41 @@ Negiere b.
 Schreibe b auf eine Zeile.
 Negiere b.
 Schreibe b auf eine Zeile.
+
+[indexings]
+Die Zahlen Liste zl ist eine Liste, die aus 1, 5, 3 besteht.
+
+
+Erhöhe zl an der Stelle 2 um 2.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+Verringere zl an der Stelle 2 um 1.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+Vervielfache zl an der Stelle 2 um 3.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+Verschiebe zl an der Stelle 2 um 2 Bit nach Links.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+Verschiebe zl an der Stelle 2 um 2 Bit nach Rechts.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+Negiere zl an der Stelle 2.
+Schreibe (zl an der Stelle 2) auf eine Zeile.
+
+
+Die Kommazahlen Liste zfl ist eine Liste, die aus 1,0, 18,0, 2,5 besteht.
+
+Teile zfl an der Stelle 2 durch 2.
+Schreibe (zfl an der Stelle 2) auf eine Zeile.
+
+Negiere zfl an der Stelle 2.
+Schreibe (zfl an der Stelle 2) auf eine Zeile.
+
+
+Die Boolean Liste bl ist eine Liste, die aus wahr, wahr, falsch besteht.
+Negiere bl an der Stelle 2.
+Schreibe (bl an der Stelle 2) auf eine Zeile.
+Negiere bl an der Stelle 2.
+Schreibe (bl an der Stelle 2) auf eine Zeile.
