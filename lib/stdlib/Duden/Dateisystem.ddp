@@ -36,6 +36,10 @@ und kann so benutzt werden:
 	"der Ordner <Pfad> erfolgreich erstellt wurde"
 
 
+[
+	Löscht die gegebene Datei oder den gegebenen Ordner.
+	Im Falle eines Ordners wird rekursiv das gesamte Verzeichnis gelöscht.
+]
 Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -43,3 +47,15 @@ und kann so benutzt werden:
 	"die Datei <Pfad> erfolgreich gelöscht wurde" oder
 	"Lösche den Ordner <Pfad>" oder
 	"der Ordner <Pfad> erfolgreich gelöscht wurde"
+
+Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Verschiebe <Pfad> zu <NeuerName> um" oder
+	"<Pfad> erfolgreich nach <NeuerName> verschoben wurde"
+
+[Die öffentliche Funktion Pfad_Umbenennen mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück, macht:
+
+Und kann so benutzt werden:
+	"Benenne <Pfad> zu <NeuerName> um" oder
+	"<Pfad> erfolgreich zu <NeuerName> umbenannt wurde"]

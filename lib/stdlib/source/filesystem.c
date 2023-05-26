@@ -79,3 +79,9 @@ ddpbool Ist_Ordner(ddpstring* Pfad) {
 #endif // DDPOS_WINDOWS
 }
 
+ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
+#ifdef DDPOS_WINDOWS
+	#error TODO: check that this works
+#endif // DDPOS_WINDOWS
+	return rename(Pfad->str, NeuerName->str) == 0;
+}
