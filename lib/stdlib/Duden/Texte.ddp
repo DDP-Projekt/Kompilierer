@@ -65,6 +65,7 @@ Und kann so benutzt werden:
 	"<text> <suchText> enthält"
 
 Die öffentliche Funktion BeginntMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle 1) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Anfang von <text> steht"
@@ -75,6 +76,7 @@ Und kann so benutzt werden:
 	"<suchText> am Anfang von <text> steht"
 
 Die öffentliche Funktion EndetMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle (die Länge von text)) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Ende von <text> steht"
@@ -204,7 +206,7 @@ Die öffentliche Funktion PolsterLinks mit den Parametern text, zeichen und endl
 
 	Gib text zurück.
 Und kann so benutzt werden:
-	"polster <text> mit <endlänge> <zeichen> links"
+	"<text> mit <endlänge> <zeichen> links gepolstert"
 
 Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
 	Die Zahl länge ist die Länge von text.
@@ -218,7 +220,7 @@ Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und end
 	
 	Gib text zurück.
 Und kann so benutzt werden:
-	"polster <text> mit <endlänge> <zeichen> rechts"
+	"<text> mit <endlänge> <zeichen> rechts gepolstert"
 
 Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Text Liste zurück, macht:
 	Die Text Liste endliste ist eine leere Text Liste.
