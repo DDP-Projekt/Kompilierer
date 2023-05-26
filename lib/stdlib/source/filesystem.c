@@ -17,15 +17,18 @@
 #define PATH_SEPERATOR "/\\"
 #else
 #include "unistd.h"
+#include <stdio.h>
+#define __USE_XOPEN_EXTENDED
+#include "ftw.h"
 #define PATH_SEPERATOR "/"
 #endif // DDPOS_WINDOWS
 
-ddpbool Existiert_Datei(ddpstring* Pfad) {
+ddpbool Existiert_Pfad(ddpstring* Pfad) {
 	return access(Pfad->str, F_OK) == 0;
 }
 
 ddpbool Erstelle_Ordner(ddpstring* Pfad) {
-	#ifdef DDPOS_LINUX
+#ifdef DDPOS_LINUX
 	#define _mkdir(arg) mkdir(arg, 0700)
 #endif // DDPOS_LINUX
 
@@ -46,8 +49,20 @@ ddpbool Erstelle_Ordner(ddpstring* Pfad) {
 #endif // DDPOS_LINUX
 }
 
-ddpbool Lösche_Datei(ddpstring* Pfad) {
-	return remove(Pfad->str) == 0;
+#ifdef DDPOS_LINUX
+
+static int visit_dir(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
+	return remove(fpath);
+}
+
+#endif // DDPOS_LINUX
+
+ddpbool Loesche_Pfad(ddpstring* Pfad) {
+#ifdef DDPOS_WINDOWS
+	#error Not yet implemented
+#else
+	return nftw(Pfad->str, visit_dir, 64, FTW_DEPTH | FTW_PHYS) == 0;
+#endif // DDPOS_WINDOWS
 }
 
 ddpbool Ist_Ordner(ddpstring* Pfad) {
@@ -58,6 +73,7 @@ ddpbool Ist_Ordner(ddpstring* Pfad) {
 	struct stat path_stat;
 	if (stat(Pfad->str, &path_stat) != 0) return false;
 	return S_ISDIR(path_stat.st_mode);
+
 #ifdef DDPOS_WINDOWS
 	#undef stat
 #endif // DDPOS_WINDOWS

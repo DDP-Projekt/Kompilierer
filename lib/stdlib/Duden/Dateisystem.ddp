@@ -5,7 +5,8 @@ Die öffentliche Funktion Existiert_Pfad mit dem Parameter Pfad vom Typ Text, gi
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Datei <Pfad> existiert" oder
-	"der Ordner <Pfad> existiert"
+	"der Ordner <Pfad> existiert" oder
+	"der Pfad <Pfad> existiert"
 
 [
 	Überprüft ob der gegebene Pfad ein Ordner ist
@@ -35,8 +36,10 @@ und kann so benutzt werden:
 	"der Ordner <Pfad> erfolgreich erstellt wurde"
 
 
-Die öffentliche Funktion Lösche_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Lösche die Datei <Pfad>" oder
-	"die Datei <Pfad> erfolgreich gelöscht wurde"
+	"die Datei <Pfad> erfolgreich gelöscht wurde" oder
+	"Lösche den Ordner <Pfad>" oder
+	"der Ordner <Pfad> erfolgreich gelöscht wurde"
