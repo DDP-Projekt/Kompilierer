@@ -50,6 +50,10 @@ void Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
 
+void Schreibe_Fehler(ddpstring* fehler) {
+	fprintf(stderr, "%s", fehler->str);
+}
+
 #ifdef DDPOS_WINDOWS
 // wrapper to get an error message for GetLastError()
 // expects fmt to be of format "<message>%s"
