@@ -145,6 +145,7 @@ Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
 Die öffentliche Funktion IndexVonText mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
