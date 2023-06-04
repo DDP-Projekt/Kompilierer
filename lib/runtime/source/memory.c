@@ -1,5 +1,6 @@
 #include "memory.h"
 #include "debug.h"
+#include <stdlib.h>
 
 // used for allocation/reallocation and freeing of memory
 // to allocate call reallocate(NULL, 0, size)

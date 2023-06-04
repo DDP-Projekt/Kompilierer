@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "utf8/utf8.h"
 #include <stdarg.h>
+#include <string.h>
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated

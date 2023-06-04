@@ -1,6 +1,8 @@
 #include "common.h"
 #include "main.h"
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // print the error message to stderr and exit with exit_code
 void ddp_runtime_error(int exit_code, const char* fmt, ...) {

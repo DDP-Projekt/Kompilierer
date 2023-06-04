@@ -20,7 +20,7 @@ und kann so benutzt werden:
 	Überprüft ob der gegebene Pfad eine Datei ist
 ]
 Die öffentliche Funktion Ist_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück, macht:
-	Wenn Pfad ein Ordner ist, gib falsch zurück.
+	Wenn Pfad ein Ordner ist oder die Länge von Pfad gleich 0 ist, gib falsch zurück.
 	Gib wahr zurück.
 Und kann so benutzt werden:
 	"<Pfad> eine Datei ist"
@@ -35,7 +35,6 @@ und kann so benutzt werden:
 	"Erstelle den Ordner <Pfad>" oder
 	"der Ordner <Pfad> erfolgreich erstellt wurde"
 
-
 [
 	Löscht die gegebene Datei oder den gegebenen Ordner.
 	Im Falle eines Ordners wird rekursiv das gesamte Verzeichnis gelöscht.
@@ -43,6 +42,8 @@ und kann so benutzt werden:
 Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
+	"Lösche <Pfad>" oder
+	"<Pfad> erfolgreich gelöscht wurde" oder
 	"Lösche die Datei <Pfad>" oder
 	"die Datei <Pfad> erfolgreich gelöscht wurde" oder
 	"Lösche den Ordner <Pfad>" oder
@@ -51,7 +52,7 @@ und kann so benutzt werden:
 Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"Verschiebe <Pfad> zu <NeuerName> um" oder
+	"Verschiebe <Pfad> nach <NeuerName>" oder
 	"<Pfad> erfolgreich nach <NeuerName> verschoben wurde"
 
 [Die öffentliche Funktion Pfad_Umbenennen mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück, macht:

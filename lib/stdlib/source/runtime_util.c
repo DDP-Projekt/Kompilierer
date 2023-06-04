@@ -5,8 +5,9 @@
 #include "main.h"
 #include "ddptypes.h"
 #include "memory.h"
-
 #include "ddpwindows.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef DDPOS_WINDOWS
 #include <io.h>

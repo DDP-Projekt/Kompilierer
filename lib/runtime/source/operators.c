@@ -7,6 +7,8 @@
 #include "utf8/utf8.h"
 #include <math.h>
 #include <float.h>
+#include <string.h>
+#include <stdlib.h>
 
 ddpint ddp_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);

@@ -2,10 +2,11 @@
 	This file implements extern functions from 
 	Duden/Zeit.ddp
 */
-#include <time.h>
 #include "ddptypes.h"
 #include "memory.h"
 #include "ddpwindows.h"
+#include <time.h>
+#include <stdio.h>
 
 ddpint Zeit_Seit_Programmstart() {
 	return clock();
