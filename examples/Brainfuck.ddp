@@ -1,0 +1,93 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
+Binde Lies_Buchstabe_Gepuffert aus "Duden/Eingabe" ein.
+Binde "Duden/Datei_Eingabe" ein.
+Binde Enthält_C und Hinzufüge_C aus "Duden/Listen" ein.
+
+[unsere Zellen]
+Die Zahlen Liste Zellen ist 100 Mal 0.
+[der Zellen Zeiger]
+Die Zahl Zeiger ist 1.
+
+[der Brainfuck Quellcode]
+Die Buchstaben Liste Anweisungen ist eine leere Buchstaben Liste.
+[Zeiger auf die momentane Anweisung]
+Die Zahl AnweisungsZeiger ist 1.
+
+Die Funktion prüfe_anweisungszeiger gibt nichts zurück, macht:
+    Wenn AnweisungsZeiger größer als die Länge von Anweisungen ist, dann:
+        Schreibe "\nEnde des Programms erreicht" auf eine Zeile.
+        Beende das Programm.
+Und kann so benutzt werden:
+    "Überprüfe den Anweisungszeiger"
+
+Die Funktion springe mit den Parametern KlammerAuf, KlammerZu und Richtung vom Typ Buchstabe, Buchstabe und Zahl, gibt nichts zurück, macht:
+    Die Zahl AnzahlKlammern ist 1.
+    Mache:
+        Erhöhe AnweisungsZeiger um Richtung.
+        Überprüfe den Anweisungszeiger.
+        Wenn Anweisungen an der Stelle AnweisungsZeiger gleich KlammerZu ist,
+            verringere AnzahlKlammern um 1.
+        Wenn aber Anweisungen an der Stelle AnweisungsZeiger gleich KlammerAuf ist,
+            erhöhe AnzahlKlammern um 1.
+    Solange AnzahlKlammern größer als 0 ist.
+Und kann so benutzt werden:
+    "Springe von der Klammer <KlammerAuf> zur Klammer <KlammerZu> nach <Richtung>"
+
+Die Funktion werte_anweisung_aus gibt nichts zurück, macht:
+    Der Buchstabe Anweisung ist Anweisungen an der Stelle AnweisungsZeiger.
+    Wenn Anweisung gleich '>' ist, dann:
+        Erhöhe Zeiger um 1.
+    Wenn aber Anweisung gleich '<' ist, dann:
+        Verringere Zeiger um 1.
+    Wenn aber Anweisung gleich '+' ist, dann:
+        Erhöhe Zellen an der Stelle Zeiger um 1.
+    Wenn aber Anweisung gleich '-' ist, dann:
+        Wenn Zellen an der Stelle Zeiger gleich 0 ist, speichere 255 in Zellen an der Stelle Zeiger.
+        Sonst verringere Zellen an der Stelle Zeiger um 1.
+    Wenn aber Anweisung gleich '.' ist, dann:
+        Der Buchstabe b ist (Zellen an der Stelle Zeiger) als Buchstabe.
+        Schreibe b.
+    Wenn aber Anweisung gleich ',' ist, dann:
+        Speichere den nächsten Buchstaben als Zahl in Zellen an der Stelle Zeiger.
+    Wenn aber Anweisung gleich '[' ist, dann:
+        Wenn Zellen an der Stelle Zeiger gleich 0 ist, dann:
+            Die Zahl _rechts ist 1.
+            Springe von der Klammer '[' zur Klammer ']' nach _rechts.
+    Wenn aber Anweisung gleich ']' ist, dann:
+        Wenn Zellen an der Stelle Zeiger ungleich 0 ist, dann:
+            Die Zahl _links ist -1.
+            Springe von der Klammer ']' zur Klammer '[' nach _links.
+
+
+    Wenn Zeiger größer als die Länge von Zellen ist, dann:
+        Die Zahlen Liste puffer ist 100 Mal 0.
+        Speichere Zellen verkettet mit puffer in Zellen.
+
+    [Fehlerbehandlung]
+    Wenn Zeiger kleiner als 1 ist, dann:
+        Schreibe "Zellen Zeiger < 0" auf eine Zeile.
+        Beende das Programm mit Code 1.
+    Wenn aber Zellen an der Stelle Zeiger größer als 255 ist,
+        Speichere 0 in Zellen an der Stelle Zeiger.
+    Erhöhe AnweisungsZeiger um 1.
+Und kann so benutzt werden:
+    "Werte die nächste Anweisungen aus"
+
+
+Die Funktion werte_argumente_aus gibt nichts zurück, macht:
+    Die Text Liste argumente ist die Befehlszeilenargumente.
+    Wenn die Länge von argumente kleiner als 2 ist, dann:
+        Schreibe "Zu wenig Argumente" auf eine Zeile.
+        Beende das Programm mit Code 1.
+    Der Text Datei ist "".
+    Lies den Text in (argumente an der Stelle 2) und speichere ihn in Datei.
+    Die Buchstaben Liste tokens ist eine Liste, die aus '+', '-', '<', '>', '.', ',', ']', '[' besteht.
+    Für jeden Buchstaben b in Datei, mache:
+        Wenn tokens b enthält, füge b an Anweisungen an.
+Und kann so benutzt werden:
+    "Werte die Befehlszeilen Argumente aus"
+
+Werte die Befehlszeilen Argumente aus.
+Solange AnweisungsZeiger kleiner als die Länge von Anweisungen ist,
+    Werte die nächste Anweisungen aus.
