@@ -1,15 +1,14 @@
 #include "ddptypes.h"
 #include "ddpos.h"
 #include "memory.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <stdarg.h>
 
 #if DDPOS_WINDOWS
 #error Not Implemented
 #else // DDPOS_LINUX
 #include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #endif // DDPOS_WINDOWS
 
 #define READ_END 0
@@ -19,6 +18,23 @@
 #if DDPOS_WINDOWS
 // TODO: add execute_process using the WinApi
 #else // DDPOS_LINUX
+
+// helper to output an error
+static void write_error(ddpstringref ref, const char* fmt, ...) {
+	char errbuff[1024];
+
+	va_list argptr;
+	va_start(argptr, fmt);
+
+	int len = vsprintf(errbuff, fmt, argptr);
+	
+	va_end(argptr);
+
+	ref->str = ddp_reallocate(ref->str, ref->cap, len+1);
+	memcpy(ref->str, errbuff, len);
+	ref->cap = len+1;
+	ref->str[ref->cap-1] = '\0';
+}
 
 // reads everything from the given pipe into out
 // then closes the pipe
@@ -42,7 +58,7 @@ static size_t read_pipe(int fd, char** out) {
 // and erroutput out-variables
 // erroutput may be equal to stdoutput if they shall be read together
 // but not NULL
-static ddpint execute_process(ddpstring* path, ddpstringlist* args,
+static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref err,
     ddpstring* input, ddpstringref stdoutput, ddpstringref erroutput)
 {
     int stdout_fd[2];
@@ -52,14 +68,18 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
     const bool need_stderr = stdoutput != erroutput;
 
     // prepare the pipes
-    if (pipe(stdout_fd))
+    if (pipe(stdout_fd)) {
+        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
         return -1;
+    }
     if (need_stderr && pipe(stderr_fd)) {
+        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
         close(stdout_fd[0]);
         close(stdout_fd[1]);
         return -1;
     }
     if (pipe(stdin_fd)) {
+        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
         close(stdout_fd[0]);
         close(stdout_fd[1]);
         if (need_stderr) {
@@ -94,6 +114,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
     // create the supprocess
     switch (fork()) {
     case -1: // error
+        write_error(err, "Fehler beim Erstellen des Unter Prozesses: %s", strerror(errno));
         return -1;
     case 0: { // child
         close(stdout_fd[READ_END]);
@@ -104,7 +125,8 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
         dup2(need_stderr ? stderr_fd[WRITE_END] : stdout_fd[WRITE_END], STDERR_FILENO);
         dup2(stdin_fd[READ_END], STDIN_FILENO);
         execv(path->str, process_args);
-        return errno;
+        write_error(err, "Fehler beim Starten des Unter Prozesses: %s", strerror(errno));
+        return -1;
     }
     default: { // parent
         // free the arguments
@@ -124,7 +146,10 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
         close(stdin_fd[WRITE_END]);
 
         int exit_code;
-        wait(&exit_code);
+        if (wait(&exit_code) == -1) {
+            write_error(err, "Fehler beim Warten auf den Unter Prozess: %s", strerror(errno));
+            return -1;
+        }
 
         size_t stdout_size = read_pipe(stdout_fd[READ_END], &stdoutput->str);
         stdoutput->str = ddp_reallocate(stdoutput->str, stdout_size, stdout_size+1);
@@ -148,7 +173,10 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
 
 #endif // DDPOS_WINDOWS
 
-ddpint Programm_Ausfuehren(ddpstring* ProgrammName, ddpstringlist* Argumente,
+ddpint Programm_Ausfuehren(ddpstring* ProgrammName, ddpstringlist* Argumente, ddpstringref Fehler,
     ddpstring* StandardEingabe, ddpstringref StandardAusgabe, ddpstringref StandardFehlerAusgabe) {
-    return execute_process(ProgrammName, Argumente, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
+    // clear error
+    ddp_reallocate(Fehler->str, Fehler->cap, 1);
+    Fehler->str[0] = '\0';
+    return execute_process(ProgrammName, Argumente, Fehler, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
 }
