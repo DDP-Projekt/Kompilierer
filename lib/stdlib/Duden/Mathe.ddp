@@ -1,7 +1,22 @@
-Die öffentliche Kommazahl PI ist 3,141592654.
-Die öffentliche Kommazahl E ist 2,718281828.
-Die öffentliche Kommazahl TAU ist 6,283185307.
-Die öffentliche Kommazahl PHI ist 1,618033989.
+Die öffentliche Funktion PI gibt eine Kommazahl zurück, macht:
+	Gib 3,141592654 zurück.
+Und kann so benutzt werden:
+	"PI"
+
+Die öffentliche Funktion E gibt eine Kommazahl zurück, macht:
+	Gib 2,718281828 zurück.
+Und kann so benutzt werden:
+	"E"
+
+Die öffentliche Funktion TAU gibt eine Kommazahl zurück, macht:
+	Gib 6,283185307 zurück.
+Und kann so benutzt werden:
+	"TAU"
+
+Die öffentliche Funktion PHI gibt eine Kommazahl zurück, macht:
+	Gib 1,618033989 zurück.
+Und kann so benutzt werden:
+	"PHI"
 
 Die öffentliche Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
