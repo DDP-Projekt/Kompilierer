@@ -1,11 +1,6 @@
 DDP_BIN = ""
 STD_BIN = libddpstdlib.a
 RUN_BIN = libddpruntime.a
-ifeq ($(OS),Windows_NT)
-	DDP_BIN = kddp.exe
-else
-	DDP_BIN = kddp
-endif
 
 LLVM_SRC_DIR=./llvm-project/llvm
 LLVM_BUILD_DIR=./llvm_build
@@ -15,6 +10,15 @@ CXX=g++
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
+LLVM_TARGETS="X86;AArch64;ARM"
+LLVM_ADDITIONAL_CMAKE_VARIABLES= -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF 
+
+ifeq ($(OS),Windows_NT)
+	DDP_BIN = kddp.exe
+else
+	DDP_BIN = kddp
+	LLVM_CMAKE_GENERATOR="Unix Makefiles"
+endif
 
 # check if ninja is installed and use it
 ifneq (, $(shell which ninja))
@@ -112,10 +116,10 @@ llvm:
 ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)
 	@echo "found ninja, using it as cmake generator"
 endif
-	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL)
+	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL) ; $(LLVM_CMAKE_BUILD_TOOL) llvm-config
 
 
 # will hold the directories to run in the tests
