@@ -1,0 +1,42 @@
+Binde "Duden/Laufzeit" ein.
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion RZahl_zu_Zahl mit dem Parameter z vom Typ Buchstabe, gibt eine Zahl zurück, macht:
+    Wenn z gleich 'I' ist, gib 1 zurück.
+    Wenn z gleich 'V' ist, gib 5 zurück.
+    Wenn z gleich 'X' ist, gib 10 zurück.
+    Wenn z gleich 'L' ist, gib 50 zurück.
+    Wenn z gleich 'C' ist, gib 100 zurück.
+    Wenn z gleich 'D' ist, gib 500 zurück.
+    Wenn z gleich 'M' ist, gib 1000 zurück.
+    Gib -1 zurück.
+Und kann so benutzt werden:
+    "römisch <z> als Zahl"
+
+Die Text Liste args ist die Befehlszeilenargumente.
+Wenn die Länge von args kleiner als 2 ist, dann:
+    Schreibe den Fehler "Es muss mindestens 1 Argument gegeben werden\n".
+    Beende das Programm mit Code 1.
+
+
+Der Text eingabe ist args an der Stelle 2.
+Die Zahl ergebnis ist 0.
+
+Für jede Zahl i von die Länge von eingabe bis 1 mit Schrittgröße -1, mache:
+    
+    Die Zahl r1 ist römisch (eingabe an der Stelle i) als Zahl.
+    Die Zahl r2 ist 0.
+    Wenn i größer als 1 ist,
+        speichere römisch (eingabe an der Stelle (i minus 1)) als Zahl in r2.
+
+    Wenn r1 kleiner als 0 ist oder r2 kleiner als 0 ist, dann:
+        Schreibe den Fehler "Keine römische Zahl\n".
+        Beende das Programm mit Code 1.
+
+    Wenn r1 größer als r2 ist, dann:
+        Erhöhe ergebnis um r1 minus r2.
+        Verringere i um 1.
+    Sonst:
+        Erhöhe ergebnis um r1.
+
+Schreibe ("Ergebnis: " verkettet mit ergebnis als Text) auf eine Zeile.
