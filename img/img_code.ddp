@@ -1,0 +1,132 @@
+Binde "Duden/Ausgabe" ein.
+
+[2 + 2]
+2 plus 2. 
+
+[to_string("22" + "4")]
+("22" verkettet mit "4") als Zahl. 
+
+[float(2 << 2) == 2^3]
+(2 um 2 Bit nach links verschoben) als Kommazahl gleich 2 hoch 3 ist. 
+
+[true && 2 >= 3 || "test" == "te" + "st"]
+wahr und 2 größer als, oder 3 ist oder "test" gleich "te" verkettet mit "st" ist.
+
+[int z = 22;]
+Die Zahl z ist 22. 
+[println(z);]
+Schreibe die Zahl z auf eine Zeile.
+
+[Fehler: Typen passen nicht]
+Speichere 'B' in z.
+[mit cast in Ordnung]
+Speichere 'B' als Zahl in z.
+
+[string t = "Hallo Welt!\n";]
+Der Text t ist "Hallo Welt!\n".
+Schreibe den Text t. [Ausgabe]
+Schreibe t. [selbe Ausgabe] 
+
+
+Die Zahlen Liste liste ist eine Liste, die aus 23, 12, 3, 7, 8 besteht.
+
+[Gibt "5" aus]
+Schreibe (die Länge von liste).
+[Gibt "23" aus]
+Schreibe (liste an der Stelle 1). 
+[Gibt "12, 3, 7, 8" aus]
+Schreibe (liste von 2 bis 5). 
+[Zeigt "3, 7, 23, 12" in der Konsole]
+Schreibe (liste von 3 bis 4 verkettet mit liste von 1 bis 2). 
+
+
+:
+[4 Leerzeichen oder 1 Tab Einrückung]
+	Schreibe "Ich bin in einem Block".
+	Die Zahl zahl ist 2.
+	:
+[8 Leerzeichen oder 2 Tabs Einrückung]
+		[Ausgabe: 2]
+		Schreibe zahl.
+	:
+		Die Zahl zahl ist 3.
+		[Ausgabe: 3]
+		Schreibe zahl.
+[
+Fehler: zahl wurde im Block deklariert
+und steht hier nicht zur Verfügung
+]
+Schreibe zahl.
+
+
+Wenn 1 gleich 2 ist, dann:
+	Schreibe "Wenn".
+Wenn aber 1 ungleich 2 ist, dann:
+	Schreibe "Wenn-aber".
+Sonst:
+	Schreibe "Sonst".
+
+
+Wenn 1 gleich 2 ist, Schreibe "Wenn".
+Wenn aber 1 ungleich 2 ist, Schreibe "Wenn-aber".
+Sonst Schreibe "Sonst".
+
+
+Die Zahl iterator ist 3.
+Solange iterator größer als, oder 0 ist, mache:
+	Schreibe iterator auf eine Zeile.
+	Verringere iterator um 1.
+
+Mache:
+	Schreibe "iteration!".
+Solange 2 gleich 3 ist.
+
+
+[Ausgabe: 12345]
+Für jede Zahl i von 1 bis 5, mache:
+	Schreibe i.
+
+[Ausgabe 135]
+Für jede Zahl i von 1 bis 5 mit Schrittgröße 2, mache:
+	Schreibe i.
+
+[Rückwärts]
+[Ausgabe: 54321]
+Für jede Zahl i von 5 bis 1 mit Schrittgröße -1, mache:
+	Schreibe i.
+
+[Iterativ über eine Liste]
+[Ausgabe: hihi2]
+Die Text Liste tl ist eine Liste, die aus "hi", "hi2" besteht.
+Für jeden Text t in tl, mache:
+	Schreibe t.
+
+
+Wiederhole:
+	Schreibe "hi".
+10 Mal.
+
+
+Solange 1 gleich 2 ist, Schreibe "test".
+
+Für jede Zahl i von 1 bis 5, Schreibe i.
+
+Für jeden Text t in tl, Schreibe t.
+
+Schreibe "hi" 10 Mal.
+
+
+[
+	string foo(string t, int bar, int baz) {
+		return t + to_string(bar + baz);
+	}
+]
+Die Funktion foo mit den Parametern t, bar und baz vom Typ Text, Zahl und Zahl, gibt einen Text zurück, macht:
+	Der Text ergebnis ist 
+		t verkettet mit (bar plus baz) als Text.
+	Gib ergebnis zurück.
+Und kann so benutzt werden:
+	"<t> verbunden mit <bar> addiert zu <baz>"
+
+[ print(foo("Ergebnis: ", 2, 15)); ]
+Schreibe ("Ergebnis: " verbunden mit 2 addiert zu 15).

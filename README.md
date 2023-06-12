@@ -10,6 +10,13 @@ Die [Bedienungsanleitung](https://ddp-projekt.github.io/Bedienungsanleitung/?p=S
 
 Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTRIBUTING.md).
 
+## Installation
+
+Um DDP zu installieren braucht man bloß den aktuellsten Release für das gewünschte Betriebssystem hier von Github zu Downloaden, 
+das Archiv zu entpacken, und den Installer (ddp-setup.exe) auszuführen.
+
+Eine detaillierte Installationsanleitung gibt es [hier](https://ddp-projekt.github.io/Bedienungsanleitung/?p=/Einstieg&lang=DE).
+
 ## Feature Übersicht
 
 DDP ist eine statisch typisierte, modulare und imperative Sprache.
@@ -29,12 +36,78 @@ DDP hat auch Listen
 
 ![lists.png](img/lists.png)
 
+### Anweisungsblöcke
+
+In DDP können mehrere Anweisungen in einem Block zusammengefasst werden.
+
+![block.png](img/block.png)
+
+Wie man sieht beginnt jeder Block mit einem ":".
+Variablen werden auf Unter-Blöcke übertragen, aber
+neue Deklarationen mit dem selben Namen überschatten
+alte Deklarationen.
+
+Da {} keine Symbole von Deutschen Texten sind wird die
+Einrückungstiefe (4 Leerzeichen oder 1 Tab) benutzt
+um zu bestimmen wann ein Block fertig ist.
+
 ### If-Anweisungen
 
+Für simple Verzweigungen bietet DDP Wenn Anweisungen.
 
+![if.png](img/if.png)
+
+Das geht natürlich auch ohne Anweisungsblöcke, allerdings nur
+für einzelne Anweisungen.
+
+![if-oneling.png](img/if-oneline.png)
 
 ### Schleifen
 
+DDP unterstützt die meisten bekannten Schleifen.
+
+While-Schleifen:
+
+![while.png](img/while.png)
+
+Do-While-Schleifen:
+
+![do-while.png](img/do-while.png)
+
+Und am wichtigsten, For-Schleifen:
+
+![for.png](img/for.png)
+
+Damit man nicht immer eine lange For-Schleife schreiben muss
+gibt es auch Wiederholungen:
+
+![repeat.png](img/repeat.png)
+
+So wie bei If-Anweisungen geht das alles auch mit einzelnen
+Anweisungen.
+
+![loop-oneline.png](img/loop-oneline.png)
+
 ### Funktionen
 
+Funktionen sind mit Abstand das wichtigste Feature von DDP,
+denn sie erlauben es, so gut wie jeden deutschen Satz oder Ausdruck in Code zu verwandeln.
+
+Das liegt an der Art wie man sie Aufruft, nämlich über so gennante Aliase.
+
+![function.png](img/function.png)
+
+Wie man sie wurde die Funktion foo wie ein normaler deutscher Ausdruck aufgerufen, ohne die grammatikalischen Regeln zu verletzten.
+
+Funktionen sind ein sehr großes Thema in DDP und dieses kleine Beispiel zeigt nur einen Bruchteil ihrer Komplexen Syntax.
+
+Für mehr details empfehle ich dringen diesen [Artikel](https://ddp-projekt.github.io/Bedienungsanleitung/?p=Programmierung/Funktionen&lang=DE) aus der Bedienungsanleitung gründlich durchzulesen, oder zumindest die Beispiele zu überfliegen.
+
 ### Module
+
+In DDP ist Quellcode in Modulen organisiert, wobei
+ein Modul einfach eine Quelldatei ist.
+
+Tatsächlich haben alle obigen Beispiele bereits das Module
+`"Duden/Ausgabe"` benutzt, um die `Schreibe x` Funktion nutzen zu können.
+
