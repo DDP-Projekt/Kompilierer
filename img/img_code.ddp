@@ -130,3 +130,15 @@ Und kann so benutzt werden:
 
 [ print(foo("Ergebnis: ", 2, 15)); ]
 Schreibe ("Ergebnis: " verbunden mit 2 addiert zu 15).
+
+
+[Binde "Duden/Ausgabe" ein.]
+
+Schreibe "Hallo Welt".
+
+
+Binde "include" ein.
+
+Schreibe zahl auf eine Zeile.
+Rufe bar auf.
+Schreibe zahl2 auf eine Zeile.

@@ -111,3 +111,16 @@ ein Modul einfach eine Quelldatei ist.
 Tatsächlich haben alle obigen Beispiele bereits das Module
 `"Duden/Ausgabe"` benutzt, um die `Schreibe x` Funktion nutzen zu können.
 
+![include1.png](img/include1.png)
+
+Wenn man ein Module einbindet, werden nur die als `öffentliche` markierten Funktionen/Variablen sichtbar.
+
+Man kann auch bloß die Funktionen/Variablen einbinden, die man braucht.
+
+include.ddp:
+
+![include2.png](img/include2.png)
+
+main.ddp:
+
+![include3.png](img/include3.png)
