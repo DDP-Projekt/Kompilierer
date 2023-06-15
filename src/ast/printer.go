@@ -155,10 +155,21 @@ func (pr *printer) VisitExprStmt(stmt *ExprStmt) {
 	pr.parenthesizeNode("ExprStmt", stmt.Expr)
 }
 func (pr *printer) VisitImportStmt(stmt *ImportStmt) {
+	if stmt.Module == nil {
+		return
+	}
 	// TODO: pretty print imports
 	nodes := make([]Node, 0)
-	for _, decl := range stmt.Module.PublicDecls {
-		nodes = append(nodes, decl)
+	if stmt.ImportedSymbols == nil {
+		for _, decl := range stmt.Module.PublicDecls {
+			nodes = append(nodes, decl)
+		}
+	} else {
+		for _, lit := range stmt.ImportedSymbols {
+			if decl, ok := stmt.Module.PublicDecls[lit.Literal]; ok {
+				nodes = append(nodes, decl)
+			}
+		}
 	}
 	pr.parenthesizeNode("ImportStmt", nodes...)
 }
