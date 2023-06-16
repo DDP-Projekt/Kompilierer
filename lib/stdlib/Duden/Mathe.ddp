@@ -137,6 +137,11 @@ Die öffentliche Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und 
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
 
+Die öffentliche Funktion ist_teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
+	Gib dividend modulo divisor gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<dividend> durch <divisor> teilbar ist"
+
 [
 	Eine Funktion, die eine Zahlen Liste von allen Primfaktoren der Zahl <z> gibt.  
 	Zeitkomplexität: O(sqrt(n))
@@ -144,13 +149,13 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Primfaktorzerlegung mit dem Parameter z vom Typ Zahl, gibt eine Zahlen Liste zurück, macht:
 	Die Zahlen Liste faktoren ist eine leere Zahlen Liste.
 
-	Solange z modulo 2 gleich 0 ist, mache:
+	Solange z durch 2 teilbar ist, mache:
 		Speichere faktoren verkettet mit 2 in faktoren.
 		Speichere (z durch 2) als Zahl in z.
 
 	Die Zahl i ist 3.
 	Solange i kleiner als, oder die 2. Wurzel von z als Zahl ist, mache:
-		Solange z modulo i gleich 0 ist, mache:
+		Solange z durch i teilbar ist, mache:
 			Speichere faktoren verkettet mit i in faktoren.
 			Speichere (z durch i) als Zahl in z.
 		Erhöhe i um 2.
@@ -171,7 +176,7 @@ Die öffentliche Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt
 	Die Zahlen Liste teiler ist eine leere Zahlen Liste.
 
 	Für jede Zahl i von z bis 1 mit Schrittgröße -1, mache:
-		Wenn z modulo i gleich 0 ist, speichere teiler verkettet mit i in teiler.	
+		Wenn z durch i teilbar ist, speichere teiler verkettet mit i in teiler.	
 
 	Gib teiler zurück.
 Und kann so benutzt werden:
