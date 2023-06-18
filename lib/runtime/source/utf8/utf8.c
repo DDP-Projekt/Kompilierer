@@ -115,8 +115,8 @@ int utf8_char_to_string(char* s, int32_t c) {
 // copied from https://rosettacode.org/wiki/UTF-8_encode_and_decode#C
 
 typedef struct {
-	char mask;    // char data will be bitwise AND with this
-	char lead;    // start bytes of current char in utf-8 encoded character
+	unsigned char mask;    // char data will be bitwise AND with this
+	unsigned char lead;    // start bytes of current char in utf-8 encoded character
 	uint32_t beg; // beginning of codepoint range
 	uint32_t end; // end of codepoint range
 	int bits_stored; // the number of bits from the codepint that fits in char
@@ -124,11 +124,11 @@ typedef struct {
  
 const utf_t* utf[] = {
 	/*             mask        lead        beg      end       bits */
-	[0] = &(utf_t){0b00111111, 0b10000000, 0,       0,        6    },
-	[1] = &(utf_t){0b01111111, 0b00000000, 0000,    0177,     7    },
-	[2] = &(utf_t){0b00011111, 0b11000000, 0200,    03777,    5    },
-	[3] = &(utf_t){0b00001111, 0b11100000, 04000,   0177777,  4    },
-	[4] = &(utf_t){0b00000111, 0b11110000, 0200000, 04177777, 3    },
+	[0] = &(utf_t){0x3F, 0x80, 0,       0,        6    },
+	[1] = &(utf_t){0x7F, 0x00, 0000,    0177,     7    },
+	[2] = &(utf_t){0x1F, 0xC0, 0200,    03777,    5    },
+	[3] = &(utf_t){0x0F, 0xE0, 04000,   0177777,  4    },
+	[4] = &(utf_t){0x07, 0xF0, 0200000, 04177777, 3    },
 	      &(utf_t){0},
 };
 

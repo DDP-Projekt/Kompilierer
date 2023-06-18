@@ -90,13 +90,13 @@ void ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint inde
 
 	index1--, index2--; // ddp indices start at 1, c indices at 0
 
-	size_t i1 = 0, len = 0;
+	ddpint i1 = 0, len = 0;
 	while (str->str[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
 		++len;
 		i1 += utf8_indicated_num_bytes(str->str[i1]);
 	}
 
-	size_t i2 = i1;
+	ddpint i2 = i1;
 	while (str->str[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
 		++len;
 		i2 += utf8_indicated_num_bytes(str->str[i2]);
