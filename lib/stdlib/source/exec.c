@@ -3,13 +3,14 @@
 #include "memory.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <string.h>
 
 #if DDPOS_WINDOWS
-#error Not Implemented
+#include "ddpwindows.h"
 #else // DDPOS_LINUX
 #include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #endif // DDPOS_WINDOWS
 
 #define READ_END 0
@@ -24,16 +25,16 @@
 // then closes the pipe
 // returns the new size of out
 static size_t read_pipe(int fd, char** out) {
-        size_t out_size = 0;
-        char buff[BUFF_SIZE];
-        int nread;
-        while ((nread = read(fd, buff, sizeof(buff))) > 0) {
-            *out = ddp_reallocate(*out, out_size, out_size + nread);
-            memcpy(*out + out_size, buff, nread);
-            out_size += nread;
-        }
-        close(fd);
-        return out_size;
+	size_t out_size = 0;
+	char buff[BUFF_SIZE];
+	int nread;
+	while ((nread = read(fd, buff, sizeof(buff))) > 0) {
+		*out = ddp_reallocate(*out, out_size, out_size + nread);
+		memcpy(*out + out_size, buff, nread);
+		out_size += nread;
+	}
+	close(fd);
+	return out_size;
 }
 
 // executes path with the given args

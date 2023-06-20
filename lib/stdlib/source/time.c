@@ -3,8 +3,9 @@
 	Duden/Zeit.ddp
 */
 #include <time.h>
+#include <stdio.h>
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "ddpwindows.h"
 
 ddpint Zeit_Seit_Programmstart() {

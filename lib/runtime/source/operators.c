@@ -2,11 +2,13 @@
 	defines functions for ddp operators
 */
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "debug.h"
 #include "utf8/utf8.h"
 #include <math.h>
 #include <float.h>
+#include <stdlib.h>
+#include <string.h>
 
 ddpint ddp_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);

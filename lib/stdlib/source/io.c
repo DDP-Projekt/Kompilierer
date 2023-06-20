@@ -7,10 +7,11 @@
 */
 #include "ddptypes.h"
 #include "utf8/utf8.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "debug.h"
 #include <math.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include "ddpwindows.h"
 #ifdef DDPOS_WINDOWS
 #include <io.h>

@@ -1,3 +1,6 @@
 {
 	"C_Cpp.formatting": "disabled",
+	"files.associations": {
+		"windows.h": "c"
+	},
 }

@@ -4,8 +4,8 @@
 */
 #include "main.h"
 #include "ddptypes.h"
-#include "memory.h"
-
+#include "ddpmemory.h"
+#include <stdio.h>
 #include "ddpwindows.h"
 
 #ifdef DDPOS_WINDOWS

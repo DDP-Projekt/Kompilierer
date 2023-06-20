@@ -10,7 +10,7 @@
 
 #include "debug.h"
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 
 // should not be needed in production
 // mainly for debugging
