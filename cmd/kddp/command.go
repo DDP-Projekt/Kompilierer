@@ -359,26 +359,27 @@ var (
 )
 
 func (cmd *VersionCommand) Run() error {
-	fmt.Printf("DDP Version: %s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
 
 	if bi, ok := debug.ReadBuildInfo(); ok {
-		fmt.Printf("Go Version: %s\n", bi.GoVersion)
+		if cmd.verbose {
+			fmt.Printf("Go Version: %s\n", bi.GoVersion)
+		}
+
 		if cmd.build_info {
 			fmt.Printf("Go build info:\n")
 			for _, v := range bi.Settings {
 				fmt.Printf("%s: %s\n", v.Key, v.Value)
 			}
 		}
-	} else {
-		fmt.Println("Keine go version gefunden")
+	} else if cmd.verbose {
+		fmt.Printf("Go Version: undefined\n")
 	}
 
-	if cmd.verbose && GCCVERSIONFULL != "undefined" {
-		fmt.Printf("GCC Version: %s\n", GCCVERSIONFULL)
-	} else {
-		fmt.Printf("GCC Version: %s\n", GCCVERSION)
+	if cmd.verbose {
+		fmt.Printf("GCC Version: %s ; Full: %s\n", GCCVERSION, GCCVERSIONFULL)
+		fmt.Printf("LLVM Version: %s\n", LLVMVERSION)
 	}
-	fmt.Printf("LLVM Version: %s\n", LLVMVERSION)
 
 	return nil
 }

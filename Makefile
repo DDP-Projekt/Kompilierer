@@ -1,20 +1,31 @@
-DDP_BIN = ""
+KDDP_BIN = ""
 STD_BIN = libddpstdlib.a
+STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
-ifeq ($(OS),Windows_NT)
-	DDP_BIN = kddp.exe
-else
-	DDP_BIN = kddp
-endif
+RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
 
-LLVM_SRC_DIR=./llvm-project/llvm
-LLVM_BUILD_DIR=./llvm_build
+LLVM_SRC_DIR=./llvm-project/llvm/
+LLVM_BUILD_DIR=./llvm_build/
 
 CC=gcc
 CXX=g++
+
+RM = rm -rf
+CP = cp -rf
+MKDIR = mkdir -p
+
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
+LLVM_TARGETS="X86;AArch64;ARM"
+LLVM_ADDITIONAL_CMAKE_VARIABLES= -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF 
+
+ifeq ($(OS),Windows_NT)
+	KDDP_BIN = kddp.exe
+else
+	KDDP_BIN = kddp
+	LLVM_CMAKE_GENERATOR="Unix Makefiles"
+endif
 
 # check if ninja is installed and use it
 ifneq (, $(shell which ninja))
@@ -22,79 +33,86 @@ ifneq (, $(shell which ninja))
 	LLVM_CMAKE_BUILD_TOOL=ninja
 endif
 
-OUT_DIR = ./build/DDP
+OUT_DIR = ./build/DDP/
 
 .DEFAULT_GOAL = all
 
-DDP_DIR = ./cmd/kddp
-STD_DIR = ./lib/stdlib
-RUN_DIR = ./lib/runtime
-INCL_DIR = ./lib/runtime/include
-DUDEN_DIR = ./lib/stdlib/Duden
+KDDP_DIR = ./cmd/kddp/
+STD_DIR = ./lib/stdlib/
+RUN_DIR = ./lib/runtime/
 
-DDP_DIR_OUT = $(OUT_DIR)/bin/
-LIB_DIR_OUT = $(OUT_DIR)/lib/
+KDDP_DIR_OUT = $(OUT_DIR)bin/
+LIB_DIR_OUT = $(OUT_DIR)lib/
+STD_DIR_OUT = $(LIB_DIR_OUT)stdlib/
+RUN_DIR_OUT = $(LIB_DIR_OUT)runtime/
 
 CMAKE = cmake
 
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all debug make_out_dir kddp stdlib stdlib-debug runtime runtime-debug test llvm help display_help_disclaimer test-complete
+.PHONY = all debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory llvm help test-complete
 
-display_help_disclaimer:
-	@echo "compiling the whole project"
-	@echo 'run "make help" to get a list of all available targets'
-	@echo ""
+all: $(OUT_DIR) kddp runtime stdlib
 
-all: display_help_disclaimer make_out_dir kddp runtime stdlib
-
-debug: make_out_dir kddp runtime-debug stdlib-debug
+debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
 
 kddp:
 	@echo "building kddp"
-	cd $(DDP_DIR) ; $(MAKE)
-	mv -f $(DDP_DIR)/build/$(DDP_BIN) $(DDP_DIR_OUT)
+	cd $(KDDP_DIR) ; $(MAKE)
+	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 
 stdlib:
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; $(MAKE)
-	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
-	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	rm -rf $(OUT_DIR)/Duden || true
-	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
+	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
+	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 stdlib-debug:
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; $(MAKE) debug
-	mv -f $(STD_DIR)/$(STD_BIN) $(LIB_DIR_OUT)
-	cp -r $(STD_DIR) $(LIB_DIR_OUT)
-	rm -rf $(OUT_DIR)/Duden || true
-	mv -f $(LIB_DIR_OUT)stdlib/Duden $(OUT_DIR)
+	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
+	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 runtime:
 	@echo "building the ddp-runtime"
 	cd $(RUN_DIR) ; $(MAKE)
-	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
-	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
+	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
+	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
 runtime-debug:
 	@echo "building the ddp-runtime in debug mode"
 	cd $(RUN_DIR) ; $(MAKE) debug
-	mv -f $(RUN_DIR)/$(RUN_BIN) $(LIB_DIR_OUT)
-	cp -r $(RUN_DIR) $(LIB_DIR_OUT)
+	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
+	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
+	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-make_out_dir:
+$(OUT_DIR): LICENSE README.md
 	@echo "creating output directories"
-	mkdir -p $(OUT_DIR)
-	mkdir -p $(DDP_DIR_OUT)
-	mkdir -p $(LIB_DIR_OUT)
-	cp LICENSE $(OUT_DIR)
-	cp README.md $(OUT_DIR)
+	$(MKDIR) $(OUT_DIR)
+	$(MKDIR) $(KDDP_DIR_OUT)
+	$(MKDIR) $(OUT_DIR)Duden/
+	$(MKDIR) $(STD_DIR_OUT)include/
+	$(MKDIR) $(STD_DIR_OUT)source/
+	$(MKDIR) $(RUN_DIR_OUT)include/
+	$(MKDIR) $(RUN_DIR_OUT)source/
+	$(CP) LICENSE $(OUT_DIR)
+	$(CP) README.md $(OUT_DIR)
 
 clean:
 	@echo "deleting output directorie"
-	rm -r $(OUT_DIR) || true
+	$(RM) $(OUT_DIR)
+	cd $(KDDP_DIR) ; $(MAKE) clean
 	cd $(STD_DIR) ; $(MAKE) clean
 	cd $(RUN_DIR) ; $(MAKE) clean
 
@@ -112,10 +130,10 @@ llvm:
 ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)
 	@echo "found ninja, using it as cmake generator"
 endif
-	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL)
+	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL) ; $(LLVM_CMAKE_BUILD_TOOL) llvm-config
 
 
 # will hold the directories to run in the tests

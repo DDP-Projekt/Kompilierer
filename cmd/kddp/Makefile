@@ -1,6 +1,6 @@
 OUT_FILE_NAME = ""
 LLVM_CONFIG = ""
-EXPORTED_CGO_LDFLAGS := ""
+EXPORTED_CGO_LDFLAGS = ""
 ifeq ($(OS),Windows_NT)
 	OUT_FILE_NAME := kddp.exe
 	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config.exe)","")
@@ -19,7 +19,7 @@ else
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
 
-.PHONY = all build make_out_dir
+.PHONY = all clean
 
 .DEFAULT_GOAL := all
 
@@ -30,19 +30,19 @@ LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
 GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
 
-LDFLAGS := "-X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'"
+LDFLAGS := "-s -w -X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'"
 
-build: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
-build: export CGO_CXXFLAGS = -std=c++14
-build: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS)
+kddp: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
+kddp: export CGO_CXXFLAGS = -std=c++14
+kddp: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS)
 
-all: build
+all: kddp
 
 clean:
 	rm -rf $(OUT_DIR)
 
-build: make_out_dir
+kddp: $(OUT_DIR)
 	go build -o $(OUT_DIR)$(OUT_FILE_NAME) -tags byollvm -ldflags $(LDFLAGS)
 
-make_out_dir:
+$(OUT_DIR):
 	mkdir -p $(OUT_DIR)

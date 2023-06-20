@@ -16,7 +16,7 @@ func EmptyHandler(Error) {}
 // creates a basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
 	return func(err Error) {
-		fmt.Fprintf(w, "%s: %s", makeErrorHeader(err, ""), err.Msg)
+		fmt.Fprintf(w, "%s: %s\n", makeErrorHeader(err, ""), err.Msg)
 	}
 }
 
