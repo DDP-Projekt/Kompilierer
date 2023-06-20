@@ -12,8 +12,12 @@ INC = -I./include/ -I../runtime/include/
 AR = ar rcs
 RM = rm -f
 
-HEADERS := $(shell find include -name '*.h')
-SRCS := $(shell find source -name '*.c')
+# these wildcards work only to depth 1
+# so include/utf8/utf8.c is matched but include/utf8/test_dir/test.c would NOT be matched
+# if you want to add more subdirectories, simply add a nesting more here (aka: include/*/*/*.h)
+HEADERS = $(wildcard ../runtime/include/*.h ../runtime/include/*/*.h)
+HEADERS = $(wildcard include/*.h include/*/*.h)
+SRCS = $(wildcard source/*.c source/*/*.c)
 OBJS = $(SRCS:.c=.o)
 OBJS_DEBUG = $(OBJS:.o=_debug.o)
 
