@@ -1,6 +1,6 @@
 #include "ddptypes.h"
 #include "ddpos.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +18,154 @@
 #define BUFF_SIZE 512
 
 #if DDPOS_WINDOWS
-// TODO: add execute_process using the WinApi
+// creates a pipe and sets the inherit_handle to be inherited
+static bool create_pipe(HANDLE pipe_handles[], int inherit_handle) {
+	return CreatePipe(&pipe_handles[READ_END], &pipe_handles[WRITE_END], NULL, 0) &&
+		SetHandleInformation(pipe_handles[inherit_handle], HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+}
+
+static void close_pipe(HANDLE pipe_handles[]) {
+	CloseHandle(pipe_handles[0]);
+	CloseHandle(pipe_handles[1]);
+}
+
+// reads everything from the given pipe into out
+// then closes the pipe
+// returns the new size of out
+//
+// TODO: read in binary mode to not have annoying \r s
+static size_t read_pipe(HANDLE handle, char** out) {
+	char buff[BUFF_SIZE];
+	size_t out_size = 0;
+	DWORD nread = 0;
+	while (ReadFile(handle, buff, BUFF_SIZE, &nread, 0)) {
+		*out = ddp_reallocate(*out, out_size, out_size + nread);
+		memcpy(*out + out_size, buff, nread);
+		out_size += nread;
+	}
+    CloseHandle(handle);
+	return out_size;
+}
+
+static ddpint execute_process(ddpstring* path, ddpstringlist* args,
+    ddpstring* input, ddpstringref stdoutput, ddpstringref erroutput)
+{
+	HANDLE stdout_pipe[2];
+    HANDLE stderr_pipe[2];
+    HANDLE stdin_pipe[2];
+
+    const bool need_stderr = stdoutput != erroutput;
+
+	// for stdout and stderr we want to inherit the write end to the child, as it writes to those pipes
+	// for stdin we inherit the read end because the child because it reads from it
+	if (!create_pipe(stdout_pipe, WRITE_END)) {
+		return -1;
+	}
+	if (need_stderr && !create_pipe(stderr_pipe, WRITE_END)) {
+		close_pipe(stdout_pipe);
+		return -1;
+	}
+	if (!create_pipe(stdin_pipe, READ_END)) {
+		close_pipe(stdout_pipe);
+		if (need_stderr) {
+			close_pipe(stderr_pipe);
+		}
+		return -1;
+	}
+	
+	// prepare the arguments
+	char* argv;
+	size_t argv_size = strlen(path->str) + 1;
+	for (ddpint i = 0; i < args->len; i++) {
+		argv_size += args->arr[i].cap; // the nullterminator is used for the trailing space
+	}
+	argv = ALLOCATE(char, argv_size);
+	argv[0] = '\0'; // make sure strcat works
+	strcat(argv, path->str);
+	strcat(argv, " ");
+	for (ddpint i = 0; i < args->len; i++) {
+		strcat(argv, args->arr[i].str);
+		if (i < args->len-1) {
+			strcat(argv, " ");
+		}
+	}
+
+	// prepare the output
+    FREE_ARRAY(char, stdoutput->str, stdoutput->cap);
+    stdoutput->cap = 0;
+    stdoutput->str = NULL;
+    if (need_stderr) {
+        FREE_ARRAY(char, erroutput->str, erroutput->cap);
+        erroutput->cap = 0;
+        erroutput->str = NULL;
+    }
+
+	// setup what to inherit for the child process
+	STARTUPINFOA si = {0};
+    si.cb = sizeof(si);
+    si.hStdInput = stdin_pipe[READ_END];
+    si.hStdOutput = stdout_pipe[WRITE_END];
+    si.hStdError = need_stderr ? stderr_pipe[WRITE_END] : stdout_pipe[WRITE_END];
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+	// start the actual child process
+	PROCESS_INFORMATION pi;
+	if (!CreateProcessA(path->str, argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
+		close_pipe(stdout_pipe);
+		if (need_stderr) {
+			close_pipe(stderr_pipe);
+		}
+		close_pipe(stdin_pipe);
+		FREE_ARRAY(char, argv, argv_size); // free the arguments
+		return -1;
+	}
+	FREE_ARRAY(char, argv, argv_size); // free the arguments
+
+	// you NEED to close these, or it will not work
+	CloseHandle(pi.hThread);
+	CloseHandle(stdout_pipe[WRITE_END]);
+	if (need_stderr) {
+		CloseHandle(stderr_pipe[WRITE_END]);
+	}
+	CloseHandle(stdin_pipe[READ_END]);
+
+
+	// write stdin
+    DWORD len_written = 0;
+	DWORD len_to_write = strlen(input->str);
+    if (!WriteFile(stdin_pipe[WRITE_END], input->str, len_to_write, &len_written, NULL) || len_written != len_to_write) {
+		// terminate the running process
+		TerminateProcess(pi.hProcess, 1);
+		CloseHandle(pi.hProcess);
+
+		CloseHandle(stdout_pipe[READ_END]);
+		if (need_stderr) {
+			CloseHandle(stderr_pipe[READ_END]);
+		}
+		CloseHandle(stdin_pipe[WRITE_END]);
+		return -1;
+	}
+    CloseHandle(stdin_pipe[WRITE_END]);
+
+	// read stdout and stderr if needed
+	size_t stdout_size = read_pipe(stdout_pipe[READ_END], &stdoutput->str);
+	stdoutput->str = ddp_reallocate(stdoutput->str, stdout_size, stdout_size+1);
+	stdoutput->str[stdout_size] = '\0';
+	stdoutput->cap = stdout_size+1;
+
+	if (need_stderr) {
+		size_t stderr_size = read_pipe(stderr_pipe[READ_END], &erroutput->str);
+		erroutput->str = ddp_reallocate(erroutput->str, stderr_size, stderr_size+1);
+		erroutput->str[stderr_size] = '\0';
+		erroutput->cap = stderr_size+1;
+	}
+
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	DWORD exit_code;
+	GetExitCodeProcess(pi.hProcess, &exit_code);
+    CloseHandle(pi.hProcess);
+    return (ddpint)exit_code;
+}
 #else // DDPOS_LINUX
 
 // reads everything from the given pipe into out
