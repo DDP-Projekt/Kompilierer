@@ -1,4 +1,4 @@
-Die öffentliche Funktion Programm_Ausfuehren mit den Parametern ProgrammName, Argumente, StandardEingabe, StandardAusgabe und StandardFehlerAusgabe  vom Typ Text, Text Liste, Text, Text Referenz und Text Referenz, gibt eine Zahl zurück,
+Die öffentliche Funktion Programm_Ausfuehren mit den Parametern ProgrammName, Argumente, Fehler, StandardEingabe, StandardAusgabe und StandardFehlerAusgabe  vom Typ Text, Text Liste, Text Referenz, Text, Text Referenz und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe>"
+    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe> und einen Fehler in <Fehler>"
