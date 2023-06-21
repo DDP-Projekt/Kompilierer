@@ -19,6 +19,23 @@
 #define BUFF_SIZE 512
 
 #if DDPOS_WINDOWS
+static void write_error(ddpstringref ref, const char* prefix) {
+	char errbuff[1024];
+
+	DWORD error_code = GetLastError();
+	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), errbuff, sizeof(errbuff), NULL)) {
+		sprintf(errbuff, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
+	}
+	
+	size_t len = strlen(prefix) + strlen(errbuff) + 1;
+	ref->str = ddp_reallocate(ref->str, ref->cap, len);
+	ref->str[0] = '\0';
+	ref->cap = len;
+	strcat(ref->str, prefix);
+	strcat(ref->str, errbuff);
+}
+
 // creates a pipe and sets the inherit_handle to be inherited
 static bool create_pipe(HANDLE pipe_handles[], int inherit_handle) {
 	return CreatePipe(&pipe_handles[READ_END], &pipe_handles[WRITE_END], NULL, 0) &&
@@ -33,19 +50,21 @@ static void close_pipe(HANDLE pipe_handles[]) {
 // reads everything from the given pipe into out
 // then closes the pipe
 // returns the new size of out
-//
-// TODO: read in binary mode to not have annoying \r s
-static size_t read_pipe(HANDLE handle, char** out) {
+static void read_pipe(HANDLE handle, ddpstringref out) {
+	ddp_free_string(out);
+
 	char buff[BUFF_SIZE];
-	size_t out_size = 0;
+	out->cap = 0;
 	DWORD nread = 0;
 	while (ReadFile(handle, buff, BUFF_SIZE, &nread, 0)) {
-		*out = ddp_reallocate(*out, out_size, out_size + nread);
-		memcpy(*out + out_size, buff, nread);
-		out_size += nread;
+		out->str = ddp_reallocate(out->str, out->cap, out->cap + nread);
+		memcpy(&out->str[out->cap], buff, nread);
+		out->cap += nread;
 	}
     CloseHandle(handle);
-	return out_size;
+	out->cap += 1;
+	out->str = ddp_reallocate(out->str, out->cap-1, out->cap);
+	out->str[out->cap-1] = '\0';
 }
 
 // TODO: use err
@@ -61,13 +80,16 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 	// for stdout and stderr we want to inherit the write end to the child, as it writes to those pipes
 	// for stdin we inherit the read end because the child because it reads from it
 	if (!create_pipe(stdout_pipe, WRITE_END)) {
+		write_error(err, "Fehler beim Öffnen der Pipe: ");
 		return -1;
 	}
 	if (need_stderr && !create_pipe(stderr_pipe, WRITE_END)) {
+		write_error(err, "Fehler beim Öffnen der Pipe: ");
 		close_pipe(stdout_pipe);
 		return -1;
 	}
 	if (!create_pipe(stdin_pipe, READ_END)) {
+		write_error(err, "Fehler beim Öffnen der Pipe: ");
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
 			close_pipe(stderr_pipe);
@@ -92,16 +114,6 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 		}
 	}
 
-	// prepare the output
-    FREE_ARRAY(char, stdoutput->str, stdoutput->cap);
-    stdoutput->cap = 0;
-    stdoutput->str = NULL;
-    if (need_stderr) {
-        FREE_ARRAY(char, erroutput->str, erroutput->cap);
-        erroutput->cap = 0;
-        erroutput->str = NULL;
-    }
-
 	// setup what to inherit for the child process
 	STARTUPINFOA si = {0};
     si.cb = sizeof(si);
@@ -113,6 +125,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 	// start the actual child process
 	PROCESS_INFORMATION pi;
 	if (!CreateProcessA(path->str, argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
+		write_error(err, "Fehler beim Erstellen des Unter Prozesses: ");
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
 			close_pipe(stderr_pipe);
@@ -136,6 +149,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
     DWORD len_written = 0;
 	DWORD len_to_write = strlen(input->str);
     if (!WriteFile(stdin_pipe[WRITE_END], input->str, len_to_write, &len_written, NULL) || len_written != len_to_write) {
+		write_error(err, "Fehler beim schreiben der Eingabe: ");
 		// terminate the running process
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);
@@ -150,16 +164,10 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
     CloseHandle(stdin_pipe[WRITE_END]);
 
 	// read stdout and stderr if needed
-	size_t stdout_size = read_pipe(stdout_pipe[READ_END], &stdoutput->str);
-	stdoutput->str = ddp_reallocate(stdoutput->str, stdout_size, stdout_size+1);
-	stdoutput->str[stdout_size] = '\0';
-	stdoutput->cap = stdout_size+1;
+	read_pipe(stdout_pipe[READ_END], stdoutput);
 
 	if (need_stderr) {
-		size_t stderr_size = read_pipe(stderr_pipe[READ_END], &erroutput->str);
-		erroutput->str = ddp_reallocate(erroutput->str, stderr_size, stderr_size+1);
-		erroutput->str[stderr_size] = '\0';
-		erroutput->cap = stderr_size+1;
+		read_pipe(stderr_pipe[READ_END], erroutput);
 	}
 
 	WaitForSingleObject(pi.hProcess, INFINITE);
@@ -190,17 +198,21 @@ static void write_error(ddpstringref ref, const char* fmt, ...) {
 // reads everything from the given pipe into out
 // then closes the pipe
 // returns the new size of out
-static size_t read_pipe(int fd, char** out) {
-	size_t out_size = 0;
+static size_t read_pipe(int fd, ddpstringref out) {
+	ddp_free_string(out);
+
+	out->cap = 0;
 	char buff[BUFF_SIZE];
 	int nread;
 	while ((nread = read(fd, buff, sizeof(buff))) > 0) {
-		*out = ddp_reallocate(*out, out_size, out_size + nread);
-		memcpy(*out + out_size, buff, nread);
-		out_size += nread;
+		out->str = ddp_reallocate(out->str, out->cap, out->cap + nread);
+		memcpy(&out->str[out->cap], buff, nread);
+		out->cap += nread;
 	}
 	close(fd);
-	return out_size;
+	out->cap += 1;
+	out->str = ddp_reallocate(out->str, out->cap-1, out->cap);
+	out->str[out->cap-1] = '\0';
 }
 
 // executes path with the given args
@@ -252,16 +264,6 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
     }
     process_args[argc] = NULL;
 
-    // prepare the output
-    FREE_ARRAY(char, stdoutput->str, stdoutput->cap);
-    stdoutput->cap = 0;
-    stdoutput->str = NULL;
-    if (need_stderr) {
-        FREE_ARRAY(char, erroutput->str, erroutput->cap);
-        erroutput->cap = 0;
-        erroutput->str = NULL;
-    }
-
     // create the supprocess
     switch (fork()) {
     case -1: // error
@@ -292,6 +294,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
         close(stdin_fd[READ_END]);
 
         if (write(stdin_fd[WRITE_END], input->str, input->cap) < 0) {
+			write_error(err, "Fehler beim schreiben der Eingabe: %s", strerror(errno));
             return -1;
         }
         close(stdin_fd[WRITE_END]);
@@ -302,16 +305,10 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
             return -1;
         }
 
-        size_t stdout_size = read_pipe(stdout_fd[READ_END], &stdoutput->str);
-        stdoutput->str = ddp_reallocate(stdoutput->str, stdout_size, stdout_size+1);
-        stdoutput->str[stdout_size] = '\0';
-        stdoutput->cap = stdout_size+1;
+        read_pipe(stdout_fd[READ_END], stdoutput);
 
         if (need_stderr) {
-            size_t stderr_size = read_pipe(stderr_fd[READ_END], &erroutput->str);
-            erroutput->str = ddp_reallocate(erroutput->str, stderr_size, stderr_size+1);
-            erroutput->str[stderr_size] = '\0';
-            erroutput->cap = stderr_size+1;
+            read_pipe(stderr_fd[READ_END], erroutput);
         }
 
         if (WIFEXITED(exit_code)) {

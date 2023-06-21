@@ -63,8 +63,8 @@ static void runtime_error_getlasterror(int exit_code, const char* fmt) {
 	char error_buffer[1024];
 	DWORD error_code = GetLastError();
 	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, 1024, NULL)) {
-		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", GetLastError());
+	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, sizeof(error_buffer), NULL)) {
+		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
 	}
 	ddp_runtime_error(exit_code, fmt, error_buffer);
 }
