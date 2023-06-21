@@ -2,11 +2,18 @@
 	This file implements extern functions from 
 	Duden/Zeit.ddp
 */
-#include <time.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include "ddptypes.h"
 #include "ddpmemory.h"
 #include "ddpwindows.h"
+
+#if DDPOS_LINUX
+#define _POSIX_C_SOURCE 200809L
+#endif // DDPOS_LINUX
+
+#include <time.h>
 
 ddpint Zeit_Seit_Programmstart() {
 	return clock();

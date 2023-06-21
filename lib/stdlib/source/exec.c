@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #if DDPOS_WINDOWS
 #include "ddpwindows.h"

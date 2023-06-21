@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include "ddpwindows.h"
 #ifdef DDPOS_WINDOWS
 #include <io.h>
