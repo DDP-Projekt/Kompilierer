@@ -198,10 +198,11 @@ static void write_error(ddpstringref ref, const char* fmt, ...) {
 // reads everything from the given pipe into out
 // then closes the pipe
 // returns the new size of out
-static size_t read_pipe(int fd, ddpstringref out) {
+static void read_pipe(int fd, ddpstringref out) {
 	ddp_free_string(out);
 
 	out->cap = 0;
+	out->str = NULL;
 	char buff[BUFF_SIZE];
 	int nread;
 	while ((nread = read(fd, buff, sizeof(buff))) > 0) {
@@ -277,7 +278,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
         dup2(stdout_fd[WRITE_END], STDOUT_FILENO);
         dup2(need_stderr ? stderr_fd[WRITE_END] : stdout_fd[WRITE_END], STDERR_FILENO);
         dup2(stdin_fd[READ_END], STDIN_FILENO);
-        execv(path->str, process_args);
+        execvp(path->str, process_args);
         write_error(err, "Fehler beim Starten des Unter Prozesses: %s", strerror(errno));
         return -1;
     }

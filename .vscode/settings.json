@@ -1,6 +1,3 @@
 {
 	"C_Cpp.formatting": "disabled",
-	"files.associations": {
-		"ios": "c"
-	},
 }
