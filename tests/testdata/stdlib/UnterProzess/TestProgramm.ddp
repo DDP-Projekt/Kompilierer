@@ -1,0 +1,21 @@
+Binde "Duden/Ausgabe" ein.
+Binde ist_teilbar aus "Duden/Mathe" ein.
+Binde "Duden/Laufzeit" ein.
+Binde "Duden/Eingabe" ein.
+
+Für jeden Text arg in den Befehlszeilenargumenten, Schreibe arg auf eine Zeile.
+
+Wenn die Länge von den Befehlszeilenargumenten kleiner als 2 ist, dann:
+    Schreibe den Fehler "Zu wenig argumente\n".
+    Beende das Programm mit Code 1.
+
+Solange die Benutzereingabe nicht vorbei ist, Schreibe (die nächste Eingabe) auf eine Zeile.
+
+Die Zahl limit ist (die Befehlszeilenargumente an der Stelle 2) als Zahl.
+Schreibe limit auf eine Zeile.
+Für jede Zahl i von 1 bis limit, mache:
+    Wenn i durch 3 teilbar ist und i durch 5 teilbar ist, Schreibe den Text "FizzBuzz" auf eine Zeile.
+    Sonst:
+        Wenn i durch 3 teilbar ist, Schreibe den Text "Fizz" auf eine Zeile.
+        Wenn aber i durch 5 teilbar ist, Schreibe den Text "Buzz" auf eine Zeile.
+        Sonst Schreibe die Zahl i auf eine Zeile.

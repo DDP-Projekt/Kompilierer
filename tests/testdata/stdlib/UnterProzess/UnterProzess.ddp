@@ -1,0 +1,27 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/UnterProzess" ein.
+Binde Betriebssystem aus "Duden/Laufzeit" ein.
+Binde Text_an_Text_fügen aus "Duden/Texte" ein.
+
+Der Text stdout ist "".
+Der Text stderr ist "".
+Der Text fehler ist "".
+
+Die Text Liste args ist eine Liste,
+die aus "15", "22", "noch", "eins" besteht.
+
+Der Text Eingabe ist "halli hallo hallöchen".
+
+Der Text ProgrammName ist "TestProgramm".
+Wenn das Betriebssystem gleich "Windows" ist, Füge ".exe" an ProgrammName an.
+
+
+Die Zahl exit_code ist Führe das Programm ProgrammName
+mit den Argumenten args
+und der Eingabe Eingabe aus, und speichere das Ergebniss in
+stdout und stderr und einen Fehler in fehler.
+
+Schreibe "ExitCode: ". Schreibe exit_code auf eine Zeile.
+Schreibe ("Fehler: " verkettet mit fehler) auf eine Zeile.
+Schreibe "Stdout:\n". Schreibe stdout auf eine Zeile.
+Schreibe "Stderr:\n". Schreibe stderr auf eine Zeile.
