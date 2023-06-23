@@ -1,4 +1,58 @@
+[
+	Grundlegende Funktion um Programme auszuführen.
+
+	Parameter:
+		<ProgrammName>: Ein Pfad zu einer Ausführbaren Datei oder ein Befehl, der sich im PATH befindet
+		<Argumente>: Die Kommandozeilen Argumente für das Auszuführende Programm (ohne den Programm Namen!)
+		<StandardEingabe>: Die Eingabe für das Programm. Wird in sein Stdin geschrieben.
+
+	Rückgabe:
+		- Der Exit Code des Programms, oder -1 im Falle eines Fehlers
+		- Fehler werden in <Fehler> gespeichert
+		- Stdout wird in <StandardAusgabe> gespeichert
+		- Stderr wird in <StandardFehlerAusgabe> gespeichert
+
+	<StandardAusgabe> und <StandardFehlerAusgabe> dürfen dieselbe
+	Text Referenz sein. Sollte dies der Fall sein enthalten sie
+	die Kombinierte Ausgabe von Stdout und Stderr.
+
+	Achtung!!! Durch Buffering des Programms sind stdout und stderr
+	vielleicht nicht in der reihenfolge in der sie ausgegeben wurden.
+
+	Sollten <StandardAusgabe>, <StandardFehlerAusgabe> oder <Fehler>
+	nicht gebraucht werden bleiben sie unverändert.
+]
 Die öffentliche Funktion Programm_Ausfuehren mit den Parametern ProgrammName, Argumente, Fehler, StandardEingabe, StandardAusgabe und StandardFehlerAusgabe  vom Typ Text, Text Liste, Text Referenz, Text, Text Referenz und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe> und einen Fehler in <Fehler>"
+    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe> und mögliche Fehler in <Fehler>" oder
+	"der Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>" oder
+	"dem Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>"
+
+[
+	Wrapper für Programm_Ausfuehren ohne Stdin, Stdout und Stderr.
+]
+Die öffentliche Funktion Programm_Ausfuehren_Fehler mit den Parametern ProgrammName, Argumente und Fehler vom Typ Text, Text Liste und Text Referenz, gibt eine Zahl zurück, macht:
+	Der Text out ist "".
+	Gib
+	Führe das Programm ProgrammName mit den Argumenten Argumente
+	und der Eingabe "" aus, und speichere das Ergebniss in
+	out und out und mögliche Fehler in Fehler
+	zurück.
+Und kann so benutzt werden:
+	"Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler> aus" oder
+	"der Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>" oder
+	"dem Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>"
+
+[
+	Wrapper für Programm_Ausfuehren, der die Kombinierte Ausgabe (Stdout + Stderr) zurückgibt.
+]
+Die öffentliche Funktion Programm_Ausfuehren_Ausgabe mit den Parametern ProgrammName, Argumente, Eingabe und Fehler vom Typ Text, Text Liste, Text und Text Referenz, gibt einen Text zurück, macht:
+	Der Text out ist "".
+	Führe das Programm ProgrammName mit den Argumenten Argumente
+	und der Eingabe Eingabe aus, und speichere das Ergebniss in
+	out und out und mögliche Fehler in Fehler.
+	Gib out zurück.
+Und kann so benutzt werden:
+	"die Ausgabe von <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <Eingabe> und dem möglichen Fehler <Fehler>" oder
+	"der Ausgabe von <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <Eingabe> und dem möglichen Fehler <Fehler>"
