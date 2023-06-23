@@ -5,7 +5,7 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 .DEFAULT_GOAL = all
 
 CC = gcc
-CCFLAGS = -c -Wall -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
+CCFLAGS = -c -Wall -Wno-format -O2 -std=c11 -pedantic
 DEBUGFLAGS = -DDDP_DEBUG
 INC = -I./include/ -I../runtime/include/
 
