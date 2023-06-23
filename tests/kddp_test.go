@@ -90,12 +90,15 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		}
 
 		// get ddp file path
-		filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
+		filename := filepath.Join(filepath.Base(path)) + ".ddp"
+		filename_from_here := filepath.Join(path, filename)
 
 		// build dpp file
 		ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
 		defer cf()
-		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
+		cmd := exec.CommandContext(ctx, "kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
+		cmd.Dir = path
+
 		// get build output
 		if out, err := cmd.CombinedOutput(); err != nil {
 			if err := ctx.Err(); err != nil {
@@ -106,13 +109,15 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 			return
 		} else {
 			// remove exe if successful
-			defer os.Remove(changeExtension(filename, ".exe"))
+			defer os.Remove(changeExtension(filename_from_here, ".exe"))
 		}
 
 		// run ddp executeable
 		ctx, cf = context.WithTimeout(context.Background(), time.Second*10)
 		defer cf()
-		cmd = exec.CommandContext(ctx, changeExtension(filename, ".exe"))
+		exe_path, _ := filepath.Abs(changeExtension(filename_from_here, ".exe"))
+		cmd = exec.CommandContext(ctx, exe_path)
+		cmd.Dir = path
 
 		// read input
 		input, err := os.Open(filepath.Join(path, "input.txt"))

@@ -149,7 +149,8 @@ Die öffentliche Funktion IndexVonText mit den Parametern text und elm vom Typ T
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
-	"der Index von <elm> in <text>"
+	"der Index von <elm> in <text>" oder
+	"den Index von <elm> in <text>"
 
 Die öffentliche Funktion IstTextLeer mit dem Parameter text vom Typ Text, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von text gleich 0 ist zurück.

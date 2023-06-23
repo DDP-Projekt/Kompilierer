@@ -1,27 +1,67 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/UnterProzess" ein.
 Binde Betriebssystem aus "Duden/Laufzeit" ein.
-Binde Text_an_Text_fügen aus "Duden/Texte" ein.
+Binde "Duden/Texte" ein.
+
+Die Funktion Lösche_CR mit dem Parameter t vom Typ Text Referenz, gibt nichts zurück, macht:
+    Die Zahl i ist der Index von '\r' in t.
+    Solange i ungleich -1 ist, mache:
+        Lösche das Element an der Stelle i aus t.
+        Speichere den Index von '\r' in t in i.
+Und kann so benutzt werden:
+    "Lösche alle CRs aus <t>"
 
 Der Text stdout ist "".
 Der Text stderr ist "".
 Der Text fehler ist "".
 
 Die Text Liste args ist eine Liste,
-die aus "15", "22", "noch", "eins" besteht.
+die aus "starte", "TestProgramm.ddp", "5", "22", "noch", "eins" besteht.
 
 Der Text Eingabe ist "halli hallo hallöchen".
 
-Der Text ProgrammName ist "TestProgramm".
-Wenn das Betriebssystem gleich "Windows" ist, Füge ".exe" an ProgrammName an.
-
-
-Die Zahl exit_code ist Führe das Programm ProgrammName
+Die Zahl exit_code ist Führe das Programm "kddp"
 mit den Argumenten args
 und der Eingabe Eingabe aus, und speichere das Ergebniss in
 stdout und stderr und einen Fehler in fehler.
 
+[sodass der Test auch auf Windows läuft]
+Lösche alle CRs aus stdout.
+Lösche alle CRs aus stderr.
+
 Schreibe "ExitCode: ". Schreibe exit_code auf eine Zeile.
-Schreibe ("Fehler: " verkettet mit fehler) auf eine Zeile.
-Schreibe "Stdout:\n". Schreibe stdout auf eine Zeile.
-Schreibe "Stderr:\n". Schreibe stderr auf eine Zeile.
+Schreibe "Fehler: ".   Schreibe fehler auf eine Zeile.
+Schreibe "Stdout:\n".  Schreibe stdout auf eine Zeile.
+Schreibe "Stderr:\n".  Schreibe stderr auf eine Zeile.
+
+Leere stdout.
+Leere stderr.
+Leere fehler.
+
+Die Zahl exit_code2 ist Führe das Programm "kddp"
+mit den Argumenten args
+und der Eingabe Eingabe aus, und speichere das Ergebniss in
+stdout und stdout und einen Fehler in fehler.
+
+[sodass der Test auch auf Windows läuft]
+Lösche alle CRs aus stdout.
+Lösche alle CRs aus stderr.
+
+Schreibe "ExitCode: ". Schreibe exit_code2 auf eine Zeile.
+Schreibe "Fehler: ".   Schreibe fehler auf eine Zeile.
+Schreibe "Stdout:\n".  Schreibe stdout auf eine Zeile.
+Schreibe "Stderr:\n".  Schreibe stderr auf eine Zeile.
+
+Leere stdout.
+Leere stderr.
+Leere fehler.
+
+Die Zahl exit_code3 ist Führe das Programm "existiert_nicht"
+mit den Argumenten (eine leere Text Liste)
+und der Eingabe Eingabe aus, und speichere das Ergebniss in
+stdout und stderr und einen Fehler in fehler.
+
+Schreibe "ExitCode: ". Schreibe exit_code3 auf eine Zeile.
+Schreibe "Fehler: ".   Schreibe (die Länge von fehler ungleich 0 ist) auf eine Zeile.
+Schreibe "Stdout:\n".  Schreibe stdout auf eine Zeile.
+Schreibe "Stderr:\n".  Schreibe stderr auf eine Zeile.

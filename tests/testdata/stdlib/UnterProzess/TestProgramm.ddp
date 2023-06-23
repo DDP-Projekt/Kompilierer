@@ -3,7 +3,10 @@ Binde ist_teilbar aus "Duden/Mathe" ein.
 Binde "Duden/Laufzeit" ein.
 Binde "Duden/Eingabe" ein.
 
-Für jeden Text arg in den Befehlszeilenargumenten, Schreibe arg auf eine Zeile.
+Schreibe "Hallo Welt" auf eine Zeile.
+Schreibe den Fehler "Fehler\n".
+Die Text Liste args ist die Befehlszeilenargumente.
+Für jeden Text arg in args von 2 bis (die Länge von args), Schreibe arg auf eine Zeile.
 
 Wenn die Länge von den Befehlszeilenargumenten kleiner als 2 ist, dann:
     Schreibe den Fehler "Zu wenig argumente\n".
