@@ -178,6 +178,8 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 }
 #else // DDPOS_LINUX
 
+#define COMMAND_NOT_FOUND 127
+
 // helper to output an error
 static void write_error(ddpstringref ref, const char* fmt, ...) {
 	char errbuff[1024];
@@ -279,7 +281,8 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
         dup2(need_stderr ? stderr_fd[WRITE_END] : stdout_fd[WRITE_END], STDERR_FILENO);
         dup2(stdin_fd[READ_END], STDIN_FILENO);
         execvp(path->str, process_args);
-        write_error(err, "Fehler beim Starten des Unter Prozesses: %s", strerror(errno));
+        fprintf(stderr, "Fehler beim Starten des Unter Prozesses: %s", strerror(errno));
+		exit(COMMAND_NOT_FOUND);
         return -1;
     }
     default: { // parent
@@ -305,6 +308,11 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
             write_error(err, "Fehler beim Warten auf den Unter Prozess: %s", strerror(errno));
             return -1;
         }
+
+		if (WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == COMMAND_NOT_FOUND) {
+			read_pipe((need_stderr ? stderr_fd : stdout_fd)[READ_END], err);
+			return -1;
+		}
 
         read_pipe(stdout_fd[READ_END], stdoutput);
 

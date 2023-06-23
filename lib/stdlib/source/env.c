@@ -4,6 +4,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "ddptypes.h"
 #include "ddpmemory.h"
 #include "ddpwindows.h"
