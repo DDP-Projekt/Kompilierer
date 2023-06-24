@@ -27,7 +27,8 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
     "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe> und mögliche Fehler in <Fehler>" oder
 	"der Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>" oder
-	"dem Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>"
+	"dem Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>" oder
+	"den Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>"
 
 [
 	Wrapper für Programm_Ausfuehren ohne Stdin, Stdout und Stderr.
@@ -42,7 +43,8 @@ Die öffentliche Funktion Programm_Ausfuehren_Fehler mit den Parametern Programm
 Und kann so benutzt werden:
 	"Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler> aus" oder
 	"der Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>" oder
-	"dem Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>"
+	"dem Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>" oder
+	"den Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente> und einem möglichen Fehler <Fehler>"
 
 [
 	Wrapper für Programm_Ausfuehren, der die Kombinierte Ausgabe (Stdout + Stderr) zurückgibt.
@@ -56,3 +58,17 @@ Die öffentliche Funktion Programm_Ausfuehren_Ausgabe mit den Parametern Program
 Und kann so benutzt werden:
 	"die Ausgabe von <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <Eingabe> und dem möglichen Fehler <Fehler>" oder
 	"der Ausgabe von <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <Eingabe> und dem möglichen Fehler <Fehler>"
+
+Die öffentliche Funktion Programm_Ausfuehren_Einfach mit den Parametern ProgrammName und Argumente vom Typ Text und Text Liste, gibt eine Zahl zurück, macht:
+	Der Text out ist "".
+	Der Text fehler ist "".
+	Gib den Rückgabe Wert vom 
+	ProgrammName mit den Argumenten Argumente,
+	der Eingabe "", 
+	der Ausgabe out und out 
+	und dem Fehler fehler zurück.
+Und kann so benutzt werden:
+	"Führe das Programm <ProgrammName> mit den Argumenten <Argumente> aus" oder
+	"der Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente>" oder
+	"den Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente>" oder
+	"dem Rückgabe Wert von <ProgrammName> mit den Argumenten <Argumente>"
