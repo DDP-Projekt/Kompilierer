@@ -122,7 +122,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <text>"
 
 Die öffentliche Funktion Lösche_Text mit den Parametern text und index vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis (die Länge von text) in text.
+	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von text größer als 1 ist, dann:
+		Speichere "" in text.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere text von 2 bis (die Länge von text) in text.
+	Wenn aber index gleich die Länge von text ist, dann:
+		Speichere text von 1 bis (die Länge von text minus 1) in text.
+	Sonst:
+		Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <text>"
 
