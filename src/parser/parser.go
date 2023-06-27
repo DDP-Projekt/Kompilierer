@@ -382,14 +382,14 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 	p.consume(token.IST)
 	var expr ast.Expression
 
-	if typ != ddptypes.Bool() && typ.IsList { // TODO: fix this with function calls and groupings
+	if typ != ddptypes.BOOLEAN && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.match(token.COUNT_MAL) {
 			value := p.expression()
 			expr = &ast.ListLit{
 				Tok:    expr.Token(),
 				Range:  token.NewRange(expr.Token(), p.previous()),
-				Type:   typ,
+				Type:   typ.(ddptypes.ListType),
 				Values: nil,
 				Count:  expr,
 				Value:  value,
@@ -504,14 +504,14 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		// parse the types of the parameters
 		validate(p.consume(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
-		validate(firstType.Primitive != ddptypes.ILLEGAL)
+		validate(firstType != nil)
 		paramTypes = append(make([]ddptypes.ParameterType, 0), ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
 		if !singleParameter {
 			// helper function to avoid too much repitition
 			addType := func() {
 				// validate the parameter type and append it
 				typ, ref := p.parseReferenceType()
-				validate(typ.Primitive != ddptypes.ILLEGAL)
+				validate(typ != nil)
 				paramTypes = append(paramTypes, ddptypes.ParameterType{Type: typ, IsReference: ref})
 			}
 
@@ -538,7 +538,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	// parse the return type declaration
 	validate(p.consume(token.GIBT))
 	Typ := p.parseReturnType()
-	if Typ.Primitive == ddptypes.ILLEGAL {
+	if Typ == nil {
 		valid = false
 	}
 
@@ -660,7 +660,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		decl.Body = body
 
 		// check that the function has a return statement if it needs one
-		if Typ != ddptypes.Void() { // only if the function does not return void
+		if !ddptypes.IsVoid(Typ) { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
 				perr(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN)
 			} else {
@@ -940,7 +940,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
-		if typ == ddptypes.Bool() {
+		if typ == ddptypes.BOOLEAN {
 			operator = ast.UN_NOT
 		}
 		return &ast.AssignStmt{
@@ -1012,7 +1012,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
-		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.Bool() {
+		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.BOOLEAN {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -1796,7 +1796,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				lhs = &ast.ListLit{
 					Tok:    begin,
 					Range:  token.NewRange(begin, p.previous()),
-					Type:   typ,
+					Type:   typ.(ddptypes.ListType),
 					Values: nil,
 				}
 			} else if p.match(token.LEERE) {
@@ -1804,7 +1804,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				lhs = &ast.ListLit{
 					Tok:    begin,
 					Range:  token.NewRange(begin, p.previous()),
-					Type:   typ,
+					Type:   typ.(ddptypes.ListType),
 					Values: nil,
 				}
 			} else {
@@ -2058,11 +2058,11 @@ outer:
 
 					if typ != paramType.Type {
 						arg = nil // arg and param types don't match
-					} else if ass, ok := arg.(*ast.Indexing);                     // string-indexings may not be passed as char-reference
-					paramType.IsReference && paramType.Type == ddptypes.Char() && // if the parameter is a char-reference
+					} else if ass, ok := arg.(*ast.Indexing);                        // string-indexings may not be passed as char-reference
+					paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
 						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
-						if lhs.Primitive == ddptypes.TEXT { // check if the lhs is a string
+						if lhs == ddptypes.TEXT { // check if the lhs is a string
 							arg = nil
 						}
 					}
@@ -2202,29 +2202,29 @@ func (p *parser) parseIntLit() *ast.IntLit {
 func tokenTypeToType(t token.TokenType) ddptypes.Type {
 	switch t {
 	case token.NICHTS:
-		return ddptypes.Void()
+		return ddptypes.VoidType{}
 	case token.ZAHL:
-		return ddptypes.Int()
+		return ddptypes.ZAHL
 	case token.KOMMAZAHL:
-		return ddptypes.Float()
+		return ddptypes.KOMMAZAHL
 	case token.BOOLEAN:
-		return ddptypes.Bool()
+		return ddptypes.BOOLEAN
 	case token.BUCHSTABE:
-		return ddptypes.Char()
+		return ddptypes.BUCHSTABE
 	case token.TEXT:
-		return ddptypes.String()
+		return ddptypes.TEXT
 	}
 	panic(fmt.Sprintf("invalid TokenType (%d)", t))
 }
 
 // parses tokens into a DDPType
 // expects the next token to be the start of the type
-// returns ILLEGAL and errors if no typename was found
+// returns nil and errors if no typename was found
 func (p *parser) parseType() ddptypes.Type {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
-		return ddptypes.Illegal() // void indicates error
+		return nil
 	}
 
 	switch p.previous().Type {
@@ -2234,31 +2234,32 @@ func (p *parser) parseType() ddptypes.Type {
 		if !p.match(token.LISTE) {
 			return tokenTypeToType(p.previous().Type)
 		}
-		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.List(ddptypes.ZAHL)
+		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
 		p.consume(token.LISTE)
-		return ddptypes.List(ddptypes.KOMMAZAHL)
+		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
 		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
-			return ddptypes.Char()
+			return ddptypes.BUCHSTABE
 		}
 		p.consume(token.LISTE)
-		return ddptypes.List(ddptypes.BUCHSTABE)
+		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	}
 
-	return ddptypes.Illegal() // unreachable
+	return nil // unreachable
 }
 
 // parses tokens into a DDPType which must be a list type
 // expects the next token to be the start of the type
-// returns ILLEGAL and errors if no typename was found
+// returns nil and errors if no typename was found
+// returns a ddptypes.ListType
 func (p *parser) parseListType() ddptypes.Type {
 	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
-		return ddptypes.Illegal()
+		return nil
 	}
 
 	if !p.consume(token.LISTE) {
@@ -2268,16 +2269,16 @@ func (p *parser) parseListType() ddptypes.Type {
 	}
 	switch p.peekN(-2).Type {
 	case token.BOOLEAN, token.TEXT:
-		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
-		return ddptypes.List(ddptypes.ZAHL)
+		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
-		return ddptypes.List(ddptypes.KOMMAZAHL)
+		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
-		return ddptypes.List(ddptypes.BUCHSTABE)
+		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	}
 
-	return ddptypes.Illegal() // unreachable
+	return nil // unreachable
 }
 
 // parses tokens into a DDPType and returns wether the type is a reference type
@@ -2287,7 +2288,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
-		return ddptypes.Illegal(), false // void indicates error
+		return nil, false // void indicates error
 	}
 
 	switch p.previous().Type {
@@ -2295,48 +2296,48 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		return tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive), false
+			return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}, false
 		} else if p.match(token.LISTEN) {
 			if !p.consume(token.REFERENZ) {
 				// report the error on the REFERENZ token, but still advance
 				// because there is a valid token afterwards
 				p.advance()
 			}
-			return ddptypes.List(tokenTypeToType(p.peekN(-3).Type).Primitive), true
+			return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-3).Type)}, true
 		} else if p.match(token.REFERENZ) {
-			return ddptypes.Primitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
+			return tokenTypeToType(p.peekN(-2).Type), true
 		}
 		return tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.List(ddptypes.ZAHL), false
+			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.List(ddptypes.ZAHL), true
+			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, true
 		}
 		p.consume(token.REFERENZ)
-		return ddptypes.Int(), true
+		return ddptypes.ZAHL, true
 	case token.KOMMAZAHLEN:
 		if p.match(token.LISTE) {
-			return ddptypes.List(ddptypes.KOMMAZAHL), false
+			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.List(ddptypes.KOMMAZAHL), true
+			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, true
 		}
 		p.consume(token.REFERENZ)
-		return ddptypes.Float(), true
+		return ddptypes.KOMMAZAHL, true
 	case token.BUCHSTABEN:
 		if p.match(token.LISTE) {
-			return ddptypes.List(ddptypes.BUCHSTABE), false
+			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, false
 		} else if p.match(token.LISTEN) {
 			p.consume(token.REFERENZ)
-			return ddptypes.List(ddptypes.BUCHSTABE), true
+			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, true
 		}
 		p.consume(token.REFERENZ)
-		return ddptypes.Char(), true
+		return ddptypes.BUCHSTABE, true
 	}
 
-	return ddptypes.Illegal(), false // unreachable
+	return nil, false // unreachable
 }
 
 // parses tokens into a DDPType
@@ -2344,7 +2345,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 // the error return is ILLEGAL
 func (p *parser) parseReturnType() ddptypes.Type {
 	if p.match(token.NICHTS) {
-		return ddptypes.Void()
+		return ddptypes.VoidType{}
 	}
 	p.consumeAny(token.EINEN, token.EINE)
 	return p.parseType()

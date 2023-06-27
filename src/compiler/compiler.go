@@ -237,7 +237,6 @@ func (c *compiler) visitNode(node ast.Node) {
 }
 
 // helper to evalueate an expression and return its ir value
-// if the result is refCounted it's refcount is usually 1
 func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType) {
 	c.visitNode(expr)
 	return c.latestReturn, c.latestReturnType
@@ -312,7 +311,7 @@ func (c *compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
 }
 
 // helper to exit a scope
-// decrements the ref-count on all local variables
+// frees all local variables
 // returns the enclosing scope
 func (c *compiler) exitScope(scp *scope) *scope {
 	for _, v := range scp.variables {
@@ -1114,7 +1113,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 }
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 	lhs, lhsTyp := c.evaluate(e.Lhs)
-	if e.Type.IsList {
+	if ddptypes.IsList(e.Type) {
 		listType := c.getListType(lhsTyp)
 		list := c.cbb.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
@@ -1127,7 +1126,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 		c.latestReturnType = listType
 		return // don't free lhs
 	} else {
-		switch e.Type.Primitive {
+		switch e.Type {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1561,6 +1560,8 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	}
 }
 
+// exits all scopes until the current function scope
+// frees all scp.non_primitives
 func (c *compiler) exitNestedScopes() {
 	for scp := c.scp; scp != c.cfscp; scp = c.exitScope(scp) {
 		for _, v := range scp.non_primitives {

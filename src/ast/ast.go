@@ -99,7 +99,7 @@ type (
 		ParamNames    []token.Token            // x, y und z
 		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
 		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
-		Type          ddptypes.Type            // Zahl Kommazahl nichts ...
+		Type          ddptypes.Type            // return Type, Zahl Kommazahl nichts ...
 		Body          *BlockStmt               // nil for extern functions
 		ExternFile    token.Token              // string literal with filepath (only pesent if Body is nil)
 		Aliases       []FuncAlias
@@ -190,7 +190,7 @@ type (
 		Range token.Range
 		// type of the empty list if Values is nil
 		// the typechecker fills this field if Values is non-nil
-		Type   ddptypes.Type
+		Type   ddptypes.ListType
 		Values []Expression // the values in the Literal
 		// if Values, Count and Value are nil, the list is empty
 		Count Expression // for big list initializations

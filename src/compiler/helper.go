@@ -36,8 +36,8 @@ func newIntT(typ *types.IntType, value int64) *constant.Int {
 
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
-	if ddpType.IsList {
-		switch ddpType.Primitive {
+	if listType, isList := ddpType.(ddptypes.ListType); isList {
+		switch listType.Underlying {
 		case ddptypes.ZAHL:
 			return c.ddpintlist
 		case ddptypes.KOMMAZAHL:
@@ -50,7 +50,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpstringlist
 		}
 	} else {
-		switch ddpType.Primitive {
+		switch ddpType {
 		case ddptypes.ZAHL:
 			return c.ddpinttyp
 		case ddptypes.KOMMAZAHL:
@@ -61,7 +61,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpchartyp
 		case ddptypes.TEXT:
 			return c.ddpstring
-		case ddptypes.NICHTS:
+		case ddptypes.VoidType{}:
 			return c.void
 		}
 	}

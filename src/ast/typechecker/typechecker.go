@@ -26,7 +26,7 @@ func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler, file string) *
 		ErrorHandler:       errorHandler,
 		CurrentTable:       symbols,
 		Errored:            false,
-		latestReturnedType: ddptypes.Void(),
+		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		file:               file,
 	}
 }
@@ -87,7 +87,7 @@ func (t *Typechecker) errExpected(operator ast.Operator, expr ast.Expression, go
 func (*Typechecker) BaseVisitor() {}
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) {
-	t.latestReturnedType = ddptypes.Void()
+	t.latestReturnedType = ddptypes.VoidType{}
 }
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) {
 	initialType := t.Evaluate(decl.InitVal)
@@ -106,46 +106,46 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 }
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
-	t.latestReturnedType = ddptypes.Void()
+	t.latestReturnedType = ddptypes.VoidType{}
 }
 func (t *Typechecker) VisitIdent(expr *ast.Ident) {
 	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
 	if !ok || !isVar {
-		t.latestReturnedType = ddptypes.Void()
+		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
 		t.latestReturnedType = decl.(*ast.VarDecl).Type
 	}
 }
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) {
-	if typ := t.Evaluate(expr.Index); typ != ddptypes.Int() {
+	if typ := t.Evaluate(expr.Index); typ != ddptypes.ZAHL {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 	}
 
 	lhs := t.Evaluate(expr.Lhs)
-	if !lhs.IsList && lhs.Primitive != ddptypes.TEXT {
+	if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 	}
 
-	if lhs.IsList {
-		t.latestReturnedType = ddptypes.Primitive(lhs.Primitive)
+	if ddptypes.IsList(lhs) {
+		t.latestReturnedType = lhs.(ddptypes.ListType).Underlying
 	} else {
-		t.latestReturnedType = ddptypes.Char() // later on the list element type
+		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
 }
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) {
-	t.latestReturnedType = ddptypes.Int()
+	t.latestReturnedType = ddptypes.ZAHL
 }
 func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) {
-	t.latestReturnedType = ddptypes.Float()
+	t.latestReturnedType = ddptypes.KOMMAZAHL
 }
 func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) {
-	t.latestReturnedType = ddptypes.Bool()
+	t.latestReturnedType = ddptypes.BOOLEAN
 }
 func (t *Typechecker) VisitCharLit(expr *ast.CharLit) {
-	t.latestReturnedType = ddptypes.Char()
+	t.latestReturnedType = ddptypes.BUCHSTABE
 }
 func (t *Typechecker) VisitStringLit(expr *ast.StringLit) {
-	t.latestReturnedType = ddptypes.String()
+	t.latestReturnedType = ddptypes.TEXT
 }
 func (t *Typechecker) VisitListLit(expr *ast.ListLit) {
 	if expr.Values != nil {
@@ -156,13 +156,13 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) {
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, msg)
 			}
 		}
-		expr.Type = ddptypes.List(elementType.Primitive)
+		expr.Type = ddptypes.ListType{Underlying: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
-		if count := t.Evaluate(expr.Count); count != ddptypes.Int() {
+		if count := t.Evaluate(expr.Count); count != ddptypes.ZAHL {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
-		if val := t.Evaluate(expr.Value); val != ddptypes.Primitive(expr.Type.Primitive) {
-			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Falscher Typ (%s) in Listen Literal vom Typ %s", val, ddptypes.Primitive(expr.Type.Primitive))
+		if val := t.Evaluate(expr.Value); val != expr.Type.Underlying {
+			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Falscher Typ (%s) in Listen Literal vom Typ %s", val, expr.Type.Underlying)
 		}
 	}
 	t.latestReturnedType = expr.Type
@@ -172,29 +172,29 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) {
 	rhs := t.Evaluate(expr.Rhs)
 	switch expr.Operator {
 	case ast.UN_ABS, ast.UN_NEGATE:
-		if !rhs.IsNumeric() {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Int(), ddptypes.Float())
+		if !ddptypes.IsNumeric(rhs) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
 	case ast.UN_NOT:
-		if !isOfType(rhs, ddptypes.Bool()) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Bool())
+		if !isOfType(rhs, ddptypes.BOOLEAN) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.BOOLEAN)
 		}
 
-		t.latestReturnedType = ddptypes.Bool()
+		t.latestReturnedType = ddptypes.BOOLEAN
 	case ast.UN_LOGIC_NOT:
-		if !isOfType(rhs, ddptypes.Int()) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Int())
+		if !isOfType(rhs, ddptypes.ZAHL) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
 		}
 
-		t.latestReturnedType = ddptypes.Int()
+		t.latestReturnedType = ddptypes.ZAHL
 	case ast.UN_LEN:
-		if !rhs.IsList && rhs.Primitive != ddptypes.TEXT {
+		if !ddptypes.IsList(rhs) && rhs != ddptypes.TEXT {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
 		}
 
-		t.latestReturnedType = ddptypes.Int()
+		t.latestReturnedType = ddptypes.ZAHL
 	case ast.UN_SIZE:
-		t.latestReturnedType = ddptypes.Int()
+		t.latestReturnedType = ddptypes.ZAHL
 	default:
 		panic(fmt.Errorf("unbekannter unärer Operator '%s'", expr.Operator))
 	}
@@ -215,59 +215,66 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 
 	switch expr.Operator {
 	case ast.BIN_CONCAT:
-		if (!lhs.IsList && !rhs.IsList) && (lhs == ddptypes.String() || rhs == ddptypes.String()) { // string, char edge case
-			validate(ddptypes.String(), ddptypes.Char())
-			t.latestReturnedType = ddptypes.String()
+		if (!ddptypes.IsList(lhs) && !ddptypes.IsList(rhs)) && (lhs == ddptypes.TEXT || rhs == ddptypes.TEXT) { // string, char edge case
+			validate(ddptypes.TEXT, ddptypes.BUCHSTABE)
+			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
-			if lhs.Primitive != rhs.Primitive {
+			getOldUnderlyingType := func(t ddptypes.Type) ddptypes.Type {
+				if listType, isList := t.(ddptypes.ListType); isList {
+					return listType.Underlying
+				}
+				return t
+			}
+
+			if getOldUnderlyingType(lhs) != getOldUnderlyingType(rhs) {
 				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
 			}
-			t.latestReturnedType = ddptypes.List(lhs.Primitive)
+			t.latestReturnedType = ddptypes.ListType{Underlying: getOldUnderlyingType(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
-		validate(ddptypes.Int(), ddptypes.Float())
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 
-		if lhs == ddptypes.Int() && rhs == ddptypes.Int() {
-			t.latestReturnedType = ddptypes.Int()
+		if lhs == ddptypes.ZAHL && rhs == ddptypes.ZAHL {
+			t.latestReturnedType = ddptypes.ZAHL
 		} else {
-			t.latestReturnedType = ddptypes.Float()
+			t.latestReturnedType = ddptypes.KOMMAZAHL
 		}
 	case ast.BIN_INDEX:
-		if !lhs.IsList && lhs != ddptypes.String() {
+		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
-		if rhs != ddptypes.Int() {
+		if rhs != ddptypes.ZAHL {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", rhs)
 		}
 
-		if lhs.IsList {
-			t.latestReturnedType = ddptypes.Primitive(lhs.Primitive)
-		} else if lhs == ddptypes.String() {
-			t.latestReturnedType = ddptypes.Char() // later on the list element type
+		if ddptypes.IsList(lhs) {
+			t.latestReturnedType = lhs.(ddptypes.ListType).Underlying
+		} else if lhs == ddptypes.TEXT {
+			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
 	case ast.BIN_DIV, ast.BIN_POW, ast.BIN_LOG:
-		validate(ddptypes.Int(), ddptypes.Float())
-		t.latestReturnedType = ddptypes.Float()
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		t.latestReturnedType = ddptypes.KOMMAZAHL
 	case ast.BIN_MOD:
-		validate(ddptypes.Int())
-		t.latestReturnedType = ddptypes.Int()
+		validate(ddptypes.ZAHL)
+		t.latestReturnedType = ddptypes.ZAHL
 	case ast.BIN_AND, ast.BIN_OR:
-		validate(ddptypes.Bool())
-		t.latestReturnedType = ddptypes.Bool()
+		validate(ddptypes.BOOLEAN)
+		t.latestReturnedType = ddptypes.BOOLEAN
 	case ast.BIN_LEFT_SHIFT, ast.BIN_RIGHT_SHIFT:
-		validate(ddptypes.Int())
-		t.latestReturnedType = ddptypes.Int()
+		validate(ddptypes.ZAHL)
+		t.latestReturnedType = ddptypes.ZAHL
 	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
 		if lhs != rhs {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
-		t.latestReturnedType = ddptypes.Bool()
+		t.latestReturnedType = ddptypes.BOOLEAN
 	case ast.BIN_GREATER, ast.BIN_LESS, ast.BIN_GREATER_EQ, ast.BIN_LESS_EQ:
-		validate(ddptypes.Int(), ddptypes.Float())
-		t.latestReturnedType = ddptypes.Bool()
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		t.latestReturnedType = ddptypes.BOOLEAN
 	case ast.BIN_LOGIC_AND, ast.BIN_LOGIC_OR, ast.BIN_LOGIC_XOR:
-		validate(ddptypes.Int())
-		t.latestReturnedType = ddptypes.Int()
+		validate(ddptypes.ZAHL)
+		t.latestReturnedType = ddptypes.ZAHL
 	default:
 		panic(fmt.Errorf("unbekannter binärer Operator '%s'", expr.Operator))
 	}
@@ -279,21 +286,21 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) {
 
 	switch expr.Operator {
 	case ast.TER_SLICE:
-		if !lhs.IsList && lhs != ddptypes.String() {
+		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
 
-		if !isOfType(mid, ddptypes.Int()) {
-			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.Int())
+		if !isOfType(mid, ddptypes.ZAHL) {
+			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL)
 		}
-		if !isOfType(rhs, ddptypes.Int()) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.Int())
+		if !isOfType(rhs, ddptypes.ZAHL) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
 		}
 
-		if lhs.IsList {
-			t.latestReturnedType = ddptypes.List(lhs.Primitive)
-		} else if lhs == ddptypes.String() {
-			t.latestReturnedType = ddptypes.String()
+		if ddptypes.IsList(lhs) {
+			t.latestReturnedType = lhs
+		} else if lhs == ddptypes.TEXT {
+			t.latestReturnedType = ddptypes.TEXT
 		}
 	default:
 		panic(fmt.Errorf("unbekannter ternärer Operator '%s'", expr.Operator))
@@ -304,39 +311,39 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) {
 	castErr := func() {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.Type)
 	}
-	if expr.Type.IsList {
-		switch expr.Type.Primitive {
+	if exprType, ok := expr.Type.(ddptypes.ListType); ok {
+		switch exprType.Underlying {
 		case ddptypes.BUCHSTABE:
-			if !isOfType(lhs, ddptypes.Char(), ddptypes.String()) {
+			if !isOfType(lhs, ddptypes.BUCHSTABE, ddptypes.TEXT) {
 				castErr()
 			}
 		case ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BOOLEAN, ddptypes.TEXT:
-			if !isOfType(lhs, ddptypes.Primitive(expr.Type.Primitive)) {
+			if !isOfType(lhs, exprType.Underlying) {
 				castErr()
 			}
 		default:
 			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
 	} else {
-		switch expr.Type.Primitive {
+		switch expr.Type.(ddptypes.PrimitiveType) {
 		case ddptypes.ZAHL:
-			if !lhs.IsPrimitive() {
+			if !ddptypes.IsPrimitive(lhs) {
 				castErr()
 			}
 		case ddptypes.KOMMAZAHL:
-			if !lhs.IsPrimitive() || !isOfType(lhs, ddptypes.String(), ddptypes.Int(), ddptypes.Float()) {
+			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 				castErr()
 			}
 		case ddptypes.BOOLEAN:
-			if !lhs.IsPrimitive() || !isOfType(lhs, ddptypes.Int(), ddptypes.Bool()) {
+			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.BOOLEAN) {
 				castErr()
 			}
 		case ddptypes.BUCHSTABE:
-			if !lhs.IsPrimitive() || !isOfType(lhs, ddptypes.Int(), ddptypes.Char()) {
+			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE) {
 				castErr()
 			}
 		case ddptypes.TEXT:
-			if lhs.IsList || isOfType(lhs, ddptypes.Void()) {
+			if ddptypes.IsList(lhs) || isOfType(lhs, ddptypes.VoidType{}) {
 				castErr()
 			}
 		default:
@@ -366,9 +373,9 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 
 		if ass, ok := expr.(ast.Assigneable); paramType.IsReference && !ok {
 			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
-		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && paramType.Type == ddptypes.Char() && ok {
+		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && ok {
 			lhs := t.Evaluate(ass.Lhs)
-			if lhs.Primitive == ddptypes.TEXT {
+			if lhs == ddptypes.TEXT {
 				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
 			}
 		}
@@ -387,7 +394,7 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {
-	t.latestReturnedType = ddptypes.Void()
+	t.latestReturnedType = ddptypes.VoidType{}
 }
 func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) {
 	stmt.Decl.Accept(t)
@@ -408,18 +415,18 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 			)
 		}
 	case *ast.Indexing:
-		if typ := t.Evaluate(assign.Index); typ != ddptypes.Int() {
+		if typ := t.Evaluate(assign.Index); typ != ddptypes.ZAHL {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, assign.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 		}
 
 		lhs := t.Evaluate(assign.Lhs)
-		if !lhs.IsList && lhs != ddptypes.String() {
+		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, assign.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
-		if lhs.IsList {
-			lhs = ddptypes.Primitive(lhs.Primitive)
-		} else if lhs == ddptypes.String() {
-			lhs = ddptypes.Char()
+		if ddptypes.IsList(lhs) {
+			lhs = lhs.(ddptypes.ListType).Underlying
+		} else if lhs == ddptypes.TEXT {
+			lhs = ddptypes.BUCHSTABE
 		}
 
 		if lhs != rhs {
@@ -440,7 +447,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) {
 }
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) {
 	conditionType := t.Evaluate(stmt.Condition)
-	if conditionType != ddptypes.Bool() {
+	if conditionType != ddptypes.BOOLEAN {
 		t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 			"Die Bedingung einer Wenn-Anweisung muss vom Typ Boolean sein, war aber vom Typ %s",
 			conditionType,
@@ -455,7 +462,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
-		if conditionType != ddptypes.Bool() {
+		if conditionType != ddptypes.BOOLEAN {
 			t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 				"Die Bedingung einer %s muss vom Typ Boolean sein, war aber vom Typ %s",
 				stmt.While.Type,
@@ -463,7 +470,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 			)
 		}
 	case token.WIEDERHOLE:
-		if conditionType != ddptypes.Int() {
+		if conditionType != ddptypes.ZAHL {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, stmt.Condition,
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
@@ -474,14 +481,14 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 }
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) {
 	t.visit(stmt.Initializer)
-	if toType := t.Evaluate(stmt.To); toType != ddptypes.Int() {
+	if toType := t.Evaluate(stmt.To); toType != ddptypes.ZAHL {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
 			"Der Endwert in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); stepType != ddptypes.Int() {
+		if stepType := t.Evaluate(stmt.StepSize); stepType != ddptypes.ZAHL {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
 				"Die Schrittgröße in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
 				stepType,
@@ -494,16 +501,16 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
 
-	if !inType.IsList && inType != ddptypes.String() {
+	if !ddptypes.IsList(inType) && inType != ddptypes.TEXT {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
 	}
 
-	if inType.IsList && elementType != ddptypes.Primitive(inType.Primitive) {
+	if inTypeList, isList := inType.(ddptypes.ListType); isList && elementType != inTypeList.Underlying {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
-				ddptypes.List(elementType.Primitive), inType),
+				elementType, inTypeList),
 		)
-	} else if inType == ddptypes.String() && elementType != ddptypes.Char() {
+	} else if inType == ddptypes.TEXT && elementType != ddptypes.BUCHSTABE {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
 				elementType),
@@ -512,7 +519,7 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	stmt.Body.Accept(t)
 }
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) {
-	returnType := ddptypes.Void()
+	var returnType ddptypes.Type = ddptypes.VoidType{}
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
