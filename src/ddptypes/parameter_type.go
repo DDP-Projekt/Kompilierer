@@ -31,5 +31,9 @@ func (paramType ParameterType) String() string {
 		panic("void type Reference")
 	}
 
+	if IsStruct(paramType.Type) {
+		return paramType.Type.String() + " Referenz"
+	}
+
 	panic("unknown type")
 }

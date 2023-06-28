@@ -79,6 +79,9 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) {
 		h.visit(decl.Body)
 	}
 }
+func (h *helperVisitor) VisitStructDecl(decl *StructDecl) {
+	panic("TODO")
+}
 
 // if a BadExpr exists the AST is faulty
 func (h *helperVisitor) VisitBadExpr(expr *BadExpr) {
@@ -196,6 +199,9 @@ func (h *helperVisitor) VisitFuncCall(expr *FuncCall) {
 			h.visit(arg)
 		}
 	}
+}
+func (h *helperVisitor) VisitStructLiteral(expr *StructLiteral) {
+	panic("TODO")
 }
 
 func (h *helperVisitor) VisitBadStmt(stmt *BadStmt) {

@@ -38,3 +38,8 @@ func IsVoid(t Type) bool {
 	_, ok := t.(VoidType)
 	return ok
 }
+
+func IsStruct(t Type) bool {
+	_, ok := t.(*StructType)
+	return ok
+}

@@ -446,6 +446,9 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
 	}
 }
+func (c *compiler) VisitStructDecl(decl *ast.StructDecl) {
+	panic("TODO")
+}
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadExpr(e *ast.BadExpr) {
@@ -1277,6 +1280,9 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 			}
 		}
 	}
+}
+func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
+	panic("TODO")
 }
 
 // should have been filtered by the resolver/typechecker, so err

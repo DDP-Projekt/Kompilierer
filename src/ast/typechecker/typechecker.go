@@ -104,6 +104,9 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 		decl.Body.Accept(t)
 	}
 }
+func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) {
+	panic("TODO")
+}
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
 	t.latestReturnedType = ddptypes.VoidType{}
@@ -391,6 +394,9 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 	}
 
 	t.latestReturnedType = decl.Type
+}
+func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) {
+	panic("TODO")
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {

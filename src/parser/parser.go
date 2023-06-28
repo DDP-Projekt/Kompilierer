@@ -28,7 +28,7 @@ type parser struct {
 
 	module            *ast.Module
 	predefinedModules map[string]*ast.Module   // modules that were passed as environment, might not all be used
-	funcAliases       []ast.FuncAlias          // all found aliases (+ inbuild aliases)
+	aliases           []ast.Alias              // all found aliases
 	currentFunction   string                   // function which is currently being parsed
 	panicMode         bool                     // flag to not report following errors
 	errored           bool                     // wether the parser found an error
@@ -63,7 +63,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		}
 	}
 
-	aliases := make([]ast.FuncAlias, 0)
+	aliases := make([]ast.Alias, 0)
 	parser := &parser{
 		tokens:       pTokens,
 		comments:     pComments,
@@ -82,7 +82,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			PublicDecls: make(map[string]ast.Declaration),
 		},
 		predefinedModules: modules,
-		funcAliases:       aliases,
+		aliases:           aliases,
 		panicMode:         false,
 		errored:           false,
 		resolver:          &resolver.Resolver{},
@@ -212,13 +212,13 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	// helper to add an alias slice to the parser
 	// only adds aliases that are not already defined
 	// and errors otherwise
-	addAliases := func(aliases []ast.FuncAlias, errRange token.Range) {
+	addAliases := func(aliases []ast.Alias, errRange token.Range) {
 		// add all the aliases
 		for _, alias := range aliases {
-			if fun := p.aliasExists(alias.Tokens); fun != nil {
-				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.Original.Literal, fun.Name()))
+			if fun := p.aliasExists(alias.GetTokens()); fun != nil {
+				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.GetOriginal().Literal, fun.Name()))
 			} else {
-				p.funcAliases = append(p.funcAliases, alias)
+				p.aliases = append(p.aliases, alias)
 			}
 		}
 	}
@@ -236,7 +236,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			}
 
 			// add all the aliases
-			addAliases(funcDecl.Aliases, importStmt.Range)
+			addAliases(toInterfaceSlice[ast.FuncAlias, ast.Alias](funcDecl.Aliases), importStmt.Range)
 		}
 	} else {
 		// only add the imported ones
@@ -250,7 +250,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			}
 
 			// add all the aliases
-			addAliases(funcDecl.Aliases, tok.Range)
+			addAliases(toInterfaceSlice[ast.FuncAlias, ast.Alias](funcDecl.Aliases), tok.Range)
 		}
 	}
 }
@@ -286,6 +286,9 @@ func (p *parser) declaration() ast.Statement {
 		case token.FUNKTION:
 			p.advance()
 			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
+		case token.WIR:
+			p.advance()
+			return &ast.DeclStmt{Decl: p.structDeclaration(n - 1)}
 		default:
 			if isTypeName(t) {
 				p.advance()
@@ -652,7 +655,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		funcAliases[i].Func = decl
 	}
 
-	p.funcAliases = append(p.funcAliases, funcAliases...)
+	p.aliases = append(p.aliases, toInterfaceSlice[ast.FuncAlias, ast.Alias](funcAliases)...)
 
 	// parse the body after the aliases to enable recursion
 	var body *ast.BlockStmt = nil
@@ -729,13 +732,17 @@ func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []d
 
 // helper to check if an alias already exists for a function
 // returns functions declaration or nil
-func (p *parser) aliasExists(alias []token.Token) *ast.FuncDecl {
-	for i := range p.funcAliases {
-		if slicesEqual(alias, p.funcAliases[i].Tokens, tokenEqual) {
-			return p.funcAliases[i].Func
+func (p *parser) aliasExists(alias []token.Token) ast.Declaration {
+	for i := range p.aliases {
+		if slicesEqual(alias, p.aliases[i].GetTokens(), tokenEqual) {
+			return p.aliases[i].Decl()
 		}
 	}
 	return nil
+}
+
+func (p *parser) structDeclaration(startDepth int) ast.Declaration {
+	panic("TODO")
 }
 
 func (p *parser) aliasDecl() ast.Statement {
@@ -789,7 +796,7 @@ func (p *parser) aliasDecl() ast.Statement {
 			Tok: begin,
 		}
 	} else if alias != nil {
-		p.funcAliases = append(p.funcAliases, *alias)
+		p.aliases = append(p.aliases, ast.Alias(*alias))
 		funDecl.Aliases = append(funDecl.Aliases, *alias)
 	}
 	return nil
@@ -1638,7 +1645,7 @@ func (p *parser) factor() ast.Expression {
 }
 
 func (p *parser) unary() ast.Expression {
-	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
+	if expr := p.alias(); expr != nil { // first check for a function call to enable operator overloading
 		return p.power(expr)
 	}
 	// match the correct unary operator
@@ -1794,7 +1801,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 // when called from power() lhs might be a funcCall
 func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	if lhs == nil {
-		lhs = p.funcCall()
+		lhs = p.alias()
 	}
 	if lhs == nil { // funccall has the highest precedence (aliases + operator overloading)
 		switch tok := p.advance(); tok.Type {
@@ -1951,11 +1958,11 @@ func (p *parser) grouping() ast.Expression {
 	}
 }
 
-func (p *parser) funcCall() ast.Expression {
+func (p *parser) alias() ast.Expression {
 	// stores an alias with the actual length of all tokens (expanded token.ALIAS_EXPRESSIONs)
 	type matchedAlias struct {
-		alias        *ast.FuncAlias // original alias
-		actualLength int            // length of this occurence in the code (considers the token length of the passed arguments)
+		alias        ast.Alias // original alias
+		actualLength int       // length of this occurence in the code (considers the token length of the passed arguments)
 	}
 
 	start := p.cur                            // save start position to restore the state if no alias was recognized
@@ -1963,13 +1970,14 @@ func (p *parser) funcCall() ast.Expression {
 
 	// loop through all possible aliases (expensive, might change later)
 outer:
-	for i, l := 0, len(p.funcAliases); i < l; i++ {
-		alias := &p.funcAliases[i]
+	for i, l := 0, len(p.aliases); i < l; i++ {
+		alias := p.aliases[i]
 		p.cur = start
+		aliasTokens := alias.GetTokens()
 
 		// loop through all the tokens in the alias
-		for ii, ll := 0, len(alias.Tokens); ii < ll && alias.Tokens[ii].Type != token.EOF; ii++ {
-			tok := &alias.Tokens[ii]
+		for ii, ll := 0, len(aliasTokens); ii < ll && aliasTokens[ii].Type != token.EOF; ii++ {
+			tok := aliasTokens[ii]
 
 			// expand arguments
 			if tok.Type == token.ALIAS_PARAMETER {
@@ -2004,7 +2012,7 @@ outer:
 			}
 
 			// validate that the alias matches
-			if !tokenEqual(p.peek(), *tok) {
+			if !tokenEqual(p.peek(), tok) {
 				p.cur = start
 				continue outer // try the next alias otherwise
 			}
@@ -2031,13 +2039,15 @@ outer:
 		error_collector := func(err ddperror.Error) {
 			reported_errors = append(reported_errors, err)
 		}
+		maliasTokens := mAlias.alias.GetTokens()
+		maliasArgs := mAlias.alias.GetArgs()
 
-		for i, l := 0, len(mAlias.alias.Tokens); i < l && mAlias.alias.Tokens[i].Type != token.EOF; i++ {
-			tok := &mAlias.alias.Tokens[i]
+		for i, l := 0, len(maliasTokens); i < l && maliasTokens[i].Type != token.EOF; i++ {
+			tok := maliasTokens[i]
 
 			if tok.Type == token.ALIAS_PARAMETER {
 				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
-				paramType := mAlias.alias.Args[argName]    // type of the current parameter
+				paramType := maliasArgs[argName]           // type of the current parameter
 
 				pType := p.peek().Type
 				// early return if a non-identifier expression is passed as reference
@@ -2070,7 +2080,7 @@ outer:
 				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
 				tokens = append(tokens, eof)
 				argParser := newParser(p.module.FileName, tokens, nil, error_collector) // create a new parser for this expression
-				argParser.funcAliases = p.funcAliases                                   // it needs the functions aliases
+				argParser.aliases = p.aliases                                           // it needs the functions aliases
 				argParser.resolver = p.resolver
 				argParser.typechecker = p.typechecker
 				var arg ast.Expression
@@ -2120,21 +2130,35 @@ outer:
 	// sort the aliases in descending order
 	// Stable so equal aliases stay in the order they were defined
 	sort.SliceStable(matchedAliases, func(i, j int) bool {
-		return len(matchedAliases[i].alias.Tokens) > len(matchedAliases[j].alias.Tokens)
+		return len(matchedAliases[i].alias.GetTokens()) > len(matchedAliases[j].alias.GetTokens())
 	})
+
+	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
+		if fnalias, isFuncAlias := alias.(ast.FuncAlias); isFuncAlias {
+			return &ast.FuncCall{
+				Range: token.NewRange(p.tokens[start], p.previous()),
+				Tok:   p.tokens[start],
+				Name:  fnalias.Func.Name(),
+				Func:  fnalias.Func,
+				Args:  args,
+			}
+		}
+
+		stralias := alias.(ast.StructAlias)
+		return &ast.StructLiteral{
+			Range:  token.NewRange(p.tokens[start], p.previous()),
+			Tok:    p.tokens[start],
+			Struct: stralias.Struct,
+			Args:   args,
+		}
+	}
 
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
 		if args, errs := checkAlias(&matchedAliases[i], true); args != nil {
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
-			return &ast.FuncCall{
-				Range: token.NewRange(p.tokens[start], p.previous()),
-				Tok:   p.tokens[start],
-				Name:  matchedAliases[i].alias.Func.Name(),
-				Func:  matchedAliases[i].alias.Func,
-				Args:  args,
-			}
+			return callOrLiteralFromAlias(matchedAliases[i].alias, args)
 		}
 	}
 
@@ -2148,13 +2172,7 @@ outer:
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return &ast.FuncCall{
-		Range: token.NewRange(p.tokens[start], p.previous()),
-		Tok:   p.tokens[start],
-		Name:  mostFitting.alias.Func.Name(),
-		Func:  mostFitting.alias.Func,
-		Args:  args,
-	}
+	return callOrLiteralFromAlias(mostFitting.alias, args)
 }
 
 /*** Helper functions ***/
@@ -2488,7 +2506,7 @@ func (p *parser) consumeAny(tokenTypes ...token.TokenType) bool {
 		}
 	}
 
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, toAnySlice(tokenTypes)...))
+	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, toInterfaceSlice[token.TokenType, any](tokenTypes)...))
 	return false
 }
 
@@ -2665,10 +2683,11 @@ func apply[T any](fun func(T), slice []T) {
 	}
 }
 
-func toAnySlice[T any](slice []T) []any {
-	result := make([]any, len(slice))
+// T must be convertivble to U
+func toInterfaceSlice[T any, U any](slice []T) []U {
+	result := make([]U, len(slice))
 	for i := range slice {
-		result[i] = slice[i]
+		result[i] = any(slice[i]).(U)
 	}
 	return result
 }

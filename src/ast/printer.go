@@ -86,6 +86,9 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
 }
+func (pr *printer) VisitStructDecl(decl *StructDecl) {
+	panic("TODO")
+}
 
 func (pr *printer) VisitBadExpr(expr *BadExpr) {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", expr.Tok))
@@ -143,6 +146,9 @@ func (pr *printer) VisitFuncCall(expr *FuncCall) {
 		args = append(args, v)
 	}
 	pr.parenthesizeNode(fmt.Sprintf("FuncCall(%s)", expr.Name), args...)
+}
+func (pr *printer) VisitStructLiteral(expr *StructLiteral) {
+	panic("TODO")
 }
 
 func (pr *printer) VisitBadStmt(stmt *BadStmt) {

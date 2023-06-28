@@ -119,6 +119,7 @@ const (
 	ALIAS
 	STEHT
 	OEFFENTLICHE
+	WIR
 
 	DOT    // .
 	COMMA  // ,
@@ -246,6 +247,7 @@ var tokenStrings = [...]string{
 	ALIAS:        "Alias",
 	STEHT:        "Steht",
 	OEFFENTLICHE: "öffentliche",
+	WIR:          "Wir",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -373,6 +375,7 @@ var KeywordMap = map[string]TokenType{
 	"steht":          STEHT,
 	"öffentliche":    OEFFENTLICHE,
 	"oeffentliche":   OEFFENTLICHE,
+	"Wir":            WIR,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

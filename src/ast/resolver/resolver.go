@@ -93,6 +93,9 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 		}
 	*/
 }
+func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
+	panic("TODO")
+}
 
 // if a BadExpr exists the AST is faulty
 func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
@@ -158,6 +161,9 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
 		r.visit(v)
 	}
 }
+func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) {
+	panic("TODO")
+}
 
 // if a BadStmt exists the AST is faulty
 func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) {
@@ -169,6 +175,8 @@ func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) {
 func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) {
 	r.visit(stmt.Expr)
 }
+
+// TODO: struct imports
 func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if stmt.Module == nil {
 		return // TODO: handle this better
