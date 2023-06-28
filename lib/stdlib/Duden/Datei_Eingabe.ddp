@@ -1,9 +1,0 @@
-[
-	Die Funktion Lies_Text_Datei speichert den Inhalt der Datei, die an dem gegebenen Pfad liegt, in ref und gibt die Anzahl der Bytes der gelesenen Datei zurück.
-	Wenn ein Fehler auftreten sollte, ist der zurückgegebene Wert negativ und die Fehler meldung in ref geschrieben
-]
-Die öffentliche Funktion Lies_Text_Datei mit den Parametern Pfad und ref vom Typ Text und Text Referenz, gibt eine Zahl zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
-	"Lies den Text in <Pfad> und speichere ihn in <ref>" oder
-	"die Anzahl der Bytes, die aus <Pfad> gelesen und in <ref> gespeichert wurden"

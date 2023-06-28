@@ -1,6 +1,6 @@
 #include "ddptypes.h"
 #include "ddpwindows.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <libgen.h>
@@ -81,8 +81,7 @@ static int remove_directory(const char *path) {
 			if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
 				continue;
 
-			len = path_len + strlen(p->d_name) + 2; 
-			buf = malloc(len);
+			len = path_len + strlen(p->d_name) + 2;
 			buf = ALLOCATE(char, len);
 
 			if (buf) {
