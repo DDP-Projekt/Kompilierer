@@ -1,0 +1,10 @@
+Binde Schreibe_Zahl aus "Duden/Ausgabe" ein.
+
+Die öffentliche Zahl zahl ist 22.
+
+Die öffentliche Funktion bar gibt nichts zurück, macht:
+	Schreibe zahl.
+Und kann so benutzt werden:
+	"Rufe bar auf"
+
+Die Zahl zahl2 ist 23.

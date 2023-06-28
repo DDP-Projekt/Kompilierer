@@ -65,6 +65,7 @@ Und kann so benutzt werden:
 	"<text> <suchText> enthält"
 
 Die öffentliche Funktion BeginntMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle 1) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Anfang von <text> steht"
@@ -75,6 +76,7 @@ Und kann so benutzt werden:
 	"<suchText> am Anfang von <text> steht"
 
 Die öffentliche Funktion EndetMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle (die Länge von text)) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Ende von <text> steht"
@@ -120,7 +122,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <text>"
 
 Die öffentliche Funktion Lösche_Text mit den Parametern text und index vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis (die Länge von text) in text.
+	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von text größer als 1 ist, dann:
+		Speichere "" in text.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere text von 2 bis (die Länge von text) in text.
+	Wenn aber index gleich die Länge von text ist, dann:
+		Speichere text von 1 bis (die Länge von text minus 1) in text.
+	Sonst:
+		Speichere text von 1 bis (index minus 1) verkettet mit text von (index plus 1) bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <text>"
 
@@ -143,10 +154,12 @@ Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
 Die öffentliche Funktion IndexVonText mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
-	"der Index von <elm> in <text>"
+	"der Index von <elm> in <text>" oder
+	"den Index von <elm> in <text>"
 
 Die öffentliche Funktion IstTextLeer mit dem Parameter text vom Typ Text, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von text gleich 0 ist zurück.
@@ -204,7 +217,7 @@ Die öffentliche Funktion PolsterLinks mit den Parametern text, zeichen und endl
 
 	Gib text zurück.
 Und kann so benutzt werden:
-	"polster <text> mit <endlänge> <zeichen> links"
+	"<text> mit <endlänge> <zeichen> links gepolstert"
 
 Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
 	Die Zahl länge ist die Länge von text.
@@ -218,7 +231,7 @@ Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und end
 	
 	Gib text zurück.
 Und kann so benutzt werden:
-	"polster <text> mit <endlänge> <zeichen> rechts"
+	"<text> mit <endlänge> <zeichen> rechts gepolstert"
 
 Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Text Liste zurück, macht:
 	Die Text Liste endliste ist eine leere Text Liste.

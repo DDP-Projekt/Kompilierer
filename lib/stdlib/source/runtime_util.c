@@ -4,7 +4,10 @@
 */
 #include "main.h"
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "ddpwindows.h"
 #include <stdlib.h>
 #include <stdio.h>

@@ -44,7 +44,7 @@
 */
 
 #include "mt19937-64.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include <time.h>
 
 #define NN 312

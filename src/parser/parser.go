@@ -495,14 +495,14 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 					}
 					addParamName(p.previous())
 				}
-				if !p.consumeN(token.UND, token.IDENTIFIER) {
+				if !p.consume(token.UND, token.IDENTIFIER) {
 					perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?")
 				}
 				addParamName(p.previous())
 			}
 		}
 		// parse the types of the parameters
-		validate(p.consumeN(token.VOM, token.TYP))
+		validate(p.consume(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
 		validate(firstType.Primitive != ddptypes.ILLEGAL)
 		paramTypes = append(make([]ddptypes.ParameterType, 0), ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
@@ -542,7 +542,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		valid = false
 	}
 
-	validate(p.consumeN(token.ZURÜCK, token.COMMA))
+	validate(p.consume(token.ZURÜCK, token.COMMA))
 	bodyStart := -1
 	definedIn := token.Token{Type: token.ILLEGAL}
 	if p.matchN(token.MACHT, token.COLON) {
@@ -552,7 +552,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			p.advance()
 		}
 	} else {
-		validate(p.consumeN(token.IST, token.IN, token.STRING, token.DEFINIERT))
+		validate(p.consume(token.IST, token.IN, token.STRING, token.DEFINIERT))
 		definedIn = p.peekN(-2)
 		switch filepath.Ext(ast.TrimStringLit(definedIn)) {
 		case ".c", ".lib", ".a", ".o":
@@ -562,7 +562,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	// parse the alias definitions before the body to enable recursion
-	validate(p.consumeN(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
+	validate(p.consume(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
 	aliases := make([]token.Token, 0)
 	if p.previous().Type == token.STRING {
 		aliases = append(aliases, p.previous())
@@ -728,7 +728,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	begin := p.peekN(-2)
 	p.consume(token.STRING)
 	aliasTok := p.previous()
-	p.consumeN(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
+	p.consume(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
 	fun := p.previous()
 
 	decl, ok, isVar := p.resolver.CurrentTable.LookupDecl(fun.Literal)
@@ -857,7 +857,8 @@ func (p *parser) importStatement() ast.Statement {
 				}
 			}
 		}
-		if p.consumeN(token.AUS, token.STRING) {
+		p.consume(token.AUS)
+		if p.consume(token.STRING) {
 			stmt = &ast.ImportStmt{
 				FileName:        p.previous(),
 				ImportedSymbols: importedSymbols,
@@ -875,7 +876,7 @@ func (p *parser) importStatement() ast.Statement {
 			Err: p.lastError,
 		}
 	}
-	p.consumeN(token.EIN, token.DOT)
+	p.consume(token.EIN, token.DOT)
 	stmt.Range = token.NewRange(binde, p.previous())
 	return stmt
 }
@@ -964,7 +965,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 	operand = p.expression()
 
 	if tok.Type == token.VERSCHIEBE {
-		p.consumeN(token.BIT, token.NACH)
+		p.consume(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		assign_token := tok
 		tok = p.previous()
@@ -1029,7 +1030,7 @@ func (p *parser) assignLiteral() ast.Statement {
 func (p *parser) assignNoLiteral() ast.Statement {
 	speichere := p.previous() // Speichere token
 	expr := p.expression()
-	p.consumeN(token.IN, token.IDENTIFIER)
+	p.consume(token.IN, token.IDENTIFIER)
 	name := p.assigneable() // name of the variable is the just consumed identifier
 	return p.finishStatement(
 		&ast.AssignStmt{
@@ -1168,7 +1169,7 @@ func (p *parser) repeatStmt() ast.Statement {
 	p.consume(token.COLON)
 	body := p.blockStatement(nil)
 	count := p.expression()
-	p.consumeN(token.COUNT_MAL, token.DOT)
+	p.consume(token.COUNT_MAL, token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(repeat),
@@ -1302,7 +1303,7 @@ func (p *parser) forStatement() ast.Statement {
 func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	expr := p.expression()
-	p.consumeN(token.ZURÜCK, token.DOT)
+	p.consume(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
 	if p.currentFunction == "" {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
@@ -1317,7 +1318,7 @@ func (p *parser) returnStatement() ast.Statement {
 
 func (p *parser) voidReturn() ast.Statement {
 	Leave := p.previous()
-	p.consumeN(token.DIE, token.FUNKTION, token.DOT)
+	p.consume(token.DIE, token.FUNKTION, token.DOT)
 	rnge := token.NewRange(Leave, p.previous())
 	if p.currentFunction == "" {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
@@ -1523,7 +1524,7 @@ func (p *parser) bitShift() ast.Expression {
 	expr := p.term()
 	for p.match(token.UM) {
 		rhs := p.term()
-		p.consumeN(token.BIT, token.NACH)
+		p.consume(token.BIT, token.NACH)
 		if !p.match(token.LINKS, token.RECHTS) {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
 			return &ast.BadExpr{
@@ -1692,7 +1693,7 @@ func (p *parser) negate() ast.Expression {
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	if p.match(token.DIE) {
 		lhs := p.unary()
-		p.consumeN(token.DOT, token.WURZEL)
+		p.consume(token.DOT, token.WURZEL)
 		tok := p.previous()
 		p.consume(token.VON)
 		// root is implemented as pow(degree, 1/radicant)
@@ -1722,7 +1723,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 		tok := p.previous()
 		p.consume(token.VON)
 		numerus := p.expression()
-		p.consumeN(token.ZUR, token.BASIS)
+		p.consume(token.ZUR, token.BASIS)
 		rhs := p.unary()
 
 		return &ast.BinaryExpr{
@@ -1807,7 +1808,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 					Values: nil,
 				}
 			} else {
-				p.consumeN(token.LISTE, token.COMMA, token.DIE, token.AUS)
+				p.consume(token.LISTE, token.COMMA, token.DIE, token.AUS)
 				values := append(make([]ast.Expression, 0, 2), p.expression())
 				for p.match(token.COMMA) {
 					values = append(values, p.expression())
@@ -1833,7 +1834,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	// 		 remember to also check p.assigneable()
 	// indexing
 	if p.match(token.AN) {
-		p.consumeN(token.DER, token.STELLE)
+		p.consume(token.DER, token.STELLE)
 		tok := p.previous()
 		rhs := p.primary(nil)
 		lhs = &ast.BinaryExpr{
@@ -1889,7 +1890,7 @@ func (p *parser) assigneable() ast.Assigneable {
 	}
 
 	for p.match(token.AN) {
-		p.consumeN(token.DER, token.STELLE)
+		p.consume(token.DER, token.STELLE)
 		index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
 		ass = &ast.Indexing{
 			Lhs:   ass,
@@ -2394,7 +2395,7 @@ func (p *parser) matchN(types ...token.TokenType) bool {
 }
 
 // if the current token is of type t advance, otherwise error
-func (p *parser) consume(t token.TokenType) bool {
+func (p *parser) consume1(t token.TokenType) bool {
 	if p.check(t) {
 		p.advance()
 		return true
@@ -2405,9 +2406,9 @@ func (p *parser) consume(t token.TokenType) bool {
 }
 
 // consume a series of tokens
-func (p *parser) consumeN(t ...token.TokenType) bool {
+func (p *parser) consume(t ...token.TokenType) bool {
 	for _, v := range t {
-		if !p.consume(v) {
+		if !p.consume1(v) {
 			return false
 		}
 	}

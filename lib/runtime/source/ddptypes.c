@@ -1,8 +1,8 @@
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "debug.h"
 #include "utf8/utf8.h"
-#include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 // allocate and create a ddpstring from a constant char array

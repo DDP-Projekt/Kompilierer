@@ -1,0 +1,15 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
+Binde "Duden/Texte" ein.
+
+Die Text Liste args ist die Befehlszeilenargumente.
+Wenn die Länge von args kleiner als 2 ist, dann:
+    Schreibe den Fehler "Es muss mindestens 1 Argument gegeben werden\n".
+    Beende das Programm mit Code 1.
+
+Der Text arg ist args an der Stelle 2.
+Der Text ergebnis ist "".
+Für jede Zahl i von die Länge von arg bis 1 mit Schrittgröße -1, mache:
+    Füge (arg an der Stelle i) an ergebnis an.
+
+Schreibe ("Ergebnis: " verkettet mit ergebnis) auf eine Zeile.

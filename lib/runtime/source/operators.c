@@ -2,13 +2,13 @@
 	defines functions for ddp operators
 */
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "debug.h"
 #include "utf8/utf8.h"
 #include <math.h>
 #include <float.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 ddpint ddp_string_length(ddpstring* str) {
 	return (ddpint)utf8_strlen(str->str);
@@ -92,13 +92,13 @@ void ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint inde
 
 	index1--, index2--; // ddp indices start at 1, c indices at 0
 
-	size_t i1 = 0, len = 0;
+	ddpint i1 = 0, len = 0;
 	while (str->str[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
 		++len;
 		i1 += utf8_indicated_num_bytes(str->str[i1]);
 	}
 
-	size_t i2 = i1;
+	ddpint i2 = i1;
 	while (str->str[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
 		++len;
 		i2 += utf8_indicated_num_bytes(str->str[i2]);

@@ -4,8 +4,9 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "ddpwindows.h"
 
 void Hole_Umgebungsvariable(ddpstring* ret, ddpstring* Name) {

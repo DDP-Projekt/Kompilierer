@@ -26,7 +26,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die öffentliche Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
+		Speichere eine leere Zahlen Liste in liste.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere liste von 2 bis (die Länge von liste) in liste.
+	Wenn aber index gleich die Länge von liste ist, dann:
+		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
+	Sonst:
+		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -87,7 +96,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die öffentliche Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
+		Speichere eine leere Kommazahlen Liste in liste.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere liste von 2 bis (die Länge von liste) in liste.
+	Wenn aber index gleich die Länge von liste ist, dann:
+		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
+	Sonst:
+		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -147,7 +165,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die öffentliche Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
+		Speichere eine leere Boolean Liste in liste.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere liste von 2 bis (die Länge von liste) in liste.
+	Wenn aber index gleich die Länge von liste ist, dann:
+		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
+	Sonst:
+		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -208,7 +235,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die öffentliche Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
+		Speichere eine leere Buchstaben Liste in liste.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere liste von 2 bis (die Länge von liste) in liste.
+	Wenn aber index gleich die Länge von liste ist, dann:
+		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
+	Sonst:
+		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -269,7 +305,16 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 Die öffentliche Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
+
+	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
+		Speichere eine leere Text Liste in liste.
+	Wenn aber index gleich 1 ist, dann:
+		Speichere liste von 2 bis (die Länge von liste) in liste.
+	Wenn aber index gleich die Länge von liste ist, dann:
+		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
+	Sonst:
+		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 

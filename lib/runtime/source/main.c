@@ -10,13 +10,15 @@
 
 #include "debug.h"
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 
 // should not be needed in production
 // mainly for debugging
-static void SegfaultHandler(int signal) {
-	ddp_end_runtime();
-	ddp_runtime_error(1, "Segmentation fault\n");
+static void SignalHandler(int signal) {
+	if (signal == SIGSEGV) {
+		ddp_end_runtime();
+		ddp_runtime_error(1, "Segmentation fault\n");
+	}
 }
 
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
@@ -26,7 +28,7 @@ static void handle_args(int argc, char** argv) {
 	cmd_args = (ddpstringlist){ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
 	DBGLOG("handle_args: %p", &cmd_args);
 
-	for (size_t i = 0; i < argc; i++) {
+	for (int i = 0; i < argc; i++) {
 		ddp_string_from_constant(&cmd_args.arr[i], argv[i]);
 	}
 }
@@ -48,7 +50,7 @@ void ddp_init_runtime(int argc, char** argv) {
 	setlocale(LC_ALL, "de_DE.UTF-8");
 #endif // DDPOS_WINDOWS
 
-	signal(SIGSEGV, SegfaultHandler); // "catch" segfaults
+	signal(SIGSEGV, SignalHandler); // "catch" segfaults
 
 	handle_args(argc, argv); // turn the commandline args into a ddpstringlist
 }

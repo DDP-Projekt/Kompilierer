@@ -2,8 +2,12 @@
 	This file implements extern functions from 
 	Duden/Zeit.ddp
 */
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
 #include "ddptypes.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "ddpwindows.h"
 #include <time.h>
 #include <stdio.h>

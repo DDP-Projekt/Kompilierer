@@ -7,10 +7,12 @@
 */
 #include "ddptypes.h"
 #include "utf8/utf8.h"
-#include "memory.h"
+#include "ddpmemory.h"
 #include "debug.h"
 #include <math.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include "ddpwindows.h"
 #ifdef DDPOS_WINDOWS
 #include <io.h>
@@ -50,6 +52,10 @@ void Schreibe_Text(ddpstring* p1) {
 	printf("%s", p1->str);
 }
 
+void Schreibe_Fehler(ddpstring* fehler) {
+	fprintf(stderr, "%s", fehler->str);
+}
+
 #ifdef DDPOS_WINDOWS
 // wrapper to get an error message for GetLastError()
 // expects fmt to be of format "<message>%s"
@@ -57,8 +63,8 @@ static void runtime_error_getlasterror(int exit_code, const char* fmt) {
 	char error_buffer[1024];
 	DWORD error_code = GetLastError();
 	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, 1024, NULL)) {
-		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", GetLastError());
+	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, sizeof(error_buffer), NULL)) {
+		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
 	}
 	ddp_runtime_error(exit_code, fmt, error_buffer);
 }
