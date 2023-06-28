@@ -50,6 +50,8 @@ Und kann so benutzt werden:
 [
 	Erstellt rekursiv den Ordner Pfad.
 	Rekursiv -> alle benötigten zwischen Ordner werden ebenfalls erstellt.
+
+	Gibt zurück ob das Erstellen erfolgreich war.
 ]
 Die öffentliche Funktion Erstelle_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
@@ -62,6 +64,8 @@ und kann so benutzt werden:
 
 	Löscht die gegebene Datei oder den gegebenen Ordner.
 	Im Falle eines Ordners wird rekursiv das gesamte Verzeichnis gelöscht.
+
+	Gibt zurück ob das Löschen erfolgreich war.
 ]
 Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
@@ -74,8 +78,12 @@ und kann so benutzt werden:
 	"der Ordner <Pfad> erfolgreich gelöscht wurde"
 
 [
-	Verschiebt den Pfad zu NeuerName
-	Kann auch zum Umbenennen benutzt werden
+	!!!Nicht unbedings sicher!!!
+
+	Verschiebt den Pfad zu NeuerName.
+	Kann auch zum Umbenennen benutzt werden.
+
+	Gibt zurück ob das Umbenennen erfolgreich war.
 ]
 Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
