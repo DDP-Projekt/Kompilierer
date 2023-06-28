@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <libgen.h>
 #include <stdio.h>
+#include <string.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -21,10 +22,10 @@
 #define stat _stat
 #define mkdir _mkdir
 #define F_OK 0
-#define PATH_SEPERATOR "/\\"
+#define PATH_SEPERATOR "/\\"// set of possible seperators
 #else
 #include <unistd.h>
-#define PATH_SEPERATOR "/"
+#define PATH_SEPERATOR "/"// set of possible seperators
 #define mkdir(arg) mkdir(arg, 0700)
 #endif // DDPOS_WINDOWS
 
@@ -82,6 +83,7 @@ static int remove_directory(const char *path) {
 
 			len = path_len + strlen(p->d_name) + 2; 
 			buf = malloc(len);
+			buf = ALLOCATE(char, len);
 
 			if (buf) {
 				struct stat statbuf;
@@ -93,7 +95,7 @@ static int remove_directory(const char *path) {
 					else
 						r2 = unlink(buf);
 				}
-				free(buf);
+				FREE(char, buf);
 			}
 			r = r2;
 		}
@@ -116,13 +118,19 @@ ddpbool Loesche_Pfad(ddpstring* Pfad) {
 ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 	struct stat path_stat;
 	// https://stackoverflow.com/questions/64276902/mv-command-implementation-in-c-not-moving-files-to-different-directory
-	if (stat(NeuerName->str, &path_stat) == 0) {
-		if (S_ISDIR(path_stat.st_mode)) {
-			char* base = basename(Pfad->str);
-			Pfad->str = GROW_ARRAY(char, Pfad->str, Pfad->cap, Pfad->cap + strlen(basename) + 1);
-			memcpy()
-		}
-	} else {
-		return rename(Pfad->str, NeuerName->str) == 0;
+	if (stat(NeuerName->str, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+		char* path_copy = ALLOCATE(char, Pfad->cap);
+		memcpy(path_copy, Pfad->str, Pfad->cap);
+
+		char* base = basename(path_copy);
+		size_t len_base = strlen(base);
+
+		NeuerName->str = GROW_ARRAY(char, NeuerName->str, NeuerName->cap, NeuerName->cap + len_base + 1);
+		strcat(NeuerName->str, "/");
+		strcat(NeuerName->str, base);
+		NeuerName->cap = NeuerName->cap + len_base + 1;
+
+		FREE(char, path_copy);
 	}
+	return rename(Pfad->str, NeuerName->str) == 0;
 }
