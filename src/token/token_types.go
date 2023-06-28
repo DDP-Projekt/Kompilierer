@@ -59,6 +59,7 @@ const (
 	FÜR
 	JEDE
 	JEDEN
+	JEDES
 	BIS
 	MIT
 	SCHRITTGRÖßE
@@ -185,6 +186,7 @@ var tokenStrings = [...]string{
 	FÜR:          "für",
 	JEDE:         "jede",
 	JEDEN:        "jeden",
+	JEDES:        "jedes",
 	BIS:          "bis",
 	MIT:          "mit",
 	SCHRITTGRÖßE: "Schrittgröße",
@@ -291,6 +293,7 @@ var KeywordMap = map[string]TokenType{
 	"fuer":           FÜR,
 	"jede":           JEDE,
 	"jeden":          JEDEN,
+	"jedes":          JEDES,
 	"bis":            BIS,
 	"mit":            MIT,
 	"Schrittgröße":   SCHRITTGRÖßE,

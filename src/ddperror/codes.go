@@ -18,6 +18,7 @@ const (
 	SYN_MALFORMED_INCLUDE_PATH                    // a include path was malformed or not parsable in some way
 	SYN_MALFORMED_ALIAS                           // an alias is malformed syntatically (invalid tokens etc.)
 	SYN_INVALID_UTF8                              // text was not valid utf8
+	SYN_GENDER_MISMATCH                           // the expected and actual grammatical gender used mismatched
 )
 
 // semantic error codes

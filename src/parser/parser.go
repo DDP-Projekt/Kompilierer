@@ -278,30 +278,22 @@ func (p *parser) declaration() ast.Statement {
 		if p.match(token.OEFFENTLICHE) {
 			n = -2
 		}
-		switch p.peekN(n).Type {
-		case token.DER:
-			switch p.peek().Type {
-			case token.BOOLEAN, token.TEXT, token.BUCHSTABE:
-				p.advance()                                         // consume the type
-				return &ast.DeclStmt{Decl: p.varDeclaration(n - 1)} // parse the declaration
-			case token.ALIAS:
+
+		switch t := p.peek().Type; t {
+		case token.ALIAS:
+			p.advance()
+			return p.aliasDecl()
+		case token.FUNKTION:
+			p.advance()
+			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
+		default:
+			if isTypeName(t) {
 				p.advance()
-				return p.aliasDecl()
-			default:
-				p.decrease() // decrease, so expressionStatement() can recognize it as expression
-			}
-		case token.DIE:
-			switch p.peek().Type {
-			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.TEXT, token.BOOLEAN:
-				p.advance()                                         // consume the type
-				return &ast.DeclStmt{Decl: p.varDeclaration(n - 1)} // parse the declaration
-			case token.FUNKTION:
-				p.advance()
-				return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)} // parse the function declaration
-			default:
-				p.decrease() // decrease, so expressionStatement() can recognize it as expression
+				return &ast.DeclStmt{Decl: p.varDeclaration(n - 1)}
 			}
 		}
+
+		p.decrease() // decrease, so expressionStatement() can recognize it as expression
 		if n == -2 {
 			p.decrease()
 		}
@@ -352,18 +344,40 @@ func (p *parser) assignRhs() ast.Expression {
 // parses a variable declaration
 // startDepth is the int passed to p.peekN(n) to get to the DER/DIE token of the declaration
 func (p *parser) varDeclaration(startDepth int) ast.Declaration {
-	begin := p.peekN(startDepth)
+	begin := p.peekN(startDepth) // Der/Die/Das
 	comment := p.commentBeforePos(begin.Range.Start)
 	// ignore the comment if it is not next to or directly above the declaration
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
 		comment = nil
 	}
+
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 	if isPublic && p.resolver.CurrentTable.Enclosing != nil {
 		p.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, p.peekN(startDepth+1).Range, "Nur globale Variablen können öffentlich sein")
 	}
+
 	p.decrease()
+	type_start := p.previous()
 	typ := p.parseType()
+	if typ == nil {
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
+	} else {
+		getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
+			switch gender {
+			case ddptypes.MASKULIN:
+				return token.DER
+			case ddptypes.FEMININ:
+				return token.DIE
+			case ddptypes.NEUTRUM:
+				return token.DAS
+			}
+			return token.ILLEGAL // unreachable
+		}
+
+		if article := getArticle(typ.Gender()); begin.Type != article {
+			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+		}
+	}
 
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
@@ -726,6 +740,9 @@ func (p *parser) aliasExists(alias []token.Token) *ast.FuncDecl {
 
 func (p *parser) aliasDecl() ast.Statement {
 	begin := p.peekN(-2)
+	if begin.Type != token.DER {
+		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", token.DER))
+	}
 	p.consume(token.STRING)
 	aliasTok := p.previous()
 	p.consume(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
@@ -1182,10 +1199,27 @@ func (p *parser) repeatStmt() ast.Statement {
 }
 
 func (p *parser) forStatement() ast.Statement {
+	getPronoun := func(gender ddptypes.GrammaticalGender) token.TokenType {
+		switch gender {
+		case ddptypes.MASKULIN:
+			return token.JEDEN
+		case ddptypes.FEMININ:
+			return token.JEDE
+		case ddptypes.NEUTRUM:
+			return token.JEDES
+		}
+		return token.ILLEGAL // unreachable
+	}
+
 	For := p.previous()
-	p.consumeAny(token.JEDE, token.JEDEN)
+	p.consumeAny(token.JEDE, token.JEDEN, token.JEDES)
+	pronoun_tok := p.previous()
 	TypeTok := p.peek()
 	Typ := p.parseType()
+	if pronoun := getPronoun(Typ.Gender()); pronoun != pronoun_tok.Type {
+		p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", pronoun))
+	}
+
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
 	iteratorComment := p.getLeadingOrTrailingComment()
@@ -1607,36 +1641,35 @@ func (p *parser) unary() ast.Expression {
 	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
 		return p.power(expr)
 	}
-	var start token.Token
 	// match the correct unary operator
-	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER, token.LOGISCH) {
-		if p.previous().Type == token.DIE {
-			start = p.previous()
-			if !p.match(token.GRÖßE, token.LÄNGE) {
+	if p.match(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.LOGISCH, token.DIE, token.DER, token.DEM) {
+		start := p.previous()
+
+		switch start.Type {
+		case token.DIE:
+			if !p.match(token.GRÖßE, token.LÄNGE) { // nominativ
 				p.decrease() // DIE does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
-		} else if p.previous().Type == token.DER {
-			start = p.previous()
-			if !p.match(token.BETRAG) {
+		case token.DER:
+			if !p.match(token.GRÖßE, token.LÄNGE, token.BETRAG) { // Betrag: nominativ, Größe/Länge: dativ
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
-		} else if p.previous().Type == token.LOGISCH {
-			start = p.previous()
+		case token.DEM:
+			if !p.match(token.BETRAG) { // dativ
+				p.decrease() // DEM does not belong to a operator, so maybe it is a function call
+				return p.negate()
+			}
+		case token.LOGISCH:
 			if !p.match(token.NICHT) {
 				p.decrease() // LOGISCH does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
-		} else { // error handling
-			switch p.previous().Type {
-			case token.GRÖßE, token.LÄNGE:
-				p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, fmt.Sprintf("Vor '%s' muss 'die' stehen", p.previous()))
-			case token.BETRAG:
-				p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, "Vor 'Betrag' muss 'der' stehen")
-			}
-			start = p.previous()
+		case token.BETRAG, token.LÄNGE, token.GRÖßE:
+			p.err(ddperror.SYN_UNEXPECTED_TOKEN, start.Range, fmt.Sprintf("Vor '%s' fehlt der Artikel", start))
 		}
+
 		tok := p.previous()
 		operator := ast.UN_ABS
 		switch tok.Type {
@@ -1691,6 +1724,7 @@ func (p *parser) negate() ast.Expression {
 // when called from unary() lhs might be a funcCall
 // TODO: check precedence
 func (p *parser) power(lhs ast.Expression) ast.Expression {
+	// TODO: grammar
 	if p.match(token.DIE) {
 		lhs := p.unary()
 		p.consume(token.DOT, token.WURZEL)
@@ -1719,6 +1753,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 		}
 	}
 
+	// TODO: grammar
 	if p.matchN(token.DER, token.LOGARITHMUS) {
 		tok := p.previous()
 		p.consume(token.VON)
@@ -1789,6 +1824,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.Ident{
 				Literal: p.previous(),
 			}
+		// TODO: grammar
 		case token.EINE, token.EINER: // list literals
 			begin := p.previous()
 			if begin.Type == token.EINER && p.match(token.LEEREN) {
@@ -2198,6 +2234,16 @@ func (p *parser) parseIntLit() *ast.IntLit {
 	}
 }
 
+// wether the next token indicates a typename
+func isTypeName(t token.TokenType) bool {
+	switch t {
+	case token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT,
+		token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN:
+		return true
+	}
+	return false
+}
+
 // converts a TokenType to a Type
 func tokenTypeToType(t token.TokenType) ddptypes.Type {
 	switch t {
@@ -2344,11 +2390,28 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 // unlike parseType it may return void
 // the error return is ILLEGAL
 func (p *parser) parseReturnType() ddptypes.Type {
+	getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
+		switch gender {
+		case ddptypes.MASKULIN:
+			return token.EINEN
+		case ddptypes.FEMININ:
+			return token.EINE
+		case ddptypes.NEUTRUM:
+			return token.EIN
+		}
+		return token.ILLEGAL // unreachable
+	}
+
 	if p.match(token.NICHTS) {
 		return ddptypes.VoidType{}
 	}
-	p.consumeAny(token.EINEN, token.EINE)
-	return p.parseType()
+	p.consumeAny(token.EINEN, token.EINE, token.EIN)
+	tok := p.previous()
+	typ := p.parseType()
+	if article := getArticle(typ.Gender()); article != tok.Type {
+		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+	}
+	return typ
 }
 
 // create a sub-scope of the current scope
