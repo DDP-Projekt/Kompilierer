@@ -101,6 +101,9 @@ func (h *helperVisitor) VisitIndexing(expr *Indexing) {
 	h.visit(expr.Lhs)
 	h.visit(expr.Index)
 }
+func (h *helperVisitor) VisitFieldAccess(expr *FieldAccess) {
+	panic("TODO")
+}
 
 // nothing to do for literals
 func (h *helperVisitor) VisitIntLit(expr *IntLit) {

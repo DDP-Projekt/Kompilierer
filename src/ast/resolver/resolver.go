@@ -115,6 +115,9 @@ func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
 	r.visit(expr.Lhs)
 	r.visit(expr.Index)
 }
+func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) {
+	panic("TODO")
+}
 
 // nothing to do for literals
 func (r *Resolver) VisitIntLit(expr *ast.IntLit) {

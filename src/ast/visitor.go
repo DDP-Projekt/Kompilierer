@@ -24,6 +24,7 @@ type FullVisitor interface {
 	BadExprVisitor
 	IdentVisitor
 	IndexingVisitor
+	FieldAccessVisitor
 	IntLitVisitor
 	FloatLitVisitor
 	BoolLitVisitor
@@ -93,6 +94,10 @@ type (
 	IndexingVisitor interface {
 		BaseVisitor
 		VisitIndexing(*Indexing)
+	}
+	FieldAccessVisitor interface {
+		BaseVisitor
+		VisitFieldAccess(*FieldAccess)
 	}
 	IntLitVisitor interface {
 		BaseVisitor

@@ -233,8 +233,16 @@ type (
 	// this one can count as Reference, and may be used
 	// inplace of Ident (may be assigned to etc.)
 	Indexing struct {
-		Lhs   Assigneable // variable Name
+		Lhs   Assigneable // variable Name or other indexing
 		Index Expression
+	}
+
+	// also exists as Binary expression for Literals
+	// this one can count as Reference, and my be used
+	// inplace of Ident (may be assigned to etc.)
+	FieldAccess struct {
+		Rhs   Assigneable // variable Name or other indexing
+		Field *Ident      // the field name
 	}
 
 	IntLit struct {
@@ -340,6 +348,7 @@ type (
 func (expr *BadExpr) String() string       { return "BadExpr" }
 func (expr *Ident) String() string         { return "Ident" }
 func (expr *Indexing) String() string      { return "Indexing" }
+func (expr *FieldAccess) String() string   { return "FieldAccess" }
 func (expr *IntLit) String() string        { return "IntLit" }
 func (expr *FloatLit) String() string      { return "FloatLit" }
 func (expr *BoolLit) String() string       { return "BoolLit" }
@@ -357,6 +366,7 @@ func (expr *StructLiteral) String() string { return "StructLiteral" }
 func (expr *BadExpr) Token() token.Token       { return expr.Tok }
 func (expr *Ident) Token() token.Token         { return expr.Literal }
 func (expr *Indexing) Token() token.Token      { return expr.Lhs.Token() }
+func (expr *FieldAccess) Token() token.Token   { return expr.Field.Token() }
 func (expr *IntLit) Token() token.Token        { return expr.Literal }
 func (expr *FloatLit) Token() token.Token      { return expr.Literal }
 func (expr *BoolLit) Token() token.Token       { return expr.Literal }
@@ -376,6 +386,9 @@ func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }
+func (expr *FieldAccess) GetRange() token.Range {
+	return token.Range{Start: expr.Field.GetRange().Start, End: expr.Rhs.GetRange().End}
+}
 func (expr *IntLit) GetRange() token.Range        { return expr.Literal.Range }
 func (expr *FloatLit) GetRange() token.Range      { return expr.Literal.Range }
 func (expr *BoolLit) GetRange() token.Range       { return expr.Literal.Range }
@@ -393,6 +406,7 @@ func (expr *StructLiteral) GetRange() token.Range { return expr.Range }
 func (expr *BadExpr) Accept(v FullVisitor)       { v.VisitBadExpr(expr) }
 func (expr *Ident) Accept(v FullVisitor)         { v.VisitIdent(expr) }
 func (expr *Indexing) Accept(v FullVisitor)      { v.VisitIndexing(expr) }
+func (expr *FieldAccess) Accept(v FullVisitor)   { v.VisitFieldAccess(expr) }
 func (expr *IntLit) Accept(v FullVisitor)        { v.VisitIntLit(expr) }
 func (expr *FloatLit) Accept(v FullVisitor)      { v.VisitFloatLit(expr) }
 func (expr *BoolLit) Accept(v FullVisitor)       { v.VisitBoolLit(expr) }
@@ -410,6 +424,7 @@ func (expr *StructLiteral) Accept(v FullVisitor) { v.VisitStructLiteral(expr) }
 func (expr *BadExpr) expressionNode()       {}
 func (expr *Ident) expressionNode()         {}
 func (expr *Indexing) expressionNode()      {}
+func (expr *FieldAccess) expressionNode()   {}
 func (expr *IntLit) expressionNode()        {}
 func (expr *FloatLit) expressionNode()      {}
 func (expr *BoolLit) expressionNode()       {}
@@ -424,8 +439,9 @@ func (expr *Grouping) expressionNode()      {}
 func (expr *FuncCall) expressionNode()      {}
 func (expr *StructLiteral) expressionNode() {}
 
-func (expr *Ident) assigneable()    {}
-func (expr *Indexing) assigneable() {}
+func (expr *Ident) assigneable()       {}
+func (expr *Indexing) assigneable()    {}
+func (expr *FieldAccess) assigneable() {}
 
 // Statements
 type (

@@ -468,15 +468,6 @@ func (c *compiler) VisitIdent(e *ast.Ident) {
 }
 
 func (c *compiler) VisitIndexing(e *ast.Indexing) {
-	// compile the two expressions onto which the operator is applied
-	/*lhs, lhsTyp := c.evaluate(e.Lhs)
-	rhs, rhsTyp := c.evaluate(e.Index)
-
-	c.evaluateIndexing(lhs, rhs, lhsTyp, rhsTyp)
-
-	c.freeNonPrimitive(lhs, lhsTyp)
-	c.freeNonPrimitive(rhs, rhsTyp)*/
-
 	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
 
 	if stringIndexing != nil {
@@ -495,6 +486,9 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 		}
 	}
 	c.latestReturnType = elementType
+}
+func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) {
+	panic("TODO")
 }
 
 // literals are simple ir constants
@@ -643,12 +637,11 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 		case c.ddpchartyp:
 			c.latestReturn = newInt(4)
 		case c.ddpstring:
-			c.latestReturn = c.cbb.NewAdd(c.loadStructField(rhs, 1), c.sizeof(c.ddpstring.typ))
+			c.latestReturn = c.loadStructField(rhs, 1) // str->cap
 		default:
 			if _, isList := typ.(*ddpIrListType); isList {
 				cap := c.loadStructField(rhs, cap_field_index)
-				cap_times_size := c.cbb.NewMul(cap, c.sizeof(typ.(*ddpIrListType).elementType.IrType()))
-				c.latestReturn = c.cbb.NewAdd(cap_times_size, c.sizeof(typ.IrType()))
+				c.latestReturn = c.cbb.NewMul(cap, c.sizeof(typ.(*ddpIrListType).elementType.IrType())) // list->cap * sizeof(list_element_type)
 			} else {
 				err("invalid Parameter Type for GRÖßE: %s", typ.Name())
 			}
@@ -895,6 +888,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
+	case ast.BIN_FIELD_ACCESS:
+		panic("TODO")
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:

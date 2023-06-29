@@ -99,6 +99,9 @@ func (pr *printer) VisitIdent(expr *Ident) {
 func (pr *printer) VisitIndexing(expr *Indexing) {
 	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
 }
+func (pr *printer) VisitFieldAccess(expr *FieldAccess) {
+	panic("TODO")
+}
 func (pr *printer) VisitIntLit(expr *IntLit) {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
 }

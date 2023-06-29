@@ -135,6 +135,9 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) {
 		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
 }
+func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) {
+	panic("TODO")
+}
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) {
 	t.latestReturnedType = ddptypes.ZAHL
 }
@@ -255,6 +258,8 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		} else if lhs == ddptypes.TEXT {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
+	case ast.BIN_FIELD_ACCESS:
+		panic("TODO")
 	case ast.BIN_DIV, ast.BIN_POW, ast.BIN_LOG:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		t.latestReturnedType = ddptypes.KOMMAZAHL
