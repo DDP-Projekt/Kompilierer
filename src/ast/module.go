@@ -24,6 +24,8 @@ type Module struct {
 	Ast *Ast
 	// map of references to all public functions and variables
 	PublicDecls map[string]Declaration
+	// map of references to all public struct decls
+	PublicStructDecls map[string]*StructDecl
 }
 
 // returns the string-literal content by which this module was first imported

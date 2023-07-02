@@ -3,7 +3,7 @@ package ast
 // stores symbols for one scope of an ast
 type SymbolTable struct {
 	Enclosing    *SymbolTable           // enclosing scope (nil in the global scope)
-	Declarations map[string]Declaration // map of all variables and functions
+	Declarations map[string]Declaration // map of all variables and functions (not structs)
 }
 
 func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
@@ -30,12 +30,15 @@ func (scope *SymbolTable) LookupDecl(name string) (Declaration, bool, bool) {
 
 // inserts a declaration into the scope if it didn't exist yet
 // and returns wether it already existed
-// BadDecls are ignored
+// BadDecls and StructDecls are ignored
 func (scope *SymbolTable) InsertDecl(name string, decl Declaration) bool {
 	if _, ok := scope.Declarations[name]; ok {
 		return true
 	}
 	if _, ok := decl.(*BadDecl); ok {
+		return false
+	}
+	if _, ok := decl.(*StructDecl); ok {
 		return false
 	}
 	scope.Declarations[name] = decl

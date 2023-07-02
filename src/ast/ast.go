@@ -139,11 +139,8 @@ type (
 		Type     ddptypes.Type // type of the variable
 		NameTok  token.Token   // identifier name
 		IsPublic bool          // wether the function is marked with öffentliche
-		// wether the variable was declared in the global scope
-		// used pretty much only in the compiler
-		IsGlobal bool
-		Mod      *Module    // the module in which the variable was declared
-		InitVal  Expression // initial value
+		Mod      *Module       // the module in which the variable was declared
+		InitVal  Expression    // initial value
 	}
 
 	FuncDecl struct {
@@ -163,15 +160,17 @@ type (
 	}
 
 	StructDecl struct {
-		Range         token.Range
-		Comment       *token.Token        // optional comment (also contained in ast.Comments)
-		Tok           token.Token         // Wir
-		NameTok       token.Token         // token of the name
-		IsPublic      bool                // wether the struct decl is marked with öffentliche
-		Mod           *Module             // the module in which the struct was declared
-		Type          ddptypes.StructType // the parsed struct type (contains the name, grammatical gender and fields of the struct)
-		DefaultValues []Expression        // the default values for all the fields (in the same order as Type.Fields)
-		Aliases       []StructAlias       // the constructors of the struct
+		Range    token.Range
+		Comment  *token.Token // optional comment (also contained in ast.Comments)
+		Tok      token.Token  // Wir
+		NameTok  token.Token  // token of the name
+		IsPublic bool         // wether the struct decl is marked with öffentliche
+		Mod      *Module      // the module in which the struct was declared
+		// Field declarations of the struct in order of declaration
+		// only contains *VarDecl and *BadDecl s
+		Fields  []Declaration
+		Type    *ddptypes.StructType // the type resulting from this decl
+		Aliases []StructAlias        // the constructors of the struct
 	}
 )
 

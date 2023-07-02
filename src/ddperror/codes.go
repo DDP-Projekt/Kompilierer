@@ -36,6 +36,7 @@ const (
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
+	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
 )
 
 // type error codes

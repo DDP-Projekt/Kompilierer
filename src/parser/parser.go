@@ -215,8 +215,9 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	addAliases := func(aliases []ast.Alias, errRange token.Range) {
 		// add all the aliases
 		for _, alias := range aliases {
-			if fun := p.aliasExists(alias.GetTokens()); fun != nil {
-				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.GetOriginal().Literal, fun.Name()))
+			if decl := p.aliasExists(alias.GetTokens()); decl != nil {
+				_, isFunc := decl.(*ast.FuncDecl)
+				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.GetOriginal().Literal, decl.Name(), isFunc))
 			} else {
 				p.aliases = append(p.aliases, alias)
 			}
@@ -292,7 +293,7 @@ func (p *parser) declaration() ast.Statement {
 		default:
 			if isTypeName(t) {
 				p.advance()
-				return &ast.DeclStmt{Decl: p.varDeclaration(n - 1)}
+				return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
 			}
 		}
 
@@ -346,7 +347,8 @@ func (p *parser) assignRhs() ast.Expression {
 
 // parses a variable declaration
 // startDepth is the int passed to p.peekN(n) to get to the DER/DIE token of the declaration
-func (p *parser) varDeclaration(startDepth int) ast.Declaration {
+// isField indicates that this declaration should be parsed as a struct field
+func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	begin := p.peekN(startDepth) // Der/Die/Das
 	comment := p.commentBeforePos(begin.Range.Start)
 	// ignore the comment if it is not next to or directly above the declaration
@@ -368,10 +370,19 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
 			switch gender {
 			case ddptypes.MASKULIN:
+				if isField {
+					return token.DEM
+				}
 				return token.DER
 			case ddptypes.FEMININ:
+				if isField {
+					return token.DER
+				}
 				return token.DIE
 			case ddptypes.NEUTRUM:
+				if isField {
+					return token.DEM
+				}
 				return token.DAS
 			}
 			return token.ILLEGAL // unreachable
@@ -397,6 +408,9 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 
 	name := p.previous()
 	p.consume(token.IST)
+	if isField {
+		p.consume(token.STANDARDMAESSIG)
+	}
 	var expr ast.Expression
 
 	if typ != ddptypes.BOOLEAN && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
@@ -416,7 +430,11 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		expr = p.assignRhs()
 	}
 
-	p.consume(token.DOT)
+	if isField {
+		p.consume(token.COMMA)
+	} else {
+		p.consume(token.DOT)
+	}
 	// prefer trailing comments as long as they are on the same line
 	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
 		comment = trailingComment
@@ -427,10 +445,14 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		Type:     typ,
 		NameTok:  name,
 		IsPublic: isPublic,
-		IsGlobal: p.resolver.CurrentTable.Enclosing == nil,
 		Mod:      p.module,
 		InitVal:  expr,
 	}
+
+	if isField {
+		return decl
+	}
+
 	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		p.module.PublicDecls[decl.Name()] = decl
 	}
@@ -479,9 +501,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
-	var paramNames []token.Token = nil
-	var paramTypes []ddptypes.ParameterType = nil
-	var paramComments []*token.Token = nil
+	var paramNames []token.Token
+	var paramTypes []ddptypes.ParameterType
+	var paramComments []*token.Token
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
 		if p.matchN(token.DEN, token.PARAMETERN) {
@@ -490,8 +512,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 		}
 		validate(p.consume(token.IDENTIFIER))
-		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
-		paramComments = append(make([]*token.Token, 0), p.getLeadingOrTrailingComment())
+		paramNames = append(paramNames, p.previous()) // append the first parameter name
+		paramComments = append(paramComments, p.getLeadingOrTrailingComment())
 		if !singleParameter {
 			// helper function to avoid too much repitition
 			addParamName := func(name token.Token) {
@@ -522,7 +544,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		validate(p.consume(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
 		validate(firstType != nil)
-		paramTypes = append(make([]ddptypes.ParameterType, 0), ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
+		paramTypes = append(paramTypes, ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
 		if !singleParameter {
 			// helper function to avoid too much repitition
 			addType := func() {
@@ -608,9 +630,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
-				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, fun.Name()))
+			} else if validateFunctionAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
+				if decl := p.aliasExists(alias); decl != nil { // check that the alias does not already exist for another function
+					_, isFunc := decl.(*ast.FuncDecl)
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, decl.Name(), isFunc))
 				} else { // the alias is valid so we append it
 					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: nil, Args: paramTypesMap})
 				}
@@ -622,7 +645,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	aliasEnd := p.cur // save the end of the function declaration for later
 
-	if p.currentFunction != "" {
+	if p.resolver.CurrentTable.Enclosing != nil {
 		perr(ddperror.SEM_NON_GLOBAL_FUNCTION, begin.Range, "Es können nur globale Funktionen deklariert werden")
 	}
 
@@ -671,7 +694,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -703,7 +726,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
-func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) bool {
+func validateFunctionAlias(alias []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) bool {
 	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
 		return false
@@ -741,8 +764,167 @@ func (p *parser) aliasExists(alias []token.Token) ast.Declaration {
 	return nil
 }
 
+// helper for structDeclaration to check that every field is provided once at max
+// fields should not contain bad decls
+// returns wether the alias is valid and its arguments
+func validateStructAlias(alias []token.Token, fields []*ast.VarDecl) (bool, map[string]ddptypes.Type) {
+	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
+	if countElements(alias, isAliasExpr) > len(fields) {                               // validate that the alias contains as many parameters as the function
+		return false, nil
+	}
+	nameSet := map[string]ddptypes.ParameterType{} // set that holds the parameter names contained in the alias and their corresponding type
+	args := map[string]ddptypes.Type{}             // the arguments of the alias
+	for _, v := range fields {
+		nameSet[v.Name()] = ddptypes.ParameterType{
+			Type:        v.Type,
+			IsReference: false, // fields are never references
+		}
+		args[v.Name()] = v.Type
+	}
+	// validate that each parameter is contained in the alias once at max
+	// and fill in the AliasInfo
+	for i, v := range alias {
+		if isAliasExpr(v) {
+			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
+			if argTyp, ok := nameSet[k]; ok {
+				alias[i].AliasInfo = &argTyp
+				delete(nameSet, k)
+			} else {
+				return false, nil
+			}
+		}
+	}
+	return true, args
+}
+
+// helper for structDeclaration
+func varDeclsToFields(decls []*ast.VarDecl) []ddptypes.StructField {
+	result := make([]ddptypes.StructField, 0, len(decls))
+	for _, v := range decls {
+		result = append(result, ddptypes.StructField{
+			Name: v.Name(),
+			Type: v.Type,
+		})
+	}
+	return result
+}
+
 func (p *parser) structDeclaration(startDepth int) ast.Declaration {
-	panic("TODO")
+	begin := p.peekN(startDepth) // Wir
+	comment := p.commentBeforePos(begin.Range.Start)
+	// ignore the comment if it is not next to or directly above the declaration
+	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
+		comment = nil
+	}
+
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+
+	p.consume(token.NENNEN, token.DIE, token.KOMBINATION, token.AUS)
+
+	var fields []ast.Declaration
+	indent := begin.Indent + 1
+	for p.peek().Indent >= indent && !p.atEnd() {
+		p.consumeAny(token.DER, token.DEM)
+		n := -1
+		if p.match(token.OEFFENTLICHE) {
+			n = -2
+		}
+		fields = append(fields, p.varDeclaration(n, true))
+	}
+
+	p.consumeAny(token.EINEN, token.EINE, token.EIN)
+	gender := ddptypes.INVALID
+	switch p.previous().Type {
+	case token.EINEN:
+		gender = ddptypes.MASKULIN
+	case token.EINE:
+		gender = ddptypes.FEMININ
+	case token.EIN:
+		gender = ddptypes.NEUTRUM
+	}
+
+	if !p.consume(token.IDENTIFIER) {
+		return &ast.BadDecl{
+			Err: ddperror.Error{
+				Range: token.NewRange(p.peekN(-2), p.peek()),
+				File:  p.module.FileName,
+				Msg:   "Es wurde ein Strukturen Name erwartet",
+			},
+			Tok: p.peek(),
+			Mod: p.module,
+		}
+	}
+	name := p.previous()
+
+	p.consume(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
+	var aliases []token.Token
+	if p.previous().Type == token.STRING {
+		aliases = append(aliases, p.previous())
+	}
+	for p.match(token.COMMA) || p.match(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
+		if p.consume(token.STRING) {
+			aliases = append(aliases, p.previous())
+		}
+	}
+
+	var structAliases []ast.StructAlias
+	fieldsForValidation := toInterfaceSlice[ast.Declaration, *ast.VarDecl](
+		filterSlice(fields, func(decl ast.Declaration) bool { _, ok := decl.(*ast.VarDecl); return ok }),
+	)
+	for _, v := range aliases {
+		didError := false
+		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
+			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+			} else if valid, args := validateStructAlias(alias, fieldsForValidation); valid {
+				if decl := p.aliasExists(alias); decl != nil {
+					_, isFunc := decl.(*ast.FuncDecl)
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, decl.Name(), isFunc))
+				} else {
+					structAliases = append(structAliases, ast.StructAlias{Tokens: alias, Original: v, Struct: nil, Args: args})
+				}
+			} else {
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Struktur Alias darf jedes Feld maximal einmal enthalten")
+			}
+		}
+	}
+
+	if p.resolver.CurrentTable.Enclosing != nil {
+		p.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, p.peekN(startDepth+1).Range, "Es können nur globale Strukturen deklariert werden")
+	}
+
+	structType := &ddptypes.StructType{
+		Name:       name.Literal,
+		GramGender: gender,
+		Fields:     varDeclsToFields(fieldsForValidation),
+	}
+
+	decl := &ast.StructDecl{
+		Range:    token.NewRange(begin, p.previous()),
+		Comment:  comment,
+		Tok:      begin,
+		NameTok:  name,
+		IsPublic: isPublic,
+		Mod:      p.module,
+		Fields:   fields,
+		Type:     structType,
+		Aliases:  structAliases,
+	}
+
+	for i := range structAliases {
+		structAliases[i].Struct = decl
+	}
+
+	p.aliases = append(p.aliases, toInterfaceSlice[ast.StructAlias, ast.Alias](structAliases)...)
+
+	if _, alreadyExists := p.module.PublicStructDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		p.module.PublicStructDecls[decl.Name()] = decl
+	} else if alreadyExists {
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name %s steht bereits für eine Struktur", decl.Name()))
+	}
+
+	return decl
 }
 
 func (p *parser) aliasDecl() ast.Statement {
@@ -777,9 +959,10 @@ func (p *parser) aliasDecl() ast.Statement {
 	var alias *ast.FuncAlias
 	if aliasTokens, err := scanner.ScanAlias(aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-	} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
-		if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
-			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, fun.Name()))
+	} else if validateFunctionAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
+		if decl := p.aliasExists(aliasTokens); decl != nil { // check that the alias does not already exist for another function
+			_, isFunc := decl.(*ast.FuncDecl)
+			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, decl.Name(), isFunc))
 		} else { // the alias is valid so we append it
 			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl, Args: paramTypes}
 		}
@@ -1241,7 +1424,6 @@ func (p *parser) forStatement() ast.Statement {
 			Type:     Typ,
 			NameTok:  Ident,
 			IsPublic: false,
-			IsGlobal: false,
 			Mod:      p.module,
 			InitVal:  from,
 		}
@@ -1296,7 +1478,6 @@ func (p *parser) forStatement() ast.Statement {
 			Type:     Typ,
 			NameTok:  Ident,
 			IsPublic: false,
-			IsGlobal: false,
 			Mod:      p.module,
 			InitVal:  In,
 		}
@@ -2688,6 +2869,17 @@ func toInterfaceSlice[T any, U any](slice []T) []U {
 	result := make([]U, len(slice))
 	for i := range slice {
 		result[i] = any(slice[i]).(U)
+	}
+	return result
+}
+
+// keeps only those elements for which the filter function returns true
+func filterSlice[T any](slice []T, filter func(t T) bool) []T {
+	result := make([]T, 0, len(slice))
+	for i := range slice {
+		if filter(slice[i]) {
+			result = append(result, slice[i])
+		}
 	}
 	return result
 }

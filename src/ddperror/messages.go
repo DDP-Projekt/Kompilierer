@@ -1,6 +1,8 @@
 package ddperror
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // generates a error message in the format
 //
@@ -25,8 +27,12 @@ func MsgNameAlreadyExists(name string) string {
 	return fmt.Sprintf("Der Name %s steht bereits für eine andere Variable oder Funktion", name)
 }
 
-func MsgAliasAlreadyExists(alias, funcName string) string {
-	return fmt.Sprintf("Der Alias %s steht bereits für die Funktion '%s'", alias, funcName)
+func MsgAliasAlreadyExists(alias, name string, isFunc bool) string {
+	typ := "Struktur"
+	if isFunc {
+		typ = "Funktion"
+	}
+	return fmt.Sprintf("Der Alias %s steht bereits für die %s '%s'", alias, typ, name)
 }
 
 const (

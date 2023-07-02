@@ -102,7 +102,8 @@ func (c *compiler) getDeclIrName(decl ast.Declaration) string {
 	isGlobal, isExtern := true, false
 	// only apply this to global variables/functions
 	if varDecl, ok := decl.(*ast.VarDecl); ok {
-		isGlobal = varDecl.IsGlobal
+		otherDecl, _, _ := c.currentModule.Ast.Symbols.LookupDecl(varDecl.Name())
+		isGlobal = otherDecl == varDecl
 	} else { // don't apply name mangling to extern functions as their name is important in linking
 		funDecl := decl.(*ast.FuncDecl)
 		isExtern = ast.IsExternFunc(funDecl)

@@ -14,7 +14,7 @@ const (
 type Type interface {
 	// the grammatical Gender of the Type
 	Gender() GrammaticalGender
-	// string representation of the type
+	// string representation of the type (its name)
 	String() string
 }
 
