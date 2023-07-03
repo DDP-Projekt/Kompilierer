@@ -105,7 +105,9 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 	}
 }
 func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) {
-	panic("TODO")
+	for _, field := range decl.Fields {
+		t.visit(field)
+	}
 }
 
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) {
@@ -136,7 +138,13 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) {
 	}
 }
 func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) {
-	panic("TODO")
+	rhs := t.Evaluate(expr.Rhs)
+	if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
+		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, expr.Rhs, "Der VON Operator erwartet eine Struktur als rechten Operanden, nicht %s", rhs)
+		t.latestReturnedType = ddptypes.VoidType{}
+	} else {
+		t.latestReturnedType = t.checkFieldAccess(expr.Field, structType)
+	}
 }
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) {
 	t.latestReturnedType = ddptypes.ZAHL
@@ -259,7 +267,16 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
 	case ast.BIN_FIELD_ACCESS:
-		panic("TODO")
+		if ident, isIdent := expr.Lhs.(*ast.Ident); isIdent {
+			if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
+				// error was already reported by the resolver
+				t.latestReturnedType = ddptypes.VoidType{}
+			} else {
+				t.latestReturnedType = t.checkFieldAccess(ident, structType)
+			}
+		} else {
+			t.latestReturnedType = ddptypes.VoidType{}
+		}
 	case ast.BIN_DIV, ast.BIN_POW, ast.BIN_LOG:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		t.latestReturnedType = ddptypes.KOMMAZAHL
@@ -401,7 +418,29 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) {
 	t.latestReturnedType = decl.Type
 }
 func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) {
-	panic("TODO")
+	for argName, arg := range expr.Args {
+		argType := t.Evaluate(arg)
+
+		var paramType ddptypes.Type
+		for _, field := range expr.Struct.Type.Fields {
+			if field.Name == argName {
+				paramType = field.Type
+				break
+			}
+		}
+
+		if argType != paramType {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
+				"Die Struktur %s erwartet einen Wert vom Typ %s für das Feld %s, aber hat %s bekommen",
+				expr.Struct.Name(),
+				paramType,
+				argName,
+				argType,
+			)
+		}
+	}
+
+	t.latestReturnedType = expr.Struct.Type
 }
 
 func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) {
@@ -551,4 +590,24 @@ func isOfType(t ddptypes.Type, types ...ddptypes.Type) bool {
 		}
 	}
 	return false
+}
+
+// helper for
+func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.StructType) ddptypes.Type {
+	var fieldType ddptypes.Type
+	for _, field := range structType.Fields {
+		if field.Name == Lhs.Literal.Literal {
+			fieldType = field.Type
+		}
+	}
+	if fieldType == nil {
+		article := "Ein"
+		switch structType.Gender() {
+		case ddptypes.FEMININ:
+			article = "Eine"
+		}
+		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, Lhs, "%s %s hat kein Feld mit Name %s", article, structType.Name, Lhs.Literal.Literal)
+		return ddptypes.VoidType{}
+	}
+	return fieldType
 }

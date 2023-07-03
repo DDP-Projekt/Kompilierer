@@ -37,6 +37,7 @@ const (
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
 	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
+	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
 )
 
 // type error codes
@@ -51,6 +52,7 @@ const (
 	TYP_BAD_CONDITION                         // condition value was not of type boolean
 	TYP_BAD_FOR                               // one of the expressions in a for loop was not of type int
 	TYP_WRONG_RETURN_TYPE                     // the return type did not match the function signature
+	TYP_BAD_FIELD_ACCESS                      // a non-struct type was accessed or similar
 )
 
 func (code Code) IsMiscError() bool {

@@ -66,7 +66,7 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
-	msg := fmt.Sprintf("VarDecl[%s]", decl.Name())
+	msg := fmt.Sprintf("VarDecl[%s: %s]", decl.Name(), decl.Type)
 	if decl.Comment != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
 	}
@@ -87,7 +87,13 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 	}
 }
 func (pr *printer) VisitStructDecl(decl *StructDecl) {
-	panic("TODO")
+	msg := fmt.Sprintf("StructDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic)
+
+	nodes := make([]Node, 0, len(decl.Fields))
+	for _, v := range decl.Fields {
+		nodes = append(nodes, v)
+	}
+	pr.parenthesizeNode(msg, nodes...)
 }
 
 func (pr *printer) VisitBadExpr(expr *BadExpr) {
@@ -100,7 +106,7 @@ func (pr *printer) VisitIndexing(expr *Indexing) {
 	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
 }
 func (pr *printer) VisitFieldAccess(expr *FieldAccess) {
-	panic("TODO")
+	pr.parenthesizeNode("FieldAccess", expr.Field, expr.Rhs)
 }
 func (pr *printer) VisitIntLit(expr *IntLit) {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
@@ -144,14 +150,18 @@ func (pr *printer) VisitGrouping(expr *Grouping) {
 	pr.parenthesizeNode("Grouping", expr.Expr)
 }
 func (pr *printer) VisitFuncCall(expr *FuncCall) {
-	args := make([]Node, 0)
+	args := make([]Node, 0, len(expr.Args))
 	for _, v := range expr.Args {
 		args = append(args, v)
 	}
-	pr.parenthesizeNode(fmt.Sprintf("FuncCall(%s)", expr.Name), args...)
+	pr.parenthesizeNode(fmt.Sprintf("FuncCall[%s]", expr.Name), args...)
 }
 func (pr *printer) VisitStructLiteral(expr *StructLiteral) {
-	panic("TODO")
+	args := make([]Node, 0, len(expr.Args))
+	for _, v := range expr.Args {
+		args = append(args, v)
+	}
+	pr.parenthesizeNode(fmt.Sprintf("StructLiteral[%s]", expr.Struct.Name()), args...)
 }
 
 func (pr *printer) VisitBadStmt(stmt *BadStmt) {

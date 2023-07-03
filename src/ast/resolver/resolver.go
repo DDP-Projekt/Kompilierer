@@ -94,7 +94,13 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 	*/
 }
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
-	panic("TODO")
+	for _, field := range decl.Fields {
+		if varDecl, isVar := field.(*ast.VarDecl); isVar {
+			r.visit(varDecl.InitVal)
+		} else { // BadDecl
+			r.visit(field)
+		}
+	}
 }
 
 // if a BadExpr exists the AST is faulty
@@ -116,7 +122,7 @@ func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
 	r.visit(expr.Index)
 }
 func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) {
-	panic("TODO")
+	r.visit(expr.Rhs)
 }
 
 // nothing to do for literals
@@ -144,7 +150,12 @@ func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) {
 	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
-	r.visit(expr.Lhs)
+	// for field access the left operand should always be an *Ident
+	if expr.Operator != ast.BIN_FIELD_ACCESS {
+		r.visit(expr.Lhs)
+	} else if _, isIdent := expr.Lhs.(*ast.Ident); !isIdent {
+		r.err(ddperror.SEM_BAD_FIELD_ACCESS, expr.Lhs.GetRange(), fmt.Sprintf("Der VON Operator erwartet einen Namen als Linken Operanden, nicht %s", expr.Lhs))
+	}
 	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) {
@@ -165,7 +176,9 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
 	}
 }
 func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) {
-	panic("TODO")
+	for _, arg := range expr.Args {
+		r.visit(arg)
+	}
 }
 
 // if a BadStmt exists the AST is faulty

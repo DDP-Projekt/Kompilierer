@@ -29,6 +29,7 @@ type parser struct {
 	module            *ast.Module
 	predefinedModules map[string]*ast.Module   // modules that were passed as environment, might not all be used
 	aliases           []ast.Alias              // all found aliases
+	typeNames         map[string]ddptypes.Type // map of struct names to struct types
 	currentFunction   string                   // function which is currently being parsed
 	panicMode         bool                     // flag to not report following errors
 	errored           bool                     // wether the parser found an error
@@ -63,6 +64,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		}
 	}
 
+	// TODO: add public decls and typenames from passed modules
 	aliases := make([]ast.Alias, 0)
 	parser := &parser{
 		tokens:       pTokens,
@@ -83,6 +85,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		},
 		predefinedModules: modules,
 		aliases:           aliases,
+		typeNames:         make(map[string]ddptypes.Type),
 		panicMode:         false,
 		errored:           false,
 		resolver:          &resolver.Resolver{},
@@ -274,7 +277,11 @@ func (p *parser) checkedDeclaration() ast.Statement {
 
 // entry point for the recursive descent parsing
 func (p *parser) declaration() ast.Statement {
-	if p.match(token.DER, token.DIE) { // might indicate a function or variable declaration
+	if p.match(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
+		if p.previous().Type == token.WIR {
+			return &ast.DeclStmt{Decl: p.structDeclaration()}
+		}
+
 		n := -1
 		if p.match(token.OEFFENTLICHE) {
 			n = -2
@@ -287,11 +294,8 @@ func (p *parser) declaration() ast.Statement {
 		case token.FUNKTION:
 			p.advance()
 			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
-		case token.WIR:
-			p.advance()
-			return &ast.DeclStmt{Decl: p.structDeclaration(n - 1)}
 		default:
-			if isTypeName(t) {
+			if p.isTypeName(p.peek()) {
 				p.advance()
 				return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
 			}
@@ -407,9 +411,10 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	name := p.previous()
-	p.consume(token.IST)
 	if isField {
-		p.consume(token.STANDARDMAESSIG)
+		p.consume(token.MIT, token.STANDARDWERT)
+	} else {
+		p.consume(token.IST)
 	}
 	var expr ast.Expression
 
@@ -430,9 +435,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		expr = p.assignRhs()
 	}
 
-	if isField {
-		p.consume(token.COMMA)
-	} else {
+	if !isField {
 		p.consume(token.DOT)
 	}
 	// prefer trailing comments as long as they are on the same line
@@ -809,17 +812,17 @@ func varDeclsToFields(decls []*ast.VarDecl) []ddptypes.StructField {
 	return result
 }
 
-func (p *parser) structDeclaration(startDepth int) ast.Declaration {
-	begin := p.peekN(startDepth) // Wir
+func (p *parser) structDeclaration() ast.Declaration {
+	begin := p.previous() // Wir
 	comment := p.commentBeforePos(begin.Range.Start)
 	// ignore the comment if it is not next to or directly above the declaration
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
 		comment = nil
 	}
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
-
-	p.consume(token.NENNEN, token.DIE, token.KOMBINATION, token.AUS)
+	p.consume(token.NENNEN, token.DIE)
+	isPublic := p.match(token.OEFFENTLICHE)
+	p.consume(token.KOMBINATION, token.AUS)
 
 	var fields []ast.Declaration
 	indent := begin.Indent + 1
@@ -829,7 +832,11 @@ func (p *parser) structDeclaration(startDepth int) ast.Declaration {
 		if p.match(token.OEFFENTLICHE) {
 			n = -2
 		}
-		fields = append(fields, p.varDeclaration(n, true))
+		p.advance()
+		fields = append(fields, p.varDeclaration(n-1, true))
+		if !p.consume(token.COMMA) {
+			p.advance()
+		}
 	}
 
 	p.consumeAny(token.EINEN, token.EINE, token.EIN)
@@ -891,7 +898,7 @@ func (p *parser) structDeclaration(startDepth int) ast.Declaration {
 	}
 
 	if p.resolver.CurrentTable.Enclosing != nil {
-		p.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, p.peekN(startDepth+1).Range, "Es können nur globale Strukturen deklariert werden")
+		p.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, begin.Range, "Es können nur globale Strukturen deklariert werden")
 	}
 
 	structType := &ddptypes.StructType{
@@ -917,11 +924,14 @@ func (p *parser) structDeclaration(startDepth int) ast.Declaration {
 	}
 
 	p.aliases = append(p.aliases, toInterfaceSlice[ast.StructAlias, ast.Alias](structAliases)...)
+	if _, exists := p.typeNames[decl.Name()]; exists {
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name %s steht bereits für eine Struktur", decl.Name()))
+	} else {
+		p.typeNames[decl.Name()] = decl.Type
+	}
 
 	if _, alreadyExists := p.module.PublicStructDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		p.module.PublicStructDecls[decl.Name()] = decl
-	} else if alreadyExists {
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name %s steht bereits für eine Struktur", decl.Name()))
 	}
 
 	return decl
@@ -2053,11 +2063,42 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
-	// TODO: check this with precedence and the else-if
-	// 		 parsing might be incorrect
+	// TODO: check this with precedence
 	// 		 remember to also check p.assigneable()
+
+	for p.match(token.VON) {
+		tok := p.previous()
+		operand := lhs
+		mid := p.expression()
+		if p.match(token.BIS) {
+			rhs := p.primary(nil)
+			lhs = &ast.TernaryExpr{
+				Range: token.Range{
+					Start: operand.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      tok,
+				Lhs:      operand,
+				Mid:      mid,
+				Rhs:      rhs,
+				Operator: ast.TER_SLICE,
+			}
+		} else {
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: operand.GetRange().Start,
+					End:   mid.GetRange().End,
+				},
+				Tok:      tok,
+				Lhs:      operand,
+				Rhs:      mid,
+				Operator: ast.BIN_FIELD_ACCESS,
+			}
+		}
+	}
+
 	// indexing
-	if p.match(token.AN) {
+	for p.match(token.AN) {
 		p.consume(token.DER, token.STELLE)
 		tok := p.previous()
 		rhs := p.primary(nil)
@@ -2070,23 +2111,6 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			Lhs:      lhs,
 			Operator: ast.BIN_INDEX,
 			Rhs:      rhs,
-		}
-	} else if p.match(token.VON) {
-		tok := p.previous()
-		operand := lhs
-		mid := p.expression()
-		p.consume(token.BIS)
-		rhs := p.primary(nil)
-		lhs = &ast.TernaryExpr{
-			Range: token.Range{
-				Start: operand.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      tok,
-			Lhs:      operand,
-			Mid:      mid,
-			Rhs:      rhs,
-			Operator: ast.TER_SLICE,
 		}
 	}
 
@@ -2106,11 +2130,22 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	return lhs
 }
 
+// x von y von z -> z.y.x
+
 // either ast.Ident or ast.Indexing
 // p.previous() must be of Type token.IDENTIFIER
 func (p *parser) assigneable() ast.Assigneable {
-	var ass ast.Assigneable = &ast.Ident{
+	ident := &ast.Ident{
 		Literal: p.previous(),
+	}
+	var ass ast.Assigneable = ident
+
+	for p.match(token.VON) {
+		rhs := p.assigneable()
+		ass = &ast.FieldAccess{
+			Rhs:   rhs,
+			Field: ident,
+		}
 	}
 
 	for p.match(token.AN) {
@@ -2434,11 +2469,14 @@ func (p *parser) parseIntLit() *ast.IntLit {
 }
 
 // wether the next token indicates a typename
-func isTypeName(t token.TokenType) bool {
-	switch t {
+func (p *parser) isTypeName(t token.Token) bool {
+	switch t.Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT,
 		token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN:
 		return true
+	case token.IDENTIFIER:
+		_, exists := p.typeNames[t.Literal]
+		return exists
 	}
 	return false
 }
@@ -2467,7 +2505,7 @@ func tokenTypeToType(t token.TokenType) ddptypes.Type {
 // returns nil and errors if no typename was found
 func (p *parser) parseType() ddptypes.Type {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil
 	}
@@ -2492,6 +2530,11 @@ func (p *parser) parseType() ddptypes.Type {
 		}
 		p.consume(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+	case token.IDENTIFIER:
+		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+			return Type
+		}
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 	}
 
 	return nil // unreachable
@@ -2502,7 +2545,7 @@ func (p *parser) parseType() ddptypes.Type {
 // returns nil and errors if no typename was found
 // returns a ddptypes.ListType
 func (p *parser) parseListType() ddptypes.Type {
-	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 		return nil
 	}
@@ -2521,6 +2564,11 @@ func (p *parser) parseListType() ddptypes.Type {
 		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+	case token.IDENTIFIER:
+		if Type, exists := p.typeNames[p.peekN(-2).Literal]; exists {
+			return Type
+		}
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peekN(-2).Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 	}
 
 	return nil // unreachable
@@ -2528,10 +2576,10 @@ func (p *parser) parseListType() ddptypes.Type {
 
 // parses tokens into a DDPType and returns wether the type is a reference type
 // expects the next token to be the start of the type
-// returns ILLEGAL and errors if no typename was found
+// returns nil and errors if no typename was found
 func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil, false // void indicates error
 	}
@@ -2580,6 +2628,24 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.BUCHSTABE, true
+	case token.IDENTIFIER:
+		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+			if p.match(token.LISTE) {
+				return ddptypes.ListType{Underlying: Type}, false
+			} else if p.match(token.LISTEN) {
+				if !p.consume(token.REFERENZ) {
+					// report the error on the REFERENZ token, but still advance
+					// because there is a valid token afterwards
+					p.advance()
+				}
+				return ddptypes.ListType{Underlying: Type}, true
+			} else if p.match(token.REFERENZ) {
+				return Type, true
+			}
+
+			return Type, false
+		}
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peekN(-2).Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 	}
 
 	return nil, false // unreachable
