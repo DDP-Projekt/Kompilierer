@@ -101,6 +101,10 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
 			r.visit(field)
 		}
 	}
+	// insert the struct into the current scope (SymbolTable)
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+	}
 }
 
 // if a BadExpr exists the AST is faulty

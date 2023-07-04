@@ -160,6 +160,7 @@ func (p *parser) synchronize() {
 }
 
 // fils out importStmt.Module and updates the parser state accordingly
+// TODO: check that type-dependencies are also imported and report errors otherwise
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -227,34 +228,52 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		}
 	}
 
+	resolveDecl := func(decl ast.Declaration) {
+		// skip decls that are already defined
+		// the resolver will error here
+		_, exists, _ := p.resolver.CurrentTable.LookupDecl(decl.Name())
+
+		if exists {
+			return
+		}
+
+		var aliases []ast.Alias
+		needAddAliases := true
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			aliases = append(aliases, toInterfaceSlice[ast.FuncAlias, ast.Alias](decl.Aliases)...)
+		case *ast.StructDecl:
+			aliases = append(aliases, toInterfaceSlice[ast.StructAlias, ast.Alias](decl.Aliases)...)
+			p.typeNames[decl.Name()] = decl.Type
+		default: // for VarDecls or BadDecls we don't need to add any aliases
+			needAddAliases = false
+		}
+
+		// VarDecls don't have aliases
+		if !needAddAliases {
+			return
+		}
+
+		// add all the aliases
+		addAliases(aliases, importStmt.Range)
+	}
+
 	if len(importStmt.ImportedSymbols) == 0 {
 		// add all public aliases
-		for name, decl := range importStmt.Module.PublicDecls {
-			funcDecl, isFunc := decl.(*ast.FuncDecl) // skip VarDecls
-			// skip functions that are already defined
-			// the resolver will error here
-			_, exists, _ := p.resolver.CurrentTable.LookupDecl(name)
-			// continue if the conditions are not met
-			if !isFunc || exists {
-				continue
-			}
-
-			// add all the aliases
-			addAliases(toInterfaceSlice[ast.FuncAlias, ast.Alias](funcDecl.Aliases), importStmt.Range)
+		for _, decl := range importStmt.Module.PublicDecls {
+			resolveDecl(decl)
 		}
 	} else {
 		// only add the imported ones
 		for _, tok := range importStmt.ImportedSymbols {
 			name := tok.Literal
 			// check that the name exists as a public declaration
-			_, exists := importStmt.Module.PublicDecls[name]
-			funcDecl, isFunc := importStmt.Module.PublicDecls[name].(*ast.FuncDecl)
-			if !isFunc || !exists {
+			decl, exists := importStmt.Module.PublicDecls[name]
+			if !exists {
 				continue
 			}
 
-			// add all the aliases
-			addAliases(toInterfaceSlice[ast.FuncAlias, ast.Alias](funcDecl.Aliases), tok.Range)
+			resolveDecl(decl)
 		}
 	}
 }
@@ -450,6 +469,10 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		IsPublic: isPublic,
 		Mod:      p.module,
 		InitVal:  expr,
+	}
+
+	if decl.IsPublic {
+		// TODO: check that all used types are public too
 	}
 
 	if isField {
@@ -722,6 +745,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration
 	}
 
+	if decl.IsPublic {
+		// TODO: check that all used types are public too
+	}
+
 	p.currentFunction = ""
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
@@ -756,8 +783,8 @@ func validateFunctionAlias(alias []token.Token, paramNames []token.Token, paramT
 	return true
 }
 
-// helper to check if an alias already exists for a function
-// returns functions declaration or nil
+// helper to check if an alias already exists for a function or struct
+// returns the corresponding declaration or nil
 func (p *parser) aliasExists(alias []token.Token) ast.Declaration {
 	for i := range p.aliases {
 		if slicesEqual(alias, p.aliases[i].GetTokens(), tokenEqual) {
@@ -924,14 +951,16 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 
 	p.aliases = append(p.aliases, toInterfaceSlice[ast.StructAlias, ast.Alias](structAliases)...)
-	if _, exists := p.typeNames[decl.Name()]; exists {
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name %s steht bereits für eine Struktur", decl.Name()))
-	} else {
+	if _, exists := p.typeNames[decl.Name()]; !exists {
 		p.typeNames[decl.Name()] = decl.Type
 	}
 
-	if _, alreadyExists := p.module.PublicStructDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
-		p.module.PublicStructDecls[decl.Name()] = decl
+	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		p.module.PublicDecls[decl.Name()] = decl
+	}
+
+	if decl.IsPublic {
+		// TODO: check that all used types are public too
 	}
 
 	return decl
@@ -2930,7 +2959,8 @@ func apply[T any](fun func(T), slice []T) {
 	}
 }
 
-// T must be convertivble to U
+// converts a slice of a subtype to it's basetype
+// T must be convertible to U
 func toInterfaceSlice[T any, U any](slice []T) []U {
 	result := make([]U, len(slice))
 	for i := range slice {
