@@ -18,6 +18,7 @@ import (
 // holds state to resolve the symbols of an AST and its nodes
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
+// TODO: give the resolver access to the module so that it can do more work
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser

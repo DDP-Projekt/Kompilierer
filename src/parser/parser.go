@@ -278,6 +278,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	}
 }
 
+// calls p.declaration and resolves and typechecks it
 func (p *parser) checkedDeclaration() ast.Statement {
 	stmt := p.declaration() // parse the node
 	// TODO: maybe introduce a NOOP node to handle such cases
@@ -380,6 +381,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	// TODO: put this into the resolver
 	if isPublic && p.resolver.CurrentTable.Enclosing != nil {
 		p.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, p.peekN(startDepth+1).Range, "Nur globale Variablen können öffentlich sein")
 	}
@@ -479,6 +481,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		return decl
 	}
 
+	// TODO: put this into the resolver
 	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		p.module.PublicDecls[decl.Name()] = decl
 	}
@@ -924,6 +927,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		}
 	}
 
+	// TODO: put this into the resolver
 	if p.resolver.CurrentTable.Enclosing != nil {
 		p.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, begin.Range, "Es können nur globale Strukturen deklariert werden")
 	}
@@ -955,6 +959,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.typeNames[decl.Name()] = decl.Type
 	}
 
+	// TODO: put this into the resolver
 	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		p.module.PublicDecls[decl.Name()] = decl
 	}
