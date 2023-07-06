@@ -35,7 +35,7 @@ func compileToObject(inputFile string, outType OutputType, to io.Writer) (int, e
 		"generic",
 		"",
 		llvm.CodeGenOptLevel(llvm.CodeGenLevelDefault),
-		llvm.RelocMode(llvm.RelocDynamicNoPic), // TODO: find documentation about what this is
+		llvm.RelocMode(llvm.RelocDynamicNoPic), // TODO: find documentation about what this is (NoPic -> no position independent code, RelocDynamic -> ?)
 		llvm.CodeModel(llvm.CodeModelDefault),
 	)
 	defer targetMachine.Dispose()

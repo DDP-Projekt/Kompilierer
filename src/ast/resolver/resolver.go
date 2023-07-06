@@ -197,10 +197,9 @@ func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) {
 	r.visit(stmt.Expr)
 }
 
-// TODO: struct imports
 func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if stmt.Module == nil {
-		return // TODO: handle this better
+		return
 	}
 
 	var errRange token.Range

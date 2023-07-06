@@ -80,7 +80,9 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) {
 	}
 }
 func (h *helperVisitor) VisitStructDecl(decl *StructDecl) {
-	panic("TODO")
+	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
+		vis.VisitStructDecl(decl)
+	}
 }
 
 // if a BadExpr exists the AST is faulty
@@ -102,7 +104,11 @@ func (h *helperVisitor) VisitIndexing(expr *Indexing) {
 	h.visit(expr.Index)
 }
 func (h *helperVisitor) VisitFieldAccess(expr *FieldAccess) {
-	panic("TODO")
+	if vis, ok := h.actualVisitor.(FieldAccessVisitor); ok {
+		vis.VisitFieldAccess(expr)
+	}
+	h.visit(expr.Field)
+	h.visit(expr.Rhs)
 }
 
 // nothing to do for literals
@@ -181,30 +187,13 @@ func (h *helperVisitor) VisitFuncCall(expr *FuncCall) {
 	if vis, ok := h.actualVisitor.(FuncCallVisitor); ok {
 		vis.VisitFuncCall(expr)
 	}
-	if len(expr.Args) != 0 {
-		// sort the arguments to visit them in the order they appear
-		args := make([]Expression, 0, len(expr.Args))
-		for _, arg := range expr.Args {
-			args = append(args, arg)
-		}
-		sort.Slice(args, func(i, j int) bool {
-			iRange, jRange := args[i].GetRange(), args[j].GetRange()
-			if iRange.Start.Line < jRange.Start.Line {
-				return true
-			}
-			if iRange.Start.Line == jRange.Start.Line {
-				return iRange.Start.Column < jRange.Start.Column
-			}
-			return false
-		})
-
-		for _, arg := range args {
-			h.visit(arg)
-		}
-	}
+	h.sortAndVisitArgs(expr.Args)
 }
 func (h *helperVisitor) VisitStructLiteral(expr *StructLiteral) {
-	panic("TODO")
+	if vis, ok := h.actualVisitor.(StructLiteralVisitor); ok {
+		vis.VisitStructLiteral(expr)
+	}
+	h.sortAndVisitArgs(expr.Args)
 }
 
 func (h *helperVisitor) VisitBadStmt(stmt *BadStmt) {
@@ -309,4 +298,30 @@ func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
 		return
 	}
 	h.visit(stmt.Value)
+}
+
+// helper for visitFuncCall and visitStructLiteral
+// sorts the arguments by their order in the source code by using their ranges
+func (h *helperVisitor) sortAndVisitArgs(Args map[string]Expression) {
+	if len(Args) != 0 {
+		// sort the arguments to visit them in the order they appear
+		args := make([]Expression, 0, len(Args))
+		for _, arg := range Args {
+			args = append(args, arg)
+		}
+		sort.Slice(args, func(i, j int) bool {
+			iRange, jRange := args[i].GetRange(), args[j].GetRange()
+			if iRange.Start.Line < jRange.Start.Line {
+				return true
+			}
+			if iRange.Start.Line == jRange.Start.Line {
+				return iRange.Start.Column < jRange.Start.Column
+			}
+			return false
+		})
+
+		for _, arg := range args {
+			h.visit(arg)
+		}
+	}
 }

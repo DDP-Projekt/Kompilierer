@@ -64,7 +64,6 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		}
 	}
 
-	// TODO: add public decls and typenames from passed modules
 	aliases := make([]ast.Alias, 0)
 	parser := &parser{
 		tokens:       pTokens,
@@ -160,7 +159,6 @@ func (p *parser) synchronize() {
 }
 
 // fils out importStmt.Module and updates the parser state accordingly
-// TODO: check that type-dependencies are also imported and report errors otherwise
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -282,8 +280,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 // calls p.declaration and resolves and typechecks it
 func (p *parser) checkedDeclaration() ast.Statement {
 	stmt := p.declaration() // parse the node
-	// TODO: maybe introduce a NOOP node to handle such cases
-	if stmt != nil { // nil check, for alias declarations that aren't Ast Nodes
+	if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
 		if importStmt, ok := stmt.(*ast.ImportStmt); ok {
 			p.resolveModuleImport(importStmt)
 		}
@@ -2127,6 +2124,8 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 
 	// TODO: check this with precedence
 	// 		 remember to also check p.assigneable()
+	// 		 also check the order of the following 4 operators
+	//		 and maybe outsource them into seperate functions
 
 	for p.match(token.VON) {
 		tok := p.previous()
@@ -2159,6 +2158,19 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
+	// type-casting
+	for p.match(token.ALS) {
+		Type := p.parseType()
+		lhs = &ast.CastExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   token.NewEndPos(p.previous()),
+			},
+			Type: Type,
+			Lhs:  lhs,
+		}
+	}
+
 	// indexing
 	for p.match(token.AN) {
 		p.consume(token.DER, token.STELLE)
@@ -2176,26 +2188,12 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
-	// type-casting
-	for p.match(token.ALS) {
-		Type := p.parseType()
-		lhs = &ast.CastExpr{
-			Range: token.Range{
-				Start: lhs.GetRange().Start,
-				End:   token.NewEndPos(p.previous()),
-			},
-			Type: Type,
-			Lhs:  lhs,
-		}
-	}
-
 	return lhs
 }
 
-// x von y von z -> z.y.x
-
 // either ast.Ident or ast.Indexing
 // p.previous() must be of Type token.IDENTIFIER
+// TODO: fix precedence with braces
 func (p *parser) assigneable() ast.Assigneable {
 	ident := &ast.Ident{
 		Literal: p.previous(),
