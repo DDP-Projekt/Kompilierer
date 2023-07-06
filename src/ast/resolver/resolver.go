@@ -2,7 +2,6 @@
 The resolver package should not be used independently from the parser.
 It is not a complete Visitor itself, but is rather used to resolve single
 Nodes while parsing to ensure correct parsing of function-calls etc.
-
 Because of this you will find many r.visit(x) calls to be commented out.
 */
 package resolver
@@ -12,6 +11,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -202,21 +202,59 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if stmt.Module == nil {
 		return // TODO: handle this better
 	}
+
+	var errRange token.Range
+	checkTypeDependency := func(decl ast.Declaration) {
+		// check that typ is defined in the current module
+		checkSingleType := func(typ ddptypes.Type) {
+			typ = ddptypes.GetNestedUnderlying(typ) // for list types
+
+			if ddptypes.IsPrimitiveOrVoid(typ) {
+				return
+			}
+
+			if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
+				r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
+			}
+		}
+
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			checkSingleType(decl.Type) // return type
+			for _, typ := range decl.ParamTypes {
+				checkSingleType(typ.Type)
+			}
+		case *ast.VarDecl:
+			checkSingleType(decl.Type)
+		case *ast.StructDecl:
+			for _, field := range decl.Type.Fields {
+				checkSingleType(field.Type)
+			}
+		}
+	}
+
+	resolveDecl := func(decl ast.Declaration) {
+		if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), stmt.Module.GetIncludeFilename()))
+			return
+		}
+
+		checkTypeDependency(decl)
+	}
+
 	// every public symbol is imported
 	if len(stmt.ImportedSymbols) == 0 {
-		for name, decl := range stmt.Module.PublicDecls {
-			if existed := r.CurrentTable.InsertDecl(name, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.GetIncludeFilename()))
-			}
+		errRange = stmt.FileName.Range
+		for _, decl := range stmt.Module.PublicDecls {
+			resolveDecl(decl)
 		}
 		return
 	}
 	// only some symbols are imported
 	for _, name := range stmt.ImportedSymbols {
 		if decl, ok := stmt.Module.PublicDecls[name.Literal]; ok {
-			if existed := r.CurrentTable.InsertDecl(name.Literal, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, ast.TrimStringLit(stmt.FileName)))
-			}
+			errRange = name.Range
+			resolveDecl(decl)
 		} else {
 			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)))
 		}

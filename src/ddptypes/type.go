@@ -39,6 +39,10 @@ func IsVoid(t Type) bool {
 	return ok
 }
 
+func IsPrimitiveOrVoid(t Type) bool {
+	return IsPrimitive(t) || IsVoid(t)
+}
+
 func IsStruct(t Type) bool {
 	_, ok := t.(*StructType)
 	return ok
