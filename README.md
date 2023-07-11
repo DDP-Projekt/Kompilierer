@@ -26,21 +26,21 @@ Die meisten Features werden Programmierern bekannt sein.
 
 Jeder Ausdruck in DDP produziert einen Wert mit festem Typ.
 
-![expression.png](img/expression.png)
+<img src="img/expression.png" width="500px"></img>
 
 Variablen haben ebenfalls einen festen Typ.
 
-![variables.png](img/variables.png)
+<img src="img/variables.png" width="300px"></img>
 
 DDP hat auch Listen
 
-![lists.png](img/lists.png)
+<img src="img/lists.png" width="500px"></img>
 
 ### Anweisungsblöcke
 
 In DDP können mehrere Anweisungen in einem Block zusammengefasst werden.
 
-![block.png](img/block.png)
+<img src="img/block.png" width="300px"></img>
 
 Wie man sieht beginnt jeder Block mit einem ":".
 Variablen werden auf Unter-Blöcke übertragen, aber
@@ -55,12 +55,12 @@ um zu bestimmen wann ein Block fertig ist.
 
 Für simple Verzweigungen bietet DDP Wenn Anweisungen.
 
-![if.png](img/if.png)
+<img src="img/if.png" width="300px"></img>
 
 Das geht natürlich auch ohne Anweisungsblöcke, allerdings nur
 für einzelne Anweisungen.
 
-![if-oneling.png](img/if-oneline.png)
+<img src="img/if-oneline.png" width="400px"></img>
 
 ### Schleifen
 
@@ -68,25 +68,25 @@ DDP unterstützt die meisten bekannten Schleifen.
 
 While-Schleifen:
 
-![while.png](img/while.png)
+<img src="img/while.png" width="400px"></img>
 
 Do-While-Schleifen:
 
-![do-while.png](img/do-while.png)
+<img src="img/do-while.png" width="200px"></img>
 
 Und am wichtigsten, For-Schleifen:
 
-![for.png](img/for.png)
+<img src="img/for.png" width="400px"></img>
 
 Damit man nicht immer eine lange For-Schleife schreiben muss
 gibt es auch Wiederholungen:
 
-![repeat.png](img/repeat.png)
+<img src="img/repeat.png" width="150px"></img>
 
 So wie bei If-Anweisungen geht das alles auch mit einzelnen
 Anweisungen.
 
-![loop-oneline.png](img/loop-oneline.png)
+<img src="img/loop-oneline.png" width="300px"></img>
 
 ### Funktionen
 
@@ -95,7 +95,7 @@ denn sie erlauben es, so gut wie jeden deutschen Satz oder Ausdruck in Code zu v
 
 Das liegt an der Art wie man sie Aufruft, nämlich über so gennante Aliase.
 
-![function.png](img/function.png)
+<img src="img/function.png" width="800px"></img>
 
 Wie man sie wurde die Funktion foo wie ein normaler deutscher Ausdruck aufgerufen, ohne die grammatikalischen Regeln zu verletzten.
 
@@ -111,7 +111,7 @@ ein Modul einfach eine Quelldatei ist.
 Tatsächlich haben alle obigen Beispiele bereits das Module
 `"Duden/Ausgabe"` benutzt, um die `Schreibe x` Funktion nutzen zu können.
 
-![include1.png](img/include1.png)
+<img src="img/include1.png" width="200px"></img>
 
 Wenn man ein Module einbindet, werden nur die als `öffentliche` markierten Funktionen/Variablen sichtbar.
 
@@ -119,8 +119,8 @@ Man kann auch bloß die Funktionen/Variablen einbinden, die man braucht.
 
 include.ddp:
 
-![include2.png](img/include2.png)
+<img src="img/include2.png" width="400px"></img>
 
 main.ddp:
 
-![include3.png](img/include3.png)
+<img src="img/include3.png" width="200px"></img>
