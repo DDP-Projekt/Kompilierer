@@ -28,8 +28,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestKDDP(t *testing.T) {
-	err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
-		return runTests(t, "kddp", path, d, err, false)
+	root := "testdata/kddp"
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		return runTests(t, "kddp", path, root, d, err, false)
 	})
 
 	if err != nil {
@@ -38,8 +39,9 @@ func TestKDDP(t *testing.T) {
 }
 
 func TestStdlib(t *testing.T) {
-	err := filepath.WalkDir("./testdata/stdlib", func(path string, d fs.DirEntry, err error) error {
-		return runTests(t, "stdlib", path, d, err, false)
+	root := "testdata/stdlib"
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		return runTests(t, "stdlib", path, root, d, err, false)
 	})
 
 	if err != nil {
@@ -49,23 +51,25 @@ func TestStdlib(t *testing.T) {
 
 func TestMemory(t *testing.T) {
 	t.Run("KDDP", func(t *testing.T) {
-		if err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
-			return runTests(t, "kddp", path, d, err, true)
+		root := "testdata/kddp"
+		if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			return runTests(t, "kddp", path, root, d, err, true)
 		}); err != nil {
 			t.Errorf("Error walking the test directory: %s", err)
 		}
 	})
 
 	t.Run("Stdlib", func(t *testing.T) {
-		if err := filepath.WalkDir("./testdata/stdlib", func(path string, d fs.DirEntry, err error) error {
-			return runTests(t, "stdlib", path, d, err, true)
+		root := "testdata/stdlib"
+		if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			return runTests(t, "stdlib", path, root, d, err, true)
 		}); err != nil {
 			t.Errorf("Error walking the test directory: %s", err)
 		}
 	})
 }
 
-func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err error, testMemory bool) error {
+func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err error, testMemory bool) error {
 	if err != nil {
 		t.Errorf("Error walking %s: %s\nskipping this directory", path, err)
 		return fs.SkipDir
@@ -79,7 +83,11 @@ func runTests(t *testing.T, ignoreFile string, path string, d fs.DirEntry, err e
 		return nil
 	}
 
-	t.Run(d.Name(), func(t *testing.T) {
+	name, err := filepath.Rel(root, path)
+	if err != nil {
+		name = path
+	}
+	t.Run(filepath.ToSlash(name), func(t *testing.T) {
 		t.Parallel()
 
 		// read expected.txt
