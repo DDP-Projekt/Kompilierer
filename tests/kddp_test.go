@@ -124,12 +124,12 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 
 		// read input
 		input, err := os.Open(filepath.Join(path, "input.txt"))
-		defer input.Close() // close input file
 		// if input.txt exists
 		if err == nil {
 			// replace stdin with input.txt
 			cmd.Stdin = input
 		}
+		defer input.Close() // close input file
 
 		// get output
 		out, err := cmd.CombinedOutput()
