@@ -373,7 +373,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		comment = nil
 	}
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
 	p.decrease()
 	type_start := p.previous()
 	typ := p.parseType()
@@ -832,7 +832,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	for p.peek().Indent >= indent && !p.atEnd() {
 		p.consumeAny(token.DER, token.DEM)
 		n := -1
-		if p.match(token.OEFFENTLICHE) {
+		if p.match(token.OEFFENTLICHEN) {
 			n = -2
 		}
 		p.advance()

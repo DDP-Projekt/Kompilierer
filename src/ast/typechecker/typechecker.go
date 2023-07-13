@@ -10,6 +10,7 @@ import (
 )
 
 // holds state to check if the types of an AST are valid
+// TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
 	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
@@ -483,39 +484,25 @@ func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) {
 func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) {}
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 	rhs := t.Evaluate(stmt.Rhs)
+	var lhs ddptypes.Type
+
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists, _ := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && decl.(*ast.VarDecl).Type != rhs {
-			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
-				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-				rhs,
-				decl.(*ast.VarDecl).Type,
-			)
+		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar {
+			lhs = decl.(*ast.VarDecl).Type
 		}
 	case *ast.Indexing:
-		if typ := t.Evaluate(assign.Index); typ != ddptypes.ZAHL {
-			t.errExpr(ddperror.TYP_BAD_INDEXING, assign.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
-		}
+		lhs = t.Evaluate(assign)
+	case *ast.FieldAccess:
+		lhs = t.Evaluate(assign)
+	}
 
-		lhs := t.Evaluate(assign.Lhs)
-		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
-			t.errExpr(ddperror.TYP_BAD_INDEXING, assign.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
-		}
-		if ddptypes.IsList(lhs) {
-			lhs = lhs.(ddptypes.ListType).Underlying
-		} else if lhs == ddptypes.TEXT {
-			lhs = ddptypes.BUCHSTABE
-		}
-
-		if lhs != rhs {
-			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
-				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-				rhs,
-				lhs,
-			)
-		}
-	case *ast.FieldAccess: // TODO: remember to check for public/private fields
-		panic("TODO")
+	if lhs != rhs {
+		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
+			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+			rhs,
+			lhs,
+		)
 	}
 }
 func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) {
@@ -624,13 +611,15 @@ func isOfType(t ddptypes.Type, types ...ddptypes.Type) bool {
 
 // helper for
 func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.StructType) ddptypes.Type {
-	var fieldType ddptypes.Type
+	var fieldType ddptypes.Type = ddptypes.VoidType{}
+
 	for _, field := range structType.Fields {
 		if field.Name == Lhs.Literal.Literal {
 			fieldType = field.Type
 		}
 	}
-	if fieldType == nil {
+
+	if fieldType == ddptypes.Type(ddptypes.VoidType{}) {
 		article := "Ein"
 		switch structType.Gender() {
 		case ddptypes.FEMININ:
@@ -639,6 +628,19 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, Lhs, "%s %s hat kein Feld mit Name %s", article, structType.Name, Lhs.Literal.Literal)
 		return ddptypes.VoidType{}
 	}
+
+	// if the type was imported, check for public/private fields
+	if structDecl := t.CurrentTable.Declarations[structType.Name].(*ast.StructDecl); structDecl.Mod != t.Module {
+		for _, field := range structDecl.Fields {
+			if field.Name() == Lhs.Literal.Literal {
+				if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
+					t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+				}
+				break
+			}
+		}
+	}
+
 	return fieldType
 }
 

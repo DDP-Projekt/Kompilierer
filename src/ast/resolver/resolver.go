@@ -18,7 +18,7 @@ import (
 // holds state to resolve the symbols of an AST and its nodes
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
-// TODO: give the resolver access to the module so that it can do more work
+// TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
@@ -129,7 +129,7 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
 		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
 	} else if !isVar {
-		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal))
+		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", expr.Literal.Literal))
 	} else { // set the reference to the declaration
 		expr.Declaration = decl.(*ast.VarDecl)
 	}
@@ -278,7 +278,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
 			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
 		} else if !isVar {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal))
+			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", assign.Literal.Literal))
 		} else { // set the reference to the declaration
 			assign.Declaration = varDecl.(*ast.VarDecl)
 		}
@@ -286,7 +286,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 		r.visit(assign.Lhs)
 		r.visit(assign.Index)
 	case *ast.FieldAccess:
-		panic("TODO")
+		r.visit(assign.Rhs)
 	}
 	r.visit(stmt.Rhs)
 }
