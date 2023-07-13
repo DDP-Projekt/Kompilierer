@@ -15,3 +15,9 @@ func IsExternFunc(fun *FuncDecl) bool {
 func TrimStringLit(lit token.Token) string {
 	return strings.Trim(lit.Literal, "\"")
 }
+
+// returns wether table is the global scope
+// table.Enclosing == nil
+func IsGlobalScope(table *SymbolTable) bool {
+	return table.Enclosing == nil
+}

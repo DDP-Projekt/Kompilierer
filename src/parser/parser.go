@@ -225,7 +225,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 
 		// skip decls that are already defined
 		// the resolver will error here
-		_, exists, _ := p.resolver.CurrentTable.LookupDecl(decl.Name())
+		_, exists, _ := p.scope().LookupDecl(decl.Name())
 
 		if exists {
 			return
@@ -499,7 +499,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	name := p.previous()
 
 	// early error report if the name is already used
-	if _, existed, _ := p.resolver.CurrentTable.LookupDecl(name.Literal); existed { // insert the name of the current function
+	if _, existed, _ := p.scope().LookupDecl(name.Literal); existed { // insert the name of the current function
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
 	}
 
@@ -651,7 +651,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	aliasEnd := p.cur // save the end of the function declaration for later
 
-	if p.resolver.CurrentTable.Enclosing != nil {
+	if !ast.IsGlobalScope(p.scope()) {
 		perr(ddperror.SEM_NON_GLOBAL_FUNCTION, begin.Range, "Es können nur globale Funktionen deklariert werden")
 	}
 
@@ -719,7 +719,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	} else { // the function is defined in an extern file
 		// insert the name of the current function
-		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
+		if existed := p.scope().InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration
@@ -940,7 +940,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	p.consume(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
 	fun := p.previous()
 
-	decl, ok, isVar := p.resolver.CurrentTable.LookupDecl(fun.Literal)
+	decl, ok, isVar := p.scope().LookupDecl(fun.Literal)
 	if !ok {
 		p.err(ddperror.SEM_NAME_UNDEFINED, fun.Range, fmt.Sprintf("Der Name %s wurde noch nicht deklariert", fun.Literal))
 		return nil
@@ -2672,6 +2672,12 @@ func (p *parser) parseReturnType() ddptypes.Type {
 		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
 	}
 	return typ
+}
+
+// returns the current scope of the parser, resolver and typechecker
+func (p *parser) scope() *ast.SymbolTable {
+	// same pointer as the one of the typechecker
+	return p.resolver.CurrentTable
 }
 
 // create a sub-scope of the current scope

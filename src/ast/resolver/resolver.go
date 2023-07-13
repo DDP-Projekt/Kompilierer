@@ -74,7 +74,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
 	}
 
-	if decl.Public() && r.CurrentTable.Enclosing != nil {
+	if decl.Public() && !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Variablen können öffentlich sein")
 	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
@@ -99,7 +99,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 	*/
 }
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
-	if r.CurrentTable.Enclosing != nil {
+	if !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
 	}
 
