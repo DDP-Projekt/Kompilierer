@@ -13,21 +13,19 @@ import (
 type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
 	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
-	Errored            bool             // wether the typechecker found an error
 	latestReturnedType ddptypes.Type    // type of the last visited expression
-	file               string           // the filename of the module that is typechecked (used for error reporting)
+	Module             *ast.Module      // the module that is being typechecked
 }
 
-func New(symbols *ast.SymbolTable, errorHandler ddperror.Handler, file string) *Typechecker {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
-		CurrentTable:       symbols,
-		Errored:            false,
+		CurrentTable:       Mod.Ast.Symbols,
 		latestReturnedType: ddptypes.Void(),
-		file:               file,
+		Module:             Mod,
 	}
 }
 
@@ -48,18 +46,19 @@ func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 }
 
 // calls Evaluate but uses ddperror.EmptyHandler as error handler
+// and doesn't change the Module.Ast.Faulty flag
 func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
-	errHndl, errored := t.ErrorHandler, t.Errored
+	errHndl, faulty := t.ErrorHandler, t.Module.Ast.Faulty
 	t.ErrorHandler = ddperror.EmptyHandler
 	ty := t.Evaluate(expr)
-	t.ErrorHandler, t.Errored = errHndl, errored
+	t.ErrorHandler, t.Module.Ast.Faulty = errHndl, faulty
 	return ty
 }
 
 // helper for errors
 func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string) {
-	t.Errored = true
-	t.ErrorHandler(ddperror.New(code, Range, msg, t.file))
+	t.Module.Ast.Faulty = true
+	t.ErrorHandler(ddperror.New(code, Range, msg, t.Module.FileName))
 }
 
 // helper to not always pass range and file

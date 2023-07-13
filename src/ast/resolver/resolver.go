@@ -21,20 +21,18 @@ import (
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
-	Errored      bool             // wether the resolver errored
-	file         string           // the filename of the module that is typechecked (used for error reporting)
+	Module       *ast.Module      // the module that is being resolved
 }
 
 // create a new resolver to resolve the passed AST
-func New(Ast *ast.Ast, errorHandler ddperror.Handler, file string) *Resolver {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &Resolver{
 		ErrorHandler: errorHandler,
-		CurrentTable: Ast.Symbols,
-		Errored:      false,
-		file:         file,
+		CurrentTable: Mod.Ast.Symbols,
+		Module:       Mod,
 	}
 }
 
@@ -58,21 +56,27 @@ func (r *Resolver) exitScope() {
 
 // helper for errors
 func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
-	r.Errored = true
-	r.ErrorHandler(ddperror.New(code, Range, msg, r.file))
+	r.Module.Ast.Faulty = true
+	r.ErrorHandler(ddperror.New(code, Range, msg, r.Module.FileName))
 }
 
 func (*Resolver) BaseVisitor() {}
 
 // if a BadDecl exists the AST is faulty
 func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
-	r.Errored = true
+	r.Module.Ast.Faulty = true
 }
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
 		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+	}
+
+	if decl.Public() && r.CurrentTable.Enclosing != nil {
+		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Variablen können öffentlich sein")
+	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
 	}
 }
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
@@ -96,7 +100,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 
 // if a BadExpr exists the AST is faulty
 func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
-	r.Errored = true
+	r.Module.Ast.Faulty = true
 }
 func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	// check if the variable exists
@@ -161,7 +165,7 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
 
 // if a BadStmt exists the AST is faulty
 func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) {
-	r.Errored = true
+	r.Module.Ast.Faulty = true
 }
 func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) {
 	r.visit(stmt.Decl)
