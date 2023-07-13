@@ -1,0 +1,8 @@
+[simple struct declaration with all alias parameter combinations]
+Wir nennen die öffentliche Kombination aus
+	der öffentlichen Zahl x mit Standardwert 0,
+	der Zahl y mit Standardwert 0,
+einen Vektor, und erstellen sie so:
+	"der Nullvektor"
+
+Der öffentliche Vektor vec ist der Nullvektor.

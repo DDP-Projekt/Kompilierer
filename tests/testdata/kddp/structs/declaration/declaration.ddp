@@ -1,7 +1,7 @@
 [simple struct declaration with all alias parameter combinations]
 Wir nennen die Kombination aus
-	der Zahl x mit Standardwert 0,
-	der Zahl y mit Standardwert 0,
+	der Zahl x mit Standardwert 0, [private field]
+	der öffentlichen Zahl y mit Standardwert 0, [public field]
 einen Vektor2, und erstellen sie so:
 	"Nullvektor2" oder
 	"der Nullvektor2" oder [0 parameters]
@@ -19,7 +19,7 @@ einen Vektor3, und erstellen sie so:
 	"ein Vektor3 mit basis gleich <basis> und z gleich <z>" [all parameters]
 
 Der Vektor2 vec2 ist der Nullvektor2. [0 parameter constructor]
-Der Vektor3 vec3 ist der Nullvektor3. [0 parameter constructor]
+Der öffentliche Vektor3 vec3 ist der Nullvektor3. [0 parameter constructor + public decl]
 Der Vektor3 vec3_2 ist ein Vektor3 mit basis gleich (Nullvektor2) und z gleich 13. [all parameter constructor]
 
 [
