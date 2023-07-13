@@ -76,7 +76,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 
 	if decl.Public() && r.CurrentTable.Enclosing != nil {
 		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Variablen können öffentlich sein")
-	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
 }
@@ -99,6 +99,10 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 	*/
 }
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
+	if r.CurrentTable.Enclosing != nil {
+		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
+	}
+
 	for _, field := range decl.Fields {
 		if varDecl, isVar := field.(*ast.VarDecl); isVar {
 			r.visit(varDecl.InitVal)
@@ -108,7 +112,11 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
 	}
 	// insert the struct into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
+	}
+	// insert the struct into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
 	}
 }
 

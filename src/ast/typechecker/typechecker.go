@@ -97,14 +97,43 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) {
 			msg,
 		)
 	}
+
+	// TODO: error on the type-name range
+	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der Typ einer öffentlichen Variable muss ebenfalls öffentlich sein")
+	}
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) {
 	if !ast.IsExternFunc(decl) {
 		decl.Body.Accept(t)
 	}
+
+	// TODO: error on the type-name ranges
+	if decl.IsPublic {
+		if !IsPublicType(decl.Type, t.CurrentTable) {
+			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
+		}
+
+		hasNonPublicType := false
+		for _, typ := range decl.ParamTypes {
+			if !IsPublicType(typ.Type, t.CurrentTable) {
+				hasNonPublicType = true
+			}
+		}
+		if hasNonPublicType {
+			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
+		}
+	}
 }
 func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) {
 	for _, field := range decl.Fields {
+		// don't check BadDecls
+		if varDecl, isVar := field.(*ast.VarDecl); isVar {
+			// check that all public fields also are of public type
+			if decl.IsPublic && varDecl.IsPublic && !IsPublicType(varDecl.Type, t.CurrentTable) {
+				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, varDecl.NameTok.Range, "Wenn eine Struktur öffentlich ist, müssen alle ihre öffentlichen Felder von öffentlichem Typ sein")
+			}
+		}
 		t.visit(field)
 	}
 }
@@ -611,4 +640,27 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 		return ddptypes.VoidType{}
 	}
 	return fieldType
+}
+
+// reports wether the given type from this module of the given table is public
+// should only be called from the global scope
+// and with the SymbolTable that was in use when the type was declared
+func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
+	// a list-type is public if its underlying type is public
+	typ = ddptypes.GetNestedUnderlying(typ)
+
+	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
+	if structTyp, isStruct := typ.(*ddptypes.StructType); isStruct {
+		// get the corresponding decl from the current scope
+		// because it contains imported types as well
+		decl, _, _ := table.LookupDecl(structTyp.Name)
+		if structDecl, isStruct := decl.(*ast.StructDecl); isStruct {
+			// if the decl is from the current module check if it is public
+			// if it is from another module, it has to be public
+			return structDecl.IsPublic
+		}
+		return false // the corresponding name was not a struct decl
+	}
+
+	return true // non-struct types are predeclared and always "public"
 }

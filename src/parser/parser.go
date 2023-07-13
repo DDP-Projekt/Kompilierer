@@ -451,7 +451,8 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
 		comment = trailingComment
 	}
-	decl := &ast.VarDecl{
+
+	return &ast.VarDecl{
 		Range:    token.NewRange(begin, p.previous()),
 		Comment:  comment,
 		Type:     typ,
@@ -460,23 +461,6 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		Mod:      p.module,
 		InitVal:  expr,
 	}
-
-	if decl.IsPublic && !p.isPublicType(decl.Type) {
-		p.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, token.Range{
-			Start: type_start.Range.Start,
-			End:   name.Range.Start,
-		}, "Der Typ einer öffentlichen Variable muss ebenfalls öffentlich sein")
-	}
-
-	if isField {
-		return decl
-	}
-
-	// TODO: put this into the resolver
-	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
-		p.module.PublicDecls[decl.Name()] = decl
-	}
-	return decl
 }
 
 // parses a function declaration
@@ -522,10 +506,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	// parse the parameter declaration
 	// parameter names and types are declared seperately
 	var (
-		paramNames               []token.Token
-		paramTypes               []ddptypes.ParameterType
-		paramComments            []*token.Token
-		params_start, params_end token.Token // used for later error reporting
+		paramNames    []token.Token
+		paramTypes    []ddptypes.ParameterType
+		paramComments []*token.Token
 	)
 	if p.match(token.MIT) { // the function takes at least 1 parameter
 		singleParameter := true
@@ -534,7 +517,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		} else if !p.matchN(token.DEM, token.PARAMETER) {
 			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 		}
-		params_start = p.peek()
 		validate(p.consume(token.IDENTIFIER))
 		paramNames = append(paramNames, p.previous()) // append the first parameter name
 		paramComments = append(paramComments, p.getLeadingOrTrailingComment())
@@ -564,7 +546,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 				addParamName(p.previous())
 			}
 		}
-		params_end = p.previous()
 		// parse the types of the parameters
 		validate(p.consume(token.VOM, token.TYP))
 		firstType, ref := p.parseReferenceType()
@@ -601,9 +582,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	// parse the return type declaration
 	validate(p.consume(token.GIBT))
-	typ_start := p.peek() // used for later error reporting
 	Typ := p.parseReturnType()
-	typ_end := p.previous() // used for later error reporting
 	if Typ == nil {
 		valid = false
 	}
@@ -746,22 +725,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration
 	}
 
-	if decl.IsPublic {
-		if !p.isPublicType(decl.Type) {
-			p.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, token.NewRange(typ_start, typ_end), "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
-		}
-
-		hasNonPublicType := false
-		for _, typ := range decl.ParamTypes {
-			if !p.isPublicType(typ.Type) {
-				hasNonPublicType = true
-			}
-		}
-		if hasNonPublicType {
-			p.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, token.NewRange(params_start, params_end), "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
-		}
-	}
-
 	p.currentFunction = ""
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
@@ -873,17 +836,9 @@ func (p *parser) structDeclaration() ast.Declaration {
 			n = -2
 		}
 		p.advance()
-		fieldDecl := p.varDeclaration(n-1, true)
-		fields = append(fields, fieldDecl)
+		fields = append(fields, p.varDeclaration(n-1, true))
 		if !p.consume(token.COMMA) {
 			p.advance()
-		}
-		// don't check BadDecls
-		if varDecl, isVar := fieldDecl.(*ast.VarDecl); isVar {
-			// check that all public fields also are of public type
-			if isPublic && fieldDecl.Public() && !p.isPublicType(varDecl.Type) {
-				p.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, varDecl.Range, "Wenn eine Struktur öffentlich ist, müssen alle ihre öffentlichen Felder von öffentlichem Typ sein")
-			}
 		}
 	}
 
@@ -945,11 +900,6 @@ func (p *parser) structDeclaration() ast.Declaration {
 		}
 	}
 
-	// TODO: put this into the resolver
-	if p.resolver.CurrentTable.Enclosing != nil {
-		p.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, begin.Range, "Es können nur globale Strukturen deklariert werden")
-	}
-
 	structType := &ddptypes.StructType{
 		Name:       name.Literal,
 		GramGender: gender,
@@ -975,11 +925,6 @@ func (p *parser) structDeclaration() ast.Declaration {
 	p.aliases = append(p.aliases, toInterfaceSlice[ast.StructAlias, ast.Alias](structAliases)...)
 	if _, exists := p.typeNames[decl.Name()]; !exists {
 		p.typeNames[decl.Name()] = decl.Type
-	}
-
-	// TODO: put this into the resolver
-	if _, alreadyExists := p.module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
-		p.module.PublicDecls[decl.Name()] = decl
 	}
 
 	return decl
@@ -2190,6 +2135,7 @@ func (p *parser) assigneable() ast.Assigneable {
 	var ass ast.Assigneable = ident
 
 	for p.match(token.VON) {
+		p.consume(token.IDENTIFIER)
 		rhs := p.assigneable()
 		ass = &ast.FieldAccess{
 			Rhs:   rhs,
@@ -2528,28 +2474,6 @@ func (p *parser) isTypeName(t token.Token) bool {
 		return exists
 	}
 	return false
-}
-
-// reports wether the given type from this module is public
-// should only be called from the global scope
-func (p *parser) isPublicType(typ ddptypes.Type) bool {
-	// a list-type is public if its underlying type is public
-	typ = ddptypes.GetNestedUnderlying(typ)
-
-	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
-	if structTyp, isStruct := typ.(*ddptypes.StructType); isStruct {
-		// get the corresponding decl from the current scope
-		// because it contains imported types as well
-		decl, _, _ := p.resolver.CurrentTable.LookupDecl(structTyp.Name)
-		if structDecl, isStruct := decl.(*ast.StructDecl); isStruct {
-			// if the decl is from the current module check if it is public
-			// if it is from another module, it has to be public
-			return structDecl.IsPublic
-		}
-		return false // the corresponding name was not a struct decl
-	}
-
-	return true // non-struct types are predeclared and always "public"
 }
 
 // converts a TokenType to a Type
