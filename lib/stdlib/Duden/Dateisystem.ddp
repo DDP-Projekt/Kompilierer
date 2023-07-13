@@ -1,0 +1,92 @@
+[
+	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
+	Falls möglich Fehler auftreten, werden diese in fehler gespeichert.
+]
+Die öffentliche Funktion Schreibe_Text_Datei mit den Parametern Pfad, text und fehler vom Typ Text, Text und Text Referenz, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe den Text <text> in die Datei <Pfad> und speichere einen möglichen Fehler in <fehler>" oder
+	"Schreibe den Text <text> in die Datei <Pfad> und speichere einen moeglichen Fehler in <fehler>" oder
+	"die Anzahl der Bytes, die von <text> in <Pfad> geschrieben wurden, wobei ein möglicher Fehler in <fehler> gespeichert wurde" oder
+	"die Anzahl der Bytes, die von <text> in <Pfad> geschrieben wurden, wobei ein moeglicher Fehler in <fehler> gespeichert wurde"
+
+[
+	Die Funktion Lies_Text_Datei speichert den Inhalt der Datei, die an dem gegebenen Pfad liegt, in ref und gibt die Anzahl der Bytes der gelesenen Datei zurück.
+	Wenn ein Fehler auftreten sollte, ist der zurückgegebene Wert negativ und die Fehler meldung in ref geschrieben
+]
+Die öffentliche Funktion Lies_Text_Datei mit den Parametern Pfad und ref vom Typ Text und Text Referenz, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Lies den Text in <Pfad> und speichere ihn in <ref>" oder
+	"die Anzahl der Bytes, die aus <Pfad> gelesen und in <ref> gespeichert wurden"
+
+[
+	Überprüft ob der gegebene Pfad existiert (egal ob als Ordner oder Datei)
+]
+Die öffentliche Funktion Existiert_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Datei <Pfad> existiert" oder
+	"der Ordner <Pfad> existiert" oder
+	"der Pfad <Pfad> existiert"
+
+[
+	Überprüft ob der gegebene Pfad ein Ordner ist
+]
+Die öffentliche Funktion Ist_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<Pfad> ein Ordner ist"
+
+[
+	Überprüft ob der gegebene Pfad eine Datei ist
+]
+Die öffentliche Funktion Ist_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück, macht:
+	Wenn die Länge von Pfad gleich 0 ist oder Pfad ein Ordner ist, gib falsch zurück.
+	Gib wahr zurück.
+Und kann so benutzt werden:
+	"<Pfad> eine Datei ist"
+
+[
+	Erstellt rekursiv den Ordner Pfad.
+	Rekursiv -> alle benötigten zwischen Ordner werden ebenfalls erstellt.
+
+	Gibt zurück ob das Erstellen erfolgreich war.
+]
+Die öffentliche Funktion Erstelle_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Erstelle den Ordner <Pfad>" oder
+	"der Ordner <Pfad> erfolgreich erstellt wurde"
+
+[
+	!!!Nicht unbedingt sicher!!!
+
+	Löscht die gegebene Datei oder den gegebenen Ordner.
+	Im Falle eines Ordners wird rekursiv das gesamte Verzeichnis gelöscht.
+
+	Gibt zurück ob das Löschen erfolgreich war.
+]
+Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Lösche <Pfad>" oder
+	"<Pfad> erfolgreich gelöscht wurde" oder
+	"Lösche die Datei <Pfad>" oder
+	"die Datei <Pfad> erfolgreich gelöscht wurde" oder
+	"Lösche den Ordner <Pfad>" oder
+	"der Ordner <Pfad> erfolgreich gelöscht wurde"
+
+[
+	!!!Nicht unbedings sicher!!!
+
+	Verschiebt den Pfad zu NeuerName.
+	Kann auch zum Umbenennen benutzt werden.
+
+	Gibt zurück ob das Umbenennen erfolgreich war.
+]
+Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Verschiebe <Pfad> nach <NeuerName>" oder
+	"<Pfad> erfolgreich nach <NeuerName> verschoben wurde"

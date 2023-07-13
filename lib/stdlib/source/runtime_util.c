@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ddpwindows.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef DDPOS_WINDOWS
 #include <io.h>

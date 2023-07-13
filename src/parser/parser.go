@@ -99,8 +99,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	parser.resolver = resolver.New(parser.module.Ast, parser.errorHandler, name)
-	parser.typechecker = typechecker.New(parser.module.Ast.Symbols, parser.errorHandler, name)
+	parser.resolver = resolver.New(parser.module, parser.errorHandler, name)
+	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name)
 
 	return parser
 }
@@ -112,11 +112,6 @@ func (p *parser) parse() *ast.Module {
 		if stmt := p.checkedDeclaration(); stmt != nil {
 			p.module.Ast.Statements = append(p.module.Ast.Statements, stmt)
 		}
-	}
-
-	// if any error occured, the AST is faulty
-	if p.errored || p.resolver.Errored || p.typechecker.Errored {
-		p.module.Ast.Faulty = true
 	}
 
 	return p.module
@@ -379,12 +374,6 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
-	// TODO: put this into the resolver
-	if isPublic && p.resolver.CurrentTable.Enclosing != nil {
-		p.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, p.peekN(startDepth+1).Range, "Nur globale Variablen können öffentlich sein")
-		isPublic = false
-	}
-
 	p.decrease()
 	type_start := p.previous()
 	typ := p.parseType()

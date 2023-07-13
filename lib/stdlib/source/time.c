@@ -9,6 +9,8 @@
 #include "ddptypes.h"
 #include "ddpmemory.h"
 #include "ddpwindows.h"
+#include <time.h>
+#include <stdio.h>
 
 ddpint Zeit_Seit_Programmstart() {
 	return clock();

@@ -51,7 +51,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory llvm help test-complete
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory llvm help test-complete
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -109,12 +109,14 @@ $(OUT_DIR): LICENSE README.md
 	$(CP) LICENSE $(OUT_DIR)
 	$(CP) README.md $(OUT_DIR)
 
-clean:
-	@echo "deleting output directorie"
-	$(RM) $(OUT_DIR)
+clean: clean-outdir
 	cd $(KDDP_DIR) ; $(MAKE) clean
 	cd $(STD_DIR) ; $(MAKE) clean
 	cd $(RUN_DIR) ; $(MAKE) clean
+
+clean-outdir:
+	@echo "deleting output directorie"
+	$(RM) $(OUT_DIR)
 
 llvm:
 # clone the submodule
