@@ -1,5 +1,5 @@
-github.com/bafto/Go-LLVM-Bindings v0.0.0-20220418211425-9d34d266f573 h1:Sm1ANz/DMaq5y5vgDW+OXsWRzTutPEQJtPfU8ACoT2w=
-github.com/bafto/Go-LLVM-Bindings v0.0.0-20220418211425-9d34d266f573/go.mod h1:/RW0wtnLwxG0HVCy6BLbCJisWmi5QTyXcZEU98srmTY=
+github.com/bafto/Go-LLVM-Bindings v1.0.0 h1:UAGlWCRxOx0SBKDQjmap0amK8VBALAvLoHCxX7FN1hg=
+github.com/bafto/Go-LLVM-Bindings v1.0.0/go.mod h1:/RW0wtnLwxG0HVCy6BLbCJisWmi5QTyXcZEU98srmTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
