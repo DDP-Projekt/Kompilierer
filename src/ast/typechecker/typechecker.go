@@ -295,7 +295,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		} else if lhs == ddptypes.TEXT {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
-	case ast.BIN_FIELD_ACCESS: // TODO: remember to check for public/private fields
+	case ast.BIN_FIELD_ACCESS:
 		if ident, isIdent := expr.Lhs.(*ast.Ident); isIdent {
 			if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
 				// error was already reported by the resolver

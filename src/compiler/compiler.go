@@ -1224,6 +1224,8 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		} else {
 			err("non-list/string type passed as assignable/reference")
 		}
+	case *ast.FieldAccess:
+		panic("TODO")
 	}
 	err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil
