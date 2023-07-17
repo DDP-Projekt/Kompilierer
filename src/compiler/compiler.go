@@ -21,6 +21,67 @@ import (
 	"github.com/llir/irutil"
 )
 
+// compiles a mainModule and all it's imports
+// the passed module is written to w,
+// all it's imports are written to files corresponding
+// to their name
+// returns:
+//   - a map of .ll paths to their corresponding module
+//   - a set of all external dependendcies
+//   - an error
+func compileWithImports(mod *ast.Module, w io.Writer, errHndl ddperror.Handler) (map[string]*ast.Module, map[string]struct{}, error) {
+	compiledMods := map[string]*ast.Module{}
+	dependencies := map[string]struct{}{}
+	return compileWithImportsRec(mod, w, compiledMods, dependencies, true, errHndl)
+}
+
+func compileWithImportsRec(mod *ast.Module, w io.Writer, compiledMods map[string]*ast.Module, dependencies map[string]struct{}, isMainModule bool, errHndl ddperror.Handler) (map[string]*ast.Module, map[string]struct{}, error) {
+	// the ast must be valid (and should have been resolved and typechecked beforehand)
+	if mod.Ast.Faulty {
+		return nil, nil, fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
+	}
+
+	destPath := changeExtension(mod.FileName, ".ll")
+	// check if the module was already compiled
+	if _, alreadyCompiled := compiledMods[destPath]; !alreadyCompiled {
+		compiledMods[destPath] = mod // add the module to the set
+	} else {
+		return compiledMods, dependencies, nil // break the recursion if the module was already compiled
+	}
+
+	// add the external dependencies
+	for path := range mod.ExternalDependencies {
+		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(mod.FileName), path)); err != nil {
+			errHndl(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
+				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), mod.FileName))
+		} else {
+			path = abspath
+		}
+		dependencies[path] = struct{}{}
+	}
+
+	// compile this module
+	if _, err := newCompiler(mod, errHndl).compile(w, isMainModule); err != nil {
+		return nil, nil, err
+	}
+
+	// recursively compile the other dependencies
+	for _, imprt := range mod.Imports {
+		destPath := changeExtension(imprt.Module.FileName, ".ll")
+		destFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_WRONLY, os.ModePerm)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer destFile.Close()
+
+		if _, _, err := compileWithImportsRec(imprt.Module, destFile, compiledMods, dependencies, false, errHndl); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return compiledMods, dependencies, nil
+}
+
 // small wrapper for a ast.FuncDecl and the corresponding ir function
 type funcWrapper struct {
 	irFunc   *ir.Func      // the function in the llvm ir
@@ -80,7 +141,8 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
-func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
+// if isMainModule is false, no ddp_main function will be generated
+func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
 	c.mod.SourceFilename = c.mainModule.GetIncludeFilename() // set the module filename (optional metadata)
 
 	c.setup()
