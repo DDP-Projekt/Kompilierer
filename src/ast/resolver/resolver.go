@@ -177,25 +177,18 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if stmt.Module == nil {
 		return // TODO: handle this better
 	}
-	// every public symbol is imported
-	if len(stmt.ImportedSymbols) == 0 {
-		for name, decl := range stmt.Module.PublicDecls {
-			if existed := r.CurrentTable.InsertDecl(name, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, stmt.Module.GetIncludeFilename()))
-			}
-		}
-		return
-	}
-	// only some symbols are imported
-	for _, name := range stmt.ImportedSymbols {
-		if decl, ok := stmt.Module.PublicDecls[name.Literal]; ok {
-			if existed := r.CurrentTable.InsertDecl(name.Literal, decl); existed {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name.Literal, ast.TrimStringLit(stmt.FileName)))
-			}
+
+	// add imported symbols
+	ast.IterateImports(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+		if decl == nil {
+			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(stmt.FileName)))
 		} else {
-			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)))
+			if r.CurrentTable.InsertDecl(name, decl) {
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, tok.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, ast.TrimStringLit(stmt.FileName)))
+			}
 		}
-	}
+		return true
+	})
 }
 func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	switch assign := stmt.Var.(type) {

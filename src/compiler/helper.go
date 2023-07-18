@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 
 	"github.com/llir/llvm/ir/constant"
@@ -95,23 +94,4 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	}
 	err("no list type found for elementType %s", ty.Name())
 	return nil // unreachable
-}
-
-// prepends the decl.Name() with the current module prefix if necessery
-func (c *compiler) getDeclIrName(decl ast.Declaration) string {
-	isGlobal, isExtern := true, false
-	// only apply this to global variables/functions
-	if varDecl, ok := decl.(*ast.VarDecl); ok {
-		isGlobal = varDecl.IsGlobal
-	} else { // don't apply name mangling to extern functions as their name is important in linking
-		funDecl := decl.(*ast.FuncDecl)
-		isExtern = ast.IsExternFunc(funDecl)
-	}
-
-	name := decl.Name()
-	// add the prefix for the current module if the conditions are met
-	if isGlobal && !isExtern {
-		name = c.getModulePrefix(decl.Module()) + name
-	}
-	return name
 }

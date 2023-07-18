@@ -218,36 +218,21 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		}
 	}
 
-	if len(importStmt.ImportedSymbols) == 0 {
-		// add all public aliases
-		for name, decl := range importStmt.Module.PublicDecls {
-			funcDecl, isFunc := decl.(*ast.FuncDecl) // skip VarDecls
-			// skip functions that are already defined
-			// the resolver will error here
-			_, exists, _ := p.resolver.CurrentTable.LookupDecl(name)
-			// continue if the conditions are not met
-			if !isFunc || exists {
-				continue
-			}
-
-			// add all the aliases
-			addAliases(funcDecl.Aliases, importStmt.Range)
+	ast.IterateImports(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+		if decl == nil {
+			return true
 		}
-	} else {
-		// only add the imported ones
-		for _, tok := range importStmt.ImportedSymbols {
-			name := tok.Literal
-			// check that the name exists as a public declaration
-			_, exists := importStmt.Module.PublicDecls[name]
-			funcDecl, isFunc := importStmt.Module.PublicDecls[name].(*ast.FuncDecl)
-			if !isFunc || !exists {
-				continue
-			}
 
-			// add all the aliases
-			addAliases(funcDecl.Aliases, tok.Range)
+		funcDecl, isFunc := decl.(*ast.FuncDecl)
+		_, alreadyDefined, _ := p.resolver.CurrentTable.LookupDecl(name)
+
+		if !isFunc || alreadyDefined {
+			return true
 		}
-	}
+
+		addAliases(funcDecl.Aliases, tok.Range)
+		return true
+	})
 }
 
 func (p *parser) checkedDeclaration() ast.Statement {
