@@ -222,6 +222,7 @@ func (cmd *BuildCommand) Run() error {
 		ErrorHandler:            errorHandler,
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
+		LinkInModules:           true,
 	})
 	if err != nil {
 		return err

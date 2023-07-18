@@ -141,6 +141,7 @@ func (c *compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 		count,
 	)
 	irFunc.CallingConv = enum.CallingConvC
+	irFunc.Linkage = enum.LinkageInternal
 
 	arrType := listType.elementType.PtrType()
 
@@ -192,6 +193,7 @@ func (c *compiler) defineFree(listType *ddpIrListType) *ir.Func {
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
+	irFunc.Linkage = enum.LinkageInternal
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -244,6 +246,7 @@ func (c *compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
+	irFunc.Linkage = enum.LinkageInternal
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -303,6 +306,7 @@ func (c *compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 		list2,
 	)
 	irFunc.CallingConv = enum.CallingConvC
+	irFunc.Linkage = enum.LinkageInternal
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -364,8 +368,6 @@ func (c *compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 	return irFunc
 }
 
-var slice_error_string *ir.Global
-
 /*
 defines the ddp_x_slice function for a listType
 
@@ -392,6 +394,7 @@ func (c *compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 		index2.(*ir.Param),
 	)
 	irFunc.CallingConv = enum.CallingConvC
+	irFunc.Linkage = enum.LinkageInternal
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -435,12 +438,7 @@ func (c *compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 	i2_less_i1 := c.cbb.NewICmp(enum.IPredSLT, index2, index1)
 	c.createIfElese(i2_less_i1,
 		func() {
-			if slice_error_string == nil {
-				slice_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n"))
-				slice_error_string.Visibility = enum.VisibilityHidden
-				slice_error_string.Immutable = true
-			}
-			c.runtime_error(newInt(1), slice_error_string, index1, index2)
+			c.runtime_error(newInt(1), c.slice_error_string, index1, index2)
 		},
 		nil,
 	)
@@ -574,6 +572,7 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, list1, list2,
 		)
 		concListList.CallingConv = enum.CallingConvC
+		concListList.Linkage = enum.LinkageInternal
 
 		setup(concListList)
 
@@ -619,6 +618,7 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, list, scal,
 		)
 		concListScal.CallingConv = enum.CallingConvC
+		concListScal.Linkage = enum.LinkageInternal
 
 		setup(concListScal)
 
@@ -659,6 +659,7 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, scal1, scal2,
 		)
 		concScalScal.CallingConv = enum.CallingConvC
+		concScalScal.Linkage = enum.LinkageInternal
 
 		setup(concScalScal)
 
@@ -695,6 +696,7 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, scal, list,
 		)
 		concScalList.CallingConv = enum.CallingConvC
+		concScalList.Linkage = enum.LinkageInternal
 
 		setup(concScalList)
 

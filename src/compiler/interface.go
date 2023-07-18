@@ -1,11 +1,11 @@
 package compiler
 
 import (
+	"bytes"
 	"errors"
 	"io"
-	"os"
-	"path/filepath"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 	"github.com/bafto/Go-LLVM-Bindings/llvm"
@@ -87,14 +87,6 @@ func validateOptions(options *Options) error {
 
 // compile ddp-source-code from the given Options
 // if an error occured, the result is nil
-//
-// !!! Warning !!!
-// any temporary files created by this function will
-// share their name with the corresponding .ddp file
-// they were parsed from, but with a different
-// file extension (.ll, .o, .asm, etc.)
-// so be careful with file descriptors pointing to
-// such files
 func Compile(options Options) (*Result, error) {
 	// validate the options
 	err := validateOptions(&options)
@@ -118,23 +110,16 @@ func Compile(options Options) (*Result, error) {
 
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 
+	// TODO: optimize the resulting module
+
 	if !options.LinkInModules {
 		switch options.OutputType {
 		case OutputIR:
 			return newCompiler(ddp_main_module, options.ErrorHandler).compile(options.To, true)
 		case OutputAsm, OutputObj:
-			ll_path := changeExtension(ddp_main_module.FileName, ".ll")
-			options.Log("Erstelle temporäre Datei '%s'", ll_path)
-			temp_file, err := os.OpenFile(ll_path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.ModePerm)
-			if err != nil {
-				return nil, err
-			}
-			if options.DeleteIntermediateFiles {
-				defer options.Log("Lösche temporäre Datei '%s'", ll_path)
-				defer os.Remove(ll_path)
-			}
+			buffer := &bytes.Buffer{}
 
-			comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(temp_file, true)
+			comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(buffer, true)
 			if err != nil {
 				return nil, err
 			}
@@ -148,12 +133,11 @@ func Compile(options Options) (*Result, error) {
 			defer llctx.Dispose()
 
 			options.Log("Parse llvm-ir zu llvm-Module")
-			mod, ctx, err := llctx.parseLLFile(temp_file.Name())
+			mod, err := llctx.parseIR(buffer.Bytes())
 			if err != nil {
 				return nil, err
 			}
 			defer mod.Dispose()
-			defer ctx.Dispose()
 
 			file_type := llvm.AssemblyFile
 			if options.OutputType == OutputObj {
@@ -182,48 +166,41 @@ func Compile(options Options) (*Result, error) {
 	defer options.Log("Entsorge llvm Context")
 	defer llctx.Dispose()
 
-	ll_path := changeExtension(ddp_main_module.FileName, ".ll")
-	options.Log("Erstelle temporäre Datei '%s'", ll_path)
-	temp_file, err := os.OpenFile(ll_path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
+	ll_modules_ir := map[string]*bytes.Buffer{}
 
-	output_paths, dependencies, err := compileWithImports(ddp_main_module, temp_file, options.ErrorHandler)
+	dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) io.Writer {
+		ll_modules_ir[m.FileName] = &bytes.Buffer{}
+		return ll_modules_ir[m.FileName]
+	}, options.ErrorHandler)
 	if err != nil {
 		return nil, err
 	}
 
 	ll_modules := map[string]llvm.Module{}
-	for path, _ := range output_paths {
-		options.Log("Parse '%s' zu llvm-Module", path)
-		llmod, ctx, err := llctx.parseLLFile(path)
+	for name := range ll_modules_ir {
+		options.Log("Parse '%s' zu llvm-Module", name)
+		llmod, err := llctx.parseIR(ll_modules_ir[name].Bytes())
 		if err != nil {
+			ll_modules_ir[name].WriteTo(options.To) // TODO DEBUG
 			return nil, err
 		}
-		defer llmod.Dispose()
-		defer ctx.Dispose()
-		ll_modules[path] = llmod
-
-		if options.DeleteIntermediateFiles {
-			defer options.Log("Lösche temporäre Datei '%s'", path)
-			defer os.Remove(path)
-		}
+		ll_modules[name] = llmod
 	}
-	ll_main_module := ll_modules[ll_path]
-	delete(ll_modules, ll_path)
+	ll_main_module := ll_modules[ddp_main_module.FileName]
+	delete(ll_modules, ddp_main_module.FileName)
 
+	defer ll_main_module.Dispose()
 	options.Log("Linke llvm Module")
 	if err := llvmLinkAllModules(ll_main_module, mapToSlice(ll_modules)); err != nil {
 		return nil, err
 	}
 
-	if _, err := io.WriteString(options.To, ll_main_module.String()); err != nil {
-		return nil, err
-	}
-
 	// if we output llvm ir we are finished here
 	if options.OutputType == OutputIR {
+		if _, err := io.WriteString(options.To, ll_main_module.String()); err != nil {
+			return nil, err
+		}
+
 		return &Result{Dependencies: dependencies}, nil
 	}
 
@@ -240,10 +217,6 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	return &Result{Dependencies: dependencies}, nil
-}
-
-func changeExtension(path, ext string) string {
-	return path[:len(path)-len(filepath.Ext(path))] + ext
 }
 
 func mapToSlice[T comparable, U any](m map[T]U) []U {

@@ -22,10 +22,14 @@ type llvmContext struct {
 	targetMachine llvm.TargetMachine
 	targetData    llvm.TargetData
 	passManager   llvm.PassManager
+	context       llvm.Context
 }
 
 func newllvmContext() (llctx *llvmContext, err error) {
 	llctx = &llvmContext{}
+
+	llctx.context = llvm.NewContext()
+
 	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
 	if err != nil {
 		return nil, err
@@ -66,6 +70,7 @@ func newllvmContext() (llctx *llvmContext, err error) {
 }
 
 func (llctx *llvmContext) Dispose() {
+	llctx.context.Dispose()
 	llctx.targetMachine.Dispose()
 	llctx.targetData.Dispose()
 	llctx.passManager.Dispose()
@@ -73,19 +78,18 @@ func (llctx *llvmContext) Dispose() {
 
 // parses a .ll file and returns the module and context
 // both need to be disposed in case of success
-func (llctx *llvmContext) parseLLFile(path string) (llvm.Module, llvm.Context, error) {
-	ctx := llvm.NewContext()
+func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
+	buf := llvm.NewMemoryBufferFromRangeCopy(llvm_ir)
 
-	mod, err := llvm.ParseIRFile(path, ctx)
+	mod, err := llvm.ParseIRFromMemoryBuffer(buf, llctx.context)
 	if err != nil {
-		ctx.Dispose()
-		return llvm.Module{}, llvm.Context{}, err
+		return llvm.Module{}, err
 	}
 
 	mod.SetDataLayout(llctx.targetData.String())
 	mod.SetTarget(llctx.targetMachine.Triple())
 
-	return mod, ctx, nil
+	return mod, nil
 }
 
 // optimizes the given module and returns wether it was modified
@@ -104,10 +108,15 @@ func (llctx *llvmContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFi
 	return w.Write(memBuffer.Bytes())
 }
 
-// in case of failure, dest should not be used
+// links all sources into dest, destroying them
+// in case of failure, all sources that were not used yet are disposed
+// and dest should not be used
 func llvmLinkAllModules(dest llvm.Module, sources []llvm.Module) error {
-	for _, src := range sources {
+	for i, src := range sources {
 		if err := llvm.LinkModules(dest, src); err != nil {
+			for _, mod := range sources[i+1:] {
+				mod.Dispose()
+			}
 			return err
 		}
 	}

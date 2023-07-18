@@ -1,6 +1,10 @@
 package compiler
 
 import (
+	"path/filepath"
+	"strings"
+
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 
 	"github.com/llir/llvm/ir/constant"
@@ -94,4 +98,20 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	}
 	err("no list type found for elementType %s", ty.Name())
 	return nil // unreachable
+}
+
+// creates the name of the module_init function
+func (c *compiler) getModuleInitName(mod *ast.Module) string {
+	return "ddp_" + strings.TrimSuffix(
+		strings.ReplaceAll(
+			strings.ReplaceAll(
+				filepath.ToSlash(mod.FileName),
+				"/",
+				"_",
+			),
+			":",
+			"_",
+		),
+		".ddp",
+	) + "_init"
 }
