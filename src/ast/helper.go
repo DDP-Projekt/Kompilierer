@@ -27,7 +27,7 @@ func TrimStringLit(lit token.Token) string {
 //
 // the return value of fun indicates wether the iteration should continue or if we break
 // true means continue, false means break
-func IterateImports(imprt *ImportStmt, fun func(name string, decl Declaration, tok token.Token) bool) {
+func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declaration, tok token.Token) bool) {
 	if len(imprt.ImportedSymbols) == 0 {
 		if imprt.Module == nil {
 			return

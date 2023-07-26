@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"runtime/debug"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
@@ -14,9 +15,10 @@ import (
 type OutputType int
 
 const (
-	OutputIR OutputType = iota
-	OutputAsm
-	OutputObj
+	OutputIR  OutputType = iota // textual llvm ir
+	OutputBC                    // llvm bitcode currently unused
+	OutputAsm                   // assembly depending on the target platform
+	OutputObj                   // object file depending on the target platform
 )
 
 // Options on how to compile the given source code
@@ -88,6 +90,8 @@ func validateOptions(options *Options) error {
 // compile ddp-source-code from the given Options
 // if an error occured, the result is nil
 func Compile(options Options) (*Result, error) {
+	defer panic_wrapper()
+
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
@@ -109,8 +113,6 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
-
-	// TODO: optimize the resulting module
 
 	if !options.LinkInModules {
 		switch options.OutputType {
@@ -146,6 +148,8 @@ func Compile(options Options) (*Result, error) {
 			} else {
 				options.Log("Kompiliere llvm-ir zu Assembler")
 			}
+
+			llctx.optimizeModule(mod)
 
 			if _, err := llctx.compileModule(mod, file_type, options.To); err != nil {
 				return nil, err
@@ -204,6 +208,8 @@ func Compile(options Options) (*Result, error) {
 		return &Result{Dependencies: dependencies}, nil
 	}
 
+	llctx.optimizeModule(ll_main_module)
+
 	file_type := llvm.AssemblyFile
 	if options.OutputType == OutputObj {
 		file_type = llvm.ObjectFile
@@ -219,10 +225,64 @@ func Compile(options Options) (*Result, error) {
 	return &Result{Dependencies: dependencies}, nil
 }
 
+// writes the definitions of the inbuilt ddp list types to w
+func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler) error {
+	defer panic_wrapper()
+
+	irBuff := bytes.Buffer{}
+	if err := newCompiler(nil, errorHandler).dumpListDefinitions(&irBuff); err != nil {
+		return err
+	}
+
+	llctx, err := newllvmContext()
+	if err != nil {
+		return err
+	}
+	defer llctx.Dispose()
+
+	list_mod, err := llctx.parseIR(irBuff.Bytes())
+	if err != nil {
+		return err
+	}
+	defer list_mod.Dispose()
+
+	llctx.optimizeModule(list_mod)
+
+	switch outputType {
+	case OutputIR:
+		_, err := io.WriteString(w, list_mod.String())
+		return err
+	case OutputAsm:
+		_, err := llctx.compileModule(list_mod, llvm.AssemblyFile, w)
+		return err
+	case OutputObj:
+		_, err := llctx.compileModule(list_mod, llvm.ObjectFile, w)
+		return err
+	}
+	return errors.New("invalid compiler.OutputType")
+}
+
 func mapToSlice[T comparable, U any](m map[T]U) []U {
 	result := make([]U, 0, len(m))
 	for _, v := range m {
 		result = append(result, v)
 	}
 	return result
+}
+
+// wraps a panic with more information and re-panics
+func panic_wrapper() {
+	if err := recover(); err != nil {
+		if err, ok := err.(*CompilerError); ok {
+			panic(err)
+		}
+
+		stack_trace := debug.Stack()
+		panic(&CompilerError{
+			Err:        err,
+			Msg:        "unknown compiler panic",
+			ModulePath: "not found",
+			StackTrace: stack_trace,
+		})
+	}
 }

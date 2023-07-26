@@ -76,8 +76,8 @@ func (llctx *llvmContext) Dispose() {
 	llctx.passManager.Dispose()
 }
 
-// parses a .ll file and returns the module and context
-// both need to be disposed in case of success
+// parses a .ll file and returns the module in with llctx.Context as c ontext
+// the module needs to be disposed
 func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 	buf := llvm.NewMemoryBufferFromRangeCopy(llvm_ir)
 

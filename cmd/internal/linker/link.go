@@ -44,7 +44,7 @@ func validateOptions(options *Options) error {
 }
 
 // link the given input file (a .o file compiled from ddp-source-code) with the given dependencies and flags
-// to the ddpruntime and stdlib into a executable
+// to the ddpruntime, stdlib and ddp_list_types_defs into a executable
 func LinkDDPFiles(options Options) ([]byte, error) {
 	err := validateOptions(&options)
 	if err != nil {
@@ -58,7 +58,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	}
 
 	var (
-		link_objects = map[string][]string{}       // library-search-paths to librarie filename map
+		link_objects = map[string][]string{}       // library-search-paths to library-filename map
 		input_files  = []string{options.InputFile} // all input files (.o)
 	)
 
@@ -71,7 +71,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 		// stdlib and runtime are linked by default
 		// ignore them because of the Duden
 		switch filename {
-		case "libddpstdlib.a", "libddpruntime.a":
+		case "libddpstdlib.a", "libddpruntime.a", ddppath.LIST_DEFS_NAME + ".o":
 			continue
 		}
 
@@ -104,16 +104,19 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	for k := range link_objects {
 		args = append(args, "-L"+k)
 	}
+
 	// add the input files
 	args = append(args, input_files...)
-	// add default dependencies
-	args = append(args, "-lddpstdlib", "-lddpruntime", "-lm")
+
 	// add external dependencies
 	for _, libs := range link_objects {
 		for _, lib := range libs {
 			args = append(args, "-l:"+lib)
 		}
 	}
+
+	// add default dependencies at the end, because dependencies might depend on the ddp runtime and list_types_defs
+	args = append(args, "-lddpstdlib", ddppath.DDP_List_Types_Defs_O, "-lddpruntime", "-lm")
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {

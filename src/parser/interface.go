@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
@@ -56,6 +57,8 @@ func validateOptions(options *Options) error {
 // parse the provided ddp-source-code from the given Options
 // if an error occured the resulting Ast is nil
 func Parse(options Options) (*ast.Module, error) {
+	defer panic_wrapper()
+
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
@@ -78,4 +81,22 @@ func Parse(options Options) (*ast.Module, error) {
 		module.FileName = path
 	}
 	return module, nil
+}
+
+// wraps a panic with more information and re-panics
+func panic_wrapper() {
+	if err := recover(); err != nil {
+		if err, ok := err.(*ParserError); ok {
+			panic(err)
+		}
+
+		stack_trace := debug.Stack()
+		err, _ := err.(error)
+		panic(&ParserError{
+			Err:        err,
+			Msg:        "unknown parser panic",
+			ModulePath: "not found",
+			StackTrace: stack_trace,
+		})
+	}
 }

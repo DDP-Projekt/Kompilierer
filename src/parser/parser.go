@@ -105,6 +105,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 
 // parse the provided tokens into an Ast
 func (p *parser) parse() *ast.Module {
+	defer parser_panic_wrapper(p)
+
 	// main parsing loop
 	for !p.atEnd() {
 		if stmt := p.checkedDeclaration(); stmt != nil {
@@ -218,7 +220,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		}
 	}
 
-	ast.IterateImports(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+	ast.IterateImportedDecls(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
 			return true
 		}
@@ -2173,7 +2175,7 @@ func (p *parser) parseIntLit() *ast.IntLit {
 }
 
 // converts a TokenType to a Type
-func tokenTypeToType(t token.TokenType) ddptypes.Type {
+func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 	switch t {
 	case token.NICHTS:
 		return ddptypes.Void()
@@ -2188,7 +2190,8 @@ func tokenTypeToType(t token.TokenType) ddptypes.Type {
 	case token.TEXT:
 		return ddptypes.String()
 	}
-	panic(fmt.Sprintf("invalid TokenType (%d)", t))
+	p.panic("invalid TokenType (%d)", t)
+	return ddptypes.Void() // unreachable
 }
 
 // parses tokens into a DDPType
@@ -2203,12 +2206,12 @@ func (p *parser) parseType() ddptypes.Type {
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return tokenTypeToType(p.previous().Type)
+		return p.tokenTypeToType(p.previous().Type)
 	case token.BOOLEAN, token.TEXT:
 		if !p.match(token.LISTE) {
-			return tokenTypeToType(p.previous().Type)
+			return p.tokenTypeToType(p.previous().Type)
 		}
-		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(p.tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
 		return ddptypes.List(ddptypes.ZAHL)
@@ -2242,7 +2245,7 @@ func (p *parser) parseListType() ddptypes.Type {
 	}
 	switch p.peekN(-2).Type {
 	case token.BOOLEAN, token.TEXT:
-		return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive)
+		return ddptypes.List(p.tokenTypeToType(p.peekN(-2).Type).Primitive)
 	case token.ZAHLEN:
 		return ddptypes.List(ddptypes.ZAHL)
 	case token.KOMMAZAHLEN:
@@ -2266,21 +2269,21 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return tokenTypeToType(p.previous().Type), false
+		return p.tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return ddptypes.List(tokenTypeToType(p.peekN(-2).Type).Primitive), false
+			return ddptypes.List(p.tokenTypeToType(p.peekN(-2).Type).Primitive), false
 		} else if p.match(token.LISTEN) {
 			if !p.consume(token.REFERENZ) {
 				// report the error on the REFERENZ token, but still advance
 				// because there is a valid token afterwards
 				p.advance()
 			}
-			return ddptypes.List(tokenTypeToType(p.peekN(-3).Type).Primitive), true
+			return ddptypes.List(p.tokenTypeToType(p.peekN(-3).Type).Primitive), true
 		} else if p.match(token.REFERENZ) {
-			return ddptypes.Primitive(tokenTypeToType(p.peekN(-2).Type).Primitive), true
+			return ddptypes.Primitive(p.tokenTypeToType(p.peekN(-2).Type).Primitive), true
 		}
-		return tokenTypeToType(p.previous().Type), false
+		return p.tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
 			return ddptypes.List(ddptypes.ZAHL), false

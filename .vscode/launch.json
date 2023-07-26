@@ -15,6 +15,19 @@
 				"--wortreich",
 				"--nichts_loeschen"
 			]
+		},
+		{
+			"name": "Launch dump-list-defs to build/ddp_list_defs",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/kddp/",
+			"args": [
+				"dump-list-defs",
+				"-o",
+				"${workspaceFolder}/build/ddp_list_defs",
+				"--llvm_ir"
+			]
 		}
 	]
 }

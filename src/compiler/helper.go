@@ -68,7 +68,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.void
 		}
 	}
-	err("illegal ddp type to ir type conversion (%s)", ddpType)
+	c.err("illegal ddp type to ir type conversion (%s)", ddpType)
 	return nil // unreachable
 }
 
@@ -96,13 +96,13 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	case c.ddpstring:
 		return c.ddpstringlist
 	}
-	err("no list type found for elementType %s", ty.Name())
+	c.err("no list type found for elementType %s", ty.Name())
 	return nil // unreachable
 }
 
 // creates the name of the module_init function
-func (c *compiler) getModuleInitName(mod *ast.Module) string {
-	return "ddp_" + strings.TrimSuffix(
+func (c *compiler) getModuleInitDisposeName(mod *ast.Module) (string, string) {
+	name := "ddp_" + strings.TrimSuffix(
 		strings.ReplaceAll(
 			strings.ReplaceAll(
 				filepath.ToSlash(mod.FileName),
@@ -113,5 +113,6 @@ func (c *compiler) getModuleInitName(mod *ast.Module) string {
 			"_",
 		),
 		".ddp",
-	) + "_init"
+	)
+	return name + "_init", name + "_dispose"
 }

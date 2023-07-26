@@ -17,6 +17,7 @@ import (
 
 var test_dirs_flag = flag.String("test_dirs", "", "")
 var test_dirs []string
+var timeout = 10
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -48,6 +49,7 @@ func TestStdlib(t *testing.T) {
 }
 
 func TestMemory(t *testing.T) {
+	timeout = 20
 	t.Run("KDDP", func(t *testing.T) {
 		if err := filepath.WalkDir("./testdata/kddp", func(path string, d fs.DirEntry, err error) error {
 			return runTests(t, "kddp", path, d, err, true)

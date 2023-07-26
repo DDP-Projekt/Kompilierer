@@ -179,7 +179,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	}
 
 	// add imported symbols
-	ast.IterateImports(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+	ast.IterateImportedDecls(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
 			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(stmt.FileName)))
 		} else {

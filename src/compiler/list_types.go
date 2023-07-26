@@ -82,6 +82,7 @@ func (t *ddpIrListType) EqualsFunc() *ir.Func {
 // defines the struct of a list type
 // and all the necessery functions
 // from the given elementType and name
+// if declarationOnly is true, all functions are only extern declarations
 // C-Equivalent:
 /*
 	struct listtypename {
@@ -90,7 +91,7 @@ func (t *ddpIrListType) EqualsFunc() *ir.Func {
 		ddpint cap;
 	}
 */
-func (c *compiler) defineListType(name string, elementType ddpIrType) *ddpIrListType {
+func (c *compiler) createListType(name string, elementType ddpIrType, declarationOnly bool) *ddpIrListType {
 	list := &ddpIrListType{}
 	list.elementType = elementType
 	list.typ = c.mod.NewTypeDef(name, types.NewStruct(
@@ -100,16 +101,16 @@ func (c *compiler) defineListType(name string, elementType ddpIrType) *ddpIrList
 	))
 	list.ptr = ptr(list.typ)
 
-	list.fromConstantsIrFun = c.defineFromConstants(list)
-	list.freeIrFun = c.defineFree(list)
-	list.deepCopyIrFun = c.defineDeepCopy(list)
-	list.equalsIrFun = c.defineEquals(list)
-	list.sliceIrFun = c.defineSlice(list)
+	list.fromConstantsIrFun = c.createFromConstants(list, declarationOnly)
+	list.freeIrFun = c.createFree(list, declarationOnly)
+	list.deepCopyIrFun = c.createDeepCopy(list, declarationOnly)
+	list.equalsIrFun = c.createEquals(list, declarationOnly)
+	list.sliceIrFun = c.createSlice(list, declarationOnly)
 
 	list.list_list_concat_IrFunc,
 		list.list_scalar_concat_IrFunc,
 		list.scalar_scalar_concat_IrFunc,
-		list.scalar_list_concat_IrFunc = c.defineConcats(list)
+		list.scalar_list_concat_IrFunc = c.createConcats(list, declarationOnly)
 
 	return list
 }
@@ -130,7 +131,7 @@ It also sets ret->len and ret->cap accordingly
 signature:
 c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
-func (c *compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
+func (c *compiler) createFromConstants(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	// declare the parameters to use them as values
 	ret, count := ir.NewParam("ret", listType.ptr), ir.NewParam("count", ddpint)
 	// declare the function
@@ -141,7 +142,11 @@ func (c *compiler) defineFromConstants(listType *ddpIrListType) *ir.Func {
 		count,
 	)
 	irFunc.CallingConv = enum.CallingConvC
-	irFunc.Linkage = enum.LinkageInternal
+
+	if declarationOnly {
+		irFunc.Linkage = enum.LinkageExternal
+		return irFunc
+	}
 
 	arrType := listType.elementType.PtrType()
 
@@ -184,7 +189,7 @@ should not be used after being freed.
 signature:
 c.void.IrType() ddp_free_x(x* list)
 */
-func (c *compiler) defineFree(listType *ddpIrListType) *ir.Func {
+func (c *compiler) createFree(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	list := ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -193,7 +198,11 @@ func (c *compiler) defineFree(listType *ddpIrListType) *ir.Func {
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
-	irFunc.Linkage = enum.LinkageInternal
+
+	if declarationOnly {
+		irFunc.Linkage = enum.LinkageExternal
+		return irFunc
+	}
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -236,7 +245,7 @@ For non-primitive types deepCopies are created
 signature:
 c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
-func (c *compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
+func (c *compiler) createDeepCopy(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	ret, list := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -246,7 +255,11 @@ func (c *compiler) defineDeepCopy(listType *ddpIrListType) *ir.Func {
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
-	irFunc.Linkage = enum.LinkageInternal
+
+	if declarationOnly {
+		irFunc.Linkage = enum.LinkageExternal
+		return irFunc
+	}
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -296,7 +309,7 @@ ddp_x_equal checks wether the two lists are equal
 signature:
 bool ddp_x_equal(x* list1, x* list2)
 */
-func (c *compiler) defineEquals(listType *ddpIrListType) *ir.Func {
+func (c *compiler) createEquals(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	list1, list2 := ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -306,7 +319,11 @@ func (c *compiler) defineEquals(listType *ddpIrListType) *ir.Func {
 		list2,
 	)
 	irFunc.CallingConv = enum.CallingConvC
-	irFunc.Linkage = enum.LinkageInternal
+
+	if declarationOnly {
+		irFunc.Linkage = enum.LinkageExternal
+		return irFunc
+	}
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -376,7 +393,7 @@ ddp_x_slice slices a list by two indices
 signature:
 bool ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
-func (c *compiler) defineSlice(listType *ddpIrListType) *ir.Func {
+func (c *compiler) createSlice(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	var (
 		ret  *ir.Param = ir.NewParam("ret", listType.ptr)
 		list *ir.Param = ir.NewParam("list", listType.ptr)
@@ -394,7 +411,11 @@ func (c *compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 		index2.(*ir.Param),
 	)
 	irFunc.CallingConv = enum.CallingConvC
-	irFunc.Linkage = enum.LinkageInternal
+
+	if declarationOnly {
+		irFunc.Linkage = enum.LinkageExternal
+		return irFunc
+	}
 
 	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
 
@@ -505,7 +526,7 @@ defines the ddp_x_y_verkettet functions for a listType
 and returns them in the order:
 list_list, list_scalar, scalar_scalar, scalar_list
 */
-func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
+func (c *compiler) createConcats(listType *ddpIrListType, declarationOnly bool) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
 	// reusable parts for all 4 functions
 
 	// non-primitive types are passed as pointers
@@ -572,7 +593,11 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, list1, list2,
 		)
 		concListList.CallingConv = enum.CallingConvC
-		concListList.Linkage = enum.LinkageInternal
+
+		if declarationOnly {
+			concListList.Linkage = enum.LinkageExternal
+			return concListList
+		}
 
 		setup(concListList)
 
@@ -618,7 +643,11 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, list, scal,
 		)
 		concListScal.CallingConv = enum.CallingConvC
-		concListScal.Linkage = enum.LinkageInternal
+
+		if declarationOnly {
+			concListScal.Linkage = enum.LinkageExternal
+			return concListScal
+		}
 
 		setup(concListScal)
 
@@ -659,7 +688,11 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, scal1, scal2,
 		)
 		concScalScal.CallingConv = enum.CallingConvC
-		concScalScal.Linkage = enum.LinkageInternal
+
+		if declarationOnly {
+			concScalScal.Linkage = enum.LinkageExternal
+			return concScalScal
+		}
 
 		setup(concScalScal)
 
@@ -696,7 +729,11 @@ func (c *compiler) defineConcats(listType *ddpIrListType) (*ir.Func, *ir.Func, *
 			ret, scal, list,
 		)
 		concScalList.CallingConv = enum.CallingConvC
-		concScalList.Linkage = enum.LinkageInternal
+
+		if declarationOnly {
+			concScalList.Linkage = enum.LinkageExternal
+			return concScalList
+		}
 
 		setup(concScalList)
 
