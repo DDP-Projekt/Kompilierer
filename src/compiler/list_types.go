@@ -473,7 +473,7 @@ func (c *compiler) defineSlice(listType *ddpIrListType) *ir.Func {
 		*/
 
 		retArr := c.loadStructField(ret, arr_field_index)
-		j := c.cbb.NewAlloca(i64) // the j index variable
+		j := c.NewAlloca(i64) // the j index variable
 		c.cbb.NewStore(zero, j)
 		c.createFor(index1,
 			// i <= index2 && i < list->len
