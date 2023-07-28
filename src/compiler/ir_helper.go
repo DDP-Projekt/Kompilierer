@@ -152,7 +152,7 @@ func (c *compiler) createWhile(cond func() value.Value, genBody func()) {
 // c.cbb and c.cf must be set/restored correctly by the caller
 func (c *compiler) createFor(iterStart value.Value, genCond func(index value.Value) value.Value, genBody func(index value.Value)) {
 	// initialize counter to 0 (ddpint counter = 0)
-	counter := c.cbb.NewAlloca(i64)
+	counter := c.NewAlloca(i64)
 	c.cbb.NewStore(iterStart, counter)
 
 	// initialize the 4 blocks

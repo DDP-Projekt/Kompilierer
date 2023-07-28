@@ -388,7 +388,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 		varLocation = globalDef
 	} else {
 		c.commentNode(c.cbb, d, d.Name())
-		varLocation = c.cf.Blocks[0].NewAlloca(Typ.IrType())
+		varLocation = c.NewAlloca(Typ.IrType())
 	}
 
 	Var := c.scp.addVar(d.Name(), varLocation, Typ, false)
@@ -470,10 +470,10 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType, true)
 			} else if !irType.IsPrimitive() { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
 			} else { // primitive types don't need any special handling
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -521,7 +521,7 @@ func (c *compiler) VisitIdent(e *ast.Ident) {
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
 		c.latestReturn = c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 	} else { // non-primitives need to be deep copied
-		dest := c.cbb.NewAlloca(Var.typ.IrType())
+		dest := c.NewAlloca(Var.typ.IrType())
 		c.latestReturn = c.deepCopyInto(dest, Var.val, Var.typ)
 	}
 	c.latestReturnType = Var.typ
@@ -550,7 +550,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 		if elementType.IsPrimitive() {
 			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
 		} else {
-			dest := c.cbb.NewAlloca(elementType.IrType())
+			dest := c.NewAlloca(elementType.IrType())
 			c.latestReturn = c.deepCopyInto(dest, elementPtr, elementType)
 		}
 	}
@@ -585,14 +585,14 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
-	dest := c.cbb.NewAlloca(c.ddpstring.typ)
+	dest := c.NewAlloca(c.ddpstring.typ)
 	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
 	c.latestReturn = dest
 	c.latestReturnType = c.ddpstring
 }
 func (c *compiler) VisitListLit(e *ast.ListLit) {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
-	list := c.cbb.NewAlloca(listType.IrType())
+	list := c.NewAlloca(listType.IrType())
 
 	// get the listLen as irValue
 	var listLen value.Value = zero
@@ -786,7 +786,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				resultTyp = c.getListType(lhsTyp)
 			}
 		}
-		result = c.cbb.NewAlloca(resultTyp.IrType())
+		result = c.NewAlloca(resultTyp.IrType())
 
 		// string concatenations
 		var concat_func *ir.Func = nil
@@ -943,7 +943,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 					if listType.elementType.IsPrimitive() { // primitives are simply loaded
 						c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
 					} else {
-						dest := c.cbb.NewAlloca(listType.elementType.IrType())
+						dest := c.NewAlloca(listType.elementType.IrType())
 						c.deepCopyInto(dest, elementPtr, listType.elementType)
 						c.latestReturn = dest
 					}
@@ -1153,7 +1153,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 
 	switch e.Operator {
 	case ast.TER_SLICE:
-		dest := c.cbb.NewAlloca(lhsTyp.IrType())
+		dest := c.NewAlloca(lhsTyp.IrType())
 		switch lhsTyp {
 		case c.ddpstring:
 			c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
@@ -1178,7 +1178,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 	lhs, lhsTyp := c.evaluate(e.Lhs)
 	if e.Type.IsList {
 		listType := c.getListType(lhsTyp)
-		list := c.cbb.NewAlloca(listType.typ)
+		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
 		elementPtr := c.indexArray(c.loadStructField(list, arr_field_index), zero)
 		if !lhsTyp.IsPrimitive() {
@@ -1254,7 +1254,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			default:
 				c.err("invalid Parameter Type for TEXT: %s", lhsTyp.Name())
 			}
-			dest := c.cbb.NewAlloca(c.ddpstring.typ)
+			dest := c.NewAlloca(c.ddpstring.typ)
 			c.cbb.NewCall(to_string_func, dest, lhs)
 			c.latestReturn = dest
 		default:
@@ -1300,7 +1300,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 	irReturnType := c.toIrType(fun.funcDecl.Type)
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
-		ret = c.cbb.NewAlloca(irReturnType.IrType())
+		ret = c.NewAlloca(irReturnType.IrType())
 		args = append(args, ret)
 	}
 
@@ -1516,7 +1516,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 
 		c.cbb = leaveBlock
 	case token.WIEDERHOLE:
-		counter := c.cf.Blocks[0].NewAlloca(ddpint)
+		counter := c.NewAlloca(ddpint)
 		cond, _ := c.evaluate(s.Condition)
 		c.cbb.NewStore(cond, counter)
 		condBlock := c.cf.NewBlock("")
@@ -1634,10 +1634,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, len, zero), leaveBlock, loopStart)
 
 	c.cbb = loopStart
-	index := c.cf.Blocks[0].NewAlloca(ddpint)
+	index := c.NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name(), c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
+	c.scp.addVar(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock

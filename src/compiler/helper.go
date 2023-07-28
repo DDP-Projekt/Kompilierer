@@ -7,6 +7,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 
+	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 )
@@ -35,6 +36,12 @@ func newInt(value int64) *constant.Int {
 
 func newIntT(typ *types.IntType, value int64) *constant.Int {
 	return constant.NewInt(typ, value)
+}
+
+// wrapper for c.cf.Blocks[0].NewAlloca
+// because allocatin on c.cbb can cause stackoverflows in loops
+func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
+	return c.cf.Blocks[0].NewAlloca(elemType)
 }
 
 // turn a ddptypes.Type into the corresponding llvm type
