@@ -8,6 +8,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 	"github.com/bafto/Go-LLVM-Bindings/llvm"
 )
@@ -16,7 +17,7 @@ type OutputType int
 
 const (
 	OutputIR  OutputType = iota // textual llvm ir
-	OutputBC                    // llvm bitcode currently unused
+	OutputBC                    // llvm bitcode, currently unused
 	OutputAsm                   // assembly depending on the target platform
 	OutputObj                   // object file depending on the target platform
 )
@@ -48,9 +49,9 @@ type Options struct {
 	// wether all compiled DDP Modules
 	// should be linked into a single llvm-ir-Module
 	LinkInModules bool
-	/*// wether the generated code for lists should be
+	// wether the generated code for lists should be
 	// linked into the main module
-	LinkLists bool*/
+	LinkInListDefs bool
 }
 
 func (options *Options) ToParserOptions() parser.Options {
@@ -115,32 +116,53 @@ func Compile(options Options) (*Result, error) {
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 
 	if !options.LinkInModules {
+		irBuff := &bytes.Buffer{}
+		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(irBuff, true)
+		if err != nil {
+			return nil, err
+		}
+
+		// early return
+		if !options.LinkInListDefs && options.OutputType == OutputIR {
+			options.To.Write(irBuff.Bytes())
+			return comp_result, nil
+		}
+
+		// if we did not return, we need it as a llvm.Module
+		options.Log("Erstelle llvm Context")
+		llctx, err := newllvmContext()
+		if err != nil {
+			return nil, err
+		}
+		defer options.Log("Entsorge llvm Context")
+		defer llctx.Dispose()
+
+		options.Log("Parse llvm-ir zu llvm-Module")
+		mod, err := llctx.parseIR(irBuff.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		defer mod.Dispose()
+
+		if options.LinkInListDefs {
+			options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
+			list_defs, err := llctx.parseListDefs()
+			if err != nil {
+				return nil, err
+			}
+			// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
+
+			options.Log("Linke ddp_list_types_defs mit dem Hauptmodul")
+			if err := llvmLinkAllModules(mod, []llvm.Module{list_defs}); err != nil {
+				return nil, err
+			}
+		}
+
 		switch options.OutputType {
 		case OutputIR:
-			return newCompiler(ddp_main_module, options.ErrorHandler).compile(options.To, true)
+			_, err := io.WriteString(options.To, mod.String())
+			return comp_result, err
 		case OutputAsm, OutputObj:
-			buffer := &bytes.Buffer{}
-
-			comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(buffer, true)
-			if err != nil {
-				return nil, err
-			}
-
-			options.Log("Erstelle llvm Context")
-			llctx, err := newllvmContext()
-			if err != nil {
-				return nil, err
-			}
-			defer options.Log("Entsorge llvm Context")
-			defer llctx.Dispose()
-
-			options.Log("Parse llvm-ir zu llvm-Module")
-			mod, err := llctx.parseIR(buffer.Bytes())
-			if err != nil {
-				return nil, err
-			}
-			defer mod.Dispose()
-
 			file_type := llvm.AssemblyFile
 			if options.OutputType == OutputObj {
 				file_type = llvm.ObjectFile
@@ -181,8 +203,21 @@ func Compile(options Options) (*Result, error) {
 	}
 
 	ll_modules := map[string]llvm.Module{}
+	// optionally link in list-defs
+	if options.LinkInListDefs {
+		options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
+		list_defs, err := llctx.parseListDefs()
+		if err != nil {
+			return nil, err
+		}
+		// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
+		ll_modules[ddppath.DDP_List_Types_Defs_LL] = list_defs
+	}
+
 	for name := range ll_modules_ir {
 		options.Log("Parse '%s' zu llvm-Module", name)
+		// we do not need to defer llmod.Dispose here
+		// because the modules will be destroyed when linking them into the main module
 		llmod, err := llctx.parseIR(ll_modules_ir[name].Bytes())
 		if err != nil {
 			ll_modules_ir[name].WriteTo(options.To) // TODO DEBUG
@@ -251,6 +286,11 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 	switch outputType {
 	case OutputIR:
 		_, err := io.WriteString(w, list_mod.String())
+		return err
+	case OutputBC:
+		buff := llvm.WriteBitcodeToMemoryBuffer(list_mod)
+		defer buff.Dispose()
+		_, err := w.Write(buff.Bytes())
 		return err
 	case OutputAsm:
 		_, err := llctx.compileModule(list_mod, llvm.AssemblyFile, w)

@@ -28,6 +28,8 @@ type Options struct {
 	// flags passed to external .c files
 	// for example to specify include directories
 	ExternGCCFlags string
+	// wether the inbuilt list-defs need to be linked in
+	LinkInListDefs bool
 }
 
 func validateOptions(options *Options) error {
@@ -116,7 +118,11 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	}
 
 	// add default dependencies at the end, because dependencies might depend on the ddp runtime and list_types_defs
-	args = append(args, "-lddpstdlib", ddppath.DDP_List_Types_Defs_O, "-lddpruntime", "-lm")
+	args = append(args, "-lddpstdlib")
+	if options.LinkInListDefs {
+		args = append(args, ddppath.DDP_List_Types_Defs_O)
+	}
+	args = append(args, "-lddpruntime", "-lm")
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {

@@ -5,6 +5,8 @@ RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
 DDP_LIST_DEFS_NAME = ddp_list_types_defs
 
+DDP_LIST_DEFS_OUTPUT_TYPES = --llvm_ir --object
+
 LLVM_SRC_DIR=./llvm-project/llvm/
 LLVM_BUILD_DIR=./llvm_build/
 
@@ -62,7 +64,7 @@ kddp:
 	@echo "building kddp"
 	cd $(KDDP_DIR) ; $(MAKE)
 	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
-	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) --llvm_ir --object
+	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 stdlib:
 	@echo "building the ddp-stdlib"

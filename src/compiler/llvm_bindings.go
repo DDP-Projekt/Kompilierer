@@ -2,7 +2,9 @@ package compiler
 
 import (
 	"io"
+	"os"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/bafto/Go-LLVM-Bindings/llvm"
 )
 
@@ -76,7 +78,7 @@ func (llctx *llvmContext) Dispose() {
 	llctx.passManager.Dispose()
 }
 
-// parses a .ll file and returns the module in with llctx.Context as c ontext
+// parses a the given llvm ir (textual) and returns the module in with llctx.Context as c ontext
 // the module needs to be disposed
 func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 	buf := llvm.NewMemoryBufferFromRangeCopy(llvm_ir)
@@ -90,6 +92,14 @@ func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 	mod.SetTarget(llctx.targetMachine.Triple())
 
 	return mod, nil
+}
+
+func (llctx *llvmContext) parseListDefs() (llvm.Module, error) {
+	list_defs_ir, err := os.ReadFile(ddppath.DDP_List_Types_Defs_LL)
+	if err != nil {
+		return llvm.Module{}, err
+	}
+	return llctx.parseIR(list_defs_ir)
 }
 
 // optimizes the given module and returns wether it was modified

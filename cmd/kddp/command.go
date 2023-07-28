@@ -43,7 +43,8 @@ type HelpCommand struct {
 
 func NewHelpCommand() *HelpCommand {
 	return &HelpCommand{
-		fs: flag.NewFlagSet("hilfe", flag.ExitOnError),
+		fs:  flag.NewFlagSet("hilfe", flag.ExitOnError),
+		cmd: "",
 	}
 }
 
@@ -93,6 +94,8 @@ type BuildCommand struct {
 	extern_gcc_flags string // custom flags passed to extern .c files
 	nodeletes        bool   // should temp files be deleted, specified by the --nodeletes flag
 	verbose          bool   // print verbose output, specified by the --verbose flag
+	link_modules     bool   // wether to link the llvm modules together
+	link_list_defs   bool   // wether to link the list-defs into the main module
 }
 
 func NewBuildCommand() *BuildCommand {
@@ -104,6 +107,8 @@ func NewBuildCommand() *BuildCommand {
 		extern_gcc_flags: "",
 		nodeletes:        false,
 		verbose:          false,
+		link_modules:     true,
+		link_list_defs:   true,
 	}
 }
 
@@ -120,11 +125,13 @@ func (cmd *BuildCommand) Init(args []string) error {
 	}
 
 	// set all the flags
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "Optionaler Pfad der Ausgabedatei")
-	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
-	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
-	cmd.fs.BoolVar(&cmd.nodeletes, "nichts_loeschen", false, "Keine temporären Dateien löschen")
-	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Gibt wortreiche Informationen während des Befehls")
+	cmd.fs.StringVar(&cmd.outPath, "o", cmd.outPath, "Optionaler Pfad der Ausgabedatei")
+	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", cmd.gcc_flags, "Benutzerdefinierte Optionen, die gcc übergeben werden")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", cmd.extern_gcc_flags, "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
+	cmd.fs.BoolVar(&cmd.nodeletes, "nichts_loeschen", cmd.nodeletes, "Keine temporären Dateien löschen")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Gibt wortreiche Informationen während des Befehls")
+	cmd.fs.BoolVar(&cmd.link_modules, "module_linken", cmd.link_modules, "Ob alle Module in das Hauptmodul gelinkt werden sollen")
+	cmd.fs.BoolVar(&cmd.link_list_defs, "list_defs_linken", cmd.link_list_defs, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -224,7 +231,8 @@ func (cmd *BuildCommand) Run() error {
 		ErrorHandler:            errorHandler,
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
-		LinkInModules:           true,
+		LinkInModules:           cmd.link_modules,
+		LinkInListDefs:          cmd.link_list_defs,
 	})
 	if err != nil {
 		return err
@@ -244,6 +252,7 @@ func (cmd *BuildCommand) Run() error {
 		DeleteIntermediateFiles: !cmd.nodeletes,
 		GCCFlags:                cmd.gcc_flags,
 		ExternGCCFlags:          cmd.extern_gcc_flags,
+		LinkInListDefs:          !cmd.link_list_defs, // if they are allready linked in, don't link them again
 	}); err != nil {
 		return fmt.Errorf("Fehler beim Linken: %s (%s)", err, string(output))
 	}
@@ -262,7 +271,9 @@ Optionen:
 	--wortreich: Gibt wortreiche Informationen während des Befehls
 	--nichts_loeschen: Temporäre Dateien werden nicht gelöscht
 	--gcc_optionen: Benutzerdefinierte Optionen, die gcc übergeben werden
-	--externe_gcc_optionen: Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden`
+	--externe_gcc_optionen: Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden
+	--module_linken: Ob alle Module in das Hauptmodul gelinkt werden sollen, standardmäßig wahr
+	--list_defs_linken: Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen, standardmäßig wahr`
 }
 
 // helper function
@@ -281,7 +292,9 @@ type ParseCommand struct {
 
 func NewParseCommand() *ParseCommand {
 	return &ParseCommand{
-		fs: flag.NewFlagSet("parse", flag.ExitOnError),
+		fs:       flag.NewFlagSet("parse", flag.ExitOnError),
+		filePath: "",
+		outPath:  "",
 	}
 }
 
@@ -295,7 +308,7 @@ func (cmd *ParseCommand) Init(args []string) error {
 		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
 	}
 
-	cmd.fs.StringVar(&cmd.outPath, "o", "", "Optionaler Pfad der Ausgabedatei")
+	cmd.fs.StringVar(&cmd.outPath, "o", cmd.outPath, "Optionaler Pfad der Ausgabedatei")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -344,13 +357,15 @@ type VersionCommand struct {
 
 func NewVersionCommand() *VersionCommand {
 	return &VersionCommand{
-		fs: flag.NewFlagSet("version", flag.ExitOnError),
+		fs:         flag.NewFlagSet("version", flag.ExitOnError),
+		verbose:    false,
+		build_info: false,
 	}
 }
 
 func (cmd *VersionCommand) Init(args []string) error {
-	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Zeige wortreiche Informationen")
-	cmd.fs.BoolVar(&cmd.build_info, "go_build_info", false, "Zeige Go build Informationen")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Zeige wortreiche Informationen")
+	cmd.fs.BoolVar(&cmd.build_info, "go_build_info", cmd.build_info, "Zeige Go build Informationen")
 	return cmd.fs.Parse(args)
 }
 
@@ -431,9 +446,9 @@ func (cmd *RunCommand) Init(args []string) error {
 	}
 
 	// set all the flags
-	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
-	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
-	cmd.fs.BoolVar(&cmd.verbose, "wortreich", false, "Gibt wortreiche Informationen während des Befehls")
+	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", cmd.gcc_flags, "Benutzerdefinierte Optionen, die gcc übergeben werden")
+	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", cmd.extern_gcc_flags, "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
+	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Gibt wortreiche Informationen während des Befehls")
 	return cmd.fs.Parse(args[1:])
 }
 
@@ -493,6 +508,7 @@ type DumpListDefsCommand struct {
 	filePath string // output file path
 	asm      bool   // wether to output assembly
 	llvm_ir  bool   // wether to output llvm ir
+	llvm_bc  bool   // wether to output llvm bitcode
 	object   bool   // wether to output an object file
 }
 
@@ -501,8 +517,9 @@ func NewDumpListDefsCommand() *DumpListDefsCommand {
 		fs:       flag.NewFlagSet("dump-list-defs", flag.ExitOnError),
 		filePath: ddppath.LIST_DEFS_NAME,
 		asm:      false,
-		llvm_ir:  true,
-		object:   true,
+		llvm_ir:  false,
+		llvm_bc:  false,
+		object:   false,
 	}
 }
 
@@ -516,6 +533,7 @@ func (cmd *DumpListDefsCommand) Init(args []string) error {
 	cmd.fs.StringVar(&cmd.filePath, "o", cmd.filePath, "Ausgabe Datei")
 	cmd.fs.BoolVar(&cmd.asm, "asm", cmd.asm, "Wether to output assembly")
 	cmd.fs.BoolVar(&cmd.llvm_ir, "llvm_ir", cmd.llvm_ir, "Wether to output llvm ir")
+	cmd.fs.BoolVar(&cmd.llvm_bc, "llvm_bc", cmd.llvm_bc, "Wether to output llvm bitcode")
 	cmd.fs.BoolVar(&cmd.object, "object", cmd.object, "Wether to output object file")
 	return cmd.fs.Parse(args)
 }
@@ -528,6 +546,9 @@ func (cmd *DumpListDefsCommand) Run() error {
 	if cmd.llvm_ir {
 		outputTypes = append(outputTypes, compiler.OutputIR)
 	}
+	if cmd.llvm_bc {
+		outputTypes = append(outputTypes, compiler.OutputBC)
+	}
 	if cmd.object {
 		outputTypes = append(outputTypes, compiler.OutputObj)
 	}
@@ -539,6 +560,8 @@ func (cmd *DumpListDefsCommand) Run() error {
 			ext = ".asm"
 		case compiler.OutputObj:
 			ext = ".o"
+		case compiler.OutputBC:
+			ext = ".bc"
 		}
 		file, err := os.OpenFile(changeExtension(cmd.filePath, ext), os.O_CREATE|os.O_TRUNC, os.ModePerm)
 		if err != nil {
