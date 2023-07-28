@@ -563,7 +563,7 @@ func (cmd *DumpListDefsCommand) Run() error {
 		case compiler.OutputBC:
 			ext = ".bc"
 		}
-		file, err := os.OpenFile(changeExtension(cmd.filePath, ext), os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		file, err := os.OpenFile(changeExtension(cmd.filePath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 		if err != nil {
 			return err
 		}
