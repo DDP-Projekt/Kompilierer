@@ -208,22 +208,20 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		importStmt.Module = module
 	}
 
-	// adds all aliases for a struct or function decl to the parsers state
-	addDeclAliases := func(decl ast.Declaration) {
-		// helper to add an alias slice to the parser
-		// only adds aliases that are not already defined
-		// and errors otherwise
-		addAliases := func(aliases []ast.Alias, errRange token.Range) {
-			// add all the aliases
-			for _, alias := range aliases {
-				if decl := p.aliasExists(alias.GetTokens()); decl != nil {
-					_, isFunc := decl.(*ast.FuncDecl)
-					p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.GetOriginal().Literal, decl.Name(), isFunc))
-				} else {
-					p.aliases = append(p.aliases, alias)
-				}
+	// helper to add an alias slice to the parser
+	// only adds aliases that are not already defined
+	// and errors otherwise
+	addAliases := func(aliases []ast.Alias, errRange token.Range) {
+		// add all the aliases
+		for _, alias := range aliases {
+			if decl := p.aliasExists(alias.GetTokens()); decl != nil {
+				_, isFunc := decl.(*ast.FuncDecl)
+				p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(alias.GetOriginal().Literal, decl.Name(), isFunc))
+			} else {
+				p.aliases = append(p.aliases, alias)
 			}
 		}
+	}
 
 	ast.IterateImportedDecls(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
@@ -235,7 +233,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		_, exists, _ := p.scope().LookupDecl(decl.Name())
 
 		if exists {
-			return
+			return true // continue
 		}
 
 		var aliases []ast.Alias
@@ -252,11 +250,12 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 
 		// VarDecls don't have aliases
 		if !needAddAliases {
-			return true
+			return true // continue
 		}
 
 		// add all the aliases
 		addAliases(aliases, importStmt.Range)
+		return true
 	})
 }
 
@@ -2481,7 +2480,7 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 		return ddptypes.TEXT
 	}
 	p.panic("invalid TokenType (%d)", t)
-	return ddptypes.Void() // unreachable
+	return ddptypes.VoidType{} // unreachable
 }
 
 // parses tokens into a DDPType
