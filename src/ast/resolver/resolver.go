@@ -253,23 +253,15 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 		checkTypeDependency(decl)
 	}
 
-	// every public symbol is imported
-	if len(stmt.ImportedSymbols) == 0 {
-		errRange = stmt.FileName.Range
-		for _, decl := range stmt.Module.PublicDecls {
-			resolveDecl(decl)
-		}
-		return
-	}
-	// only some symbols are imported
-	for _, name := range stmt.ImportedSymbols {
-		if decl, ok := stmt.Module.PublicDecls[name.Literal]; ok {
-			errRange = name.Range
-			resolveDecl(decl)
+	// add imported symbols
+	ast.IterateImportedDecls(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+		if decl == nil {
+			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(stmt.FileName)))
 		} else {
-			r.err(ddperror.SEM_NAME_UNDEFINED, name.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name.Literal, ast.TrimStringLit(stmt.FileName)))
+			resolveDecl(decl)
 		}
-	}
+		return true
+	})
 }
 func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 	switch assign := stmt.Var.(type) {

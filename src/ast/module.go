@@ -53,3 +53,26 @@ func visitModuleRec(module *Module, visitor BaseVisitor, visited map[*Module]str
 	}
 	VisitAst(module.Ast, visitor)
 }
+
+// Calls fun with module and every module it imports recursively
+// meaning fun is called on module, all of its imports and all of their imports and so on
+// a single time per module
+func IterateModuleImports(module *Module, fun func(*Module)) {
+	if module != nil {
+		iterateModuleImportsRec(module, fun, make(map[*Module]struct{}))
+	}
+}
+
+func iterateModuleImportsRec(module *Module, fun func(*Module), visited map[*Module]struct{}) {
+	// return if already visited
+	if _, ok := visited[module]; ok {
+		return
+	}
+	visited[module] = struct{}{}
+	for _, imprt := range module.Imports {
+		if imprt.Module != nil {
+			iterateModuleImportsRec(imprt.Module, fun, visited)
+		}
+	}
+	fun(module)
+}

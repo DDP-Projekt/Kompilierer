@@ -107,6 +107,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 
 // parse the provided tokens into an Ast
 func (p *parser) parse() *ast.Module {
+	defer parser_panic_wrapper(p)
+
 	// main parsing loop
 	for !p.atEnd() {
 		if stmt := p.checkedDeclaration(); stmt != nil {
@@ -223,6 +225,11 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			}
 		}
 
+	ast.IterateImportedDecls(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+		if decl == nil {
+			return true
+		}
+
 		// skip decls that are already defined
 		// the resolver will error here
 		_, exists, _ := p.scope().LookupDecl(decl.Name())
@@ -245,31 +252,12 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 
 		// VarDecls don't have aliases
 		if !needAddAliases {
-			return
+			return true
 		}
 
 		// add all the aliases
 		addAliases(aliases, importStmt.Range)
-	}
-
-	if len(importStmt.ImportedSymbols) == 0 {
-		// add all public aliases
-		for _, decl := range importStmt.Module.PublicDecls {
-			addDeclAliases(decl)
-		}
-	} else {
-		// only add the imported ones
-		for _, tok := range importStmt.ImportedSymbols {
-			name := tok.Literal
-			// check that the name exists as a public declaration
-			decl, exists := importStmt.Module.PublicDecls[name]
-			if !exists {
-				continue
-			}
-
-			addDeclAliases(decl)
-		}
-	}
+	})
 }
 
 // calls p.declaration and resolves and typechecks it
@@ -2477,7 +2465,7 @@ func (p *parser) isTypeName(t token.Token) bool {
 }
 
 // converts a TokenType to a Type
-func tokenTypeToType(t token.TokenType) ddptypes.Type {
+func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 	switch t {
 	case token.NICHTS:
 		return ddptypes.VoidType{}
@@ -2492,7 +2480,8 @@ func tokenTypeToType(t token.TokenType) ddptypes.Type {
 	case token.TEXT:
 		return ddptypes.TEXT
 	}
-	panic(fmt.Sprintf("invalid TokenType (%d)", t))
+	p.panic("invalid TokenType (%d)", t)
+	return ddptypes.Void() // unreachable
 }
 
 // parses tokens into a DDPType
@@ -2507,12 +2496,12 @@ func (p *parser) parseType() ddptypes.Type {
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return tokenTypeToType(p.previous().Type)
+		return p.tokenTypeToType(p.previous().Type)
 	case token.BOOLEAN, token.TEXT:
 		if !p.match(token.LISTE) {
-			return tokenTypeToType(p.previous().Type)
+			return p.tokenTypeToType(p.previous().Type)
 		}
-		return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}
+		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
 		p.consume(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
@@ -2552,7 +2541,7 @@ func (p *parser) parseListType() ddptypes.Type {
 	}
 	switch p.peekN(-2).Type {
 	case token.BOOLEAN, token.TEXT:
-		return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}
+		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
 		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
@@ -2581,21 +2570,21 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
-		return tokenTypeToType(p.previous().Type), false
+		return p.tokenTypeToType(p.previous().Type), false
 	case token.BOOLEAN, token.TEXT:
 		if p.match(token.LISTE) {
-			return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-2).Type)}, false
+			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
 		} else if p.match(token.LISTEN) {
 			if !p.consume(token.REFERENZ) {
 				// report the error on the REFERENZ token, but still advance
 				// because there is a valid token afterwards
 				p.advance()
 			}
-			return ddptypes.ListType{Underlying: tokenTypeToType(p.peekN(-3).Type)}, true
+			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-3).Type)}, true
 		} else if p.match(token.REFERENZ) {
-			return tokenTypeToType(p.peekN(-2).Type), true
+			return p.tokenTypeToType(p.peekN(-2).Type), true
 		}
-		return tokenTypeToType(p.previous().Type), false
+		return p.tokenTypeToType(p.previous().Type), false
 	case token.ZAHLEN:
 		if p.match(token.LISTE) {
 			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, false

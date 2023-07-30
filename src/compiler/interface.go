@@ -1,22 +1,25 @@
 package compiler
 
 import (
+	"bytes"
 	"errors"
 	"io"
-	"os"
-	"path/filepath"
-	"strings"
+	"runtime/debug"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 )
 
 type OutputType int
 
 const (
-	OutputIR OutputType = iota
-	OutputAsm
-	OutputObj
+	OutputIR  OutputType = iota // textual llvm ir
+	OutputBC                    // llvm bitcode, currently unused
+	OutputAsm                   // assembly depending on the target platform
+	OutputObj                   // object file depending on the target platform
 )
 
 // Options on how to compile the given source code
@@ -31,12 +34,10 @@ type Options struct {
 	// Optional reader to read the source code from
 	// if Source is nil
 	From io.Reader
-	// Optional Writer to write the compiler output to
-	// must be non-nil if the output is a object file
+	// writer where the result is written to
+	// must be non-nil
 	To io.Writer
 	// type of the output
-	// OutputObj should be written to To
-	// OutputAsm/IR may be returned in a *Result
 	OutputType OutputType
 	// ErrorHandler used for the scanner, parser, ...
 	// May be nil
@@ -45,6 +46,12 @@ type Options struct {
 	Log func(string, ...any)
 	// wether or not to delete intermediate .ll files
 	DeleteIntermediateFiles bool
+	// wether all compiled DDP Modules
+	// should be linked into a single llvm-ir-Module
+	LinkInModules bool
+	// wether the generated code for lists should be
+	// linked into the main module
+	LinkInListDefs bool
 }
 
 func (options *Options) ToParserOptions() parser.Options {
@@ -63,14 +70,14 @@ type Result struct {
 	// to link the final executable
 	// contains .c, .lib, .a and .o files
 	Dependencies map[string]struct{}
-	// the llvm ir or assembly
-	// empty if the output was written to a io.Writer
-	Output string
 }
 
 func validateOptions(options *Options) error {
 	if options.Source == nil && options.From == nil && options.FileName == "" {
 		return errors.New("Kein Quellcode gegeben")
+	}
+	if options.To == nil {
+		return errors.New("Kein Ziel io.Writer gegeben")
 	}
 	if options.ErrorHandler == nil {
 		options.ErrorHandler = ddperror.EmptyHandler
@@ -83,9 +90,9 @@ func validateOptions(options *Options) error {
 
 // compile ddp-source-code from the given Options
 // if an error occured, the result is nil
-// if the given source code is not valid ddp-code
-// an error with an empty message is returned
 func Compile(options Options) (*Result, error) {
+	defer panic_wrapper()
+
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
@@ -100,68 +107,222 @@ func Compile(options Options) (*Result, error) {
 			return nil, err
 		}
 	}
-	module, err := parser.Parse(options.ToParserOptions())
 
+	ddp_main_module, err := parser.Parse(options.ToParserOptions())
 	if err != nil {
 		return nil, err
 	}
 
-	// if set, only compile to llvm ir and return
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
+
+	if !options.LinkInModules {
+		irBuff := &bytes.Buffer{}
+		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(irBuff, true)
+		if err != nil {
+			return nil, err
+		}
+
+		// early return
+		if !options.LinkInListDefs && options.OutputType == OutputIR {
+			options.To.Write(irBuff.Bytes())
+			return comp_result, nil
+		}
+
+		// if we did not return, we need it as a llvm.Module
+		options.Log("Erstelle llvm Context")
+		llctx, err := newllvmContext()
+		if err != nil {
+			return nil, err
+		}
+		defer options.Log("Entsorge llvm Context")
+		defer llctx.Dispose()
+
+		options.Log("Parse llvm-ir zu llvm-Module")
+		mod, err := llctx.parseIR(irBuff.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		defer mod.Dispose()
+
+		if options.LinkInListDefs {
+			options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
+			list_defs, err := llctx.parseListDefs()
+			if err != nil {
+				return nil, err
+			}
+			// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
+
+			options.Log("Linke ddp_list_types_defs mit dem Hauptmodul")
+			if err := llvmLinkAllModules(mod, []llvm.Module{list_defs}); err != nil {
+				return nil, err
+			}
+		}
+
+		switch options.OutputType {
+		case OutputIR:
+			_, err := io.WriteString(options.To, mod.String())
+			return comp_result, err
+		case OutputAsm, OutputObj:
+			file_type := llvm.AssemblyFile
+			if options.OutputType == OutputObj {
+				file_type = llvm.ObjectFile
+				options.Log("Kompiliere llvm-ir zu Object Code")
+			} else {
+				options.Log("Kompiliere llvm-ir zu Assembler")
+			}
+
+			llctx.optimizeModule(mod)
+
+			if _, err := llctx.compileModule(mod, file_type, options.To); err != nil {
+				return nil, err
+			}
+
+			return comp_result, nil
+		default:
+			return nil, errors.New("invalid compiler.OutputType")
+		}
+	}
+	// options.LinkInModules == true
+
+	options.Log("Erstelle llvm Context")
+	llctx, err := newllvmContext()
+	if err != nil {
+		return nil, err
+	}
+	defer options.Log("Entsorge llvm Context")
+	defer llctx.Dispose()
+
+	ll_modules_ir := map[string]*bytes.Buffer{}
+
+	dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) io.Writer {
+		ll_modules_ir[m.FileName] = &bytes.Buffer{}
+		return ll_modules_ir[m.FileName]
+	}, options.ErrorHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	ll_modules := map[string]llvm.Module{}
+	// optionally link in list-defs
+	if options.LinkInListDefs {
+		options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
+		list_defs, err := llctx.parseListDefs()
+		if err != nil {
+			return nil, err
+		}
+		// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
+		ll_modules[ddppath.DDP_List_Types_Defs_LL] = list_defs
+	}
+
+	for name := range ll_modules_ir {
+		options.Log("Parse '%s' zu llvm-Module", name)
+		// we do not need to defer llmod.Dispose here
+		// because the modules will be destroyed when linking them into the main module
+		llmod, err := llctx.parseIR(ll_modules_ir[name].Bytes())
+		if err != nil {
+			ll_modules_ir[name].WriteTo(options.To) // TODO DEBUG
+			return nil, err
+		}
+		ll_modules[name] = llmod
+	}
+	ll_main_module := ll_modules[ddp_main_module.FileName]
+	delete(ll_modules, ddp_main_module.FileName)
+
+	defer ll_main_module.Dispose()
+	options.Log("Linke llvm Module")
+	if err := llvmLinkAllModules(ll_main_module, mapToSlice(ll_modules)); err != nil {
+		return nil, err
+	}
+
+	// if we output llvm ir we are finished here
 	if options.OutputType == OutputIR {
-		return newCompiler(module, options.ErrorHandler).compile(options.To)
+		if _, err := io.WriteString(options.To, ll_main_module.String()); err != nil {
+			return nil, err
+		}
+
+		return &Result{Dependencies: dependencies}, nil
 	}
 
-	// wrtite the llvm ir to an intermediate file
-	tempFileName := "ddp_temp.ll"
-	if options.FileName != "" {
-		tempFileName = changeExtension(options.FileName, ".ll")
-	}
-	file, err := os.OpenFile(tempFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	if options.DeleteIntermediateFiles {
-		defer options.Log("Lösche die temporäre Datei '%s'", tempFileName)
-		defer os.Remove(tempFileName)
-	}
+	llctx.optimizeModule(ll_main_module)
 
-	options.Log("Schreibe LLVM ir nach %s", tempFileName)
-	result, err := newCompiler(module, options.ErrorHandler).compile(file)
-	file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// object files are written to the given io.Writer (most commonly a file)
-	options.Log("Kompiliere LLVM ir zu einer Objektdatei")
+	file_type := llvm.AssemblyFile
 	if options.OutputType == OutputObj {
-		_, err = compileToObject(tempFileName, options.OutputType, options.To)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		file_type = llvm.ObjectFile
+		options.Log("Kompiliere llvm-ir zu Object Code")
+	} else {
+		options.Log("Kompiliere llvm-ir zu Assembler")
 	}
 
-	// if options.To is nil, the assembly code is returned as string in result
-	if options.To == nil {
-		out := &strings.Builder{}
-		_, err = compileToObject(tempFileName, options.OutputType, out)
-		if err != nil {
-			return nil, err
-		}
-		result.Output = out.String()
-		return result, nil
-	}
-
-	// otherwise the assembly code is written to options.To
-	_, err = compileToObject(tempFileName, options.OutputType, options.To)
-	if err != nil {
+	if _, err := llctx.compileModule(ll_main_module, file_type, options.To); err != nil {
 		return nil, err
 	}
-	return result, nil
+
+	return &Result{Dependencies: dependencies}, nil
 }
 
-func changeExtension(path, ext string) string {
-	return path[:len(path)-len(filepath.Ext(path))] + ext
+// writes the definitions of the inbuilt ddp list types to w
+func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler) error {
+	defer panic_wrapper()
+
+	irBuff := bytes.Buffer{}
+	if err := newCompiler(nil, errorHandler).dumpListDefinitions(&irBuff); err != nil {
+		return err
+	}
+
+	llctx, err := newllvmContext()
+	if err != nil {
+		return err
+	}
+	defer llctx.Dispose()
+
+	list_mod, err := llctx.parseIR(irBuff.Bytes())
+	if err != nil {
+		return err
+	}
+	defer list_mod.Dispose()
+
+	llctx.optimizeModule(list_mod)
+
+	switch outputType {
+	case OutputIR:
+		_, err := io.WriteString(w, list_mod.String())
+		return err
+	case OutputBC:
+		buff := llvm.WriteBitcodeToMemoryBuffer(list_mod)
+		defer buff.Dispose()
+		_, err := w.Write(buff.Bytes())
+		return err
+	case OutputAsm:
+		_, err := llctx.compileModule(list_mod, llvm.AssemblyFile, w)
+		return err
+	case OutputObj:
+		_, err := llctx.compileModule(list_mod, llvm.ObjectFile, w)
+		return err
+	}
+	return errors.New("invalid compiler.OutputType")
+}
+
+func mapToSlice[T comparable, U any](m map[T]U) []U {
+	result := make([]U, 0, len(m))
+	for _, v := range m {
+		result = append(result, v)
+	}
+	return result
+}
+
+// wraps a panic with more information and re-panics
+func panic_wrapper() {
+	if err := recover(); err != nil {
+		if err, ok := err.(*CompilerError); ok {
+			panic(err)
+		}
+
+		stack_trace := debug.Stack()
+		panic(&CompilerError{
+			Err:        err,
+			Msg:        "unknown compiler panic",
+			ModulePath: "not found",
+			StackTrace: stack_trace,
+		})
+	}
 }

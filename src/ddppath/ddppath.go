@@ -7,6 +7,8 @@ import (
 	"github.com/kardianos/osext"
 )
 
+const LIST_DEFS_NAME = "ddp_list_types_defs"
+
 var (
 	// path to the directory where DDP is installed
 	InstallDir string
@@ -16,6 +18,10 @@ var (
 	Bin string
 	// path to the DDP/lib dir (contains ddpstdlib.a and ddpruntime.a and probably their sources)
 	Lib string
+	// path to the ddp_list_types_defs.ll file which contains the textual llvm ir definitions of the inbuilt ddp list types
+	DDP_List_Types_Defs_LL string
+	// path to the ddp_list_types_defs.ll file which is an object file containing the definitions of the inbuilt ddp list types
+	DDP_List_Types_Defs_O string
 	// path to the mingw64 directory in the DDP installation directory
 	// might not be present
 	Mingw64 string
@@ -36,5 +42,7 @@ func init() {
 	Duden = filepath.Join(InstallDir, "Duden")
 	Bin = filepath.Join(InstallDir, "bin")
 	Lib = filepath.Join(InstallDir, "lib")
+	DDP_List_Types_Defs_LL = filepath.Join(Lib, LIST_DEFS_NAME+".ll")
+	DDP_List_Types_Defs_O = filepath.Join(Lib, LIST_DEFS_NAME+".o")
 	Mingw64 = filepath.Join(InstallDir, "mingw64")
 }

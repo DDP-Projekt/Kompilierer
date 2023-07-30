@@ -1,9 +1,13 @@
 package compiler
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 
+	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 )
@@ -32,6 +36,12 @@ func newInt(value int64) *constant.Int {
 
 func newIntT(typ *types.IntType, value int64) *constant.Int {
 	return constant.NewInt(typ, value)
+}
+
+// wrapper for c.cf.Blocks[0].NewAlloca
+// because allocatin on c.cbb can cause stackoverflows in loops
+func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
+	return c.cf.Blocks[0].NewAlloca(elemType)
 }
 
 // turn a ddptypes.Type into the corresponding llvm type
@@ -65,7 +75,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.void
 		}
 	}
-	err("illegal ddp type to ir type conversion (%s)", ddpType)
+	c.err("illegal ddp type to ir type conversion (%s)", ddpType)
 	return nil // unreachable
 }
 
@@ -93,26 +103,23 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	case c.ddpstring:
 		return c.ddpstringlist
 	}
-	err("no list type found for elementType %s", ty.Name())
+	c.err("no list type found for elementType %s", ty.Name())
 	return nil // unreachable
 }
 
-// prepends the decl.Name() with the current module prefix if necessery
-func (c *compiler) getDeclIrName(decl ast.Declaration) string {
-	isGlobal, isExtern := true, false
-	// only apply this to global variables/functions
-	if varDecl, ok := decl.(*ast.VarDecl); ok {
-		otherDecl, _, _ := c.currentModule.Ast.Symbols.LookupDecl(varDecl.Name())
-		isGlobal = otherDecl == varDecl
-	} else { // don't apply name mangling to extern functions as their name is important in linking
-		funDecl := decl.(*ast.FuncDecl)
-		isExtern = ast.IsExternFunc(funDecl)
-	}
-
-	name := decl.Name()
-	// add the prefix for the current module if the conditions are met
-	if isGlobal && !isExtern {
-		name = c.getModulePrefix(decl.Module()) + name
-	}
-	return name
+// creates the name of the module_init function
+func (c *compiler) getModuleInitDisposeName(mod *ast.Module) (string, string) {
+	name := "ddp_" + strings.TrimSuffix(
+		strings.ReplaceAll(
+			strings.ReplaceAll(
+				filepath.ToSlash(mod.FileName),
+				"/",
+				"_",
+			),
+			":",
+			"_",
+		),
+		".ddp",
+	)
+	return name + "_init", name + "_dispose"
 }

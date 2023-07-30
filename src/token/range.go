@@ -3,6 +3,8 @@
 // by code-analysis tools
 package token
 
+import "fmt"
+
 // a position in a ddp source-file
 // Line and Column are 1-based
 // and measured in utf8-characters not bytes
@@ -27,10 +29,18 @@ func (p Position) IsBehind(pos Position) bool {
 	return p.Line == pos.Line && p.Column > pos.Column
 }
 
+func (p Position) String() string {
+	return fmt.Sprintf("Pos{L: %d C: %d}", p.Line, p.Column)
+}
+
 // a range in a ddp source-file
 type Range struct {
 	Start Position // First Character position in the Range
 	End   Position // Last Character position in the Range
+}
+
+func (r Range) String() string {
+	return fmt.Sprintf("Range{Start: %s End: %s}", r.Start, r.End)
 }
 
 // creates a new range from the first character of begin

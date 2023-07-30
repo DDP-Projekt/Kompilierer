@@ -81,15 +81,8 @@ func (c *compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value
 	c.cbb.NewUnreachable()
 }
 
-var out_of_bounds_error_string *ir.Global
-
 func (c *compiler) out_of_bounds_error(index, len value.Value) {
-	if out_of_bounds_error_string == nil {
-		out_of_bounds_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n"))
-		out_of_bounds_error_string.Visibility = enum.VisibilityHidden
-		out_of_bounds_error_string.Immutable = true
-	}
-	c.runtime_error(newInt(1), out_of_bounds_error_string, index, len)
+	c.runtime_error(newInt(1), c.out_of_bounds_error_string, index, len)
 }
 
 // calls ddp_reallocate from the runtime

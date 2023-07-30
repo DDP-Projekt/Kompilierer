@@ -179,17 +179,14 @@ func (pr *printer) VisitImportStmt(stmt *ImportStmt) {
 	}
 	// TODO: pretty print imports
 	nodes := make([]Node, 0)
-	if stmt.ImportedSymbols == nil {
-		for _, decl := range stmt.Module.PublicDecls {
+
+	IterateImportedDecls(stmt, func(name string, decl Declaration, tok token.Token) bool {
+		if decl != nil {
 			nodes = append(nodes, decl)
 		}
-	} else {
-		for _, lit := range stmt.ImportedSymbols {
-			if decl, ok := stmt.Module.PublicDecls[lit.Literal]; ok {
-				nodes = append(nodes, decl)
-			}
-		}
-	}
+		return true
+	})
+
 	pr.parenthesizeNode("ImportStmt", nodes...)
 }
 func (pr *printer) VisitAssignStmt(stmt *AssignStmt) {

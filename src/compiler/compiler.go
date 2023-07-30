@@ -3,13 +3,11 @@ package compiler
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 
@@ -21,6 +19,58 @@ import (
 	"github.com/llir/irutil"
 )
 
+// compiles a mainModule and all it's imports
+// every module is written to a io.Writer created
+// by calling destCreator with the given module
+// returns:
+//   - a map of .ll paths to their corresponding module
+//   - a set of all external dependendcies
+//   - an error
+func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer, errHndl ddperror.Handler) (map[string]struct{}, error) {
+	compiledMods := map[string]*ast.Module{}
+	dependencies := map[string]struct{}{}
+	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl)
+}
+
+func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer, compiledMods map[string]*ast.Module, dependencies map[string]struct{}, isMainModule bool, errHndl ddperror.Handler) (map[string]struct{}, error) {
+	// the ast must be valid (and should have been resolved and typechecked beforehand)
+	if mod.Ast.Faulty {
+		return nil, fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
+	}
+
+	// check if the module was already compiled
+	if _, alreadyCompiled := compiledMods[mod.FileName]; !alreadyCompiled {
+		compiledMods[mod.FileName] = mod // add the module to the set
+	} else {
+		return dependencies, nil // break the recursion if the module was already compiled
+	}
+
+	// add the external dependencies
+	for path := range mod.ExternalDependencies {
+		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(mod.FileName), path)); err != nil {
+			errHndl(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
+				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), mod.FileName))
+		} else {
+			path = abspath
+		}
+		dependencies[path] = struct{}{}
+	}
+
+	// compile this module
+	if _, err := newCompiler(mod, errHndl).compile(destCreator(mod), isMainModule); err != nil {
+		return nil, err
+	}
+
+	// recursively compile the other dependencies
+	for _, imprt := range mod.Imports {
+		if _, err := compileWithImportsRec(imprt.Module, destCreator, compiledMods, dependencies, false, errHndl); err != nil {
+			return nil, err
+		}
+	}
+
+	return dependencies, nil
+}
+
 // small wrapper for a ast.FuncDecl and the corresponding ir function
 type funcWrapper struct {
 	irFunc   *ir.Func      // the function in the llvm ir
@@ -29,21 +79,26 @@ type funcWrapper struct {
 
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
-	mainModule             *ast.Module         // the module that was passed in to compile
-	currentModule          *ast.Module         // the module that is currently being compiled
-	alreadyCompiledModules map[string]struct{} // set of modules that have already been compiled
-	mod                    *ir.Module          // the ir module (basically the ir file)
-	errorHandler           ddperror.Handler    // errors are passed to this function
-	result                 *Result             // result of the compilation
+	ddpModule    *ast.Module      // the module to be compiled
+	mod          *ir.Module       // the ir module (basically the ir file)
+	errorHandler ddperror.Handler // errors are passed to this function
+	result       *Result          // result of the compilation
 
-	cbb              *ir.Block               // current basic block in the ir
-	cf               *ir.Func                // current function
-	scp              *scope                  // current scope in the ast (not in the ir)
-	cfscp            *scope                  // out-most scope of the current function
-	functions        map[string]*funcWrapper // all the global functions
-	latestReturn     value.Value             // return of the latest evaluated expression (in the ir)
-	latestReturnType ddpIrType               // the type of latestReturn
-	modulePrefixes   map[*ast.Module]string
+	cbb              *ir.Block                // current basic block in the ir
+	cf               *ir.Func                 // current function
+	scp              *scope                   // current scope in the ast (not in the ir)
+	cfscp            *scope                   // out-most scope of the current function
+	functions        map[string]*funcWrapper  // all the global functions
+	latestReturn     value.Value              // return of the latest evaluated expression (in the ir)
+	latestReturnType ddpIrType                // the type of latestReturn
+	importedModules  map[*ast.Module]struct{} // all the modules that have already been imported
+	currentNode      ast.Node                 // used for error reporting
+
+	moduleInitFunc             *ir.Func  // the module_init func of this module
+	moduleInitCbb              *ir.Block // cbb but for module_init
+	moduleDisposeFunc          *ir.Func
+	out_of_bounds_error_string *ir.Global
+	slice_error_string         *ir.Global
 
 	// all the type definitions of inbuilt types used by the compiler
 	void                                                              *ddpIrVoidType
@@ -58,157 +113,112 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &compiler{
-		mainModule:             module,
-		currentModule:          module,
-		alreadyCompiledModules: make(map[string]struct{}),
-		mod:                    ir.NewModule(),
-		errorHandler:           errorHandler,
+		ddpModule:    module,
+		mod:          ir.NewModule(),
+		errorHandler: errorHandler,
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
-			Output:       "",
 		},
-		cbb:            nil,
-		cf:             nil,
-		scp:            newScope(nil), // global scope
-		cfscp:          nil,
-		functions:      make(map[string]*funcWrapper),
-		modulePrefixes: make(map[*ast.Module]string),
-		latestReturn:   nil,
+		cbb:              nil,
+		cf:               nil,
+		scp:              newScope(nil), // global scope
+		cfscp:            nil,
+		functions:        make(map[string]*funcWrapper),
+		latestReturn:     nil,
+		latestReturnType: nil,
+		importedModules:  make(map[*ast.Module]struct{}),
 	}
 }
 
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
-func (c *compiler) compile(w io.Writer) (result *Result, rerr error) {
-	c.mod.SourceFilename = c.mainModule.GetIncludeFilename() // set the module filename (optional metadata)
+// if isMainModule is false, no ddp_main function will be generated
+func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
+	defer compiler_panic_wrapper(c)
+
+	c.mod.SourceFilename = c.ddpModule.FileName // set the module filename (optional metadata)
+	c.addExternalDependencies()
 
 	c.setup()
 
-	// called from the ddp-c-runtime after initialization
-	ddpmain := c.insertFunction(
-		"ddp_ddpmain",
-		nil,
-		c.mod.NewFunc("ddp_ddpmain", ddpint),
-	)
-	c.cf = ddpmain               // first function is ddpmain
-	c.cbb = ddpmain.NewBlock("") // first block
-
-	// compile the main module and its imports recursively
-	if err := c.compileModule(c.mainModule, true); err != nil {
-		return nil, err
+	// TODO: add a module_init function to every module that initializes
+	// global variables with their inital value
+	if isMainModule {
+		// called from the ddp-c-runtime after initialization
+		ddpmain := c.insertFunction(
+			"ddp_ddpmain",
+			nil,
+			c.mod.NewFunc("ddp_ddpmain", ddpint),
+		)
+		c.cf = ddpmain               // first function is ddpmain
+		c.cbb = ddpmain.NewBlock("") // first block
 	}
 
-	c.scp = c.exitScope(c.scp) // exit the main scope
-
-	// on success ddpmain returns 0
-	c.cbb.NewRet(zero)
-	if w != nil {
-		_, err := c.mod.WriteTo(w)
-		return c.result, err
-	} else {
-		c.result.Output = c.mod.String()
-		return c.result, nil // return the module as string
+	// visit every statement in the modules AST and compile it
+	// in imports we only visit declarations and ignore other top-level statements
+	for _, stmt := range c.ddpModule.Ast.Statements {
+		if isMainModule {
+			c.visitNode(stmt)
+		} else {
+			switch stmt.(type) {
+			case *ast.ImportStmt:
+				c.visitNode(stmt)
+			case *ast.DeclStmt:
+				c.visitNode(stmt)
+			}
+		}
 	}
+
+	if isMainModule {
+		c.scp = c.exitScope(c.scp) // exit the main scope
+		// call all the module_dispose functions
+		for mod := range c.importedModules {
+			_, dispose_name := c.getModuleInitDisposeName(mod)
+			dispose_fun := c.functions[dispose_name]
+			c.cbb.NewCall(dispose_fun.irFunc)
+		}
+		// on success ddpmain returns 0
+		c.cbb.NewRet(zero)
+	}
+
+	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
+
+	_, err := c.mod.WriteTo(w)
+	return c.result, err
 }
 
-// recursively compiles a single module and its imports
-func (c *compiler) compileModule(module *ast.Module, isMainModule bool) error {
-	// the ast must be valid (and should have been resolved and typechecked beforehand)
-	if c.mainModule.Ast.Faulty {
-		return fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", module.GetIncludeFilename())
-	}
+// dumps only the definitions for inbuilt list types to w
+func (c *compiler) dumpListDefinitions(w io.Writer) error {
+	defer compiler_panic_wrapper(c)
 
-	// check if the module was already compiled
-	if _, alreadyCompiled := c.alreadyCompiledModules[module.FileName]; !alreadyCompiled {
-		c.alreadyCompiledModules[module.FileName] = struct{}{} // add the module to the set
-	} else {
-		return nil // break the recursion if the module was already compiled
-	}
+	c.mod.SourceFilename = ddppath.LIST_DEFS_NAME
 
+	c.setupErrorStrings()
+	// the order of these function calls is important
+	// because the primitive types need to be setup
+	// before the list types
+	c.void = &ddpIrVoidType{}
+	c.initRuntimeFunctions()
+	c.setupPrimitiveTypes()
+	c.ddpstring = c.defineStringType()
+	c.setupListTypes(false) // we want definitions
+
+	_, err := c.mod.WriteTo(w)
+	return err
+}
+
+func (c *compiler) addExternalDependencies() {
 	// add the external dependencies
-	for path := range module.ExternalDependencies {
-		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(module.FileName), path)); err != nil {
+	for path := range c.ddpModule.ExternalDependencies {
+		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(c.ddpModule.FileName), path)); err != nil {
 			c.errorHandler(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
-				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), module.FileName))
+				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), c.ddpModule.FileName))
 		} else {
 			path = abspath
 		}
 		c.result.Dependencies[path] = struct{}{}
 	}
-
-	// recursively add the other dependencies
-	for _, imprt := range module.Imports {
-		// set the correct module for nodes that need information about their module
-		cmod := c.currentModule
-		c.currentModule = imprt.Module
-		// compile the imported module
-		if err := c.compileModule(imprt.Module, false); err != nil {
-			return err
-		}
-		// restore the module
-		c.currentModule = cmod
-	}
-
-	// visit every statement in the modules AST and compile it
-	// in imports we only visit declarations and ignore other top-level statements
-	for _, stmt := range module.Ast.Statements {
-		if isMainModule {
-			c.visitNode(stmt)
-		} else if _, isDecl := stmt.(*ast.DeclStmt); isDecl {
-			c.visitNode(stmt)
-		}
-	}
-
-	return nil
-}
-
-// creates and caches name prefixes for the given module
-func (c *compiler) getModulePrefix(module *ast.Module) string {
-	if prefix, exists := c.modulePrefixes[module]; exists {
-		return prefix
-	}
-
-	// get the relative path from the main module to the current module without the file extension (.ddp)
-	relPath, err := filepath.Rel(filepath.Dir(c.mainModule.FileName), strings.TrimSuffix(c.currentModule.FileName, filepath.Ext(c.currentModule.FileName)))
-	if err != nil {
-		// on error fallback on the absolute path
-		relPath = filepath.Dir(c.currentModule.FileName)
-	}
-	// replace all filepath seperators with underscores
-	prefix := strings.ReplaceAll(
-		relPath,
-		string(os.PathSeparator),
-		"_",
-	)
-	// replace (leading) .. path elements with DirUp (placeholder as I don't know if . is a good character to have in a function name)
-	prefix = strings.ReplaceAll(
-		prefix,
-		"..",
-		"DirUp",
-	)
-	// on absolute paths replace the volume : for windows
-	if filepath.IsAbs(relPath) {
-		if vol := filepath.VolumeName(relPath); vol != "" {
-			prefix = strings.ReplaceAll(
-				prefix,
-				vol,
-				strings.ReplaceAll(vol, ":", "_"),
-			)
-		}
-	}
-	prefix += "_"
-	c.modulePrefixes[module] = prefix
-	return prefix
-}
-
-// helper that might be extended later
-// it is not intended for the end user to see these errors, as they are compiler bugs
-// the errors in the ddp-code were already reported by the parser/typechecker/resolver
-func err(msg string, args ...any) {
-	// retreive the file and line on which the error occured
-	_, file, line, _ := runtime.Caller(1)
-	panic(fmt.Errorf("%s, %d: %s", filepath.Base(file), line, fmt.Sprintf(msg, args...)))
 }
 
 // if the llvm-ir should be commented
@@ -217,7 +227,7 @@ var Comments_Enabled = true
 
 func (c *compiler) commentNode(block *ir.Block, node ast.Node, details string) {
 	if Comments_Enabled {
-		comment := fmt.Sprintf("F %s, %d:%d: %s", c.currentModule.FileName, node.Token().Line(), node.Token().Column(), node)
+		comment := fmt.Sprintf("F %s, %d:%d: %s", c.ddpModule.FileName, node.Token().Line(), node.Token().Column(), node)
 		if details != "" {
 			comment += " (" + details + ")"
 		}
@@ -233,6 +243,7 @@ func (c *compiler) comment(comment string, block *ir.Block) {
 
 // helper to visit a single node
 func (c *compiler) visitNode(node ast.Node) {
+	c.currentNode = node
 	node.Accept(c)
 }
 
@@ -253,6 +264,8 @@ func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *i
 }
 
 func (c *compiler) setup() {
+	c.setupErrorStrings()
+
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
@@ -260,9 +273,23 @@ func (c *compiler) setup() {
 	c.initRuntimeFunctions()
 	c.setupPrimitiveTypes()
 	c.ddpstring = c.defineStringType()
-	c.setupListTypes()
+	c.setupListTypes(true)
+
+	c.setupModuleInitDispose()
 
 	c.setupOperators()
+}
+
+// used in setup()
+func (c *compiler) setupErrorStrings() {
+	c.out_of_bounds_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n"))
+	c.out_of_bounds_error_string.Linkage = enum.LinkageInternal
+	c.out_of_bounds_error_string.Visibility = enum.VisibilityDefault
+	c.out_of_bounds_error_string.Immutable = true
+	c.slice_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n"))
+	c.slice_error_string.Linkage = enum.LinkageInternal
+	c.slice_error_string.Visibility = enum.VisibilityDefault
+	c.slice_error_string.Immutable = true
 }
 
 // used in setup()
@@ -274,12 +301,27 @@ func (c *compiler) setupPrimitiveTypes() {
 }
 
 // used in setup()
-func (c *compiler) setupListTypes() {
-	c.ddpintlist = c.defineListType("ddpintlist", c.ddpinttyp)
-	c.ddpfloatlist = c.defineListType("ddpfloatlist", c.ddpfloattyp)
-	c.ddpboollist = c.defineListType("ddpboollist", c.ddpbooltyp)
-	c.ddpcharlist = c.defineListType("ddpcharlist", c.ddpchartyp)
-	c.ddpstringlist = c.defineListType("ddpstringlist", c.ddpstring)
+func (c *compiler) setupListTypes(declarationOnly bool) {
+	c.ddpintlist = c.createListType("ddpintlist", c.ddpinttyp, declarationOnly)
+	c.ddpfloatlist = c.createListType("ddpfloatlist", c.ddpfloattyp, declarationOnly)
+	c.ddpboollist = c.createListType("ddpboollist", c.ddpbooltyp, declarationOnly)
+	c.ddpcharlist = c.createListType("ddpcharlist", c.ddpchartyp, declarationOnly)
+	c.ddpstringlist = c.createListType("ddpstringlist", c.ddpstring, declarationOnly)
+}
+
+// used in setup()
+// creates a function that can be called to initialize the global state of this module
+func (c *compiler) setupModuleInitDispose() {
+	init_name, dispose_name := c.getModuleInitDisposeName(c.ddpModule)
+	c.moduleInitFunc = c.mod.NewFunc(init_name, c.void.IrType())
+	c.moduleInitFunc.Visibility = enum.VisibilityDefault
+	c.moduleInitCbb = c.moduleInitFunc.NewBlock("")
+	c.insertFunction(init_name, nil, c.moduleInitFunc)
+
+	c.moduleDisposeFunc = c.mod.NewFunc(dispose_name, c.void.IrType())
+	c.moduleDisposeFunc.Visibility = enum.VisibilityDefault
+	c.moduleDisposeFunc.NewBlock("").NewRet(nil)
+	c.insertFunction(dispose_name, nil, c.moduleDisposeFunc)
 }
 
 // used in setup()
@@ -326,33 +368,55 @@ func (*compiler) BaseVisitor() {}
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadDecl(d *ast.BadDecl) {
-	err("Es wurde eine invalide Deklaration gefunden")
+	c.err("Es wurde eine invalide Deklaration gefunden")
 }
 func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
-	Typ := c.toIrType(d.Type) // get the llvm type
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
-	// global variables are allocated in the ddpmain function
-	c.commentNode(c.cbb, d, d.Name())
+
+	Typ := c.toIrType(d.Type) // get the llvm type
 	var varLocation value.Value
 	if c.scp.enclosing == nil { // global scope
-		globalDef := c.mod.NewGlobalDef("", Typ.DefaultValue())
+		globalDef := c.mod.NewGlobalDef(d.Name(), Typ.DefaultValue())
 		// make private variables static like in C
 		if !d.IsPublic {
 			globalDef.Linkage = enum.LinkageInternal
-			globalDef.Visibility = enum.VisibilityDefault
 		}
+		globalDef.Visibility = enum.VisibilityDefault
 		varLocation = globalDef
 	} else {
-		varLocation = c.cf.Blocks[0].NewAlloca(Typ.IrType())
+		c.commentNode(c.cbb, d, d.Name())
+		varLocation = c.NewAlloca(Typ.IrType())
 	}
-	Var := c.scp.addVar(c.getDeclIrName(d), varLocation, Typ, false)
-	initVal, _ := c.evaluate(d.InitVal) // evaluate the initial value
-	if !Typ.IsPrimitive() {
-		initVal = c.cbb.NewLoad(Typ.IrType(), initVal)
+
+	Var := c.scp.addVar(d.Name(), varLocation, Typ, false)
+
+	// adds the variable initializer to the function fun
+	addInitializer := func() {
+		initVal, _ := c.evaluate(d.InitVal) // evaluate the initial value
+		if !Typ.IsPrimitive() {
+			initVal = c.cbb.NewLoad(Typ.IrType(), initVal)
+		}
+		c.cbb.NewStore(initVal, Var) // store the initial value
 	}
-	c.cbb.NewStore(initVal, Var) // store the initial value
+	if c.scp.enclosing == nil { // module_init
+		cf, cbb := c.cf, c.cbb
+		c.cf, c.cbb = c.moduleInitFunc, c.moduleInitCbb
+		addInitializer() // initialize the variable in module_init
+		c.moduleInitFunc, c.moduleInitCbb = c.cf, c.cbb
+
+		c.cf, c.cbb = c.moduleDisposeFunc, c.moduleDisposeFunc.Blocks[0]
+		c.freeNonPrimitive(Var, Typ) // free the variable in module_dispose
+
+		c.cf, c.cbb = cf, cbb
+	}
+
+	// if those are nil, we are at the global scope but there is no ddp_main func
+	// meaning this module is being compiled as a non-main module
+	if c.cf != nil && c.cbb != nil { // ddp_main
+		addInitializer()
+	}
 }
 func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	retType := c.toIrType(d.Type) // get the llvm type
@@ -372,17 +436,15 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
-	name := c.getDeclIrName(d)
-
-	irFunc := c.mod.NewFunc(name, retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC              // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(d.Name(), retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                  // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
 	if !d.IsPublic {
 		irFunc.Linkage = enum.LinkageInternal
 		irFunc.Visibility = enum.VisibilityDefault
 	}
 
-	c.insertFunction(name, d, irFunc)
+	c.insertFunction(d.Name(), d, irFunc)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(d) {
@@ -407,10 +469,10 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType, true)
 			} else if !irType.IsPrimitive() { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
 			} else { // primitive types don't need any special handling
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.cbb.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -452,16 +514,16 @@ func (c *compiler) VisitStructDecl(decl *ast.StructDecl) {
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadExpr(e *ast.BadExpr) {
-	err("Es wurde ein invalider Ausdruck gefunden")
+	c.err("Es wurde ein invalider Ausdruck gefunden")
 }
 func (c *compiler) VisitIdent(e *ast.Ident) {
-	Var := c.scp.lookupVar(c.getDeclIrName(e.Declaration)) // get the alloca in the ir
+	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
 		c.latestReturn = c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 	} else { // non-primitives need to be deep copied
-		dest := c.cbb.NewAlloca(Var.typ.IrType())
+		dest := c.NewAlloca(Var.typ.IrType())
 		c.latestReturn = c.deepCopyInto(dest, Var.val, Var.typ)
 	}
 	c.latestReturnType = Var.typ
@@ -481,7 +543,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 		if elementType.IsPrimitive() {
 			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
 		} else {
-			dest := c.cbb.NewAlloca(elementType.IrType())
+			dest := c.NewAlloca(elementType.IrType())
 			c.latestReturn = c.deepCopyInto(dest, elementPtr, elementType)
 		}
 	}
@@ -519,14 +581,14 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
-	dest := c.cbb.NewAlloca(c.ddpstring.typ)
+	dest := c.NewAlloca(c.ddpstring.typ)
 	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
 	c.latestReturn = dest
 	c.latestReturnType = c.ddpstring
 }
 func (c *compiler) VisitListLit(e *ast.ListLit) {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
-	list := c.cbb.NewAlloca(listType.IrType())
+	list := c.NewAlloca(listType.IrType())
 
 	// get the listLen as irValue
 	var listLen value.Value = zero
@@ -597,7 +659,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 			)
 			c.latestReturnType = c.ddpinttyp
 		default:
-			err("invalid Parameter Type for BETRAG: %s", typ.Name())
+			c.err("invalid Parameter Type for BETRAG: %s", typ.Name())
 		}
 	case ast.UN_NEGATE:
 		switch typ {
@@ -608,7 +670,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 			c.latestReturn = c.cbb.NewSub(zero, rhs)
 			c.latestReturnType = c.ddpinttyp
 		default:
-			err("invalid Parameter Type for NEGATE: %s", typ.Name())
+			c.err("invalid Parameter Type for NEGATE: %s", typ.Name())
 		}
 	case ast.UN_NOT:
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
@@ -624,7 +686,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 			if _, isList := typ.(*ddpIrListType); isList {
 				c.latestReturn = c.loadStructField(rhs, len_field_index)
 			} else {
-				err("invalid Parameter Type for LÄNGE: %s", typ.Name())
+				c.err("invalid Parameter Type for LÄNGE: %s", typ.Name())
 			}
 		}
 		c.latestReturnType = c.ddpinttyp
@@ -643,12 +705,12 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 				cap := c.loadStructField(rhs, cap_field_index)
 				c.latestReturn = c.cbb.NewMul(cap, c.sizeof(typ.(*ddpIrListType).elementType.IrType())) // list->cap * sizeof(list_element_type)
 			} else {
-				err("invalid Parameter Type for GRÖßE: %s", typ.Name())
+				c.err("invalid Parameter Type for GRÖßE: %s", typ.Name())
 			}
 		}
 		c.latestReturnType = c.ddpinttyp
 	default:
-		err("Unbekannter Operator '%s'", e.Operator)
+		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
 
 	c.freeNonPrimitive(rhs, typ)
@@ -719,7 +781,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				resultTyp = c.getListType(lhsTyp)
 			}
 		}
-		result = c.cbb.NewAlloca(resultTyp.IrType())
+		result = c.NewAlloca(resultTyp.IrType())
 
 		// string concatenations
 		var concat_func *ir.Func = nil
@@ -759,7 +821,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
 			default:
-				err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -769,11 +831,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFAdd(lhs, rhs)
 			default:
-				err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
 		default:
-			err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 	case ast.BIN_MINUS:
 		switch lhsTyp {
@@ -787,7 +849,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				c.latestReturn = c.cbb.NewFSub(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
 			default:
-				err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -797,11 +859,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFSub(lhs, rhs)
 			default:
-				err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
 		default:
-			err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 	case ast.BIN_MULT:
 		switch lhsTyp {
@@ -815,7 +877,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				c.latestReturn = c.cbb.NewFMul(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
 			default:
-				err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -825,11 +887,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFMul(lhs, rhs)
 			default:
-				err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
 		default:
-			err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 	case ast.BIN_DIV:
 		switch lhsTyp {
@@ -843,7 +905,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
 			default:
-				err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -853,10 +915,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
 			default:
-				err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		default:
-			err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpfloattyp
 	case ast.BIN_INDEX:
@@ -876,7 +938,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 					if listType.elementType.IsPrimitive() { // primitives are simply loaded
 						c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
 					} else {
-						dest := c.cbb.NewAlloca(listType.elementType.IrType())
+						dest := c.NewAlloca(listType.elementType.IrType())
 						c.deepCopyInto(dest, elementPtr, listType.elementType)
 						c.latestReturn = dest
 					}
@@ -885,7 +947,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				})
 				c.latestReturnType = listType.elementType
 			} else {
-				err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
 	case ast.BIN_FIELD_ACCESS:
@@ -900,7 +962,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
 			default:
-				err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -908,7 +970,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
 			}
 		default:
-			err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["pow"].irFunc, lhs, rhs)
 		c.latestReturnType = c.ddpfloattyp
@@ -922,7 +984,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
 			default:
-				err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -930,7 +992,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
 			}
 		default:
-			err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		log10_num := c.cbb.NewCall(c.functions["log10"].irFunc, lhs)
 		log10_base := c.cbb.NewCall(c.functions["log10"].irFunc, rhs)
@@ -985,7 +1047,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
 			default:
-				err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -995,7 +1057,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)
 			default:
-				err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
 		c.latestReturnType = c.ddpbooltyp
@@ -1009,7 +1071,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
 			default:
-				err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -1019,10 +1081,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, rhs)
 			default:
-				err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		default:
-			err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER:
@@ -1035,7 +1097,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
 			default:
-				err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -1045,10 +1107,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs)
 			default:
-				err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		default:
-			err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER_EQ:
@@ -1061,7 +1123,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
 			default:
-				err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -1071,10 +1133,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, rhs)
 			default:
-				err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		default:
-			err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
 	}
@@ -1088,7 +1150,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 
 	switch e.Operator {
 	case ast.TER_SLICE:
-		dest := c.cbb.NewAlloca(lhsTyp.IrType())
+		dest := c.NewAlloca(lhsTyp.IrType())
 		switch lhsTyp {
 		case c.ddpstring:
 			c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
@@ -1096,13 +1158,13 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 				c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, mid, rhs)
 			} else {
-				err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		}
 		c.latestReturn = dest
 		c.latestReturnType = lhsTyp
 	default:
-		err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}
 
 	c.freeNonPrimitive(lhs, lhsTyp)
@@ -1113,7 +1175,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 	lhs, lhsTyp := c.evaluate(e.Lhs)
 	if ddptypes.IsList(e.Type) {
 		listType := c.getListType(lhsTyp)
-		list := c.cbb.NewAlloca(listType.typ)
+		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
 		elementPtr := c.indexArray(c.loadStructField(list, arr_field_index), zero)
 		if !lhsTyp.IsPrimitive() {
@@ -1139,7 +1201,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
 			default:
-				err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
 			}
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
@@ -1150,7 +1212,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			default:
-				err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}
 		case ddptypes.BOOLEAN:
 			switch lhsTyp {
@@ -1159,7 +1221,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpbooltyp:
 				c.latestReturn = lhs
 			default:
-				err("invalid Parameter Type for BOOLEAN: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for BOOLEAN: %s", lhsTyp.Name())
 			}
 		case ddptypes.BUCHSTABE:
 			switch lhsTyp {
@@ -1168,7 +1230,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpchartyp:
 				c.latestReturn = lhs
 			default:
-				err("invalid Parameter Type for BUCHSTABE: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for BUCHSTABE: %s", lhsTyp.Name())
 			}
 		case ddptypes.TEXT:
 			if lhsTyp == c.ddpstring {
@@ -1187,13 +1249,13 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			case c.ddpchartyp:
 				to_string_func = c.ddpstring.char_to_string_IrFun
 			default:
-				err("invalid Parameter Type for TEXT: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for TEXT: %s", lhsTyp.Name())
 			}
-			dest := c.cbb.NewAlloca(c.ddpstring.typ)
+			dest := c.NewAlloca(c.ddpstring.typ)
 			c.cbb.NewCall(to_string_func, dest, lhs)
 			c.latestReturn = dest
 		default:
-			err("Invalide Typumwandlung zu %s", e.Type)
+			c.err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
 	c.latestReturnType = c.toIrType(e.Type)
@@ -1209,7 +1271,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) {
 func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(c.getDeclIrName(assign.Declaration))
+		Var := c.scp.lookupVar(assign.Declaration.Name())
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -1222,22 +1284,22 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		} else if !as_ref && lhsTyp == c.ddpstring {
 			return lhs, lhsTyp, assign
 		} else {
-			err("non-list/string type passed as assignable/reference")
+			c.err("non-list/string type passed as assignable/reference")
 		}
 	case *ast.FieldAccess:
 		panic("TODO")
 	}
-	err("Invalid types in evaluateAssignableOrReference %s", ass)
+	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil
 }
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
-	fun := c.functions[c.getDeclIrName(e.Func)] // retreive the function (the resolver took care that it is present)
+	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
 
 	irReturnType := c.toIrType(fun.funcDecl.Type)
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
-		ret = c.cbb.NewAlloca(irReturnType.IrType())
+		ret = c.NewAlloca(irReturnType.IrType())
 		args = append(args, ret)
 	}
 
@@ -1249,7 +1311,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 			if assign, ok := e.Args[param.Literal].(ast.Assigneable); ok {
 				val, _, _ = c.evaluateAssignableOrReference(assign, true)
 			} else {
-				err("non-assignable passed as reference to %s", fun.funcDecl.Name())
+				c.err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
 		} else {
 			val, _ = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
@@ -1284,7 +1346,7 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadStmt(s *ast.BadStmt) {
-	err("Es wurde eine invalide Aussage gefunden")
+	c.err("Es wurde eine invalide Aussage gefunden")
 }
 func (c *compiler) VisitDeclStmt(s *ast.DeclStmt) {
 	s.Decl.Accept(c)
@@ -1293,7 +1355,74 @@ func (c *compiler) VisitExprStmt(s *ast.ExprStmt) {
 	expr, exprTyp := c.evaluate(s.Expr)
 	c.freeNonPrimitive(expr, exprTyp)
 }
-func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {}
+func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
+	if s.Module == nil {
+		c.err("importStmt.Module == nil")
+	}
+
+	ast.IterateImportedDecls(s, func(name string, decl ast.Declaration, _ token.Token) bool {
+		switch decl := decl.(type) {
+		case *ast.VarDecl: // declare the variable as external
+			Typ := c.toIrType(decl.Type)
+			globalDecl := c.mod.NewGlobal(decl.Name(), Typ.IrType())
+			globalDecl.Linkage = enum.LinkageExternal
+			globalDecl.Visibility = enum.VisibilityDefault
+			c.scp.addVar(decl.Name(), globalDecl, Typ, false)
+		case *ast.FuncDecl:
+			retType := c.toIrType(decl.Type) // get the llvm type
+			retTypeIr := retType.IrType()
+			params := make([]*ir.Param, 0, len(decl.ParamTypes)) // list of the ir parameters
+
+			hasReturnParam := !retType.IsPrimitive()
+			// non-primitives are returned by passing a pointer to the struct as first parameter
+			if hasReturnParam {
+				params = append(params, ir.NewParam("", retType.PtrType()))
+				retTypeIr = c.void.IrType()
+			}
+
+			// append all the other parameters
+			for i, typ := range decl.ParamTypes {
+				ty := c.toIrParamType(typ)                                           // convert the type of the parameter
+				params = append(params, ir.NewParam(decl.ParamNames[i].Literal, ty)) // add it to the list
+			}
+
+			irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function
+			irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+			// declare it as extern function
+			irFunc.Linkage = enum.LinkageExternal
+			irFunc.Visibility = enum.VisibilityDefault
+
+			c.insertFunction(decl.Name(), decl, irFunc)
+		case *ast.BadDecl:
+			c.err("BadDecl in import")
+		default:
+			c.err("invalid decl type")
+		}
+		return true
+	})
+	// only call the module init func once per module
+	// and also initialize the modules that this module imports
+	ast.IterateModuleImports(s.Module, func(module *ast.Module) {
+		if _, alreadyImported := c.importedModules[module]; !alreadyImported {
+			init_name, dispose_name := c.getModuleInitDisposeName(module)
+			module_init := c.mod.NewFunc(init_name, c.void.IrType())
+			module_init.Linkage = enum.LinkageExternal
+			module_init.Visibility = enum.VisibilityDefault
+			c.insertFunction(init_name, nil, module_init)
+			if c.cf != nil && c.cbb != nil { // ddp_main
+				c.cbb.NewCall(module_init) // only call this in main modules
+			}
+
+			module_dispose := c.mod.NewFunc(dispose_name, c.void.IrType())
+			module_dispose.Linkage = enum.LinkageExternal
+			module_dispose.Visibility = enum.VisibilityDefault
+			c.insertFunction(dispose_name, nil, module_dispose)
+
+			c.importedModules[module] = struct{}{}
+		}
+	})
+
+}
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) {
 	rhs, rhsTyp := c.evaluate(s.Rhs) // compile the expression
 
@@ -1389,7 +1518,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 
 		c.cbb = leaveBlock
 	case token.WIEDERHOLE:
-		counter := c.cf.Blocks[0].NewAlloca(ddpint)
+		counter := c.NewAlloca(ddpint)
 		cond, _ := c.evaluate(s.Condition)
 		c.cbb.NewStore(cond, counter)
 		condBlock := c.cf.NewBlock("")
@@ -1507,10 +1636,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, len, zero), leaveBlock, loopStart)
 
 	c.cbb = loopStart
-	index := c.cf.Blocks[0].NewAlloca(ddpint)
+	index := c.NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name(), c.cf.Blocks[0].NewAlloca(irType.IrType()), irType, false)
+	c.scp.addVar(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
