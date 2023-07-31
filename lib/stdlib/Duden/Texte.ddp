@@ -17,7 +17,12 @@ Und kann so benutzt werden:
 Die öffentliche Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist die Länge von text.
 	Wenn index gleich 0 ist, verlasse die Funktion.
-	Solange (text an der Stelle index) gleich zeichen ist, verringere index um 1.
+	Solange (text an der Stelle index) gleich zeichen ist, mache:
+		Verringere index um 1.
+		Wenn index kleiner als 1 ist, dann:
+			Speichere "" in text.
+			Verlasse die Funktion.
+
 	Speichere text von 1 bis index in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> nach <text>"

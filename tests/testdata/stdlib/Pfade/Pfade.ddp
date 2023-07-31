@@ -1,0 +1,31 @@
+Binde "Duden/Pfade" ein.
+Binde "Duden/Ausgabe" ein.
+
+[ Basispfad Tests ]
+Schreibe (den Basispfad von "/a/b/c/d") auf eine Zeile.
+Schreibe (den Basispfad von "/a/b/c/") auf eine Zeile.
+Schreibe (den Basispfad von "./b") auf eine Zeile.
+Schreibe (den Basispfad von "hi.txt") auf eine Zeile.
+Schreibe (den Basispfad von "") auf eine Zeile.
+
+[ Ordnerpfad Tests ]
+Schreibe (den Ordnerpfad von "/a/b/c") auf eine Zeile.
+Schreibe (den Ordnerpfad von "a/b/c") auf eine Zeile.
+Schreibe (den Ordnerpfad von "/a/") auf eine Zeile.
+Schreibe (den Ordnerpfad von "a/") auf eine Zeile.
+Schreibe (den Ordnerpfad von "a") auf eine Zeile.
+Schreibe (den Ordnerpfad von "/") auf eine Zeile.
+Schreibe (den Ordnerpfad von "") auf eine Zeile.
+
+[ Erweiterung Tests ]
+Schreibe (die Erweiterung der Datei bei "/a/b/c/bar.css") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "/") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei ".") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "") auf eine Zeile.
+
+[ Dateiname Tests ]
+Schreibe (den Dateinamen von "/a/b/c/test.txt") auf eine Zeile.
+Schreibe (den Dateinamen von "/a/b/c/") auf eine Zeile.
+Schreibe (den Dateinamen von "/a/b/c") auf eine Zeile.
+Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
+Schreibe (den Dateinamen von "") auf eine Zeile.

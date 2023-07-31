@@ -1,0 +1,78 @@
+Binde "Duden/Texte" ein.
+Binde "Duden/Laufzeit" ein.
+
+Die öffentliche Funktion TrennZeichen gibt einen Buchstaben zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib '\\' zurück.
+	Gib '/' zurück.
+Und kann so benutzt werden:
+	"Pfad-Trennzeichen",
+	"den Pfad-Trennzeichen",
+	"das Pfad-Trennzeichen"
+
+[
+	Gibt zurück ob der gegebene Pfad ein absoluter oder relativer Pfad ist
+]
+Die öffentliche Funktion IstAbsolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
+	Gib (das Pfad-Trennzeichen) am Anfang von t steht zurück.
+Und kann so benutzt werden:
+	"ein <t> ein Absoluter Pfad ist"
+
+[
+	Gibt den Pfad ohne den letzen Element zurück. 
+	Falls der Pfad leer ist, wird ein "." zurück gegeben.
+	Falls der Pfad nur aus "/" gefolg von nicht-"/" Zeichen, wird "/" zurückgegeben.
+]
+Die öffentliche Funktion OrdnerPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich Pfad-Trennzeichen ist, dann:
+			Der Text dir ist t von 1 bis i.
+			Entferne alle (Pfad-Trennzeichen) nach dir.
+			Wenn die Länge von dir gleich 0 ist, gib (das Pfad-Trennzeichen) als Text zurück.
+
+			Gib dir zurück.
+		Verringere i um 1.
+	Gib "." zurück.
+Und kann so benutzt werden:
+	"den Ordnerpfad von <t>"
+
+
+[
+	Gibt den letzten Element eines Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
+]
+Die öffentliche Funktion BasisPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Der Text t2 ist (t mit allen (Pfad-Trennzeichen) danach entfernt).
+	Die Zahl i ist die Länge von t2.
+	Solange i größer als 0 ist, mache:
+		Wenn t2 an der Stelle i gleich (Pfad-Trennzeichen) ist, dann:
+			Gib t2 von (i plus 1) bis (die Länge von t2) zurück.
+		Verringere i um 1.
+	Gib "." zurück.
+Und kann so benutzt werden:
+	"den Basispfad von <t>",
+	"der Basispfad von <t>"
+
+[
+	Gibt die Erweiterung einer Datei zurück. Wenn der Pfad eines Ordners gegeben wurde 
+	oder der Parameter t leer ist, wird einen leeren Text zurück gegeben.
+]
+Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich (Pfad-Trennzeichen) ist, gib "" zurück.
+		Wenn t an der Stelle i gleich '.' ist, gib t von i bis (die Länge von t) zurück.
+		Verringere i um 1.
+	Gib "" zurück.
+Und kann so benutzt werden:
+	"die Erweiterung der Datei bei <t>"
+
+Die öffentliche Funktion DateiName mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Der Text bf ist der Basispfad von t.
+	Wenn bf gleich "." ist, gib "" zurück.
+	Die Zahl i ist 1.
+	Solange i kleiner als, oder die Länge von bf ist und bf an der Stelle i ungleich '.' ist, erhöhe i um 1.
+	Gib bf von 1 bis (i minus 1) zurück.
+Und kann so benutzt werden:
+	"den Dateinamen von <t>",
+	"der Dateiname von <t>"
