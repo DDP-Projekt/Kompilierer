@@ -9,7 +9,9 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // often used types declared here to shorten their names
@@ -73,6 +75,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpstring
 		case ddptypes.VoidType{}:
 			return c.void
+		default: // struct types
+			return c.structTypes[ddpType.String()]
 		}
 	}
 	c.err("illegal ddp type to ir type conversion (%s)", ddpType)
@@ -122,4 +126,18 @@ func (c *compiler) getModuleInitDisposeName(mod *ast.Module) (string, string) {
 		".ddp",
 	)
 	return name + "_init", name + "_dispose"
+}
+
+// compares two values of same type for equality
+func (c *compiler) compare_values(lhs, rhs value.Value, typ ddpIrType) value.Value {
+	switch typ {
+	case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
+		c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
+	case c.ddpfloattyp:
+		c.latestReturn = c.cbb.NewFCmp(enum.FPredOEQ, lhs, rhs)
+	default:
+		c.latestReturn = c.cbb.NewCall(typ.EqualsFunc(), lhs, rhs)
+	}
+	c.latestReturnType = c.ddpbooltyp
+	return c.latestReturn
 }

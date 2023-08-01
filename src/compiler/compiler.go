@@ -84,15 +84,16 @@ type compiler struct {
 	errorHandler ddperror.Handler // errors are passed to this function
 	result       *Result          // result of the compilation
 
-	cbb              *ir.Block                // current basic block in the ir
-	cf               *ir.Func                 // current function
-	scp              *scope                   // current scope in the ast (not in the ir)
-	cfscp            *scope                   // out-most scope of the current function
-	functions        map[string]*funcWrapper  // all the global functions
-	latestReturn     value.Value              // return of the latest evaluated expression (in the ir)
-	latestReturnType ddpIrType                // the type of latestReturn
-	importedModules  map[*ast.Module]struct{} // all the modules that have already been imported
-	currentNode      ast.Node                 // used for error reporting
+	cbb              *ir.Block                   // current basic block in the ir
+	cf               *ir.Func                    // current function
+	scp              *scope                      // current scope in the ast (not in the ir)
+	cfscp            *scope                      // out-most scope of the current function
+	functions        map[string]*funcWrapper     // all the global functions
+	structTypes      map[string]*ddpIrStructType // struct names mapped to their IR type
+	latestReturn     value.Value                 // return of the latest evaluated expression (in the ir)
+	latestReturnType ddpIrType                   // the type of latestReturn
+	importedModules  map[*ast.Module]struct{}    // all the modules that have already been imported
+	currentNode      ast.Node                    // used for error reporting
 
 	moduleInitFunc             *ir.Func  // the module_init func of this module
 	moduleInitCbb              *ir.Block // cbb but for module_init
@@ -124,6 +125,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 		scp:              newScope(nil), // global scope
 		cfscp:            nil,
 		functions:        make(map[string]*funcWrapper),
+		structTypes:      make(map[string]*ddpIrStructType),
 		latestReturn:     nil,
 		latestReturnType: nil,
 		importedModules:  make(map[*ast.Module]struct{}),
@@ -142,8 +144,6 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 
 	c.setup()
 
-	// TODO: add a module_init function to every module that initializes
-	// global variables with their inital value
 	if isMainModule {
 		// called from the ddp-c-runtime after initialization
 		ddpmain := c.insertFunction(
@@ -509,7 +509,7 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 	}
 }
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) {
-	panic("TODO")
+	c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, false)
 }
 
 // should have been filtered by the resolver/typechecker, so err
@@ -550,7 +550,15 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 	c.latestReturnType = elementType
 }
 func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) {
-	panic("TODO")
+	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
+
+	if fieldType.IsPrimitive() {
+		c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+	} else {
+		dest := c.NewAlloca(fieldType.IrType())
+		c.latestReturn = c.deepCopyInto(dest, fieldPtr, fieldType)
+	}
+	c.latestReturnType = fieldType
 }
 
 // literals are simple ir constants
@@ -717,6 +725,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 }
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
+	// for BIN_FIELD_ACCESS we don't want to evaluate Lhs, as it is just the field name
 	switch e.Operator {
 	case ast.BIN_AND:
 		lhs, _ := c.evaluate(e.Lhs)
@@ -751,6 +760,24 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
 		c.latestReturnType = c.ddpbooltyp
+		return
+	case ast.BIN_FIELD_ACCESS:
+		rhs, rhsTyp := c.evaluate(e.Rhs)
+		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
+			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
+			fieldType := structType.fieldIrTypes[fieldIndex]
+			fieldPtr := c.indexStruct(rhs, fieldIndex)
+			if fieldType.IsPrimitive() {
+				c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+			} else {
+				dest := c.NewAlloca(fieldType.IrType())
+				c.deepCopyInto(dest, fieldPtr, fieldType)
+				c.latestReturn = dest
+			}
+			c.latestReturnType = fieldType
+		} else {
+			c.err("invalid Parameter Types for VON (%s)", rhsTyp.Name())
+		}
 		return
 	}
 
@@ -950,8 +977,6 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-	case ast.BIN_FIELD_ACCESS:
-		panic("TODO")
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1017,15 +1042,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
 	case ast.BIN_EQUAL:
-		switch lhsTyp {
-		case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
-			c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
-		case c.ddpfloattyp:
-			c.latestReturn = c.cbb.NewFCmp(enum.FPredOEQ, lhs, rhs)
-		default:
-			c.latestReturn = c.cbb.NewCall(lhsTyp.EqualsFunc(), lhs, rhs)
-		}
-		c.latestReturnType = c.ddpbooltyp
+		c.compare_values(lhs, rhs, lhsTyp)
 	case ast.BIN_UNEQUAL:
 		switch lhsTyp {
 		case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
@@ -1284,10 +1301,17 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		} else if !as_ref && lhsTyp == c.ddpstring {
 			return lhs, lhsTyp, assign
 		} else {
-			c.err("non-list/string type passed as assignable/reference")
+			c.err("non-list/string/struct type passed as assignable/reference")
 		}
 	case *ast.FieldAccess:
-		panic("TODO")
+		rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
+		if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
+			fieldIndex := getFieldIndex(assign.Field.Literal.Literal, structTyp)
+			fieldPtr := c.indexStruct(rhs, fieldIndex)
+			return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
+		} else {
+			c.err("non-struct type passed to FieldAccess")
+		}
 	}
 	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil
@@ -1341,7 +1365,22 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 	}
 }
 func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
-	panic("TODO")
+	resultType := c.toIrType(expr.Struct.Type)
+	result := c.NewAlloca(resultType.IrType())
+	for i, field := range expr.Struct.Type.Fields {
+		argExpr := expr.Struct.Fields[i].(*ast.VarDecl).InitVal
+		if fieldArg, hasArg := expr.Args[field.Name]; hasArg {
+			// the arg was passed so use that instead
+			argExpr = fieldArg
+		}
+
+		argVal, argType := c.evaluate(argExpr)
+		if !argType.IsPrimitive() {
+			argVal = c.cbb.NewLoad(argType.IrType(), argVal)
+		}
+		c.cbb.NewStore(argVal, c.indexStruct(result, int64(i)))
+	}
+	c.latestReturn, c.latestReturnType = result, resultType
 }
 
 // should have been filtered by the resolver/typechecker, so err
@@ -1393,6 +1432,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
 			irFunc.Visibility = enum.VisibilityDefault
 
 			c.insertFunction(decl.Name(), decl, irFunc)
+		case *ast.StructDecl:
+			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
 		case *ast.BadDecl:
 			c.err("BadDecl in import")
 		default:

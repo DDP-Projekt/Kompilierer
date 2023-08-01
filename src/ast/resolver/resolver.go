@@ -168,7 +168,7 @@ func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) {
 }
 func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
 	// for field access the left operand should always be an *Ident
-	if expr.Operator != ast.BIN_FIELD_ACCESS { // TODO: check private fields
+	if expr.Operator != ast.BIN_FIELD_ACCESS {
 		r.visit(expr.Lhs)
 	} else if _, isIdent := expr.Lhs.(*ast.Ident); !isIdent {
 		r.err(ddperror.SEM_BAD_FIELD_ACCESS, expr.Lhs.GetRange(), fmt.Sprintf("Der VON Operator erwartet einen Namen als Linken Operanden, nicht %s", expr.Lhs))
