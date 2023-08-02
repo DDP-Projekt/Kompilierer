@@ -1597,14 +1597,17 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
-	initValue := c.latestReturn // safe the initial value of the counter to check for less or greater then
+	var incrementer value.Value // Schrittgröße
+	// if no stepsize was present it is 1
+	if s.StepSize == nil {
+		incrementer = newInt(1)
+	} else { // stepsize was present, so compile it
+		incrementer, _, _ = c.evaluate(s.StepSize)
+	}
 
 	condBlock := c.cf.NewBlock("")
-	c.comment("condBlock", condBlock)
 	incrementBlock := c.cf.NewBlock("")
-	c.comment("incrementBlock", incrementBlock)
 	forBody := c.cf.NewBlock("")
-	c.comment("forBody", forBody)
 
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
@@ -1617,18 +1620,10 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	}
 
 	// compile the incrementBlock
-	Var := c.scp.lookupVar(s.Initializer.Name())
-	indexVar := incrementBlock.NewLoad(Var.typ.IrType(), Var.val)
-	var incrementer value.Value // Schrittgröße
-	// if no stepsize was present it is 1
-	if s.StepSize == nil {
-		incrementer = newInt(1)
-	} else { // stepsize was present, so compile it
-		c.cbb = incrementBlock
-		incrementer, _, _ = c.evaluate(s.StepSize)
-	}
-
 	c.cbb = incrementBlock
+	Var := c.scp.lookupVar(s.Initializer.Name())
+	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
+
 	// add the incrementer to the counter variable
 	add := c.cbb.NewAdd(indexVar, incrementer)
 	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
@@ -1636,28 +1631,24 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
-	initGreaterTo := c.cf.NewBlock("")
-	c.comment("initGreaterTo", initGreaterTo)
-	initLessthenTo := c.cf.NewBlock("")
-	c.comment("initLessthenTo", initLessthenTo)
+	loopDown := c.cf.NewBlock("")
+	loopUp := c.cf.NewBlock("")
 	leaveBlock := c.cf.NewBlock("") // after the condition is false we jump to the leaveBlock
-	c.comment("forLeaveBlock", leaveBlock)
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	to, _, _ := c.evaluate(s.To)
-	cond := c.cbb.NewICmp(enum.IPredSLE, initValue, to)
+	cond := c.cbb.NewICmp(enum.IPredSLT, incrementer, newInt(0))
 	c.commentNode(c.cbb, s, "")
-	c.cbb.NewCondBr(cond, initLessthenTo, initGreaterTo)
+	c.cbb.NewCondBr(cond, loopDown, loopUp)
 
-	c.cbb = initLessthenTo
+	c.cbb = loopUp
 	// we are counting up, so compare less-or-equal
-	to, _, _ = c.evaluate(s.To)
+	to, _, _ := c.evaluate(s.To)
 	cond = c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
-	c.cbb = initGreaterTo
+	c.cbb = loopDown
 	// we are counting down, so compare greater-or-equal
 	to, _, _ = c.evaluate(s.To)
 	cond = c.cbb.NewICmp(enum.IPredSGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
