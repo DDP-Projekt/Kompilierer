@@ -1,14 +1,14 @@
 Binde "Duden/Pfade" ein.
 Binde "Duden/Ausgabe" ein.
 
-[ Basispfad Tests ]
+[ BasisPfad Tests ]
 Schreibe (den Basispfad von "/a/b/c/d") auf eine Zeile.
 Schreibe (den Basispfad von "/a/b/c/") auf eine Zeile.
 Schreibe (den Basispfad von "./b") auf eine Zeile.
 Schreibe (den Basispfad von "hi.txt") auf eine Zeile.
 Schreibe (den Basispfad von "") auf eine Zeile.
 
-[ Ordnerpfad Tests ]
+[ OrdnerPfad Tests ]
 Schreibe (den Ordnerpfad von "/a/b/c") auf eine Zeile.
 Schreibe (den Ordnerpfad von "a/b/c") auf eine Zeile.
 Schreibe (den Ordnerpfad von "/a/") auf eine Zeile.
@@ -23,9 +23,24 @@ Schreibe (die Erweiterung der Datei bei "/") auf eine Zeile.
 Schreibe (die Erweiterung der Datei bei ".") auf eine Zeile.
 Schreibe (die Erweiterung der Datei bei "") auf eine Zeile.
 
-[ Dateiname Tests ]
+[ DateiName Tests ]
 Schreibe (den Dateinamen von "/a/b/c/test.txt") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c/") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
 Schreibe (den Dateinamen von "") auf eine Zeile.
+
+[ Säubern Tests ]
+Schreibe (der Pfad "a/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a//c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a/c/." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a/c/b/.." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "/../a/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "/../a/b/../././/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad ".." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "" gesäubert) auf eine Zeile.
+
+[ IstAbsout Tests ]
+Schreibe ("/a/b" ein Absoluter Pfad ist) auf eine Zeile.
+Schreibe ("a/b" ein Absoluter Pfad ist) auf eine Zeile.
+Schreibe ("" ein Absoluter Pfad ist) auf eine Zeile.
