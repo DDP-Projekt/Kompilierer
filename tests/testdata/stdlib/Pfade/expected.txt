@@ -27,3 +27,6 @@ a/c
 /a/c
 ..
 .
+wahr
+falsch
+falsch

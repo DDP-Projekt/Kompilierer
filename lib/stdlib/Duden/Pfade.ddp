@@ -15,7 +15,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion IstAbsolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
 	Gib (das Pfad-Trennzeichen) am Anfang von t steht zurück.
 Und kann so benutzt werden:
-	"ein <t> ein Absoluter Pfad ist"
+	"<t> ein Absoluter Pfad ist"
 
 [
 	Gibt den Pfad ohne den letzen Element zurück. 
