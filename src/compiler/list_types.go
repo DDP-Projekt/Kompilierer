@@ -268,6 +268,13 @@ func (c *compiler) createDeepCopy(listType *ddpIrListType, declarationOnly bool)
 	arrFieldPtr, lenFieldPtr, capFieldPtr := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
 	origArr, origLen, origCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, len_field_index), c.loadStructField(list, cap_field_index)
 
+	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(ret, i64), c.cbb.NewPtrToInt(list, i64))
+	c.createIfElese(ptrs_equal, func() {
+		c.cbb.NewRet(nil)
+	},
+		nil,
+	)
+
 	// allocate(sizeof(t) * list->cap)
 	arr := c.allocateArr(getPointeeTypeT(getPointeeType(arrFieldPtr)), origCap)
 
@@ -331,7 +338,6 @@ func (c *compiler) createEquals(listType *ddpIrListType, declarationOnly bool) *
 	c.cbb = c.cf.NewBlock("")
 
 	// if (list1 == list2) return true;
-	c.cbb.NewPtrToInt(list1, i64)
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(list1, i64), c.cbb.NewPtrToInt(list2, i64))
 	c.createIfElese(ptrs_equal, func() {
 		c.cbb.NewRet(constant.True)
@@ -391,7 +397,7 @@ defines the ddp_x_slice function for a listType
 ddp_x_slice slices a list by two indices
 
 signature:
-bool ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
+void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *compiler) createSlice(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	var (

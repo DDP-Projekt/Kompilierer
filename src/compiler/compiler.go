@@ -91,6 +91,7 @@ type compiler struct {
 	functions        map[string]*funcWrapper  // all the global functions
 	latestReturn     value.Value              // return of the latest evaluated expression (in the ir)
 	latestReturnType ddpIrType                // the type of latestReturn
+	latestIsTemp     bool                     // ewther the latestReturn is a temporary or not
 	importedModules  map[*ast.Module]struct{} // all the modules that have already been imported
 	currentNode      ast.Node                 // used for error reporting
 
@@ -126,6 +127,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 		functions:        make(map[string]*funcWrapper),
 		latestReturn:     nil,
 		latestReturnType: nil,
+		latestIsTemp:     false,
 		importedModules:  make(map[*ast.Module]struct{}),
 	}
 }
@@ -247,11 +249,12 @@ func (c *compiler) visitNode(node ast.Node) {
 	node.Accept(c)
 }
 
-// helper to evalueate an expression and return its ir value
-// if the result is refCounted it's refcount is usually 1
-func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType) {
+// helper to evaluate an expression and return its ir value and type
+// the  bool signals wether the returned value is a temporary value that can be claimed
+// or if it is a 'reference' to a variable that must be copied
+func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType, bool) {
 	c.visitNode(expr)
-	return c.latestReturn, c.latestReturnType
+	return c.latestReturn, c.latestReturnType, c.latestIsTemp
 }
 
 // helper to insert a function into the global function map
@@ -353,6 +356,21 @@ func (c *compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
 	}
 }
 
+// claims the given value if possible, copies it otherwise
+// dest should be a value that is definetly freed at some point (meaning a variable or list-element etc.)
+func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp bool) {
+	if !valTyp.IsPrimitive() {
+		if isTemp { // temporaries can be claimed
+			val = c.cbb.NewLoad(valTyp.IrType(), c.scp.claimTemporary(val))
+			c.cbb.NewStore(val, dest)
+		} else { // non-temporaries need to be copied
+			c.deepCopyInto(dest, val, valTyp)
+		}
+	} else { // primitives are trivially copied
+		c.cbb.NewStore(val, dest) // store the value
+	}
+}
+
 // helper to exit a scope
 // decrements the ref-count on all local variables
 // returns the enclosing scope
@@ -361,6 +379,9 @@ func (c *compiler) exitScope(scp *scope) *scope {
 		if !v.isRef {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
+	}
+	for _, v := range scp.temporaries {
+		c.freeNonPrimitive(v.val, v.typ)
 	}
 	return scp.enclosing
 }
@@ -395,12 +416,10 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
-		initVal, _ := c.evaluate(d.InitVal) // evaluate the initial value
-		if !Typ.IsPrimitive() {
-			initVal = c.cbb.NewLoad(Typ.IrType(), initVal)
-		}
-		c.cbb.NewStore(initVal, Var) // store the initial value
+		initVal, _, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
+		c.claimOrCopy(Var, initVal, Typ, isTemp)
 	}
+
 	if c.scp.enclosing == nil { // module_init
 		cf, cbb := c.cf, c.cbb
 		c.cf, c.cbb = c.moduleInitFunc, c.moduleInitCbb
@@ -520,11 +539,11 @@ func (c *compiler) VisitIdent(e *ast.Ident) {
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
 		c.latestReturn = c.cbb.NewLoad(Var.typ.IrType(), Var.val)
-	} else { // non-primitives need to be deep copied
-		dest := c.NewAlloca(Var.typ.IrType())
-		c.latestReturn = c.deepCopyInto(dest, Var.val, Var.typ)
+	} else { // non-primitives are used by pointer
+		c.latestReturn = Var.val
 	}
 	c.latestReturnType = Var.typ
+	c.latestIsTemp = false
 }
 
 func (c *compiler) VisitIndexing(e *ast.Indexing) {
@@ -540,18 +559,18 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
 
 	if stringIndexing != nil {
-		lhs, lhsTyp := c.evaluate(stringIndexing.Lhs)
-		index, _ := c.evaluate(stringIndexing.Index)
+		lhs, _, _ := c.evaluate(stringIndexing.Lhs)
+		index, _, _ := c.evaluate(stringIndexing.Index)
 		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, index)
 		c.latestReturnType = c.ddpchartyp
-		c.freeNonPrimitive(lhs, lhsTyp)
+		// c.latestIsTemp = false // it is a primitive typ, so we don't care
 		return
 	} else {
 		if elementType.IsPrimitive() {
 			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
 		} else {
-			dest := c.NewAlloca(elementType.IrType())
-			c.latestReturn = c.deepCopyInto(dest, elementPtr, elementType)
+			c.latestReturn = elementPtr
+			c.latestIsTemp = false
 		}
 	}
 	c.latestReturnType = elementType
@@ -587,8 +606,9 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
 	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
-	c.latestReturn = dest
+	c.latestReturn = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestReturnType = c.ddpstring
+	c.latestIsTemp = true
 }
 func (c *compiler) VisitListLit(e *ast.ListLit) {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
@@ -599,11 +619,12 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
 		listLen = newInt(int64(len(e.Values)))
 	} else if e.Count != nil && e.Value != nil {
-		listLen, _ = c.evaluate(e.Count)
+		listLen, _, _ = c.evaluate(e.Count)
 	} else { // empty list
 		c.cbb.NewStore(listType.DefaultValue(), list)
-		c.latestReturn = list
+		c.latestReturn = c.scp.addTemporary(list, listType)
 		c.latestReturnType = listType
+		c.latestIsTemp = true
 		return
 	}
 
@@ -615,34 +636,30 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil { // we got some values to copy
 		// evaluate every value and copy it into the array
 		for i, v := range e.Values {
-			val, valTyp := c.evaluate(v)
+			val, valTyp, isTemp := c.evaluate(v)
 			elementPtr := c.indexArray(listArr, newInt(int64(i)))
-			if !valTyp.IsPrimitive() {
-				val = c.cbb.NewLoad(valTyp.IrType(), val)
-			}
-			c.cbb.NewStore(val, elementPtr)
+			c.claimOrCopy(elementPtr, val, valTyp, isTemp)
 		}
 	} else if e.Count != nil && e.Value != nil { // single Value multiple times
-		Value, _ := c.evaluate(e.Value)
+		val, _, _ := c.evaluate(e.Value) // if val is a temporary, it is freed automatically
 
 		c.createFor(zero, c.forDefaultCond(listLen), func(index value.Value) {
 			elementPtr := c.indexArray(listArr, index)
 			if listType.elementType.IsPrimitive() {
-				c.cbb.NewStore(Value, elementPtr)
+				c.cbb.NewStore(val, elementPtr)
 			} else {
-				c.deepCopyInto(elementPtr, Value, listType.elementType)
+				c.deepCopyInto(elementPtr, val, listType.elementType)
 			}
 		})
-
-		c.freeNonPrimitive(Value, listType.elementType)
 	}
-	c.latestReturn = list
+	c.latestReturn = c.scp.addTemporary(list, listType)
 	c.latestReturnType = listType
+	c.latestIsTemp = true
 }
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	const all_ones int64 = ^0 // int with all bits set to 1
 
-	rhs, typ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
+	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
@@ -717,20 +734,18 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
-
-	c.freeNonPrimitive(rhs, typ)
 }
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	switch e.Operator {
 	case ast.BIN_AND:
-		lhs, _ := c.evaluate(e.Lhs)
+		lhs, _, _ := c.evaluate(e.Lhs)
 		startBlock, trueBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
 
 		c.cbb = trueBlock
-		rhs, _ := c.evaluate(e.Rhs)
+		rhs, _, _ := c.evaluate(e.Rhs)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		trueBlock = c.cbb
@@ -741,13 +756,13 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.latestReturnType = c.ddpbooltyp
 		return
 	case ast.BIN_OR:
-		lhs, _ := c.evaluate(e.Lhs)
+		lhs, _, _ := c.evaluate(e.Lhs)
 		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
 
 		c.cbb = falseBlock
-		rhs, _ := c.evaluate(e.Rhs)
+		rhs, _, _ := c.evaluate(e.Rhs)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb // in case c.evaluate has multiple blocks
@@ -760,8 +775,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	}
 
 	// compile the two expressions onto which the operator is applied
-	lhs, lhsTyp := c.evaluate(e.Lhs)
-	rhs, rhsTyp := c.evaluate(e.Rhs)
+	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
+	rhs, rhsTyp, isTempRhs := c.evaluate(e.Rhs)
 	// big switches on the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
@@ -769,6 +784,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		var (
 			result    value.Value
 			resultTyp ddpIrType
+			claimsLhs bool
+			claimsRhs bool
 		)
 
 		lhsListTyp, lhsIsList := lhsTyp.(*ddpIrListType)
@@ -792,28 +809,47 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		var concat_func *ir.Func = nil
 		if lhsTyp == c.ddpstring && rhsTyp == c.ddpstring {
 			concat_func = c.ddpstring.str_str_concat_IrFunc
+			claimsLhs, claimsRhs = true, false
 		} else if lhsTyp == c.ddpstring && rhsTyp == c.ddpchartyp {
 			concat_func = c.ddpstring.str_char_concat_IrFunc
+			claimsLhs, claimsRhs = true, false
 		} else if lhsTyp == c.ddpchartyp && rhsTyp == c.ddpstring {
 			concat_func = c.ddpstring.char_str_concat_IrFunc
+			claimsLhs, claimsRhs = false, true
 		}
 
 		// list concatenations
 		if concat_func == nil {
 			if lhsIsList && rhsIsList {
 				concat_func = lhsListTyp.list_list_concat_IrFunc
+				claimsLhs, claimsRhs = true, false
 			} else if lhsIsList && !rhsIsList {
 				concat_func = lhsListTyp.list_scalar_concat_IrFunc
+				claimsLhs, claimsRhs = true, false
 			} else if !lhsIsList && !rhsIsList {
 				concat_func = c.getListType(lhsTyp).scalar_scalar_concat_IrFunc
+				claimsLhs, claimsRhs = false, false
 			} else if !lhsIsList && rhsIsList {
 				concat_func = rhsListTyp.scalar_list_concat_IrFunc
+				claimsLhs, claimsRhs = false, true
 			}
 		}
 
+		// the concat functions use the buffer of some of their arguments
+		// if those arguments aren't temporaries, we copy them
+		if claimsLhs && !isTempLhs {
+			dest := c.NewAlloca(lhsTyp.IrType())
+			lhs = c.deepCopyInto(dest, lhs, lhsTyp)
+		}
+		if claimsRhs && !isTempRhs {
+			dest := c.NewAlloca(rhsTyp.IrType())
+			rhs = c.deepCopyInto(dest, rhs, rhsTyp)
+		}
+
 		c.cbb.NewCall(concat_func, result, lhs, rhs)
-		c.latestReturn = result
+		c.latestReturn = c.scp.addTemporary(result, resultTyp)
 		c.latestReturnType = resultTyp
+		c.latestIsTemp = true
 	case ast.BIN_PLUS:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -940,12 +976,25 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 				c.createIfElese(cond, func() {
 					listArr := c.loadStructField(lhs, arr_field_index)
 					elementPtr := c.indexArray(listArr, index)
-					if listType.elementType.IsPrimitive() { // primitives are simply loaded
-						c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+					// if the list is a temporary, we need to copy the element
+					if isTempLhs {
+						if listType.elementType.IsPrimitive() { // primitives are simply loaded
+							c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+						} else {
+							dest := c.NewAlloca(listType.elementType.IrType())
+							c.latestReturn = c.scp.addTemporary(
+								c.deepCopyInto(dest, elementPtr, listType.elementType),
+								listType.elementType,
+							)
+							c.latestIsTemp = true // the element is now also a temporary
+						}
 					} else {
-						dest := c.NewAlloca(listType.elementType.IrType())
-						c.deepCopyInto(dest, elementPtr, listType.elementType)
-						c.latestReturn = dest
+						if listType.elementType.IsPrimitive() {
+							c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+						} else { // the list is not temporary, so a reference to the element is enough
+							c.latestReturn = elementPtr
+							c.latestIsTemp = false
+						}
 					}
 				}, func() { // runtime error
 					c.out_of_bounds_error(rhs, listLen)
@@ -1143,13 +1192,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 		c.latestReturnType = c.ddpbooltyp
 	}
-	c.freeNonPrimitive(lhs, lhsTyp)
-	c.freeNonPrimitive(rhs, rhsTyp)
 }
 func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
-	lhs, lhsTyp := c.evaluate(e.Lhs)
-	mid, midTyp := c.evaluate(e.Mid)
-	rhs, rhsTyp := c.evaluate(e.Rhs)
+	lhs, lhsTyp, _ := c.evaluate(e.Lhs)
+	mid, midTyp, _ := c.evaluate(e.Mid)
+	rhs, rhsTyp, _ := c.evaluate(e.Rhs)
 
 	switch e.Operator {
 	case ast.TER_SLICE:
@@ -1164,30 +1211,24 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 				c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturn = dest
+		c.latestReturn = c.scp.addTemporary(dest, lhsTyp)
 		c.latestReturnType = lhsTyp
+		c.latestIsTemp = true
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}
-
-	c.freeNonPrimitive(lhs, lhsTyp)
-	c.freeNonPrimitive(mid, midTyp)
-	c.freeNonPrimitive(rhs, rhsTyp)
 }
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
-	lhs, lhsTyp := c.evaluate(e.Lhs)
+	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	if e.Type.IsList {
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
 		elementPtr := c.indexArray(c.loadStructField(list, arr_field_index), zero)
-		if !lhsTyp.IsPrimitive() {
-			lhs = c.cbb.NewLoad(lhsTyp.IrType(), lhs)
-		}
-		c.cbb.NewStore(lhs, elementPtr)
-		c.latestReturn = list
+		c.claimOrCopy(elementPtr, lhs, lhsTyp, isTempLhs)
+		c.latestReturn = c.scp.addTemporary(list, listType)
 		c.latestReturnType = listType
-		return // don't free lhs
+		c.latestIsTemp = true
 	} else {
 		switch e.Type.Primitive {
 		case ddptypes.ZAHL:
@@ -1238,6 +1279,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 		case ddptypes.TEXT:
 			if lhsTyp == c.ddpstring {
 				c.latestReturn = lhs
+				c.latestReturnType = c.ddpstring
+				c.latestIsTemp = isTempLhs
 				return // don't free lhs
 			}
 
@@ -1256,13 +1299,13 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			}
 			dest := c.NewAlloca(c.ddpstring.typ)
 			c.cbb.NewCall(to_string_func, dest, lhs)
-			c.latestReturn = dest
+			c.latestReturn = c.scp.addTemporary(dest, c.ddpstring)
+			c.latestIsTemp = true
 		default:
 			c.err("Invalide Typumwandlung zu %s", e.Type)
 		}
 	}
 	c.latestReturnType = c.toIrType(e.Type)
-	c.freeNonPrimitive(lhs, lhsTyp)
 }
 func (c *compiler) VisitGrouping(e *ast.Grouping) {
 	e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
@@ -1279,7 +1322,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-			index, _ := c.evaluate(assign.Index)
+			index, _, _ := c.evaluate(assign.Index)
 			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
 			listArr := c.loadStructField(lhs, arr_field_index)
 			elementPtr := c.indexArray(listArr, index)
@@ -1315,7 +1358,14 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 				c.err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
 		} else {
-			val, _ = c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+			eval, valTyp, isTemp := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+			if valTyp.IsPrimitive() {
+				val = eval
+			} else { // function parameters need to be copied by the caller
+				dest := c.NewAlloca(valTyp.IrType())
+				c.claimOrCopy(dest, eval, valTyp, isTemp)
+				val = dest // do not add it to the temporaries, as the callee will free it
+			}
 		}
 
 		args = append(args, val) // add the value to the arguments
@@ -1327,7 +1377,8 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 		c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
 	} else {
 		c.cbb.NewCall(fun.irFunc, args...)
-		c.latestReturn = ret
+		c.latestReturn = c.scp.addTemporary(ret, irReturnType)
+		c.latestIsTemp = true
 	}
 	c.latestReturnType = irReturnType
 
@@ -1350,8 +1401,7 @@ func (c *compiler) VisitDeclStmt(s *ast.DeclStmt) {
 	s.Decl.Accept(c)
 }
 func (c *compiler) VisitExprStmt(s *ast.ExprStmt) {
-	expr, exprTyp := c.evaluate(s.Expr)
-	c.freeNonPrimitive(expr, exprTyp)
+	c.visitNode(s.Expr)
 }
 func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
 	if s.Module == nil {
@@ -1422,19 +1472,16 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
 
 }
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) {
-	rhs, rhsTyp := c.evaluate(s.Rhs) // compile the expression
+	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
 
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
 	if lhsStringIndexing != nil {
-		index, _ := c.evaluate(lhsStringIndexing.Index)
+		index, _, _ := c.evaluate(lhsStringIndexing.Index)
 		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
-		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
-		if !lhsTyp.IsPrimitive() {
-			rhs = c.cbb.NewLoad(rhsTyp.IrType(), rhs)
-		}
-		c.cbb.NewStore(rhs, lhs) // store the new value
+		c.freeNonPrimitive(lhs, lhsTyp)            // free the old value in the variable/list
+		c.claimOrCopy(lhs, rhs, rhsTyp, isTempRhs) // copy/claim the new value
 	}
 }
 func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) {
@@ -1456,7 +1503,7 @@ func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
 func (c *compiler) VisitIfStmt(s *ast.IfStmt) {
-	cond, _ := c.evaluate(s.Condition)
+	cond, _, _ := c.evaluate(s.Condition)
 	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.commentNode(c.cbb, s, "")
 	if s.Else != nil {
@@ -1509,7 +1556,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 		}
 
 		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
-		cond, _ := c.evaluate(s.Condition)
+		cond, _, _ := c.evaluate(s.Condition)
 		leaveBlock := c.cf.NewBlock("")
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewCondBr(cond, body, leaveBlock)
@@ -1517,7 +1564,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 		c.cbb = leaveBlock
 	case token.WIEDERHOLE:
 		counter := c.NewAlloca(ddpint)
-		cond, _ := c.evaluate(s.Condition)
+		cond, _, _ := c.evaluate(s.Condition)
 		c.cbb.NewStore(cond, counter)
 		condBlock := c.cf.NewBlock("")
 		body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
@@ -1578,7 +1625,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 		incrementer = newInt(1)
 	} else { // stepsize was present, so compile it
 		c.cbb = incrementBlock
-		incrementer, _ = c.evaluate(s.StepSize)
+		incrementer, _, _ = c.evaluate(s.StepSize)
 	}
 
 	c.cbb = incrementBlock
@@ -1598,21 +1645,21 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	to, _ := c.evaluate(s.To)
+	to, _, _ := c.evaluate(s.To)
 	cond := c.cbb.NewICmp(enum.IPredSLE, initValue, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, initLessthenTo, initGreaterTo)
 
 	c.cbb = initLessthenTo
 	// we are counting up, so compare less-or-equal
-	to, _ = c.evaluate(s.To)
+	to, _, _ = c.evaluate(s.To)
 	cond = c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb = initGreaterTo
 	// we are counting down, so compare greater-or-equal
-	to, _ = c.evaluate(s.To)
+	to, _, _ = c.evaluate(s.To)
 	cond = c.cbb.NewICmp(enum.IPredSGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
@@ -1621,8 +1668,10 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 }
 func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.scp = newScope(c.scp)
-	in, inTyp := c.evaluate(s.In)
-	c.scp.addNonPrimitive(in, inTyp)
+	in, inTyp, isTempIn := c.evaluate(s.In)
+	temp := c.NewAlloca(inTyp.IrType())
+	c.claimOrCopy(temp, in, inTyp, isTempIn)
+	in = c.scp.addTemporary(temp, inTyp)
 
 	var len value.Value
 	if inTyp == c.ddpstring {
@@ -1661,6 +1710,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 		}
 	}
 	c.visitNode(s.Body)
+	c.freeNonPrimitive(loopVar.val, loopVar.typ)
 	if c.cbb.Term == nil {
 		c.cbb.NewBr(incrementBlock)
 	}
@@ -1669,8 +1719,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb.NewStore(c.cbb.NewAdd(c.cbb.NewLoad(ddpint, index), newInt(1)), index)
 	c.cbb.NewBr(condBlock)
 
-	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp)
-	c.freeNonPrimitive(in, inTyp)
+	c.cbb = leaveBlock
+	delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
+	c.scp = c.exitScope(c.scp)
 }
 func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
@@ -1679,22 +1730,20 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 		c.cbb.NewRet(nil)
 		return
 	}
-	val, valTyp := c.evaluate(s.Value)
-	c.exitNestedScopes()
-	c.commentNode(c.cbb, s, "")
+	val, valTyp, isTemp := c.evaluate(s.Value)
 	if valTyp.IsPrimitive() {
 		c.cbb.NewRet(val)
 	} else {
 		c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
+		c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
 		c.cbb.NewRet(nil)
 	}
+	c.exitNestedScopes()
+	c.commentNode(c.cbb, s, "")
 }
 
 func (c *compiler) exitNestedScopes() {
 	for scp := c.scp; scp != c.cfscp; scp = c.exitScope(scp) {
-		for _, v := range scp.non_primitives {
-			c.freeNonPrimitive(v.val, v.typ)
-		}
 	}
 	c.exitScope(c.cfscp)
 }
