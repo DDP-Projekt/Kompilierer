@@ -29,3 +29,13 @@ Schreibe (den Dateinamen von "/a/b/c/") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
 Schreibe (den Dateinamen von "") auf eine Zeile.
+
+[ Clean Tests ]
+Schreibe (der Pfad "a/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a//c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a/c/." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a/c/b/.." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "/../a/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "/../a/b/../././/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad ".." gesäubert) auf eine Zeile.
+Schreibe (der Pfad "" gesäubert) auf eine Zeile.

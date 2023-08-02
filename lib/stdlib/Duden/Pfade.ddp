@@ -76,3 +76,47 @@ Die öffentliche Funktion DateiName mit dem Parameter t vom Typ Text, gibt einen
 Und kann so benutzt werden:
 	"den Dateinamen von <t>",
 	"der Dateiname von <t>"
+
+Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn t gleich "" ist, gib "." zurück.
+	Der Boolean rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
+	Die Zahl n ist die Länge von t.
+	Die Text path ist "".
+	Die Zahl r ist 1.
+	Die Zahl dotdot ist 1.
+	Wenn rooted gleich wahr ist, dann:
+		Füge '/' an path an.
+		Speichere 2 in r.
+		Speichere 2 in dotdot.
+
+	Solange r kleiner als, oder n ist, mache:
+		Wenn t an der Stelle r gleich '/' ist, dann:
+			[ empty path element ]
+			Erhöhe r um 1.
+		Wenn aber t an der Stelle r gleich '.' ist und (r gleich n ist oder t an der Stelle (r plus 1) gleich '/' ist), dann:
+			[ . element ]
+			Erhöhe r um 1.
+		Wenn aber t an der Stelle r gleich '.' ist und t an der Stelle (r plus 1) gleich '.' ist und (r plus 1 gleich n ist oder t an der Stelle (r plus 2) gleich '/' ist), dann:
+			[ .. element: remove last / ]
+			Erhöhe r um 2.
+			Wenn die Länge von path größer als dotdot ist, dann:
+				Mache:
+					Speichere path von 1 bis (die Länge von path minus 1) in path.
+				Solange die Länge von path größer als dotdot ist und path an der Stelle (die Länge von path minus 1) ungleich '/' ist.
+			Wenn aber rooted gleich falsch ist, dann:
+				Wenn die Länge von path größer als 0 ist, dann:
+					Füge '/' an path an.
+				Füge ".." an path an.
+				Speichere die Länge von path in dotdot.
+		Sonst:
+			Wenn rooted und die Länge von path ungleich 1 ist oder nicht rooted und die Länge von path ungleich 0 ist, dann:
+				Füge '/' an path an.
+
+			Solange r kleiner als, oder n ist und t an der Stelle r ungleich '/' ist, mache:
+				Füge (t an der Stelle r) an path an.
+				Erhöhe r um 1.
+
+	Wenn path leer ist, speichere "." in path.
+	Gib path zurück.
+Und kann so benutzt werden:
+	"der Pfad <t> gesäubert"

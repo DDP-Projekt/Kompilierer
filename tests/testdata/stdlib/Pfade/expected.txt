@@ -19,3 +19,11 @@ c
 c
 test
 
+a/c
+a/c
+a/c
+a/c
+/a/c
+/a/c
+..
+.
