@@ -299,5 +299,7 @@ func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
 	if stmt.Value == nil {
 		return
 	}
-	h.visit(stmt.Value)
+	if stmt.Value != nil { // void return
+		h.visit(stmt.Value)
+	}
 }
