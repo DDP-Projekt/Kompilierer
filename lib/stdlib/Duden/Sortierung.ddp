@@ -9,8 +9,27 @@ Und kann so benutzt werden:
 	"tausche <a> und <b>" oder
 	"Tausche <a> und <b>"
 
+[sortiert a, b und c unter der Annahme, dass es listen elemente in der entsprechenden Reihenfolge sind]
+Die Funktion DreiZahlenSortieren mit den Parametern a, b und c vom Typ Zahlen Referenz, Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
+	Wenn a größer als c ist, tausche a und c.
+	Wenn a größer als b ist, tausche a und b.
+	Wenn b größer als c ist, tausche b und c.
+Und kann so benutzt werden:
+	"Sortiere <a>, <b> und <c>"
+
 Die Funktion Quicksort_Rec mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Wenn re kleiner als, oder li ist, verlasse die Funktion.
+
+	Die Zahl list_len ist re minus li plus 1.
+	Wenn list_len gleich 2 ist und liste an der Stelle li größer als liste an der Stelle re ist, dann:
+		Tausche (liste an der Stelle li) und (liste an der Stelle re).
+		Verlasse die Funktion.
+	
+	[3-Median]
+	Die Zahl mi ist li plus (list_len durch 2) als Zahl.
+	Sortiere (liste an der Stelle li), (liste an der Stelle mi) und (liste an der Stelle re).
+	Wenn list_len gleich 3 ist, verlasse die Funktion.
+	Tausche (liste an der Stelle mi) und (liste an der Stelle re).
 
 	Die Zahl pivot ist liste an der Stelle re.
 	Die Zahl i ist li minus 1.
