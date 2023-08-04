@@ -17,18 +17,40 @@ Die Funktion DreiZahlenSortieren mit den Parametern a, b und c vom Typ Zahlen Re
 Und kann so benutzt werden:
 	"Sortiere <a>, <b> und <c>"
 
-Die Funktion Quicksort_Rec mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Wenn re kleiner als, oder li ist, verlasse die Funktion.
+Die Zahlen Liste stack ist 50 mal 2 Mal 0.
+Die Zahl stack_top ist 0.
+
+Die Funktion VomStackNehmen mit den Parametern _links und _rechts vom Typ Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
+	Speichere stack an der Stelle stack_top in _links.
+	Speichere stack an der Stelle (stack_top minus 1) in _rechts.
+	Verringere stack_top um 2.
+Und kann so benutzt werden:
+	"Nimm <_links> und <_rechts> vom Stack"
+
+Die Funktion AufDenStackLegen mit den Parametern _links und _rechts vom Typ Zahl und Zahl, gibt nichts zurück, macht:
+	Wenn die Länge von stack gleich stack_top ist, dann:
+		Die Zahlen Liste zehnmalnull ist 10 Mal 0.
+		Speichere stack verkettet mit zehnmalnull in stack.
+
+	Erhöhe stack_top um 2.
+	Speichere _links in stack an der Stelle stack_top.
+	Speichere _rechts in stack an der Stelle (stack_top minus 1).
+Und kann so benutzt werden:
+	"Lege <_links> und <_rechts> auf den Stack" oder
+	"lege <_links> und <_rechts> auf den Stack"
+
+Die Funktion Quicksort_Iter_Impl mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt eine Zahl zurück, macht:
+	Wenn re kleiner als, oder li ist, gib li zurück.
 
 	Die Zahl list_len ist re minus li plus 1.
-	Wenn list_len gleich 2 ist und liste an der Stelle li größer als liste an der Stelle re ist, dann:
-		Tausche (liste an der Stelle li) und (liste an der Stelle re).
-		Verlasse die Funktion.
+	Wenn list_len gleich 2 ist, dann: 
+		Wenn liste an der Stelle li größer als liste an der Stelle re ist, tausche (liste an der Stelle li) und (liste an der Stelle re).
+		Gib li zurück.
 	
 	[3-Median]
 	Die Zahl mi ist li plus (list_len durch 2) als Zahl.
 	Sortiere (liste an der Stelle li), (liste an der Stelle mi) und (liste an der Stelle re).
-	Wenn list_len gleich 3 ist, verlasse die Funktion.
+	Wenn list_len gleich 3 ist, gib mi zurück.
 	Tausche (liste an der Stelle mi) und (liste an der Stelle re).
 
 	Die Zahl pivot ist liste an der Stelle re.
@@ -49,26 +71,36 @@ Die Funktion Quicksort_Rec mit den Parametern liste, li und re vom Typ Zahlen Li
 
 	Tausche (liste an der Stelle i) und (liste an der Stelle re).
 
-	quicksort-rec liste li (i minus 1).
-	quicksort-rec liste (i plus 1) re.
+	Gib i zurück.
 Und kann so benutzt werden:
-	"quicksort-rec <liste> <li> <re>"
+	"quicksort-iter-impl <liste> <li> <re>"
+
+Die Funktion Quicksort_Iter mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Lege li und re auf den Stack.
+	Solange stack_top größer als 0 ist, mache:
+		Nimm li und re vom Stack.
+		Die Zahl i ist quicksort-iter-impl liste li re.
+
+		Wenn i minus 1 größer als li ist, lege li und (i minus 1) auf den Stack.
+		Wenn i plus 1 kleiner als re ist, lege (i plus 1) und re auf den Stack.
+Und kann so benutzt werden:
+	"quicksort-iter <liste> <li> <re>"
 
 [
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert.
-	Zeitkomplexität: O(n * log(n))
+	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
 ]
-Die öffentliche Funktion Quicksort_Neu_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
-	quicksort-rec liste 1 (die Länge von liste).
+Die öffentliche Funktion Quicksort_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+	quicksort-iter liste 1 (die Länge von liste).
 Und kann so benutzt werden:
 	"Sortiere <liste>" oder
 	"Sortiere <liste> mit quick-sort"
 
 [
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert und die sortierte Liste zurück gibt.
-	Zeitkomplexität: O(n * log(n))
+	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
 ]
-Die öffentliche Funktion Quicksort_Neu mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
 	Sortiere liste mit quick-sort.
 	Gib liste zurück.
 Und kann so benutzt werden:
