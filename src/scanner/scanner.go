@@ -22,7 +22,7 @@ const (
 
 type Scanner struct {
 	file         string // Path to the file
-	src          []rune
+	src          []byte
 	errorHandler ddperror.Handler // this function is called for all error messages
 	mode         Mode             // scanner mode (alias, initializing, ...)
 
@@ -78,7 +78,7 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 		return nil, ddperror.New(ddperror.SYN_INVALID_UTF8, scan.currentRange(), ddperror.MSG_INVALID_UTF8, scan.file)
 	}
 
-	scan.src = []rune(string(src))
+	scan.src = src
 
 	return scan, nil
 }
@@ -108,7 +108,7 @@ func (s *Scanner) NextToken() token.Token {
 	char := s.advance()
 
 	if isAlpha(char) {
-		return s.identifier()
+		return s.identifier(char)
 	}
 	if isDigit(char) {
 		return s.number()
@@ -254,10 +254,10 @@ func (s *Scanner) number() token.Token {
 	return s.newToken(tok)
 }
 
-func (s *Scanner) identifier() token.Token {
+func (s *Scanner) identifier(start rune) token.Token {
 	shouldReportCapitailzation := false // we don't report capitalization errors on aliases but don't know the tokenType yet, so this flag is used
 	var capitalRange token.Range
-	if s.strictCapitalizationMode() && s.shouldCapitalize && !isUpper(s.src[s.cur-1]) {
+	if s.strictCapitalizationMode() && s.shouldCapitalize && !isUpper(start) {
 		shouldReportCapitailzation = true
 		capitalRange = s.currentRange()
 	}
@@ -395,26 +395,30 @@ func (s *Scanner) currentRange() token.Range {
 const eof = -1
 
 func (s *Scanner) advance() rune {
-	s.cur++
+	r, w := utf8.DecodeRune(s.src[s.cur:])
+	s.cur += w
 	s.column++
-	if s.shouldIndent && !isSpace(s.src[s.cur-1]) {
+	if s.shouldIndent && !isSpace(r) {
 		s.shouldIndent = false
 	}
-	return s.src[s.cur-1]
+	return r
 }
 
 func (s *Scanner) peek() rune {
 	if s.atEnd() {
 		return eof
 	}
-	return s.src[s.cur]
+	r, _ := utf8.DecodeRune(s.src[s.cur:])
+	return r
 }
 
 func (s *Scanner) peekNext() rune {
 	if s.atEnd() || s.cur+1 >= len(s.src) {
 		return eof
 	}
-	return s.src[s.cur+1]
+	_, w := utf8.DecodeRune(s.src[s.cur:])
+	r, _ := utf8.DecodeRune(s.src[s.cur+w:])
+	return r
 }
 
 func (s *Scanner) err(code ddperror.Code, Range token.Range, msg string) {
