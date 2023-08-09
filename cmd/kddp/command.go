@@ -5,6 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,32 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 )
+
+// https://stackoverflow.com/a/74146375
+// ParseFlagSet works like flagset.Parse(), except positional arguments are not
+// required to come after flag arguments.
+func parseFlagSet(flagset *flag.FlagSet, args []string) error {
+	var positionalArgs []string
+	for {
+		if err := flagset.Parse(args); err != nil {
+			return err
+		}
+		// Consume all the flags that were parsed as flags.
+		args = args[len(args)-flagset.NArg():]
+		if len(args) == 0 {
+			break
+		}
+		// There's at least one flag remaining and it must be a positional arg since
+		// we consumed all args that were parsed as flags. Consume just the first
+		// one, and retry parsing, since subsequent args may be flags.
+		positionalArgs = append(positionalArgs, args[0])
+		args = args[1:]
+	}
+	// Parse just the positional args so that flagset.Args()/flagset.NArgs()
+	// return the expected value.
+	// Note: This should never return an error.
+	return flagset.Parse(positionalArgs)
+}
 
 // interface for a sub-command
 type Command interface {
@@ -49,11 +76,11 @@ func NewHelpCommand() *HelpCommand {
 }
 
 func (cmd *HelpCommand) Init(args []string) error {
-	// maybe a sub-command was specified
-	if len(args) > 0 {
-		cmd.cmd = args[0]
+	if err := parseFlagSet(cmd.fs, args); err != nil {
+		return err
 	}
-	return cmd.fs.Parse(args)
+	cmd.cmd = cmd.fs.Arg(0)
+	return nil
 }
 
 func (cmd *HelpCommand) Run() error {
@@ -113,17 +140,6 @@ func NewBuildCommand() *BuildCommand {
 }
 
 func (cmd *BuildCommand) Init(args []string) error {
-	// a input .ddp file is necessary
-	if len(args) < 1 {
-		return fmt.Errorf("Der kompiliere Befehl braucht eine Eingabedatei")
-	}
-
-	// the first argument must be the input file (.ddp)
-	cmd.filePath = args[0]
-	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
-	}
-
 	// set all the flags
 	cmd.fs.StringVar(&cmd.outPath, "o", cmd.outPath, "Optionaler Pfad der Ausgabedatei")
 	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", cmd.gcc_flags, "Benutzerdefinierte Optionen, die gcc übergeben werden")
@@ -132,7 +148,17 @@ func (cmd *BuildCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Gibt wortreiche Informationen während des Befehls")
 	cmd.fs.BoolVar(&cmd.link_modules, "module_linken", cmd.link_modules, "Ob alle Module in das Hauptmodul gelinkt werden sollen")
 	cmd.fs.BoolVar(&cmd.link_list_defs, "list_defs_linken", cmd.link_list_defs, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
-	return cmd.fs.Parse(args[1:])
+
+	if err := parseFlagSet(cmd.fs, args); err != nil {
+		return err
+	}
+	if cmd.fs.NArg() >= 1 {
+		cmd.filePath = cmd.fs.Arg(0)
+		if filepath.Ext(cmd.filePath) != ".ddp" {
+			return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
+		}
+	}
+	return nil
 }
 
 // invokes the main behaviour of kddp
@@ -181,7 +207,11 @@ func (cmd *BuildCommand) Run() error {
 
 	// create the path to the output file
 	if cmd.outPath == "" { // if no output file was specified, we use the name of the input .ddp file
-		cmd.outPath = changeExtension(cmd.filePath, extension)
+		if cmd.filePath == "" {
+			cmd.outPath = "ddp" + extension // if no input file was specified, we use the default name "ddp"
+		} else {
+			cmd.outPath = changeExtension(cmd.filePath, extension)
+		}
 	} else { // otherwise we use the provided name
 		cmd.outPath = changeExtension(cmd.outPath, extension)
 	}
@@ -214,9 +244,17 @@ func (cmd *BuildCommand) Run() error {
 	}
 	defer to.Close()
 
-	src, err := os.ReadFile(cmd.filePath)
-	if err != nil {
-		return err
+	var src []byte
+	// if no input file was specified, we read from stdin
+	if cmd.filePath == "" {
+		cmd.filePath = "stdin"
+		if src, err = io.ReadAll(os.Stdin); err != nil {
+			return err
+		}
+	} else {
+		if src, err = os.ReadFile(cmd.filePath); err != nil {
+			return err
+		}
 	}
 
 	errorHandler := ddperror.MakeAdvancedHandler(cmd.filePath, src, os.Stderr)
@@ -299,21 +337,28 @@ func NewParseCommand() *ParseCommand {
 }
 
 func (cmd *ParseCommand) Init(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("Der parse Befehl braucht eine Eingabedatei")
-	}
-
-	cmd.filePath = args[0]
-	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
-	}
-
 	cmd.fs.StringVar(&cmd.outPath, "o", cmd.outPath, "Optionaler Pfad der Ausgabedatei")
-	return cmd.fs.Parse(args[1:])
+	if err := parseFlagSet(cmd.fs, args); err != nil {
+		return err
+	}
+	if cmd.fs.NArg() >= 1 {
+		cmd.filePath = cmd.fs.Arg(0)
+		if filepath.Ext(cmd.filePath) != ".ddp" {
+			return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
+		}
+	}
+	return nil
 }
 
 func (cmd *ParseCommand) Run() error {
-	module, err := parser.Parse(parser.Options{FileName: cmd.filePath, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
+	var src []byte
+	if cmd.filePath == "" {
+		var err error
+		if src, err = io.ReadAll(os.Stdin); err != nil {
+			return err
+		}
+	}
+	module, err := parser.Parse(parser.Options{FileName: cmd.filePath, Source: src, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
 	if err != nil {
 		return err
 	}
@@ -366,7 +411,7 @@ func NewVersionCommand() *VersionCommand {
 func (cmd *VersionCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Zeige wortreiche Informationen")
 	cmd.fs.BoolVar(&cmd.build_info, "go_build_info", cmd.build_info, "Zeige Go build Informationen")
-	return cmd.fs.Parse(args)
+	return parseFlagSet(cmd.fs, args)
 }
 
 var (
@@ -434,22 +479,20 @@ func NewRunCommand() *RunCommand {
 }
 
 func (cmd *RunCommand) Init(args []string) error {
-	// a input .ddp file is necessary
-	if len(args) < 1 {
-		return fmt.Errorf("Der starte Befehl braucht eine Eingabedatei")
-	}
-
-	// the first argument must be the input file (.ddp)
-	cmd.filePath = args[0]
-	if filepath.Ext(cmd.filePath) != ".ddp" {
-		return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
-	}
-
 	// set all the flags
 	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", cmd.gcc_flags, "Benutzerdefinierte Optionen, die gcc übergeben werden")
 	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", cmd.extern_gcc_flags, "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
 	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Gibt wortreiche Informationen während des Befehls")
-	return cmd.fs.Parse(args[1:])
+	if err := parseFlagSet(cmd.fs, args); err != nil {
+		return err
+	}
+	if cmd.fs.NArg() >= 1 {
+		cmd.filePath = cmd.fs.Arg(0)
+		if filepath.Ext(cmd.filePath) != ".ddp" {
+			return fmt.Errorf("Die Eingabedatei ist keine .ddp Datei")
+		}
+	}
+	return nil
 }
 
 func (cmd *RunCommand) Run() error {
@@ -467,6 +510,9 @@ func (cmd *RunCommand) Run() error {
 	defer os.RemoveAll(outDir)
 
 	exePath := filepath.Join(outDir, filepath.Base(changeExtension(cmd.filePath, ".exe")))
+	if cmd.filePath == "" {
+		exePath = filepath.Join(outDir, "ddp.exe")
+	}
 
 	buildCmd := NewBuildCommand()
 	buildCmd.filePath = cmd.filePath
@@ -481,7 +527,11 @@ func (cmd *RunCommand) Run() error {
 	}
 
 	print("Starte das Programm\n")
-	ddpExe := exec.Command(exePath, cmd.fs.Args()...)
+	args := cmd.fs.Args()
+	if cmd.filePath != "" {
+		args = args[1:]
+	}
+	ddpExe := exec.Command(exePath, args...)
 	ddpExe.Stdin = os.Stdin
 	ddpExe.Stdout = os.Stdout
 	ddpExe.Stderr = os.Stderr
@@ -535,7 +585,7 @@ func (cmd *DumpListDefsCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.llvm_ir, "llvm_ir", cmd.llvm_ir, "Wether to output llvm ir")
 	cmd.fs.BoolVar(&cmd.llvm_bc, "llvm_bc", cmd.llvm_bc, "Wether to output llvm bitcode")
 	cmd.fs.BoolVar(&cmd.object, "object", cmd.object, "Wether to output object file")
-	return cmd.fs.Parse(args)
+	return parseFlagSet(cmd.fs, args)
 }
 
 func (cmd *DumpListDefsCommand) Run() error {
