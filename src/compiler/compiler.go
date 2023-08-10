@@ -35,7 +35,7 @@ func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer
 func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer, compiledMods map[string]*ast.Module, dependencies map[string]struct{}, isMainModule bool, errHndl ddperror.Handler) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Quellcode im Module '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
+		return nil, fmt.Errorf("Fehlerhafter Quellcode im Modul '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
 	}
 
 	// check if the module was already compiled
