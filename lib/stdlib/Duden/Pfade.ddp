@@ -1,4 +1,8 @@
 Binde "Duden/Texte" ein.
+[
+	Pfad Manipulationsfunktionen. NUR FÜR UNIX!
+]
+
 Binde "Duden/Laufzeit" ein.
 
 Die öffentliche Funktion TrennZeichen gibt einen Buchstaben zurück, macht:
@@ -10,10 +14,10 @@ Und kann so benutzt werden:
 	"das Pfad-Trennzeichen"
 
 [
-	Gibt zurück ob der gegebene Pfad ein absoluter oder relativer Pfad ist
+	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist
 ]
 Die öffentliche Funktion IstAbsolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
-	Gib (das Pfad-Trennzeichen) am Anfang von t steht zurück.
+	Gib '/' am Anfang von t steht zurück.
 Und kann so benutzt werden:
 	"<t> ein Absoluter Pfad ist"
 
@@ -26,10 +30,10 @@ Die öffentliche Funktion OrdnerPfad mit dem Parameter t vom Typ Text, gibt eine
 	Die Zahl i ist die Länge von t.
 	
 	Solange i größer als 0 ist, mache:
-		Wenn t an der Stelle i gleich Pfad-Trennzeichen ist, dann:
+		Wenn t an der Stelle i gleich '/' ist, dann:
 			Der Text dir ist t von 1 bis i.
-			Entferne alle (Pfad-Trennzeichen) nach dir.
-			Wenn die Länge von dir gleich 0 ist, gib (das Pfad-Trennzeichen) als Text zurück.
+			Entferne alle '/' nach dir.
+			Wenn die Länge von dir gleich 0 ist, gib "/" zurück.
 
 			Gib dir zurück.
 		Verringere i um 1.
@@ -42,10 +46,10 @@ Und kann so benutzt werden:
 	Gibt den letzten Element eines Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
 ]
 Die öffentliche Funktion BasisPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Der Text t2 ist (t mit allen (Pfad-Trennzeichen) danach entfernt).
+	Der Text t2 ist (t mit allen '/' danach entfernt).
 	Die Zahl i ist die Länge von t2.
 	Solange i größer als 0 ist, mache:
-		Wenn t2 an der Stelle i gleich (Pfad-Trennzeichen) ist, dann:
+		Wenn t2 an der Stelle i gleich '/' ist, dann:
 			Gib t2 von (i plus 1) bis (die Länge von t2) zurück.
 		Verringere i um 1.
 	Gib "." zurück.
@@ -60,13 +64,16 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Die Zahl i ist die Länge von t.
 	Solange i größer als 0 ist, mache:
-		Wenn t an der Stelle i gleich (Pfad-Trennzeichen) ist, gib "" zurück.
+		Wenn t an der Stelle i gleich '/' ist, gib "" zurück.
 		Wenn t an der Stelle i gleich '.' ist, gib t von i bis (die Länge von t) zurück.
 		Verringere i um 1.
 	Gib "" zurück.
 Und kann so benutzt werden:
 	"die Erweiterung der Datei bei <t>"
 
+[
+	Gibt den Dateinamen einer Datei zurück.
+]
 Die öffentliche Funktion DateiName mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Der Text bf ist der Basispfad von t.
 	Wenn bf gleich "." ist, gib "" zurück.
@@ -77,6 +84,19 @@ Und kann so benutzt werden:
 	"den Dateinamen von <t>",
 	"der Dateiname von <t>"
 
+[
+	Säubert/Normalisiert einen UNIX Pfad:
+	- Ersetzt mehrere aufeinderfolgende '/' durch einen ("///" -> "/")
+	- Entfernt '.' pfade ("a/." -> "a")
+	- Entfernt innere '..' pfade und das (nicht-..) element das davor steht ("a/b/.." -> "a")
+	- Entfernt .. elemente die nach root stehen ("/.." -> "/")
+
+	Der gesäuberter Pfad endet mit einem '/' nur wenn es root ist.
+	Ein leerer Pfad gibt "." zurück.
+
+	Entspricht Go's path.clean funktion
+	https://pkg.go.dev/path#Clean
+]
 Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Wenn t gleich "" ist, gib "." zurück.
 	Der Boolean rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
@@ -127,9 +147,12 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 Und kann so benutzt werden:
 	"der Pfad <t> gesäubert"
 
+[
+	Verbindet zwei UNIX Pfade mit einem '/' und säubert zuletzt.
+]
 Die öffentliche Funktion Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
 	Wenn a leer ist, gib b zurück.
 	Wenn b leer ist, gib a zurück.
-	Gib der Pfad (a verkettet mit Pfad-Trennzeichen verkettet mit b) gesäubert zurück.
+	Gib der Pfad (a verkettet mit '/' verkettet mit b) gesäubert zurück.
 Und kann so benutzt werden:
 	"die Pfade <a> und <b> verbunden"
