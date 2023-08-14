@@ -37,6 +37,7 @@ Schreibe (der Pfad "a/c/." gesäubert) auf eine Zeile.
 Schreibe (der Pfad "a/c/b/.." gesäubert) auf eine Zeile.
 Schreibe (der Pfad "/../a/c" gesäubert) auf eine Zeile.
 Schreibe (der Pfad "/../a/b/../././/c" gesäubert) auf eine Zeile.
+Schreibe (der Pfad "a/b/../../../xyz" gesäubert) auf eine Zeile.
 Schreibe (der Pfad ".." gesäubert) auf eine Zeile.
 Schreibe (der Pfad "" gesäubert) auf eine Zeile.
 
@@ -44,3 +45,11 @@ Schreibe (der Pfad "" gesäubert) auf eine Zeile.
 Schreibe ("/a/b" ein Absoluter Pfad ist) auf eine Zeile.
 Schreibe ("a/b" ein Absoluter Pfad ist) auf eine Zeile.
 Schreibe ("" ein Absoluter Pfad ist) auf eine Zeile.
+
+[ Verbinden Tests ]
+Schreibe (die Pfade "a" und "b/c" verbunden) auf eine Zeile.
+Schreibe (die Pfade "a/b" und "c" verbunden) auf eine Zeile.
+Schreibe (die Pfade "" und "a/b" verbunden) auf eine Zeile.
+Schreibe (die Pfade "a/b" und "" verbunden) auf eine Zeile.
+Schreibe (die Pfade "" und "" verbunden) auf eine Zeile.
+Schreibe (die Pfade "a/b" und "../../../xyz" verbunden) auf eine Zeile.

@@ -25,8 +25,15 @@ a/c
 a/c
 /a/c
 /a/c
+../xyz
 ..
 .
 wahr
 falsch
 falsch
+a/b/c
+a/b/c
+a/b
+a/b
+
+../xyz

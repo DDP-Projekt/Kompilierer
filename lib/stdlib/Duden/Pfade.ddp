@@ -81,34 +81,40 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 	Wenn t gleich "" ist, gib "." zurück.
 	Der Boolean rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
 	Die Zahl n ist die Länge von t.
-	Die Text path ist "".
-	Die Zahl r ist 1.
-	Die Zahl dotdot ist 1.
+	Die Text path ist "". [ output text ]
+	Die Zahl r ist 1. [ next index to process ]
+	Die Zahl dotdot ist 1. [ index where .. must stop ]
 	Wenn rooted gleich wahr ist, dann:
 		Füge '/' an path an.
 		Speichere 2 in r.
 		Speichere 2 in dotdot.
 
 	Solange r kleiner als, oder n ist, mache:
+		[Schreibe r auf eine Zeile.]
 		Wenn t an der Stelle r gleich '/' ist, dann:
 			[ empty path element ]
-			Erhöhe r um 1.
+			Erhöhe r um 1. [skip /]
 		Wenn aber t an der Stelle r gleich '.' ist und (r gleich n ist oder t an der Stelle (r plus 1) gleich '/' ist), dann:
 			[ . element ]
-			Erhöhe r um 1.
+			Erhöhe r um 1. [skip .]
 		Wenn aber t an der Stelle r gleich '.' ist und t an der Stelle (r plus 1) gleich '.' ist und (r plus 1 gleich n ist oder t an der Stelle (r plus 2) gleich '/' ist), dann:
 			[ .. element: remove last / ]
-			Erhöhe r um 2.
-			Wenn die Länge von path größer als dotdot ist, dann:
+			Erhöhe r um 2. 
+			Wenn die Länge von path größer als, oder dotdot ist, dann:
 				Mache:
-					Speichere path von 1 bis (die Länge von path minus 1) in path.
+					Wenn die Länge von path gleich 1 ist, dann:
+						Speichere "" in path.
+					Sonst
+						Speichere path von 1 bis (die Länge von path minus 1) in path.
 				Solange die Länge von path größer als dotdot ist und path an der Stelle (die Länge von path minus 1) ungleich '/' ist.
 			Wenn aber rooted gleich falsch ist, dann:
+				[ cannot backtrack, but not rooted, so append .. element ]
 				Wenn die Länge von path größer als 0 ist, dann:
 					Füge '/' an path an.
 				Füge ".." an path an.
 				Speichere die Länge von path in dotdot.
 		Sonst:
+			[ add slash if needed ]
 			Wenn rooted und die Länge von path ungleich 1 ist oder nicht rooted und die Länge von path ungleich 0 ist, dann:
 				Füge '/' an path an.
 
@@ -120,3 +126,10 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 	Gib path zurück.
 Und kann so benutzt werden:
 	"der Pfad <t> gesäubert"
+
+Die öffentliche Funktion Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
+	Wenn a leer ist, gib b zurück.
+	Wenn b leer ist, gib a zurück.
+	Gib der Pfad (a verkettet mit Pfad-Trennzeichen verkettet mit b) gesäubert zurück.
+Und kann so benutzt werden:
+	"die Pfade <a> und <b> verbunden"
