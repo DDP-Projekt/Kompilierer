@@ -1,6 +1,8 @@
 Binde "Duden/Texte" ein.
 Binde "Duden/Ausgabe" ein.
 
+Schreibe (einen leeren Text) auf eine Zeile.
+
 Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, guh??]
 Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
 Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, guh??]

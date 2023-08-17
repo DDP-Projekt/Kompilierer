@@ -1,5 +1,22 @@
 Binde "Duden/Zeichen" ein.
 
+[
+	Gibt "" zurück.
+	Nutzen: Der Text t ist ein leerer Text.
+]
+Die öffentliche Funktion LeererText gibt einen Text zurück, macht:
+	Gib "" zurück.
+Und kann so benutzt werden:
+	"ein leerer Text" oder
+	"einen leeren Text"
+
+[
+	Entfernt alle gegebenen Buchstaben vom Anfang eines gegebenen Textes.
+	z.B.: 
+		Der Text t ist "aaaaaaahallo"
+		Entferne alle 'a' vor t.
+		t: "hallo"
+]
 Die öffentliche Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
 	Die Zahl index ist 1.
@@ -8,12 +25,22 @@ Die öffentliche Funktion TrimAnfang mit den Parametern text und zeichen vom Typ
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor <text>"
 
+[
+	Siehe TrimAnfang
+]
 Die öffentliche Funktion TrimAnfangWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
 	Entferne alle zeichen vor text.
 	Gib text zurück.
 Und kann so benutzt werden:
 	"<text> mit allen <zeichen> davor entfernt"
 
+[
+	Entfernt alle gegebenen Buchstaben vom Ende eines gegebenen Textes.
+	z.B.: 
+		Der Text t ist "hallo!!!!!!!!!!"
+		Entferne alle '!' nach t.
+		t: "hallo"
+]
 Die öffentliche Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl index ist die Länge von text.
 	Wenn index gleich 0 ist, verlasse die Funktion.
@@ -27,12 +54,22 @@ Die öffentliche Funktion TrimEnde mit den Parametern text und zeichen vom Typ T
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> nach <text>"
 
+[
+	Siehe TrimEnde
+]
 Die öffentliche Funktion TrimEndeWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
 	Entferne alle zeichen nach text.
 	Gib text zurück.
 Und kann so benutzt werden:
 	"<text> mit allen <zeichen> danach entfernt"
 
+[
+	Entfernt alle gegebenen Buchstaben vom Anfang und Ende eines gegebenen Textes.
+	z.B.: 
+		Der Text t ist "!!!!!hallo!!!!!!!!!!"
+		Entferne alle '!' vor und nach t.
+		t: "hallo"
+]
 Die öffentliche Funktion Trim mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Zahl startIndex ist 1.
 	Die Zahl stopIndex ist die Länge von text.
@@ -42,18 +79,27 @@ Die öffentliche Funktion Trim mit den Parametern text und zeichen vom Typ Text 
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor und nach <text>"
 
+[
+	Siehe Trim
+]
 Die öffentliche Funktion TrimWert mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Text zurück, macht:
 	Entferne alle zeichen vor und nach text.
 	Gib text zurück.
 Und kann so benutzt werden:
 	"<text> mit allen <zeichen> davor und danach entfernt"
 
+[
+	Gibt zurück ob der gegebenen Text den gegebenen Buchstaben enthält. 
+]
 Die öffentliche Funktion EnthältBuchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<text> <zeichen> enthält"
 
+[
+	Gibt zurück ob der gegebene Text (text) den Subtext (suchText) enthält.
+]
 Die öffentliche Funktion EnthältText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Die Zahl startIndex ist 0.
 	Die Zahl endIndex ist die Länge von suchText.
@@ -69,43 +115,69 @@ Die öffentliche Funktion EnthältText mit den Parametern text und suchText vom 
 Und kann so benutzt werden:
 	"<text> <suchText> enthält"
 
+[
+	Gibt zurück ob der gegebene Text mit dem gegebenen Buchstaben anfängt.
+]
 Die öffentliche Funktion BeginntMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle 1) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Anfang von <text> steht"
 
+[
+	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) anfängt.
+]
 Die öffentliche Funktion BeginntMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Gib (text von 1 bis (die Länge von suchText)) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Anfang von <text> steht"
 
+[
+	Gibt zurück ob der gegebene Text mit dem gegebenen Buchstaben endet.
+]
 Die öffentliche Funktion EndetMitBuchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle (die Länge von text)) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
 	"<buchstabe> am Ende von <text> steht"
 
+[
+	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) endet.
+]
 Die öffentliche Funktion EndetMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis (die Länge von text)) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Ende von <text> steht"
 
+[
+	Speichert einen leeren Text in text.
+]
 Die öffentliche Funktion Text_leeren mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
 	Speichere "" in text.
 Und kann so benutzt werden:
 	"Leere <text>"
 
+[
+	Fügt zwei Texte aneinander.
+	f("ha", "lo") -> "halo"
+]
 Die öffentliche Funktion Text_an_Text_fügen mit den Parametern text und elm vom Typ Text Referenz und Text, gibt nichts zurück, macht:
 	Speichere text verkettet mit elm in text.
 Und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
+[
+	Fügt einen Buchstaben an einen Text.
+	f("may", 'o') -> "mayo"
+]
 Die öffentliche Funktion Buchstabe_an_Text_fügen mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Speichere text verkettet mit elm in text.
 Und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
+[
+	Fügt einen Text 
+]
 Die öffentliche Funktion Text_in_Text_einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Text, gibt nichts zurück, macht:
 	Speichere text von 1 bis (index minus 1) verkettet mit elm verkettet mit text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
@@ -116,16 +188,27 @@ Die öffentliche Funktion Buchstabe_in_Text_einfügen mit den Parametern text, i
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
+[
+	Fügt einen Text am Anfang eines Textes ein.
+	f("hallo", " welt!") -> "hallo welt!"
+]
 Die öffentliche Funktion Text_vor_Text_stellen mit den Parametern text und elm vom Typ Text Referenz und Text, gibt nichts zurück, macht:
 	Speichere elm verkettet mit text in text.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <text>"
 
+[
+	Fügt einen Buchstaben am Anfang eines Textes ein.
+	f("allo", 'h') -> "hallo"
+]
 Die öffentliche Funktion Buchstabe_vor_Text_stellen mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Speichere elm verkettet mit text in text.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <text>"
 
+[
+	Entfernt den Buchstaben an der Stelle index vom Text
+]
 Die öffentliche Funktion Lösche_Text mit den Parametern text und index vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
 	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
 
@@ -140,6 +223,9 @@ Die öffentliche Funktion Lösche_Text mit den Parametern text und index vom Typ
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <text>"
 
+[
+	Entfernt einen Bereich vom Text
+]
 Die öffentliche Funktion Lösche_Text_Bereich mit den Parametern text, start und end vom Typ Text Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Wenn start gleich 1 ist, dann:
 		Speichere text von end plus 1 bis (die Länge von text) in text.
@@ -148,6 +234,9 @@ Die öffentliche Funktion Lösche_Text_Bereich mit den Parametern text, start un
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <text>"
 
+[
+	Füllt den Text mit dem gegebenen Buchstaben
+]
 Die öffentliche Funktion Fülle_Text mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Der Text neuerText ist "".
 	Wiederhole:
@@ -158,6 +247,9 @@ Die öffentliche Funktion Fülle_Text mit den Parametern text und elm vom Typ Te
 Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
+[
+	Gibt den index des gegebenen Buchstaben im Text zurück oder -1 falls es nicht gefunden wurde. 
+]
 Die öffentliche Funktion IndexVonText mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
@@ -166,12 +258,17 @@ Und kann so benutzt werden:
 	"der Index von <elm> in <text>" oder
 	"den Index von <elm> in <text>"
 
+[
+	Gibt ob der gegebene Text leer ist zurück
+]
 Die öffentliche Funktion IstTextLeer mit dem Parameter text vom Typ Text, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von text gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<text> leer ist"
 
-[ob ein Text in eine Zahl umgewandelt werden kann]
+[
+	Gibt zurück ob ein Text in eine Zahl umgewandelt werden kann
+]
 Die öffentliche Funktion Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
 	Die Zahl l ist die Länge von t.
 	Wenn l kleiner als 1 ist, gib falsch zurück.
@@ -184,6 +281,9 @@ Die öffentliche Funktion Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen 
 Und kann so benutzt werden:
 	"<t> eine Zahl ist"
 
+[
+	Wandelt jeden Buchstaben des gegebenen Textes in die groß geschriebene Variante
+]
 Die öffentliche Funktion GroßschreibenWert mit dem Parameter text vom Typ Text, gibt einen Text zurück, macht:
 	Der Text neuerText ist "".
 	Für jeden Buchstaben b in text, mache:
@@ -192,11 +292,17 @@ Die öffentliche Funktion GroßschreibenWert mit dem Parameter text vom Typ Text
 Und kann so benutzt werden:
 	"<text> groß geschrieben"
 
+[
+	Wandelt jeden Buchstaben des gegebenen Textes in die groß geschriebene Variante
+]
 Die öffentliche Funktion Großschreiben mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
 	Speichere text groß geschrieben in text.
 Und kann so benutzt werden:
 	"Schreibe <text> groß"
 
+[
+	Wandelt jeden Buchstaben des gegebenen Textes in die klein geschriebene Variante
+]
 Die öffentliche Funktion KleinschreibenWert mit dem Parameter text vom Typ Text, gibt einen Text zurück, macht:
 	Der Text neuerText ist "".
 	Für jeden Buchstaben b in text, mache:
@@ -205,11 +311,21 @@ Die öffentliche Funktion KleinschreibenWert mit dem Parameter text vom Typ Text
 Und kann so benutzt werden:
 	"<text> klein geschrieben"
 
+[
+	Wandelt jeden Buchstaben des gegebenen Textes in die klein geschriebene Variante
+]
 Die öffentliche Funktion Kleinschreiben mit dem Parameter text vom Typ Text Referenz, gibt nichts zurück, macht:
 	Speichere text klein geschrieben in text.
 Und kann so benutzt werden:
 	"Schreibe <text> klein"
 
+[
+	z.B.:
+	f("hallo", ' ', 8) -> "   hallo"
+	f("hey", ' ', 8) -> "     hey"
+	f("programm", ' ', 8) -> "programm"
+	f("", 'o', 8) -> "oooooooo" 
+]
 Die öffentliche Funktion PolsterLinks mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
 	Die Zahl länge ist die Länge von text.
 	Die Zahl gesuchteLänge ist endlänge minus länge.
@@ -224,6 +340,13 @@ Die öffentliche Funktion PolsterLinks mit den Parametern text, zeichen und endl
 Und kann so benutzt werden:
 	"<text> mit <endlänge> <zeichen> links gepolstert"
 
+[
+	z.B.:
+	f("hallo", ' ', 8) -> "hallo   "
+	f("hey", ' ', 8) -> "hey     "
+	f("programm", ' ', 8) -> "programm"
+	f("", 'o', 8) -> "oooooooo" 
+]
 Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und endlänge vom Typ Text, Buchstabe und Zahl, gibt einen Text zurück, macht:
 	Die Zahl länge ist die Länge von text.
 	Die Zahl gesuchteLänge ist endlänge minus länge.
@@ -238,6 +361,9 @@ Die öffentliche Funktion PolsterRechts mit den Parametern text, zeichen und end
 Und kann so benutzt werden:
 	"<text> mit <endlänge> <zeichen> rechts gepolstert"
 
+[
+	Spaltet den gegebenen Text anhand des angegebenen Buchstaben in Teiltexte. 
+]
 Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Text Liste zurück, macht:
 	Die Text Liste endliste ist eine leere Text Liste.
 	Die Zahl endIndex ist der Index von zeichen in text.
@@ -254,7 +380,7 @@ Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Tex
 	Gib endliste zurück.
 Und kann so benutzt werden:
 	"<text> an <zeichen> gespalten"
-	
+
 [
 	Two-Way string-matching Algorithmus
 ]

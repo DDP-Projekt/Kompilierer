@@ -1,35 +1,65 @@
+[ 
+	Gibt den Wert von der Kreiszahl "PI" (π) mit 15 Nachkommastellen zurück:
+	3,141592653589793
+]
 Die öffentliche Funktion PI gibt eine Kommazahl zurück, macht:
-	Gib 3,141592654 zurück.
+	Gib 3,141592653589793 zurück.
 Und kann so benutzt werden:
 	"PI"
 
+[
+	Gibt den Wert der Eulerschen Zahl "E" mit 15 Nachkommastellen zurück:
+	2,718281828459045
+]
 Die öffentliche Funktion E gibt eine Kommazahl zurück, macht:
-	Gib 2,718281828 zurück.
+	Gib 2,718281828459045 zurück.
 Und kann so benutzt werden:
 	"E"
 
+[
+	Gibt den Wert der alternativen Kreiszahl "TAU" (τ) mit 15 Nachkommastellen zurück:
+	6,283185307179586
+	Es entspricht exakt den Wert von 2 mal PI.
+]
 Die öffentliche Funktion TAU gibt eine Kommazahl zurück, macht:
-	Gib 6,283185307 zurück.
+	Gib 6,283185307179586 zurück.
 Und kann so benutzt werden:
 	"TAU"
 
+[
+	Gibt den Wert des Goldenen Schittes "PHI" (Φ) mit 15 Nachkommastellen zurück:
+	1,618033988749895
+]
 Die öffentliche Funktion PHI gibt eine Kommazahl zurück, macht:
-	Gib 1,618033989 zurück.
+	Gib 1,618033988749895 zurück.
 Und kann so benutzt werden:
 	"PHI"
 
+[
+	Wenn a >= b ist wird a zurück gegeben.
+	Wenn a < b ist wird b zurückgegeben.
+]
 Die öffentliche Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
+[
+	Wenn a <= b ist wird a zurückgegeben.
+	Wenn a > b ist wird b zurückgegeben.
+]
 Die öffentliche Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
 
+[
+	Wenn wert > max ist, wird max zurückgegeben.
+	Wenn wert < min ist, wird min zurückgegeben.
+	Wenn min < wert < max ist, wird wert zurückgegeben.
+]
 Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert größer als max ist, gib max zurück.
 	Wenn wert kleiner als min ist, gib min zurück.
@@ -37,6 +67,11 @@ Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zah
 Und kann so benutzt werden:
 	"<wert> zwischen <min> und <max>"
 
+[
+	Wenn wert < 0 ist, wird -1 zurückgegeben.
+	Wenn wert > 0 ist, wird 1 zurückgegeben.
+	Wenn wert = 0 ist, wird 0 zurückgegeben.
+]
 Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
@@ -44,22 +79,32 @@ Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Za
 Und kann so benutzt werden:
 	"das Vorzeichen von <wert>"
 
+[
+	Rundet wert nach unten.
+]
 Die öffentliche Funktion floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert minus (wert minus wert als Zahl) zurück.
 Und kann so benutzt werden:
 	"<wert> nach unten gerundet"
 
+[
+	Rundet wert nach oben.
+]
 Die öffentliche Funktion ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert plus (1 minus (wert minus wert als Zahl)) zurück.
 Und kann so benutzt werden:
 	"<wert> nach oben gerundet"
 
+[
+	Schneidet alle Kommastellen von wert ab.
+]
 Die öffentliche Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib (wert als Zahl) als Kommazahl zurück.
 Und kann so benutzt werden:
 	"<wert> trunkiert"
 
 [ Trigonometrische Funktionen ]
+
 Die öffentliche Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -137,6 +182,10 @@ Die öffentliche Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und 
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
 
+[
+	Ob der divident durch den divisor teilbar ist.
+	Auch: Ob divident modulo divisor = 0 ist. 
+]
 Die öffentliche Funktion ist_teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
 	Gib dividend modulo divisor gleich 0 ist zurück.
 Und kann so benutzt werden:
