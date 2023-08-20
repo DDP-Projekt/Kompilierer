@@ -20,21 +20,24 @@ SRCS = $(wildcard source/*.c source/*/*.c)
 OBJS = $(SRCS:.c=.o)
 OBJS_DEBUG = $(OBJS:.o=_debug.o)
 
+LIB_OBJS = $(filter-out source/main.o, $(OBJS))
+LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
+
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) $< -o $@
 
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC)  $< -o $@
 
-all: $(OUT_FILE_NAME)
+all: $(OUT_FILE_NAME) source/main.o
 
-debug: $(OUT_FILE_NAME_DEBUG)
+debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
-$(OUT_FILE_NAME): $(OBJS)
-	$(AR) $(OUT_FILE_NAME) $(OBJS)
+$(OUT_FILE_NAME): $(LIB_OBJS)
+	$(AR) $(OUT_FILE_NAME) $(LIB_OBJS)
 
-$(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
-	$(AR) $(OUT_FILE_NAME_DEBUG) $(OBJS_DEBUG)
+$(OUT_FILE_NAME_DEBUG): $(LIB_OBJS_DEBUG)
+	$(AR) $(OUT_FILE_NAME_DEBUG) $(LIB_OBJS_DEBUG)
 
 clean:
 	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend

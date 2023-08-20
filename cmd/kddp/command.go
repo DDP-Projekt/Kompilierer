@@ -117,6 +117,7 @@ type BuildCommand struct {
 	// arguments
 	filePath         string // input file (.ddp), neccessery, first argument
 	outPath          string // path for the output file, specified by the -o flag, may be empty
+	main_path        string // path to the main.o file, specified by the --main flag, may be empty
 	gcc_flags        string // custom flags that are passed to gcc
 	extern_gcc_flags string // custom flags passed to extern .c files
 	nodeletes        bool   // should temp files be deleted, specified by the --nodeletes flag
@@ -130,6 +131,7 @@ func NewBuildCommand() *BuildCommand {
 		fs:               flag.NewFlagSet("kompiliere", flag.ExitOnError),
 		filePath:         "",
 		outPath:          "",
+		main_path:        "",
 		gcc_flags:        "",
 		extern_gcc_flags: "",
 		nodeletes:        false,
@@ -142,6 +144,7 @@ func NewBuildCommand() *BuildCommand {
 func (cmd *BuildCommand) Init(args []string) error {
 	// set all the flags
 	cmd.fs.StringVar(&cmd.outPath, "o", cmd.outPath, "Optionaler Pfad der Ausgabedatei")
+	cmd.fs.StringVar(&cmd.main_path, "main", cmd.main_path, "Optionaler Pfad zur main.o Datei")
 	cmd.fs.StringVar(&cmd.gcc_flags, "gcc_optionen", cmd.gcc_flags, "Benutzerdefinierte Optionen, die gcc übergeben werden")
 	cmd.fs.StringVar(&cmd.extern_gcc_flags, "externe_gcc_optionen", cmd.extern_gcc_flags, "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
 	cmd.fs.BoolVar(&cmd.nodeletes, "nichts_loeschen", cmd.nodeletes, "Keine temporären Dateien löschen")
@@ -289,6 +292,7 @@ func (cmd *BuildCommand) Run() error {
 		Log:                     print,
 		DeleteIntermediateFiles: !cmd.nodeletes,
 		GCCFlags:                cmd.gcc_flags,
+		MainFile:                cmd.main_path,
 		ExternGCCFlags:          cmd.extern_gcc_flags,
 		LinkInListDefs:          !cmd.link_list_defs, // if they are allready linked in, don't link them again
 	}); err != nil {

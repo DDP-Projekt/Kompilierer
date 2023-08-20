@@ -2,7 +2,7 @@
 	This file implements extern functions from 
 	Duden/Laufzeit.ddp
 */
-#include "main.h"
+#include "runtime.h"
 #include "ddptypes.h"
 #include "ddpmemory.h"
 #include <stdio.h>

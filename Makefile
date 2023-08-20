@@ -1,8 +1,15 @@
+KDDP_DIR = ./cmd/kddp/
+STD_DIR = ./lib/stdlib/
+RUN_DIR = ./lib/runtime/
+
 KDDP_BIN = ""
 STD_BIN = libddpstdlib.a
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
+RUN_BIN_MAIN_DIR = $(RUN_DIR)source/
+RUN_BIN_MAIN = main.o
+RUN_BIN_MAIN_DEBUG = $(RUN_BIN_MAIN:.o=_debug.o)
 DDP_LIST_DEFS_NAME = ddp_list_types_defs
 
 DDP_LIST_DEFS_OUTPUT_TYPES = --llvm_ir --object
@@ -39,10 +46,6 @@ endif
 OUT_DIR = ./build/DDP/
 
 .DEFAULT_GOAL = all
-
-KDDP_DIR = ./cmd/kddp/
-STD_DIR = ./lib/stdlib/
-RUN_DIR = ./lib/runtime/
 
 KDDP_DIR_OUT = $(OUT_DIR)bin/
 LIB_DIR_OUT = $(OUT_DIR)lib/
@@ -88,6 +91,7 @@ runtime:
 	@echo "building the ddp-runtime"
 	cd $(RUN_DIR) ; $(MAKE)
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
+	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
 	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
@@ -97,6 +101,7 @@ runtime-debug:
 	cd $(RUN_DIR) ; $(MAKE) debug
 	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
+	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
 	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
