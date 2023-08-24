@@ -50,3 +50,12 @@ Die öffentliche Funktion Ist_Befehlszeile gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Benutzereingabe eine Befehlszeile ist"
+
+[
+	Leere Funktion, die nichts macht und nichts zurückgibt.
+	Nützlich in einigen wenigen Fällen.
+]
+Die öffentliche Funktion Macht_Nichts gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Mache nichts" oder
+	"mache nichts"
