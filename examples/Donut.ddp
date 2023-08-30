@@ -1,0 +1,59 @@
+[
+	Drehender Donut
+	https://www.a1k0n.net/2011/07/20/donut-math.html
+]
+
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/ANSI-Escape" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Mathe" ein.
+
+Die Kommazahl A ist 0,0.
+Die Kommazahl B ist 0,0.
+Die Kommazahlen Liste z ist 1760 Mal 0,0.
+Die Buchstaben Liste b ist 1760 Mal ' '.
+Leere die gesamte Konsole.
+Lösche alle gespeicherten Zeilen.
+
+Solange wahr, mache:
+	Fülle z mit 0,0.
+	Fülle b mit ' '.
+
+	Die Kommazahl j ist 0,0.
+	Solange 6,28 größer als j ist, mache:
+		Die Kommazahl i ist 0,0.
+		Solange 6,28 größer als i ist, mache:
+			Die Kommazahl sini ist der Sinus von i.
+			Die Kommazahl cosj ist der Kosinus von j.
+			Die Kommazahl sinA ist der Sinus von A.
+			Die Kommazahl sinj ist der Sinus von j.
+			Die Kommazahl cosA ist der Kosinus von A.
+			Die Kommazahl cosj2 ist cosj plus 2.
+			Die Kommazahl mess ist 1 durch (sini mal cosj2 mal sinA plus sinj mal cosA plus 5).
+			Die Kommazahl cosi ist der Kosinus von i.
+			Die Kommazahl cosB ist der Kosinus von B.
+			Die Kommazahl sinB ist der Sinus von B.
+			Die Kommazahl t ist sini mal cosj2 mal cosA minus sinj mal sinA.
+
+			Die Zahl x ist (40 plus 30 mal mess mal (cosi mal cosj2 mal cosB minus t mal sinB)) als Zahl.
+			Die Zahl y ist (12 plus 15 mal mess mal (cosi mal cosj2 mal sinB plus t mal cosB)) als Zahl.
+			Die Zahl o ist (x plus 80 mal y) plus 1.
+			Die Zahl N ist (8 mal ((sinj mal sinA minus sini mal cosj mal cosA) mal cosB minus sini mal cosj mal sinA minus sinj mal cosA minus cosi mal cosj mal sinB)) als Zahl.
+
+			Wenn 22 größer als y ist und y größer als 0 ist und x größer als 0 ist und 80 größer als x ist und mess größer als z an der Stelle o ist, dann:
+				Speichere mess in z an der Stelle o.
+				Wenn N größer als 0 ist, dann:
+					Speichere ",-~:;=!*#$@" an der Stelle N in b an der Stelle o.
+				Sonst:
+					Speichere '.' in b an der Stelle o.
+			Erhoehe i um 0,01.
+		Erhoehe j um 0,03.
+	Bewege den Konsolen Zeiger zu Zeile 1 und Spalte 1.
+	Für jede Zahl k von 0 bis 1760, mache:
+		Wenn nicht k durch 80 teilbar ist, dann:
+			Schreibe (b an der Stelle (k plus 1)).
+		Sonst:
+			Schreibe '\n'.
+	
+	Erhöhe A um 0,04.
+	Erhöhe B um 0,02.
