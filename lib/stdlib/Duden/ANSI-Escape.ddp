@@ -1,0 +1,253 @@
+Binde Schreibe_Text aus "Ausgabe" ein.
+Binde Text_an_Text_fügen und Buchstabe_an_Text_fügen aus "Texte" ein.
+
+Die Funktion ANSI_Escape gibt einen Text zurück, macht:
+	Gib 27 als Buchstabe verkettet mit "[" zurück.
+Und kann so benutzt werden:
+	"ESC"
+
+Die öffentliche Funktion ANSI_Funktion_Ausführen_1Arg mit den Parametern arg und func vom Typ Zahl und Buchstabe, gibt nichts zurück, macht:
+	Schreibe (ESC verkettet mit arg als Text verkettet mit func).
+Und kann so benutzt werden:
+	"Führe die ANSI Funktion <func> mit dem argument <arg> aus"
+
+Die öffentliche Funktion ANSI_Funktion_Ausführen mit den Parametern args und func vom Typ Zahlen Liste und Buchstabe, gibt nichts zurück, macht:
+	Der Text befehl ist ESC.
+	Die Zahl i ist 1.
+	Für jede Zahl arg in args, mache:
+		Füge (arg als Text) an befehl an.
+		Wenn i kleiner als die Länge von args ist, Füge ';' an befehl an.
+		Erhöhe i um 1.
+	Schreibe (befehl verkettet mit func).
+Und kann so benutzt werden:
+	"Führe die ANSI Funktion <func> mit den argumenten <args> aus"
+
+Die öffentliche Funktion Konsole_Zeiger_Zeigen gibt nichts zurück, macht:
+	Schreibe (ESC verkettet mit "?25h").
+Und kann so benutzt werden:
+	"Zeige den Konsolen Zeiger"
+
+Die öffentliche Funktion Konsole_Zeiger_Verstecken gibt nichts zurück, macht:
+	Schreibe (ESC verkettet mit "?25l").
+Und kann so benutzt werden:
+	"Verstecke den Konsolen Zeiger"
+
+Die öffentliche Funktion Konsole_Zeiger_Hoch mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'A' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeichen nach oben"
+
+Die öffentliche Funktion Konsole_Zeiger_Runter mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'B' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeichen nach unten"
+
+Die öffentliche Funktion Konsole_Zeiger_Vorne mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'C' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeichen nach vorne"
+
+Die öffentliche Funktion Konsole_Zeiger_Hinten mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'D' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeichen nach hinten"
+
+Die öffentliche Funktion Konsole_Zeiger_Vorne_Zeile mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'E' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeilen nach vorne"
+
+Die öffentliche Funktion Konsole_Zeiger_Hinten_Zeile mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'F' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger um <n> Zeilen nach hinten"
+
+Die öffentliche Funktion Konsole_Zeiger_Spalte mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'G' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger zu Spalte <n>"
+
+Die öffentliche Funktion Konsole_Zeiger_Position mit den Parametern n und m vom Typ Zahl und Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'H' mit den argumenten (eine Liste, die aus n, m besteht) aus.
+Und kann so benutzt werden:
+	"Bewege den Konsolen Zeiger zu Zeile <n> und Spalte <m>"
+
+Die öffentliche Funktion Konsole_Leeren_Ende gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'J' mit dem argument 0 aus.
+Und kann so benutzt werden:
+	"Leere die Konsole vom Zeiger zum Ende des Bildschirms"
+
+Die öffentliche Funktion Konsole_Leeren_Anfang gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'J' mit dem argument 1 aus.
+Und kann so benutzt werden:
+	"Leere die Konsole vom Zeiger zum Anfang des Bildschirms"
+
+Die öffentliche Funktion Konsole_Leeren gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'J' mit dem argument 2 aus.
+Und kann so benutzt werden:
+	"Leere die gesamte Konsole"
+
+Die öffentliche Funktion Konsole_Leeren_ClearBuf gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'J' mit dem argument 3 aus.
+Und kann so benutzt werden:
+	"Lösche alle gespeicherten Zeilen"
+
+Die öffentliche Funktion Konsole_Zeile_Leeren_Ende gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'K' mit dem argument 0 aus.
+Und kann so benutzt werden:
+	"Leere die Zeile vom Zeiger zum Ende des Bildschirms"
+
+Die öffentliche Funktion Konsole_Zeile_Leeren_Anfang gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'K' mit dem argument 1 aus.
+Und kann so benutzt werden:
+	"Leere die Zeile vom Zeiger zum Anfang des Bildschirms"
+
+Die öffentliche Funktion Konsole_Zeile_Leeren gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'K' mit dem argument 2 aus.
+Und kann so benutzt werden:
+	"Leere die gesamte Zeile"
+
+Die öffentliche Funktion Konsole_Scrollen_Hoch mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'S' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Scrolle die Konsole um <n> Zeilen nach oben"
+
+Die öffentliche Funktion Konsole_Scrollen_Runter mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'T' mit dem argument n aus.
+Und kann so benutzt werden:
+	"Scrolle die Konsole um <n> Zeilen nach unten"
+
+Die öffentliche Funktion Konsole_Schrift_Reset gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 0 aus.
+Und kann so benutzt werden:
+	"Konsolenschrift zurücksetzen"
+
+Die öffentliche Funktion Konsole_Schrift_Fett gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 1 aus.
+Und kann so benutzt werden:
+	"Konsolenschrift fett setzen"
+
+Die öffentliche Funktion Konsole_Schrift_Schräg gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 3 aus.
+Und kann so benutzt werden:
+	"Konsolenschrift schräg setzen"
+
+Die öffentliche Funktion Konsole_Schrift_Unterstrichen gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 4 aus.
+Und kann so benutzt werden:
+	"Konsolenschrift unterschrichen setzen"
+
+Die öffentliche Funktion Konsole_Schrift_Durchgestrichen gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 9 aus.
+Und kann so benutzt werden:
+	"Konsolenschrift durchgestrichen setzen"
+
+Die öffentliche Funktion Konsole_Vordergrund_Reset gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 39 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zurück."
+
+Die öffentliche Funktion Konsole_Vordergrund_Schwarz gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 30 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu schwarz"
+
+Die öffentliche Funktion Konsole_Vordergrund_Rot gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 31 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu rot"
+
+Die öffentliche Funktion Konsole_Vordergrund_Grün gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 32 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu grün"
+
+Die öffentliche Funktion Konsole_Vordergrund_Gelb gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 33 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu gelb"
+
+Die öffentliche Funktion Konsole_Vordergrund_Blau gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 34 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu blau"
+
+Die öffentliche Funktion Konsole_Vordergrund_Magenta gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 35 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu magenta"
+
+Die öffentliche Funktion Konsole_Vordergrund_Türkis gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 36 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu türkis"
+
+Die öffentliche Funktion Konsole_Vordergrund_Weiß gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 37 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zu weiß"
+
+Die öffentliche Funktion Konsole_Vordergrund_8Bit mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit den argumenten (eine Liste, die aus 38, 5, n besteht) aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zum index <n> einer 8Bit Farbpallete"
+
+Die öffentliche Funktion Konsole_Vordergrund_RGB mit den Parametern r, g und b vom Typ Zahl, Zahl und Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit den argumenten (eine Liste, die aus 38, 2, r, g, b besteht) aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift zum RGB wert <r>, <g>, <b>"
+
+Die öffentliche Funktion Konsole_Hintergrund_Reset gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 49 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zurück."
+
+Die öffentliche Funktion Konsole_Hintergrund_Schwarz gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 40 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu schwarz"
+
+Die öffentliche Funktion Konsole_Hintergrund_Rot gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 41 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu rot"
+
+Die öffentliche Funktion Konsole_Hintergrund_Grün gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 42 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu grün"
+
+Die öffentliche Funktion Konsole_Hintergrund_Gelb gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 43 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu gelb"
+
+Die öffentliche Funktion Konsole_Hintergrund_Blau gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 44 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu blau"
+
+Die öffentliche Funktion Konsole_Hintergrund_Magenta gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 45 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu magenta"
+
+Die öffentliche Funktion Konsole_Hintergrund_Türkis gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 46 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu türkis"
+
+Die öffentliche Funktion Konsole_Hintergrund_Weiß gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit dem argument 47 aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zu weiß"
+
+Die öffentliche Funktion Konsole_Hintergrund_8Bit mit dem Parameter n vom Typ Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit den argumenten (eine Liste, die aus 48, 5, n besteht) aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zum index <n> einer 8Bit Farbpallete"
+
+Die öffentliche Funktion Konsole_Hintergrund_RGB mit den Parametern r, g und b vom Typ Zahl, Zahl und Zahl, gibt nichts zurück, macht:
+	Führe die ANSI Funktion 'm' mit den argumenten (eine Liste, die aus 48, 2, r, g, b besteht) aus.
+Und kann so benutzt werden:
+	"Setze die Konsolenschrift Hintergrund zum RGB wert <r>, <g>, <b>"
