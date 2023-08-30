@@ -284,3 +284,8 @@ Die öffentliche Funktion Quadriere_Wert mit dem Parameter x vom Typ Kommazahl, 
 	Gib x mal x zurück.
 Und kann so benutzt werden:
 	"<x> zum quadrat"
+
+Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+	Gib (x als Zahl) als Kommazahl gleich x ist zurück.
+Und kann so benutzt werden:
+	"<x> eine ganze Zahl ist"
