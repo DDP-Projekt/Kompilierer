@@ -1,7 +1,7 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
 Binde Lies_Buchstabe_Gepuffert aus "Duden/Eingabe" ein.
-Binde "Duden/Datei_Eingabe" ein.
+Binde "Duden/Dateisystem" ein.
 Binde Enthält_C und Hinzufüge_C aus "Duden/Listen" ein.
 
 [unsere Zellen]

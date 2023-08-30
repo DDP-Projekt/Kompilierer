@@ -2,10 +2,9 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
+Binde Macht_Nichts aus "Duden/Laufzeit" ein.
 
-Die öffentliche Funktion MachWeiter gibt nichts zurück, macht:
-Und kann so benutzt werden:
-	"mach weiter"
+Der Alias "mach weiter" steht für die Funktion Macht_Nichts.
 
 Die öffentliche Text Liste Schlüsselwörter ist eine Liste, die aus "(", ")", "$", "+", "*", "^" besteht.
 
