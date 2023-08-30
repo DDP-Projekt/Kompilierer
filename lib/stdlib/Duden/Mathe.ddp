@@ -68,11 +68,55 @@ Und kann so benutzt werden:
 	"<wert> zwischen <min> und <max>"
 
 [
+	Wenn a >= b ist wird a zurück gegeben.
+	Wenn a < b ist wird b zurückgegeben.
+]
+Die öffentliche Funktion maxK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a größer als, oder b ist, gib a zurück.
+	Gib b zurück.
+Und kann so benutzt werden:
+	"die größere Zahl von <a> und <b>"
+
+[
+	Wenn a <= b ist wird a zurückgegeben.
+	Wenn a > b ist wird b zurückgegeben.
+]
+Die öffentliche Funktion minK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a kleiner als, oder b ist, gib a zurück.
+	Gib b zurück.
+Und kann so benutzt werden:
+	"die kleinere Zahl von <a> und <b>"
+
+[
+	Wenn wert > max ist, wird max zurückgegeben.
+	Wenn wert < min ist, wird min zurückgegeben.
+	Wenn min < wert < max ist, wird wert zurückgegeben.
+]
+Die öffentliche Funktion clampK mit den Parametern wert, max und min vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn wert größer als max ist, gib max zurück.
+	Wenn wert kleiner als min ist, gib min zurück.
+	Gib wert zurück.
+Und kann so benutzt werden:
+	"<wert> zwischen <min> und <max>"
+
+[
 	Wenn wert < 0 ist, wird -1 zurückgegeben.
 	Wenn wert > 0 ist, wird 1 zurückgegeben.
 	Wenn wert = 0 ist, wird 0 zurückgegeben.
 ]
 Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Wenn wert kleiner als 0 ist, gib -1 zurück.
+	Wenn aber wert größer als 0 ist, gib 1 zurück.
+	Gib 0 zurück.
+Und kann so benutzt werden:
+	"das Vorzeichen von <wert>"
+
+[
+	Wenn wert < 0 ist, wird -1 zurückgegeben.
+	Wenn wert > 0 ist, wird 1 zurückgegeben.
+	Wenn wert = 0 ist, wird 0 zurückgegeben.
+]
+Die öffentliche Funktion signK mit dem Parameter wert vom Typ Kommazahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
 	Gib 0 zurück.
