@@ -230,3 +230,13 @@ Die öffentliche Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt
 	Gib teiler zurück.
 Und kann so benutzt werden:
 	"alle Teiler von <z>"
+
+Die öffentliche Funktion Quadriere mit dem Parameter x vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
+	Vervielfache x um x.
+Und kann so benutzt werden:
+	"Quadriere <x>"
+
+Die öffentliche Funktion Quadriere_Wert mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib x mal x zurück.
+Und kann so benutzt werden:
+	"<x> zum quadrat"
