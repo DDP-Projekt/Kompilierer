@@ -37,4 +37,9 @@ Schreibe (alle Teiler von 54) auf eine Zeile. [ 54, 27, 18, 9, 6, 3, 2, 1 ]
 Schreibe die Kommazahl PI auf eine Zeile.
 Schreibe die Kommazahl E auf eine Zeile.
 Schreibe die Kommazahl TAU auf eine Zeile.
-Schreibe die Kommazahl PHI.
+Schreibe die Kommazahl PHI auf eine Zeile.
+
+Schreibe (4,0 eine ganze Zahl ist) auf eine Zeile.
+Schreibe (4,6 eine ganze Zahl ist) auf eine Zeile.
+Schreibe (3,0 eine gerade Zahl ist) auf eine Zeile.
+Schreibe (4,2 eine gerade Zahl ist).

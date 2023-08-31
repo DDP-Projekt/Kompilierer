@@ -1,0 +1,26 @@
+Min: 1
+Max: 5
+0,3; 1
+0,4; 0,7
+0,7; 0,6
+0,8; 0,3
+1; 0,2
+0,5
+3; 0,3
+1; 0,1
+3; 0,3
+1; 0,1
+2; 0,2
+Summe: 28
+Mittelwert: 2,8
+Median: 3
+Modalwert: 3, 1
+25% Quantil: 1
+75% Quantil: 4
+Varianz: 2,4
+STD: 1,549193338482967
+Spannweite: 4
+IQR: 3
+Kovarianz: 21,64285714285714
+Korrelationskoeffizient: 0,7915908406303396
+Bestimmtheitsmaß: 0,6266160589698476

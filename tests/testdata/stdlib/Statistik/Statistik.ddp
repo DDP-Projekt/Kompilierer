@@ -1,0 +1,55 @@
+Binde "Duden/Statistik" ein.
+Binde "Duden/Ausgabe" ein.
+
+Die Kommazahlen Liste urliste ist eine Liste, die aus 3,0, 4,0, 5,0, 1,0, 5,0, 2,0, 1,0, 3,0, 1,0, 3,0 besteht.
+Die Kommazahlen Liste urliste_sortiert ist eine Liste, die aus 1,0, 1,0, 1,0, 2,0, 3,0, 3,0, 3,0, 4,0, 5,0, 5,0 besteht.
+
+Schreibe "Min: ".
+Schreibe (der kleinste Wert aus urliste) auf eine Zeile.
+Schreibe "Max: ".
+Schreibe (der höchste Wert aus urliste) auf eine Zeile.
+
+Für jede Zahl i von 1 bis 5, mache:
+	Die Kommazahl k ist i als Kommazahl.
+	Schreibe (wie viel Prozent der Zahlen aus urliste mindestens k sind).
+	Schreibe "; ".
+	Schreibe (wie viel Prozent der Zahlen aus urliste höchstens k sind) auf eine Zeile.
+
+Schreibe (wie viel Prozent der Zahlen aus urliste zwischen 2,0 und 4,0 sind) auf eine Zeile.
+
+Für jede Zahl i von 1 bis 5, mache:
+	Die Kommazahl k ist i als Kommazahl.
+	Schreibe (die absolute Häufigkeit von k in urliste).
+	Schreibe "; ".
+	Schreibe (die relative Häufigkeit von k in urliste) auf eine Zeile.
+
+Schreibe "Summe: ".
+Schreibe (die Summe aller zahlen aus urliste) auf eine Zeile.
+Schreibe "Mittelwert: ".
+Schreibe (der Mittelwert von urliste) auf eine Zeile.
+Schreibe "Median: ".
+Schreibe (der Median von urliste_sortiert) auf eine Zeile.
+Schreibe "Modalwert: ".
+Schreibe (der Modalwert von urliste) auf eine Zeile.
+Schreibe "25% Quantil: ".
+Schreibe (das 0,25-Quantil von urliste_sortiert) auf eine Zeile.
+Schreibe "75% Quantil: ".
+Schreibe (das 0,75-Quantil von urliste_sortiert) auf eine Zeile.
+Schreibe "Varianz: ".
+Schreibe (die Varianz von urliste) auf eine Zeile.
+Schreibe "STD: ".
+Schreibe (die Standardabweichung von urliste) auf eine Zeile.
+Schreibe "Spannweite: ".
+Schreibe (die Spannweite von urliste) auf eine Zeile.
+Schreibe "IQR: ".
+Schreibe (der Interquartilabstand von urliste_sortiert) auf eine Zeile.
+
+Die Kommazahlen Liste a ist eine Liste, die aus 37,0, 55,0, 55,0, 42,0, 50,0, 50,0, 55,0 besteht.
+Die Kommazahlen Liste b ist eine Liste, die aus 2,0, 11,0, 8,0, 8,0, 9,0, 12,0, 14,0 besteht.
+
+Schreibe "Kovarianz: ".
+Schreibe (die empirische Kovarianz von a und b) auf eine Zeile.
+Schreibe "Korrelationskoeffizient: ".
+Schreibe (der empirische Korrelationskoeffizient von a und b) auf eine Zeile.
+Schreibe "Bestimmtheitsmaß: ".
+Schreibe (der Bestimmtheitsmaß von a und b) auf eine Zeile.
