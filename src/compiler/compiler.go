@@ -1595,12 +1595,24 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) {
+	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
+		if s.Initializer.Type == ddptypes.Int() {
+			return c.cbb.NewICmp(ipred, x, yi)
+		} else {
+			return c.cbb.NewFCmp(fpred, x, yf)
+		}
+	}
+
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		incrementer = newInt(1)
+		if s.Initializer.Type == ddptypes.Int() {
+			incrementer = newInt(1)
+		} else {
+			incrementer = constant.NewFloat(ddpfloat, 1.0)
+		}
 	} else { // stepsize was present, so compile it
 		incrementer, _, _ = c.evaluate(s.StepSize)
 	}
@@ -1625,7 +1637,12 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 
 	// add the incrementer to the counter variable
-	add := c.cbb.NewAdd(indexVar, incrementer)
+	var add value.Value
+	if s.Initializer.Type == ddptypes.Int() {
+		add = c.cbb.NewAdd(indexVar, incrementer)
+	} else {
+		add = c.cbb.NewFAdd(indexVar, incrementer)
+	}
 	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
@@ -1637,21 +1654,21 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := c.cbb.NewICmp(enum.IPredSLT, incrementer, newInt(0))
+	cond := new_IorF_comp(enum.IPredSLT, enum.FPredOLT, incrementer, newInt(0), constant.NewFloat(ddpfloat, 0.0))
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, loopDown, loopUp)
 
 	c.cbb = loopUp
 	// we are counting up, so compare less-or-equal
 	to, _, _ := c.evaluate(s.To)
-	cond = c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
+	cond = new_IorF_comp(enum.IPredSLE, enum.FPredOLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb = loopDown
 	// we are counting down, so compare greater-or-equal
 	to, _, _ = c.evaluate(s.To)
-	cond = c.cbb.NewICmp(enum.IPredSGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to)
+	cond = new_IorF_comp(enum.IPredSGE, enum.FPredOGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
