@@ -399,7 +399,7 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 	rhs := t.Evaluate(stmt.Rhs)
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists, _ := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && decl.(*ast.VarDecl).Type != rhs {
+		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && decl.(*ast.VarDecl).Type != rhs {
 			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 				rhs,
