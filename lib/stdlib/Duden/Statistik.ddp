@@ -3,33 +3,54 @@ Binde "Duden/Listen" ein.
 Binde "Duden/Extremwerte" ein.
 Binde Laufzeitfehler aus "Duden/Laufzeit" ein.
 
-Die öffentliche Funktion Max_List mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Höchste_Liset mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
 	Die Zahl maxNum ist der minimale Wert einer Zahl.
-	Für jede Zahl z in liste, Speichere die größere Zahl von z und maxNum in maxNum.
+	Für jede Zahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der höchste Wert aus <liste>"
 
-Die öffentliche Funktion Max_ListK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Höchste_ListeK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl maxNum ist der minimale Wert einer Kommazahl.
-	Für jede Kommazahl z in liste, Speichere die größere Zahl von z und maxNum in maxNum.
+	Für jede Kommazahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der höchste Wert aus <liste>"
 
-Die öffentliche Funktion Min_List mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Kleinste_Liset mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
 	Die Zahl maxNum ist der maximale Wert einer Zahl.
-	Für jede Zahl z in liste, Speichere die kleinere Zahl von z und maxNum in maxNum.
+	Für jede Zahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der kleinste Wert aus <liste>"
 
-Die öffentliche Funktion Min_ListK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Kleinste_ListeK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl maxNum ist der maximale Wert einer Kommazahl.
-	Für jede Kommazahl z in liste, Speichere die kleinere Zahl von z und maxNum in maxNum.
+	Für jede Kommazahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der kleinste Wert aus <liste>"
+
+Die öffentliche Funktion Mindestens_Liste mit den Parametern x und liste vom Typ Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Die Kommazahl a ist 0,0.
+	Für jede Kommazahl z in liste, wenn z kleiner als, oder x ist, erhöhe a um 1.
+	Gib a durch die Länge von liste zurück.
+Und kann so benutzt werden:
+	"wie viel Prozent der Zahlen aus <liste> mindestens <x> sind"
+
+Die öffentliche Funktion Höchstens_Liste mit den Parametern x und liste vom Typ Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Die Kommazahl a ist 0,0.
+	Für jede Kommazahl z in liste, wenn z größer als, oder x ist, erhöhe a um 1.
+	Gib a durch die Länge von liste zurück.
+Und kann so benutzt werden:
+	"wie viel Prozent der Zahlen aus <liste> höchstens <x> sind"
+
+Die öffentliche Funktion Zwischen_Liste mit den Parametern x, y und liste vom Typ Kommazahl, Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Die Kommazahl a ist 0,0.
+	Für jede Kommazahl z in liste, wenn z größer als, oder x ist und z kleiner als, oder y ist, erhöhe a um 1.
+	Gib a durch die Länge von liste zurück.
+Und kann so benutzt werden:
+	"wie viel Prozent der Zahlen aus <liste> zwischen <x> und <y> sind"
 
 [
 	Gibt die absolute Häufigkeit von x aus der gegebenen Liste zurück.
@@ -47,7 +68,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Relative_Häufigkeit mit den Parametern liste und x vom Typ Kommazahlen Liste und Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib die absolute Häufigkeit von x in liste durch die Länge von liste zurück.
 Und kann so benutzt werden:
-	"die relative Häufigkeit von <x> in <liste>"
+	"die relative Häufigkeit von <x> in <liste>" oder
+	"wie viel Prozent der Zahlen aus <liste> gleich <x> sind"
 
 [
 	Gibt die Summe aller Zahlen der gegebenen Liste zurück. 
@@ -73,8 +95,9 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Median mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl m ist (die Länge von liste) durch 2.
-	Wenn (die Länge von liste) durch 2 teilbar ist, Gib (m nach unten gerundet plus m nach oben gerundet) durch 2 zurück.
-	Gib liste an der Stelle m als Zahl zurück.
+	Wenn (die Länge von liste) eine gerade Zahl ist, dann:
+		Gib (liste an der Stelle (m nach unten gerundet als Zahl) plus liste an der Stelle (m nach oben gerundet als Zahl)) durch 2 zurück.
+	Gib liste an der Stelle (m als Zahl plus 1) zurück.
 Und kann so benutzt werden:
 	"der Median von <liste>" oder
 	"der Zentralwert von <liste>"
@@ -103,7 +126,8 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Quantil mit den Parametern liste und p vom Typ Kommazahlen Liste und Kommazahl, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl np ist die Länge von liste mal p.
-	Wenn np eine ganze Zahl ist, gib (liste an der Stelle np als Zahl plus liste an der Stelle (np als Zahl plus 1)) durch 2 zurück.
+	Wenn np eine ganze Zahl ist, dann:
+		Gib (liste an der Stelle np als Zahl plus liste an der Stelle (np als Zahl plus 1)) durch 2 zurück.
 	Gib liste an der Stelle (np nach oben gerundet) als Zahl zurück.
 Und kann so benutzt werden:
 	"das <p>-Quantil von <liste>"
@@ -115,8 +139,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Varianz mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl x ist 0,0.
 	Die Kommazahl m ist der Mittelwert von liste.
-	Für jede Kommazahl z in liste, mache:
-		Erhöhe x um (z minus m) mal (z minus m).
+	Für jede Kommazahl z in liste, erhöhe x um (z minus m) mal (z minus m).
 	Gib x durch (die Länge von liste minus 1) zurück.
 Und kann so benutzt werden:
 	"die Varianz von <liste>",
@@ -140,6 +163,7 @@ Und kann so benutzt werden:
 
 [
 	Gibt die Differenz des 0,75-Quantils und 0,25-Quantils zurück.
+	Es muss eine sortierte Liste übergeben werden!
 ]
 Die öffentliche Funktion Interquartilabstand mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Gib das 0,75-Quantil von liste minus das 0,25-Quantil von liste zurück.
@@ -160,22 +184,22 @@ Die öffentliche Funktion Kovarianz mit den Parametern liste1 und liste2 vom Typ
 		Erhöhe x um (liste1 an der Stelle i minus m1) mal (liste2 an der Stelle i minus m2).
 	Gib x durch (die Länge von liste1 minus 1) zurück.
 Und kann so benutzt werden:
-	"die Kovarianz von <liste1> und <liste2>"
+	"die empirische Kovarianz von <liste1> und <liste2>"
 
 [
 	Berechnet den Korrelationskoeffizienten zweier gleichlangen Listen.
 	Beide Listen MÜSSEN gleich lang sein, sonst wird ein Laufzeitfehler geworfen.
 ]
 Die öffentliche Funktion Korrelationskoeffizient mit den Parametern liste1 und liste2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
-	Gib (die Kovarianz von liste1 und liste2) durch (die Varianz von liste1 mal die Varianz von liste2) zurück.
+	Gib (die empirische Kovarianz von liste1 und liste2) durch (die Standardabweichung von liste1 mal die Standardabweichung von liste2) zurück.
 Und kann so benutzt werden:
-	"der Korrelationskoeffizient von <liste1> und <liste2>"
+	"der empirische Korrelationskoeffizient von <liste1> und <liste2>"
 
 [
 	Berechnet den Bestimmtheitsmaß zweier gleichlangen Listen (Quadrat des Korrelationskoeffizienten).
 	Beide Listen MÜSSEN gleich lang sein, sonst wird ein Laufzeitfehler geworfen.
 ]
 Die öffentliche Funktion Bestimmtheitsmaß mit den Parametern liste1 und liste2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
-	Gib der Korrelationskoeffizient von liste1 und liste2 hoch 2 zurück.
+	Gib der empirische Korrelationskoeffizient von liste1 und liste2 hoch 2 zurück.
 Und kann so benutzt werden:
 	"der Bestimmtheitsmaß von <liste1> und <liste2>"

@@ -289,3 +289,13 @@ Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt
 	Gib (x als Zahl) als Kommazahl gleich x ist zurück.
 Und kann so benutzt werden:
 	"<x> eine ganze Zahl ist"
+
+Die öffentliche Funktion Gerade_Zahl mit dem Parameter x vom Typ Zahl, gibt einen Boolean zurück, macht:
+	Gib x modulo 2 gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<x> eine gerade Zahl ist"
+
+Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+	Gib x als Zahl modulo 2 gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<x> eine gerade Zahl ist"
