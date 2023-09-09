@@ -47,4 +47,5 @@ var commands = []Command{
 	NewVersionCommand(),
 	NewRunCommand(),
 	NewDumpListDefsCommand(),
+	NewUpdateCommand(),
 }
