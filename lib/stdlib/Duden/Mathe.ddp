@@ -149,54 +149,81 @@ Und kann so benutzt werden:
 
 [ Trigonometrische Funktionen ]
 
+[
+	Berechnet den Sinus von v.
+]
 Die öffentliche Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Sinus von <v>" oder 
 	"den Sinus von <v>"
 
+[
+	Berechnet den Kosinus von v.
+]
 Die öffentliche Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Kosinus von <v>" oder
 	"den Kosinus von <v>"
 
+[
+	Berechnet den Tangens von v.
+]
 Die öffentliche Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Tangens von <v>" oder
 	"den Tangens von <v>"
 
+[
+	Berechnet den Arkussinus von v. (sin⁻¹)
+]
 Die öffentliche Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkussinus von <v>" oder
 	"den Arkussinus von <v>"
 
+[
+	Berechnet den Arkuskosinus von v. (cos⁻¹)
+]
 Die öffentliche Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkuskosinus von <v>" oder
 	"den Arkuskosinus von <v>"
 
+[
+	Berechnet den Arkustangens von v. (tan⁻¹)
+]
 Die öffentliche Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkustangens von <v>" oder 
 	"den Arkustangens von <v>"
 
+[
+	Berechnet den Hyperbelsinus von v.
+]
 Die öffentliche Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelsinus von <v>" oder
 	"den Hyperbelsinus von <v>"
 
+[
+	Berechnet den Hyperbelkosinus von v.
+]
 Die öffentliche Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelkosinus von <v>" oder
 	"den Hyperbelkosinus von <v>"
 
+[
+	Berechnet den Hyperbeltangens von v.
+]
 Die öffentliche Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -275,26 +302,41 @@ Die öffentliche Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt
 Und kann so benutzt werden:
 	"alle Teiler von <z>"
 
+[
+	Quadriert (hoch 2) die gegebene Zahl.
+]
 Die öffentliche Funktion Quadriere mit dem Parameter x vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
 	Vervielfache x um x.
 Und kann so benutzt werden:
 	"Quadriere <x>"
 
+[
+	Gibt die gegebene Zahl hoch 2 zurück.
+]
 Die öffentliche Funktion Quadriere_Wert mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib x mal x zurück.
 Und kann so benutzt werden:
 	"<x> zum quadrat"
 
+[
+	Gibt zurück ob die gegebene Kommazahl eine ganze Zahl ist. (...; -2,0; -1,0; 0,0; 1,0; 2,0; ...)
+]
 Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
 	Gib (x als Zahl) als Kommazahl gleich x ist zurück.
 Und kann so benutzt werden:
 	"<x> eine ganze Zahl ist"
 
+[
+	Gibt zurück ob die gegebene Zahl eine gerade Zahl ist. (x mod 2 = 0)
+]
 Die öffentliche Funktion Gerade_Zahl mit dem Parameter x vom Typ Zahl, gibt einen Boolean zurück, macht:
 	Gib x modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"
 
+[
+	Gibt zurück ob die gegebene Kommazahl eine gerade Zahl ist. ((int)x mod 2 = 0)
+]
 Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
 	Gib x als Zahl modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:

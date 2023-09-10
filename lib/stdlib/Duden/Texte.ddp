@@ -381,6 +381,11 @@ Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Tex
 Und kann so benutzt werden:
 	"<text> an <zeichen> gespalten"
 
+[
+	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.
+	z.B.:
+		f(["hi", "", "yo"], '-') -> "hi--yo"
+]
 Die öffentliche Funktion VerbindenT mit den Parametern liste und trennzeichen vom Typ Text Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
@@ -390,6 +395,11 @@ Die öffentliche Funktion VerbindenT mit den Parametern liste und trennzeichen v
 Und kann so benutzt werden:
 	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
 
+[
+	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.
+	z.B.:
+		f([1, 234, 56789, 0], '-') -> "1-234-56789-0"
+]
 Die öffentliche Funktion VerbindenZ mit den Parametern liste und trennzeichen vom Typ Zahlen Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
@@ -399,6 +409,11 @@ Die öffentliche Funktion VerbindenZ mit den Parametern liste und trennzeichen v
 Und kann so benutzt werden:
 	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
 
+[
+	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.
+	z.B.:
+		f([1,4, 0 durch 0, 23,0], '-') -> "1,4-nan-23"
+]
 Die öffentliche Funktion VerbindenK mit den Parametern liste und trennzeichen vom Typ Kommazahlen Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
@@ -408,6 +423,11 @@ Die öffentliche Funktion VerbindenK mit den Parametern liste und trennzeichen v
 Und kann so benutzt werden:
 	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
 
+[
+	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.
+	z.B.:
+		f(['a', 'b', 'c'], '-') -> "a-b-c"
+]
 Die öffentliche Funktion VerbindenB mit den Parametern liste und trennzeichen vom Typ Buchstaben Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
@@ -417,6 +437,11 @@ Die öffentliche Funktion VerbindenB mit den Parametern liste und trennzeichen v
 Und kann so benutzt werden:
 	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
 
+[
+	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.
+	z.B.:
+		f([wahr, falsch, falsch], '-') -> "wahr-falsch-falsch"
+]
 Die öffentliche Funktion VerbindenBool mit den Parametern liste und trennzeichen vom Typ Boolean Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
