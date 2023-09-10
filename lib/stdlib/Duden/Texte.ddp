@@ -381,6 +381,51 @@ Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Tex
 Und kann so benutzt werden:
 	"<text> an <zeichen> gespalten"
 
+Die öffentliche Funktion VerbindenT mit den Parametern liste und trennzeichen vom Typ Text Liste und Buchstabe, gibt einen Text zurück, macht:
+	Der Text ret ist ein leerer Text.
+	Für jede Zahl i von 1 bis die Länge von liste, mache:
+		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit liste an der Stelle i verkettet mit trennzeichen in ret.
+		Sonst Speichere ret verkettet mit liste an der Stelle i in ret.
+	Gib ret zurück.
+Und kann so benutzt werden:
+	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
+
+Die öffentliche Funktion VerbindenZ mit den Parametern liste und trennzeichen vom Typ Zahlen Liste und Buchstabe, gibt einen Text zurück, macht:
+	Der Text ret ist ein leerer Text.
+	Für jede Zahl i von 1 bis die Länge von liste, mache:
+		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit (liste an der Stelle i) als Text verkettet mit trennzeichen in ret.
+		Sonst Speichere ret verkettet mit (liste an der Stelle i) als Text in ret.
+	Gib ret zurück.
+Und kann so benutzt werden:
+	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
+
+Die öffentliche Funktion VerbindenK mit den Parametern liste und trennzeichen vom Typ Kommazahlen Liste und Buchstabe, gibt einen Text zurück, macht:
+	Der Text ret ist ein leerer Text.
+	Für jede Zahl i von 1 bis die Länge von liste, mache:
+		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit (liste an der Stelle i) als Text verkettet mit trennzeichen in ret.
+		Sonst Speichere ret verkettet mit (liste an der Stelle i) als Text in ret.
+	Gib ret zurück.
+Und kann so benutzt werden:
+	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
+
+Die öffentliche Funktion VerbindenB mit den Parametern liste und trennzeichen vom Typ Buchstaben Liste und Buchstabe, gibt einen Text zurück, macht:
+	Der Text ret ist ein leerer Text.
+	Für jede Zahl i von 1 bis die Länge von liste, mache:
+		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit (liste an der Stelle i) verkettet mit trennzeichen in ret.
+		Sonst Speichere ret verkettet mit (liste an der Stelle i) in ret.
+	Gib ret zurück.
+Und kann so benutzt werden:
+	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
+
+Die öffentliche Funktion VerbindenBool mit den Parametern liste und trennzeichen vom Typ Boolean Liste und Buchstabe, gibt einen Text zurück, macht:
+	Der Text ret ist ein leerer Text.
+	Für jede Zahl i von 1 bis die Länge von liste, mache:
+		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit (liste an der Stelle i) als Text verkettet mit trennzeichen in ret.
+		Sonst Speichere ret verkettet mit (liste an der Stelle i) als Text in ret.
+	Gib ret zurück.
+Und kann so benutzt werden:
+	"<liste> mit dem Trennzeichen <trennzeichen> zum Text verbunden"
+
 [
 	Two-Way string-matching Algorithmus
 ]

@@ -1,5 +1,5 @@
 Binde Schreibe_Text aus "Ausgabe" ein.
-Binde Text_an_Text_fügen und Buchstabe_an_Text_fügen aus "Texte" ein.
+Binde VerbindenZ, Text_an_Text_fügen und Buchstabe_an_Text_fügen aus "Texte" ein.
 
 Die Funktion ANSI_Escape gibt einen Text zurück, macht:
 	Gib 27 als Buchstabe verkettet mit "[" zurück.
@@ -12,12 +12,7 @@ Und kann so benutzt werden:
 	"Führe die ANSI Funktion <func> mit dem argument <arg> aus"
 
 Die öffentliche Funktion ANSI_Funktion_Ausführen mit den Parametern args und func vom Typ Zahlen Liste und Buchstabe, gibt nichts zurück, macht:
-	Der Text befehl ist ESC.
-	Die Zahl i ist 1.
-	Für jede Zahl arg in args, mache:
-		Füge (arg als Text) an befehl an.
-		Wenn i kleiner als die Länge von args ist, Füge ';' an befehl an.
-		Erhöhe i um 1.
+	Der Text befehl ist ESC verkettet mit args mit dem Trennzeichen ';' zum Text verbunden.
 	Schreibe (befehl verkettet mit func).
 Und kann so benutzt werden:
 	"Führe die ANSI Funktion <func> mit den argumenten <args> aus"
