@@ -28,8 +28,7 @@ type UpdateCommand struct {
 	verbose         bool
 	compare_version bool
 	pre_release     bool
-	use_archive     string // mainly meant for after kddp has updated itself
-	old_kddp        string // only used when kddp updates itself
+	use_archive     string // only meant for internal use
 	gh              *github.Client
 	infof           func(format string, a ...any)
 }
@@ -41,7 +40,6 @@ func NewUpdateCommand() *UpdateCommand {
 		compare_version: false,
 		pre_release:     false,
 		use_archive:     "",
-		old_kddp:        "",
 		gh:              github.NewClient(nil),
 	}
 	cmd.infof = func(format string, a ...any) {
@@ -56,32 +54,33 @@ func (cmd *UpdateCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Zeige wortreiche Informationen")
 	cmd.fs.BoolVar(&cmd.compare_version, "vergleiche_version", cmd.compare_version, "Vergleicht nur die installierte Version mit der neuesten Version ohne zu updaten")
 	cmd.fs.BoolVar(&cmd.pre_release, "pre_release", cmd.pre_release, "pre-release Versionen mit einbeziehen")
-	cmd.fs.StringVar(&cmd.use_archive, "use_archive", cmd.use_archive, "Nutze das angegebene Archiv anstatt die neueste Version herunterzuladen")
-	cmd.fs.StringVar(&cmd.old_kddp, "old_kddp", cmd.old_kddp, "Nur für interne Zwecke")
+	cmd.fs.StringVar(&cmd.use_archive, "use_archive", cmd.use_archive, "Nur für interne Zwecke")
 	return parseFlagSet(cmd.fs, args)
 }
 
 func (cmd *UpdateCommand) Run() error {
-	fmt.Printf("\nAktuelle Version: %s\n", DDPVERSION)
-	latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
-	if err != nil {
-		return err
-	}
-	latest_version := latestRelease.GetTagName()
-	fmt.Printf("Neueste Version:  %s\n\n", latest_version)
+	is_sub_process := cmd.use_archive != ""
 
-	if is_newer, err := is_newer_version(DDPVERSION, latest_version); err != nil {
-		return err
-	} else if is_newer {
-		fmt.Println("Es ist eine neuere Version verfügbar")
-	} else {
-		fmt.Println("DDP ist auf dem neusten Stand")
-	}
-	if cmd.compare_version { // early return if only the version should be compared
-		return nil
-	}
+	if !is_sub_process {
+		fmt.Printf("\nAktuelle Version: %s\n", DDPVERSION)
+		latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
+		if err != nil {
+			return err
+		}
+		latest_version := latestRelease.GetTagName()
+		fmt.Printf("Neueste Version:  %s\n\n", latest_version)
 
-	if cmd.use_archive == "" {
+		if is_newer, err := is_newer_version(DDPVERSION, latest_version); err != nil {
+			return err
+		} else if is_newer {
+			fmt.Println("Es ist eine neuere Version verfügbar")
+		} else {
+			fmt.Println("DDP ist auf dem neusten Stand")
+		}
+		if cmd.compare_version { // early return if only the version should be compared
+			return nil
+		}
+
 		archive_type := ".zip"
 		if runtime.GOOS == "linux" {
 			archive_type = ".tar.gz"
@@ -102,14 +101,8 @@ func (cmd *UpdateCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	defer archive.Close()
 
-	should_update_kddp := true
-	if _, err := os.Stat(filepath.Join(ddppath.InstallDir, update_cache_name)); !errors.Is(err, os.ErrNotExist) {
-		should_update_kddp = false
-	}
-
-	if should_update_kddp {
+	if !is_sub_process {
 		cmd.infof("Update kddp.exe")
 
 		// get the kddp.exe from the archive
@@ -125,16 +118,17 @@ func (cmd *UpdateCommand) Run() error {
 			return err
 		}
 
-		if err := cmd.serialize_update_cache(); err != nil {
+		fmt.Println("\nUpdate war erfolgreich")
+
+		cmd.infof("Lösche %s", cmd.use_archive)
+		archive.Close()
+		if err := os.Remove(cmd.use_archive); err != nil {
 			return err
 		}
-		fmt.Println("\nUpdate von kddp.exe erfolgreich\nUm das update abzuschließen bitte 'kddp update' erneut ausführen")
+
 		return nil
 	}
-
-	if err := cmd.parse_update_cache(); err != nil {
-		return err
-	}
+	defer archive.Close()
 
 	cmd.infof("Update Bibliotheken")
 	if err := cmd.update_lib(archive); err != nil {
@@ -145,16 +139,6 @@ func (cmd *UpdateCommand) Run() error {
 	if err := cmd.update_ddpls(archive); err != nil {
 		return err
 	}
-
-	cmd.infof("Lösche %s", cmd.use_archive)
-	if err := os.Remove(cmd.use_archive); err != nil {
-		return err
-	}
-	cmd.infof("Lösche %s", cmd.old_kddp)
-	if err := os.Remove(cmd.old_kddp); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -171,8 +155,8 @@ Optionen:
 }
 
 func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
-	cmd.old_kddp = filepath.Join(ddppath.Bin, "kddp.exe.old")
-	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{OldSavePath: cmd.old_kddp}); err != nil {
+	old_kddp := filepath.Join(ddppath.Bin, "kddp.exe.old")
+	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{OldSavePath: old_kddp}); err != nil {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
 			fmt.Println("Rollback fehlgeschlagen:", rerr)
 			fmt.Println("Bitte manuell die neueste Version von kddp.exe herunterladen und ersetzen")
@@ -182,45 +166,27 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 			return err
 		}
 	}
-	fmt.Printf("\n")
-	return nil
-}
+	cmd.infof("Starte neue Version von kddp.exe")
 
-const update_cache_name = "update_cache.txt"
-
-func (cmd *UpdateCommand) serialize_update_cache() error {
-	var args []string
-	args = append(args, fmt.Sprintf("%s=%v", "wortreich", cmd.verbose))
-	args = append(args, fmt.Sprintf("%s=%s", "use_archive", cmd.use_archive))
-	args = append(args, fmt.Sprintf("%s=%s", "old_kddp", cmd.old_kddp))
-	file, err := os.Create(filepath.Join(ddppath.InstallDir, update_cache_name))
+	// Get current process name and directory.
+	execName, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	_, err = file.WriteString(strings.Join(args, ";"))
-	return err
-}
+	execDir := filepath.Dir(execName)
 
-func (cmd *UpdateCommand) parse_update_cache() error {
-	file, err := os.ReadFile(filepath.Join(ddppath.InstallDir, update_cache_name))
-	if err != nil {
+	new_kddp := exec.Command(execName, "update",
+		fmt.Sprintf("--use_archive=%s", cmd.use_archive),
+		fmt.Sprintf("--wortreich=%v", cmd.verbose),
+		fmt.Sprintf("--pre_release=%v", cmd.pre_release),
+	)
+	new_kddp.Dir = execDir
+	new_kddp.Stdout = os.Stdout
+	new_kddp.Stderr = os.Stderr
+	new_kddp.Stdin = os.Stdin
+
+	if err := new_kddp.Run(); err != nil {
 		return err
-	}
-	update_cache_args := strings.Split(string(file), ";")
-	for _, arg := range update_cache_args {
-		split := strings.Split(arg, "=")
-		arg_name, arg_value := split[0], split[1]
-		switch arg_name {
-		case "wortreich":
-			cmd.verbose = arg_value == "true"
-		case "use_archive":
-			cmd.use_archive = arg_value
-		case "old_kddp":
-			cmd.old_kddp = arg_value
-		default:
-			return fmt.Errorf("ungültiges Argument in %s: %s", update_cache_name, arg_name)
-		}
 	}
 	return nil
 }
