@@ -30,10 +30,11 @@ type UpdateCommand struct {
 	pre_release     bool
 	use_archive     string // mainly meant for after kddp has updated itself
 	gh              *github.Client
+	infof           func(format string, a ...any)
 }
 
 func NewUpdateCommand() *UpdateCommand {
-	return &UpdateCommand{
+	cmd := &UpdateCommand{
 		fs:              flag.NewFlagSet("update", flag.ExitOnError),
 		verbose:         false,
 		compare_version: false,
@@ -41,6 +42,12 @@ func NewUpdateCommand() *UpdateCommand {
 		use_archive:     "",
 		gh:              github.NewClient(nil),
 	}
+	cmd.infof = func(format string, a ...any) {
+		if cmd.verbose {
+			fmt.Printf(format+"\n", a...)
+		}
+	}
+	return cmd
 }
 
 func (cmd *UpdateCommand) Init(args []string) error {
@@ -52,7 +59,7 @@ func (cmd *UpdateCommand) Init(args []string) error {
 }
 
 func (cmd *UpdateCommand) Run() error {
-	fmt.Printf("\nAktuelle Version: %s\n", DDPVERSION)
+	fmt.Printf("\nAktuelle Version: %s", DDPVERSION)
 	latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
 	if err != nil {
 		return err
@@ -100,7 +107,7 @@ func (cmd *UpdateCommand) Run() error {
 	}
 
 	if should_update_kddp {
-		fmt.Println("Update kddp.exe")
+		cmd.infof("Update kddp.exe")
 
 		// get the kddp.exe from the archive
 		kddp_exe, size, err := archive.GetElementFunc(func(path string) bool {
@@ -160,6 +167,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 			return err
 		}
 	}
+	fmt.Printf("\n")
 	return nil
 }
 
@@ -236,6 +244,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 			if _, err := io.Copy(f, pr); err != nil {
 				return err
 			}
+			fmt.Printf("\n")
 		}
 		return nil
 	}); err != nil {
@@ -252,7 +261,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 		return nil // we do not have to recompile anything
 	}
 
-	fmt.Println("Bibliotheken werden neu kompiliert")
+	cmd.infof("Bibliotheken werden neu kompiliert")
 	make_cmd, ar_cmd := "make", "ar"
 	if _, err := os.Stat(ddppath.Mingw64); err == nil || !os.IsNotExist(err) {
 		make_cmd, ar_cmd = filepath.Join(ddppath.Mingw64, "bin", "mingw32-make.exe"), filepath.Join(ddppath.Mingw64, "bin", "ar.exe")
@@ -278,7 +287,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 		return err
 	}
 
-	fmt.Println("Bibliotheken werden kopiert")
+	cmd.infof("Bibliotheken werden kopiert")
 	if err := cp.Copy(filepath.Join(runtime_src, "libddpruntime.a"), filepath.Join(ddppath.Lib, "libddpruntime.a")); err != nil {
 		return err
 	}
@@ -295,7 +304,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 		return err
 	}
 
-	fmt.Println("Bibliotheken werden aufgeräumt")
+	cmd.infof("Bibliotheken werden aufgeräumt")
 	if err := runCmd(runtime_src, make_cmd, "clean", rmArg); err != nil {
 		return err
 	}
@@ -326,6 +335,7 @@ func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) er
 	if _, err := io.Copy(ddpls_file, pr); err != nil {
 		return err
 	}
+	fmt.Printf("\n")
 	return nil
 }
 
