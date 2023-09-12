@@ -29,6 +29,7 @@ type UpdateCommand struct {
 	compare_version bool
 	pre_release     bool
 	use_archive     string // mainly meant for after kddp has updated itself
+	old_kddp        string // only used when kddp updates itself
 	gh              *github.Client
 	infof           func(format string, a ...any)
 }
@@ -40,6 +41,7 @@ func NewUpdateCommand() *UpdateCommand {
 		compare_version: false,
 		pre_release:     false,
 		use_archive:     "",
+		old_kddp:        "",
 		gh:              github.NewClient(nil),
 	}
 	cmd.infof = func(format string, a ...any) {
@@ -55,11 +57,12 @@ func (cmd *UpdateCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.compare_version, "vergleiche_version", cmd.compare_version, "Vergleicht nur die installierte Version mit der neuesten Version ohne zu updaten")
 	cmd.fs.BoolVar(&cmd.pre_release, "pre_release", cmd.pre_release, "pre-release Versionen mit einbeziehen")
 	cmd.fs.StringVar(&cmd.use_archive, "use_archive", cmd.use_archive, "Nutze das angegebene Archiv anstatt die neueste Version herunterzuladen")
+	cmd.fs.StringVar(&cmd.old_kddp, "old_kddp", cmd.old_kddp, "Nur für interne Zwecke")
 	return parseFlagSet(cmd.fs, args)
 }
 
 func (cmd *UpdateCommand) Run() error {
-	fmt.Printf("\nAktuelle Version: %s", DDPVERSION)
+	fmt.Printf("\nAktuelle Version: %s\n", DDPVERSION)
 	latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
 	if err != nil {
 		return err
@@ -133,11 +136,22 @@ func (cmd *UpdateCommand) Run() error {
 		return err
 	}
 
+	cmd.infof("Update Bibliotheken")
 	if err := cmd.update_lib(archive); err != nil {
 		return err
 	}
 
+	cmd.infof("Update DDPLS")
 	if err := cmd.update_ddpls(archive); err != nil {
+		return err
+	}
+
+	cmd.infof("Lösche %s", cmd.use_archive)
+	if err := os.Remove(cmd.use_archive); err != nil {
+		return err
+	}
+	cmd.infof("Lösche %s", cmd.old_kddp)
+	if err := os.Remove(cmd.old_kddp); err != nil {
 		return err
 	}
 
@@ -157,7 +171,8 @@ Optionen:
 }
 
 func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
-	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{}); err != nil {
+	cmd.old_kddp = filepath.Join(ddppath.Bin, "kddp.exe.old")
+	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{OldSavePath: cmd.old_kddp}); err != nil {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
 			fmt.Println("Rollback fehlgeschlagen:", rerr)
 			fmt.Println("Bitte manuell die neueste Version von kddp.exe herunterladen und ersetzen")
@@ -177,6 +192,7 @@ func (cmd *UpdateCommand) serialize_update_cache() error {
 	var args []string
 	args = append(args, fmt.Sprintf("%s=%v", "wortreich", cmd.verbose))
 	args = append(args, fmt.Sprintf("%s=%s", "use_archive", cmd.use_archive))
+	args = append(args, fmt.Sprintf("%s=%s", "old_kddp", cmd.old_kddp))
 	file, err := os.Create(filepath.Join(ddppath.InstallDir, update_cache_name))
 	if err != nil {
 		return err
@@ -200,6 +216,8 @@ func (cmd *UpdateCommand) parse_update_cache() error {
 			cmd.verbose = arg_value == "true"
 		case "use_archive":
 			cmd.use_archive = arg_value
+		case "old_kddp":
+			cmd.old_kddp = arg_value
 		default:
 			return fmt.Errorf("ungültiges Argument in %s: %s", update_cache_name, arg_name)
 		}
