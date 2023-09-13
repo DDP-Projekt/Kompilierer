@@ -107,7 +107,7 @@ func (cmd *UpdateCommand) Run() error {
 		cmd.infof("Update kddp.exe")
 
 		// get the kddp.exe from the archive
-		kddp_exe, size, err := archive.GetElementFunc(func(path string) bool {
+		kddp_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
 			return strings.HasSuffix(path, "kddp.exe")
 		})
 		if err != nil {
@@ -213,12 +213,15 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	lib_regex := regexp.MustCompile(lib_regex_pattern)
 	lib_replace_regex := regexp.MustCompile(lib_regex_replace_pattern)
 
-	if err := archive.IterateElementsFunc(func(path string, r io.Reader, size uint64) error {
+	if err := archive.IterateElementsFunc(func(path string, isDir bool, r io.Reader, size uint64) error {
 		if lib_regex.MatchString(path) {
 			path = lib_replace_regex.ReplaceAllString(path, "")
 			path = filepath.Join(ddppath.Lib, path)
 			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return err
+			}
+			if isDir {
+				return nil
 			}
 			f, err := os.Create(path)
 			if err != nil {
@@ -302,7 +305,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 
 func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) error {
 	// get the DDPLS.exe from the archive
-	ddpls_exe, size, err := archive.GetElementFunc(func(path string) bool {
+	ddpls_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
 		return strings.HasSuffix(path, "DDPLS.exe")
 	})
 	if err != nil {

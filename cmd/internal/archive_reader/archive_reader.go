@@ -11,12 +11,17 @@ import (
 	"path/filepath"
 )
 
+type tarFile struct {
+	hdr *tar.Header
+	buf *bytes.Buffer
+}
+
 // ArchiveReader provides a way to only read some selected files
 // from either a .zip or .tar.gz archive
 type ArchiveReader struct {
 	zipArchive *zip.ReadCloser
 	tarArchive *tar.Reader
-	tarFiles   map[string]*bytes.Buffer
+	tarFiles   map[string]tarFile
 	close_fn   func() error
 }
 
@@ -47,7 +52,7 @@ func New(archive string) (*ArchiveReader, error) {
 		tr := tar.NewReader(gzr)
 		return &ArchiveReader{
 			tarArchive: tr,
-			tarFiles:   make(map[string]*bytes.Buffer),
+			tarFiles:   make(map[string]tarFile),
 			close_fn: func() error {
 				gzr.Close()
 				return f.Close()
@@ -63,46 +68,46 @@ func (ar *ArchiveReader) Close() error {
 	return ar.close_fn()
 }
 
-// returns a file-like reader and the size of that file for the first path that satisfies fn
-func (ar *ArchiveReader) GetElementFunc(fn func(string) bool) (io.ReadCloser, uint64, error) {
+// returns a file-like reader, wether the file is a directory the size of that file for the first path that satisfies fn
+func (ar *ArchiveReader) GetElementFunc(fn func(string) bool) (io.ReadCloser, bool, uint64, error) {
 	// zip case is simple as it already provides a file-like interface
 	if ar.zipArchive != nil {
 		for _, f := range ar.zipArchive.File {
 			if fn(f.Name) {
 				rc, err := f.Open()
-				return rc, f.UncompressedSize64, err
+				return rc, f.FileInfo().IsDir(), f.UncompressedSize64, err
 			}
 		}
 	}
 
 	// tar case is more complicated as we have to read the whole archive
 	// check if we already have the file in memory
-	for name, buf := range ar.tarFiles {
+	for name, f := range ar.tarFiles {
 		if fn(name) {
-			return io.NopCloser(buf), uint64(buf.Len()), nil
+			return io.NopCloser(f.buf), f.hdr.FileInfo().IsDir(), uint64(f.buf.Len()), nil
 		}
 	}
 	// otherwise iterate over the tar archive
 	for hdr, err := ar.tarArchive.Next(); err != io.EOF; hdr, err = ar.tarArchive.Next() {
 		if err != nil {
-			return nil, 0, err
+			return nil, false, 0, err
 		}
 		if fn(hdr.Name) {
-			return io.NopCloser(ar.tarArchive), uint64(hdr.Size), nil
+			return io.NopCloser(ar.tarArchive), hdr.FileInfo().IsDir(), uint64(hdr.Size), nil
 		} else {
-			ar.tarFiles[hdr.Name] = &bytes.Buffer{}
-			_, err := io.Copy(ar.tarFiles[hdr.Name], ar.tarArchive)
+			ar.tarFiles[hdr.Name] = tarFile{hdr: hdr, buf: &bytes.Buffer{}}
+			_, err := io.Copy(ar.tarFiles[hdr.Name].buf, ar.tarArchive)
 			if err != nil {
-				return nil, 0, err
+				return nil, false, 0, err
 			}
 		}
 	}
-	return nil, 0, fmt.Errorf("element not found")
+	return nil, false, 0, fmt.Errorf("element not found")
 }
 
 // allows iteration over all elements in the archive
 // fn is called on each element and should and error occur that error is returned
-func (ar *ArchiveReader) IterateElementsFunc(fn func(string, io.Reader, uint64) error) error {
+func (ar *ArchiveReader) IterateElementsFunc(fn func(string, bool, io.Reader, uint64) error) error {
 	// zip case is simple as it already provides a file-like interface
 	if ar.zipArchive != nil {
 		for _, f := range ar.zipArchive.File {
@@ -111,7 +116,7 @@ func (ar *ArchiveReader) IterateElementsFunc(fn func(string, io.Reader, uint64) 
 				return err
 			}
 			defer rc.Close()
-			if err := fn(f.Name, rc, f.UncompressedSize64); err != nil {
+			if err := fn(f.Name, f.FileInfo().IsDir(), rc, f.UncompressedSize64); err != nil {
 				return err
 			}
 		}
@@ -123,16 +128,16 @@ func (ar *ArchiveReader) IterateElementsFunc(fn func(string, io.Reader, uint64) 
 		if err != nil {
 			return err
 		}
-		ar.tarFiles[hdr.Name] = &bytes.Buffer{}
-		_, err := io.Copy(ar.tarFiles[hdr.Name], ar.tarArchive)
+		ar.tarFiles[hdr.Name] = tarFile{hdr: hdr, buf: &bytes.Buffer{}}
+		_, err := io.Copy(ar.tarFiles[hdr.Name].buf, ar.tarArchive)
 		if err != nil {
 			return err
 		}
 	}
 
 	// iterate over the archive
-	for name, buf := range ar.tarFiles {
-		if err := fn(name, buf, uint64(buf.Len())); err != nil {
+	for name, f := range ar.tarFiles {
+		if err := fn(name, f.hdr.FileInfo().IsDir(), f.buf, uint64(f.buf.Len())); err != nil {
 			return err
 		}
 	}
