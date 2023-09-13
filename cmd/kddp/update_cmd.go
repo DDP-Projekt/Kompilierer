@@ -62,7 +62,7 @@ func (cmd *UpdateCommand) Run() error {
 	is_sub_process := cmd.use_archive != ""
 
 	if !is_sub_process {
-		fmt.Printf("\nAktuelle Version: %s\n", DDPVERSION)
+		fmt.Printf("Aktuelle Version: %s\n", DDPVERSION)
 		latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
 		if err != nil {
 			return err
@@ -70,12 +70,13 @@ func (cmd *UpdateCommand) Run() error {
 		latest_version := latestRelease.GetTagName()
 		fmt.Printf("Neueste Version:  %s\n\n", latest_version)
 
-		if is_newer, err := is_newer_version(DDPVERSION, latest_version); err != nil {
+		if is_newer, err := is_newer_version(latest_version, DDPVERSION); err != nil {
 			return err
 		} else if is_newer {
 			fmt.Println("Es ist eine neuere Version verfügbar")
 		} else {
 			fmt.Println("DDP ist auf dem neusten Stand")
+			return nil
 		}
 		if cmd.compare_version { // early return if only the version should be compared
 			return nil
@@ -92,7 +93,7 @@ func (cmd *UpdateCommand) Run() error {
 		cmd.use_archive += archive_type
 		cmd.use_archive = filepath.Join(ddppath.InstallDir, cmd.use_archive)
 
-		if err := cmd.downloadAssetTo(cmd.use_archive, cmd.use_archive, latestRelease); err != nil {
+		if err := cmd.downloadAssetTo(filepath.Base(cmd.use_archive), cmd.use_archive, latestRelease); err != nil {
 			return err
 		}
 	}
@@ -401,8 +402,12 @@ func (cmd *UpdateCommand) getLatestRelease(pre_release bool) (*github.Repository
 }
 
 func (cmd *UpdateCommand) downloadAssetTo(assetName, targetPath string, release *github.RepositoryRelease) error {
+	cmd.infof("searching for asset %s", assetName)
 	for _, asset := range release.Assets {
-		if asset.GetName() == assetName {
+		name := asset.GetName()
+		cmd.infof("considering asset %s", name)
+		if name == assetName {
+			cmd.infof("found asset")
 			r, _, err := cmd.gh.Repositories.DownloadReleaseAsset(context.Background(), "DDP-Projekt", "Kompilierer", asset.GetID(), http.DefaultClient)
 			if err != nil {
 				return err
