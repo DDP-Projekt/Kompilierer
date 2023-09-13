@@ -115,7 +115,7 @@ func (cmd *UpdateCommand) Run() error {
 		}
 		defer kddp_exe.Close()
 
-		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke kddp.exe"}); err != nil {
+		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke kddp.exe", should_print: true}); err != nil {
 			return err
 		}
 
@@ -228,7 +228,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 				return err
 			}
 			defer f.Close()
-			pr := &progressReader{r: r, max: size, msg: fmt.Sprintf("Entpacke %s", filepath.Base(path))}
+			pr := &progressReader{r: r, max: size, msg: fmt.Sprintf("Entpacke %s", filepath.Base(path)), should_print: cmd.verbose}
 			if _, err := io.Copy(f, pr); err != nil {
 				return err
 			}
@@ -279,7 +279,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	if err := cp.Copy(filepath.Join(runtime_src, "libddpruntime.a"), filepath.Join(ddppath.Lib, "libddpruntime.a")); err != nil {
 		return err
 	}
-	if err := cp.Copy(filepath.Join(runtime_src, "main.o"), filepath.Join(ddppath.Lib, "main.o")); err != nil {
+	if err := cp.Copy(filepath.Join(runtime_src, "source", "main.o"), filepath.Join(ddppath.Lib, "main.o")); err != nil {
 		return err
 	}
 	if err := cp.Copy(filepath.Join(stdlib_src, "libddpstdlib.a"), filepath.Join(ddppath.Lib, "libddpstdlib.a")); err != nil {
@@ -319,7 +319,7 @@ func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) er
 	}
 	defer ddpls_file.Close()
 
-	pr := &progressReader{r: ddpls_exe, max: size, msg: "Ersetze DDPLS.exe"}
+	pr := &progressReader{r: ddpls_exe, max: size, msg: "Ersetze DDPLS.exe", should_print: true}
 	if _, err := io.Copy(ddpls_file, pr); err != nil {
 		return err
 	}
@@ -421,7 +421,7 @@ func (cmd *UpdateCommand) downloadAssetTo(assetName, targetPath string, release 
 				return err
 			}
 			defer f.Close()
-			pr := &progressReader{r: r, max: uint64(asset.GetSize()), msg: fmt.Sprintf("Lade %s herunter", assetName)}
+			pr := &progressReader{r: r, max: uint64(asset.GetSize()), msg: fmt.Sprintf("Lade %s herunter", assetName), should_print: true}
 			if _, err := io.Copy(f, pr); err != nil {
 				return err
 			}
@@ -432,15 +432,25 @@ func (cmd *UpdateCommand) downloadAssetTo(assetName, targetPath string, release 
 }
 
 type progressReader struct {
-	r     io.Reader
-	total uint64
-	max   uint64
-	msg   string
+	r            io.Reader
+	total        uint64
+	max          uint64
+	msg          string
+	should_print bool
 }
 
 func (pr *progressReader) Read(p []byte) (n int, err error) {
 	n, err = pr.r.Read(p)
 	pr.total += uint64(n)
+
+	if !pr.should_print {
+		return
+	}
+	// if total is smaller than 3 MB show progress in KB
+	if pr.max < 3000000 {
+		fmt.Printf("\r%s: %v of %v KB (%v%%)", pr.msg, pr.total/1000, pr.max/1000, pr.total*100/pr.max)
+		return
+	}
 	fmt.Printf("\r%s: %v of %v MB (%v%%)", pr.msg, pr.total/1000000, pr.max/1000000, pr.total*100/pr.max)
 	return
 }
