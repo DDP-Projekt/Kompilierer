@@ -29,6 +29,7 @@ type UpdateCommand struct {
 	compare_version bool
 	pre_release     bool
 	use_archive     string // only meant for internal use
+	now             bool
 	gh              *github.Client
 	infof           func(format string, a ...any)
 }
@@ -40,6 +41,7 @@ func NewUpdateCommand() *UpdateCommand {
 		compare_version: false,
 		pre_release:     false,
 		use_archive:     "",
+		now:             false,
 		gh:              github.NewClient(nil),
 	}
 	cmd.infof = func(format string, a ...any) {
@@ -55,6 +57,7 @@ func (cmd *UpdateCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.compare_version, "vergleiche_version", cmd.compare_version, "Vergleicht nur die installierte Version mit der neuesten Version ohne zu updaten")
 	cmd.fs.BoolVar(&cmd.pre_release, "pre_release", cmd.pre_release, "pre-release Versionen mit einbeziehen")
 	cmd.fs.StringVar(&cmd.use_archive, "use_archive", cmd.use_archive, "Nur für interne Zwecke")
+	cmd.fs.BoolVar(&cmd.now, "jetzt", cmd.now, "Falls eine neue Version verfügbar ist, wird diese ohne zu fragen sofort heruntergeladen und installiert")
 	return parseFlagSet(cmd.fs, args)
 }
 
@@ -79,6 +82,16 @@ func (cmd *UpdateCommand) Run() error {
 			return nil
 		}
 		if cmd.compare_version { // early return if only the version should be compared
+			return nil
+		}
+
+		fmt.Printf("DDP jetzt updaten? (j/n): ")
+		var answer string
+		if _, err := fmt.Scanln(&answer); err != nil {
+			return err
+		}
+		answer = strings.TrimSpace(strings.ToLower(answer))
+		if answer != "j" && answer != "y" {
 			return nil
 		}
 
@@ -152,7 +165,8 @@ func (cmd *UpdateCommand) Usage() string {
 Optionen:
 	--wortreich: Zeige wortreiche Informationen
 	--vergleiche_version: Vergleiche die installierte Version mit der neuesten Version
-	--pre_release: pre-release Versionen mit einbeziehen`
+	--pre_release: pre-release Versionen mit einbeziehen
+	--jetzt: Falls eine neue Version verfügbar ist, wird diese ohne zu fragen sofort heruntergeladen und installiert`
 }
 
 func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
@@ -232,7 +246,9 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 			if _, err := io.Copy(f, pr); err != nil {
 				return err
 			}
-			fmt.Printf("\n")
+			if cmd.verbose {
+				fmt.Printf("\n")
+			}
 		}
 		return nil
 	}); err != nil {
