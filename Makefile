@@ -158,7 +158,7 @@ test-memory:
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 
-test-complete: clean all test clean debug test-memory
+test-complete: all test debug test-memory
 
 help:
 	@echo "Targets:"

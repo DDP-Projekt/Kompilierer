@@ -31,10 +31,13 @@ jobs:
       if: runner.os == 'Linux'
         
     - name: Build
-      run: make
+      run: make -j$(nproc)
       
     - name: Run tests
       run: make test
+
+    - name: Build debug
+      run: make -j$(nproc) debug
     
     - name: Run memory tests
-      run: make clean && make debug && make test-memory
+      run: make test-memory
