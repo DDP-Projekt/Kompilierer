@@ -61,6 +61,8 @@ func (cmd *UpdateCommand) Init(args []string) error {
 	return parseFlagSet(cmd.fs, args)
 }
 
+var kddp_bin_name = exePath("kddp")
+
 func (cmd *UpdateCommand) Run() error {
 	is_sub_process := cmd.use_archive != ""
 
@@ -117,18 +119,18 @@ func (cmd *UpdateCommand) Run() error {
 	}
 
 	if !is_sub_process {
-		cmd.infof("Update kddp.exe")
+		cmd.infof("Update %s", kddp_bin_name)
 
 		// get the kddp.exe from the archive
 		kddp_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
-			return strings.HasSuffix(path, "kddp.exe")
+			return strings.HasSuffix(path, kddp_bin_name)
 		})
 		if err != nil {
 			return err
 		}
 		defer kddp_exe.Close()
 
-		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke kddp.exe", should_print: true}); err != nil {
+		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke " + kddp_bin_name, should_print: true}); err != nil {
 			return err
 		}
 
@@ -170,18 +172,18 @@ Optionen:
 }
 
 func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
-	old_kddp := filepath.Join(ddppath.Bin, "kddp.exe.old")
+	old_kddp := filepath.Join(ddppath.Bin, kddp_bin_name+".old")
 	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{OldSavePath: old_kddp}); err != nil {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
 			fmt.Println("Rollback fehlgeschlagen:", rerr)
-			fmt.Println("Bitte manuell die neueste Version von kddp.exe herunterladen und ersetzen")
+			fmt.Printf("Bitte manuell die neueste Version von %s herunterladen und ersetzen\n", kddp_bin_name)
 			return err
 		} else {
 			fmt.Println("Update fehlgeschlagen:", err)
 			return err
 		}
 	}
-	cmd.infof("Starte neue Version von kddp.exe")
+	cmd.infof("Starte neue Version von " + kddp_bin_name)
 
 	// Get current process name and directory.
 	execName, err := os.Executable()
@@ -320,22 +322,23 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 }
 
 func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) error {
+	ddpls_bin_name := exePath("DDPLS")
 	// get the DDPLS.exe from the archive
 	ddpls_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
-		return strings.HasSuffix(path, "DDPLS.exe")
+		return strings.HasSuffix(path, ddpls_bin_name)
 	})
 	if err != nil {
 		return err
 	}
 	defer ddpls_exe.Close()
 
-	ddpls_file, err := os.OpenFile(filepath.Join(ddppath.Bin, "DDPLS.exe"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+	ddpls_file, err := os.OpenFile(filepath.Join(ddppath.Bin, ddpls_bin_name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	defer ddpls_file.Close()
 
-	pr := &progressReader{r: ddpls_exe, max: size, msg: "Ersetze DDPLS.exe", should_print: true}
+	pr := &progressReader{r: ddpls_exe, max: size, msg: "Ersetze " + ddpls_bin_name, should_print: true}
 	if _, err := io.Copy(ddpls_file, pr); err != nil {
 		return err
 	}
@@ -469,4 +472,11 @@ func (pr *progressReader) Read(p []byte) (n int, err error) {
 	}
 	fmt.Printf("\r%s: %v of %v MB (%v%%)", pr.msg, pr.total/1000000, pr.max/1000000, pr.total*100/pr.max)
 	return
+}
+
+func exePath(path string) string {
+	if runtime.GOOS == "windows" {
+		return path + ".exe"
+	}
+	return path
 }
