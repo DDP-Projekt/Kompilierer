@@ -25,7 +25,7 @@ endif
 
 OUT_DIR := build/
 
-DDPVERSION := pre_0.0.1
+DDPVERSION := v0.0.4-pre
 LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
 GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
