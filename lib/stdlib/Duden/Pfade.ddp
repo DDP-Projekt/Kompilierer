@@ -1,10 +1,16 @@
-Binde "Duden/Texte" ein.
 [
 	Pfad Manipulationsfunktionen. NUR FÜR UNIX!
 ]
 
-Binde "Duden/Laufzeit" ein.
 
+Binde "Duden/Texte" ein.
+Binde Betriebssystem aus "Duden/Laufzeit" ein.
+
+[
+	Gibt den Pfad-Trennzeichen, der dem Betriebssystem entspricht zurück.
+	Auf Linux: '/'
+	Auf Windows: '\'
+]
 Die öffentliche Funktion TrennZeichen gibt einen Buchstaben zurück, macht:
 	Wenn das Betriebssystem gleich "Windows" ist, gib '\\' zurück.
 	Gib '/' zurück.

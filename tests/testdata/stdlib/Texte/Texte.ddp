@@ -73,4 +73,12 @@ Schreibe text auf eine Zeile. [ahaaa]
 
 [Text_in_Text_einfügen]
 Setze "hah" an die Stelle 4 von text.
-Schreibe text. [ahahahaa]
+Schreibe text auf eine Zeile. [ahahahaa]
+
+[VerbindenT/B/Z/K/Bool]
+Schreibe ((eine leere Text Liste) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+Schreibe ((eine Liste, die aus "abc", "", "def" besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+Schreibe ((eine Liste, die aus 'a', 'b', 'c' besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+Schreibe ((eine Liste, die aus 1, 234, 56789, 0 besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+Schreibe ((eine Liste, die aus 1,4, 0 durch 0, 82,0 besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+Schreibe ((eine Liste, die aus wahr, falsch, falsch besteht) mit dem Trennzeichen '-' zum Text verbunden).

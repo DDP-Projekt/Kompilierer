@@ -3,13 +3,19 @@ Binde "Duden/Listen" ein.
 Binde "Duden/Extremwerte" ein.
 Binde Laufzeitfehler aus "Duden/Laufzeit" ein.
 
-Die öffentliche Funktion Höchste_Liset mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+[
+	Gibt den höchsten Wert der Zahlen Liste zurück.
+]
+Die öffentliche Funktion Höchste_ListeZ mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
 	Die Zahl maxNum ist der minimale Wert einer Zahl.
 	Für jede Zahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der höchste Wert aus <liste>"
 
+[
+	Gibt den höchsten Wert der Kommazahlen Liste zurück.
+]
 Die öffentliche Funktion Höchste_ListeK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl maxNum ist der minimale Wert einer Kommazahl.
 	Für jede Kommazahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
@@ -17,13 +23,19 @@ Die öffentliche Funktion Höchste_ListeK mit dem Parameter liste vom Typ Kommaz
 Und kann so benutzt werden:
 	"der höchste Wert aus <liste>"
 
-Die öffentliche Funktion Kleinste_Liset mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+[
+	Gibt den kleinsten Wert der Zahlen Liste zurück.
+]
+Die öffentliche Funktion Kleinste_ListeZ mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
 	Die Zahl maxNum ist der maximale Wert einer Zahl.
 	Für jede Zahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
 	"der kleinste Wert aus <liste>"
 
+[
+	Gibt den kleinsten Wert der Kommazahlen Liste zurück.
+]
 Die öffentliche Funktion Kleinste_ListeK mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl maxNum ist der maximale Wert einer Kommazahl.
 	Für jede Kommazahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
@@ -31,6 +43,9 @@ Die öffentliche Funktion Kleinste_ListeK mit dem Parameter liste vom Typ Kommaz
 Und kann so benutzt werden:
 	"der kleinste Wert aus <liste>"
 
+[
+	Gibt die Summe der relativen Häufigkeiten aller Zahlen größer als, oder x. 
+]
 Die öffentliche Funktion Mindestens_Liste mit den Parametern x und liste vom Typ Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl a ist 0,0.
 	Für jede Kommazahl z in liste, wenn z kleiner als, oder x ist, erhöhe a um 1.
@@ -38,6 +53,9 @@ Die öffentliche Funktion Mindestens_Liste mit den Parametern x und liste vom Ty
 Und kann so benutzt werden:
 	"wie viel Prozent der Zahlen aus <liste> mindestens <x> sind"
 
+[
+	Gibt die Summe der relativen Häufigkeiten aller Zahlen kleiner als, oder x. 
+]
 Die öffentliche Funktion Höchstens_Liste mit den Parametern x und liste vom Typ Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl a ist 0,0.
 	Für jede Kommazahl z in liste, wenn z größer als, oder x ist, erhöhe a um 1.
@@ -45,6 +63,9 @@ Die öffentliche Funktion Höchstens_Liste mit den Parametern x und liste vom Ty
 Und kann so benutzt werden:
 	"wie viel Prozent der Zahlen aus <liste> höchstens <x> sind"
 
+[
+	Gibt die Summe der relativen Häufigkeiten aller Zahlen zwischen x und y.
+]
 Die öffentliche Funktion Zwischen_Liste mit den Parametern x, y und liste vom Typ Kommazahl, Kommazahl und Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
 	Die Kommazahl a ist 0,0.
 	Für jede Kommazahl z in liste, wenn z größer als, oder x ist und z kleiner als, oder y ist, erhöhe a um 1.
