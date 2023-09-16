@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -34,7 +35,7 @@ func newllvmContext() (llctx *llvmContext, err error) {
 
 	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not create llvm target: %w", err)
 	}
 
 	llctx.targetMachine = target.CreateTargetMachine(
@@ -85,7 +86,7 @@ func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 
 	mod, err := llvm.ParseIRFromMemoryBuffer(buf, llctx.context)
 	if err != nil {
-		return llvm.Module{}, err
+		return llvm.Module{}, fmt.Errorf("could not parse llvm ir: %w", err)
 	}
 
 	mod.SetDataLayout(llctx.targetData.String())
@@ -97,7 +98,7 @@ func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 func (llctx *llvmContext) parseListDefs() (llvm.Module, error) {
 	list_defs_ir, err := os.ReadFile(ddppath.DDP_List_Types_Defs_LL)
 	if err != nil {
-		return llvm.Module{}, err
+		return llvm.Module{}, fmt.Errorf("could not read list_defs: %w", err)
 	}
 	return llctx.parseIR(list_defs_ir)
 }
@@ -111,7 +112,7 @@ func (llctx *llvmContext) optimizeModule(mod llvm.Module) bool {
 func (llctx *llvmContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
 	memBuffer, err := llctx.targetMachine.EmitToMemoryBuffer(mod, fileType)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("could not compile module to memory buffer: %w", err)
 	}
 	defer memBuffer.Dispose()
 

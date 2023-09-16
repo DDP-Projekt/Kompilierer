@@ -74,7 +74,7 @@ func (cmd *DumpListDefsCommand) Run() error {
 		}
 		file, err := os.OpenFile(changeExtension(cmd.filePath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 		if err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Öffnen der Ausgabedatei: %w", err)
 		}
 		defer file.Close()
 		if err := compiler.DumpListDefinitions(file, outType, ddperror.MakeBasicHandler(os.Stderr)); err != nil {

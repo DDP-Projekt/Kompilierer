@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 // https://stackoverflow.com/a/74146375
@@ -13,7 +14,7 @@ func parseFlagSet(flagset *flag.FlagSet, args []string) error {
 	var positionalArgs []string
 	for {
 		if err := flagset.Parse(args); err != nil {
-			return err
+			return fmt.Errorf("failed to parse flags: %w", err)
 		}
 		// Consume all the flags that were parsed as flags.
 		args = args[len(args)-flagset.NArg():]

@@ -70,7 +70,7 @@ func (cmd *UpdateCommand) Run() error {
 		fmt.Printf("Aktuelle Version: %s\n", DDPVERSION)
 		latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
 		if err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Abrufen der neuesten Version: %w", err)
 		}
 		latest_version := latestRelease.GetTagName()
 		fmt.Printf("Neueste Version:  %s\n\n", latest_version)
@@ -90,7 +90,7 @@ func (cmd *UpdateCommand) Run() error {
 		fmt.Printf("DDP jetzt updaten? (j/n): ")
 		var answer string
 		if _, err := fmt.Scanln(&answer); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Lesen der Eingabe: %w", err)
 		}
 		answer = strings.TrimSpace(strings.ToLower(answer))
 		if answer != "j" && answer != "y" {
@@ -109,7 +109,7 @@ func (cmd *UpdateCommand) Run() error {
 		cmd.use_archive = filepath.Join(ddppath.InstallDir, cmd.use_archive)
 
 		if err := cmd.downloadAssetTo(filepath.Base(cmd.use_archive), cmd.use_archive, latestRelease); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Herunterladen der neuesten Version: %w", err)
 		}
 	}
 
@@ -131,7 +131,7 @@ func (cmd *UpdateCommand) Run() error {
 		defer kddp_exe.Close()
 
 		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke " + kddp_bin_name, should_print: true}); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Updaten von %s: %w", kddp_bin_name, err)
 		}
 
 		fmt.Println("\nUpdate war erfolgreich")
@@ -139,7 +139,7 @@ func (cmd *UpdateCommand) Run() error {
 		cmd.infof("Lösche %s", cmd.use_archive)
 		archive.Close()
 		if err := os.Remove(cmd.use_archive); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Löschen der Archivdatei: %w", err)
 		}
 
 		return nil
@@ -148,12 +148,12 @@ func (cmd *UpdateCommand) Run() error {
 
 	cmd.infof("Update Bibliotheken")
 	if err := cmd.update_lib(archive); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Updaten der Bibliotheken: %w", err)
 	}
 
 	cmd.infof("Update DDPLS")
 	if err := cmd.update_ddpls(archive); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Updaten von DDPLS: %w", err)
 	}
 	return nil
 }
@@ -177,7 +177,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
 			fmt.Println("Rollback fehlgeschlagen:", rerr)
 			fmt.Printf("Bitte manuell die neueste Version von %s herunterladen und ersetzen\n", kddp_bin_name)
-			return err
+			return fmt.Errorf("Fehler beim Rollback: %w", rerr)
 		} else {
 			fmt.Println("Update fehlgeschlagen:", err)
 			return err
@@ -188,7 +188,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 	// Get current process name and directory.
 	execName, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Abrufen des aktuellen Prozesses: %w", err)
 	}
 	execDir := filepath.Dir(execName)
 
@@ -203,7 +203,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 	new_kddp.Stdin = os.Stdin
 
 	if err := new_kddp.Run(); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Neustarten von kddp: %w", err)
 	}
 	return nil
 }
@@ -212,7 +212,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) error {
 	empty_dir := func(path string) error {
 		if err := os.RemoveAll(path); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Löschen von %s: %w", path, err)
 		}
 		return os.MkdirAll(path, os.ModePerm)
 	}
@@ -234,19 +234,19 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 			path = lib_replace_regex.ReplaceAllString(path, "")
 			path = filepath.Join(ddppath.Lib, path)
 			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Erstellen des Ordners: %w", err)
 			}
 			if isDir {
 				return nil
 			}
 			f, err := os.Create(path)
 			if err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Erstellen der Datei: %w", err)
 			}
 			defer f.Close()
 			pr := &progressReader{r: r, max: size, msg: fmt.Sprintf("Entpacke %s", filepath.Base(path)), should_print: cmd.verbose}
 			if _, err := io.Copy(f, pr); err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Entpacken von %s: %w", path, err)
 			}
 			if cmd.verbose {
 				fmt.Printf("\n")
@@ -260,7 +260,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	gcc_version_cmd := gcc.New("-dumpfullversion")
 	gcc_version_out, err := gcc_version_cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Abrufen der lokalen gcc Version: %w", err)
 	}
 	gcc_version := strings.Trim(string(gcc_version_out), "\r\n")
 	if gcc_version == strings.Trim(GCCVERSIONFULL, "\r\n") {
@@ -287,10 +287,10 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	runtime_src, stdlib_src := filepath.Join(ddppath.Lib, "runtime"), filepath.Join(ddppath.Lib, "stdlib")
 
 	if err := runCmd(runtime_src, make_cmd, make_args...); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Kompilieren der Laufzeitbibliothek: %w", err)
 	}
 	if err := runCmd(stdlib_src, make_cmd, make_args...); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Kompilieren der Standardbibliothek: %w", err)
 	}
 
 	cmd.infof("Bibliotheken werden kopiert")
@@ -307,15 +307,15 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	list_defs_cmd := NewDumpListDefsCommand()
 	list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
 	if err := list_defs_cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen: %w", err)
 	}
 
 	cmd.infof("Bibliotheken werden aufgeräumt")
 	if err := runCmd(runtime_src, make_cmd, "clean", rmArg); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Aufräumen der Laufzeitbibliothek: %w", err)
 	}
 	if err := runCmd(stdlib_src, make_cmd, "clean", rmArg); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Aufräumen der Standardbibliothek: %w", err)
 	}
 
 	return nil
@@ -328,19 +328,19 @@ func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) er
 		return strings.HasSuffix(path, ddpls_bin_name)
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Abrufen von %s: %w", ddpls_bin_name, err)
 	}
 	defer ddpls_exe.Close()
 
 	ddpls_file, err := os.OpenFile(filepath.Join(ddppath.Bin, ddpls_bin_name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Erstellen von %s: %w", ddpls_bin_name, err)
 	}
 	defer ddpls_file.Close()
 
 	pr := &progressReader{r: ddpls_exe, max: size, msg: "Ersetze " + ddpls_bin_name, should_print: true}
 	if _, err := io.Copy(ddpls_file, pr); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Ersetzen von %s: %w", ddpls_bin_name, err)
 	}
 	fmt.Printf("\n")
 	return nil
@@ -363,7 +363,7 @@ func is_newer_version(a, b string) (bool, error) {
 	parse_version := func(version string) (major, minor, patch int, additional string, err error) {
 		var n int
 		if n, err = fmt.Sscanf(version, version_fmt, &major, &minor, &patch); n < 3 {
-			err = fmt.Errorf("ungültiges Versions Format: %s", version)
+			err = fmt.Errorf("Ungültiges Versions Format: %s", version)
 		}
 		if split := strings.Split(version, "-"); len(split) > 1 {
 			additional = split[1]
@@ -409,7 +409,7 @@ func (cmd *UpdateCommand) getLatestRelease(pre_release bool) (*github.Repository
 	}
 	releases, _, err := cmd.gh.Repositories.ListReleases(context.Background(), "DDP-Projekt", "Kompilierer", &github.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fehler beim Abrufen der Releases von Github: %w", err)
 	}
 	if len(releases) == 0 {
 		return nil, fmt.Errorf("no releases found")
@@ -432,17 +432,17 @@ func (cmd *UpdateCommand) downloadAssetTo(assetName, targetPath string, release 
 			cmd.infof("found asset")
 			r, _, err := cmd.gh.Repositories.DownloadReleaseAsset(context.Background(), "DDP-Projekt", "Kompilierer", asset.GetID(), http.DefaultClient)
 			if err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Herunterladen der Asset: %w", err)
 			}
 			defer r.Close()
 			f, err := os.Create(targetPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Erstellen der Datei: %w", err)
 			}
 			defer f.Close()
 			pr := &progressReader{r: r, max: uint64(asset.GetSize()), msg: fmt.Sprintf("Lade %s herunter", assetName), should_print: true}
 			if _, err := io.Copy(f, pr); err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Herunterladen der Asset: %w", err)
 			}
 			return nil
 		}

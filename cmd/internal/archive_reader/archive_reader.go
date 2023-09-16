@@ -31,7 +31,7 @@ func New(archive string) (*ArchiveReader, error) {
 	case ".zip":
 		zr, err := zip.OpenReader(archive)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to open zip archive: %w", err)
 		}
 		return &ArchiveReader{
 			zipArchive: zr,
@@ -42,12 +42,12 @@ func New(archive string) (*ArchiveReader, error) {
 	case ".gz":
 		f, err := os.Open(archive)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to open tar archive: %w", err)
 		}
 		gzr, err := gzip.NewReader(f)
 		if err != nil {
 			f.Close()
-			return nil, err
+			return nil, fmt.Errorf("failed to open gz compressed archive: %w", err)
 		}
 		tr := tar.NewReader(gzr)
 		return &ArchiveReader{
@@ -87,10 +87,11 @@ func (ar *ArchiveReader) GetElementFunc(fn func(string) bool) (io.ReadCloser, bo
 			return io.NopCloser(f.buf), f.hdr.FileInfo().IsDir(), uint64(f.buf.Len()), nil
 		}
 	}
+
 	// otherwise iterate over the tar archive
 	for hdr, err := ar.tarArchive.Next(); err != io.EOF; hdr, err = ar.tarArchive.Next() {
 		if err != nil {
-			return nil, false, 0, err
+			return nil, false, 0, fmt.Errorf("failed to get next element from tar archive: %w", err)
 		}
 		if fn(hdr.Name) {
 			return io.NopCloser(ar.tarArchive), hdr.FileInfo().IsDir(), uint64(hdr.Size), nil
@@ -98,7 +99,7 @@ func (ar *ArchiveReader) GetElementFunc(fn func(string) bool) (io.ReadCloser, bo
 			ar.tarFiles[hdr.Name] = tarFile{hdr: hdr, buf: &bytes.Buffer{}}
 			_, err := io.Copy(ar.tarFiles[hdr.Name].buf, ar.tarArchive)
 			if err != nil {
-				return nil, false, 0, err
+				return nil, false, 0, fmt.Errorf("failed to read element (%s) from tar archive: %w", hdr.Name, err)
 			}
 		}
 	}
@@ -113,7 +114,7 @@ func (ar *ArchiveReader) IterateElementsFunc(fn func(string, bool, io.Reader, ui
 		for _, f := range ar.zipArchive.File {
 			rc, err := f.Open()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to open file (%s) in zip archive: %w", f.Name, err)
 			}
 			defer rc.Close()
 			if err := fn(f.Name, f.FileInfo().IsDir(), rc, f.UncompressedSize64); err != nil {
@@ -126,12 +127,12 @@ func (ar *ArchiveReader) IterateElementsFunc(fn func(string, bool, io.Reader, ui
 	// read the whole tar archive into memory
 	for hdr, err := ar.tarArchive.Next(); err != io.EOF; hdr, err = ar.tarArchive.Next() {
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get next element from tar archive: %w", err)
 		}
 		ar.tarFiles[hdr.Name] = tarFile{hdr: hdr, buf: &bytes.Buffer{}}
 		_, err := io.Copy(ar.tarFiles[hdr.Name].buf, ar.tarArchive)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read element (%s) from tar archive: %w", hdr.Name, err)
 		}
 	}
 

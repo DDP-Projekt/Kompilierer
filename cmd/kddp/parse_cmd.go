@@ -46,12 +46,12 @@ func (cmd *ParseCommand) Run() error {
 	if cmd.filePath == "" {
 		var err error
 		if src, err = io.ReadAll(os.Stdin); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Lesen von stdin: %w", err)
 		}
 	}
 	module, err := parser.Parse(parser.Options{FileName: cmd.filePath, Source: src, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Parsen: %w", err)
 	}
 
 	if module.Ast.Faulty {
@@ -60,11 +60,11 @@ func (cmd *ParseCommand) Run() error {
 
 	if cmd.outPath != "" {
 		if file, err := os.OpenFile(cmd.outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm); err != nil {
-			return fmt.Errorf("Ausgabedatei konnte nicht geöffnet werden")
+			return fmt.Errorf("Ausgabedatei konnte nicht geöffnet werden: %w", err)
 		} else {
 			defer file.Close()
 			if _, err := file.WriteString(module.Ast.String()); err != nil {
-				return fmt.Errorf("Ausgabedatei konnte nicht beschrieben werden: %s", err.Error())
+				return fmt.Errorf("Ausgabedatei konnte nicht beschrieben werden: %w", err)
 			}
 		}
 	} else {

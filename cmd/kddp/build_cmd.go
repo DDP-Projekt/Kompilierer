@@ -55,7 +55,7 @@ func (cmd *BuildCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.link_list_defs, "list_defs_linken", cmd.link_list_defs, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
 
 	if err := parseFlagSet(cmd.fs, args); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Parsen der Argumente: %w", err)
 	}
 	if cmd.fs.NArg() >= 1 {
 		cmd.filePath = cmd.fs.Arg(0)
@@ -124,7 +124,7 @@ func (cmd *BuildCommand) Run() error {
 	print("Erstelle Ausgabeordner: %s", filepath.Dir(cmd.outPath))
 	// make the output file directory
 	if err := os.MkdirAll(filepath.Dir(cmd.outPath), os.ModePerm); err != nil {
-		return fmt.Errorf("Fehler beim Erstellen des Ausgabeordners: %s", err.Error())
+		return fmt.Errorf("Fehler beim Erstellen des Ausgabeordners: %w", err)
 	}
 
 	objPath := changeExtension(cmd.outPath, ".o")
@@ -154,11 +154,11 @@ func (cmd *BuildCommand) Run() error {
 	if cmd.filePath == "" {
 		cmd.filePath = "stdin"
 		if src, err = io.ReadAll(os.Stdin); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Lesen von stdin: %w", err)
 		}
 	} else {
 		if src, err = os.ReadFile(cmd.filePath); err != nil {
-			return err
+			return fmt.Errorf("Fehler beim Lesen von %s: %w", cmd.filePath, err)
 		}
 	}
 
@@ -178,7 +178,7 @@ func (cmd *BuildCommand) Run() error {
 		LinkInListDefs:          cmd.link_list_defs,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Kompilieren: %w", err)
 	}
 
 	if !targetExe {
@@ -198,7 +198,7 @@ func (cmd *BuildCommand) Run() error {
 		ExternGCCFlags:          cmd.extern_gcc_flags,
 		LinkInListDefs:          !cmd.link_list_defs, // if they are allready linked in, don't link them again
 	}); err != nil {
-		return fmt.Errorf("Fehler beim Linken: %s (%s)", err, string(output))
+		return fmt.Errorf("Fehler beim Linken: %w (%s)", err, string(output))
 	}
 
 	return nil

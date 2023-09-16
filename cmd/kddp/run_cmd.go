@@ -55,7 +55,7 @@ func (cmd *RunCommand) Run() error {
 
 	outDir, err := os.MkdirTemp("", "KDDP_RUN")
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Erstellen des temporären Ordners: %w", err)
 	}
 	defer os.RemoveAll(outDir)
 
@@ -73,7 +73,7 @@ func (cmd *RunCommand) Run() error {
 
 	print("Kompiliere den Quellcode")
 	if err = buildCmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Kompilieren: %w", err)
 	}
 
 	print("Starte das Programm\n")

@@ -58,7 +58,7 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 
 	// compile this module
 	if _, err := newCompiler(mod, errHndl).compile(destCreator(mod), isMainModule); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
 	}
 
 	// recursively compile the other dependencies
