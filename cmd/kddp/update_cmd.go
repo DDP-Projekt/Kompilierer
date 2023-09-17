@@ -119,7 +119,7 @@ func (cmd *UpdateCommand) Run() error {
 	}
 
 	if !is_sub_process {
-		cmd.infof("Update %s", kddp_bin_name)
+		cmd.infof("\nUpdate %s", kddp_bin_name)
 
 		// get the kddp.exe from the archive
 		kddp_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
@@ -147,15 +147,15 @@ func (cmd *UpdateCommand) Run() error {
 	defer archive.Close()
 
 	cmd.infof("Update Bibliotheken")
-	if err := cmd.update_lib(archive); err != nil {
-		return fmt.Errorf("Fehler beim Updaten der Bibliotheken: %w", err)
+	if bib_err := cmd.update_lib(archive); bib_err != nil {
+		err = fmt.Errorf("Fehler beim Updaten der Bibliotheken: %w", bib_err)
 	}
 
 	cmd.infof("Update DDPLS")
-	if err := cmd.update_ddpls(archive); err != nil {
-		return fmt.Errorf("Fehler beim Updaten von DDPLS: %w", err)
+	if ls_err := cmd.update_ddpls(archive); ls_err != nil {
+		err = errors.Join(err, fmt.Errorf("Fehler beim Updaten von DDPLS: %w", ls_err))
 	}
-	return nil
+	return err
 }
 
 func (cmd *UpdateCommand) Name() string {
@@ -183,7 +183,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 			return err
 		}
 	}
-	cmd.infof("Starte neue Version von " + kddp_bin_name)
+	cmd.infof("\nStarte neue Version von " + kddp_bin_name)
 
 	// Get current process name and directory.
 	execName, err := os.Executable()
@@ -209,7 +209,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 }
 
 // updates the lib directory
-func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) error {
+func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err error) {
 	empty_dir := func(path string) error {
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("Fehler beim Löschen von %s: %w", path, err)
@@ -217,9 +217,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 		return os.MkdirAll(path, os.ModePerm)
 	}
 
-	if err := empty_dir(ddppath.Lib); err != nil {
-		return err
-	}
+	err = empty_dir(ddppath.Lib)
 
 	// write a regex that matches all files in the lib directory where lib could be preceeded by anything
 	const (
@@ -229,7 +227,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 	lib_regex := regexp.MustCompile(lib_regex_pattern)
 	lib_replace_regex := regexp.MustCompile(lib_regex_replace_pattern)
 
-	if err := archive.IterateElementsFunc(func(path string, isDir bool, r io.Reader, size uint64) error {
+	if it_err := archive.IterateElementsFunc(func(path string, isDir bool, r io.Reader, size uint64) error {
 		if lib_regex.MatchString(path) {
 			path = lib_replace_regex.ReplaceAllString(path, "")
 			path = filepath.Join(ddppath.Lib, path)
@@ -253,19 +251,21 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
+	}); it_err != nil {
+		return errors.Join(err, it_err)
 	}
 
 	gcc_version_cmd := gcc.New("-dumpfullversion")
-	gcc_version_out, err := gcc_version_cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("Fehler beim Abrufen der lokalen gcc Version: %w", err)
+	gcc_version_out, gcc_err := gcc_version_cmd.CombinedOutput()
+	if gcc_err != nil {
+		err = errors.Join(err, fmt.Errorf("Fehler beim Abrufen der lokalen gcc Version: %w", gcc_err))
+	} else {
+		gcc_version := strings.Trim(string(gcc_version_out), "\r\n")
+		if gcc_version == strings.Trim(GCCVERSIONFULL, "\r\n") {
+			return err // we do not have to recompile anything
+		}
 	}
-	gcc_version := strings.Trim(string(gcc_version_out), "\r\n")
-	if gcc_version == strings.Trim(GCCVERSIONFULL, "\r\n") {
-		return nil // we do not have to recompile anything
-	}
+	// if there was an error we just recompile to be sure
 
 	cmd.infof("Bibliotheken werden neu kompiliert")
 	make_cmd, ar_cmd := "make", "ar"
@@ -286,39 +286,40 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) erro
 
 	runtime_src, stdlib_src := filepath.Join(ddppath.Lib, "runtime"), filepath.Join(ddppath.Lib, "stdlib")
 
-	if err := runCmd(runtime_src, make_cmd, make_args...); err != nil {
-		return fmt.Errorf("Fehler beim Kompilieren der Laufzeitbibliothek: %w", err)
+	if run_err := runCmd(runtime_src, make_cmd, make_args...); run_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Kompilieren der Laufzeitbibliothek: %w", run_err))
 	}
-	if err := runCmd(stdlib_src, make_cmd, make_args...); err != nil {
-		return fmt.Errorf("Fehler beim Kompilieren der Standardbibliothek: %w", err)
+	if run_err := runCmd(stdlib_src, make_cmd, make_args...); run_err != nil {
+		return errors.Join(fmt.Errorf("Fehler beim Kompilieren der Standardbibliothek: %w", run_err))
 	}
 
 	cmd.infof("Bibliotheken werden kopiert")
-	if err := cp.Copy(filepath.Join(runtime_src, "libddpruntime.a"), filepath.Join(ddppath.Lib, "libddpruntime.a")); err != nil {
-		return err
+	if cp_err := cp.Copy(filepath.Join(runtime_src, "libddpruntime.a"), filepath.Join(ddppath.Lib, "libddpruntime.a")); cp_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der Laufzeitbibliothek: %w", cp_err))
 	}
-	if err := cp.Copy(filepath.Join(runtime_src, "source", "main.o"), filepath.Join(ddppath.Lib, "main.o")); err != nil {
-		return err
+	if cp_err := cp.Copy(filepath.Join(runtime_src, "source", "main.o"), filepath.Join(ddppath.Lib, "main.o")); cp_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der main.o: %w", cp_err))
 	}
-	if err := cp.Copy(filepath.Join(stdlib_src, "libddpstdlib.a"), filepath.Join(ddppath.Lib, "libddpstdlib.a")); err != nil {
-		return err
+	if cp_err := cp.Copy(filepath.Join(stdlib_src, "libddpstdlib.a"), filepath.Join(ddppath.Lib, "libddpstdlib.a")); cp_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der Standardbibliothek: %w", cp_err))
 	}
 
+	cmd.infof("Generiere ddp_list_types_defs.*")
 	list_defs_cmd := NewDumpListDefsCommand()
 	list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
-	if err := list_defs_cmd.Run(); err != nil {
-		return fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen: %w", err)
+	if run_err := list_defs_cmd.Run(); run_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen: %w", run_err))
 	}
 
 	cmd.infof("Bibliotheken werden aufgeräumt")
-	if err := runCmd(runtime_src, make_cmd, "clean", rmArg); err != nil {
-		return fmt.Errorf("Fehler beim Aufräumen der Laufzeitbibliothek: %w", err)
+	if run_err := runCmd(runtime_src, make_cmd, "clean", rmArg); run_err != nil {
+		err = errors.Join(err, fmt.Errorf("Fehler beim Aufräumen der Laufzeitbibliothek: %w", run_err))
 	}
-	if err := runCmd(stdlib_src, make_cmd, "clean", rmArg); err != nil {
-		return fmt.Errorf("Fehler beim Aufräumen der Standardbibliothek: %w", err)
+	if run_err := runCmd(stdlib_src, make_cmd, "clean", rmArg); run_err != nil {
+		err = errors.Join(err, fmt.Errorf("Fehler beim Aufräumen der Standardbibliothek: %w", run_err))
 	}
 
-	return nil
+	return err
 }
 
 func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) error {
@@ -328,7 +329,7 @@ func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) er
 		return strings.HasSuffix(path, ddpls_bin_name)
 	})
 	if err != nil {
-		return fmt.Errorf("Fehler beim Abrufen von %s: %w", ddpls_bin_name, err)
+		return fmt.Errorf("Fehler beim Entpacken von %s: %w", ddpls_bin_name, err)
 	}
 	defer ddpls_exe.Close()
 
