@@ -268,10 +268,9 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 	if _, err := os.Stat(ddppath.Mingw64); err == nil || !os.IsNotExist(err) {
 		make_cmd, ar_cmd = filepath.Join(ddppath.Mingw64, "bin", "mingw32-make.exe"), filepath.Join(ddppath.Mingw64, "bin", "ar.exe")
 	}
-	make_args, rmArg := make([]string, 0, 3), ""
+	make_args := make([]string, 0, 3)
 	if runtime.GOOS == "windows" {
 		make_args = append(make_args, fmt.Sprintf("CC=%s", gcc.Cmd()), fmt.Sprintf("AR=%s %s", ar_cmd, "rcs"))
-		rmArg = "RM=" + filepath.Join(ddppath.Bin, "ddp-rm.exe")
 	}
 
 	runCmd := func(dir, name string, args ...string) error {
@@ -305,14 +304,6 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 	list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
 	if run_err := list_defs_cmd.Run(); run_err != nil {
 		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
-	}
-
-	cmd.infof("Bibliotheken werden aufgeräumt")
-	if run_err := runCmd(runtime_src, make_cmd, "clean", rmArg); run_err != nil {
-		err = errors.Join(err, fmt.Errorf("Fehler beim Aufräumen der Laufzeitbibliothek:\n\t%w", run_err))
-	}
-	if run_err := runCmd(stdlib_src, make_cmd, "clean", rmArg); run_err != nil {
-		err = errors.Join(err, fmt.Errorf("Fehler beim Aufräumen der Standardbibliothek:\n\t%w", run_err))
 	}
 
 	return err
