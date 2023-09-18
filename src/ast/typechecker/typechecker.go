@@ -494,6 +494,10 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 				rhs,
 				decl.(*ast.VarDecl).Type,
 			)
+		} else if exists && isVar {
+			lhs = decl.(*ast.VarDecl).Type
+		} else {
+			lhs = ddptypes.VoidType{}
 		}
 	case *ast.Indexing:
 		lhs = t.Evaluate(assign)
@@ -553,7 +557,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) {
 	t.visit(stmt.Initializer)
 	iter_type := stmt.Initializer.Type
-	if !iter_type.IsNumeric() {
+	if !ddptypes.IsNumeric(iter_type) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
 	}
 	if toType := t.Evaluate(stmt.To); toType != iter_type {

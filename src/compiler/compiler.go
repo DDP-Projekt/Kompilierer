@@ -576,7 +576,9 @@ func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) {
 		c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
 	} else {
 		dest := c.NewAlloca(fieldType.IrType())
-		c.latestReturn = c.deepCopyInto(dest, fieldPtr, fieldType)
+		c.deepCopyInto(dest, fieldPtr, fieldType)
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
+		c.latestIsTemp = true
 	}
 	c.latestReturnType = fieldType
 }
@@ -611,8 +613,7 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
 	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
-	c.latestReturn = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
-	c.latestReturnType = c.ddpstring
+	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
 }
 func (c *compiler) VisitListLit(e *ast.ListLit) {
@@ -627,8 +628,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 		listLen, _, _ = c.evaluate(e.Count)
 	} else { // empty list
 		c.cbb.NewStore(listType.DefaultValue(), list)
-		c.latestReturn = c.scp.addTemporary(list, listType)
-		c.latestReturnType = listType
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 		return
 	}
@@ -657,8 +657,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 			}
 		})
 	}
-	c.latestReturn = c.scp.addTemporary(list, listType)
-	c.latestReturnType = listType
+	c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 	c.latestIsTemp = true
 }
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
@@ -740,6 +739,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	}
 }
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
+	c.commentNode(c.cbb, e, e.Operator.String())
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	// for BIN_FIELD_ACCESS we don't want to evaluate Lhs, as it is just the field name
 	switch e.Operator {
@@ -778,7 +778,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.latestReturnType = c.ddpbooltyp
 		return
 	case ast.BIN_FIELD_ACCESS:
-		rhs, rhsTyp := c.evaluate(e.Rhs)
+		rhs, rhsTyp, _ := c.evaluate(e.Rhs)
 		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
 			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
 			fieldType := structType.fieldIrTypes[fieldIndex]
@@ -788,7 +788,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 			} else {
 				dest := c.NewAlloca(fieldType.IrType())
 				c.deepCopyInto(dest, fieldPtr, fieldType)
-				c.latestReturn = dest
+				c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
+				c.latestIsTemp = true
 			}
 			c.latestReturnType = fieldType
 		} else {
@@ -801,7 +802,6 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	rhs, rhsTyp, isTempRhs := c.evaluate(e.Rhs)
 	// big switches on the different type combinations
-	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
 	case ast.BIN_CONCAT:
 		var (
@@ -870,8 +870,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 
 		c.cbb.NewCall(concat_func, result, lhs, rhs)
-		c.latestReturn = c.scp.addTemporary(result, resultTyp)
-		c.latestReturnType = resultTyp
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultTyp)
 		c.latestIsTemp = true
 	case ast.BIN_PLUS:
 		switch lhsTyp {
@@ -1005,7 +1004,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 							c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
 						} else {
 							dest := c.NewAlloca(listType.elementType.IrType())
-							c.latestReturn = c.scp.addTemporary(
+							c.latestReturn, c.latestReturnType = c.scp.addTemporary(
 								c.deepCopyInto(dest, elementPtr, listType.elementType),
 								listType.elementType,
 							)
@@ -1226,8 +1225,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 				c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturn = c.scp.addTemporary(dest, lhsTyp)
-		c.latestReturnType = lhsTyp
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
 		c.latestIsTemp = true
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
@@ -1241,8 +1239,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
 		elementPtr := c.indexArray(c.loadStructField(list, arr_field_index), zero)
 		c.claimOrCopy(elementPtr, lhs, lhsTyp, isTempLhs)
-		c.latestReturn = c.scp.addTemporary(list, listType)
-		c.latestReturnType = listType
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 	} else {
 		switch e.Type {
@@ -1314,7 +1311,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 			}
 			dest := c.NewAlloca(c.ddpstring.typ)
 			c.cbb.NewCall(to_string_func, dest, lhs)
-			c.latestReturn = c.scp.addTemporary(dest, c.ddpstring)
+			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
 			c.latestIsTemp = true
 		default:
 			c.err("Invalide Typumwandlung zu %s", e.Type)
@@ -1401,7 +1398,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 		c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
 	} else {
 		c.cbb.NewCall(fun.irFunc, args...)
-		c.latestReturn = c.scp.addTemporary(ret, irReturnType)
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(ret, irReturnType)
 		c.latestIsTemp = true
 	}
 	c.latestReturnType = irReturnType
@@ -1426,13 +1423,11 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
 			argExpr = fieldArg
 		}
 
-		argVal, argType := c.evaluate(argExpr)
-		if !argType.IsPrimitive() {
-			argVal = c.cbb.NewLoad(argType.IrType(), argVal)
-		}
-		c.cbb.NewStore(argVal, c.indexStruct(result, int64(i)))
+		argVal, argType, isTempArg := c.evaluate(argExpr)
+		c.claimOrCopy(c.indexStruct(result, int64(i)), argVal, argType, isTempArg)
 	}
-	c.latestReturn, c.latestReturnType = result, resultType
+	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
+	c.latestIsTemp = true
 }
 
 // should have been filtered by the resolver/typechecker, so err
@@ -1640,7 +1635,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
-		if s.Initializer.Type == ddptypes.Int() {
+		if s.Initializer.Type == ddptypes.ZAHL {
 			return c.cbb.NewICmp(ipred, x, yi)
 		} else {
 			return c.cbb.NewFCmp(fpred, x, yf)
@@ -1652,7 +1647,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		if s.Initializer.Type == ddptypes.Int() {
+		if s.Initializer.Type == ddptypes.ZAHL {
 			incrementer = newInt(1)
 		} else {
 			incrementer = constant.NewFloat(ddpfloat, 1.0)
@@ -1682,7 +1677,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if s.Initializer.Type == ddptypes.Int() {
+	if s.Initializer.Type == ddptypes.ZAHL {
 		add = c.cbb.NewAdd(indexVar, incrementer)
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)
@@ -1723,7 +1718,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	in, inTyp, isTempIn := c.evaluate(s.In)
 	temp := c.NewAlloca(inTyp.IrType())
 	c.claimOrCopy(temp, in, inTyp, isTempIn)
-	in = c.scp.addTemporary(temp, inTyp)
+	in, _ = c.scp.addTemporary(temp, inTyp)
 
 	var len value.Value
 	if inTyp == c.ddpstring {
