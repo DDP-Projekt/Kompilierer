@@ -1,6 +1,6 @@
 module github.com/DDP-Projekt/Kompilierer
 
-go 1.18
+go 1.20
 
 require (
 	github.com/bafto/Go-LLVM-Bindings v1.0.2
