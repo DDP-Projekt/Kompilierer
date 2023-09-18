@@ -6,7 +6,9 @@
 
 Die Deutsche Programmiersprache (DDP) ist eine (Witz-)Programmiersprache von NotLe0n und bafto, die so entworfen wurde, dass in ihr geschriebene Programme so gelesen werden können wie (annähernd) korrektes Deutsch.
 
-Die [Bedienungsanleitung](https://ddp-projekt.github.io/Bedienungsanleitung/?p=Startseite&lang=DE) ist ein guter Startpunkt um DDP (kennen) zu lernen, dort ist auch eine Installations-Anleitung zu finden.
+Die [Bedienungsanleitung](https://ddp.le0n.dev/Bedienungsanleitung/) ist ein guter Startpunkt um DDP (kennen) zu lernen, dort ist auch eine Installations-Anleitung zu finden.
+
+Der [Spielplatz](https://ddp.le0n.dev/Spieplatz) ermöglicht es DDP ausprobieren zu können ohne den Kompiler installieren zu müssen.
 
 Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTRIBUTING.md).
 
@@ -15,7 +17,7 @@ Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTR
 Um DDP zu installieren braucht man bloß den aktuellsten Release für das gewünschte Betriebssystem hier von Github zu Downloaden, 
 das Archiv zu entpacken, und den Installer (ddp-setup.exe) auszuführen.
 
-Eine detaillierte Installationsanleitung gibt es [hier](https://ddp-projekt.github.io/Bedienungsanleitung/?p=/Einstieg&lang=DE).
+Eine detaillierte Installationsanleitung gibt es [hier](https://ddp.le0n.dev/Bedienungsanleitung/DE/Einstieg).
 
 ## Feature Übersicht
 
@@ -97,11 +99,11 @@ Das liegt an der Art wie man sie Aufruft, nämlich über so gennante Aliase.
 
 <img src="img/function.png" width="800px"></img>
 
-Wie man sie wurde die Funktion foo wie ein normaler deutscher Ausdruck aufgerufen, ohne die grammatikalischen Regeln zu verletzten.
+Wie man sieht wurde die Funktion foo wie ein normaler deutscher Ausdruck aufgerufen, ohne die grammatikalischen Regeln zu verletzten.
 
 Funktionen sind ein sehr großes Thema in DDP und dieses kleine Beispiel zeigt nur einen Bruchteil ihrer Komplexen Syntax.
 
-Für mehr details empfehle ich dringen diesen [Artikel](https://ddp-projekt.github.io/Bedienungsanleitung/?p=Programmierung/Funktionen&lang=DE) aus der Bedienungsanleitung gründlich durchzulesen, oder zumindest die Beispiele zu überfliegen.
+Für mehr details empfehle ich dringen diesen [Artikel](https://ddp.le0n.dev/Bedienungsanleitung/DE/Programmierung/Funktionen) aus der Bedienungsanleitung gründlich durchzulesen, oder zumindest die Beispiele zu überfliegen.
 
 ### Module
 
