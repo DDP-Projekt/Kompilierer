@@ -27,7 +27,7 @@ MKDIR = mkdir -p
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
-LLVM_TARGETS="X86;AArch64;ARM"
+LLVM_TARGETS="X86;AArch64"
 LLVM_ADDITIONAL_CMAKE_VARIABLES= -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF 
 
 ifeq ($(OS),Windows_NT)
@@ -157,8 +157,14 @@ test:
 test-memory:
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-
-test-complete: clean all test clean debug test-memory
+# runs all tests and test-memory
+# everything is done manually to ensure the build is finished
+# before the tests even with -j n
+test-complete: 
+	$(MAKE) all 
+	$(MAKE) test 
+	$(MAKE) debug 
+	$(MAKE) test-memory
 
 help:
 	@echo "Targets:"
