@@ -18,7 +18,7 @@ und kann so benutzt werden:
 [
 	Pausiert das Programm für eine bestimmte Dauer in Sekunden.
 ]
-Die öffentliche Funktion Warten mit dem Parameter sekunden vom Typ Kommazahl, gibt nichts zurück, 
+Die öffentliche Funktion Warte mit dem Parameter sekunden vom Typ Kommazahl, gibt nichts zurück, 
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Warte <sekunden> Sekunden"

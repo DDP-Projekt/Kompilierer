@@ -16,7 +16,17 @@ Schreibe den Buchstaben '\n'.
 Für jede Zahl i von 10 bis 0 mit Schrittgröße -1, Schreibe die Zahl i.
 Schreibe den Buchstaben '\n'.
 Für jede Zahl i von 0 bis 10 mit Schrittgröße 2, Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
 
+Für jede Kommazahl i von 0,0 bis 10,0, mache:
+	Schreibe die Kommazahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Kommazahl i von 10,0 bis 0,0 mit Schrittgröße -1,0, mache:
+	Schreibe die Kommazahl i.
+Schreibe den Buchstaben '\n'.
+Für jede Kommazahl i von 0,0 bis 10,0 mit Schrittgröße 0,75, mache:
+	Schreibe die Kommazahl i.
+	Schreibe ' '.
 
 Schreibe den Buchstaben '\n'.
 Für jede Zahl a von 1 bis 3, mache:

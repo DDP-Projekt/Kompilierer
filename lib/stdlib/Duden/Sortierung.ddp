@@ -6,39 +6,103 @@ Die Funktion Tausche_Zahl mit den Parametern a und b vom Typ Zahlen Referenz und
 	Speichere b in a.
 	Speichere temp in b.
 Und kann so benutzt werden:
-	"tausche <a> und <b>"
+	"tausche <a> und <b>" oder
+	"Tausche <a> und <b>"
+
+[sortiert a, b und c unter der Annahme, dass es listen elemente in der entsprechenden Reihenfolge sind]
+Die Funktion DreiZahlenSortieren mit den Parametern a, b und c vom Typ Zahlen Referenz, Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
+	Wenn a größer als c ist, tausche a und c.
+	Wenn a größer als b ist, tausche a und b.
+	Wenn b größer als c ist, tausche b und c.
+Und kann so benutzt werden:
+	"Sortiere <a>, <b> und <c>"
+
+Die Zahlen Liste stack ist 50 mal 2 Mal 0.
+Die Zahl stack_top ist 0.
+
+Die Funktion VomStackNehmen mit den Parametern _links und _rechts vom Typ Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
+	Speichere stack an der Stelle stack_top in _links.
+	Speichere stack an der Stelle (stack_top minus 1) in _rechts.
+	Verringere stack_top um 2.
+Und kann so benutzt werden:
+	"Nimm <_links> und <_rechts> vom Stack"
+
+Die Funktion AufDenStackLegen mit den Parametern _links und _rechts vom Typ Zahl und Zahl, gibt nichts zurück, macht:
+	Wenn die Länge von stack gleich stack_top ist, dann:
+		Die Zahlen Liste zehnmalnull ist 10 Mal 0.
+		Speichere stack verkettet mit zehnmalnull in stack.
+
+	Erhöhe stack_top um 2.
+	Speichere _links in stack an der Stelle stack_top.
+	Speichere _rechts in stack an der Stelle (stack_top minus 1).
+Und kann so benutzt werden:
+	"Lege <_links> und <_rechts> auf den Stack" oder
+	"lege <_links> und <_rechts> auf den Stack"
+
+Die Funktion Quicksort_Iter_Impl mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt eine Zahl zurück, macht:
+	Wenn re kleiner als, oder li ist, gib li zurück.
+
+	Die Zahl list_len ist re minus li plus 1.
+	Wenn list_len gleich 2 ist, dann: 
+		Wenn liste an der Stelle li größer als liste an der Stelle re ist, tausche (liste an der Stelle li) und (liste an der Stelle re).
+		Gib li zurück.
+	
+	[3-Median]
+	Die Zahl mi ist li plus (list_len durch 2) als Zahl.
+	Sortiere (liste an der Stelle li), (liste an der Stelle mi) und (liste an der Stelle re).
+	Wenn list_len gleich 3 ist, gib mi zurück.
+	Tausche (liste an der Stelle mi) und (liste an der Stelle re).
+
+	Die Zahl pivot ist liste an der Stelle re.
+	Die Zahl i ist li minus 1.
+	Die Zahl j ist re.
+
+	Der Boolean weiter ist wahr.
+	Solange weiter, mache:
+		Mache:
+			Erhöhe i um 1.
+		Solange liste an der Stelle i kleiner als pivot ist.
+		Mache:
+			Verringere j um 1.
+		Solange j größer als, oder li ist und liste an der Stelle j größer als pivot ist.
+
+		Wenn i größer als, oder j ist, speichere falsch in weiter.
+		Sonst tausche (liste an der Stelle i) und (liste an der Stelle j).
+
+	Tausche (liste an der Stelle i) und (liste an der Stelle re).
+
+	Gib i zurück.
+Und kann so benutzt werden:
+	"quicksort-iter-impl <liste> <li> <re>"
+
+Die Funktion Quicksort_Iter mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Lege li und re auf den Stack.
+	Solange stack_top größer als 0 ist, mache:
+		Nimm li und re vom Stack.
+		Die Zahl i ist quicksort-iter-impl liste li re.
+
+		Wenn i minus 1 größer als li ist, lege li und (i minus 1) auf den Stack.
+		Wenn i plus 1 kleiner als re ist, lege (i plus 1) und re auf den Stack.
+Und kann so benutzt werden:
+	"quicksort-iter <liste> <li> <re>"
+
+[
+	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert.
+	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
+]
+Die öffentliche Funktion Quicksort_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+	quicksort-iter liste 1 (die Länge von liste).
+Und kann so benutzt werden:
+	"Sortiere <liste>" oder
+	"Sortiere <liste> mit quick-sort"
 
 [
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert und die sortierte Liste zurück gibt.
-	Zeitkomplexität: O(n * log(n))
+	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
 ]
 Die öffentliche Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
-	Wenn die Länge von liste kleiner als, oder 1 ist, gib liste zurück. [End-Bedingung der Rekursion]
-	
-	Die Zahl Teiler ist 0. [für später]
-	:
-		Die Zahl pivot ist liste an der Stelle (die Länge von liste). [das pivot Element ist das letzte Element der Liste]
-		[alle Elemente die größer als pivot sind kommen nach rechts, der Rest nach links, die Mitte wird in Teiler gespeichert]
-		Die Zahl _links ist 1.
-		Die Zahl _rechts ist die Länge von liste.
-		Die Zahl i ist _links.
-		Die Zahl j ist _rechts.
-
-		Solange i kleiner als j ist, mache:
-			Solange i kleiner als j ist und liste an der Stelle i kleiner als, oder pivot ist, erhöhe i um 1.
-			Solange j größer als i ist und liste an der Stelle j größer als pivot ist, verringere j um 1.
-			
-			Wenn liste an der Stelle i größer als liste an der Stelle j ist, tausche (liste an der Stelle j) und (liste an der Stelle i).
-
-		Wenn liste an der Stelle i größer als pivot ist, tausche (liste an der Stelle i) und (liste an der Stelle _rechts).
-		Sonst speichere _rechts in i.
-		Speichere i in Teiler.
-	
-	[sortiere die linke und rechte Hälfte rekursiv]
-	Die Zahlen Liste linkeHälfte ist (liste von 1 bis (Teiler minus 1)) mit quick-sort sortiert.
-	Die Zahlen Liste rechteHälfte ist (liste von Teiler bis (die Länge von liste)) mit quick-sort sortiert.
-
-	Gib linkeHälfte verkettet mit rechteHälfte zurück.
+	Sortiere liste mit quick-sort.
+	Gib liste zurück.
 Und kann so benutzt werden:
 	"<liste> sortiert" oder
 	"<liste> mit quick-sort sortiert"

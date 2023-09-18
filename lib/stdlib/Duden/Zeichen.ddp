@@ -6,6 +6,9 @@ Die öffentliche Funktion IstLeer mit dem Parameter b vom Typ Buchstabe, gibt ei
 Und kann so benutzt werden:
 	"<b> ein leeres Zeichen ist"
 
+[
+	Gibt wahr zurück wenn der Buchstabe b groß ist.
+]
 Die öffentliche Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
@@ -17,6 +20,9 @@ Die öffentliche Funktion IstGroß mit dem Parameter b vom Typ Buchstabe, gibt e
 Und kann so benutzt werden:
 	[Wenn] "<b> ein großer Buchstabe ist"
 
+[
+	Gibt wahr zurück wenn der Buchstabe b klein ist.
+]
 Die öffentliche Funktion IstKlein mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Die Zahl z ist b als Zahl.
 	Der Boolean erg ist 
@@ -97,3 +103,11 @@ Die öffentliche Funktion Kleingeschrieben mit dem Parameter b vom Typ Buchstabe
 	Gib (b als Zahl plus 32) als Buchstabe zurück.
 Und kann so benutzt werden:
 	"<b> als kleiner Buchstabe"
+
+[
+	Gibt den Zeichen mit der gegebenen ASCII Nummer zurück. 
+]
+Die öffentliche Funktion ASCII_Zeichen mit dem Parameter id vom Typ Zahl, gibt einen Buchstaben zurück, macht:
+	Gib id als Buchstabe zurück.
+Und kann so benutzt werden:
+	"der ASCII Zeichen mit der Nummer <id>"

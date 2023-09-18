@@ -1420,6 +1420,9 @@ func (p *parser) forStatement() ast.Statement {
 		p.consume(token.BIS)
 		to := p.expression()                            // end of the counter
 		var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
+		if Typ == ddptypes.Float() {
+			step = &ast.FloatLit{Value: 1.0}
+		}
 		if p.match(token.MIT) {
 			p.consume(token.SCHRITTGRÖßE)
 			step = p.expression() // custom specified step-size

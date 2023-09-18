@@ -3,6 +3,7 @@ package compiler
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"runtime/debug"
 
@@ -96,7 +97,7 @@ func Compile(options Options) (*Result, error) {
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Ungültige Compiler Optionen: %w", err)
 	}
 
 	// compile the ddp-source into an Ast
@@ -110,7 +111,7 @@ func Compile(options Options) (*Result, error) {
 
 	ddp_main_module, err := parser.Parse(options.ToParserOptions())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fehler beim Parsen: %w", err)
 	}
 
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
@@ -132,7 +133,7 @@ func Compile(options Options) (*Result, error) {
 		options.Log("Erstelle llvm Context")
 		llctx, err := newllvmContext()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 		}
 		defer options.Log("Entsorge llvm Context")
 		defer llctx.Dispose()
@@ -140,7 +141,7 @@ func Compile(options Options) (*Result, error) {
 		options.Log("Parse llvm-ir zu llvm-Module")
 		mod, err := llctx.parseIR(irBuff.Bytes())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Fehler beim Parsen von llvm-ir: %w", err)
 		}
 		defer mod.Dispose()
 
@@ -148,13 +149,13 @@ func Compile(options Options) (*Result, error) {
 			options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
 			list_defs, err := llctx.parseListDefs()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Fehler beim Parsen von %s: %w", ddppath.DDP_List_Types_Defs_LL, err)
 			}
 			// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
 
 			options.Log("Linke ddp_list_types_defs mit dem Hauptmodul")
 			if err := llvmLinkAllModules(mod, []llvm.Module{list_defs}); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Fehler beim Linken von %s: %w", ddppath.DDP_List_Types_Defs_LL, err)
 			}
 		}
 
@@ -174,7 +175,7 @@ func Compile(options Options) (*Result, error) {
 			llctx.optimizeModule(mod)
 
 			if _, err := llctx.compileModule(mod, file_type, options.To); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Fehler beim Kompilieren von llvm-ir: %w", err)
 			}
 
 			return comp_result, nil
@@ -187,7 +188,7 @@ func Compile(options Options) (*Result, error) {
 	options.Log("Erstelle llvm Context")
 	llctx, err := newllvmContext()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 	}
 	defer options.Log("Entsorge llvm Context")
 	defer llctx.Dispose()
@@ -208,7 +209,7 @@ func Compile(options Options) (*Result, error) {
 		options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
 		list_defs, err := llctx.parseListDefs()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Fehler beim Parsen von %s: %w", ddppath.DDP_List_Types_Defs_LL, err)
 		}
 		// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
 		ll_modules[ddppath.DDP_List_Types_Defs_LL] = list_defs
@@ -231,7 +232,7 @@ func Compile(options Options) (*Result, error) {
 	defer ll_main_module.Dispose()
 	options.Log("Linke llvm Module")
 	if err := llvmLinkAllModules(ll_main_module, mapToSlice(ll_modules)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fehler beim Linken von llvm-Modulen: %w", err)
 	}
 
 	// if we output llvm ir we are finished here
@@ -271,13 +272,13 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 
 	llctx, err := newllvmContext()
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 	}
 	defer llctx.Dispose()
 
 	list_mod, err := llctx.parseIR(irBuff.Bytes())
 	if err != nil {
-		return err
+		return fmt.Errorf("Fehler beim Parsen von llvm-ir: %w", err)
 	}
 	defer list_mod.Dispose()
 

@@ -27,6 +27,7 @@ und kann so benutzt werden:
 
 [
 	Gibt eine Text Liste zurück die alle übergebenen Befehlszeilenargumente enthält.
+	Index 1 enthält immer den Programmpfad.
 ]
 Die öffentliche Funktion Befehlszeilenargumente gibt eine Text Liste zurück,
 ist in "libddpruntime.a" definiert
@@ -49,3 +50,12 @@ Die öffentliche Funktion Ist_Befehlszeile gibt einen Boolean zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Benutzereingabe eine Befehlszeile ist"
+
+[
+	Leere Funktion, die nichts macht und nichts zurückgibt.
+	Nützlich in einigen wenigen Fällen.
+]
+Die öffentliche Funktion Macht_Nichts gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"Tue nichts" oder
+	"tue nichts"

@@ -25,6 +25,9 @@ type Options struct {
 	DeleteIntermediateFiles bool
 	// flags for the final gcc call
 	GCCFlags string
+	// the .o file containing main(argc, argv)
+	// if this is not set, the linker will use the default main
+	MainFile string
 	// flags passed to external .c files
 	// for example to specify include directories
 	ExternGCCFlags string
@@ -42,6 +45,10 @@ func validateOptions(options *Options) error {
 	if options.Log == nil {
 		options.Log = func(string, ...any) {}
 	}
+	if options.MainFile == "" {
+		options.Log("Keine main.o angegeben, verwende Standard")
+		options.MainFile = ddppath.Main_O
+	}
 	return nil
 }
 
@@ -50,7 +57,7 @@ func validateOptions(options *Options) error {
 func LinkDDPFiles(options Options) ([]byte, error) {
 	err := validateOptions(&options)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Ungültige Linker Optionen: %w", err)
 	}
 
 	// split the flags passed to gcc when compiling extern .c files
@@ -88,7 +95,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 			input_files = append(input_files, path)
 		case ".c": // .c files must be compiled first
 			if outPath, output, err := compileCFile(path, extern_gcc_flags, options.Log); err != nil {
-				return output, err
+				return output, fmt.Errorf("Fehler beim Kompilieren von '%s': %w", path, err)
 			} else {
 				input_files = append(input_files, outPath)
 				if options.DeleteIntermediateFiles {
@@ -123,6 +130,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 		args = append(args, ddppath.DDP_List_Types_Defs_O)
 	}
 	args = append(args, "-lddpruntime", "-lm")
+	args = append(args, options.MainFile)
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {

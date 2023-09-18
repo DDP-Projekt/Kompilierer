@@ -1,35 +1,65 @@
+[ 
+	Gibt den Wert von der Kreiszahl "PI" (π) mit 15 Nachkommastellen zurück:
+	3,141592653589793
+]
 Die öffentliche Funktion PI gibt eine Kommazahl zurück, macht:
-	Gib 3,141592654 zurück.
+	Gib 3,141592653589793 zurück.
 Und kann so benutzt werden:
 	"PI"
 
+[
+	Gibt den Wert der Eulerschen Zahl "E" mit 15 Nachkommastellen zurück:
+	2,718281828459045
+]
 Die öffentliche Funktion E gibt eine Kommazahl zurück, macht:
-	Gib 2,718281828 zurück.
+	Gib 2,718281828459045 zurück.
 Und kann so benutzt werden:
 	"E"
 
+[
+	Gibt den Wert der alternativen Kreiszahl "TAU" (τ) mit 15 Nachkommastellen zurück:
+	6,283185307179586
+	Es entspricht exakt den Wert von 2 mal PI.
+]
 Die öffentliche Funktion TAU gibt eine Kommazahl zurück, macht:
-	Gib 6,283185307 zurück.
+	Gib 6,283185307179586 zurück.
 Und kann so benutzt werden:
 	"TAU"
 
+[
+	Gibt den Wert des Goldenen Schittes "PHI" (Φ) mit 15 Nachkommastellen zurück:
+	1,618033988749895
+]
 Die öffentliche Funktion PHI gibt eine Kommazahl zurück, macht:
-	Gib 1,618033989 zurück.
+	Gib 1,618033988749895 zurück.
 Und kann so benutzt werden:
 	"PHI"
 
+[
+	Wenn a >= b ist wird a zurück gegeben.
+	Wenn a < b ist wird b zurückgegeben.
+]
 Die öffentliche Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
+[
+	Wenn a <= b ist wird a zurückgegeben.
+	Wenn a > b ist wird b zurückgegeben.
+]
 Die öffentliche Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
 
+[
+	Wenn wert > max ist, wird max zurückgegeben.
+	Wenn wert < min ist, wird min zurückgegeben.
+	Wenn min < wert < max ist, wird wert zurückgegeben.
+]
 Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert größer als max ist, gib max zurück.
 	Wenn wert kleiner als min ist, gib min zurück.
@@ -37,6 +67,43 @@ Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zah
 Und kann so benutzt werden:
 	"<wert> zwischen <min> und <max>"
 
+[
+	Wenn a >= b ist wird a zurück gegeben.
+	Wenn a < b ist wird b zurückgegeben.
+]
+Die öffentliche Funktion maxK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a größer als, oder b ist, gib a zurück.
+	Gib b zurück.
+Und kann so benutzt werden:
+	"die größere Zahl von <a> und <b>"
+
+[
+	Wenn a <= b ist wird a zurückgegeben.
+	Wenn a > b ist wird b zurückgegeben.
+]
+Die öffentliche Funktion minK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a kleiner als, oder b ist, gib a zurück.
+	Gib b zurück.
+Und kann so benutzt werden:
+	"die kleinere Zahl von <a> und <b>"
+
+[
+	Wenn wert > max ist, wird max zurückgegeben.
+	Wenn wert < min ist, wird min zurückgegeben.
+	Wenn min < wert < max ist, wird wert zurückgegeben.
+]
+Die öffentliche Funktion clampK mit den Parametern wert, max und min vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn wert größer als max ist, gib max zurück.
+	Wenn wert kleiner als min ist, gib min zurück.
+	Gib wert zurück.
+Und kann so benutzt werden:
+	"<wert> zwischen <min> und <max>"
+
+[
+	Wenn wert < 0 ist, wird -1 zurückgegeben.
+	Wenn wert > 0 ist, wird 1 zurückgegeben.
+	Wenn wert = 0 ist, wird 0 zurückgegeben.
+]
 Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
@@ -44,70 +111,119 @@ Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Za
 Und kann so benutzt werden:
 	"das Vorzeichen von <wert>"
 
+[
+	Wenn wert < 0 ist, wird -1 zurückgegeben.
+	Wenn wert > 0 ist, wird 1 zurückgegeben.
+	Wenn wert = 0 ist, wird 0 zurückgegeben.
+]
+Die öffentliche Funktion signK mit dem Parameter wert vom Typ Kommazahl, gibt eine Zahl zurück, macht:
+	Wenn wert kleiner als 0 ist, gib -1 zurück.
+	Wenn aber wert größer als 0 ist, gib 1 zurück.
+	Gib 0 zurück.
+Und kann so benutzt werden:
+	"das Vorzeichen von <wert>"
+
+[
+	Rundet wert nach unten.
+]
 Die öffentliche Funktion floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert minus (wert minus wert als Zahl) zurück.
 Und kann so benutzt werden:
 	"<wert> nach unten gerundet"
 
+[
+	Rundet wert nach oben.
+]
 Die öffentliche Funktion ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert plus (1 minus (wert minus wert als Zahl)) zurück.
 Und kann so benutzt werden:
 	"<wert> nach oben gerundet"
 
+[
+	Schneidet alle Kommastellen von wert ab.
+]
 Die öffentliche Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib (wert als Zahl) als Kommazahl zurück.
 Und kann so benutzt werden:
 	"<wert> trunkiert"
 
 [ Trigonometrische Funktionen ]
+
+[
+	Berechnet den Sinus von v.
+]
 Die öffentliche Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Sinus von <v>" oder 
 	"den Sinus von <v>"
 
+[
+	Berechnet den Kosinus von v.
+]
 Die öffentliche Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Kosinus von <v>" oder
 	"den Kosinus von <v>"
 
+[
+	Berechnet den Tangens von v.
+]
 Die öffentliche Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Tangens von <v>" oder
 	"den Tangens von <v>"
 
+[
+	Berechnet den Arkussinus von v. (sin⁻¹)
+]
 Die öffentliche Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkussinus von <v>" oder
 	"den Arkussinus von <v>"
 
+[
+	Berechnet den Arkuskosinus von v. (cos⁻¹)
+]
 Die öffentliche Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkuskosinus von <v>" oder
 	"den Arkuskosinus von <v>"
 
+[
+	Berechnet den Arkustangens von v. (tan⁻¹)
+]
 Die öffentliche Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkustangens von <v>" oder 
 	"den Arkustangens von <v>"
 
+[
+	Berechnet den Hyperbelsinus von v.
+]
 Die öffentliche Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelsinus von <v>" oder
 	"den Hyperbelsinus von <v>"
 
+[
+	Berechnet den Hyperbelkosinus von v.
+]
 Die öffentliche Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelkosinus von <v>" oder
 	"den Hyperbelkosinus von <v>"
 
+[
+	Berechnet den Hyperbeltangens von v.
+]
 Die öffentliche Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -137,6 +253,10 @@ Die öffentliche Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und 
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
 
+[
+	Ob der divident durch den divisor teilbar ist.
+	Auch: Ob divident modulo divisor = 0 ist. 
+]
 Die öffentliche Funktion ist_teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
 	Gib dividend modulo divisor gleich 0 ist zurück.
 Und kann so benutzt werden:
@@ -181,3 +301,43 @@ Die öffentliche Funktion Teilerzerlegung mit dem Parameter z vom Typ Zahl, gibt
 	Gib teiler zurück.
 Und kann so benutzt werden:
 	"alle Teiler von <z>"
+
+[
+	Quadriert (hoch 2) die gegebene Zahl.
+]
+Die öffentliche Funktion Quadriere mit dem Parameter x vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
+	Vervielfache x um x.
+Und kann so benutzt werden:
+	"Quadriere <x>"
+
+[
+	Gibt die gegebene Zahl hoch 2 zurück.
+]
+Die öffentliche Funktion Quadriere_Wert mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib x mal x zurück.
+Und kann so benutzt werden:
+	"<x> zum quadrat"
+
+[
+	Gibt zurück ob die gegebene Kommazahl eine ganze Zahl ist. (...; -2,0; -1,0; 0,0; 1,0; 2,0; ...)
+]
+Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+	Gib (x als Zahl) als Kommazahl gleich x ist zurück.
+Und kann so benutzt werden:
+	"<x> eine ganze Zahl ist"
+
+[
+	Gibt zurück ob die gegebene Zahl eine gerade Zahl ist. (x mod 2 = 0)
+]
+Die öffentliche Funktion Gerade_Zahl mit dem Parameter x vom Typ Zahl, gibt einen Boolean zurück, macht:
+	Gib x modulo 2 gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<x> eine gerade Zahl ist"
+
+[
+	Gibt zurück ob die gegebene Kommazahl eine gerade Zahl ist. ((int)x mod 2 = 0)
+]
+Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+	Gib x als Zahl modulo 2 gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<x> eine gerade Zahl ist"

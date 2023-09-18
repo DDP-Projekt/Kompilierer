@@ -1,3 +1,4 @@
+
 guh??
 guh??
 guh??
@@ -25,3 +26,9 @@ test
 aaaa
 ahaaa
 ahahahaa
+
+abc--def
+a-b-c
+1-234-56789-0
+1,4-nan-82
+wahr-falsch-falsch

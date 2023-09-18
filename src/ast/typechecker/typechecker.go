@@ -488,8 +488,12 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar {
-			lhs = decl.(*ast.VarDecl).Type
+		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && decl.(*ast.VarDecl).Type != rhs {
+			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
+				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+				rhs,
+				decl.(*ast.VarDecl).Type,
+			)
 		}
 	case *ast.Indexing:
 		lhs = t.Evaluate(assign)
@@ -548,16 +552,22 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 }
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) {
 	t.visit(stmt.Initializer)
-	if toType := t.Evaluate(stmt.To); toType != ddptypes.ZAHL {
+	iter_type := stmt.Initializer.Type
+	if !iter_type.IsNumeric() {
+		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
+	}
+	if toType := t.Evaluate(stmt.To); toType != iter_type {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
-			"Der Endwert in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
+			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
+			iter_type,
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); stepType != ddptypes.ZAHL {
+		if stepType := t.Evaluate(stmt.StepSize); stepType != iter_type {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
-				"Die Schrittgröße in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
+				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
+				iter_type,
 				stepType,
 			)
 		}
