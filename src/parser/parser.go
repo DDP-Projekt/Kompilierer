@@ -237,15 +237,22 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	})
 }
 
+func (p *parser) checkStatement(stmt ast.Statement) {
+	if stmt == nil {
+		p.panic("nil statement passed to checkStatement")
+	}
+	if importStmt, ok := stmt.(*ast.ImportStmt); ok {
+		p.resolveModuleImport(importStmt)
+	}
+	p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
+	p.typechecker.TypecheckNode(stmt) // typecheck the node
+}
+
 func (p *parser) checkedDeclaration() ast.Statement {
 	stmt := p.declaration() // parse the node
 	// TODO: maybe introduce a NOOP node to handle such cases
 	if stmt != nil { // nil check, for alias declarations that aren't Ast Nodes
-		if importStmt, ok := stmt.(*ast.ImportStmt); ok {
-			p.resolveModuleImport(importStmt)
-		}
-		p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
-		p.typechecker.TypecheckNode(stmt) // typecheck the node
+		p.checkStatement(stmt)
 	}
 	if p.panicMode { // synchronize the parsing if we are in panic mode
 		p.synchronize()
@@ -862,6 +869,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.match(token.DOT) {
 		return stmt
 	}
+	p.checkStatement(stmt)
 	count := p.expression()
 	if !p.match(token.COUNT_MAL) {
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
