@@ -40,7 +40,7 @@ func (c *compiler) growCapacity(cap value.Value) value.Value {
 	c.cbb.NewBr(endBlock)
 
 	c.cbb = falseBlock
-	newCap := c.cbb.NewMul(cap, newInt(2))
+	newCap := c.cbb.NewFPToSI(c.cbb.NewFMul(c.cbb.NewSIToFP(cap, ddpfloat), constant.NewFloat(ddpfloat, 1.5)), i64)
 	c.cbb.NewBr(endBlock)
 
 	c.cbb = endBlock

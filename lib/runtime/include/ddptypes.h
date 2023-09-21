@@ -97,6 +97,12 @@ extern void ddp_deep_copy_ddpstringlist(ddpstringlist* ret, ddpstringlist* list)
 
 // useful typedefs to use when interfacing with ddp code
 
+#define GROWTH_FACTOR (1.5)
+#define BASE_CAPACITY (8)
+// helper macro to calculate the new capacity of an array
+#define GROW_CAPACITY(capacity) \
+    (capacity < BASE_CAPACITY ? BASE_CAPACITY : (ddpint)ceil(capacity * GROWTH_FACTOR))
+
 typedef ddpint* ddpintref;
 typedef ddpfloat* ddpfloatref;
 typedef ddpbool* ddpboolref;

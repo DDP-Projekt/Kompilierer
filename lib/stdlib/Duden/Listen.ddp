@@ -7,11 +7,17 @@ Die öffentliche Funktion Leere_Z mit dem Parameter liste vom Typ Zahlen Listen 
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_int mit den Parametern list, elem und elem_size vom Typ Zahlen Listen Referenz, Zahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_int <list> <elem> <elem_size>"
+
 [
 	Fügt eine Zahl am Ende der gegeben Zahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -110,11 +116,17 @@ Die öffentliche Funktion Leere_K mit dem Parameter liste vom Typ Kommazahlen Li
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_float mit den Parametern list, elem und elem_size vom Typ Kommazahlen Listen Referenz, Kommazahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_float <list> <elem> <elem_size>"
+
 [
 	Fügt eine Kommazahl am Ende der gegeben Kommazahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -213,11 +225,17 @@ Die öffentliche Funktion Leere_B mit dem Parameter liste vom Typ Boolean Listen
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_bool mit den Parametern list, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_bool <list> <elem> <elem_size>"
+
 [
 	Fügt einen Boolean am Ende der gegeben Boolean Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -316,11 +334,17 @@ Die öffentliche Funktion Leere_C mit dem Parameter liste vom Typ Buchstaben Lis
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_char mit den Parametern list, elem und elem_size vom Typ Buchstaben Listen Referenz, Buchstaben Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_char <list> <elem> <elem_size>"
+
 [
 	Fügt einen Buchstaben am Ende der gegeben Buchstaben Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -419,11 +443,17 @@ Die öffentliche Funktion Leere_T mit dem Parameter liste vom Typ Text Listen Re
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_string mit den Parametern list, elem und elem_size vom Typ Text Listen Referenz, Text Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_string <list> <elem> <elem_size>"
+
 [
 	Fügt einen Text am Ende der gegeben Text Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
