@@ -24,6 +24,7 @@ Und kann so benutzt werden:
 
 [
 	Fügt eine Zahl vor einem Index in der gegebenen Zahlen Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -38,11 +39,18 @@ Die öffentliche Funktion Einfügen_Bereich_Z mit den Parametern liste, index un
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_int mit den Parametern liste, elem und elem_size vom Typ Zahlen Listen Referenz, Zahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_int <liste> <elem> <elem_size>"
+
 [
 	Fügt eine Zahl am Anfang der gegeben Zahlen Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -133,6 +141,7 @@ Und kann so benutzt werden:
 
 [
 	Fügt eine Kommazahl vor einem Index in der gegebenen Kommazahlen Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -147,11 +156,18 @@ Die öffentliche Funktion Einfügen_Bereich_K mit den Parametern liste, index un
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_float mit den Parametern liste, elem und elem_size vom Typ Kommazahlen Listen Referenz, Kommazahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_float <liste> <elem> <elem_size>"
+
 [
 	Fügt eine Kommazahl am Anfang der gegeben Kommazahlen Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -250,17 +266,25 @@ Und kann so benutzt werden:
 
 [
 	Fügt eine Boolean Liste vor einem Index in der gegebenen Boolean Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_bool mit den Parametern liste, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,	
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_bool <liste> <elem> <elem_size>"
+
 [
 	Fügt einen Boolean am Anfang der gegeben Boolean Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -351,6 +375,7 @@ Und kann so benutzt werden:
 
 [
 	Fügt einen Buchstaben vor einem Index in der gegebenen Buchstaben Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
@@ -365,11 +390,18 @@ Die öffentliche Funktion Einfügen_Bereich_C mit den Parametern liste, index un
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_char mit den Parametern liste, elem und elem_size vom Typ Buchstaben Listen Referenz, Buchstaben Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_char <liste> <elem> <elem_size>"
+
 [
 	Fügt einen Buchstaben am Anfang der gegeben Buchstaben Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -468,17 +500,25 @@ Und kann so benutzt werden:
 
 [
 	Fügt eine Text Liste vor einem Index in der gegebenen Text Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
 	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_string mit den Parametern liste, elem und elem_size vom Typ Text Listen Referenz, Text Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_string <liste> <elem> <elem_size>"
+
 [
 	Fügt einen Text am Anfang der gegeben Text Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
