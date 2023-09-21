@@ -76,3 +76,58 @@ void efficient_list_prepend_string(ddpstringlistref list, ddpstringref elem, ddp
 	elem->cap = 0;
 	elem->str = NULL;
 }
+
+#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len) - 1 : (index)))
+
+// the range is inclusive [start, end]
+// the indices are 0-based (like in C, not like in DDP)
+static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddpint end, ddpint elem_size) {
+	if (list->len <= 0) {
+		return;
+	}
+
+	if (start > end) {
+		ddp_runtime_error(1, "start index ist größer als end index (%d, %d)", start, end);
+	}
+	start = CLAMP(start, list->len);
+	end = CLAMP(end, list->len);
+
+	ddpint new_len = list->len - (end - start + 1);
+	memmove(&((uint8_t*)list->arr)[start * elem_size], &((uint8_t*)list->arr)[(end + 1) * elem_size], (list->len - end - 1) * elem_size);
+	list->len = new_len;
+}
+
+void efficient_list_delete_range_int(ddpintlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
+}
+
+void efficient_list_delete_range_float(ddpfloatlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
+}
+
+void efficient_list_delete_range_bool(ddpboollistref list, ddpint start, ddpint end, ddpint elem_size) {
+	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
+}
+
+void efficient_list_delete_range_char(ddpcharlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
+}
+
+void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	// duplicate logic, but better safe than sorry
+	if (list->len <= 0) {
+		return;
+	}
+
+	if (start > end) {
+		ddp_runtime_error(1, "start index ist größer als end index (%d, %d)", start, end);
+	}
+
+	// free the old strings before shallow-copying them
+	ddpint free_end = CLAMP(end, list->len);
+	for (ddpint i = CLAMP(start, list->len); i <= free_end; i++) {
+		ddp_free_string(&list->arr[i]);
+	}
+
+	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
+}
