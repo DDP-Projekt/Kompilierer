@@ -2016,10 +2016,16 @@ outer:
 				// append the EOF needed for the parser
 				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
 				tokens = append(tokens, eof)
-				argParser := newParser(p.module.FileName, tokens, nil, error_collector) // create a new parser for this expression
-				argParser.funcAliases = p.funcAliases                                   // it needs the functions aliases
-				argParser.resolver = p.resolver
-				argParser.typechecker = p.typechecker
+				argParser := &parser{
+					tokens:       tokens,
+					errorHandler: error_collector,
+					module: &ast.Module{
+						FileName: p.module.FileName,
+					},
+					funcAliases: p.funcAliases,
+					resolver:    p.resolver,
+					typechecker: p.typechecker,
+				}
 				var arg ast.Expression
 				if paramType.IsReference {
 					if tokens[0].Type == token.LPAREN {
