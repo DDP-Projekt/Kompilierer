@@ -52,21 +52,23 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
-	pTokens := make([]token.Token, 0, len(tokens))
-	pComments := make([]token.Token, 0)
+	comments := make([]token.Token, 0)
 	// filter the comments out
-	for i := range tokens {
-		if tokens[i].Type == token.COMMENT {
-			pComments = append(pComments, tokens[i])
+	i := 0
+	for _, tok := range tokens {
+		if tok.Type == token.COMMENT {
+			comments = append(comments, tok)
 		} else {
-			pTokens = append(pTokens, tokens[i])
+			tokens[i] = tok
+			i++
 		}
 	}
+	tokens = tokens[:i]
 
 	aliases := make([]ast.FuncAlias, 0)
 	parser := &parser{
-		tokens:       pTokens,
-		comments:     pComments,
+		tokens:       tokens,
+		comments:     comments,
 		cur:          0,
 		errorHandler: nil,
 		module: &ast.Module{
@@ -75,7 +77,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			ExternalDependencies: make(map[string]struct{}),
 			Ast: &ast.Ast{
 				Statements: make([]ast.Statement, 0),
-				Comments:   pComments,
+				Comments:   comments,
 				Symbols:    ast.NewSymbolTable(nil),
 				Faulty:     false,
 			},
@@ -157,7 +159,7 @@ func (p *parser) synchronize() {
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
-	rawPath := ast.TrimStringLit(importStmt.FileName)
+	rawPath := ast.TrimStringLit(&importStmt.FileName)
 	inclPath := ""
 
 	if rawPath == "" {
@@ -301,14 +303,14 @@ func (p *parser) assignRhs() ast.Expression {
 		if p.match(token.COMMA) {
 			p.consume(token.WENN)
 			// if it is false, we add a unary bool-negate into the ast
-			if tok := p.tokens[p.cur-2]; tok.Type == token.FALSE {
+			if tok := &p.tokens[p.cur-2]; tok.Type == token.FALSE {
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
 				expr = &ast.UnaryExpr{
 					Range: token.Range{
 						Start: token.NewStartPos(tok),
 						End:   rhs.GetRange().End,
 					},
-					Tok:      tok,
+					Tok:      *tok,
 					Operator: ast.UN_NOT,
 					Rhs:      rhs,
 				}
@@ -352,7 +354,7 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 				File:  p.module.FileName,
 				Msg:   "Es wurde ein Variablen Name erwartet",
 			},
-			Tok: p.peek(),
+			Tok: *p.peek(),
 			Mod: p.module,
 		}
 	}
@@ -365,9 +367,10 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		expr = p.expression()
 		if p.match(token.COUNT_MAL) {
 			value := p.expression()
+			expr_tok := expr.Token()
 			expr = &ast.ListLit{
 				Tok:    expr.Token(),
-				Range:  token.NewRange(expr.Token(), p.previous()),
+				Range:  token.NewRange(&expr_tok, p.previous()),
 				Type:   typ,
 				Values: nil,
 				Count:  expr,
@@ -387,7 +390,7 @@ func (p *parser) varDeclaration(startDepth int) ast.Declaration {
 		Range:    token.NewRange(begin, p.previous()),
 		Comment:  comment,
 		Type:     typ,
-		NameTok:  name,
+		NameTok:  *name,
 		IsPublic: isPublic,
 		IsGlobal: p.resolver.CurrentTable.Enclosing == nil,
 		Mod:      p.module,
@@ -425,7 +428,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.module.FileName),
-			Tok: p.peek(),
+			Tok: *p.peek(),
 			Mod: p.module,
 		}
 	}
@@ -449,15 +452,15 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 		}
 		validate(p.consume(token.IDENTIFIER))
-		paramNames = append(make([]token.Token, 0), p.previous()) // append the first parameter name
+		paramNames = append(make([]token.Token, 0), *p.previous()) // append the first parameter name
 		paramComments = append(make([]*token.Token, 0), p.getLeadingOrTrailingComment())
 		if !singleParameter {
 			// helper function to avoid too much repitition
-			addParamName := func(name token.Token) {
+			addParamName := func(name *token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
 					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
 				}
-				paramNames = append(paramNames, name)                                  // append the parameter name
+				paramNames = append(paramNames, *name)                                 // append the parameter name
 				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
 			}
 
@@ -508,7 +511,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 	// we need as many parmeter names as types
 	if len(paramNames) != len(paramTypes) {
-		perr(ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH, token.NewRange(paramNames[0], p.previous()), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)))
+		perr(ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH, token.NewRange(&paramNames[0], p.previous()), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)))
 	}
 
 	// parse the return type declaration
@@ -520,7 +523,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
 	bodyStart := -1
-	definedIn := token.Token{Type: token.ILLEGAL}
+	definedIn := &token.Token{Type: token.ILLEGAL}
 	if p.matchN(token.MACHT, token.COLON) {
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
 		indent := p.previous().Indent + 1             // indentation level of the function body
@@ -539,7 +542,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	// parse the alias definitions before the body to enable recursion
 	validate(p.consume(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
-	aliases := make([]token.Token, 0)
+	aliases := make([]*token.Token, 0)
 	if p.previous().Type == token.STRING {
 		aliases = append(aliases, p.previous())
 	}
@@ -564,14 +567,14 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		// scan the raw alias withouth the ""
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if alias, err := scanner.ScanAlias(v, errHandleWrapper); err == nil && !didError {
+		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if validateAlias(alias, paramNames, paramTypes) { // check that the alias fits the function
 				if fun := p.aliasExists(alias); fun != nil { // check that the alias does not already exist for another function
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, fun.Name()))
 				} else { // the alias is valid so we append it
-					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: v, Func: nil, Args: paramTypesMap})
+					funcAliases = append(funcAliases, ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
 				}
 			} else {
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
@@ -589,7 +592,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.cur = aliasEnd
 		return &ast.BadDecl{
 			Err: p.lastError,
-			Tok: Funktion,
+			Tok: *Funktion,
 			Mod: p.module,
 		}
 	}
@@ -597,8 +600,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	decl := &ast.FuncDecl{
 		Range:         token.NewRange(begin, p.previous()),
 		Comment:       comment,
-		Tok:           begin,
-		NameTok:       name,
+		Tok:           *begin,
+		NameTok:       *name,
 		IsPublic:      isPublic,
 		Mod:           p.module,
 		ParamNames:    paramNames,
@@ -606,7 +609,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		ParamComments: paramComments,
 		Type:          Typ,
 		Body:          nil,
-		ExternFile:    definedIn,
+		ExternFile:    *definedIn,
 		Aliases:       funcAliases,
 	}
 
@@ -630,7 +633,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, IsGlobal: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(&paramNames[i], &paramNames[i]), Comment: paramComments[i]})
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -652,7 +655,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		if existed := p.resolver.CurrentTable.InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
-		p.module.ExternalDependencies[ast.TrimStringLit(decl.ExternFile)] = struct{}{} // add the extern declaration
+		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration
 	}
 
 	p.currentFunction = ""
@@ -727,13 +730,13 @@ func (p *parser) aliasDecl() ast.Statement {
 
 	// scan the raw alias withouth the ""
 	var alias *ast.FuncAlias
-	if aliasTokens, err := scanner.ScanAlias(aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+	if aliasTokens, err := scanner.ScanAlias(*aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 	} else if validateAlias(aliasTokens, funDecl.ParamNames, funDecl.ParamTypes) { // check that the alias fits the function
 		if fun := p.aliasExists(aliasTokens); fun != nil { // check that the alias does not already exist for another function
 			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, fun.Name()))
 		} else { // the alias is valid so we append it
-			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: aliasTok, Func: funDecl, Args: paramTypes}
+			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: *aliasTok, Func: funDecl, Args: paramTypes}
 		}
 	} else {
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
@@ -745,7 +748,7 @@ func (p *parser) aliasDecl() ast.Statement {
 		p.err(ddperror.SEM_ALIAS_MUST_BE_GLOBAL, token.NewRange(begin, p.previous()), "Ein Alias darf nur im globalen Bereich deklariert werden!")
 		return &ast.BadStmt{
 			Err: p.lastError,
-			Tok: begin,
+			Tok: *begin,
 		}
 	} else if alias != nil {
 		p.funcAliases = append(p.funcAliases, *alias)
@@ -813,42 +816,42 @@ func (p *parser) importStatement() ast.Statement {
 	var stmt *ast.ImportStmt
 	if p.match(token.STRING) {
 		stmt = &ast.ImportStmt{
-			FileName:        p.previous(),
+			FileName:        *p.previous(),
 			ImportedSymbols: nil,
 		}
 	} else if p.match(token.IDENTIFIER) {
-		importedSymbols := []token.Token{p.previous()}
+		importedSymbols := []token.Token{*p.previous()}
 		if p.peek().Type != token.AUS {
 			if p.match(token.UND) {
 				p.consume(token.IDENTIFIER)
-				importedSymbols = append(importedSymbols, p.previous())
+				importedSymbols = append(importedSymbols, *p.previous())
 			} else {
 				for p.match(token.COMMA) {
 					if p.consume(token.IDENTIFIER) {
-						importedSymbols = append(importedSymbols, p.previous())
+						importedSymbols = append(importedSymbols, *p.previous())
 					}
 				}
 				if p.consume(token.UND) && p.consume(token.IDENTIFIER) {
-					importedSymbols = append(importedSymbols, p.previous())
+					importedSymbols = append(importedSymbols, *p.previous())
 				}
 			}
 		}
 		p.consume(token.AUS)
 		if p.consume(token.STRING) {
 			stmt = &ast.ImportStmt{
-				FileName:        p.previous(),
+				FileName:        *p.previous(),
 				ImportedSymbols: importedSymbols,
 			}
 		} else {
 			return &ast.BadStmt{
-				Tok: p.peek(),
+				Tok: *p.peek(),
 				Err: p.lastError,
 			}
 		}
 	} else {
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "ein Text Literal oder ein Name"))
 		return &ast.BadStmt{
-			Tok: p.peek(),
+			Tok: *p.peek(),
 			Err: p.lastError,
 		}
 	}
@@ -878,7 +881,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 			Start: stmt.GetRange().Start,
 			End:   token.NewEndPos(p.previous()),
 		},
-		While:     tok,
+		While:     *tok,
 		Condition: count,
 		Body:      stmt,
 	}
@@ -921,11 +924,11 @@ func (p *parser) compoundAssignement() ast.Statement {
 		}
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
-			Tok:   tok,
+			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.UnaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
-				Tok:      tok,
+				Tok:      *tok,
 				Operator: operator,
 				Rhs:      varName,
 			},
@@ -952,11 +955,11 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
-			Tok:   assign_token,
+			Tok:   *assign_token,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
-				Tok:      tok,
+				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
@@ -966,11 +969,11 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
-			Tok:   tok,
+			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
-				Tok:      tok,
+				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
@@ -992,9 +995,10 @@ func (p *parser) assignLiteral() ast.Statement {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
+	ident_tok := ident.Token()
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(ident.Token(), p.peek()),
+			Range: token.NewRange(&ident_tok, p.peek()),
 			Tok:   ident.Token(),
 			Var:   ident,
 			Rhs:   expr,
@@ -1011,7 +1015,7 @@ func (p *parser) assignNoLiteral() ast.Statement {
 	return p.finishStatement(
 		&ast.AssignStmt{
 			Range: token.NewRange(speichere, p.peek()),
-			Tok:   speichere,
+			Tok:   *speichere,
 			Var:   name,
 			Rhs:   expr,
 		},
@@ -1037,7 +1041,7 @@ func (p *parser) ifStatement() ast.Statement {
 		p.exitScope()
 		Then = &ast.BlockStmt{
 			Range:      Then.GetRange(),
-			Colon:      comma,
+			Colon:      *comma,
 			Statements: []ast.Statement{Then},
 			Symbols:    thenScope,
 		}
@@ -1056,7 +1060,7 @@ func (p *parser) ifStatement() ast.Statement {
 				p.exitScope()
 				Else = &ast.BlockStmt{
 					Range:      Else.GetRange(),
-					Colon:      _else,
+					Colon:      *_else,
 					Statements: []ast.Statement{Else},
 					Symbols:    elseScope,
 				}
@@ -1083,7 +1087,7 @@ func (p *parser) ifStatement() ast.Statement {
 			Start: token.NewStartPos(If),
 			End:   endPos,
 		},
-		If:        If,
+		If:        *If,
 		Condition: condition,
 		Then:      Then,
 		Else:      Else,
@@ -1106,7 +1110,7 @@ func (p *parser) whileStatement() ast.Statement {
 		p.exitScope()
 		Body = &ast.BlockStmt{
 			Range:      Body.GetRange(),
-			Colon:      is,
+			Colon:      *is,
 			Statements: []ast.Statement{Body},
 			Symbols:    bodyTable,
 		}
@@ -1116,7 +1120,7 @@ func (p *parser) whileStatement() ast.Statement {
 			Start: token.NewStartPos(While),
 			End:   Body.GetRange().End,
 		},
-		While:     While,
+		While:     *While,
 		Condition: condition,
 		Body:      Body,
 	}
@@ -1134,7 +1138,7 @@ func (p *parser) doWhileStmt() ast.Statement {
 			Start: token.NewStartPos(Do),
 			End:   token.NewEndPos(p.previous()),
 		},
-		While:     Do,
+		While:     *Do,
 		Condition: condition,
 		Body:      body,
 	}
@@ -1151,7 +1155,7 @@ func (p *parser) repeatStmt() ast.Statement {
 			Start: token.NewStartPos(repeat),
 			End:   body.GetRange().End,
 		},
-		While:     repeat,
+		While:     *repeat,
 		Condition: count,
 		Body:      body,
 	}
@@ -1174,7 +1178,7 @@ func (p *parser) forStatement() ast.Statement {
 			},
 			Comment:  iteratorComment,
 			Type:     Typ,
-			NameTok:  Ident,
+			NameTok:  *Ident,
 			IsPublic: false,
 			IsGlobal: false,
 			Mod:      p.module,
@@ -1208,7 +1212,7 @@ func (p *parser) forStatement() ast.Statement {
 					Start: token.NewStartPos(Colon),
 					End:   stmt.GetRange().End,
 				},
-				Colon:      Colon,
+				Colon:      *Colon,
 				Statements: []ast.Statement{stmt},
 				Symbols:    bodyTable,
 			}
@@ -1218,7 +1222,7 @@ func (p *parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(For),
 				End:   Body.GetRange().End,
 			},
-			For:         For,
+			For:         *For,
 			Initializer: initializer,
 			To:          to,
 			StepSize:    step,
@@ -1232,7 +1236,7 @@ func (p *parser) forStatement() ast.Statement {
 				End:   In.GetRange().End,
 			},
 			Type:     Typ,
-			NameTok:  Ident,
+			NameTok:  *Ident,
 			IsPublic: false,
 			IsGlobal: false,
 			Mod:      p.module,
@@ -1256,7 +1260,7 @@ func (p *parser) forStatement() ast.Statement {
 					Start: token.NewStartPos(Colon),
 					End:   stmt.GetRange().End,
 				},
-				Colon:      Colon,
+				Colon:      *Colon,
 				Statements: []ast.Statement{stmt},
 				Symbols:    bodyTable,
 			}
@@ -1266,7 +1270,7 @@ func (p *parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(For),
 				End:   Body.GetRange().End,
 			},
-			For:         For,
+			For:         *For,
 			Initializer: initializer,
 			In:          In,
 			Body:        Body,
@@ -1275,7 +1279,7 @@ func (p *parser) forStatement() ast.Statement {
 	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'von'", "'in'"))
 	return &ast.BadStmt{
 		Err: p.lastError,
-		Tok: p.previous(),
+		Tok: *p.previous(),
 	}
 }
 
@@ -1290,7 +1294,7 @@ func (p *parser) returnStatement() ast.Statement {
 	return &ast.ReturnStmt{
 		Range:  rnge,
 		Func:   p.currentFunction,
-		Return: Return,
+		Return: *Return,
 		Value:  expr,
 	}
 }
@@ -1305,7 +1309,7 @@ func (p *parser) voidReturn() ast.Statement {
 	return &ast.ReturnStmt{
 		Range:  token.NewRange(Leave, p.previous()),
 		Func:   p.currentFunction,
-		Return: Leave,
+		Return: *Leave,
 		Value:  nil,
 	}
 }
@@ -1331,7 +1335,7 @@ func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 
 	return &ast.BlockStmt{
 		Range:      token.NewRange(colon, p.previous()),
-		Colon:      colon,
+		Colon:      *colon,
 		Statements: statements,
 		Symbols:    symbols,
 	}
@@ -1356,7 +1360,7 @@ func (p *parser) boolOR() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_OR,
 			Rhs:      rhs,
@@ -1375,7 +1379,7 @@ func (p *parser) boolAND() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_AND,
 			Rhs:      rhs,
@@ -1394,7 +1398,7 @@ func (p *parser) bitwiseOR() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_LOGIC_OR,
 			Rhs:      rhs,
@@ -1413,7 +1417,7 @@ func (p *parser) bitwiseXOR() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_LOGIC_XOR,
 			Rhs:      rhs,
@@ -1432,7 +1436,7 @@ func (p *parser) bitwiseAND() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_LOGIC_AND,
 			Rhs:      rhs,
@@ -1455,7 +1459,7 @@ func (p *parser) equality() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1489,7 +1493,7 @@ func (p *parser) comparison() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1521,7 +1525,7 @@ func (p *parser) bitShift() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1548,7 +1552,7 @@ func (p *parser) term() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1573,7 +1577,7 @@ func (p *parser) factor() ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
@@ -1586,7 +1590,7 @@ func (p *parser) unary() ast.Expression {
 	if expr := p.funcCall(); expr != nil { // first check for a function call to enable operator overloading
 		return p.power(expr)
 	}
-	var start token.Token
+	var start *token.Token
 	// match the correct unary operator
 	if p.match(token.NICHT, token.BETRAG, token.DIE, token.GRÖßE, token.LÄNGE, token.DER, token.LOGISCH) {
 		if p.previous().Type == token.DIE {
@@ -1642,7 +1646,7 @@ func (p *parser) unary() ast.Expression {
 				Start: token.NewStartPos(start),
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Operator: operator,
 			Rhs:      rhs,
 		}
@@ -1659,7 +1663,7 @@ func (p *parser) negate() ast.Expression {
 				Start: token.NewStartPos(tok),
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Operator: ast.UN_NEGATE,
 			Rhs:      rhs,
 		}
@@ -1683,7 +1687,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 				Start: expr.GetRange().Start,
 				End:   lhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      expr,
 			Operator: ast.BIN_POW,
 			Rhs: &ast.BinaryExpr{
@@ -1691,7 +1695,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 					Literal: lhs.Token(),
 					Value:   1,
 				},
-				Tok:      tok,
+				Tok:      *tok,
 				Operator: ast.BIN_DIV,
 				Rhs:      lhs,
 			},
@@ -1710,7 +1714,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 				Start: numerus.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      numerus,
 			Operator: ast.BIN_LOG,
 			Rhs:      rhs,
@@ -1726,7 +1730,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      lhs,
 			Operator: ast.BIN_POW,
 			Rhs:      rhs,
@@ -1743,37 +1747,37 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	if lhs == nil { // funccall has the highest precedence (aliases + operator overloading)
 		switch tok := p.advance(); tok.Type {
 		case token.FALSE:
-			lhs = &ast.BoolLit{Literal: p.previous(), Value: false}
+			lhs = &ast.BoolLit{Literal: *p.previous(), Value: false}
 		case token.TRUE:
-			lhs = &ast.BoolLit{Literal: p.previous(), Value: true}
+			lhs = &ast.BoolLit{Literal: *p.previous(), Value: true}
 		case token.INT:
 			lhs = p.parseIntLit()
 		case token.FLOAT:
 			lit := p.previous()
 			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
-				lhs = &ast.FloatLit{Literal: lit, Value: val}
+				lhs = &ast.FloatLit{Literal: *lit, Value: val}
 			} else {
 				p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Kommazahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-				lhs = &ast.FloatLit{Literal: lit, Value: 0}
+				lhs = &ast.FloatLit{Literal: *lit, Value: 0}
 			}
 		case token.CHAR:
 			lit := p.previous()
-			lhs = &ast.CharLit{Literal: lit, Value: p.parseChar(lit.Literal)}
+			lhs = &ast.CharLit{Literal: *lit, Value: p.parseChar(lit.Literal)}
 		case token.STRING:
 			lit := p.previous()
-			lhs = &ast.StringLit{Literal: lit, Value: p.parseString(lit.Literal)}
+			lhs = &ast.StringLit{Literal: *lit, Value: p.parseString(lit.Literal)}
 		case token.LPAREN:
 			lhs = p.grouping()
 		case token.IDENTIFIER:
 			lhs = &ast.Ident{
-				Literal: p.previous(),
+				Literal: *p.previous(),
 			}
 		case token.EINE, token.EINER: // list literals
 			begin := p.previous()
 			if begin.Type == token.EINER && p.match(token.LEEREN) {
 				typ := p.parseListType()
 				lhs = &ast.ListLit{
-					Tok:    begin,
+					Tok:    *begin,
 					Range:  token.NewRange(begin, p.previous()),
 					Type:   typ,
 					Values: nil,
@@ -1781,7 +1785,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			} else if p.match(token.LEERE) {
 				typ := p.parseListType()
 				lhs = &ast.ListLit{
-					Tok:    begin,
+					Tok:    *begin,
 					Range:  token.NewRange(begin, p.previous()),
 					Type:   typ,
 					Values: nil,
@@ -1794,7 +1798,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				}
 				p.consume(token.BESTEHT)
 				lhs = &ast.ListLit{
-					Tok:    begin,
+					Tok:    *begin,
 					Range:  token.NewRange(begin, p.previous()),
 					Values: values,
 				}
@@ -1803,7 +1807,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Literal", "ein Name"))
 			lhs = &ast.BadExpr{
 				Err: p.lastError,
-				Tok: tok,
+				Tok: *tok,
 			}
 		}
 	}
@@ -1821,7 +1825,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      lhs,
 			Operator: ast.BIN_INDEX,
 			Rhs:      rhs,
@@ -1837,7 +1841,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Start: operand.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
-			Tok:      tok,
+			Tok:      *tok,
 			Lhs:      operand,
 			Mid:      mid,
 			Rhs:      rhs,
@@ -1865,7 +1869,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 // p.previous() must be of Type token.IDENTIFIER
 func (p *parser) assigneable() ast.Assigneable {
 	var ass ast.Assigneable = &ast.Ident{
-		Literal: p.previous(),
+		Literal: *p.previous(),
 	}
 
 	for p.match(token.AN) {
@@ -1889,7 +1893,7 @@ func (p *parser) grouping() ast.Expression {
 
 	return &ast.Grouping{
 		Range:  token.NewRange(lParen, p.previous()),
-		LParen: lParen,
+		LParen: *lParen,
 		Expr:   innerExpr,
 	}
 }
@@ -1947,7 +1951,7 @@ outer:
 			}
 
 			// validate that the alias matches
-			if !tokenEqual(p.peek(), *tok) {
+			if !tokenEqual(p.peek(), tok) {
 				p.cur = start
 				continue outer // try the next alias otherwise
 			}
@@ -2072,7 +2076,7 @@ outer:
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
 			return &ast.FuncCall{
-				Range: token.NewRange(p.tokens[start], p.previous()),
+				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  matchedAliases[i].alias.Func.Name(),
 				Func:  matchedAliases[i].alias.Func,
@@ -2092,7 +2096,7 @@ outer:
 	apply(p.errorHandler, errs)
 
 	return &ast.FuncCall{
-		Range: token.NewRange(p.tokens[start], p.previous()),
+		Range: token.NewRange(&p.tokens[start], p.previous()),
 		Tok:   p.tokens[start],
 		Name:  mostFitting.alias.Func.Name(),
 		Func:  mostFitting.alias.Func,
@@ -2170,10 +2174,10 @@ func (p *parser) parseString(s string) string {
 func (p *parser) parseIntLit() *ast.IntLit {
 	lit := p.previous()
 	if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
-		return &ast.IntLit{Literal: lit, Value: val}
+		return &ast.IntLit{Literal: *lit, Value: val}
 	} else {
 		p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-		return &ast.IntLit{Literal: lit, Value: 0}
+		return &ast.IntLit{Literal: *lit, Value: 0}
 	}
 }
 
@@ -2431,7 +2435,7 @@ func (p *parser) atEnd() bool {
 }
 
 // return the current token and advance p.cur
-func (p *parser) advance() token.Token {
+func (p *parser) advance() *token.Token {
 	if !p.atEnd() {
 		p.cur++
 		return p.previous()
@@ -2440,25 +2444,25 @@ func (p *parser) advance() token.Token {
 }
 
 // returns the current token without advancing
-func (p *parser) peek() token.Token {
-	return p.tokens[p.cur]
+func (p *parser) peek() *token.Token {
+	return &p.tokens[p.cur]
 }
 
 // returns the n'th token starting from current without advancing
 // p.peekN(0) is equal to p.peek()
-func (p *parser) peekN(n int) token.Token {
+func (p *parser) peekN(n int) *token.Token {
 	if p.cur+n >= len(p.tokens) || p.cur+n < 0 {
-		return p.tokens[len(p.tokens)-1] // EOF
+		return &p.tokens[len(p.tokens)-1] // EOF
 	}
-	return p.tokens[p.cur+n]
+	return &p.tokens[p.cur+n]
 }
 
 // returns the token before peek()
-func (p *parser) previous() token.Token {
+func (p *parser) previous() *token.Token {
 	if p.cur < 1 {
-		return token.Token{Type: token.ILLEGAL}
+		return &token.Token{Type: token.ILLEGAL}
 	}
-	return p.tokens[p.cur-1]
+	return &p.tokens[p.cur-1]
 }
 
 // opposite of advance
@@ -2532,7 +2536,11 @@ func containsLiteral(tokens []token.Token, literal string) bool {
 }
 
 // check if two tokens are equal
-func tokenEqual(t1 token.Token, t2 token.Token) bool {
+func tokenEqual(t1 *token.Token, t2 *token.Token) bool {
+	if t1 == t2 {
+		return true
+	}
+
 	if t1.Type != t2.Type {
 		return false
 	}
@@ -2560,13 +2568,13 @@ func countElements[T any](elements []T, pred func(T) bool) (count int) {
 }
 
 // checks wether two slices are equal using the provided comparison function
-func slicesEqual[T any](s1 []T, s2 []T, equal func(T, T) bool) bool {
+func slicesEqual[T any](s1 []T, s2 []T, equal func(*T, *T) bool) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
 
 	for i := range s1 {
-		if !equal(s1[i], s2[i]) {
+		if !equal(&s1[i], &s2[i]) {
 			return false
 		}
 	}
