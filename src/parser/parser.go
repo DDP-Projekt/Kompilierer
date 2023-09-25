@@ -1934,6 +1934,17 @@ func (p *parser) funcCall() ast.Expression {
 		return nil // no alias -> no function call
 	}
 
+	type cachedArg struct {
+		Arg     ast.Expression
+		exprEnd int
+	}
+
+	type cachedArgKey struct {
+		cur         int
+		isReference bool
+	}
+
+	cached_args := map[cachedArgKey]*cachedArg{}
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
@@ -1960,50 +1971,61 @@ func (p *parser) funcCall() ast.Expression {
 					return nil, reported_errors
 				}
 
-				exprStart := p.cur
-				switch pType {
-				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
-					p.advance() // single-token argument
-				case token.NEGATE:
-					p.advance()
-					p.match(token.INT, token.FLOAT, token.IDENTIFIER)
-				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
-					p.advance()
-					numLparens := 1
-					for numLparens > 0 && !p.atEnd() {
-						switch p.advance().Type {
-						case token.LPAREN:
-							numLparens++
-						case token.RPAREN:
-							numLparens--
+				cached_arg_key := cachedArgKey{cur: p.cur, isReference: paramType.IsReference}
+				cached_arg, ok := cached_args[cached_arg_key]
+
+				if !ok { // if the argument was not already parsed
+					cached_arg = &cachedArg{}
+					exprStart := p.cur
+					switch pType {
+					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+						p.advance() // single-token argument
+					case token.NEGATE:
+						p.advance()
+						p.match(token.INT, token.FLOAT, token.IDENTIFIER)
+					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
+						p.advance()
+						numLparens := 1
+						for numLparens > 0 && !p.atEnd() {
+							switch p.advance().Type {
+							case token.LPAREN:
+								numLparens++
+							case token.RPAREN:
+								numLparens--
+							}
 						}
 					}
-				}
-				tokens := make([]token.Token, p.cur-exprStart, p.cur-exprStart+1)
-				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
-				// append the EOF needed for the parser
-				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
-				tokens = append(tokens, eof)
-				argParser := &parser{
-					tokens:       tokens,
-					errorHandler: error_collector,
-					module: &ast.Module{
-						FileName: p.module.FileName,
-					},
-					funcAliases: p.funcAliases,
-					resolver:    p.resolver,
-					typechecker: p.typechecker,
-				}
-				var arg ast.Expression
-				if paramType.IsReference {
-					if tokens[0].Type == token.LPAREN {
-						tokens = append(tokens[1:len(tokens)-2], eof)
-						argParser.tokens = tokens
+					cached_arg.exprEnd = p.cur
+
+					tokens := make([]token.Token, p.cur-exprStart, p.cur-exprStart+1)
+					copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
+					// append the EOF needed for the parser
+					eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
+					tokens = append(tokens, eof)
+					argParser := &parser{
+						tokens:       tokens,
+						errorHandler: error_collector,
+						module: &ast.Module{
+							FileName: p.module.FileName,
+						},
+						funcAliases: p.funcAliases,
+						resolver:    p.resolver,
+						typechecker: p.typechecker,
 					}
-					argParser.advance() // consume the identifier for assigneable() to work
-					arg = argParser.assigneable()
+
+					if paramType.IsReference {
+						if tokens[0].Type == token.LPAREN {
+							tokens = append(tokens[1:len(tokens)-2], eof)
+							argParser.tokens = tokens
+						}
+						argParser.advance() // consume the identifier for assigneable() to work
+						cached_arg.Arg = argParser.assigneable()
+					} else {
+						cached_arg.Arg = argParser.expression() // parse the argument
+					}
+					cached_args[cached_arg_key] = cached_arg
 				} else {
-					arg = argParser.expression() // parse the argument
+					p.cur = cached_arg.exprEnd // skip the already parsed argument
 				}
 
 				// check if the argument type matches the prameter type
@@ -2011,25 +2033,26 @@ func (p *parser) funcCall() ast.Expression {
 				// we are in the for loop below, so the types must match
 				// otherwise it doesn't matter
 				if typeSensitive {
-					typ := p.typechecker.EvaluateSilent(arg) // evaluate the argument
+					typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 
+					didMatch := true
 					if typ != paramType.Type {
-						arg = nil // arg and param types don't match
-					} else if ass, ok := arg.(*ast.Indexing);                     // string-indexings may not be passed as char-reference
+						didMatch = false
+					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);          // string-indexings may not be passed as char-reference
 					paramType.IsReference && paramType.Type == ddptypes.Char() && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
 						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
 						if lhs.Primitive == ddptypes.TEXT { // check if the lhs is a string
-							arg = nil
+							didMatch = false
 						}
 					}
 
-					if arg == nil {
+					if !didMatch {
 						return nil, reported_errors
 					}
 				}
 
-				args[argName] = arg
+				args[argName] = cached_arg.Arg
 				p.decrease() // to not skip a token
 			}
 			p.advance() // ignore non-argument tokens
