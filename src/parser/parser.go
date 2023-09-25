@@ -1877,13 +1877,24 @@ func (p *parser) grouping() ast.Expression {
 }
 
 func (p *parser) funcCall() ast.Expression {
+
 	start := p.cur // save start position to restore the state if no alias was recognized
 
-	start_indices := map[int]int{}
+	start_indices := make([]int, 0, 30) // used as a map[int]int
 	matchedAliases := p.funcAliases.Search(func(node_index int, tok *token.Token) (*token.Token, bool) {
-		if i, ok := start_indices[node_index]; ok {
-			p.cur = i
-		} else {
+		// the if statement below is a more efficient map[int]int implementation
+		// abusing the fact that node_index is incremental
+		if node_index < len(start_indices) {
+			if i := start_indices[node_index]; i == -1 {
+				start_indices[node_index] = p.cur
+			} else {
+				p.cur = i
+			}
+		} else { // node_index is not in range
+			n := node_index - len(start_indices) + 1
+			for i := 0; i < n; i++ {
+				start_indices = append(start_indices, -1)
+			}
 			start_indices[node_index] = p.cur
 		}
 
