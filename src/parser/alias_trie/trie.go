@@ -18,21 +18,23 @@ type trieNode[K, V any] struct {
 // K = *token.Token and V = *ast.FuncAlias
 type Trie[K, V any] struct {
 	root     *trieNode[K, V]
-	key_comp func(K, K) bool
+	key_eq   slicemap.CompFunc[K]
+	key_less slicemap.CompFunc[K]
 }
 
 // create a new trie
-func New[K, V any](key_comp func(K, K) bool) *Trie[K, V] {
+func New[K, V any](key_eq, key_less slicemap.CompFunc[K]) *Trie[K, V] {
 	var k K
 	var v V
 	return &Trie[K, V]{
 		root: &trieNode[K, V]{
-			children: slicemap.New[K, *trieNode[K, V]](key_comp),
+			children: slicemap.New[K, *trieNode[K, V]](key_eq, key_less),
 			key:      k,
 			value:    v,
 			hasValue: false,
 		},
-		key_comp: key_comp,
+		key_eq:   key_eq,
+		key_less: key_less,
 	}
 }
 
@@ -45,7 +47,7 @@ func (t *Trie[K, V]) Insert(key []K, value V) {
 			node = child
 		} else {
 			child := &trieNode[K, V]{
-				children: slicemap.New[K, *trieNode[K, V]](t.key_comp),
+				children: slicemap.New[K, *trieNode[K, V]](t.key_eq, t.key_less),
 				key:      k,
 				value:    v,
 				hasValue: false,
@@ -73,22 +75,18 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 	searchImpl = func(keys TrieKeyGen[K], node *trieNode[K, V]) {
 		node_index := i
 		i++
-		visitedKeys := slicemap.New[K, struct{}](t.key_comp)
-		for _, startKey := range node.children.Keys() {
-			k, ok := keys(node_index, startKey)
+		child_node_keys := node.children.Keys()
+		for i := range child_node_keys {
+			k, ok := keys(node_index, child_node_keys[i])
 			if !ok {
 				continue // or break?
-			} else if child, ok := node.children.Get(k); ok {
-
-				if _, ok := visitedKeys.Get(k); ok {
-					continue
+			}
+			if t.key_eq(k, child_node_keys[i]) {
+				child_node, _ := node.children.Get(child_node_keys[i])
+				if child_node.hasValue {
+					values = append(values, child_node.value)
 				}
-
-				visitedKeys.Set(k, struct{}{})
-				if child.hasValue {
-					values = append(values, child.value)
-				}
-				searchImpl(keys, child)
+				searchImpl(keys, child_node)
 			}
 		}
 	}

@@ -10,6 +10,8 @@ func TestSliceMap(t *testing.T) {
 	// create a new SliceMap
 	m := New[int, string](func(a, b int) bool {
 		return a == b
+	}, func(a, b int) bool {
+		return a < b
 	})
 	// set some values
 	m.Set(1, "one")

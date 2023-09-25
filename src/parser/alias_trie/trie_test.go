@@ -12,6 +12,9 @@ func TestTrie(t *testing.T) {
 		func(a, b int) bool {
 			return a == b
 		},
+		func(a, b int) bool {
+			return a < b
+		},
 	)
 	// insert some values
 	trie.Insert([]int{1, 2, 3}, "three")

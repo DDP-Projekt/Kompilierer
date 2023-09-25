@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -85,7 +84,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			PublicDecls: make(map[string]ast.Declaration),
 		},
 		predefinedModules: modules,
-		funcAliases:       at.New[*token.Token, *ast.FuncAlias](tokenEqual),
+		funcAliases:       at.New[*token.Token, *ast.FuncAlias](tokenEqual, tokenLess),
 		panicMode:         false,
 		errored:           false,
 		resolver:          &resolver.Resolver{},
@@ -1880,12 +1879,12 @@ func (p *parser) grouping() ast.Expression {
 func (p *parser) funcCall() ast.Expression {
 	start := p.cur // save start position to restore the state if no alias was recognized
 
-	start_indices := make([]int, 0, 20)
+	start_indices := map[int]int{}
 	matchedAliases := p.funcAliases.Search(func(node_index int, tok *token.Token) (*token.Token, bool) {
-		if node_index < len(start_indices) {
-			p.cur = start_indices[node_index]
+		if i, ok := start_indices[node_index]; ok {
+			p.cur = i
 		} else {
-			start_indices = append(start_indices, p.cur)
+			start_indices[node_index] = p.cur
 		}
 
 		if tok.Type == token.ALIAS_PARAMETER {
@@ -2518,8 +2517,37 @@ func tokenEqual(t1, t2 *token.Token) bool {
 	return true
 }
 
-func aliasEqual(a1, a2 *ast.FuncAlias) bool {
-	return a1.Func == a2.Func && reflect.DeepEqual(a1.Args, a2.Args) && slicesEqual(a1.Tokens, a2.Tokens, tokenEqual)
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// reports wether t1 < t2
+// by comparing their types, then their AliasInfo and then their literals
+func tokenLess(t1, t2 *token.Token) bool {
+	if t1.Type != t2.Type {
+		return t1.Type < t2.Type
+	}
+
+	switch t1.Type {
+	case token.ALIAS_PARAMETER:
+		b1, b2 := boolToInt(t1.AliasInfo.IsReference), boolToInt(t2.AliasInfo.IsReference)
+		if b1 != b2 {
+			return b1 < b2
+		}
+		b1, b2 = boolToInt(t1.AliasInfo.Type.IsList), boolToInt(t2.AliasInfo.Type.IsList)
+		if b1 != b2 {
+			return b1 < b2
+		}
+
+		return t1.AliasInfo.Type.Primitive < t2.AliasInfo.Type.Primitive
+	case token.IDENTIFIER, token.INT, token.FLOAT, token.CHAR, token.STRING:
+		return t1.Literal < t2.Literal
+	}
+
+	return false
 }
 
 // counts all elements in the slice which fulfill the provided predicate function
@@ -2530,21 +2558,6 @@ func countElements[T any](elements []T, pred func(T) bool) (count int) {
 		}
 	}
 	return count
-}
-
-// checks wether two slices are equal using the provided comparison function
-func slicesEqual[T any](s1 []T, s2 []T, equal func(*T, *T) bool) bool {
-	if len(s1) != len(s2) {
-		return false
-	}
-
-	for i := range s1 {
-		if !equal(&s1[i], &s2[i]) {
-			return false
-		}
-	}
-
-	return true
 }
 
 // applies fun to every element in slice

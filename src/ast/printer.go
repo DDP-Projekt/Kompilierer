@@ -63,7 +63,7 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 func (*printer) BaseVisitor() {}
 
 func (pr *printer) VisitBadDecl(decl *BadDecl) {
-	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", decl.Tok))
+	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", &decl.Tok))
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
 	msg := fmt.Sprintf("VarDecl[%s]", decl.Name())
@@ -88,7 +88,7 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 }
 
 func (pr *printer) VisitBadExpr(expr *BadExpr) {
-	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", expr.Tok))
+	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", &expr.Tok))
 }
 func (pr *printer) VisitIdent(expr *Ident) {
 	pr.parenthesizeNode(fmt.Sprintf("Ident[%s]", expr.Literal.Literal))
@@ -146,7 +146,7 @@ func (pr *printer) VisitFuncCall(expr *FuncCall) {
 }
 
 func (pr *printer) VisitBadStmt(stmt *BadStmt) {
-	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", stmt.Tok))
+	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", &stmt.Tok))
 }
 func (pr *printer) VisitDeclStmt(stmt *DeclStmt) {
 	pr.parenthesizeNode("DeclStmt", stmt.Decl)
