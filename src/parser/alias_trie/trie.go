@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	slicemap "github.com/DDP-Projekt/Kompilierer/src/parser/slice_map"
+	orderedmap "github.com/DDP-Projekt/Kompilierer/src/parser/ordered_map"
 )
 
 type trieNode[K, V any] struct {
-	children *slicemap.SliceMap[K, *trieNode[K, V]]
+	children *orderedmap.OrderedMap[K, *trieNode[K, V]]
 	key      K
 	hasValue bool
 	value    V
@@ -18,17 +18,17 @@ type trieNode[K, V any] struct {
 // K = *token.Token and V = *ast.FuncAlias
 type Trie[K, V any] struct {
 	root     *trieNode[K, V]
-	key_eq   slicemap.CompFunc[K]
-	key_less slicemap.CompFunc[K]
+	key_eq   orderedmap.CompFunc[K]
+	key_less orderedmap.CompFunc[K]
 }
 
 // create a new trie
-func New[K, V any](key_eq, key_less slicemap.CompFunc[K]) *Trie[K, V] {
+func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 	var k K
 	var v V
 	return &Trie[K, V]{
 		root: &trieNode[K, V]{
-			children: slicemap.New[K, *trieNode[K, V]](key_eq, key_less),
+			children: orderedmap.New[K, *trieNode[K, V]](key_eq, key_less),
 			key:      k,
 			value:    v,
 			hasValue: false,
@@ -47,7 +47,7 @@ func (t *Trie[K, V]) Insert(key []K, value V) {
 			node = child
 		} else {
 			child := &trieNode[K, V]{
-				children: slicemap.New[K, *trieNode[K, V]](t.key_eq, t.key_less),
+				children: orderedmap.New[K, *trieNode[K, V]](t.key_eq, t.key_less),
 				key:      k,
 				value:    v,
 				hasValue: false,

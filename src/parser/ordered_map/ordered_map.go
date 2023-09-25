@@ -2,18 +2,18 @@ package parser
 
 type CompFunc[K any] func(K, K) bool
 
-type SliceMap[K, V any] struct {
+type OrderedMap[K, V any] struct {
 	data []any
 	eq   CompFunc[K] // wether a is equal to b (a == b)
 	less CompFunc[K] // wether a is less than b
 }
 
-func New[K, V any](eq, less CompFunc[K]) *SliceMap[K, V] {
-	return &SliceMap[K, V]{make([]any, 0), eq, less}
+func New[K, V any](eq, less CompFunc[K]) *OrderedMap[K, V] {
+	return &OrderedMap[K, V]{make([]any, 0), eq, less}
 }
 
 // finds the given key using binary search and returns it's index and wether it exists
-func (m *SliceMap[K, V]) binarySearch(key K) (int, bool) {
+func (m *OrderedMap[K, V]) binarySearch(key K) (int, bool) {
 	low, high := 0, len(m.data)/2
 	for low < high {
 		mid := (low + high) / 2
@@ -28,7 +28,7 @@ func (m *SliceMap[K, V]) binarySearch(key K) (int, bool) {
 	return low, false
 }
 
-func (m *SliceMap[K, V]) Set(key K, value V) {
+func (m *OrderedMap[K, V]) Set(key K, value V) {
 	// insert at the right position to keep the slice sorted in ascending order
 	// without duplicate
 	i, ok := m.binarySearch(key)
@@ -45,7 +45,7 @@ func (m *SliceMap[K, V]) Set(key K, value V) {
 	}
 }
 
-func (m *SliceMap[K, V]) Get(key K) (V, bool) {
+func (m *OrderedMap[K, V]) Get(key K) (V, bool) {
 	// get the key using binary search
 	i, ok := m.binarySearch(key)
 	if ok {
@@ -55,7 +55,7 @@ func (m *SliceMap[K, V]) Get(key K) (V, bool) {
 	return v, false
 }
 
-func (m *SliceMap[K, V]) Delete(key K) {
+func (m *OrderedMap[K, V]) Delete(key K) {
 	// delete the key using binary search
 	i, ok := m.binarySearch(key)
 	if ok {
@@ -63,7 +63,7 @@ func (m *SliceMap[K, V]) Delete(key K) {
 	}
 }
 
-func (m *SliceMap[K, V]) Keys() []K {
+func (m *OrderedMap[K, V]) Keys() []K {
 	keys := make([]K, len(m.data)/2)
 	for i := 0; i < len(m.data); i += 2 {
 		keys[i/2] = m.data[i].(K)
@@ -71,7 +71,7 @@ func (m *SliceMap[K, V]) Keys() []K {
 	return keys
 }
 
-func (m *SliceMap[K, V]) Values() []V {
+func (m *OrderedMap[K, V]) Values() []V {
 	values := make([]V, len(m.data)/2)
 	for i := 0; i < len(m.data); i += 2 {
 		values[i/2] = m.data[i+1].(V)
@@ -80,7 +80,7 @@ func (m *SliceMap[K, V]) Values() []V {
 }
 
 // iterate over all Keys in the map until f returns false
-func (m *SliceMap[K, V]) IterateKeys(f func(K) bool) {
+func (m *OrderedMap[K, V]) IterateKeys(f func(K) bool) {
 	for i := 0; i < len(m.data); i += 2 {
 		if !f(m.data[i].(K)) {
 			return
@@ -88,7 +88,7 @@ func (m *SliceMap[K, V]) IterateKeys(f func(K) bool) {
 	}
 }
 
-func (m *SliceMap[K, V]) IterateValues(f func(V) bool) {
+func (m *OrderedMap[K, V]) IterateValues(f func(V) bool) {
 	for i := 1; i < len(m.data); i += 2 {
 		if !f(m.data[i].(V)) {
 			return
