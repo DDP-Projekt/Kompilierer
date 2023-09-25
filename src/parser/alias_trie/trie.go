@@ -75,20 +75,21 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 	searchImpl = func(keys TrieKeyGen[K], node *trieNode[K, V]) {
 		node_index := i
 		i++
-		child_node_keys := node.children.Keys()
-		for i := range child_node_keys {
-			k, ok := keys(node_index, child_node_keys[i])
+
+		node.children.IterateKeys(func(child_key K) bool {
+			k, ok := keys(node_index, child_key)
 			if !ok {
-				continue // or break?
+				return true // continue
 			}
-			if t.key_eq(k, child_node_keys[i]) {
-				child_node, _ := node.children.Get(child_node_keys[i])
+			if t.key_eq(k, child_key) {
+				child_node, _ := node.children.Get(child_key)
 				if child_node.hasValue {
 					values = append(values, child_node.value)
 				}
 				searchImpl(keys, child_node)
 			}
-		}
+			return true // continue
+		})
 	}
 
 	searchImpl(keys, t.root)

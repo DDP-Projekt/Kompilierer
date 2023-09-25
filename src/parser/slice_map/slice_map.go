@@ -78,3 +78,20 @@ func (m *SliceMap[K, V]) Values() []V {
 	}
 	return values
 }
+
+// iterate over all Keys in the map until f returns false
+func (m *SliceMap[K, V]) IterateKeys(f func(K) bool) {
+	for i := 0; i < len(m.data); i += 2 {
+		if !f(m.data[i].(K)) {
+			return
+		}
+	}
+}
+
+func (m *SliceMap[K, V]) IterateValues(f func(V) bool) {
+	for i := 1; i < len(m.data); i += 2 {
+		if !f(m.data[i].(V)) {
+			return
+		}
+	}
+}
