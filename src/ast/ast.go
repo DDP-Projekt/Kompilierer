@@ -381,7 +381,7 @@ func (expr *FuncCall) Token() token.Token      { return expr.Tok }
 func (expr *StructLiteral) Token() token.Token { return expr.Tok }
 
 func (expr *BadExpr) GetRange() token.Range { return expr.Err.Range }
-func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *Ident) GetRange() token.Range   { return token.NewRange(&expr.Literal, &expr.Literal) }
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }

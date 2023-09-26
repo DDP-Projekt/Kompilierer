@@ -256,9 +256,11 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	// add imported symbols
 	ast.IterateImportedDecls(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
-			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(stmt.FileName)))
+			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(&stmt.FileName)))
 		} else {
-			resolveDecl(decl)
+			if r.CurrentTable.InsertDecl(name, decl) {
+				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, tok.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, ast.TrimStringLit(&stmt.FileName)))
+			}
 		}
 		return true
 	})

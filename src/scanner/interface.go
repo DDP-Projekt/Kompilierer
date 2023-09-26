@@ -54,7 +54,7 @@ func Scan(options Options) ([]token.Token, error) {
 // scans the provided source as a function alias
 // expects the alias without the enclosing ""
 func ScanAlias(alias token.Token, errorHandler ddperror.Handler) ([]token.Token, error) {
-	if scan, err := New("Alias", []byte(ast.TrimStringLit(alias)), errorHandler, ModeAlias); err != nil {
+	if scan, err := New("Alias", []byte(ast.TrimStringLit(&alias)), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
 		scan.line, scan.column, scan.indent = alias.Line(), alias.Column(), alias.Indent

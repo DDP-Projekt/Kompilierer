@@ -12,7 +12,10 @@ func IsExternFunc(fun *FuncDecl) bool {
 }
 
 // trims the "" from the literal
-func TrimStringLit(lit token.Token) string {
+func TrimStringLit(lit *token.Token) string {
+	if lit == nil {
+		return ""
+	}
 	return strings.Trim(lit.Literal, "\"")
 }
 
