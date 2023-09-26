@@ -1877,24 +1877,30 @@ func (p *parser) grouping() ast.Expression {
 }
 
 func (p *parser) funcCall() ast.Expression {
-
 	start := p.cur // save start position to restore the state if no alias was recognized
 
-	start_indices := make([]int, 0, 30) // used as a map[int]int
+	// used as a map[int]int abusing the fact that node_index is incremental
+	// keys are the indices where start_indices[i] < start_indices[i+1]
+	// example order: 0, 1, 2, 5, 7, 9
+	start_indices := make([]int, 0, 30)
 	matchedAliases := p.funcAliases.Search(func(node_index int, tok *token.Token) (*token.Token, bool) {
 		// the if statement below is a more efficient map[int]int implementation
 		// abusing the fact that node_index is incremental
-		if node_index < len(start_indices) {
+		if node_index < len(start_indices) { // key is already in the map
+			// -1 is a placeholder for an unused keys
 			if i := start_indices[node_index]; i == -1 {
-				start_indices[node_index] = p.cur
+				start_indices[node_index] = p.cur // assign the value
 			} else {
-				p.cur = i
+				p.cur = i // the value is valid so use it
 			}
-		} else { // node_index is not in range
+		} else { // key is not in the map
+			// we need to insert n more keys
 			n := node_index - len(start_indices) + 1
+			// placeholder -1 in every key
 			for i := 0; i < n; i++ {
 				start_indices = append(start_indices, -1)
 			}
+			// assign the value to the new key
 			start_indices[node_index] = p.cur
 		}
 
@@ -1934,16 +1940,19 @@ func (p *parser) funcCall() ast.Expression {
 		return nil // no alias -> no function call
 	}
 
+	// a argument that was already parsed
 	type cachedArg struct {
-		Arg     ast.Expression
-		exprEnd int
+		Arg     ast.Expression // expression (might be an assignable)
+		exprEnd int            // where the expression was over (p.cur for the token after)
 	}
 
+	// a key for a cached argument
 	type cachedArgKey struct {
-		cur         int
-		isReference bool
+		cur         int  // the start pos of that argument
+		isReference bool // wether the argument was parsed with p.assignable() or p.expression()
 	}
 
+	// used for the algorithm below to parse each argument only once
 	cached_args := map[cachedArgKey]*cachedArg{}
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
@@ -1971,6 +1980,7 @@ func (p *parser) funcCall() ast.Expression {
 					return nil, reported_errors
 				}
 
+				// create the key for the argument
 				cached_arg_key := cachedArgKey{cur: p.cur, isReference: paramType.IsReference}
 				cached_arg, ok := cached_args[cached_arg_key]
 
@@ -2531,7 +2541,7 @@ func containsLiteral(tokens []token.Token, literal string) bool {
 	return false
 }
 
-// check if two tokens are equal
+// check if two tokens are equal for alias matching
 func tokenEqual(t1, t2 *token.Token) bool {
 	if t1 == t2 {
 		return true
@@ -2559,7 +2569,10 @@ func boolToInt(b bool) int {
 }
 
 // reports wether t1 < t2
-// by comparing their types, then their AliasInfo and then their literals
+// tokens are first sorted by their type
+// if the types are equal they are sorted by their AliasInfo or Literal
+// for AliasInfo: type < list < reference
+// for Identifiers: t1.Literal < t2.Literal
 func tokenLess(t1, t2 *token.Token) bool {
 	if t1.Type != t2.Type {
 		return t1.Type < t2.Type
@@ -2567,13 +2580,11 @@ func tokenLess(t1, t2 *token.Token) bool {
 
 	switch t1.Type {
 	case token.ALIAS_PARAMETER:
-		b1, b2 := boolToInt(t1.AliasInfo.IsReference), boolToInt(t2.AliasInfo.IsReference)
-		if b1 != b2 {
-			return b1 < b2
+		if t1.AliasInfo.IsReference != t2.AliasInfo.IsReference {
+			return boolToInt(t1.AliasInfo.IsReference) < boolToInt(t2.AliasInfo.IsReference)
 		}
-		b1, b2 = boolToInt(t1.AliasInfo.Type.IsList), boolToInt(t2.AliasInfo.Type.IsList)
-		if b1 != b2 {
-			return b1 < b2
+		if t1.AliasInfo.Type.IsList != t2.AliasInfo.Type.IsList {
+			return boolToInt(t1.AliasInfo.Type.IsList) < boolToInt(t2.AliasInfo.Type.IsList)
 		}
 
 		return t1.AliasInfo.Type.Primitive < t2.AliasInfo.Type.Primitive
@@ -2633,6 +2644,7 @@ func (p *parser) addAliases(aliases []ast.FuncAlias, errRange token.Range) {
 	for _, alias := range aliases {
 		// I fucking hate this thing
 		// thank god they finally fixed it in 1.22
+		// still leave it here just to be sure
 		alias := alias
 
 		if ok, fun, pTokens := p.aliasExists(alias.Tokens); ok {

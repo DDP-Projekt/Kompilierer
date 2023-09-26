@@ -7,22 +7,24 @@ import (
 	orderedmap "github.com/DDP-Projekt/Kompilierer/src/parser/ordered_map"
 )
 
+// a single node of the trie
 type trieNode[K, V any] struct {
-	children *orderedmap.OrderedMap[K, *trieNode[K, V]]
-	key      K
-	hasValue bool
-	value    V
+	children *orderedmap.OrderedMap[K, *trieNode[K, V]] // children of the node
+	key      K                                          // the key by which the node can be found in it's parent's children map
+	hasValue bool                                       // wether value is valid
+	value    V                                          // value of the node or the default value if hasValue is false
 }
 
 // though generic it is only meant to be used with
 // K = *token.Token and V = *ast.FuncAlias
 type Trie[K, V any] struct {
-	root     *trieNode[K, V]
-	key_eq   orderedmap.CompFunc[K]
-	key_less orderedmap.CompFunc[K]
+	root     *trieNode[K, V]        // root node of the trie (empty node)
+	key_eq   orderedmap.CompFunc[K] // used to check if two keys are equal
+	key_less orderedmap.CompFunc[K] // used to check if a key is less than another
 }
 
 // create a new trie
+// should only be used with K = *token.Token and V = *ast.FuncAlias
 func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 	var k K
 	var v V
@@ -61,8 +63,10 @@ func (t *Trie[K, V]) Insert(key []K, value V) {
 }
 
 // generate keys for the trie
-// it is given a unique index for the node visited
+// it is given a unique, incrementing index for the node visited
 // and the key of the possible child
+// should return false if there are no keys left on the path
+// should not be stateful or be able to revert to a previous state using the index
 type TrieKeyGen[K any] func(int, K) (K, bool)
 
 // finds all values that match the given keys
@@ -97,7 +101,7 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 }
 
 // strictly checks if the given keys are in the trie
-// returns either all the values for the key or nil
+// returns either the value for the key or nil
 func (t *Trie[K, V]) Contains(keys []K) (bool, V) {
 	var v V
 	node := t.root
@@ -116,7 +120,7 @@ func (t *Trie[K, V]) PrettyPrint(k_print func(K) string, v_print func(V) string)
 	t.prettyPrintImpl(t.root, 0, k_print, v_print)
 }
 
-// helper function for pretty printing the trie
+// recursive helper function for pretty printing the trie
 func (t *Trie[K, V]) prettyPrintImpl(node *trieNode[K, V], depth int, k_print func(K) string, v_print func(V) string) {
 	// print the node's key and value
 	fmt.Printf("%s%s", strings.Repeat("\t", depth), k_print(node.key))
