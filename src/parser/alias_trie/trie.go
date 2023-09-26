@@ -16,7 +16,7 @@ type trieNode[K, V any] struct {
 }
 
 // though generic it is only meant to be used with
-// K = *token.Token and V = *ast.FuncAlias
+// K = *token.Token and V = ast.Alias
 type Trie[K, V any] struct {
 	root     *trieNode[K, V]        // root node of the trie (empty node)
 	key_eq   orderedmap.CompFunc[K] // used to check if two keys are equal
@@ -24,7 +24,7 @@ type Trie[K, V any] struct {
 }
 
 // create a new trie
-// should only be used with K = *token.Token and V = *ast.FuncAlias
+// should only be used with K = *token.Token and V = ast.Alias
 func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 	var k K
 	var v V

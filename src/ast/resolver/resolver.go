@@ -258,9 +258,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 		if decl == nil {
 			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(&stmt.FileName)))
 		} else {
-			if r.CurrentTable.InsertDecl(name, decl) {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, tok.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, ast.TrimStringLit(&stmt.FileName)))
-			}
+			resolveDecl(decl)
 		}
 		return true
 	})
