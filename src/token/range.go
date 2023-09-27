@@ -45,7 +45,7 @@ func (r Range) String() string {
 
 // creates a new range from the first character of begin
 // to the last character of end
-func NewRange(begin, end Token) Range {
+func NewRange(begin, end *Token) Range {
 	return Range{
 		Start: begin.Range.Start,
 		End:   end.Range.End,
@@ -53,11 +53,11 @@ func NewRange(begin, end Token) Range {
 }
 
 // Get the starting position of a Token
-func NewStartPos(tok Token) Position {
+func NewStartPos(tok *Token) Position {
 	return tok.Range.Start
 }
 
 // Get the ending position of a Token
-func NewEndPos(tok Token) Position {
+func NewEndPos(tok *Token) Position {
 	return tok.Range.End
 }
