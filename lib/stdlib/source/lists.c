@@ -131,3 +131,79 @@ void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddp
 
 	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
+
+// the index is 0-based (like in C, not like in DDP)
+void efficient_list_insert(generic_list_ref list, ddpint index, generic_ref elem, ddpint elem_size) {
+	if (index < 0 || index > list->len) {
+		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)", index, list->len);
+	}
+
+	grow_if_needed(list, elem_size);
+	memmove(&((uint8_t*)list->arr)[(index + 1) * elem_size], &((uint8_t*)list->arr)[index * elem_size], (list->len - index) * elem_size);
+	memcpy(&((uint8_t*)list->arr)[index * elem_size], elem, elem_size);
+	list->len++;
+}
+
+void efficient_list_insert_int(ddpintlistref list, ddpint index, ddpintref elem, ddpint elem_size) {
+	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
+}
+
+void efficient_list_insert_float(ddpfloatlistref list, ddpint index, ddpfloatref elem, ddpint elem_size) {
+	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
+}
+
+void efficient_list_insert_bool(ddpboollistref list, ddpint index, ddpboolref elem, ddpint elem_size) {
+	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
+}
+
+void efficient_list_insert_char(ddpcharlistref list, ddpint index, ddpcharref elem, ddpint elem_size) {
+	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
+}
+
+void efficient_list_insert_string(ddpstringlistref list, ddpint index, ddpstringref elem, ddpint elem_size) {
+	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
+	elem->cap = 0;
+	elem->str = NULL;
+}
+
+// the index is 0-based (like in C, not like in DDP)
+void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_list_ref other, ddpint elem_size) {
+	if (index < 0 || index > list->len) {
+		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)", index, list->len);
+	}
+
+	ddpint new_len = list->len + other->len;
+	if (new_len > list->cap) {
+		ddpint old_cap = list->cap;
+		list->cap = GROW_CAPACITY(new_len);
+		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
+	}
+
+	memmove(&((uint8_t*)list->arr)[(index + other->len) * elem_size], &((uint8_t*)list->arr)[index * elem_size], (list->len - index) * elem_size);
+	memcpy(&((uint8_t*)list->arr)[index * elem_size], other->arr, other->len * elem_size);
+	list->len = new_len;
+}
+
+void efficient_list_insert_range_int(ddpintlistref list, ddpint index, ddpintlistref other, ddpint elem_size) {
+	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+}
+
+void efficient_list_insert_range_float(ddpfloatlistref list, ddpint index, ddpfloatlistref other, ddpint elem_size) {
+	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+}
+
+void efficient_list_insert_range_bool(ddpboollistref list, ddpint index, ddpboollistref other, ddpint elem_size) {
+	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+}
+
+void efficient_list_insert_range_char(ddpcharlistref list, ddpint index, ddpcharlistref other, ddpint elem_size) {
+	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+}
+
+void efficient_list_insert_range_string(ddpstringlistref list, ddpint index, ddpstringlistref other, ddpint elem_size) {
+	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+	for (ddpint i = 0; i < other->len; i++) {
+		other->arr[i].cap = 0;
+		other->arr[i].str = NULL;
+	}
+}
