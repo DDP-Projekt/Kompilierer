@@ -60,6 +60,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpcharlist
 		case ddptypes.TEXT:
 			return c.ddpstringlist
+		default:
+			return c.structTypes[listType.Underlying.String()].listType
 		}
 	} else {
 		switch ddpType {

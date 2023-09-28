@@ -1100,15 +1100,8 @@ func (p *parser) compoundAssignement() ast.Statement {
 		operator = ast.BIN_DIV
 	}
 
-	var operand ast.Expression
-	var varName ast.Assigneable
-	p.consume(token.IDENTIFIER)
-	if p.match(token.LPAREN) { // indexings may be enclosed in parens to prevent the 'um' from being interpretetd as bitshift
-		varName = p.assigneable()
-		p.consume(token.RPAREN)
-	} else {
-		varName = p.assigneable()
-	}
+	p.consumeAny(token.IDENTIFIER, token.LPAREN)
+	varName := p.assigneable()
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
@@ -1137,7 +1130,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.UM)
 	}
 
-	operand = p.expression()
+	operand := p.expression()
 
 	if tok.Type == token.VERSCHIEBE {
 		p.consume(token.BIT, token.NACH)
@@ -1206,7 +1199,8 @@ func (p *parser) assignLiteral() ast.Statement {
 func (p *parser) assignNoLiteral() ast.Statement {
 	speichere := p.previous() // Speichere token
 	expr := p.expression()
-	p.consume(token.IN, token.IDENTIFIER)
+	p.consume(token.IN)
+	p.consumeAny(token.IDENTIFIER, token.LPAREN)
 	name := p.assigneable() // name of the variable is the just consumed identifier
 	return p.finishStatement(
 		&ast.AssignStmt{
@@ -2025,6 +2019,23 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
+	// indexing
+	for p.match(token.AN) {
+		p.consume(token.DER, token.STELLE)
+		tok := p.previous()
+		rhs := p.primary(nil)
+		lhs = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *tok,
+			Lhs:      lhs,
+			Operator: ast.BIN_INDEX,
+			Rhs:      rhs,
+		}
+	}
+
 	// TODO: check this with precedence
 	// 		 remember to also check p.assigneable()
 	// 		 also check the order of the following 4 operators
@@ -2047,15 +2058,39 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Operator: ast.TER_SLICE,
 			}
 		} else {
-			lhs = &ast.BinaryExpr{
-				Range: token.Range{
-					Start: operand.GetRange().Start,
-					End:   mid.GetRange().End,
-				},
-				Tok:      *tok,
-				Lhs:      operand,
-				Rhs:      mid,
-				Operator: ast.BIN_FIELD_ACCESS,
+			// disgusting hack around indexing vs field_access precedence
+			// in combination with von ... bis
+			if indexing, isBin := mid.(*ast.BinaryExpr); isBin && indexing.Operator == ast.BIN_INDEX {
+				lhs = &ast.BinaryExpr{
+					Range: token.Range{
+						Start: lhs.GetRange().Start,
+						End:   indexing.GetRange().End,
+					},
+					Tok: indexing.Tok,
+					Lhs: &ast.BinaryExpr{
+						Range: token.Range{
+							Start: operand.GetRange().Start,
+							End:   mid.GetRange().End,
+						},
+						Tok:      *tok,
+						Lhs:      operand,
+						Operator: ast.BIN_FIELD_ACCESS,
+						Rhs:      indexing.Lhs,
+					},
+					Operator: ast.BIN_INDEX,
+					Rhs:      indexing.Rhs,
+				}
+			} else {
+				lhs = &ast.BinaryExpr{
+					Range: token.Range{
+						Start: operand.GetRange().Start,
+						End:   mid.GetRange().End,
+					},
+					Tok:      *tok,
+					Lhs:      operand,
+					Operator: ast.BIN_FIELD_ACCESS,
+					Rhs:      mid,
+				}
 			}
 		}
 	}
@@ -2073,56 +2108,61 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
-	// indexing
-	for p.match(token.AN) {
-		p.consume(token.DER, token.STELLE)
-		tok := p.previous()
-		rhs := p.primary(nil)
-		lhs = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: lhs.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      lhs,
-			Operator: ast.BIN_INDEX,
-			Rhs:      rhs,
-		}
-	}
-
 	return lhs
 }
 
-// either ast.Ident or ast.Indexing
-// p.previous() must be of Type token.IDENTIFIER
+// either ast.Ident, ast.Indexing or ast.FieldAccess
+// p.previous() must be of Type token.IDENTIFIER or token.LPAREN
 // TODO: fix precedence with braces
 func (p *parser) assigneable() ast.Assigneable {
-	ident := &ast.Ident{
-		Literal: *p.previous(),
-	}
-	var ass ast.Assigneable = ident
+	var assigneable_impl func(bool) ast.Assigneable
+	assigneable_impl = func(isInFieldAcess bool) ast.Assigneable {
+		isParenthesized := p.previous().Type == token.LPAREN
+		if isParenthesized {
+			p.consume(token.IDENTIFIER)
+		}
+		ident := &ast.Ident{
+			Literal: *p.previous(),
+		}
+		var ass ast.Assigneable = ident
 
-	for p.match(token.VON) {
-		p.consume(token.IDENTIFIER)
-		rhs := p.assigneable()
-		ass = &ast.FieldAccess{
-			Rhs:   rhs,
-			Field: ident,
+		for p.match(token.VON) {
+			if p.match(token.IDENTIFIER) {
+				rhs := assigneable_impl(true)
+				ass = &ast.FieldAccess{
+					Rhs:   rhs,
+					Field: ident,
+				}
+			} else {
+				p.consume(token.LPAREN)
+				rhs := assigneable_impl(false)
+				ass = &ast.FieldAccess{
+					Rhs:   rhs,
+					Field: ident,
+				}
+			}
 		}
-	}
 
-	for p.match(token.AN) {
-		p.consume(token.DER, token.STELLE)
-		index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
-		ass = &ast.Indexing{
-			Lhs:   ass,
-			Index: index,
+		if !isInFieldAcess {
+			for p.match(token.AN) {
+				p.consume(token.DER, token.STELLE)
+				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
+				ass = &ast.Indexing{
+					Lhs:   ass,
+					Index: index,
+				}
+				if !p.match(token.COMMA) {
+					break
+				}
+			}
 		}
-		if !p.match(token.COMMA) {
-			break
+
+		if isParenthesized {
+			p.consume(token.RPAREN)
 		}
+		return ass
 	}
-	return ass
+	return assigneable_impl(false)
 }
 
 func (p *parser) grouping() ast.Expression {
@@ -2523,6 +2563,9 @@ func (p *parser) parseType() ddptypes.Type {
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
 		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+			if p.match(token.LISTE) {
+				return ddptypes.ListType{Underlying: Type}
+			}
 			return Type
 		}
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
@@ -2557,7 +2600,7 @@ func (p *parser) parseListType() ddptypes.Type {
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
 		if Type, exists := p.typeNames[p.peekN(-2).Literal]; exists {
-			return Type
+			return ddptypes.ListType{Underlying: Type}
 		}
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peekN(-2).Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 	}

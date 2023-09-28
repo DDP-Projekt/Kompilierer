@@ -43,7 +43,7 @@ Speichere 42 in x von (vektoren an der Stelle 3).
 Schreibe (x von (vektoren an der Stelle 3)) auf eine Zeile.
 
 Wir nennen die Kombination aus
-	der Vektoren Liste vektoren mit Standardwert eine Leere Vektor2 Liste,
+	der Vektor2 Liste vektoren mit Standardwert eine Leere Vektor2 Liste,
 eine VektorenListe, und erstellen sie so:
 	"Leere VektorenListe" oder
 	"die Leere VektorenListe" oder [0 parameters]
