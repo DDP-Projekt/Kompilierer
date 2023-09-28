@@ -630,6 +630,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 	for _, field := range structType.Fields {
 		if field.Name == Lhs.Literal.Literal {
 			fieldType = field.Type
+			break
 		}
 	}
 
@@ -644,13 +645,16 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 	}
 
 	// if the type was imported, check for public/private fields
-	if structDecl := t.CurrentTable.Declarations[structType.Name].(*ast.StructDecl); structDecl.Mod != t.Module {
-		for _, field := range structDecl.Fields {
-			if field.Name() == Lhs.Literal.Literal {
-				if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
-					t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+	if structDecl, exists, _ := t.CurrentTable.LookupDecl(structType.Name); exists {
+		structDecl := structDecl.(*ast.StructDecl)
+		if structDecl.Mod != t.Module {
+			for _, field := range structDecl.Fields {
+				if field.Name() == Lhs.Literal.Literal {
+					if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
+						t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+					}
+					break
 				}
-				break
 			}
 		}
 	}
