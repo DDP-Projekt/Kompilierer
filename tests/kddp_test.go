@@ -18,12 +18,16 @@ import (
 var test_dirs_flag = flag.String("test_dirs", "", "")
 var test_dirs []string
 var timeout = 10
+var diff_cmd = ""
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	test_dirs = strings.Split(*test_dirs_flag, " ")
 	if *test_dirs_flag == "" {
 		test_dirs = []string{}
+	}
+	if cmd, err := exec.LookPath("diff"); err == nil {
+		diff_cmd = cmd
 	}
 	os.Exit(m.Run())
 }
@@ -169,9 +173,20 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		} else {
 			// error if 'out' was not the expected output
 			if out, expected := string(out), string(expected); out != expected {
+				diff, err := get_diff(filepath.Join(path, "expected.txt"), out)
+				if err != nil {
+					t.Errorf("Error getting diff: %s", err)
+				}
 				t.Errorf("Test did not yield the expected output\n"+
 					"\x1b[1;32mExpected:\x1b[0m\n%s\n"+
-					"\x1b[1;31mGot:\x1b[0m\n%s", expected, out)
+					"\x1b[1;31mGot:\x1b[0m\n%s\n"+
+					"\x1b[1;31mDiff:\x1b[0m\n%s", expected, out, diff)
+				if err := dump_file(filepath.Join(path, "got.txt"), out); err != nil {
+					t.Errorf("Error dumping output: %s", err)
+				}
+				if err := dump_file(filepath.Join(path, "diff.txt"), diff); err != nil {
+					t.Errorf("Error dumping diff: %s", err)
+				}
 				return
 			}
 		}
@@ -184,4 +199,21 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 // returns path with the specified extension
 func changeExtension(path, ext string) string {
 	return path[:len(path)-len(filepath.Ext(path))] + ext
+}
+
+func dump_file(path, value string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(value)
+	return err
+}
+
+func get_diff(expected_path, got string) (string, error) {
+	cmd := exec.Command(diff_cmd, "-", expected_path)
+	cmd.Stdin = strings.NewReader(got)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
