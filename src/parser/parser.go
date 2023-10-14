@@ -572,7 +572,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten und darf nicht nur aus Parametern bestehen")
 			}
 		}
 	}
@@ -659,9 +659,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 }
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
+// and that the alias does not only consist of parameters (which would lead to infinite loops etc.)
 func validateAlias(alias []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) bool {
-	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
-	if countElements(alias, isAliasExpr) != len(paramNames) {                          // validate that the alias contains as many parameters as the function
+	isAliasExpr := func(t token.Token) bool { return t.Type == token.ALIAS_PARAMETER }                             // helper to check for parameters
+	if numParams := countElements(alias, isAliasExpr); numParams != len(paramNames) || numParams == len(alias)-1 { // validate that the alias contains as many parameters as the function
 		return false
 	}
 	nameSet := map[string]ddptypes.ParameterType{} // set that holds the parameter names contained in the alias and their corresponding type
@@ -723,7 +724,7 @@ func (p *parser) aliasDecl() ast.Statement {
 			pTokens = toks
 		}
 	} else {
-		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten und darf nicht nur aus Parametern bestehen")
 	}
 
 	p.consume(token.DOT)
