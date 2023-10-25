@@ -83,6 +83,9 @@ func (h *helperVisitor) VisitStructDecl(decl *StructDecl) {
 	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
 		vis.VisitStructDecl(decl)
 	}
+	for _, field := range decl.Fields {
+		h.visit(field)
+	}
 }
 
 // if a BadExpr exists the AST is faulty
