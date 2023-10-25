@@ -18,6 +18,8 @@ var (
 	Bin string
 	// path to the DDP/lib dir (contains ddpstdlib.a and ddpruntime.a and probably their sources)
 	Lib string
+	// path to the main.o file which contains the main function
+	Main_O string
 	// path to the ddp_list_types_defs.ll file which contains the textual llvm ir definitions of the inbuilt ddp list types
 	DDP_List_Types_Defs_LL string
 	// path to the ddp_list_types_defs.ll file which is an object file containing the definitions of the inbuilt ddp list types
@@ -42,6 +44,7 @@ func init() {
 	Duden = filepath.Join(InstallDir, "Duden")
 	Bin = filepath.Join(InstallDir, "bin")
 	Lib = filepath.Join(InstallDir, "lib")
+	Main_O = filepath.Join(Lib, "main.o")
 	DDP_List_Types_Defs_LL = filepath.Join(Lib, LIST_DEFS_NAME+".ll")
 	DDP_List_Types_Defs_O = filepath.Join(Lib, LIST_DEFS_NAME+".o")
 	Mingw64 = filepath.Join(InstallDir, "mingw64")

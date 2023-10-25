@@ -18,7 +18,7 @@ Die Funktion SymbolAktualisieren gibt nichts zurück, macht:
 	Speichere symbole an der Stelle symbolIndex in dasAktuelleSymbol.
 Und kann so benutzt werden:
 	"gehe ein Symbol weiter",
-	"Gehe ein Symbol weiter",
+	"Gehe ein Symbol weiter"
 
 Die Funktion OperatorAuswerten gibt nichts zurück, macht:
 	Die Zahl rechterOperand ist das oberste Element vom Keller entfernt als Zahl.

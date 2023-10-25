@@ -15,7 +15,7 @@ Wer LLVM auf Linux trotzdem selber bauen möchte, kann zum *LLVM bauen* Teil spr
 Um das Makefile auf Windows auszuführen müssen folgende Programme installiert und im PATH sein:
 
 - [Go](https://go.dev/dl/) (mindestens Version 1.18)
-- [mingw64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z/download) (Version 8.1.0 wurde getestet und funktioniert, andere Versionen werden vielleicht nicht funktionieren)
+- [mingw64](https://winlibs.com/) (Version 12.2.0 mit der msvcrt runtime wurde getestet und funktioniert, andere Versionen werden vielleicht nicht funktionieren)
 - make (kann man mit chocolatey bekommen oder durch mingw32-make, was mit mingw64 dazu kommt)
 - [git](https://git-scm.com/download/win) (git-bash wird benutzt um die Makefiles auszuführen)
 

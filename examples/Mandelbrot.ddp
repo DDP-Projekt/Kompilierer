@@ -25,22 +25,11 @@
 
 ]
 
+Binde "Duden/Mathe" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
-
-[für den Alias]
-Die Funktion Kommazahl_Quadrat mit dem Parameter k vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
-    Gib k mal k zurück.
-Und kann so benutzt werden:
-    "<k> quadriert"
-
-[für den Alias]
-Die Funktion Quadriere_Kommazahl mit dem Parameter k vom Typ Kommazahlen Referenz, gibt nichts zurück, macht:
-    Vervielfache k um k.
-Und kann so benutzt werden:
-    "Quadriere <k>"
 
 [
     quadrat einer komplexen Zahl mit 3 Produkten
@@ -83,7 +72,7 @@ Die Funktion finde_Anzahl_iterationen mit den Parametern c_r und c_i vom Typ Kom
     Die Kommazahl f_r ist c_r.
     Die Kommazahl f_i ist c_i.
 
-    Solange f_r quadriert plus f_i quadriert kleiner als, oder 4,0 ist und iterationen kleiner als Max_Iterationen ist, mache:
+    Solange f_r zum quadrat plus f_i zum quadrat kleiner als, oder 4,0 ist und iterationen kleiner als Max_Iterationen ist, mache:
         Quadriere f_r i f_i.
         [Komplexe addition]
         Erhöhe f_r um c_r.

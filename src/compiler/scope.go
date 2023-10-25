@@ -13,9 +13,9 @@ type varwrapper struct {
 
 // wraps local variables of a scope + the enclosing scope
 type scope struct {
-	enclosing      *scope                // enclosing scope, nil if it is the global scope
-	variables      map[string]varwrapper // variables in this scope
-	non_primitives []varwrapper          // in case of scope-nested returns, these have to be freed
+	enclosing   *scope                // enclosing scope, nil if it is the global scope
+	variables   map[string]varwrapper // variables in this scope
+	temporaries []varwrapper          // intermediate values that need to be freed when the scope ends
 }
 
 // create a new scope in the enclosing scope
@@ -46,7 +46,22 @@ func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef boo
 	return val
 }
 
-func (scope *scope) addNonPrimitive(val value.Value, typ ddpIrType) value.Value {
-	scope.non_primitives = append(scope.non_primitives, varwrapper{val: val, typ: typ, isRef: false})
-	return val
+func (scope *scope) addTemporary(val value.Value, typ ddpIrType) (value.Value, ddpIrType) {
+	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false})
+	return val, typ
+}
+
+// removes the given value from scope.temporaries giving ownership to the caller
+// who now has to make sure it is freed
+// returns the value
+func (scope *scope) claimTemporary(val value.Value) value.Value {
+	// loop backwards, because we mostlikely claim new values more frequently
+	for i := len(scope.temporaries) - 1; i >= 0; i-- {
+		// remove the found value and return
+		if scope.temporaries[i].val == val {
+			scope.temporaries = append(scope.temporaries[0:i], scope.temporaries[i+1:]...)
+			return val
+		}
+	}
+	panic("attempted Value claim not found in scope.temporaries")
 }

@@ -28,6 +28,9 @@ void ddp_free_string(ddpstring* str) {
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring* ret, ddpstring* str) {
 	DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
+	if (ret == str) {
+		return;
+	}
 	char* cpy = ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap); // copy the chars
 	// set the fields of the copy

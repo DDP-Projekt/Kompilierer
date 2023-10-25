@@ -488,8 +488,16 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) {
 
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar {
+		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && decl.(*ast.VarDecl).Type != rhs {
+			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
+				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
+				rhs,
+				decl.(*ast.VarDecl).Type,
+			)
+		} else if exists && isVar {
 			lhs = decl.(*ast.VarDecl).Type
+		} else {
+			lhs = ddptypes.VoidType{}
 		}
 	case *ast.Indexing:
 		lhs = t.Evaluate(assign)
@@ -548,16 +556,22 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) {
 }
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) {
 	t.visit(stmt.Initializer)
-	if toType := t.Evaluate(stmt.To); toType != ddptypes.ZAHL {
+	iter_type := stmt.Initializer.Type
+	if !ddptypes.IsNumeric(iter_type) {
+		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
+	}
+	if toType := t.Evaluate(stmt.To); toType != iter_type {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
-			"Der Endwert in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
+			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
+			iter_type,
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); stepType != ddptypes.ZAHL {
+		if stepType := t.Evaluate(stmt.StepSize); stepType != iter_type {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
-				"Die Schrittgröße in einer Zählenden-Schleife muss eine Zahl sein, aber war %s",
+				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
+				iter_type,
 				stepType,
 			)
 		}
@@ -616,6 +630,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 	for _, field := range structType.Fields {
 		if field.Name == Lhs.Literal.Literal {
 			fieldType = field.Type
+			break
 		}
 	}
 
@@ -630,13 +645,16 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 	}
 
 	// if the type was imported, check for public/private fields
-	if structDecl := t.CurrentTable.Declarations[structType.Name].(*ast.StructDecl); structDecl.Mod != t.Module {
-		for _, field := range structDecl.Fields {
-			if field.Name() == Lhs.Literal.Literal {
-				if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
-					t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+	if structDecl, exists, _ := t.CurrentTable.LookupDecl(structType.Name); exists {
+		structDecl := structDecl.(*ast.StructDecl)
+		if structDecl.Mod != t.Module {
+			for _, field := range structDecl.Fields {
+				if field.Name() == Lhs.Literal.Literal {
+					if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
+						t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+					}
+					break
 				}
-				break
 			}
 		}
 	}

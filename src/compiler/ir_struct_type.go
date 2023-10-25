@@ -21,6 +21,7 @@ type ddpIrStructType struct {
 	freeIrFun     *ir.Func // the free ir func
 	deepCopyIrFun *ir.Func // the deepCopy ir func
 	equalsIrFun   *ir.Func // the equals ir func
+	listType      *ddpIrListType
 }
 
 var _ ddpIrType = (*ddpIrStructType)(nil)
@@ -72,6 +73,8 @@ func (c *compiler) defineStructType(name string, fields []ddptypes.StructField, 
 	structType.freeIrFun = c.createStructFree(structType, declarationOnly)
 	structType.deepCopyIrFun = c.createStructDeepCopy(structType, declarationOnly)
 	structType.equalsIrFun = c.createStructEquals(structType, declarationOnly)
+
+	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
 	return structType
 }
 

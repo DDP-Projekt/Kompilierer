@@ -15,22 +15,38 @@ Und kann so benutzt werden:
 	"der maximale Wert einer Zahl"
 
 [
-	Gibt 4,9406564584124654 * 10^-323,6 zurück.
-	ACHTUNG: nicht der echte minimale Wert wegen Rundungsfehler
+	Gibt -1,79769313486231 * 10^308 zurück.
 ]
 Die öffentliche Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
-	Gib 4,9406564584124654 mal 10 hoch -323,6[4] zurück.
+	Gib -1,7976931348623158 mal 10 hoch 308 zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Kommazahl"
 
 [
 	Gibt 1,79769313486231 * 10^308 zurück.
-	ACHTUNG: nicht der echte maximale Wert wegen Rundungsfehler
 ]
 Die öffentliche Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
-	Gib 1,79769313486231[57] mal 10 hoch 308 zurück.
+	Gib 1,7976931348623158 mal 10 hoch 308 zurück.
 Und kann so benutzt werden:
 	"der maximale Wert einer Kommazahl"
+
+[
+	Gibt 2.2250738585072014 * 10^-308 zurück.
+	Der Wert der am nächsten zu +0 ist.
+]
+Die Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
+	Gib 2,2250738585072014 mal 10 hoch -308 zurück.
+Und kann so benutzt werden:
+	"der kleinste positive Wert einer Kommazahl"
+
+[
+	Gibt -2,2250738585072014 * 10^-308 zurück.
+	Der Wert der am nächsten zu -0 ist.
+]
+Die Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
+	Gib -2,2250738585072014 mal 10 hoch -308 zurück.
+Und kann so benutzt werden:
+	"der kleinste negative Wert einer Kommazahl"
 
 [
 	Gibt Unendlich (1 durch 0) zurück.

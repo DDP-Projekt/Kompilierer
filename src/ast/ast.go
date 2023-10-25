@@ -55,29 +55,29 @@ type (
 	}
 )
 
-func (alias FuncAlias) GetTokens() []token.Token {
+func (alias *FuncAlias) GetTokens() []token.Token {
 	return alias.Tokens
 }
-func (alias FuncAlias) GetOriginal() token.Token {
+func (alias *FuncAlias) GetOriginal() token.Token {
 	return alias.Original
 }
-func (alias FuncAlias) Decl() Declaration {
+func (alias *FuncAlias) Decl() Declaration {
 	return alias.Func
 }
-func (alias FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
+func (alias *FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
 	return alias.Args
 }
 
-func (alias StructAlias) GetTokens() []token.Token {
+func (alias *StructAlias) GetTokens() []token.Token {
 	return alias.Tokens
 }
-func (alias StructAlias) GetOriginal() token.Token {
+func (alias *StructAlias) GetOriginal() token.Token {
 	return alias.Original
 }
-func (alias StructAlias) Decl() Declaration {
+func (alias *StructAlias) Decl() Declaration {
 	return alias.Struct
 }
-func (alias StructAlias) GetArgs() map[string]ddptypes.ParameterType {
+func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
 	paramTypes := map[string]ddptypes.ParameterType{}
 	for name, arg := range alias.Args {
 		paramTypes[name] = ddptypes.ParameterType{
@@ -157,7 +157,7 @@ type (
 		Type          ddptypes.Type            // return Type, Zahl Kommazahl nichts ...
 		Body          *BlockStmt               // nil for extern functions
 		ExternFile    token.Token              // string literal with filepath (only pesent if Body is nil)
-		Aliases       []FuncAlias
+		Aliases       []*FuncAlias
 	}
 
 	StructDecl struct {
@@ -171,7 +171,7 @@ type (
 		// only contains *VarDecl and *BadDecl s
 		Fields  []Declaration
 		Type    *ddptypes.StructType // the type resulting from this decl
-		Aliases []StructAlias        // the constructors of the struct
+		Aliases []*StructAlias       // the constructors of the struct
 	}
 )
 
@@ -387,7 +387,7 @@ func (expr *FuncCall) Token() token.Token      { return expr.Tok }
 func (expr *StructLiteral) Token() token.Token { return expr.Tok }
 
 func (expr *BadExpr) GetRange() token.Range { return expr.Err.Range }
-func (expr *Ident) GetRange() token.Range   { return token.NewRange(expr.Literal, expr.Literal) }
+func (expr *Ident) GetRange() token.Range   { return token.NewRange(&expr.Literal, &expr.Literal) }
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }

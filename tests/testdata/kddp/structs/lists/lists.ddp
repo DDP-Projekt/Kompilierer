@@ -1,0 +1,64 @@
+Binde "Duden/Ausgabe" ein.
+
+[simple struct declaration with all alias parameter combinations]
+Wir nennen die Kombination aus
+	der Zahl x mit Standardwert 0, [private field]
+	der öffentlichen Zahl y mit Standardwert 0, [public field]
+einen Vektor2, und erstellen sie so:
+	"Nullvektor2" oder
+	"der Nullvektor2" oder [0 parameters]
+	"ein Vektor2 mit x gleich <x>" oder [1 parameter]
+	"ein Vektor2 mit x gleich <x> und y gleich <y>" [all parameters]
+
+Die Funktion Schreibe_Vektor mit dem Parameter vek vom Typ Vektor2, gibt nichts zurück, macht:
+	Schreibe "x: ".
+	Schreibe (x von vek).
+	Schreibe " y: ".
+	Schreibe (y von vek).
+Und kann so benutzt werden:
+	"Schreibe <vek>" oder
+	"Schreibe den Vektor2 <vek>"
+
+Die Vektor2 Liste vektoren ist eine Liste, die aus 
+	der Nullvektor2, 
+	ein Vektor2 mit x gleich 5, 
+	ein Vektor2 mit x gleich 5 und y gleich 6, 
+	der Nullvektor2 
+besteht.
+
+Für jede Zahl i von 1 bis die Länge von vektoren, mache:
+	Schreibe (vektoren an der Stelle i).
+	Schreibe ", ".
+Schreibe '\n'.
+
+Für jeden Vektor2 vek in vektoren, mache:
+	Schreibe vek.
+	Schreibe ", ".
+Schreibe '\n'.
+
+Schreibe (x von (vektoren an der Stelle 1)) auf eine Zeile.
+Schreibe (y von (vektoren an der Stelle 3)) auf eine Zeile.
+
+Speichere 42 in x von (vektoren an der Stelle 3).
+Schreibe (x von (vektoren an der Stelle 3)) auf eine Zeile.
+
+Wir nennen die Kombination aus
+	der Vektor2 Liste vektoren mit Standardwert eine Leere Vektor2 Liste,
+eine VektorenListe, und erstellen sie so:
+	"Leere VektorenListe" oder
+	"die Leere VektorenListe" oder [0 parameters]
+	"eine VektorenListe mit vektoren gleich <vektoren>" [1 parameter]
+
+Die VektorenListe vek_liste ist eine VektorenListe mit vektoren gleich vektoren.
+
+[Operator precedence]
+Schreibe (vektoren von vek_liste an der Stelle 3).
+Schreibe '\n'.
+Schreibe (x von (vektoren von vek_liste an der Stelle 3)) auf eine Zeile.
+
+Speichere der Nullvektor2 in vektoren von vek_liste an der Stelle 3.
+Schreibe (vektoren von vek_liste an der Stelle 3).
+Schreibe '\n'.
+
+Speichere 42 in x von (vektoren von vek_liste an der Stelle 3).
+Schreibe (x von (vektoren von vek_liste an der Stelle 3)) auf eine Zeile.

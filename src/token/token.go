@@ -17,20 +17,20 @@ type Token struct {
 	AliasInfo *ddptypes.ParameterType // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
 }
 
-func (t Token) String() string {
+func (t *Token) String() string {
 	return t.Literal
 }
 
-func (t Token) StringVerbose() string {
+func (t *Token) StringVerbose() string {
 	return fmt.Sprintf("[L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.Range.Start.Line, t.Range.Start.Column, t.Indent, t.Literal, t.Type)
 }
 
 // t.Range.Start.Line
-func (t Token) Line() uint {
+func (t *Token) Line() uint {
 	return t.Range.Start.Line
 }
 
 // t.Range.Start.Column
-func (t Token) Column() uint {
+func (t *Token) Column() uint {
 	return t.Range.Start.Column
 }

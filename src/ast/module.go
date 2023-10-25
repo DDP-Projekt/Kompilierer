@@ -32,7 +32,7 @@ func (module *Module) GetIncludeFilename() string {
 	if module.FileNameToken == nil {
 		return filepath.Base(module.FileName)
 	}
-	return TrimStringLit(*module.FileNameToken)
+	return TrimStringLit(module.FileNameToken)
 }
 
 // calls VisitAst on all Asts of module and it's imports

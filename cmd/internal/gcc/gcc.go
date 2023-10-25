@@ -20,6 +20,12 @@ func init() {
 	}
 }
 
+// returns the gcc command used by New
+// either "gcc" or $(DDPPATH)/mingw64/bin/gcc.exe
+func Cmd() string {
+	return gcc
+}
+
 // creates a new command calling gcc with the specified args
 // on windows it first searches the DDPPATH for a
 // mingw64 installation

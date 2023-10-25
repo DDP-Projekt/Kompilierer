@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
@@ -40,7 +41,7 @@ func validateOptions(options *Options) error {
 // if an error occured the resulting tokens are nil
 func Scan(options Options) ([]token.Token, error) {
 	if err := validateOptions(&options); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Ungültige Scanner Optionen: %w", err)
 	}
 
 	if scan, err := New(options.FileName, options.Source, options.ErrorHandler, options.ScannerMode); err != nil {
@@ -53,7 +54,7 @@ func Scan(options Options) ([]token.Token, error) {
 // scans the provided source as a function alias
 // expects the alias without the enclosing ""
 func ScanAlias(alias token.Token, errorHandler ddperror.Handler) ([]token.Token, error) {
-	if scan, err := New("Alias", []byte(ast.TrimStringLit(alias)), errorHandler, ModeAlias); err != nil {
+	if scan, err := New("Alias", []byte(ast.TrimStringLit(&alias)), errorHandler, ModeAlias); err != nil {
 		return nil, err
 	} else {
 		scan.line, scan.column, scan.indent = alias.Line(), alias.Column(), alias.Indent

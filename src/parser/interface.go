@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime/debug"
 
@@ -62,13 +63,13 @@ func Parse(options Options) (*ast.Module, error) {
 	// validate the options
 	err := validateOptions(&options)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Ungültige Parser Optionen: %w", err)
 	}
 
 	if options.Tokens == nil {
 		options.Tokens, err = scanner.Scan(options.ToScannerOptions(scanner.ModeStrictCapitalization))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Fehler beim Scannen: %w", err)
 		}
 	}
 
