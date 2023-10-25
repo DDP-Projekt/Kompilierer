@@ -109,10 +109,11 @@ type (
 
 	Declaration interface {
 		Node
-		declarationNode() // dummy function for the interface
-		Name() string     // returns the name of the declaration or "" for BadDecls
-		Public() bool     // returns wether the declaration is public. always false for BadDecls
-		Module() *Module  // returns the module from which the declaration comes
+		declarationNode()      // dummy function for the interface
+		Name() string          // returns the name of the declaration or "" for BadDecls
+		Public() bool          // returns wether the declaration is public. always false for BadDecls
+		Comment() *token.Token // returns a optional comment
+		Module() *Module       // returns the module from which the declaration comes
 	}
 
 	// *Ident or *Indexing
@@ -134,18 +135,18 @@ type (
 	}
 
 	VarDecl struct {
-		Range    token.Range
-		Comment  *token.Token  // optional comment (also contained in ast.Comments)
-		Type     ddptypes.Type // type of the variable
-		NameTok  token.Token   // identifier name
-		IsPublic bool          // wether the function is marked with öffentliche
-		Mod      *Module       // the module in which the variable was declared
-		InitVal  Expression    // initial value
+		Range      token.Range
+		CommentTok *token.Token  // optional comment (also contained in ast.Comments)
+		Type       ddptypes.Type // type of the variable
+		NameTok    token.Token   // identifier name
+		IsPublic   bool          // wether the function is marked with öffentliche
+		Mod        *Module       // the module in which the variable was declared
+		InitVal    Expression    // initial value
 	}
 
 	FuncDecl struct {
 		Range         token.Range
-		Comment       *token.Token             // optional comment (also contained in ast.Comments)
+		CommentTok    *token.Token             // optional comment (also contained in ast.Comments)
 		Tok           token.Token              // Die
 		NameTok       token.Token              // token of the name
 		IsPublic      bool                     // wether the function is marked with öffentliche
@@ -160,12 +161,12 @@ type (
 	}
 
 	StructDecl struct {
-		Range    token.Range
-		Comment  *token.Token // optional comment (also contained in ast.Comments)
-		Tok      token.Token  // Wir
-		NameTok  token.Token  // token of the name
-		IsPublic bool         // wether the struct decl is marked with öffentliche
-		Mod      *Module      // the module in which the struct was declared
+		Range      token.Range
+		CommentTok *token.Token // optional comment (also contained in ast.Comments)
+		Tok        token.Token  // Wir
+		NameTok    token.Token  // token of the name
+		IsPublic   bool         // wether the struct decl is marked with öffentliche
+		Mod        *Module      // the module in which the struct was declared
 		// Field declarations of the struct in order of declaration
 		// only contains *VarDecl and *BadDecl s
 		Fields  []Declaration
@@ -208,6 +209,11 @@ func (decl *BadDecl) Public() bool    { return false }
 func (decl *VarDecl) Public() bool    { return decl.IsPublic }
 func (decl *FuncDecl) Public() bool   { return decl.IsPublic }
 func (decl *StructDecl) Public() bool { return decl.IsPublic }
+
+func (decl *BadDecl) Comment() *token.Token    { return nil }
+func (decl *VarDecl) Comment() *token.Token    { return decl.CommentTok }
+func (decl *FuncDecl) Comment() *token.Token   { return decl.CommentTok }
+func (decl *StructDecl) Comment() *token.Token { return decl.CommentTok }
 
 func (decl *BadDecl) Module() *Module    { return decl.Mod }
 func (decl *VarDecl) Module() *Module    { return decl.Mod }

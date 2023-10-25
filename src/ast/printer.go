@@ -67,8 +67,8 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) {
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
 	msg := fmt.Sprintf("VarDecl[%s: %s]", decl.Name(), decl.Type)
-	if decl.Comment != nil {
-		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	if decl.CommentTok != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
 	pr.parenthesizeNode(msg, decl.InitVal)
 }
@@ -77,8 +77,8 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 	if IsExternFunc(decl) {
 		msg += " Extern"
 	}
-	if decl.Comment != nil {
-		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	if decl.CommentTok != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
 	if IsExternFunc(decl) {
 		pr.parenthesizeNode(msg)

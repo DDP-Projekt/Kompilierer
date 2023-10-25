@@ -440,13 +440,13 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	return &ast.VarDecl{
-		Range:    token.NewRange(begin, p.previous()),
-		Comment:  comment,
-		Type:     typ,
-		NameTok:  name,
-		IsPublic: isPublic,
-		Mod:      p.module,
-		InitVal:  expr,
+		Range:      token.NewRange(begin, p.previous()),
+		CommentTok: comment,
+		Type:       typ,
+		NameTok:    name,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		InitVal:    expr,
 	}
 }
 
@@ -653,7 +653,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	decl := &ast.FuncDecl{
 		Range:         token.NewRange(begin, p.previous()),
-		Comment:       comment,
+		CommentTok:    comment,
 		Tok:           begin,
 		NameTok:       name,
 		IsPublic:      isPublic,
@@ -687,7 +687,16 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal, &ast.VarDecl{NameTok: paramNames[i], IsPublic: false, Mod: p.module, Type: paramTypes[i].Type, Range: token.NewRange(paramNames[i], paramNames[i]), Comment: paramComments[i]})
+			bodyTable.InsertDecl(paramNames[i].Literal,
+				&ast.VarDecl{
+					NameTok:    paramNames[i],
+					IsPublic:   false,
+					Mod:        p.module,
+					Type:       paramTypes[i].Type,
+					Range:      token.NewRange(paramNames[i], paramNames[i]),
+					CommentTok: paramComments[i],
+				},
+			)
 		}
 		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 		decl.Body = body
@@ -894,15 +903,15 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 
 	decl := &ast.StructDecl{
-		Range:    token.NewRange(begin, p.previous()),
-		Comment:  comment,
-		Tok:      begin,
-		NameTok:  name,
-		IsPublic: isPublic,
-		Mod:      p.module,
-		Fields:   fields,
-		Type:     structType,
-		Aliases:  structAliases,
+		Range:      token.NewRange(begin, p.previous()),
+		CommentTok: comment,
+		Tok:        begin,
+		NameTok:    name,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		Fields:     fields,
+		Type:       structType,
+		Aliases:    structAliases,
 	}
 
 	for i := range structAliases {
@@ -1410,12 +1419,12 @@ func (p *parser) forStatement() ast.Statement {
 				Start: token.NewStartPos(TypeTok),
 				End:   from.GetRange().End,
 			},
-			Comment:  iteratorComment,
-			Type:     Typ,
-			NameTok:  Ident,
-			IsPublic: false,
-			Mod:      p.module,
-			InitVal:  from,
+			CommentTok: iteratorComment,
+			Type:       Typ,
+			NameTok:    Ident,
+			IsPublic:   false,
+			Mod:        p.module,
+			InitVal:    from,
 		}
 		p.consume(token.BIS)
 		to := p.expression()                            // end of the counter
