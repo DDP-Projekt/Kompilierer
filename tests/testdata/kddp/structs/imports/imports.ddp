@@ -1,0 +1,9 @@
+Binde "Duden/Ausgabe" ein.
+Binde Vektor und vec aus "modul" ein.
+
+Schreibe (x von vec) auf eine Zeile. [public field access]
+[Schreibe (x von vec) auf eine Zeile.] [error, private field access]
+
+Speichere 2 in x von vec. [public field assignement]
+[Speichere 2 in y von vec.] [error, private field assignement]
+Schreibe (x von vec) auf eine Zeile.

@@ -101,16 +101,16 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	))
 	list.ptr = ptr(list.typ)
 
-	list.fromConstantsIrFun = c.createFromConstants(list, declarationOnly)
-	list.freeIrFun = c.createFree(list, declarationOnly)
-	list.deepCopyIrFun = c.createDeepCopy(list, declarationOnly)
-	list.equalsIrFun = c.createEquals(list, declarationOnly)
-	list.sliceIrFun = c.createSlice(list, declarationOnly)
+	list.fromConstantsIrFun = c.createListFromConstants(list, declarationOnly)
+	list.freeIrFun = c.createListFree(list, declarationOnly)
+	list.deepCopyIrFun = c.createListDeepCopy(list, declarationOnly)
+	list.equalsIrFun = c.createListEquals(list, declarationOnly)
+	list.sliceIrFun = c.createListSlice(list, declarationOnly)
 
 	list.list_list_concat_IrFunc,
 		list.list_scalar_concat_IrFunc,
 		list.scalar_scalar_concat_IrFunc,
-		list.scalar_list_concat_IrFunc = c.createConcats(list, declarationOnly)
+		list.scalar_list_concat_IrFunc = c.createListConcats(list, declarationOnly)
 
 	return list
 }
@@ -131,7 +131,7 @@ It also sets ret->len and ret->cap accordingly
 signature:
 c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
-func (c *compiler) createFromConstants(listType *ddpIrListType, declarationOnly bool) *ir.Func {
+func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	// declare the parameters to use them as values
 	ret, count := ir.NewParam("ret", listType.ptr), ir.NewParam("count", ddpint)
 	// declare the function
@@ -189,7 +189,7 @@ should not be used after being freed.
 signature:
 c.void.IrType() ddp_free_x(x* list)
 */
-func (c *compiler) createFree(listType *ddpIrListType, declarationOnly bool) *ir.Func {
+func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	list := ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -245,7 +245,7 @@ For non-primitive types deepCopies are created
 signature:
 c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
-func (c *compiler) createDeepCopy(listType *ddpIrListType, declarationOnly bool) *ir.Func {
+func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	ret, list := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -316,7 +316,7 @@ ddp_x_equal checks wether the two lists are equal
 signature:
 bool ddp_x_equal(x* list1, x* list2)
 */
-func (c *compiler) createEquals(listType *ddpIrListType, declarationOnly bool) *ir.Func {
+func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	list1, list2 := ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 
 	irFunc := c.mod.NewFunc(
@@ -399,7 +399,7 @@ ddp_x_slice slices a list by two indices
 signature:
 void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
-func (c *compiler) createSlice(listType *ddpIrListType, declarationOnly bool) *ir.Func {
+func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	var (
 		ret  *ir.Param = ir.NewParam("ret", listType.ptr)
 		list *ir.Param = ir.NewParam("list", listType.ptr)
@@ -532,7 +532,7 @@ defines the ddp_x_y_verkettet functions for a listType
 and returns them in the order:
 list_list, list_scalar, scalar_scalar, scalar_list
 */
-func (c *compiler) createConcats(listType *ddpIrListType, declarationOnly bool) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
+func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bool) (*ir.Func, *ir.Func, *ir.Func, *ir.Func) {
 	// reusable parts for all 4 functions
 
 	// non-primitive types are passed as pointers

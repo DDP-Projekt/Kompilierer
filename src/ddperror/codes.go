@@ -18,6 +18,7 @@ const (
 	SYN_MALFORMED_INCLUDE_PATH                    // a include path was malformed or not parsable in some way
 	SYN_MALFORMED_ALIAS                           // an alias is malformed syntatically (invalid tokens etc.)
 	SYN_INVALID_UTF8                              // text was not valid utf8
+	SYN_GENDER_MISMATCH                           // the expected and actual grammatical gender used mismatched
 )
 
 // semantic error codes
@@ -35,20 +36,26 @@ const (
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
+	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
+	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
+	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
+	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
 )
 
 // type error codes
 const (
-	TYP_TYPE_MISMATCH      Code = iota + 3000 // simple type mismatch in an operator
-	TYP_BAD_ASSIGNEMENT                       // invalid variable assignement
-	TYP_BAD_INDEXING                          // type error in index expression
-	TYP_BAD_LIST_LITERAL                      // wrong type in list literal
-	TYP_BAD_CAST                              // invalid type conversion
-	TYP_EXPECTED_REFERENCE                    // a variable (reference parameter) was expected
-	TYP_INVALID_REFERENCE                     // a char in a string was tried to be passed as refernce
-	TYP_BAD_CONDITION                         // condition value was not of type boolean
-	TYP_BAD_FOR                               // one of the expressions in a for loop was not of type int
-	TYP_WRONG_RETURN_TYPE                     // the return type did not match the function signature
+	TYP_TYPE_MISMATCH        Code = iota + 3000 // simple type mismatch in an operator
+	TYP_BAD_ASSIGNEMENT                         // invalid variable assignement
+	TYP_BAD_INDEXING                            // type error in index expression
+	TYP_BAD_LIST_LITERAL                        // wrong type in list literal
+	TYP_BAD_CAST                                // invalid type conversion
+	TYP_EXPECTED_REFERENCE                      // a variable (reference parameter) was expected
+	TYP_INVALID_REFERENCE                       // a char in a string was tried to be passed as refernce
+	TYP_BAD_CONDITION                           // condition value was not of type boolean
+	TYP_BAD_FOR                                 // one of the expressions in a for loop was not of type int
+	TYP_WRONG_RETURN_TYPE                       // the return type did not match the function signature
+	TYP_BAD_FIELD_ACCESS                        // a non-struct type was accessed or similar
+	TYP_PRIVATE_FIELD_ACCESS                    // a non-public field was accessed from another module
 )
 
 func (code Code) IsMiscError() bool {

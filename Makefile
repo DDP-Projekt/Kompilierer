@@ -57,7 +57,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory llvm help test-complete
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -127,7 +127,7 @@ clean-outdir:
 	@echo "deleting output directorie"
 	$(RM) $(OUT_DIR)
 
-llvm:
+download-llvm:
 # clone the submodule
 	@echo "cloning the llvm repo"
 	git submodule init
@@ -136,6 +136,7 @@ llvm:
 # ignore gopls errors
 	cd ./llvm-project ; go mod init ignored || true
 
+llvm: download-llvm
 # generate cmake build files
 	@echo "building llvm"
 ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)

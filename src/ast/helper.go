@@ -19,6 +19,12 @@ func TrimStringLit(lit *token.Token) string {
 	return strings.Trim(lit.Literal, "\"")
 }
 
+// returns wether table is the global scope
+// table.Enclosing == nil
+func IsGlobalScope(table *SymbolTable) bool {
+	return table.Enclosing == nil
+}
+
 // applies fun to all declarations imported by imprt
 // if len(imprt.ImportedSymbols) == 0, it is applied to all imprt.Module.PublicDecls
 // otherwise to every tok in imprt.ImportedSymbols is used

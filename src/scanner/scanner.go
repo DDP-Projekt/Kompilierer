@@ -290,7 +290,6 @@ func (s *Scanner) identifierType() token.TokenType {
 }
 
 // helper to scan the <argname> in aliases
-// TODO: replace s.currentRange() with better ranges in this function
 func (s *Scanner) aliasParameter() token.Token {
 	if !isAlpha(s.peek()) {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")

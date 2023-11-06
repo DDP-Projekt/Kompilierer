@@ -2,7 +2,6 @@
 The resolver package should not be used independently from the parser.
 It is not a complete Visitor itself, but is rather used to resolve single
 Nodes while parsing to ensure correct parsing of function-calls etc.
-
 Because of this you will find many r.visit(x) calls to be commented out.
 */
 package resolver
@@ -12,12 +11,14 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // holds state to resolve the symbols of an AST and its nodes
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
+// TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
@@ -73,9 +74,9 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
 	}
 
-	if decl.Public() && r.CurrentTable.Enclosing != nil {
+	if decl.Public() && !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Variablen können öffentlich sein")
-	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
 }
@@ -97,6 +98,27 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 		}
 	*/
 }
+func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
+	if !ast.IsGlobalScope(r.CurrentTable) {
+		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
+	}
+
+	for _, field := range decl.Fields {
+		if varDecl, isVar := field.(*ast.VarDecl); isVar {
+			r.visit(varDecl.InitVal)
+		} else { // BadDecl
+			r.visit(field)
+		}
+	}
+	// insert the struct into the current scope (SymbolTable)
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
+	}
+	// insert the struct into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
+}
 
 // if a BadExpr exists the AST is faulty
 func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
@@ -107,7 +129,7 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
 		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
 	} else if !isVar {
-		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", expr.Literal.Literal))
+		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", expr.Literal.Literal))
 	} else { // set the reference to the declaration
 		expr.Declaration = decl.(*ast.VarDecl)
 	}
@@ -115,6 +137,9 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) {
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
 	r.visit(expr.Lhs)
 	r.visit(expr.Index)
+}
+func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) {
+	r.visit(expr.Rhs)
 }
 
 // nothing to do for literals
@@ -142,7 +167,12 @@ func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) {
 	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
-	r.visit(expr.Lhs)
+	// for field access the left operand should always be an *Ident
+	if expr.Operator != ast.BIN_FIELD_ACCESS {
+		r.visit(expr.Lhs)
+	} else if _, isIdent := expr.Lhs.(*ast.Ident); !isIdent {
+		r.err(ddperror.SEM_BAD_FIELD_ACCESS, expr.Lhs.GetRange(), fmt.Sprintf("Der VON Operator erwartet einen Namen als Linken Operanden, nicht %s", expr.Lhs))
+	}
 	r.visit(expr.Rhs)
 }
 func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) {
@@ -162,6 +192,11 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
 		r.visit(v)
 	}
 }
+func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) {
+	for _, arg := range expr.Args {
+		r.visit(arg)
+	}
+}
 
 // if a BadStmt exists the AST is faulty
 func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) {
@@ -173,9 +208,49 @@ func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) {
 func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) {
 	r.visit(stmt.Expr)
 }
+
 func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 	if stmt.Module == nil {
-		return // TODO: handle this better
+		return
+	}
+
+	var errRange token.Range
+	checkTypeDependency := func(decl ast.Declaration) {
+		// check that typ is defined in the current module
+		checkSingleType := func(typ ddptypes.Type) {
+			typ = ddptypes.GetNestedUnderlying(typ) // for list types
+
+			if ddptypes.IsPrimitiveOrVoid(typ) {
+				return
+			}
+
+			if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
+				r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
+			}
+		}
+
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			checkSingleType(decl.Type) // return type
+			for _, typ := range decl.ParamTypes {
+				checkSingleType(typ.Type)
+			}
+		case *ast.VarDecl:
+			checkSingleType(decl.Type)
+		case *ast.StructDecl:
+			for _, field := range decl.Type.Fields {
+				checkSingleType(field.Type)
+			}
+		}
+	}
+
+	resolveDecl := func(decl ast.Declaration) {
+		if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), stmt.Module.GetIncludeFilename()))
+			return
+		}
+
+		checkTypeDependency(decl)
 	}
 
 	// add imported symbols
@@ -183,9 +258,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 		if decl == nil {
 			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(&stmt.FileName)))
 		} else {
-			if r.CurrentTable.InsertDecl(name, decl) {
-				r.err(ddperror.SEM_NAME_ALREADY_DEFINED, tok.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", name, ast.TrimStringLit(&stmt.FileName)))
-			}
+			resolveDecl(decl)
 		}
 		return true
 	})
@@ -197,13 +270,15 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
 			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
 		} else if !isVar {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion und nicht für eine Variable", assign.Literal.Literal))
+			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", assign.Literal.Literal))
 		} else { // set the reference to the declaration
 			assign.Declaration = varDecl.(*ast.VarDecl)
 		}
 	case *ast.Indexing:
 		r.visit(assign.Lhs)
 		r.visit(assign.Index)
+	case *ast.FieldAccess:
+		r.visit(assign.Rhs)
 	}
 	r.visit(stmt.Rhs)
 }

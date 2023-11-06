@@ -46,9 +46,9 @@ func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef boo
 	return val
 }
 
-func (scope *scope) addTemporary(val value.Value, typ ddpIrType) value.Value {
+func (scope *scope) addTemporary(val value.Value, typ ddpIrType) (value.Value, ddpIrType) {
 	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false})
-	return val
+	return val, typ
 }
 
 // removes the given value from scope.temporaries giving ownership to the caller

@@ -22,7 +22,7 @@ type Module struct {
 	ExternalDependencies map[string]struct{}
 	// the Ast of the Module
 	Ast *Ast
-	// map of references to all public functions and variables
+	// map of references to all public functions, variables and structs
 	PublicDecls map[string]Declaration
 }
 

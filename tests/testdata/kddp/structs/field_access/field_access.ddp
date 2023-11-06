@@ -1,0 +1,43 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl x mit Standardwert 0,
+	der Zahl y mit Standardwert 0,
+einen Vektor2, und erstellen sie so:
+	"Nullvektor2" oder
+	"der Nullvektor2" oder
+	"ein Vektor2 mit x gleich <x>" oder
+	"ein Vektor2 mit x gleich <x> und y gleich <y>"
+
+Wir nennen die Kombination aus
+	dem Vektor2 basis mit Standardwert Nullvektor2,
+	der Zahl z mit Standardwert 0,
+einen Vektor3, und erstellen sie so:
+	"der Nullvektor3" oder
+	"ein Vektor3 mit basis gleich <basis>" oder
+	"ein Vektor3 mit z gleich <z>" oder
+	"ein Vektor3 mit basis gleich <basis> und z gleich <z>"
+
+Der Vektor2 vec2 ist der Nullvektor2.
+Der Vektor3 vec3 ist der Nullvektor3.
+
+Schreibe (x von vec2) auf eine Zeile.
+Schreibe (y von vec2) auf eine Zeile.
+
+Schreibe (x von basis von vec3) auf eine Zeile.
+Schreibe (y von basis von vec3) auf eine Zeile.
+Schreibe (z von vec3) auf eine Zeile.
+
+Speichere 1 in x von vec2.
+Speichere 2 in y von vec2.
+
+Speichere 3 in x von basis von vec3.
+Speichere 4 in y von basis von vec3.
+Speichere 5 in z von vec3.
+
+Schreibe (x von vec2) auf eine Zeile.
+Schreibe (y von vec2) auf eine Zeile.
+
+Schreibe (x von basis von vec3) auf eine Zeile.
+Schreibe (y von basis von vec3) auf eine Zeile.
+Schreibe (z von vec3) auf eine Zeile.

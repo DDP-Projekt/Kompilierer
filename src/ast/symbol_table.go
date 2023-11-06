@@ -3,7 +3,7 @@ package ast
 // stores symbols for one scope of an ast
 type SymbolTable struct {
 	Enclosing    *SymbolTable           // enclosing scope (nil in the global scope)
-	Declarations map[string]Declaration // map of all variables and functions
+	Declarations map[string]Declaration // map of all variables, functions and structs
 }
 
 func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {

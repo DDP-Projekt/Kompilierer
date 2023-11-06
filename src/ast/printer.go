@@ -66,9 +66,9 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", &decl.Tok))
 }
 func (pr *printer) VisitVarDecl(decl *VarDecl) {
-	msg := fmt.Sprintf("VarDecl[%s]", decl.Name())
-	if decl.Comment != nil {
-		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	msg := fmt.Sprintf("VarDecl[%s: %s]", decl.Name(), decl.Type)
+	if decl.CommentTok != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
 	pr.parenthesizeNode(msg, decl.InitVal)
 }
@@ -77,14 +77,23 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) {
 	if IsExternFunc(decl) {
 		msg += " Extern"
 	}
-	if decl.Comment != nil {
-		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.Comment.Literal, commentCutset), pr.currentIdent, " ")
+	if decl.CommentTok != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
 	if IsExternFunc(decl) {
 		pr.parenthesizeNode(msg)
 	} else {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
+}
+func (pr *printer) VisitStructDecl(decl *StructDecl) {
+	msg := fmt.Sprintf("StructDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic)
+
+	nodes := make([]Node, 0, len(decl.Fields))
+	for _, v := range decl.Fields {
+		nodes = append(nodes, v)
+	}
+	pr.parenthesizeNode(msg, nodes...)
 }
 
 func (pr *printer) VisitBadExpr(expr *BadExpr) {
@@ -95,6 +104,9 @@ func (pr *printer) VisitIdent(expr *Ident) {
 }
 func (pr *printer) VisitIndexing(expr *Indexing) {
 	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
+}
+func (pr *printer) VisitFieldAccess(expr *FieldAccess) {
+	pr.parenthesizeNode("FieldAccess", expr.Field, expr.Rhs)
 }
 func (pr *printer) VisitIntLit(expr *IntLit) {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
@@ -138,11 +150,18 @@ func (pr *printer) VisitGrouping(expr *Grouping) {
 	pr.parenthesizeNode("Grouping", expr.Expr)
 }
 func (pr *printer) VisitFuncCall(expr *FuncCall) {
-	args := make([]Node, 0)
+	args := make([]Node, 0, len(expr.Args))
 	for _, v := range expr.Args {
 		args = append(args, v)
 	}
-	pr.parenthesizeNode(fmt.Sprintf("FuncCall(%s)", expr.Name), args...)
+	pr.parenthesizeNode(fmt.Sprintf("FuncCall[%s]", expr.Name), args...)
+}
+func (pr *printer) VisitStructLiteral(expr *StructLiteral) {
+	args := make([]Node, 0, len(expr.Args))
+	for _, v := range expr.Args {
+		args = append(args, v)
+	}
+	pr.parenthesizeNode(fmt.Sprintf("StructLiteral[%s]", expr.Struct.Name()), args...)
 }
 
 func (pr *printer) VisitBadStmt(stmt *BadStmt) {

@@ -46,29 +46,30 @@ type BinaryOperator int
 func (BinaryOperator) Operator() {}
 
 const (
-	BIN_INVALID     BinaryOperator = iota
-	BIN_AND                        // und
-	BIN_OR                         // oder
-	BIN_CONCAT                     // verkettet
-	BIN_PLUS                       // plus
-	BIN_MINUS                      // minus
-	BIN_MULT                       // mal
-	BIN_DIV                        // durch
-	BIN_INDEX                      // an der Stelle
-	BIN_POW                        // hoch
-	BIN_LOG                        // Logarithmus
-	BIN_LOGIC_AND                  // logisch und
-	BIN_LOGIC_OR                   // logisch oder
-	BIN_LOGIC_XOR                  // logisch kontra
-	BIN_MOD                        // modulo
-	BIN_LEFT_SHIFT                 // links verschoben
-	BIN_RIGHT_SHIFT                // rechts verschoben
-	BIN_EQUAL                      // gleich
-	BIN_UNEQUAL                    // ungleich
-	BIN_LESS                       // kleiner
-	BIN_GREATER                    // größer
-	BIN_LESS_EQ                    // kleiner als, oder
-	BIN_GREATER_EQ                 // größer als, oder
+	BIN_INVALID      BinaryOperator = iota
+	BIN_AND                         // und
+	BIN_OR                          // oder
+	BIN_CONCAT                      // verkettet
+	BIN_PLUS                        // plus
+	BIN_MINUS                       // minus
+	BIN_MULT                        // mal
+	BIN_DIV                         // durch
+	BIN_INDEX                       // an der Stelle
+	BIN_POW                         // hoch
+	BIN_LOG                         // Logarithmus
+	BIN_LOGIC_AND                   // logisch und
+	BIN_LOGIC_OR                    // logisch oder
+	BIN_LOGIC_XOR                   // logisch kontra
+	BIN_MOD                         // modulo
+	BIN_LEFT_SHIFT                  // links verschoben
+	BIN_RIGHT_SHIFT                 // rechts verschoben
+	BIN_EQUAL                       // gleich
+	BIN_UNEQUAL                     // ungleich
+	BIN_LESS                        // kleiner
+	BIN_GREATER                     // größer
+	BIN_LESS_EQ                     // kleiner als, oder
+	BIN_GREATER_EQ                  // größer als, oder
+	BIN_FIELD_ACCESS                // von
 )
 
 func (op BinaryOperator) String() string {
@@ -117,6 +118,8 @@ func (op BinaryOperator) String() string {
 		return "kleiner oder"
 	case BIN_GREATER_EQ:
 		return "größer oder"
+	case BIN_FIELD_ACCESS:
+		return "von"
 	}
 	panic(fmt.Errorf("unbekannter binärer Operator %d", op))
 }
