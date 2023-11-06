@@ -8,7 +8,7 @@ Die Deutsche Programmiersprache (DDP) ist eine (Witz-)Programmiersprache von Not
 
 Die [Bedienungsanleitung](https://ddp.le0n.dev/Bedienungsanleitung/) ist ein guter Startpunkt um DDP (kennen) zu lernen, dort ist auch eine Installations-Anleitung zu finden.
 
-Der [Spielplatz](https://ddp.le0n.dev/Spieplatz) ermöglicht es DDP ausprobieren zu können ohne den Kompiler installieren zu müssen.
+Der [Spielplatz](https://ddp.le0n.dev/Spielplatz) ermöglicht es DDP ausprobieren zu können ohne den Kompiler installieren zu müssen.
 
 Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTRIBUTING.md).
 

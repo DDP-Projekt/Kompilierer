@@ -6,6 +6,7 @@
 #define DDP_MEMORY_H
 
 #include "common.h"
+#include <math.h>
 
 // used for allocation/reallocation and freeing of memory
 // to allocate call reallocate(NULL, 0, size)
@@ -19,10 +20,6 @@ void* ddp_reallocate(void* pointer, size_t oldSize, size_t newSize);
 
 // helper macro to free any type (not arrays though)
 #define FREE(type, pointer) ddp_reallocate(pointer, sizeof(type), 0)
-
-// helper macro to calculate the new capacity of an array
-#define GROW_CAPACITY(capacity) \
-    ((capacity) < 8 ? 8 : (capacity) * 2)
 
 // helper macro to expand the capacity of an array
 #define GROW_ARRAY(type, pointer, oldCount, newCount) \

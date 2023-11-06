@@ -7,61 +7,85 @@ Die öffentliche Funktion Leere_Z mit dem Parameter liste vom Typ Zahlen Listen 
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_int mit den Parametern list, elem und elem_size vom Typ Zahlen Listen Referenz, Zahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_int <list> <elem> <elem_size>"
+
 [
 	Fügt eine Zahl am Ende der gegeben Zahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_int mit den Parametern list, index, elem und elem_size vom Typ Zahlen Listen Referenz, Zahl, Zahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_int <list> <index> <elem> <elem_size>"
+
 [
 	Fügt eine Zahl vor einem Index in der gegebenen Zahlen Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_int liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_int mit den Parametern list, index, range und elem_size vom Typ Zahlen Listen Referenz, Zahl, Zahlen Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_int <list> <index> <range> <elem_size>"
 
 [
 	Fügt eine Zahlen Liste vor einem Index in der gegebenen Zahlen Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Z mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_range_int liste (index minus 1) range (die Größe von 0).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_int mit den Parametern liste, elem und elem_size vom Typ Zahlen Listen Referenz, Zahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_int <liste> <elem> <elem_size>"
 
 [
 	Fügt eine Zahl am Anfang der gegeben Zahlen Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_int mit den Parametern list, start, end und elem_size vom Typ Zahlen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_int <list> <start> <end> <elem_size>"
 
 [
 	Entfernt die Zahl an dem gegeben Index aus der gegeben Zahlen Liste.
 ]
 Die öffentliche Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
-
-	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
-		Speichere eine leere Zahlen Liste in liste.
-	Wenn aber index gleich 1 ist, dann:
-		Speichere liste von 2 bis (die Länge von liste) in liste.
-	Wenn aber index gleich die Länge von liste ist, dann:
-		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
-	Sonst:
-		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_int liste index index (die Größe von 0).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Zahlen aus der Liste im gegebenen Bereich (inkusiv)
+	Entfernt alle Zahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Z mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
+	efficient_list_delete_range_int liste (start minus 1) (end minus 1) (die Größe von 0).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -110,61 +134,85 @@ Die öffentliche Funktion Leere_K mit dem Parameter liste vom Typ Kommazahlen Li
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_float mit den Parametern list, elem und elem_size vom Typ Kommazahlen Listen Referenz, Kommazahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_float <list> <elem> <elem_size>"
+
 [
 	Fügt eine Kommazahl am Ende der gegeben Kommazahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_float mit den Parametern list, index, elem und elem_size vom Typ Kommazahlen Listen Referenz, Zahl, Kommazahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_float <list> <index> <elem> <elem_size>"
+
 [
 	Fügt eine Kommazahl vor einem Index in der gegebenen Kommazahlen Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_float liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_float mit den Parametern list, index, range und elem_size vom Typ Kommazahlen Listen Referenz, Zahl, Kommazahlen Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_float <list> <index> <range> <elem_size>"
 
 [
 	Fügt eine Kommazahlen Liste vor einem Index in der gegebenen Kommazahlen Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_K mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_range_float liste (index minus 1) range (die Größe von 0,0).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_float mit den Parametern liste, elem und elem_size vom Typ Kommazahlen Listen Referenz, Kommazahlen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_float <liste> <elem> <elem_size>"
 
 [
 	Fügt eine Kommazahl am Anfang der gegeben Kommazahlen Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_float mit den Parametern list, start, end und elem_size vom Typ Kommazahlen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,	
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_float <list> <start> <end> <elem_size>"
 
 [
 	Entfernt die Kommazahl an dem gegeben Index aus der gegeben Kommazahlen Liste.
 ]
 Die öffentliche Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
-
-	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
-		Speichere eine leere Kommazahlen Liste in liste.
-	Wenn aber index gleich 1 ist, dann:
-		Speichere liste von 2 bis (die Länge von liste) in liste.
-	Wenn aber index gleich die Länge von liste ist, dann:
-		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
-	Sonst:
-		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_float liste index index (die Größe von 0,0).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Kommazahlen aus der Liste im gegebenen Bereich (inkusiv)
+	Entfernt alle Kommazahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_K mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
+	efficient_list_delete_range_float liste (start minus 1) (end minus 1) (die Größe von 0,0).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -213,61 +261,85 @@ Die öffentliche Funktion Leere_B mit dem Parameter liste vom Typ Boolean Listen
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_bool mit den Parametern list, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_bool <list> <elem> <elem_size>"
+
 [
 	Fügt einen Boolean am Ende der gegeben Boolean Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_bool mit den Parametern list, index, elem und elem_size vom Typ Boolean Listen Referenz, Zahl, Boolean Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_bool <list> <index> <elem> <elem_size>"
 
 [
 	Fügt einen Boolean vor einem Index in der gegebenen Boolean Liste ein.
 ]
 Die öffentliche Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_bool liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_bool mit den Parametern list, index, range und elem_size vom Typ Boolean Listen Referenz, Zahl, Boolean Listen Referenz und Zahl, gibt nichts zurück,	
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_bool <list> <index> <range> <elem_size>"
+
 [
 	Fügt eine Boolean Liste vor einem Index in der gegebenen Boolean Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_range_bool liste (index minus 1) range (die Größe von wahr).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_bool mit den Parametern liste, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,	
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_bool <liste> <elem> <elem_size>"
 
 [
 	Fügt einen Boolean am Anfang der gegeben Boolean Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_bool mit den Parametern list, start, end und elem_size vom Typ Boolean Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,		
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_bool <list> <start> <end> <elem_size>"
 
 [
 	Entfernt den Boolean an dem gegeben Index aus der gegeben Boolean Liste.
 ]
 Die öffentliche Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
-
-	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
-		Speichere eine leere Boolean Liste in liste.
-	Wenn aber index gleich 1 ist, dann:
-		Speichere liste von 2 bis (die Länge von liste) in liste.
-	Wenn aber index gleich die Länge von liste ist, dann:
-		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
-	Sonst:
-		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_bool liste index index (die Größe von wahr).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Booleans aus der Liste im gegebenen Bereich (inkusiv)
+	Entfernt alle Booleans aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_B mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
+	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von wahr).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -316,61 +388,85 @@ Die öffentliche Funktion Leere_C mit dem Parameter liste vom Typ Buchstaben Lis
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_char mit den Parametern list, elem und elem_size vom Typ Buchstaben Listen Referenz, Buchstaben Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_char <list> <elem> <elem_size>"
+
 [
 	Fügt einen Buchstaben am Ende der gegeben Buchstaben Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_char mit den Parametern list, index, elem und elem_size vom Typ Buchstaben Listen Referenz, Zahl, Buchstaben Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_char <list> <index> <elem> <elem_size>"
+
 [
 	Fügt einen Buchstaben vor einem Index in der gegebenen Buchstaben Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_char liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für Einfügen_Bereich_X]	
+Die Funktion efficient_list_insert_range_char mit den Parametern list, index, range und elem_size vom Typ Buchstaben Listen Referenz, Zahl, Buchstaben Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_char <list> <index> <range> <elem_size>"
 
 [
 	Fügt eine Buchstaben Liste vor einem Index in der gegebenen Buchstaben Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_C mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_range_char liste (index minus 1) range (die Größe von ' ').
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_char mit den Parametern liste, elem und elem_size vom Typ Buchstaben Listen Referenz, Buchstaben Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_char <liste> <elem> <elem_size>"
 
 [
 	Fügt einen Buchstaben am Anfang der gegeben Buchstaben Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_char mit den Parametern list, start, end und elem_size vom Typ Buchstaben Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_char <list> <start> <end> <elem_size>"
 
 [
 	Entfernt den Buchstaben an dem gegeben Index aus der gegeben Buchstaben Liste.
 ]
 Die öffentliche Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
-
-	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
-		Speichere eine leere Buchstaben Liste in liste.
-	Wenn aber index gleich 1 ist, dann:
-		Speichere liste von 2 bis (die Länge von liste) in liste.
-	Wenn aber index gleich die Länge von liste ist, dann:
-		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
-	Sonst:
-		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_char liste index index (die Größe von ' ').
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Buchstaben aus der Liste im gegebenen Bereich (inkusiv)
+	Entfernt alle Buchstaben aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_C mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
+	efficient_list_delete_range_char liste (start minus 1) (end minus 1) (die Größe von ' ').
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -419,61 +515,85 @@ Die öffentliche Funktion Leere_T mit dem Parameter liste vom Typ Text Listen Re
 Und kann so benutzt werden:
 	"Leere <liste>"
 
+[Hilfsfunktion für Hinzufüge_X]
+Die Funktion efficient_list_append_string mit den Parametern list, elem und elem_size vom Typ Text Listen Referenz, Text Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_string <list> <elem> <elem_size>"
+
 [
 	Fügt einen Text am Ende der gegeben Text Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
-	Speichere liste verkettet mit elm in liste.
+	efficient_list_append_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_string mit den Parametern list, index, elem und elem_size vom Typ Text Listen Referenz, Zahl, Text Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_string <list> <index> <elem> <elem_size>"
 
 [
 	Fügt einen Text vor einem Index in der gegebenen Text Liste ein.
 ]
 Die öffentliche Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit elm verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_string liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_string mit den Parametern list, index, range und elem_size vom Typ Text Listen Referenz, Zahl, Text Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_string <list> <index> <range> <elem_size>"
+
 [
 	Fügt eine Text Liste vor einem Index in der gegebenen Text Liste ein.
+	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (index minus 1) verkettet mit range verkettet mit liste von index  bis (die Länge von liste) in liste.
+	efficient_list_insert_range_string liste (index minus 1) range (die Größe von "").
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_string mit den Parametern liste, elem und elem_size vom Typ Text Listen Referenz, Text Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_string <liste> <elem> <elem_size>"
 
 [
 	Fügt einen Text am Anfang der gegeben Text Liste hinzu.
 ]
 Die öffentliche Funktion Voranstellen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
-	Speichere elm verkettet mit liste in liste.
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_string mit den Parametern list, start, end und elem_size vom Typ Text Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,	
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_string <list> <start> <end> <elem_size>"
 
 [
 	Entfernt den Text an dem gegeben Index aus der gegeben Text Liste.
 ]
 Die öffentliche Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Wenn die Länge von liste gleich 0 ist, verlasse die Funktion.
-
-	Wenn index gleich 1 ist und die Länge von liste größer als 1 ist, dann:
-		Speichere eine leere Text Liste in liste.
-	Wenn aber index gleich 1 ist, dann:
-		Speichere liste von 2 bis (die Länge von liste) in liste.
-	Wenn aber index gleich die Länge von liste ist, dann:
-		Speichere liste von 1 bis (die Länge von liste minus 1) in liste.
-	Sonst:
-		Speichere liste von 1 bis (index minus 1) verkettet mit liste von (index plus 1) bis (die Länge von liste) in liste.
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_string liste index index (die Größe von "").
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Texte aus der Liste im gegebenen Bereich (inkusiv)
+	Entfernt alle Texte aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_T mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	Speichere liste von 1 bis (start minus 1) verkettet mit liste von (end plus 1) bis (die Länge von liste) in liste.
+	efficient_list_delete_range_string liste (start minus 1) (end minus 1) (die Größe von "").
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 

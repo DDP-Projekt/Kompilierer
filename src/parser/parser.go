@@ -245,14 +245,21 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 }
 
 // calls p.declaration and resolves and typechecks it
+func (p *parser) checkStatement(stmt ast.Statement) {
+	if stmt == nil {
+		p.panic("nil statement passed to checkStatement")
+	}
+	if importStmt, ok := stmt.(*ast.ImportStmt); ok {
+		p.resolveModuleImport(importStmt)
+	}
+	p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
+	p.typechecker.TypecheckNode(stmt) // typecheck the node
+}
+
 func (p *parser) checkedDeclaration() ast.Statement {
 	stmt := p.declaration() // parse the node
 	if stmt != nil {        // nil check, for alias declarations that aren't Ast Nodes
-		if importStmt, ok := stmt.(*ast.ImportStmt); ok {
-			p.resolveModuleImport(importStmt)
-		}
-		p.resolver.ResolveNode(stmt)      // resolve symbols in it (variables, functions, ...)
-		p.typechecker.TypecheckNode(stmt) // typecheck the node
+		p.checkStatement(stmt)
 	}
 	if p.panicMode { // synchronize the parsing if we are in panic mode
 		p.synchronize()
@@ -618,7 +625,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten und darf nicht nur aus Parametern bestehen")
 			}
 		}
 	}
@@ -943,7 +950,7 @@ func (p *parser) aliasDecl() ast.Statement {
 			pTokens = toks
 		}
 	} else {
-		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten")
+		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Funktions Alias muss jeden Funktions Parameter genau ein mal enthalten und darf nicht nur aus Parametern bestehen")
 	}
 
 	p.consume(token.DOT)
@@ -1069,6 +1076,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.match(token.DOT) {
 		return stmt
 	}
+	p.checkStatement(stmt)
 	count := p.expression()
 	if !p.match(token.COUNT_MAL) {
 		count_tok := count.Token()

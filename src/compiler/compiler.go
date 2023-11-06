@@ -423,7 +423,13 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 	if c.scp.enclosing == nil { // module_init
 		cf, cbb := c.cf, c.cbb
 		c.cf, c.cbb = c.moduleInitFunc, c.moduleInitCbb
+		current_temporaries_end := len(c.scp.temporaries)
 		addInitializer() // initialize the variable in module_init
+		// free all temporaries that were created in the initializer
+		for _, v := range c.scp.temporaries[current_temporaries_end:] {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
+		c.scp.temporaries = c.scp.temporaries[:current_temporaries_end]
 		c.moduleInitFunc, c.moduleInitCbb = c.cf, c.cbb
 
 		c.cf, c.cbb = c.moduleDisposeFunc, c.moduleDisposeFunc.Blocks[0]
@@ -716,23 +722,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 		}
 		c.latestReturnType = c.ddpinttyp
 	case ast.UN_SIZE:
-		switch typ {
-		case c.ddpinttyp, c.ddpfloattyp:
-			c.latestReturn = newInt(8)
-		case c.ddpbooltyp:
-			c.latestReturn = newInt(1)
-		case c.ddpchartyp:
-			c.latestReturn = newInt(4)
-		case c.ddpstring:
-			c.latestReturn = c.loadStructField(rhs, 1) // str->cap
-		default:
-			if _, isList := typ.(*ddpIrListType); isList {
-				cap := c.loadStructField(rhs, cap_field_index)
-				c.latestReturn = c.cbb.NewMul(cap, c.sizeof(typ.(*ddpIrListType).elementType.IrType())) // list->cap * sizeof(list_element_type)
-			} else {
-				c.err("invalid Parameter Type for GRÖßE: %s", typ.Name())
-			}
-		}
+		c.latestReturn = c.sizeof(typ.IrType())
 		c.latestReturnType = c.ddpinttyp
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
