@@ -526,7 +526,7 @@ type (
 
 	BreakContinueStmt struct {
 		Range token.Range
-		Tok   token.Token
+		Tok   token.Token // VERLASSE for break, otherwise continue
 	}
 
 	ReturnStmt struct {

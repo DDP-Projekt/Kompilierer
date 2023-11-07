@@ -1828,8 +1828,21 @@ func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) {
 	c.cbb = c.cf.NewBlock("")
 }
 func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
+	exitScopeReturn := func() {
+		for scp := c.scp; scp != c.cfscp.enclosing; scp = scp.enclosing {
+			for _, Var := range scp.variables {
+				if !Var.isRef {
+					c.freeNonPrimitive(Var.val, Var.typ)
+				}
+			}
+			for _, Var := range scp.temporaries {
+				c.freeNonPrimitive(Var.val, Var.typ)
+			}
+		}
+	}
+
 	if s.Value == nil {
-		c.exitNestedScopes(c.cfscp)
+		exitScopeReturn()
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
 		return
@@ -1842,7 +1855,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 		c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
 		c.cbb.NewRet(nil)
 	}
-	c.exitNestedScopes(c.cfscp)
+	exitScopeReturn()
 	c.commentNode(c.cbb, s, "")
 }
 

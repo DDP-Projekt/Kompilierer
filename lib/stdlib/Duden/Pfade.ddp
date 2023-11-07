@@ -107,7 +107,7 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 	Wenn t gleich "" ist, gib "." zurück.
 	Der Boolean rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
 	Die Zahl n ist die Länge von t.
-	Die Text path ist "". [ output text ]
+	Der Text path ist "". [ output text ]
 	Die Zahl r ist 1. [ next index to process ]
 	Die Zahl dotdot ist 1. [ index where .. must stop ]
 	Wenn rooted gleich wahr ist, dann:
