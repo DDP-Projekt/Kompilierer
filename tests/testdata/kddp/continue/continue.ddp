@@ -1,0 +1,67 @@
+Binde "Duden/Ausgabe" ein.
+
+Für jede Zahl i von 1 bis 15, mache:
+    Fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+
+Schreibe '\n'.
+
+Für jede Zahl i von 1 bis 10, mache:
+    Wenn i gleich 5 ist, fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+
+Schreibe '\n'.
+
+Die Zahlen Liste z ist eine Liste, die aus 1, 2, 3, 4, 5 besteht.
+Für jede Zahl z in z, mache:
+    Wenn z gleich 3 ist, fahre mit der Schleife fort.
+    Schreibe z.
+    Schreibe ' '.
+
+Schreibe '\n'.
+
+Die Zahl i ist 1.
+Solange i kleiner als 10 ist, mache:
+    Wenn i gleich 5 ist, dann:
+        Erhöhe i um 1.
+        Fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+    Erhöhe i um 1.
+
+Schreibe '\n'.
+
+Speichere 1 in i.
+Mache:
+    Wenn i gleich 5 ist, dann:
+        Erhöhe i um 1.
+        Fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+    Erhöhe i um 1.
+Solange i kleiner als 10 ist.
+
+Schreibe '\n'.
+
+Speichere 1 in i.
+Wiederhole:
+    Wenn i gleich 5 ist, dann:
+        Erhöhe i um 1.
+        Fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+    Erhöhe i um 1.
+10 Mal.
+
+Schreibe '\n'.
+
+Für jede Zahl i von 1 bis 5, mache:
+    Wenn i gleich 3 ist, fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+    Für jede Zahl j von 1 bis 5, mache:
+        Wenn j gleich 3 ist, fahre mit der Schleife fort.
+        Schreibe j.
+        Schreibe ';'.

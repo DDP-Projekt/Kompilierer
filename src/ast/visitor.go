@@ -53,6 +53,7 @@ type FullVisitor interface {
 	WhileStmtVisitor
 	ForStmtVisitor
 	ForRangeStmtVisitor
+	BreakContineStmtVisitor
 	ReturnStmtVisitor
 }
 
@@ -191,6 +192,10 @@ type (
 	ForRangeStmtVisitor interface {
 		BaseVisitor
 		VisitForRangeStmt(*ForRangeStmt)
+	}
+	BreakContineStmtVisitor interface {
+		BaseVisitor
+		VisitBreakContinueStmt(*BreakContinueStmt)
 	}
 	ReturnStmtVisitor interface {
 		BaseVisitor

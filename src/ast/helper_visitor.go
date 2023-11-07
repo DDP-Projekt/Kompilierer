@@ -293,6 +293,11 @@ func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) {
 	h.visit(stmt.In)
 	h.visit(stmt.Body)
 }
+func (h *helperVisitor) VisitBreakContinueStmt(stmt *BreakContinueStmt) {
+	if vis, ok := h.actualVisitor.(BreakContineStmtVisitor); ok {
+		vis.VisitBreakContinueStmt(stmt)
+	}
+}
 func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) {
 	if vis, ok := h.actualVisitor.(ReturnStmtVisitor); ok {
 		vis.VisitReturnStmt(stmt)

@@ -126,6 +126,9 @@ const (
 	STANDARDWERT
 	ERSTELLEN
 	SIE
+	FAHRE
+	SCHLEIFE
+	FORT
 
 	DOT    // .
 	COMMA  // ,
@@ -260,6 +263,9 @@ var tokenStrings = [...]string{
 	STANDARDWERT:  "Standardwert",
 	ERSTELLEN:     "erstellen",
 	SIE:           "sie",
+	FAHRE:         "Fahre",
+	SCHLEIFE:      "Schleife",
+	FORT:          "fort",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -395,6 +401,9 @@ var KeywordMap = map[string]TokenType{
 	"Standardwert":   STANDARDWERT,
 	"erstellen":      ERSTELLEN,
 	"sie":            SIE,
+	"fahre":          FAHRE,
+	"Schleife":       SCHLEIFE,
+	"fort":           FORT,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

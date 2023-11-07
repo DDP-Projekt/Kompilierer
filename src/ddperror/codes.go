@@ -39,6 +39,7 @@ const (
 	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
 	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
 	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
+	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop
 	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
 )
 

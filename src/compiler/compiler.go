@@ -102,6 +102,10 @@ type compiler struct {
 	out_of_bounds_error_string *ir.Global
 	slice_error_string         *ir.Global
 
+	curLeaveBlock    *ir.Block // leave block of the current loop
+	curContinueBlock *ir.Block // block where a continue should jump to
+	curLoopScope     *scope    // scope of the current loop for break/continue to free to
+
 	// all the type definitions of inbuilt types used by the compiler
 	void                                                              *ddpIrVoidType
 	ddpinttyp, ddpfloattyp, ddpbooltyp, ddpchartyp                    *ddpIrPrimitiveType
@@ -131,6 +135,9 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
 		latestReturnType: nil,
 		latestIsTemp:     false,
 		importedModules:  make(map[*ast.Module]struct{}),
+		curLeaveBlock:    nil,
+		curContinueBlock: nil,
+		curLoopScope:     nil,
 	}
 }
 
@@ -376,12 +383,14 @@ func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp b
 // returns the enclosing scope
 func (c *compiler) exitScope(scp *scope) *scope {
 	for _, v := range scp.variables {
-		if !v.isRef {
+		if !v.isRef && !v.protected {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
 	for _, v := range scp.temporaries {
-		c.freeNonPrimitive(v.val, v.typ)
+		if !v.protected {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
 	}
 	return scp.enclosing
 }
@@ -1566,10 +1575,12 @@ func (c *compiler) VisitIfStmt(s *ast.IfStmt) {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
-		condBlock := c.cf.NewBlock("")
-		body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
+		condBlock, body, bodyScope := c.cf.NewBlock(""), c.cf.NewBlock(""), newScope(c.scp)
+		breakLeave := c.cf.NewBlock("")
+		c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = bodyScope, breakLeave, condBlock
 
 		c.commentNode(c.cbb, s, "")
 		if op == token.SOLANGE {
@@ -1590,13 +1601,17 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewCondBr(cond, body, leaveBlock)
 
-		c.cbb = leaveBlock
+		trueLeave := c.cf.NewBlock("")
+		leaveBlock.NewBr(trueLeave)
+		breakLeave.NewBr(trueLeave)
+		c.cbb = trueLeave
 	case token.WIEDERHOLE:
 		counter := c.NewAlloca(ddpint)
 		cond, _, _ := c.evaluate(s.Condition)
 		c.cbb.NewStore(cond, counter)
-		condBlock := c.cf.NewBlock("")
-		body, bodyScope := c.cf.NewBlock(""), newScope(c.scp)
+		condBlock, body, bodyScope := c.cf.NewBlock(""), c.cf.NewBlock(""), newScope(c.scp)
+		breakLeave := c.cf.NewBlock("")
+		c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = bodyScope, breakLeave, condBlock
 
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewBr(condBlock)
@@ -1618,8 +1633,12 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 			leaveBlock,
 		)
 
-		c.cbb = leaveBlock
+		trueLeave := c.cf.NewBlock("")
+		leaveBlock.NewBr(trueLeave)
+		breakLeave.NewBr(trueLeave)
+		c.cbb = trueLeave
 	}
+	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
@@ -1631,6 +1650,8 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 			return c.cbb.NewFCmp(fpred, x, yf)
 		}
 	}
+
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 
 	c.scp = newScope(c.scp)     // scope for the for body
 	c.visitNode(s.Initializer)  // compile the counter variable declaration
@@ -1649,6 +1670,9 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	condBlock := c.cf.NewBlock("")
 	incrementBlock := c.cf.NewBlock("")
 	forBody := c.cf.NewBlock("")
+
+	breakLeave := c.cf.NewBlock("")
+	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, incrementBlock
 
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
@@ -1701,14 +1725,25 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
-	c.cbb, c.scp = leaveBlock, c.exitScope(c.scp) // leave the scopee
+	c.cbb = leaveBlock
+	c.scp = c.exitScope(c.scp) // leave the scope
+
+	trueLeave := c.cf.NewBlock("")
+	leaveBlock.NewBr(trueLeave)
+	breakLeave.NewBr(trueLeave)
+	c.cbb = trueLeave
+
+	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
 }
 func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
+
 	c.scp = newScope(c.scp)
 	in, inTyp, isTempIn := c.evaluate(s.In)
 	temp := c.NewAlloca(inTyp.IrType())
 	c.claimOrCopy(temp, in, inTyp, isTempIn)
 	in, _ = c.scp.addTemporary(temp, inTyp)
+	c.scp.protectTemporary(in)
 
 	var len value.Value
 	if inTyp == c.ddpstring {
@@ -1723,14 +1758,20 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	index := c.NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addVar(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
+	c.scp.addProtected(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
 
-	c.cbb = bodyBlock
 	loopVar := c.scp.lookupVar(s.Initializer.Name())
+
+	continueBlock := c.cf.NewBlock("")
+	c.cbb = continueBlock
+	c.freeNonPrimitive(loopVar.val, loopVar.typ)
+	c.cbb.NewBr(incrementBlock)
+
+	c.cbb = bodyBlock
 	if inTyp == c.ddpstring {
 		char := c.cbb.NewCall(c.ddpstring.indexIrFun, in, c.cbb.NewLoad(ddpint, index))
 		c.cbb.NewStore(char, loopVar.val)
@@ -1746,6 +1787,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 			c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
 		}
 	}
+	breakLeave := c.cf.NewBlock("")
+	breakLeave.NewBr(leaveBlock)
+	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, continueBlock
 	c.visitNode(s.Body)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
 	if c.cbb.Term == nil {
@@ -1757,12 +1801,35 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = leaveBlock
-	delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
+	c.scp.unprotectTemporary(in)
+	// delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
 	c.scp = c.exitScope(c.scp)
+
+	c.cbb = breakLeave
+	c.freeNonPrimitive(in, inTyp)
+	c.freeNonPrimitive(loopVar.val, loopVar.typ)
+
+	trueLeave := c.cf.NewBlock("")
+	leaveBlock.NewBr(trueLeave)
+	breakLeave.NewBr(trueLeave)
+	c.cbb = trueLeave
+
+	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+}
+func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) {
+	c.exitNestedScopes(c.curLoopScope)
+	c.commentNode(c.cbb, s, "")
+	if s.Tok.Type == token.VERLASSE {
+		c.cbb.NewBr(c.curLeaveBlock)
+		c.cbb = c.cf.NewBlock("")
+		return
+	}
+	c.cbb.NewBr(c.curContinueBlock)
+	c.cbb = c.cf.NewBlock("")
 }
 func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
-		c.exitNestedScopes()
+		c.exitNestedScopes(c.cfscp)
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
 		return
@@ -1775,14 +1842,13 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 		c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
 		c.cbb.NewRet(nil)
 	}
-	c.exitNestedScopes()
+	c.exitNestedScopes(c.cfscp)
 	c.commentNode(c.cbb, s, "")
 }
 
 // exits all scopes until the current function scope
 // frees all scp.non_primitives
-func (c *compiler) exitNestedScopes() {
-	for scp := c.scp; scp != c.cfscp; scp = c.exitScope(scp) {
+func (c *compiler) exitNestedScopes(targetScope *scope) {
+	for scp := c.scp; scp != targetScope.enclosing; scp = c.exitScope(scp) {
 	}
-	c.exitScope(c.cfscp)
 }

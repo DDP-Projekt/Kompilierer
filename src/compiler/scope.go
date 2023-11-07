@@ -6,9 +6,10 @@ import (
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val   value.Value // alloca or global-Def in the ir
-	typ   ddpIrType   // ir type of the variable
-	isRef bool
+	val       value.Value // alloca or global-Def in the ir
+	typ       ddpIrType   // ir type of the variable
+	isRef     bool
+	protected bool // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
 }
 
 // wraps local variables of a scope + the enclosing scope
@@ -42,12 +43,37 @@ func (s *scope) lookupVar(name string) varwrapper {
 
 // add a variable to the scope
 func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef}
+	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
 	return val
 }
 
+func (scope *scope) addProtected(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
+	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
+	return val
+}
+
+func (scope *scope) protectTemporary(val value.Value) {
+	for i := len(scope.temporaries) - 1; i >= 0; i-- {
+		if scope.temporaries[i].val == val {
+			scope.temporaries[i].protected = true
+			return
+		}
+	}
+	panic("attempted Value protection not found in scope.temporaries")
+}
+
+func (scope *scope) unprotectTemporary(val value.Value) {
+	for i := len(scope.temporaries) - 1; i >= 0; i-- {
+		if scope.temporaries[i].val == val {
+			scope.temporaries[i].protected = false
+			return
+		}
+	}
+	panic("attempted Value unprotection not found in scope.temporaries")
+}
+
 func (scope *scope) addTemporary(val value.Value, typ ddpIrType) (value.Value, ddpIrType) {
-	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false})
+	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false, protected: false})
 	return val, typ
 }
 

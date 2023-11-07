@@ -215,6 +215,13 @@ func (pr *printer) VisitForStmt(stmt *ForStmt) {
 func (pr *printer) VisitForRangeStmt(stmt *ForRangeStmt) {
 	pr.parenthesizeNode("ForRangeStmt", stmt.Initializer, stmt.In, stmt.Body)
 }
+func (pr *printer) VisitBreakContinueStmt(stmt *BreakContinueStmt) {
+	if stmt.Tok.Type == token.VERLASSE {
+		pr.parenthesizeNode("BreakContinueStmt[break]")
+	} else {
+		pr.parenthesizeNode("BreakContinueStmt[continue]")
+	}
+}
 func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) {
 	if stmt.Value == nil {
 		pr.parenthesizeNode("ReturnStmt[void]")

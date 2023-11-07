@@ -599,6 +599,7 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	}
 	stmt.Body.Accept(t)
 }
+func (t *Typechecker) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) {}
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) {
 	var returnType ddptypes.Type = ddptypes.VoidType{}
 	if stmt.Value != nil {

@@ -1012,7 +1012,10 @@ func (p *parser) statement() ast.Statement {
 		return p.returnStatement()
 	case token.VERLASSE:
 		p.consume(token.VERLASSE)
-		return p.voidReturn()
+		return p.voidReturnOrBreak()
+	case token.FAHRE:
+		p.consume(token.FAHRE)
+		return p.continueStatement()
 	case token.COLON:
 		p.consume(token.COLON)
 		return p.blockStatement(nil)
@@ -1307,6 +1310,7 @@ func (p *parser) whileStatement() ast.Statement {
 	p.consume(token.COMMA)
 	var Body ast.Statement
 	bodyTable := p.newScope()
+	p.resolver.IsInLoop = true
 	if p.match(token.MACHE) {
 		p.consume(token.COLON)
 		Body = p.blockStatement(bodyTable)
@@ -1322,6 +1326,7 @@ func (p *parser) whileStatement() ast.Statement {
 			Symbols:    bodyTable,
 		}
 	}
+	p.resolver.IsInLoop = false
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(While),
@@ -1336,7 +1341,9 @@ func (p *parser) whileStatement() ast.Statement {
 func (p *parser) doWhileStmt() ast.Statement {
 	Do := p.previous()
 	p.consume(token.COLON)
+	p.resolver.IsInLoop = true
 	body := p.blockStatement(nil)
+	p.resolver.IsInLoop = false
 	p.consume(token.SOLANGE)
 	condition := p.expression()
 	p.consume(token.DOT)
@@ -1354,7 +1361,9 @@ func (p *parser) doWhileStmt() ast.Statement {
 func (p *parser) repeatStmt() ast.Statement {
 	repeat := p.previous()
 	p.consume(token.COLON)
+	p.resolver.IsInLoop = true
 	body := p.blockStatement(nil)
+	p.resolver.IsInLoop = false
 	count := p.expression()
 	p.consume(token.COUNT_MAL, token.DOT)
 	return &ast.WhileStmt{
@@ -1421,7 +1430,8 @@ func (p *parser) forStatement() ast.Statement {
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
-		if p.match(token.MACHE) {                        // body is a block statement
+		p.resolver.IsInLoop = true
+		if p.match(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
@@ -1440,6 +1450,7 @@ func (p *parser) forStatement() ast.Statement {
 				Symbols:    bodyTable,
 			}
 		}
+		p.resolver.IsInLoop = false
 		return &ast.ForStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -1468,7 +1479,8 @@ func (p *parser) forStatement() ast.Statement {
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
-		if p.match(token.MACHE) {                        // body is a block statement
+		p.resolver.IsInLoop = true
+		if p.match(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
@@ -1487,6 +1499,7 @@ func (p *parser) forStatement() ast.Statement {
 				Symbols:    bodyTable,
 			}
 		}
+		p.resolver.IsInLoop = false
 		return &ast.ForRangeStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -1521,9 +1534,18 @@ func (p *parser) returnStatement() ast.Statement {
 	}
 }
 
-func (p *parser) voidReturn() ast.Statement {
+func (p *parser) voidReturnOrBreak() ast.Statement {
 	Leave := p.previous()
-	p.consume(token.DIE, token.FUNKTION, token.DOT)
+	p.consume(token.DIE)
+	if p.match(token.SCHLEIFE) {
+		p.consume(token.DOT)
+		return &ast.BreakContinueStmt{
+			Range: token.NewRange(Leave, p.previous()),
+			Tok:   *Leave,
+		}
+	}
+
+	p.consume(token.FUNKTION, token.DOT)
 	rnge := token.NewRange(Leave, p.previous())
 	if p.currentFunction == "" {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
@@ -1533,6 +1555,15 @@ func (p *parser) voidReturn() ast.Statement {
 		Func:   p.currentFunction,
 		Return: *Leave,
 		Value:  nil,
+	}
+}
+
+func (p *parser) continueStatement() ast.Statement {
+	Continue := p.previous()
+	p.consume(token.MIT, token.DER, token.SCHLEIFE, token.FORT, token.DOT)
+	return &ast.BreakContinueStmt{
+		Range: token.NewRange(Continue, p.previous()),
+		Tok:   *Continue,
 	}
 }
 

@@ -1,0 +1,24 @@
+Binde "Duden/Ausgabe" ein.
+
+Für jede Zahl i von 1 bis 10, mache:
+    Fahre mit der Schleife fort.
+    Der Text t ist "Hallo".
+    Schreibe t.
+
+Schreibe '\n'.
+
+Für jede Zahl i von 1 bis 10, mache:
+    Wenn i gleich 5 ist, dann:
+        Der Text t ist "Hallo ".
+        Schreibe t.
+        Fahre mit der Schleife fort.
+    Schreibe i.
+    Schreibe ' '.
+
+Schreibe '\n'.
+
+Die Text Liste t ist eine Liste, die aus "hi", "ha", "ho", "hu" besteht.
+Für jeden Text t in t, mache:
+    Wenn t gleich "ho" ist, fahre mit der Schleife fort.
+    Schreibe t.
+    Schreibe ' '.

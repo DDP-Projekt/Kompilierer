@@ -524,6 +524,11 @@ type (
 		Body        *BlockStmt
 	}
 
+	BreakContinueStmt struct {
+		Range token.Range
+		Tok   token.Token
+	}
+
 	ReturnStmt struct {
 		Range  token.Range
 		Return token.Token // Gib
@@ -532,62 +537,67 @@ type (
 	}
 )
 
-func (stmt *BadStmt) String() string      { return "BadStmt" }
-func (stmt *DeclStmt) String() string     { return "DeclStmt" }
-func (stmt *ExprStmt) String() string     { return "ExprStmt" }
-func (stmt *ImportStmt) String() string   { return "ImportStmt" }
-func (stmt *AssignStmt) String() string   { return "AssignStmt" }
-func (stmt *BlockStmt) String() string    { return "BlockStmt" }
-func (stmt *IfStmt) String() string       { return "IfStmt" }
-func (stmt *WhileStmt) String() string    { return "WhileStmt" }
-func (stmt *ForStmt) String() string      { return "ForStmt" }
-func (stmt *ForRangeStmt) String() string { return "ForRangeStmt" }
-func (stmt *ReturnStmt) String() string   { return "ReturnStmt" }
+func (stmt *BadStmt) String() string           { return "BadStmt" }
+func (stmt *DeclStmt) String() string          { return "DeclStmt" }
+func (stmt *ExprStmt) String() string          { return "ExprStmt" }
+func (stmt *ImportStmt) String() string        { return "ImportStmt" }
+func (stmt *AssignStmt) String() string        { return "AssignStmt" }
+func (stmt *BlockStmt) String() string         { return "BlockStmt" }
+func (stmt *IfStmt) String() string            { return "IfStmt" }
+func (stmt *WhileStmt) String() string         { return "WhileStmt" }
+func (stmt *ForStmt) String() string           { return "ForStmt" }
+func (stmt *ForRangeStmt) String() string      { return "ForRangeStmt" }
+func (stmt *BreakContinueStmt) String() string { return "BreakContinueStmt" }
+func (stmt *ReturnStmt) String() string        { return "ReturnStmt" }
 
-func (stmt *BadStmt) Token() token.Token      { return stmt.Tok }
-func (stmt *DeclStmt) Token() token.Token     { return stmt.Decl.Token() }
-func (stmt *ExprStmt) Token() token.Token     { return stmt.Expr.Token() }
-func (stmt *ImportStmt) Token() token.Token   { return stmt.FileName }
-func (stmt *AssignStmt) Token() token.Token   { return stmt.Tok }
-func (stmt *BlockStmt) Token() token.Token    { return stmt.Colon }
-func (stmt *IfStmt) Token() token.Token       { return stmt.If }
-func (stmt *WhileStmt) Token() token.Token    { return stmt.While }
-func (stmt *ForStmt) Token() token.Token      { return stmt.For }
-func (stmt *ForRangeStmt) Token() token.Token { return stmt.For }
-func (stmt *ReturnStmt) Token() token.Token   { return stmt.Return }
+func (stmt *BadStmt) Token() token.Token           { return stmt.Tok }
+func (stmt *DeclStmt) Token() token.Token          { return stmt.Decl.Token() }
+func (stmt *ExprStmt) Token() token.Token          { return stmt.Expr.Token() }
+func (stmt *ImportStmt) Token() token.Token        { return stmt.FileName }
+func (stmt *AssignStmt) Token() token.Token        { return stmt.Tok }
+func (stmt *BlockStmt) Token() token.Token         { return stmt.Colon }
+func (stmt *IfStmt) Token() token.Token            { return stmt.If }
+func (stmt *WhileStmt) Token() token.Token         { return stmt.While }
+func (stmt *ForStmt) Token() token.Token           { return stmt.For }
+func (stmt *ForRangeStmt) Token() token.Token      { return stmt.For }
+func (stmt *BreakContinueStmt) Token() token.Token { return stmt.Tok }
+func (stmt *ReturnStmt) Token() token.Token        { return stmt.Return }
 
-func (stmt *BadStmt) GetRange() token.Range      { return stmt.Err.Range }
-func (stmt *DeclStmt) GetRange() token.Range     { return stmt.Decl.GetRange() }
-func (stmt *ExprStmt) GetRange() token.Range     { return stmt.Expr.GetRange() }
-func (stmt *ImportStmt) GetRange() token.Range   { return stmt.Range }
-func (stmt *AssignStmt) GetRange() token.Range   { return stmt.Range }
-func (stmt *BlockStmt) GetRange() token.Range    { return stmt.Range }
-func (stmt *IfStmt) GetRange() token.Range       { return stmt.Range }
-func (stmt *WhileStmt) GetRange() token.Range    { return stmt.Range }
-func (stmt *ForStmt) GetRange() token.Range      { return stmt.Range }
-func (stmt *ForRangeStmt) GetRange() token.Range { return stmt.Range }
-func (stmt *ReturnStmt) GetRange() token.Range   { return stmt.Range }
+func (stmt *BadStmt) GetRange() token.Range           { return stmt.Err.Range }
+func (stmt *DeclStmt) GetRange() token.Range          { return stmt.Decl.GetRange() }
+func (stmt *ExprStmt) GetRange() token.Range          { return stmt.Expr.GetRange() }
+func (stmt *ImportStmt) GetRange() token.Range        { return stmt.Range }
+func (stmt *AssignStmt) GetRange() token.Range        { return stmt.Range }
+func (stmt *BlockStmt) GetRange() token.Range         { return stmt.Range }
+func (stmt *IfStmt) GetRange() token.Range            { return stmt.Range }
+func (stmt *WhileStmt) GetRange() token.Range         { return stmt.Range }
+func (stmt *ForStmt) GetRange() token.Range           { return stmt.Range }
+func (stmt *ForRangeStmt) GetRange() token.Range      { return stmt.Range }
+func (stmt *BreakContinueStmt) GetRange() token.Range { return stmt.Range }
+func (stmt *ReturnStmt) GetRange() token.Range        { return stmt.Range }
 
-func (stmt *BadStmt) Accept(v FullVisitor)      { v.VisitBadStmt(stmt) }
-func (stmt *DeclStmt) Accept(v FullVisitor)     { v.VisitDeclStmt(stmt) }
-func (stmt *ExprStmt) Accept(v FullVisitor)     { v.VisitExprStmt(stmt) }
-func (stmt *ImportStmt) Accept(v FullVisitor)   { v.VisitImportStmt(stmt) }
-func (stmt *AssignStmt) Accept(v FullVisitor)   { v.VisitAssignStmt(stmt) }
-func (stmt *BlockStmt) Accept(v FullVisitor)    { v.VisitBlockStmt(stmt) }
-func (stmt *IfStmt) Accept(v FullVisitor)       { v.VisitIfStmt(stmt) }
-func (stmt *WhileStmt) Accept(v FullVisitor)    { v.VisitWhileStmt(stmt) }
-func (stmt *ForStmt) Accept(v FullVisitor)      { v.VisitForStmt(stmt) }
-func (stmt *ForRangeStmt) Accept(v FullVisitor) { v.VisitForRangeStmt(stmt) }
-func (stmt *ReturnStmt) Accept(v FullVisitor)   { v.VisitReturnStmt(stmt) }
+func (stmt *BadStmt) Accept(v FullVisitor)           { v.VisitBadStmt(stmt) }
+func (stmt *DeclStmt) Accept(v FullVisitor)          { v.VisitDeclStmt(stmt) }
+func (stmt *ExprStmt) Accept(v FullVisitor)          { v.VisitExprStmt(stmt) }
+func (stmt *ImportStmt) Accept(v FullVisitor)        { v.VisitImportStmt(stmt) }
+func (stmt *AssignStmt) Accept(v FullVisitor)        { v.VisitAssignStmt(stmt) }
+func (stmt *BlockStmt) Accept(v FullVisitor)         { v.VisitBlockStmt(stmt) }
+func (stmt *IfStmt) Accept(v FullVisitor)            { v.VisitIfStmt(stmt) }
+func (stmt *WhileStmt) Accept(v FullVisitor)         { v.VisitWhileStmt(stmt) }
+func (stmt *ForStmt) Accept(v FullVisitor)           { v.VisitForStmt(stmt) }
+func (stmt *ForRangeStmt) Accept(v FullVisitor)      { v.VisitForRangeStmt(stmt) }
+func (stmt *BreakContinueStmt) Accept(v FullVisitor) { v.VisitBreakContinueStmt(stmt) }
+func (stmt *ReturnStmt) Accept(v FullVisitor)        { v.VisitReturnStmt(stmt) }
 
-func (stmt *BadStmt) statementNode()      {}
-func (stmt *DeclStmt) statementNode()     {}
-func (stmt *ExprStmt) statementNode()     {}
-func (stmt *ImportStmt) statementNode()   {}
-func (stmt *AssignStmt) statementNode()   {}
-func (stmt *BlockStmt) statementNode()    {}
-func (stmt *IfStmt) statementNode()       {}
-func (stmt *WhileStmt) statementNode()    {}
-func (stmt *ForStmt) statementNode()      {}
-func (stmt *ForRangeStmt) statementNode() {}
-func (stmt *ReturnStmt) statementNode()   {}
+func (stmt *BadStmt) statementNode()           {}
+func (stmt *DeclStmt) statementNode()          {}
+func (stmt *ExprStmt) statementNode()          {}
+func (stmt *ImportStmt) statementNode()        {}
+func (stmt *AssignStmt) statementNode()        {}
+func (stmt *BlockStmt) statementNode()         {}
+func (stmt *IfStmt) statementNode()            {}
+func (stmt *WhileStmt) statementNode()         {}
+func (stmt *ForStmt) statementNode()           {}
+func (stmt *ForRangeStmt) statementNode()      {}
+func (stmt *BreakContinueStmt) statementNode() {}
+func (stmt *ReturnStmt) statementNode()        {}
