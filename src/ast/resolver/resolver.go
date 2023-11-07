@@ -23,7 +23,7 @@ type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
 	Module       *ast.Module      // the module that is being resolved
-	IsInLoop     bool             // for break and continue statements
+	LoopDepth    uint             // for break and continue statements
 }
 
 // create a new resolver to resolve the passed AST
@@ -328,7 +328,7 @@ func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
 	r.exitScope()
 }
 func (r *Resolver) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) {
-	if !r.IsInLoop {
+	if r.LoopDepth == 0 {
 		r.err(ddperror.SEM_BREAK_CONTINUE_NOT_IN_LOOP, stmt.Tok.Range, "Break oder Continue darf nur in einer Schleife benutzt werden")
 	}
 }

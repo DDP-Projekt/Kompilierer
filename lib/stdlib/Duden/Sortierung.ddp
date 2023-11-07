@@ -57,8 +57,7 @@ Die Funktion Quicksort_Iter_Impl mit den Parametern liste, li und re vom Typ Zah
 	Die Zahl i ist li minus 1.
 	Die Zahl j ist re.
 
-	Der Boolean weiter ist wahr.
-	Solange weiter, mache:
+	Solange wahr, mache:
 		Mache:
 			Erhöhe i um 1.
 		Solange liste an der Stelle i kleiner als pivot ist.
@@ -66,8 +65,8 @@ Die Funktion Quicksort_Iter_Impl mit den Parametern liste, li und re vom Typ Zah
 			Verringere j um 1.
 		Solange j größer als, oder li ist und liste an der Stelle j größer als pivot ist.
 
-		Wenn i größer als, oder j ist, speichere falsch in weiter.
-		Sonst tausche (liste an der Stelle i) und (liste an der Stelle j).
+		Wenn i größer als, oder j ist, verlasse die Schleife. 
+		Tausche (liste an der Stelle i) und (liste an der Stelle j).
 
 	Tausche (liste an der Stelle i) und (liste an der Stelle re).
 

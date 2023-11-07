@@ -1310,7 +1310,7 @@ func (p *parser) whileStatement() ast.Statement {
 	p.consume(token.COMMA)
 	var Body ast.Statement
 	bodyTable := p.newScope()
-	p.resolver.IsInLoop = true
+	p.resolver.LoopDepth++
 	if p.match(token.MACHE) {
 		p.consume(token.COLON)
 		Body = p.blockStatement(bodyTable)
@@ -1326,7 +1326,7 @@ func (p *parser) whileStatement() ast.Statement {
 			Symbols:    bodyTable,
 		}
 	}
-	p.resolver.IsInLoop = false
+	p.resolver.LoopDepth--
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(While),
@@ -1341,9 +1341,9 @@ func (p *parser) whileStatement() ast.Statement {
 func (p *parser) doWhileStmt() ast.Statement {
 	Do := p.previous()
 	p.consume(token.COLON)
-	p.resolver.IsInLoop = true
+	p.resolver.LoopDepth++
 	body := p.blockStatement(nil)
-	p.resolver.IsInLoop = false
+	p.resolver.LoopDepth--
 	p.consume(token.SOLANGE)
 	condition := p.expression()
 	p.consume(token.DOT)
@@ -1361,9 +1361,9 @@ func (p *parser) doWhileStmt() ast.Statement {
 func (p *parser) repeatStmt() ast.Statement {
 	repeat := p.previous()
 	p.consume(token.COLON)
-	p.resolver.IsInLoop = true
+	p.resolver.LoopDepth++
 	body := p.blockStatement(nil)
-	p.resolver.IsInLoop = false
+	p.resolver.LoopDepth--
 	count := p.expression()
 	p.consume(token.COUNT_MAL, token.DOT)
 	return &ast.WhileStmt{
@@ -1430,7 +1430,7 @@ func (p *parser) forStatement() ast.Statement {
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
-		p.resolver.IsInLoop = true
+		p.resolver.LoopDepth++
 		if p.match(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
@@ -1450,7 +1450,7 @@ func (p *parser) forStatement() ast.Statement {
 				Symbols:    bodyTable,
 			}
 		}
-		p.resolver.IsInLoop = false
+		p.resolver.LoopDepth--
 		return &ast.ForStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
@@ -1479,7 +1479,7 @@ func (p *parser) forStatement() ast.Statement {
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
-		p.resolver.IsInLoop = true
+		p.resolver.LoopDepth++
 		if p.match(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
@@ -1499,7 +1499,7 @@ func (p *parser) forStatement() ast.Statement {
 				Symbols:    bodyTable,
 			}
 		}
-		p.resolver.IsInLoop = false
+		p.resolver.LoopDepth--
 		return &ast.ForRangeStmt{
 			Range: token.Range{
 				Start: token.NewStartPos(For),
