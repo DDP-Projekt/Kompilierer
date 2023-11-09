@@ -1395,8 +1395,10 @@ func (p *parser) forStatement() ast.Statement {
 	pronoun_tok := p.previous()
 	TypeTok := p.peek()
 	Typ := p.parseType()
-	if pronoun := getPronoun(Typ.Gender()); pronoun != pronoun_tok.Type {
-		p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", pronoun))
+	if Typ != nil {
+		if pronoun := getPronoun(Typ.Gender()); pronoun != pronoun_tok.Type {
+			p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", pronoun))
+		}
 	}
 
 	p.consume(token.IDENTIFIER)
@@ -2755,6 +2757,9 @@ func (p *parser) parseReturnType() ddptypes.Type {
 	p.consumeAny(token.EINEN, token.EINE, token.EIN)
 	tok := p.previous()
 	typ := p.parseType()
+	if typ == nil {
+		return typ // prevent the crash from the if below
+	}
 	if article := getArticle(typ.Gender()); article != tok.Type {
 		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
 	}
