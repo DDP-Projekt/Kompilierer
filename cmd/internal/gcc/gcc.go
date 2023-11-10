@@ -33,3 +33,7 @@ func New(args ...string) *exec.Cmd {
 	cmd := exec.Command(gcc, args...)
 	return cmd
 }
+
+func SetGcc(gccPath string) {
+	gcc = gccPath
+}
