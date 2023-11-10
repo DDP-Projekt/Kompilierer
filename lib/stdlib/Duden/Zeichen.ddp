@@ -83,7 +83,8 @@ Und kann so benutzt werden:
 	"<b> ein deutscher Buchstabe oder eine Zahl ist"
 
 [
-	Gibt wahr zurück wenn der Buchstabe b ein großer deutscher Buchstabe ist.
+	Gibt den gegebenen Buchstaben als großgeschriebe Variante zurück. 
+	Gibt den selben Buchstaben zurück wenn es schon großgeschrieben ist oder kein deutscher Buchstabe (siehe IstDeutscherBuchstabe) ist.
 ]
 Die öffentliche Funktion Großgeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
 	Wenn nicht b ein deutscher Buchstabe ist, dann:
@@ -94,7 +95,8 @@ Und kann so benutzt werden:
 	"<b> als großer Buchstabe"
 
 [
-	Gibt wahr zurück wenn der Buchstabe b ein kleiner deutscher Buchstabe ist.
+	Gibt den gegebenen Buchstaben als kleingeschriebene Variante zurück. 
+	Gibt den selben Buchstaben zurück wenn es schon kleingeschrieben ist oder kein deutscher Buchstabe (siehe IstDeutscherBuchstabe) ist.
 ]
 Die öffentliche Funktion Kleingeschrieben mit dem Parameter b vom Typ Buchstabe, gibt einen Buchstaben zurück, macht:
 	Wenn nicht b ein deutscher Buchstabe ist oder b ein kleiner Buchstabe ist, dann:

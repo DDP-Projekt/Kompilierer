@@ -20,7 +20,11 @@ Und kann so benutzt werden:
 Die öffentliche Funktion TrimAnfang mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
 	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
 	Die Zahl index ist 1.
-	Solange (text an der Stelle index) gleich zeichen ist, erhöhe index um 1.
+	Solange (text an der Stelle index) gleich zeichen ist, mache:
+		Erhöhe index um 1.
+		Wenn index größer als die Länge von text ist, dann:
+			Speichere "" in text.
+			Verlasse die Funktion.
 	Speichere text von index bis (die Länge von text) in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor <text>"
@@ -42,6 +46,8 @@ Und kann so benutzt werden:
 		t: "hallo"
 ]
 Die öffentliche Funktion TrimEnde mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
+	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
+
 	Die Zahl index ist die Länge von text.
 	Wenn index gleich 0 ist, verlasse die Funktion.
 	Solange (text an der Stelle index) gleich zeichen ist, mache:
@@ -71,10 +77,16 @@ Und kann so benutzt werden:
 		t: "hallo"
 ]
 Die öffentliche Funktion Trim mit den Parametern text und zeichen vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
+	Wenn die Länge von text gleich 0 ist, verlasse die Funktion.
+	
 	Die Zahl startIndex ist 1.
 	Die Zahl stopIndex ist die Länge von text.
-	Solange (text an der Stelle startIndex) gleich zeichen ist, erhöhe startIndex um 1.
-	Solange (text an der Stelle stopIndex) gleich zeichen ist, verringere stopIndex um 1.
+	Solange (text an der Stelle startIndex) gleich zeichen ist und startIndex kleiner als die Länge von text ist, erhöhe startIndex um 1.
+	Solange (text an der Stelle stopIndex) gleich zeichen ist und stopIndex ungleich 1 ist, verringere stopIndex um 1.
+	Wenn startIndex gleich die Länge von text ist und stopIndex gleich 1 ist, dann:
+	  	Speichere "" in text.
+		Verlasse die Funktion.
+	
 	Speichere text von startIndex bis stopIndex in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor und nach <text>"
@@ -101,8 +113,11 @@ Und kann so benutzt werden:
 	Gibt zurück ob der gegebene Text (text) den Subtext (suchText) enthält.
 ]
 Die öffentliche Funktion EnthältText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+	Wenn text gleich suchText ist, gib wahr zurück.
+
 	Die Zahl startIndex ist 0.
 	Die Zahl endIndex ist die Länge von suchText.
+	Wenn endIndex gleich 0 ist, gib falsch zurück.
 
 	Solange endIndex kleiner als, oder die Länge von text ist, mache:
 		Der Text subtext ist text von startIndex bis endIndex.
@@ -128,6 +143,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) anfängt.
 ]
 Die öffentliche Funktion BeginntMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
 	Gib (text von 1 bis (die Länge von suchText)) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Anfang von <text> steht"
@@ -145,6 +161,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) endet.
 ]
 Die öffentliche Funktion EndetMitText mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
 	Gib (text von die Länge von text minus die Länge von suchText plus 1 bis (die Länge von text)) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Ende von <text> steht"

@@ -36,3 +36,50 @@ wahr
 wahr
 wahr
 wahr
+--- IstDeutscherBuchstabe Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+--- Großgeschrieben Test ---
+A
+B
+C
+Z
+Ä
+Ö
+Ü
+A
+Z
+Ä
+Ö
+Ü
+ß
+--- Kleingeschrieben Test ---
+a
+b
+c
+z
+ä
+ö
+ü
+a
+z
+ä
+ö
+ü
+ß
+--- ASCII_Zeichen Test ---
+0
+A
+K
+d
+~
