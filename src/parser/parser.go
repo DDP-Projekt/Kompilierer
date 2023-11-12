@@ -2093,7 +2093,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	for p.match(token.VON) {
 		tok := p.previous()
 		operand := lhs
-		mid := p.expression()
+		mid := p.primary(nil)
 		if p.match(token.BIS) {
 			rhs := p.primary(nil)
 			lhs = &ast.TernaryExpr{
