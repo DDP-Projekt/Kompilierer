@@ -1,0 +1,321 @@
+[
+	Gibt -9223372036854775807 zurück.
+]
+Die öffentliche Funktion MinZahl gibt eine Zahl zurück, macht:
+	Gib -9223372036854775807 zurück.
+Und kann so benutzt werden:
+	"der minimale Wert einer Zahl"
+
+[
+	Gibt 9223372036854775807 zurück.
+]
+Die öffentliche Funktion MaxZahl gibt eine Zahl zurück, macht:
+	Gib 9223372036854775807 zurück.
+Und kann so benutzt werden:
+	"der maximale Wert einer Zahl"
+
+[
+	Gibt -1,79769313486231 * 10^308 zurück.
+]
+Die öffentliche Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
+	Gib -1,7976931348623158 mal 10 hoch 308 zurück.
+Und kann so benutzt werden:
+	"der minimale Wert einer Kommazahl"
+
+[
+	Gibt 1,79769313486231 * 10^308 zurück.
+]
+Die öffentliche Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
+	Gib 1,7976931348623158 mal 10 hoch 308 zurück.
+Und kann so benutzt werden:
+	"der maximale Wert einer Kommazahl"
+
+[
+	Gibt 2.2250738585072014 * 10^-308 zurück.
+	Der Wert der am nächsten zu +0 ist.
+]
+Die Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
+	Gib 2,2250738585072014 mal 10 hoch -308 zurück.
+Und kann so benutzt werden:
+	"der kleinste positive Wert einer Kommazahl"
+
+[
+	Gibt -2,2250738585072014 * 10^-308 zurück.
+	Der Wert der am nächsten zu -0 ist.
+]
+Die Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
+	Gib -2,2250738585072014 mal 10 hoch -308 zurück.
+Und kann so benutzt werden:
+	"der kleinste negative Wert einer Kommazahl"
+
+[
+	Gibt Unendlich (1 durch 0) zurück.
+]
+Die öffentliche Funktion Unendlich gibt eine Kommazahl zurück, macht:
+	Gib 1 durch 0 zurück.
+Und kann so benutzt werden:
+	"Unendlich"
+
+[
+	Gibt NaN (0 durch 0) zurück.
+]
+Die öffentliche Funktion KeineZahl gibt eine Kommazahl zurück, macht:
+	Gib 0,0 durch 0,0 zurück.
+Und kann so benutzt werden:
+	"keine Zahl"
+
+[
+	Gibt 0 zurück.
+]
+Die öffentliche Funktion ZahlNull gibt eine Zahl zurück, macht:
+	Gib 0 zurück.
+Und kann so benutzt werden:
+	"Null" oder "null"
+
+[
+	Gibt 1 zurück.
+]
+Die öffentliche Funktion ZahlEins gibt eine Zahl zurück, macht:
+	Gib 1 zurück.
+Und kann so benutzt werden:
+	"Eins", "eins" oder "ein"
+
+[
+	Gibt 2 zurück.
+]
+Die öffentliche Funktion ZahlZwei gibt eine Zahl zurück, macht:
+	Gib 2 zurück.
+Und kann so benutzt werden:
+	"Zwei" oder "zwei"
+
+[
+	Gibt 3 zurück.
+]
+Die öffentliche Funktion ZahlDrei gibt eine Zahl zurück, macht:
+	Gib 3 zurück.
+Und kann so benutzt werden:
+	"Drei" oder "drei"
+
+[
+	Gibt 4 zurück.
+]
+Die öffentliche Funktion ZahlVier gibt eine Zahl zurück, macht:
+	Gib 4 zurück.
+Und kann so benutzt werden:
+	"Vier" oder "vier"
+
+[
+	Gibt 5 zurück.
+]
+Die öffentliche Funktion ZahlFünf gibt eine Zahl zurück, macht:
+	Gib 5 zurück.
+Und kann so benutzt werden:
+	"Fünf" oder "fünf"
+
+[
+	Gibt 6 zurück.
+]
+Die öffentliche Funktion ZahlSechs gibt eine Zahl zurück, macht:
+	Gib 6 zurück.
+Und kann so benutzt werden:
+	"Sechs" oder "sechs"
+
+[
+	Gibt 7 zurück.
+]
+Die öffentliche Funktion ZahlSieben gibt eine Zahl zurück, macht:
+	Gib 7 zurück.
+Und kann so benutzt werden:
+	"Sieben" oder "sieben"
+
+[
+	Gibt 8 zurück.
+]
+Die öffentliche Funktion ZahlAcht gibt eine Zahl zurück, macht:
+	Gib 8 zurück.
+Und kann so benutzt werden:
+	"Acht" oder "acht"
+
+[
+	Gibt 9 zurück.
+]
+Die öffentliche Funktion ZahlNeun gibt eine Zahl zurück, macht:
+	Gib 9 zurück.
+Und kann so benutzt werden:
+	"Neun" oder "neun"
+
+[
+	Gibt 10 zurück.
+]
+Die öffentliche Funktion ZahlZehn gibt eine Zahl zurück, macht:
+	Gib 10 zurück.
+Und kann so benutzt werden:
+	"Zehn" oder "zehn"
+
+[
+	Gibt 11 zurück.
+]
+Die öffentliche Funktion ZahlElf gibt eine Zahl zurück, macht:
+	Gib 11 zurück.
+Und kann so benutzt werden:
+	"Elf" oder "elf"
+
+[
+	Gibt 12 zurück.
+]
+Die öffentliche Funktion ZahlZwölf gibt eine Zahl zurück, macht:
+	Gib 12 zurück.
+Und kann so benutzt werden:
+	"Zwölf" oder "zwölf"
+
+[
+	Gibt 100 zurück.
+]
+Die öffentliche Funktion ZahlHundert gibt eine Zahl zurück, macht:
+	Gib 100 zurück.
+Und kann so benutzt werden:
+	"Einhundert" oder "Hundert"
+
+[
+	Gibt 1000 zurück.
+]
+Die öffentliche Funktion ZahlTausend gibt eine Zahl zurück, macht:
+	Gib 1000 zurück.
+Und kann so benutzt werden:
+	"Eintausend" oder "Tausend"
+
+[
+	Gibt 10000 zurück.
+]
+Die öffentliche Funktion ZahlZehntausend gibt eine Zahl zurück, macht:
+	Gib 10000 zurück.
+Und kann so benutzt werden:
+	"Zehntausend"
+
+[
+	Gibt 100000 zurück.
+]
+Die öffentliche Funktion ZahlHunderttausend gibt eine Zahl zurück, macht:
+	Gib 100000 zurück.
+Und kann so benutzt werden:
+	"Einhunderttausend"
+
+[
+	Gibt 1000000 zurück.
+]
+Die öffentliche Funktion ZahlMillion gibt eine Zahl zurück, macht:
+	Gib 1000000 zurück.
+Und kann so benutzt werden:
+	"eine Million" oder "Million"
+
+[
+	Gibt 0,5 zurück.
+]
+Die öffentliche Funktion ZahlHalb gibt eine Kommazahl zurück, macht:
+	Gib 0,5 zurück.
+Und kann so benutzt werden:
+	"einhalb" oder "halb"
+
+[
+	Gibt 1,5 zurück.
+]
+Die öffentliche Funktion ZahlAnderthalb gibt eine Kommazahl zurück, macht:
+	Gib 1,5 zurück.
+Und kann so benutzt werden:
+	"anderthalb" oder "eineinhalb"
+
+[
+	Gibt <n> durch 2 zurück.
+]
+Die öffentliche Funktion ZahlBruchHalbe mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 2 zurück.
+Und kann so benutzt werden:
+	"<n> Halbe"
+
+[
+	Gibt <n> durch 3 zurück.
+]
+Die öffentliche Funktion ZahlBruchDrittel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 3 zurück.
+Und kann so benutzt werden:
+	"<n> Drittel"
+
+[
+	Gibt <n> durch 4 zurück.
+]
+Die öffentliche Funktion ZahlBruchViertel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 4 zurück.
+Und kann so benutzt werden:
+	"<n> Viertel"
+
+[
+	Gibt <n> durch 5 zurück.
+]
+Die öffentliche Funktion ZahlBruchFünftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 5 zurück.
+Und kann so benutzt werden:
+	"<n> Fünftel"
+
+[
+	Gibt <n> durch 6 zurück.
+]
+Die öffentliche Funktion ZahlBruchSechstel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 6 zurück.
+Und kann so benutzt werden:
+	"<n> Sechstel"
+
+[
+	Gibt <n> durch 7 zurück.
+]
+Die öffentliche Funktion ZahlBruchSiebtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 7 zurück.
+Und kann so benutzt werden:
+	"<n> Siebtel"
+
+[
+	Gibt <n> durch 8 zurück.
+]
+Die öffentliche Funktion ZahlBruchAchtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 8 zurück.
+Und kann so benutzt werden:
+	"<n> Achtel"
+
+[
+	Gibt <n> durch 9 zurück.
+]
+Die öffentliche Funktion ZahlBruchNeuntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 9 zurück.
+Und kann so benutzt werden:
+	"<n> Neuntel"
+
+[
+	Gibt <n> durch 10 zurück.
+]
+Die öffentliche Funktion ZahlBruchZehntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 10 zurück.
+Und kann so benutzt werden:
+	"<n> Zehntel"
+
+[
+	Gibt <n> durch 11 zurück.
+]
+Die öffentliche Funktion ZahlBruchElftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 11 zurück.
+Und kann so benutzt werden:
+	"<n> Elftel"
+
+[
+	Gibt <n> durch 12 zurück.
+]
+Die öffentliche Funktion ZahlBruchZwölftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib n durch 12 zurück.
+Und kann so benutzt werden:
+	"<n> Zwölftel"
+
+[
+	Gibt <z> mal 12 zurück.
+]
+Die öffentliche Funktion ZahlDuzent mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Gib z mal 12 zurück.
+Und kann so benutzt werden:
+	"<z> Dutzend"
