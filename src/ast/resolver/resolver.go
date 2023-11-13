@@ -18,6 +18,10 @@ import (
 // holds state to resolve the symbols of an AST and its nodes
 // and checking if they are valid
 // fills the ASTs SymbolTable while doing so
+//
+// even though it is a visitor, it should not be used seperately from the parser
+// all it's VisitX return values are dummy returns
+//
 // TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
@@ -65,10 +69,11 @@ func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 func (*Resolver) BaseVisitor() {}
 
 // if a BadDecl exists the AST is faulty
-func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) {
+func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	r.Module.Ast.Faulty = true
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
+func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
@@ -80,8 +85,9 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) {
 	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
+func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// all of the below was already resolved by the parser
 
 	/*
@@ -98,8 +104,9 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) {
 			r.visit(decl.Body) // resolve the function body
 		}
 	*/
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
+func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
 	}
@@ -119,13 +126,15 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) {
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
+	return ast.VisitRecurse
 }
 
 // if a BadExpr exists the AST is faulty
-func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) {
+func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	r.Module.Ast.Faulty = true
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitIdent(expr *ast.Ident) {
+func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	// check if the variable exists
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
 		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
@@ -134,27 +143,35 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) {
 	} else { // set the reference to the declaration
 		expr.Declaration = decl.(*ast.VarDecl)
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitIndexing(expr *ast.Indexing) {
+func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	r.visit(expr.Lhs)
 	r.visit(expr.Index)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) {
+func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	r.visit(expr.Rhs)
+	return ast.VisitRecurse
 }
 
 // nothing to do for literals
-func (r *Resolver) VisitIntLit(expr *ast.IntLit) {
+func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.VisitResult {
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) {
+func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) ast.VisitResult {
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) {
+func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.VisitResult {
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitCharLit(expr *ast.CharLit) {
+func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.VisitResult {
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitStringLit(expr *ast.StringLit) {
+func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.VisitResult {
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitListLit(expr *ast.ListLit) {
+func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	if expr.Values != nil {
 		for _, v := range expr.Values {
 			r.visit(v)
@@ -163,11 +180,13 @@ func (r *Resolver) VisitListLit(expr *ast.ListLit) {
 		r.visit(expr.Count)
 		r.visit(expr.Value)
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) {
+func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	r.visit(expr.Rhs)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
+func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	// for field access the left operand should always be an *Ident
 	if expr.Operator != ast.BIN_FIELD_ACCESS {
 		r.visit(expr.Lhs)
@@ -175,44 +194,53 @@ func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) {
 		r.err(ddperror.SEM_BAD_FIELD_ACCESS, expr.Lhs.GetRange(), fmt.Sprintf("Der VON Operator erwartet einen Namen als Linken Operanden, nicht %s", expr.Lhs))
 	}
 	r.visit(expr.Rhs)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) {
+func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	r.visit(expr.Lhs)
 	r.visit(expr.Mid)
 	r.visit(expr.Rhs) // visit the actual expressions
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) {
+func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	r.visit(expr.Lhs) // visit the actual expressions
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitGrouping(expr *ast.Grouping) {
+func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 	r.visit(expr.Expr)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) {
+func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.VisitResult {
 	// visit the passed arguments
 	for _, v := range expr.Args {
 		r.visit(v)
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) {
+func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	for _, arg := range expr.Args {
 		r.visit(arg)
 	}
+	return ast.VisitRecurse
 }
 
 // if a BadStmt exists the AST is faulty
-func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) {
+func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) ast.VisitResult {
 	r.Module.Ast.Faulty = true
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) {
+func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) ast.VisitResult {
 	r.visit(stmt.Decl)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) {
+func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.VisitResult {
 	r.visit(stmt.Expr)
+	return ast.VisitRecurse
 }
 
-func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
+func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	if stmt.Module == nil {
-		return
+		return ast.VisitRecurse
 	}
 
 	var errRange token.Range
@@ -263,8 +291,9 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) {
 		}
 		return true
 	})
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
+func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
 		// check if the variable exists
@@ -282,8 +311,9 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) {
 		r.visit(assign.Rhs)
 	}
 	r.visit(stmt.Rhs)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) {
+func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	if stmt.Symbols == nil {
 		r.setScope(stmt.Symbols) // set the current scope to the block
 		// visit every statement in the block
@@ -292,8 +322,9 @@ func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) {
 		}
 		r.exitScope() // restore the enclosing scope
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) {
+func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	r.visit(stmt.Condition)
 	if _, ok := stmt.Then.(*ast.BlockStmt); !ok {
 		r.visit(stmt.Then)
@@ -303,12 +334,14 @@ func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) {
 			r.visit(stmt.Else)
 		}
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) {
+func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	r.visit(stmt.Condition)
 	// r.visit(stmt.Body)
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) {
+func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	r.setScope(stmt.Body.Symbols)
 	// only visit the InitVal because the variable is already in the scope
 	r.visit(stmt.Initializer.InitVal)
@@ -318,23 +351,27 @@ func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) {
 	}
 	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
 	r.exitScope()
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) {
+func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
 	r.setScope(stmt.Body.Symbols)
 	// only visit the InitVal because the variable is already in the scope
 	r.visit(stmt.Initializer.InitVal)
 	r.visit(stmt.In)
 	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
 	r.exitScope()
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) {
+func (r *Resolver) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) ast.VisitResult {
 	if r.LoopDepth == 0 {
 		r.err(ddperror.SEM_BREAK_CONTINUE_NOT_IN_LOOP, stmt.Tok.Range, "Break oder Continue darf nur in einer Schleife benutzt werden")
 	}
+	return ast.VisitRecurse
 }
-func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) {
+func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value == nil {
-		return
+		return ast.VisitRecurse
 	}
 	r.visit(stmt.Value)
+	return ast.VisitRecurse
 }

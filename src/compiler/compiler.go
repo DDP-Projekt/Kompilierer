@@ -398,10 +398,11 @@ func (c *compiler) exitScope(scp *scope) *scope {
 func (*compiler) BaseVisitor() {}
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *compiler) VisitBadDecl(d *ast.BadDecl) {
+func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
 	c.err("Es wurde eine invalide Deklaration gefunden")
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
+func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
 	// in the ir a local variable is a alloca instruction (a stack allocation)
@@ -452,8 +453,9 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) {
 	if c.cf != nil && c.cbb != nil { // ddp_main
 		addInitializer()
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
+func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	retType := c.toIrType(d.Type) // get the llvm type
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
@@ -542,16 +544,19 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) {
 		}
 		c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitStructDecl(decl *ast.StructDecl) {
+func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, false)
+	return ast.VisitRecurse
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *compiler) VisitBadExpr(e *ast.BadExpr) {
+func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 	c.err("Es wurde ein invalider Ausdruck gefunden")
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitIdent(e *ast.Ident) {
+func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
@@ -562,9 +567,10 @@ func (c *compiler) VisitIdent(e *ast.Ident) {
 	}
 	c.latestReturnType = Var.typ
 	c.latestIsTemp = false
+	return ast.VisitRecurse
 }
 
-func (c *compiler) VisitIndexing(e *ast.Indexing) {
+func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
 
 	if stringIndexing != nil {
@@ -573,7 +579,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, index)
 		c.latestReturnType = c.ddpchartyp
 		// c.latestIsTemp = false // it is a primitive typ, so we don't care
-		return
+		return ast.VisitRecurse
 	} else {
 		if elementType.IsPrimitive() {
 			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
@@ -583,8 +589,9 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) {
 		}
 	}
 	c.latestReturnType = elementType
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) {
+func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
 
 	if fieldType.IsPrimitive() {
@@ -596,33 +603,38 @@ func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) {
 		c.latestIsTemp = true
 	}
 	c.latestReturnType = fieldType
+	return ast.VisitRecurse
 }
 
 // literals are simple ir constants
-func (c *compiler) VisitIntLit(e *ast.IntLit) {
+func (c *compiler) VisitIntLit(e *ast.IntLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newInt(e.Value)
 	c.latestReturnType = c.ddpinttyp
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitFloatLit(e *ast.FloatLit) {
+func (c *compiler) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	c.latestReturnType = c.ddpfloattyp
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitBoolLit(e *ast.BoolLit) {
+func (c *compiler) VisitBoolLit(e *ast.BoolLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
 	c.latestReturnType = c.ddpbooltyp
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitCharLit(e *ast.CharLit) {
+func (c *compiler) VisitCharLit(e *ast.CharLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newIntT(ddpchar, int64(e.Value))
 	c.latestReturnType = c.ddpchartyp
+	return ast.VisitRecurse
 }
 
 // string literals are created by the runtime
 // so we need to do some work here
-func (c *compiler) VisitStringLit(e *ast.StringLit) {
+func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
@@ -630,8 +642,9 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) {
 	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitListLit(e *ast.ListLit) {
+func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
 	list := c.NewAlloca(listType.IrType())
 
@@ -645,7 +658,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 		c.cbb.NewStore(listType.DefaultValue(), list)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
-		return
+		return ast.VisitRecurse
 	}
 
 	// create a empty list of the correct length
@@ -674,8 +687,9 @@ func (c *compiler) VisitListLit(e *ast.ListLit) {
 	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 	c.latestIsTemp = true
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
+func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	const all_ones int64 = ^0 // int with all bits set to 1
 
 	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
@@ -736,8 +750,9 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) {
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
+func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	c.commentNode(c.cbb, e, e.Operator.String())
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	// for BIN_FIELD_ACCESS we don't want to evaluate Lhs, as it is just the field name
@@ -758,7 +773,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
 		c.latestReturnType = c.ddpbooltyp
-		return
+		return ast.VisitRecurse
 	case ast.BIN_OR:
 		lhs, _, _ := c.evaluate(e.Lhs)
 		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
@@ -775,7 +790,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
 		c.latestReturnType = c.ddpbooltyp
-		return
+		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
 		rhs, rhsTyp, _ := c.evaluate(e.Rhs)
 		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
@@ -794,7 +809,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		} else {
 			c.err("invalid Parameter Types for VON (%s)", rhsTyp.Name())
 		}
-		return
+		return ast.VisitRecurse
 	}
 
 	// compile the two expressions onto which the operator is applied
@@ -1205,8 +1220,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) {
 		}
 		c.latestReturnType = c.ddpbooltyp
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
+func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	lhs, lhsTyp, _ := c.evaluate(e.Lhs)
 	mid, midTyp, _ := c.evaluate(e.Mid)
 	rhs, rhsTyp, _ := c.evaluate(e.Rhs)
@@ -1229,8 +1245,9 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) {
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
+func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	if ddptypes.IsList(e.Type) {
 		listType := c.getListType(lhsTyp)
@@ -1292,7 +1309,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 				c.latestReturn = lhs
 				c.latestReturnType = c.ddpstring
 				c.latestIsTemp = isTempLhs
-				return // don't free lhs
+				return ast.VisitRecurse // don't free lhs
 			}
 
 			var to_string_func *ir.Func
@@ -1317,9 +1334,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) {
 		}
 	}
 	c.latestReturnType = c.toIrType(e.Type)
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitGrouping(e *ast.Grouping) {
+func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 	e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
+	return ast.VisitRecurse
 }
 
 // helper for VisitAssignStmt and VisitFuncCall
@@ -1356,7 +1375,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil
 }
-func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
+func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
 
@@ -1411,8 +1430,9 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) {
 			}
 		}
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
+func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	resultType := c.toIrType(expr.Struct.Type)
 	result := c.NewAlloca(resultType.IrType())
 	for i, field := range expr.Struct.Type.Fields {
@@ -1427,19 +1447,23 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) {
 	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
 	c.latestIsTemp = true
+	return ast.VisitRecurse
 }
 
 // should have been filtered by the resolver/typechecker, so err
-func (c *compiler) VisitBadStmt(s *ast.BadStmt) {
+func (c *compiler) VisitBadStmt(s *ast.BadStmt) ast.VisitResult {
 	c.err("Es wurde eine invalide Aussage gefunden")
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitDeclStmt(s *ast.DeclStmt) {
+func (c *compiler) VisitDeclStmt(s *ast.DeclStmt) ast.VisitResult {
 	s.Decl.Accept(c)
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitExprStmt(s *ast.ExprStmt) {
+func (c *compiler) VisitExprStmt(s *ast.ExprStmt) ast.VisitResult {
 	c.visitNode(s.Expr)
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
+func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 	if s.Module == nil {
 		c.err("importStmt.Module == nil")
 	}
@@ -1507,9 +1531,9 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) {
 			c.importedModules[module] = struct{}{}
 		}
 	})
-
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) {
+func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
 
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
@@ -1521,8 +1545,9 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) {
 		c.freeNonPrimitive(lhs, lhsTyp)            // free the old value in the variable/list
 		c.claimOrCopy(lhs, rhs, rhsTyp, isTempRhs) // copy/claim the new value
 	}
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) {
+func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) ast.VisitResult {
 	c.scp = newScope(c.scp) // a block gets its own scope
 	wasReturn := false
 	for _, stmt := range s.Statements {
@@ -1537,10 +1562,11 @@ func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) {
 	} else {
 		c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
 	}
+	return ast.VisitRecurse
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
-func (c *compiler) VisitIfStmt(s *ast.IfStmt) {
+func (c *compiler) VisitIfStmt(s *ast.IfStmt) ast.VisitResult {
 	cond, _, _ := c.evaluate(s.Condition)
 	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.commentNode(c.cbb, s, "")
@@ -1571,10 +1597,11 @@ func (c *compiler) VisitIfStmt(s *ast.IfStmt) {
 	}
 
 	c.cbb = leaveBlock
+	return ast.VisitRecurse
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
+func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
@@ -1639,10 +1666,11 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) {
 		c.cbb = trueLeave
 	}
 	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	return ast.VisitRecurse
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
-func (c *compiler) VisitForStmt(s *ast.ForStmt) {
+func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
 		if s.Initializer.Type == ddptypes.ZAHL {
 			return c.cbb.NewICmp(ipred, x, yi)
@@ -1734,8 +1762,9 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) {
 	c.cbb = trueLeave
 
 	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
+func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 
 	c.scp = newScope(c.scp)
@@ -1815,19 +1844,21 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	c.cbb = trueLeave
 
 	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) {
+func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) ast.VisitResult {
 	c.exitNestedScopes(c.curLoopScope)
 	c.commentNode(c.cbb, s, "")
 	if s.Tok.Type == token.VERLASSE {
 		c.cbb.NewBr(c.curLeaveBlock)
 		c.cbb = c.cf.NewBlock("")
-		return
+		return ast.VisitRecurse
 	}
 	c.cbb.NewBr(c.curContinueBlock)
 	c.cbb = c.cf.NewBlock("")
+	return ast.VisitRecurse
 }
-func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
+func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	exitScopeReturn := func() {
 		for scp := c.scp; scp != c.cfscp.enclosing; scp = scp.enclosing {
 			for _, Var := range scp.variables {
@@ -1845,7 +1876,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 		exitScopeReturn()
 		c.commentNode(c.cbb, s, "")
 		c.cbb.NewRet(nil)
-		return
+		return ast.VisitRecurse
 	}
 	val, valTyp, isTemp := c.evaluate(s.Value)
 	if valTyp.IsPrimitive() {
@@ -1857,6 +1888,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) {
 	}
 	exitScopeReturn()
 	c.commentNode(c.cbb, s, "")
+	return ast.VisitRecurse
 }
 
 // exits all scopes until the current function scope

@@ -94,7 +94,7 @@ type (
 		fmt.Stringer
 		Token() token.Token
 		GetRange() token.Range
-		Accept(FullVisitor)
+		Accept(FullVisitor) VisitResult
 	}
 
 	Expression interface {
@@ -190,10 +190,10 @@ func (decl *VarDecl) GetRange() token.Range    { return decl.Range }
 func (decl *FuncDecl) GetRange() token.Range   { return decl.Range }
 func (decl *StructDecl) GetRange() token.Range { return decl.Range }
 
-func (decl *BadDecl) Accept(visitor FullVisitor)    { visitor.VisitBadDecl(decl) }
-func (decl *VarDecl) Accept(visitor FullVisitor)    { visitor.VisitVarDecl(decl) }
-func (decl *FuncDecl) Accept(visitor FullVisitor)   { visitor.VisitFuncDecl(decl) }
-func (decl *StructDecl) Accept(visitor FullVisitor) { visitor.VisitStructDecl(decl) }
+func (decl *BadDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitBadDecl(decl) }
+func (decl *VarDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitVarDecl(decl) }
+func (decl *FuncDecl) Accept(visitor FullVisitor) VisitResult   { return visitor.VisitFuncDecl(decl) }
+func (decl *StructDecl) Accept(visitor FullVisitor) VisitResult { return visitor.VisitStructDecl(decl) }
 
 func (decl *BadDecl) declarationNode()    {}
 func (decl *VarDecl) declarationNode()    {}
@@ -408,23 +408,23 @@ func (expr *Grouping) GetRange() token.Range      { return expr.Range }
 func (expr *FuncCall) GetRange() token.Range      { return expr.Range }
 func (expr *StructLiteral) GetRange() token.Range { return expr.Range }
 
-func (expr *BadExpr) Accept(v FullVisitor)       { v.VisitBadExpr(expr) }
-func (expr *Ident) Accept(v FullVisitor)         { v.VisitIdent(expr) }
-func (expr *Indexing) Accept(v FullVisitor)      { v.VisitIndexing(expr) }
-func (expr *FieldAccess) Accept(v FullVisitor)   { v.VisitFieldAccess(expr) }
-func (expr *IntLit) Accept(v FullVisitor)        { v.VisitIntLit(expr) }
-func (expr *FloatLit) Accept(v FullVisitor)      { v.VisitFloatLit(expr) }
-func (expr *BoolLit) Accept(v FullVisitor)       { v.VisitBoolLit(expr) }
-func (expr *CharLit) Accept(v FullVisitor)       { v.VisitCharLit(expr) }
-func (expr *StringLit) Accept(v FullVisitor)     { v.VisitStringLit(expr) }
-func (expr *ListLit) Accept(v FullVisitor)       { v.VisitListLit(expr) }
-func (expr *UnaryExpr) Accept(v FullVisitor)     { v.VisitUnaryExpr(expr) }
-func (expr *BinaryExpr) Accept(v FullVisitor)    { v.VisitBinaryExpr(expr) }
-func (expr *TernaryExpr) Accept(v FullVisitor)   { v.VisitTernaryExpr(expr) }
-func (expr *CastExpr) Accept(v FullVisitor)      { v.VisitCastExpr(expr) }
-func (expr *Grouping) Accept(v FullVisitor)      { v.VisitGrouping(expr) }
-func (expr *FuncCall) Accept(v FullVisitor)      { v.VisitFuncCall(expr) }
-func (expr *StructLiteral) Accept(v FullVisitor) { v.VisitStructLiteral(expr) }
+func (expr *BadExpr) Accept(v FullVisitor) VisitResult       { return v.VisitBadExpr(expr) }
+func (expr *Ident) Accept(v FullVisitor) VisitResult         { return v.VisitIdent(expr) }
+func (expr *Indexing) Accept(v FullVisitor) VisitResult      { return v.VisitIndexing(expr) }
+func (expr *FieldAccess) Accept(v FullVisitor) VisitResult   { return v.VisitFieldAccess(expr) }
+func (expr *IntLit) Accept(v FullVisitor) VisitResult        { return v.VisitIntLit(expr) }
+func (expr *FloatLit) Accept(v FullVisitor) VisitResult      { return v.VisitFloatLit(expr) }
+func (expr *BoolLit) Accept(v FullVisitor) VisitResult       { return v.VisitBoolLit(expr) }
+func (expr *CharLit) Accept(v FullVisitor) VisitResult       { return v.VisitCharLit(expr) }
+func (expr *StringLit) Accept(v FullVisitor) VisitResult     { return v.VisitStringLit(expr) }
+func (expr *ListLit) Accept(v FullVisitor) VisitResult       { return v.VisitListLit(expr) }
+func (expr *UnaryExpr) Accept(v FullVisitor) VisitResult     { return v.VisitUnaryExpr(expr) }
+func (expr *BinaryExpr) Accept(v FullVisitor) VisitResult    { return v.VisitBinaryExpr(expr) }
+func (expr *TernaryExpr) Accept(v FullVisitor) VisitResult   { return v.VisitTernaryExpr(expr) }
+func (expr *CastExpr) Accept(v FullVisitor) VisitResult      { return v.VisitCastExpr(expr) }
+func (expr *Grouping) Accept(v FullVisitor) VisitResult      { return v.VisitGrouping(expr) }
+func (expr *FuncCall) Accept(v FullVisitor) VisitResult      { return v.VisitFuncCall(expr) }
+func (expr *StructLiteral) Accept(v FullVisitor) VisitResult { return v.VisitStructLiteral(expr) }
 
 func (expr *BadExpr) expressionNode()       {}
 func (expr *Ident) expressionNode()         {}
@@ -576,18 +576,20 @@ func (stmt *ForRangeStmt) GetRange() token.Range      { return stmt.Range }
 func (stmt *BreakContinueStmt) GetRange() token.Range { return stmt.Range }
 func (stmt *ReturnStmt) GetRange() token.Range        { return stmt.Range }
 
-func (stmt *BadStmt) Accept(v FullVisitor)           { v.VisitBadStmt(stmt) }
-func (stmt *DeclStmt) Accept(v FullVisitor)          { v.VisitDeclStmt(stmt) }
-func (stmt *ExprStmt) Accept(v FullVisitor)          { v.VisitExprStmt(stmt) }
-func (stmt *ImportStmt) Accept(v FullVisitor)        { v.VisitImportStmt(stmt) }
-func (stmt *AssignStmt) Accept(v FullVisitor)        { v.VisitAssignStmt(stmt) }
-func (stmt *BlockStmt) Accept(v FullVisitor)         { v.VisitBlockStmt(stmt) }
-func (stmt *IfStmt) Accept(v FullVisitor)            { v.VisitIfStmt(stmt) }
-func (stmt *WhileStmt) Accept(v FullVisitor)         { v.VisitWhileStmt(stmt) }
-func (stmt *ForStmt) Accept(v FullVisitor)           { v.VisitForStmt(stmt) }
-func (stmt *ForRangeStmt) Accept(v FullVisitor)      { v.VisitForRangeStmt(stmt) }
-func (stmt *BreakContinueStmt) Accept(v FullVisitor) { v.VisitBreakContinueStmt(stmt) }
-func (stmt *ReturnStmt) Accept(v FullVisitor)        { v.VisitReturnStmt(stmt) }
+func (stmt *BadStmt) Accept(v FullVisitor) VisitResult      { return v.VisitBadStmt(stmt) }
+func (stmt *DeclStmt) Accept(v FullVisitor) VisitResult     { return v.VisitDeclStmt(stmt) }
+func (stmt *ExprStmt) Accept(v FullVisitor) VisitResult     { return v.VisitExprStmt(stmt) }
+func (stmt *ImportStmt) Accept(v FullVisitor) VisitResult   { return v.VisitImportStmt(stmt) }
+func (stmt *AssignStmt) Accept(v FullVisitor) VisitResult   { return v.VisitAssignStmt(stmt) }
+func (stmt *BlockStmt) Accept(v FullVisitor) VisitResult    { return v.VisitBlockStmt(stmt) }
+func (stmt *IfStmt) Accept(v FullVisitor) VisitResult       { return v.VisitIfStmt(stmt) }
+func (stmt *WhileStmt) Accept(v FullVisitor) VisitResult    { return v.VisitWhileStmt(stmt) }
+func (stmt *ForStmt) Accept(v FullVisitor) VisitResult      { return v.VisitForStmt(stmt) }
+func (stmt *ForRangeStmt) Accept(v FullVisitor) VisitResult { return v.VisitForRangeStmt(stmt) }
+func (stmt *BreakContinueStmt) Accept(v FullVisitor) VisitResult {
+	return v.VisitBreakContinueStmt(stmt)
+}
+func (stmt *ReturnStmt) Accept(v FullVisitor) VisitResult { return v.VisitReturnStmt(stmt) }
 
 func (stmt *BadStmt) statementNode()           {}
 func (stmt *DeclStmt) statementNode()          {}
