@@ -3,17 +3,20 @@
 	to check that it parses correctly
 ]
 
+Binde "Duden/ANSI-Escape" ein.
 Binde "Duden/Ausgabe" ein.
+Binde "Duden/Dateisystem" ein.
 Binde "Duden/Eingabe" ein.
-Binde "Duden/Extremwerte" ein.
 Binde "Duden/Laufzeit" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Mathe" ein.
+Binde "Duden/Pfade" ein.
 Binde "Duden/Sortierung" ein.
+Binde "Duden/Statistik" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Umgebungsvariablen" ein.
 Binde "Duden/UnterProzess" ein.
+Binde "Duden/Zahlen" ein.
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Zeit" ein.
 Binde "Duden/Zufall" ein.
-Binde "Duden/Dateisystem" ein.

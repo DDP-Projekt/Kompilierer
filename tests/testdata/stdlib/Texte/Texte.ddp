@@ -6,24 +6,40 @@ Schreibe (einen leeren Text) auf eine Zeile.
 Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, guh??]
 Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
 Schreibe ("    guh??   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, guh??]
+Schreibe ("" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, ]
+Schreibe ("" mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, ]
+Schreibe ("" mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, ]
+Schreibe ("   " mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, ]
+Schreibe ("   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, ]
+Schreibe ("   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, ]
 
 Schreibe ("Hello World" 'e' enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
 Schreibe ("Hello World" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
+Schreibe ("" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
 
 Schreibe ("Hello World" "ello" enthält) auf eine Zeile. [EnthältText, wahr]
 Schreibe ("Hello World" "guh" enthält) auf eine Zeile. [EnthältText, falsch]
+Schreibe ("Hello World" "" enthält) auf eine Zeile. [EnthältText, falsch]
+Schreibe ("" "h" enthält) auf eine Zeile. [EnthältText, falsch]
+Schreibe ("" "" enthält) auf eine Zeile. [EnthältText, wahr]
 
 Schreibe ('H' am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitBuchstabe, wahr]
 Schreibe (' ' am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitBuchstabe, falsch]
+Schreibe (' ' am Anfang von "" steht) auf eine Zeile. [BeginntMitBuchstabe, falsch]
 
 Schreibe ('d' am Ende von "Hello World" steht) auf eine Zeile. [EndetMitBuchstabe, wahr]
 Schreibe (' ' am Ende von "Hello World" steht) auf eine Zeile. [EndetMitBuchstabe, falsch]
+Schreibe (' ' am Ende von "" steht) auf eine Zeile. [EndetMitBuchstabe, falsch]
 
 Schreibe ("Hell" am Anfang von "Hello World" steht) auf eine Zeile.[BeginntMitText, wahr]
 Schreibe ("hi" am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitText, falsch]
+Schreibe ("" am Anfang von "Hello World" steht) auf eine Zeile. [BeginntMitText, falsch]
+Schreibe ("ha" am Anfang von "" steht) auf eine Zeile. [BeginntMitText, falsch]
 
 Schreibe ("orld" am Ende von "Hello World" steht) auf eine Zeile. [EndetMitText, wahr]
 Schreibe ("orad" am Ende von "Hello World" steht) auf eine Zeile. [EndetMitText, falsch]
+Schreibe ("" am Ende von "Hello World" steht) auf eine Zeile. [EndetMitText, falsch]
+Schreibe ("ha" am Ende von "" steht) auf eine Zeile. [EndetMitText, falsch]
 
 Der Text text ist "Hello World!".
 
@@ -41,6 +57,7 @@ Schreibe den Text text auf eine Zeile. []
 
 [IstTextLeer]
 Schreibe den Boolean (text leer ist) auf eine Zeile. [wahr]
+Schreibe den Boolean ("text" leer ist) auf eine Zeile. [falsch]
 
 text ist "test".
 

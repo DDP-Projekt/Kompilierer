@@ -65,13 +65,13 @@ debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
 
 kddp:
 	@echo "building kddp"
-	cd $(KDDP_DIR) ; $(MAKE)
+	cd $(KDDP_DIR) ; '$(MAKE)'
 	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 stdlib:
 	@echo "building the ddp-stdlib"
-	cd $(STD_DIR) ; $(MAKE)
+	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
@@ -80,7 +80,7 @@ stdlib:
 
 stdlib-debug:
 	@echo "building the ddp-stdlib in debug mode"
-	cd $(STD_DIR) ; $(MAKE) debug
+	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
@@ -89,7 +89,7 @@ stdlib-debug:
 
 runtime:
 	@echo "building the ddp-runtime"
-	cd $(RUN_DIR) ; $(MAKE)
+	cd $(RUN_DIR) ; '$(MAKE)'
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
 	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
@@ -98,7 +98,7 @@ runtime:
 
 runtime-debug:
 	@echo "building the ddp-runtime in debug mode"
-	cd $(RUN_DIR) ; $(MAKE) debug
+	cd $(RUN_DIR) ; '$(MAKE)' debug
 	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
@@ -119,9 +119,9 @@ $(OUT_DIR): LICENSE README.md
 	$(CP) README.md $(OUT_DIR)
 
 clean: clean-outdir
-	cd $(KDDP_DIR) ; $(MAKE) clean
-	cd $(STD_DIR) ; $(MAKE) clean
-	cd $(RUN_DIR) ; $(MAKE) clean
+	cd $(KDDP_DIR) ; '$(MAKE)' clean
+	cd $(STD_DIR) ; '$(MAKE)' clean
+	cd $(RUN_DIR) ; '$(MAKE)' clean
 
 clean-outdir:
 	@echo "deleting output directorie"
@@ -162,10 +162,10 @@ test-memory:
 # everything is done manually to ensure the build is finished
 # before the tests even with -j n
 test-complete: 
-	$(MAKE) all 
-	$(MAKE) test 
-	$(MAKE) debug 
-	$(MAKE) test-memory
+	'$(MAKE)' all 
+	'$(MAKE)' test 
+	'$(MAKE)' debug 
+	'$(MAKE)' test-memory
 
 help:
 	@echo "Targets:"

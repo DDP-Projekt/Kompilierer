@@ -2,12 +2,12 @@
 [
 	Löscht alle Zahlen aus der gegebenen Zahlen Liste.
 ]
-Die öffentliche Funktion Leere_Z mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Zahl mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Zahlen Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-[Hilfsfunktion für Hinzufüge_X]
+[Hilfsfunktion für Hinzufügen_X]
 Die Funktion efficient_list_append_int mit den Parametern list, elem und elem_size vom Typ Zahlen Listen Referenz, Zahlen Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
@@ -16,7 +16,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Zahl am Ende der gegeben Zahlen Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufüge_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Zahl mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	efficient_list_append_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
@@ -32,7 +32,7 @@ Und kann so benutzt werden:
 	Fügt eine Zahl vor einem Index in der gegebenen Zahlen Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion EinfügenZ mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Zahl mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_insert_int liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
@@ -46,7 +46,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Zahlen Liste vor einem Index in der gegebenen Zahlen Liste ein.
 ]
-Die öffentliche Funktion Einfügen_Bereich_Z mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Zahl mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_int liste (index minus 1) range (die Größe von 0).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -60,7 +60,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Zahl am Anfang der gegeben Zahlen Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Zahl mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_int liste elm (die Größe von elm).
 Und kann so benutzt werden:
@@ -75,7 +75,7 @@ Und kann so benutzt werden:
 [
 	Entfernt die Zahl an dem gegeben Index aus der gegeben Zahlen Liste.
 ]
-Die öffentliche Funktion Lösche_Z mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Zahl mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_int liste index index (die Größe von 0).
 Und kann so benutzt werden:
@@ -84,7 +84,7 @@ Und kann so benutzt werden:
 [
 	Entfernt alle Zahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_Z mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Zahl mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_int liste (start minus 1) (end minus 1) (die Größe von 0).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -92,7 +92,7 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Zahlen Liste mit der gegebenen Zahl.
 ]
-Die öffentliche Funktion Füllen_Z mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Zahl mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Die Zahlen Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
@@ -101,7 +101,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Index der gegebenen Zahl aus der Liste zurück oder -1 wenn die Zahl nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion IndexVon_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), wenn liste an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
@@ -110,7 +110,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Zahl in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Z mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
 	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -119,7 +119,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
-Die öffentliche Funktion IstLeer_Z mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -129,12 +129,12 @@ Und kann so benutzt werden:
 [
 	Löscht alle Kommazahlen aus der gegebenen Kommazahlen Liste.
 ]
-Die öffentliche Funktion Leere_K mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Kommazahlen Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-[Hilfsfunktion für Hinzufüge_X]
+[Hilfsfunktion für Hinzufügen_X]
 Die Funktion efficient_list_append_float mit den Parametern list, elem und elem_size vom Typ Kommazahlen Listen Referenz, Kommazahlen Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
@@ -143,7 +143,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Kommazahl am Ende der gegeben Kommazahlen Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufüge_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	efficient_list_append_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
@@ -159,7 +159,7 @@ Und kann so benutzt werden:
 	Fügt eine Kommazahl vor einem Index in der gegebenen Kommazahlen Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion EinfügenK mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Kommazahl mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
 	efficient_list_insert_float liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
@@ -173,7 +173,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Kommazahlen Liste vor einem Index in der gegebenen Kommazahlen Liste ein.
 ]
-Die öffentliche Funktion Einfügen_Bereich_K mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Kommazahl mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_float liste (index minus 1) range (die Größe von 0,0).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -187,7 +187,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Kommazahl am Anfang der gegeben Kommazahlen Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_float liste elm (die Größe von elm).
 Und kann so benutzt werden:
@@ -202,7 +202,7 @@ Und kann so benutzt werden:
 [
 	Entfernt die Kommazahl an dem gegeben Index aus der gegeben Kommazahlen Liste.
 ]
-Die öffentliche Funktion Lösche_K mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Kommazahl mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_float liste index index (die Größe von 0,0).
 Und kann so benutzt werden:
@@ -211,7 +211,7 @@ Und kann so benutzt werden:
 [
 	Entfernt alle Kommazahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_K mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Kommazahl mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_float liste (start minus 1) (end minus 1) (die Größe von 0,0).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -219,7 +219,7 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Kommazahlen Liste mit der gegebenen Kommazahl.
 ]
-Die öffentliche Funktion Füllen_K mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	Die Kommazahlen Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
@@ -228,7 +228,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Index der gegebenen Kommazahl aus der Liste zurück oder -1 wenn die Kommazahl nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion IndexVon_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
@@ -237,7 +237,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Kommazahl in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_K mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
 	Für jede Kommazahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -246,7 +246,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Kommazahlen Liste leer ist.
 ]
-Die öffentliche Funktion IstLeer_K mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -256,12 +256,12 @@ Und kann so benutzt werden:
 [
 	Löscht alle Booleans aus der gegebenen Boolean Liste.
 ]
-Die öffentliche Funktion Leere_B mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Boolean mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Boolean Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-[Hilfsfunktion für Hinzufüge_X]
+[Hilfsfunktion für Hinzufügen_X]
 Die Funktion efficient_list_append_bool mit den Parametern list, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
@@ -270,7 +270,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Boolean am Ende der gegeben Boolean Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufüge_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	efficient_list_append_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
@@ -285,7 +285,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Boolean vor einem Index in der gegebenen Boolean Liste ein.
 ]
-Die öffentliche Funktion EinfügenB mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Boolean mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
 	efficient_list_insert_bool liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
@@ -300,7 +300,7 @@ Und kann so benutzt werden:
 	Fügt eine Boolean Liste vor einem Index in der gegebenen Boolean Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion Einfügen_Bereich_B mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Boolean mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_bool liste (index minus 1) range (die Größe von wahr).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -314,7 +314,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Boolean am Anfang der gegeben Boolean Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
@@ -329,7 +329,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Boolean an dem gegeben Index aus der gegeben Boolean Liste.
 ]
-Die öffentliche Funktion Lösche_B mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Boolean mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_bool liste index index (die Größe von wahr).
 Und kann so benutzt werden:
@@ -338,7 +338,7 @@ Und kann so benutzt werden:
 [
 	Entfernt alle Booleans aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_B mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Boolean mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von wahr).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -346,7 +346,7 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Kommazahlen Liste mit der gegebenen Kommazahl.
 ]
-Die öffentliche Funktion Füllen_B mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
 	Die Boolean Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
@@ -355,7 +355,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Index des gegebenen Booleans aus der Liste zurück oder -1 wenn der Boolean nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion IndexVon_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Boolean mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
@@ -364,7 +364,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der Boolean in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_B mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Boolean mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
 	Für jeden Boolean b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -373,7 +373,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Boolean Liste leer ist.
 ]
-Die öffentliche Funktion IstLeer_B mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Boolean mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -383,12 +383,12 @@ Und kann so benutzt werden:
 [
 	Löscht alle Buchstaben aus der gegebenen Buchstaben Liste.
 ]
-Die öffentliche Funktion Leere_C mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Buchstabe mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Buchstaben Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-[Hilfsfunktion für Hinzufüge_X]
+[Hilfsfunktion für Hinzufügen_X]
 Die Funktion efficient_list_append_char mit den Parametern list, elem und elem_size vom Typ Buchstaben Listen Referenz, Buchstaben Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
@@ -397,7 +397,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Buchstaben am Ende der gegeben Buchstaben Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufüge_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	efficient_list_append_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
@@ -413,7 +413,7 @@ Und kann so benutzt werden:
 	Fügt einen Buchstaben vor einem Index in der gegebenen Buchstaben Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion EinfügenC mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Buchstabe mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
 	efficient_list_insert_char liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
@@ -427,7 +427,7 @@ Und kann so benutzt werden:
 [
 	Fügt eine Buchstaben Liste vor einem Index in der gegebenen Buchstaben Liste ein.
 ]
-Die öffentliche Funktion Einfügen_Bereich_C mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Buchstabe mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_char liste (index minus 1) range (die Größe von ' ').
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -441,7 +441,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Buchstaben am Anfang der gegeben Buchstaben Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_char liste elm (die Größe von elm).
 Und kann so benutzt werden:
@@ -456,7 +456,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Buchstaben an dem gegeben Index aus der gegeben Buchstaben Liste.
 ]
-Die öffentliche Funktion Lösche_C mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Buchstabe mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_char liste index index (die Größe von ' ').
 Und kann so benutzt werden:
@@ -465,7 +465,7 @@ Und kann so benutzt werden:
 [
 	Entfernt alle Buchstaben aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_C mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Buchstabe mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_char liste (start minus 1) (end minus 1) (die Größe von ' ').
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -473,7 +473,7 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Buchstaben Liste mit dem gegebenen Buchstaben.
 ]
-Die öffentliche Funktion Füllen_C mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	Die Buchstaben Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
@@ -482,7 +482,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Index des gegebenen Buchstabens aus der Liste zurück oder -1 wenn der Buchstabe nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion IndexVon_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
@@ -491,7 +491,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der Buchstabe in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_C mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
 	Für jeden Buchstaben b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -500,7 +500,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
-Die öffentliche Funktion IstLeer_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -510,12 +510,12 @@ Und kann so benutzt werden:
 [
 	Löscht alle Texte aus der gegebenen Text Liste.
 ]
-Die öffentliche Funktion Leere_T mit dem Parameter liste vom Typ Text Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche Funktion Leere_Text mit dem Parameter liste vom Typ Text Listen Referenz, gibt nichts zurück, macht:
 	Speichere eine leere Text Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
-[Hilfsfunktion für Hinzufüge_X]
+[Hilfsfunktion für Hinzufügen_X]
 Die Funktion efficient_list_append_string mit den Parametern list, elem und elem_size vom Typ Text Listen Referenz, Text Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
@@ -524,7 +524,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Text am Ende der gegeben Text Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufüge_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Text mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	efficient_list_append_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
@@ -539,7 +539,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Text vor einem Index in der gegebenen Text Liste ein.
 ]
-Die öffentliche Funktion EinfügenT mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Text mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
 	efficient_list_insert_string liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
@@ -554,7 +554,7 @@ Und kann so benutzt werden:
 	Fügt eine Text Liste vor einem Index in der gegebenen Text Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion Einfügen_Bereich_T mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Text mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_string liste (index minus 1) range (die Größe von "").
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
@@ -568,7 +568,7 @@ Und kann so benutzt werden:
 [
 	Fügt einen Text am Anfang der gegeben Text Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Text mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_string liste elm (die Größe von elm).
 Und kann so benutzt werden:
@@ -583,7 +583,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Text an dem gegeben Index aus der gegeben Text Liste.
 ]
-Die öffentliche Funktion Lösche_T mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Text mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_string liste index index (die Größe von "").
 Und kann so benutzt werden:
@@ -592,7 +592,7 @@ Und kann so benutzt werden:
 [
 	Entfernt alle Texte aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_T mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Text mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_string liste (start minus 1) (end minus 1) (die Größe von "").
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -600,7 +600,7 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Text Liste mit dem gegebenen Text.
 ]
-Die öffentliche Funktion Füllen_T mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Füllen_Text mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	Die Text Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
@@ -609,7 +609,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Index des gegebenen Textes aus der Liste zurück oder -1 wenn der Text nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion IndexVon_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
@@ -618,7 +618,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der Text in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_T mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
 	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -627,7 +627,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Text Liste leer ist.
 ]
-Die öffentliche Funktion IstLeer_T mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -635,7 +635,7 @@ Und kann so benutzt werden:
 [
 	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
 ]
-Die öffentliche Funktion Aneinandergehängt_C mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
+Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
 	Der Text t ist "".
 	Für jeden Buchstabe b in liste, mache:
 		Speichere t verkettet mit b in t.

@@ -25,7 +25,7 @@
 Die öffentliche Funktion Programm_Ausfuehren mit den Parametern ProgrammName, Argumente, Fehler, StandardEingabe, StandardAusgabe und StandardFehlerAusgabe  vom Typ Text, Text Liste, Text Referenz, Text, Text Referenz und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebniss in <StandardAusgabe> und <StandardFehlerAusgabe> und mögliche Fehler in <Fehler>" oder
+    "Führe das Programm <ProgrammName> mit den Argumenten <Argumente> und der Eingabe <StandardEingabe> aus, und speichere das Ergebnis in <StandardAusgabe> und <StandardFehlerAusgabe> und mögliche Fehler in <Fehler>" oder
 	"der Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>" oder
 	"dem Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>" oder
 	"den Rückgabe Wert vom <ProgrammName> mit den Argumenten <Argumente>, der Eingabe <StandardEingabe>, der Ausgabe <StandardAusgabe> und <StandardFehlerAusgabe> und dem Fehler <Fehler>"
@@ -37,7 +37,7 @@ Die öffentliche Funktion Programm_Ausfuehren_Fehler mit den Parametern Programm
 	Der Text out ist "".
 	Gib
 	Führe das Programm ProgrammName mit den Argumenten Argumente
-	und der Eingabe "" aus, und speichere das Ergebniss in
+	und der Eingabe "" aus, und speichere das Ergebnis in
 	out und out und mögliche Fehler in Fehler
 	zurück.
 Und kann so benutzt werden:
@@ -52,7 +52,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Programm_Ausfuehren_Ausgabe mit den Parametern ProgrammName, Argumente, Eingabe und Fehler vom Typ Text, Text Liste, Text und Text Referenz, gibt einen Text zurück, macht:
 	Der Text out ist "".
 	Führe das Programm ProgrammName mit den Argumenten Argumente
-	und der Eingabe Eingabe aus, und speichere das Ergebniss in
+	und der Eingabe Eingabe aus, und speichere das Ergebnis in
 	out und out und mögliche Fehler in Fehler.
 	Gib out zurück.
 Und kann so benutzt werden:
