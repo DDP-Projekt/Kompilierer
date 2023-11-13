@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"reflect"
 	"sort"
 
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -74,7 +75,7 @@ func VisitNode(visitor BaseVisitor, node Node, currentScope *SymbolTable) {
 }
 
 func (h *helperVisitor) visit(node Node) VisitResult {
-	if node == nil {
+	if isNil(node) {
 		return VisitRecurse
 	}
 
@@ -399,4 +400,17 @@ func toInterfaceSlice[T any, U any](slice []T) []U {
 		result[i] = any(slice[i]).(U)
 	}
 	return result
+}
+
+func isNil(node Node) bool {
+	if node == nil {
+		return true
+	}
+	switch reflect.TypeOf(node).Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer,
+		reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+		return reflect.ValueOf(node).IsNil()
+	default:
+		return false
+	}
 }
