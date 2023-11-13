@@ -174,7 +174,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Hundert gibt eine Zahl zurück, macht:
 	Gib 100 zurück.
 Und kann so benutzt werden:
-	"Einhundert" oder "Hundert"
+	"Einhundert", "Hundert" oder "hundert"
 
 [
 	Gibt 1000 zurück.
@@ -182,7 +182,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Tausend gibt eine Zahl zurück, macht:
 	Gib 1000 zurück.
 Und kann so benutzt werden:
-	"Eintausend" oder "Tausend"
+	"Eintausend", "Tausend" oder "tausend"
 
 [
 	Gibt 10000 zurück.
@@ -190,7 +190,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Zehntausend gibt eine Zahl zurück, macht:
 	Gib 10000 zurück.
 Und kann so benutzt werden:
-	"Zehntausend"
+	"Zehntausend" oder "zehntausend"
 
 [
 	Gibt 100000 zurück.
@@ -198,7 +198,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Hunderttausend gibt eine Zahl zurück, macht:
 	Gib 100000 zurück.
 Und kann so benutzt werden:
-	"Einhunderttausend"
+	"Einhunderttausend" oder "einhunderttausend"
 
 [
 	Gibt 1000000 zurück.
