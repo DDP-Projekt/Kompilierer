@@ -41,3 +41,6 @@ Schreibe (y von vec2) auf eine Zeile.
 Schreibe (x von basis von vec3) auf eine Zeile.
 Schreibe (y von basis von vec3) auf eine Zeile.
 Schreibe (z von vec3) auf eine Zeile.
+
+Schreibe (z von vec3 plus 3) auf eine Zeile.
+Schreibe (x von basis von vec3 plus y von basis von vec3) auf eine Zeile.
