@@ -45,7 +45,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn der Buchstabe b eine Zahl (Code 48-57) ist. 
 ]
-Die öffentliche Funktion Ist_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Buchstabe_Ist_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
 	Gib b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> eine Zahl ist"

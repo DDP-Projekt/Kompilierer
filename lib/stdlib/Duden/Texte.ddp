@@ -103,7 +103,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebenen Text den gegebenen Buchstaben enthält. 
 ]
-Die öffentliche Funktion Enthält_Buchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Enthält_Buchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
 	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -112,7 +112,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text (text) den Subtext (suchText) enthält.
 ]
-Die öffentliche Funktion Enthält_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Enthält_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Wenn text gleich suchText ist, gib wahr zurück.
 
 	Die Zahl startIndex ist 0.
@@ -267,7 +267,7 @@ Und kann so benutzt werden:
 [
 	Gibt den index des gegebenen Buchstaben im Text zurück oder -1 falls es nicht gefunden wurde. 
 ]
-Die öffentliche Funktion Index_Von_Text mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Text_Index_Von_Buchstabe mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
@@ -286,7 +286,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob ein Text in eine Zahl umgewandelt werden kann
 ]
-Die öffentliche Funktion Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
 	Die Zahl l ist die Länge von t.
 	Wenn l kleiner als 1 ist, gib falsch zurück.
 

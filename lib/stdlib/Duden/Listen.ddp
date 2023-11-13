@@ -75,7 +75,7 @@ Und kann so benutzt werden:
 [
 	Entfernt die Zahl an dem gegeben Index aus der gegeben Zahlen Liste.
 ]
-Die öffentliche Funktion Lösche_Zahl mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Zahl mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_int liste index index (die Größe von 0).
 Und kann so benutzt werden:
@@ -202,7 +202,7 @@ Und kann so benutzt werden:
 [
 	Entfernt die Kommazahl an dem gegeben Index aus der gegeben Kommazahlen Liste.
 ]
-Die öffentliche Funktion Lösche_Kommazahl mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Kommazahl mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_float liste index index (die Größe von 0,0).
 Und kann so benutzt werden:
@@ -329,7 +329,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Boolean an dem gegeben Index aus der gegeben Boolean Liste.
 ]
-Die öffentliche Funktion Lösche_Boolean mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Boolean mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_bool liste index index (die Größe von wahr).
 Und kann so benutzt werden:
@@ -456,7 +456,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Buchstaben an dem gegeben Index aus der gegeben Buchstaben Liste.
 ]
-Die öffentliche Funktion Lösche_Buchstabe mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Buchstabe mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_char liste index index (die Größe von ' ').
 Und kann so benutzt werden:
@@ -583,7 +583,7 @@ Und kann so benutzt werden:
 [
 	Entfernt den Text an dem gegeben Index aus der gegeben Text Liste.
 ]
-Die öffentliche Funktion Lösche_Text mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Text mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_string liste index index (die Größe von "").
 Und kann so benutzt werden:
