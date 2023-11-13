@@ -11,6 +11,17 @@ type helperVisitor struct {
 	conditional   bool
 }
 
+// a visitor that can be setup before visiting
+type SetupableVisitor interface {
+	BaseVisitor
+	// called before the first node is visited
+	// the passed visitor is the actual implementation that forwards the visits
+	// and can be saved to customize visit order
+	//
+	// should return true if the visitor should start visiting
+	Setup(FullVisitor) bool
+}
+
 // invokes visitor on each Node of ast
 // while checking if visitor implements
 // other *Visitor-Interfaces and invoking
@@ -22,6 +33,11 @@ func VisitAst(ast *Ast, visitor BaseVisitor) {
 	}
 	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
 		h.conditional = true
+	}
+	if setupVis, ok := h.actualVisitor.(SetupableVisitor); ok {
+		if !setupVis.Setup(h) {
+			return
+		}
 	}
 	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok {
 		scpVis.UpdateScope(ast.Symbols)
@@ -45,6 +61,11 @@ func VisitNode(visitor BaseVisitor, node Node, currentScope *SymbolTable) {
 	}
 	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
 		h.conditional = true
+	}
+	if setupVis, ok := h.actualVisitor.(SetupableVisitor); ok {
+		if !setupVis.Setup(h) {
+			return
+		}
 	}
 	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && currentScope != nil {
 		scpVis.UpdateScope(currentScope)
@@ -352,17 +373,6 @@ func (h *helperVisitor) sortArgs(Args map[string]Expression) []Node {
 		return args
 	}
 	return nil
-}
-
-// sorts by range and visits each
-func (h *helperVisitor) visitByRange(nodes []Node) VisitResult {
-	nodes = sortedByRange(nodes)
-	for _, node := range nodes {
-		if h.visit(node) == VisitBreak {
-			return VisitBreak
-		}
-	}
-	return VisitRecurse
 }
 
 func sortedByRange(nodes []Node) []Node {
