@@ -1,5 +1,5 @@
 Binde Schreibe_Text aus "Ausgabe" ein.
-Binde VerbindenZ, Text_an_Text_fügen und Buchstabe_an_Text_fügen aus "Texte" ein.
+Binde Verbinden_Zahl, Text_An_Text_Fügen und Buchstabe_An_Text_Fügen aus "Texte" ein.
 
 Die Funktion ANSI_Escape gibt einen Text zurück, macht:
 	Gib 27 als Buchstabe verkettet mit "[" zurück.

@@ -11,7 +11,7 @@ Binde Betriebssystem aus "Duden/Laufzeit" ein.
 	Auf Linux: '/'
 	Auf Windows: '\'
 ]
-Die öffentliche Funktion TrennZeichen gibt einen Buchstaben zurück, macht:
+Die öffentliche Funktion Trenn_Zeichen gibt einen Buchstaben zurück, macht:
 	Wenn das Betriebssystem gleich "Windows" ist, gib '\\' zurück.
 	Gib '/' zurück.
 Und kann so benutzt werden:
@@ -22,7 +22,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist
 ]
-Die öffentliche Funktion IstAbsolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
 	Gib '/' am Anfang von t steht zurück.
 Und kann so benutzt werden:
 	"<t> ein Absoluter Pfad ist"
@@ -32,7 +32,7 @@ Und kann so benutzt werden:
 	Falls der Pfad leer ist, wird ein "." zurück gegeben.
 	Falls der Pfad nur aus "/" gefolg von nicht-"/" Zeichen, wird "/" zurückgegeben.
 ]
-Die öffentliche Funktion OrdnerPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion Ordner_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Die Zahl i ist die Länge von t.
 	
 	Solange i größer als 0 ist, mache:
@@ -51,7 +51,7 @@ Und kann so benutzt werden:
 [
 	Gibt den letzten Element eines Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
 ]
-Die öffentliche Funktion BasisPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion Basis_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Der Text t2 ist (t mit allen '/' danach entfernt).
 	Die Zahl i ist die Länge von t2.
 	Solange i größer als 0 ist, mache:
@@ -80,7 +80,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Dateinamen einer Datei zurück.
 ]
-Die öffentliche Funktion DateiName mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion Datei_Name mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Der Text bf ist der Basispfad von t.
 	Wenn bf gleich "." ist, gib "" zurück.
 	Die Zahl i ist 1.

@@ -39,7 +39,7 @@ Und kann so benutzt werden:
 	Wenn a >= b ist wird a zurück gegeben.
 	Wenn a < b ist wird b zurückgegeben.
 ]
-Die öffentliche Funktion max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Max mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
@@ -49,7 +49,7 @@ Und kann so benutzt werden:
 	Wenn a <= b ist wird a zurückgegeben.
 	Wenn a > b ist wird b zurückgegeben.
 ]
-Die öffentliche Funktion min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Min mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
@@ -60,7 +60,7 @@ Und kann so benutzt werden:
 	Wenn wert < min ist, wird min zurückgegeben.
 	Wenn min < wert < max ist, wird wert zurückgegeben.
 ]
-Die öffentliche Funktion clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Clamp mit den Parametern wert, max und min vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert größer als max ist, gib max zurück.
 	Wenn wert kleiner als min ist, gib min zurück.
 	Gib wert zurück.
@@ -71,7 +71,7 @@ Und kann so benutzt werden:
 	Wenn a >= b ist wird a zurück gegeben.
 	Wenn a < b ist wird b zurückgegeben.
 ]
-Die öffentliche Funktion maxK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Max_Kommazahl mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
 	Wenn a größer als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
@@ -81,7 +81,7 @@ Und kann so benutzt werden:
 	Wenn a <= b ist wird a zurückgegeben.
 	Wenn a > b ist wird b zurückgegeben.
 ]
-Die öffentliche Funktion minK mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Min_Kommazahl mit den Parametern a und b vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
 	Wenn a kleiner als, oder b ist, gib a zurück.
 	Gib b zurück.
 Und kann so benutzt werden:
@@ -92,7 +92,7 @@ Und kann so benutzt werden:
 	Wenn wert < min ist, wird min zurückgegeben.
 	Wenn min < wert < max ist, wird wert zurückgegeben.
 ]
-Die öffentliche Funktion clampK mit den Parametern wert, max und min vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Clamp_Kommazahl mit den Parametern wert, max und min vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
 	Wenn wert größer als max ist, gib max zurück.
 	Wenn wert kleiner als min ist, gib min zurück.
 	Gib wert zurück.
@@ -104,7 +104,7 @@ Und kann so benutzt werden:
 	Wenn wert > 0 ist, wird 1 zurückgegeben.
 	Wenn wert = 0 ist, wird 0 zurückgegeben.
 ]
-Die öffentliche Funktion sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Sign mit dem Parameter wert vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
 	Gib 0 zurück.
@@ -116,7 +116,7 @@ Und kann so benutzt werden:
 	Wenn wert > 0 ist, wird 1 zurückgegeben.
 	Wenn wert = 0 ist, wird 0 zurückgegeben.
 ]
-Die öffentliche Funktion signK mit dem Parameter wert vom Typ Kommazahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Sign_Kommazahl mit dem Parameter wert vom Typ Kommazahl, gibt eine Zahl zurück, macht:
 	Wenn wert kleiner als 0 ist, gib -1 zurück.
 	Wenn aber wert größer als 0 ist, gib 1 zurück.
 	Gib 0 zurück.
@@ -126,7 +126,7 @@ Und kann so benutzt werden:
 [
 	Rundet wert nach unten.
 ]
-Die öffentliche Funktion floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Floor mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert minus (wert minus wert als Zahl) zurück.
 Und kann so benutzt werden:
 	"<wert> nach unten gerundet"
@@ -134,7 +134,7 @@ Und kann so benutzt werden:
 [
 	Rundet wert nach oben.
 ]
-Die öffentliche Funktion ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Ceil mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib wert plus (1 minus (wert minus wert als Zahl)) zurück.
 Und kann so benutzt werden:
 	"<wert> nach oben gerundet"
@@ -142,7 +142,7 @@ Und kann so benutzt werden:
 [
 	Schneidet alle Kommastellen von wert ab.
 ]
-Die öffentliche Funktion trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Trunc mit dem Parameter wert vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib (wert als Zahl) als Kommazahl zurück.
 Und kann so benutzt werden:
 	"<wert> trunkiert"
@@ -234,7 +234,7 @@ und kann so benutzt werden:
 	Eine Funktion, die den größten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
-Die öffentliche Funktion groesster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Größter_Gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Die Zahl t ist 0.
 	Solange b ungleich 0 ist, mache:
 		Speichere b in t.
@@ -248,7 +248,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die den kleinsten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
 	Zeitkomplexität: O(n)
 ]
-Die öffentliche Funktion kleinster_gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Kleinster_Gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Gib (der Betrag von (a mal b) durch (der größte gemeinsame Teiler von a und b)) als Zahl zurück.
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
@@ -257,7 +257,7 @@ Und kann so benutzt werden:
 	Ob der divident durch den divisor teilbar ist.
 	Auch: Ob divident modulo divisor = 0 ist. 
 ]
-Die öffentliche Funktion ist_teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
 	Gib dividend modulo divisor gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<dividend> durch <divisor> teilbar ist"

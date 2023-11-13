@@ -67,7 +67,7 @@ Und kann so benutzt werden:
 [
 	Gibt 0 zurück.
 ]
-Die öffentliche Funktion ZahlNull gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Null gibt eine Zahl zurück, macht:
 	Gib 0 zurück.
 Und kann so benutzt werden:
 	"Null" oder "null"
@@ -75,7 +75,7 @@ Und kann so benutzt werden:
 [
 	Gibt 1 zurück.
 ]
-Die öffentliche Funktion ZahlEins gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Eins gibt eine Zahl zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
 	"Eins", "eins" oder "ein"
@@ -83,7 +83,7 @@ Und kann so benutzt werden:
 [
 	Gibt 2 zurück.
 ]
-Die öffentliche Funktion ZahlZwei gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Zwei gibt eine Zahl zurück, macht:
 	Gib 2 zurück.
 Und kann so benutzt werden:
 	"Zwei" oder "zwei"
@@ -91,7 +91,7 @@ Und kann so benutzt werden:
 [
 	Gibt 3 zurück.
 ]
-Die öffentliche Funktion ZahlDrei gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Drei gibt eine Zahl zurück, macht:
 	Gib 3 zurück.
 Und kann so benutzt werden:
 	"Drei" oder "drei"
@@ -99,7 +99,7 @@ Und kann so benutzt werden:
 [
 	Gibt 4 zurück.
 ]
-Die öffentliche Funktion ZahlVier gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Vier gibt eine Zahl zurück, macht:
 	Gib 4 zurück.
 Und kann so benutzt werden:
 	"Vier" oder "vier"
@@ -107,7 +107,7 @@ Und kann so benutzt werden:
 [
 	Gibt 5 zurück.
 ]
-Die öffentliche Funktion ZahlFünf gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Fünf gibt eine Zahl zurück, macht:
 	Gib 5 zurück.
 Und kann so benutzt werden:
 	"Fünf" oder "fünf"
@@ -115,7 +115,7 @@ Und kann so benutzt werden:
 [
 	Gibt 6 zurück.
 ]
-Die öffentliche Funktion ZahlSechs gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Sechs gibt eine Zahl zurück, macht:
 	Gib 6 zurück.
 Und kann so benutzt werden:
 	"Sechs" oder "sechs"
@@ -123,7 +123,7 @@ Und kann so benutzt werden:
 [
 	Gibt 7 zurück.
 ]
-Die öffentliche Funktion ZahlSieben gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Sieben gibt eine Zahl zurück, macht:
 	Gib 7 zurück.
 Und kann so benutzt werden:
 	"Sieben" oder "sieben"
@@ -131,7 +131,7 @@ Und kann so benutzt werden:
 [
 	Gibt 8 zurück.
 ]
-Die öffentliche Funktion ZahlAcht gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Acht gibt eine Zahl zurück, macht:
 	Gib 8 zurück.
 Und kann so benutzt werden:
 	"Acht" oder "acht"
@@ -139,7 +139,7 @@ Und kann so benutzt werden:
 [
 	Gibt 9 zurück.
 ]
-Die öffentliche Funktion ZahlNeun gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Neun gibt eine Zahl zurück, macht:
 	Gib 9 zurück.
 Und kann so benutzt werden:
 	"Neun" oder "neun"
@@ -147,7 +147,7 @@ Und kann so benutzt werden:
 [
 	Gibt 10 zurück.
 ]
-Die öffentliche Funktion ZahlZehn gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Zehn gibt eine Zahl zurück, macht:
 	Gib 10 zurück.
 Und kann so benutzt werden:
 	"Zehn" oder "zehn"
@@ -155,7 +155,7 @@ Und kann so benutzt werden:
 [
 	Gibt 11 zurück.
 ]
-Die öffentliche Funktion ZahlElf gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Elf gibt eine Zahl zurück, macht:
 	Gib 11 zurück.
 Und kann so benutzt werden:
 	"Elf" oder "elf"
@@ -163,7 +163,7 @@ Und kann so benutzt werden:
 [
 	Gibt 12 zurück.
 ]
-Die öffentliche Funktion ZahlZwölf gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Zwölf gibt eine Zahl zurück, macht:
 	Gib 12 zurück.
 Und kann so benutzt werden:
 	"Zwölf" oder "zwölf"
@@ -171,7 +171,7 @@ Und kann so benutzt werden:
 [
 	Gibt 100 zurück.
 ]
-Die öffentliche Funktion ZahlHundert gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Hundert gibt eine Zahl zurück, macht:
 	Gib 100 zurück.
 Und kann so benutzt werden:
 	"Einhundert" oder "Hundert"
@@ -179,7 +179,7 @@ Und kann so benutzt werden:
 [
 	Gibt 1000 zurück.
 ]
-Die öffentliche Funktion ZahlTausend gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Tausend gibt eine Zahl zurück, macht:
 	Gib 1000 zurück.
 Und kann so benutzt werden:
 	"Eintausend" oder "Tausend"
@@ -187,7 +187,7 @@ Und kann so benutzt werden:
 [
 	Gibt 10000 zurück.
 ]
-Die öffentliche Funktion ZahlZehntausend gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Zehntausend gibt eine Zahl zurück, macht:
 	Gib 10000 zurück.
 Und kann so benutzt werden:
 	"Zehntausend"
@@ -195,7 +195,7 @@ Und kann so benutzt werden:
 [
 	Gibt 100000 zurück.
 ]
-Die öffentliche Funktion ZahlHunderttausend gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Hunderttausend gibt eine Zahl zurück, macht:
 	Gib 100000 zurück.
 Und kann so benutzt werden:
 	"Einhunderttausend"
@@ -203,7 +203,7 @@ Und kann so benutzt werden:
 [
 	Gibt 1000000 zurück.
 ]
-Die öffentliche Funktion ZahlMillion gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Million gibt eine Zahl zurück, macht:
 	Gib 1000000 zurück.
 Und kann so benutzt werden:
 	"eine Million" oder "Million"
@@ -211,7 +211,7 @@ Und kann so benutzt werden:
 [
 	Gibt 0,5 zurück.
 ]
-Die öffentliche Funktion ZahlHalb gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Halb gibt eine Kommazahl zurück, macht:
 	Gib 0,5 zurück.
 Und kann so benutzt werden:
 	"einhalb" oder "halb"
@@ -219,7 +219,7 @@ Und kann so benutzt werden:
 [
 	Gibt 1,5 zurück.
 ]
-Die öffentliche Funktion ZahlAnderthalb gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Anderthalb gibt eine Kommazahl zurück, macht:
 	Gib 1,5 zurück.
 Und kann so benutzt werden:
 	"anderthalb" oder "eineinhalb"
@@ -227,7 +227,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 2 zurück.
 ]
-Die öffentliche Funktion ZahlBruchHalbe mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Halbe mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 2 zurück.
 Und kann so benutzt werden:
 	"<n> Halbe"
@@ -235,7 +235,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 3 zurück.
 ]
-Die öffentliche Funktion ZahlBruchDrittel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Drittel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 3 zurück.
 Und kann so benutzt werden:
 	"<n> Drittel"
@@ -243,7 +243,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 4 zurück.
 ]
-Die öffentliche Funktion ZahlBruchViertel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Viertel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 4 zurück.
 Und kann so benutzt werden:
 	"<n> Viertel"
@@ -251,7 +251,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 5 zurück.
 ]
-Die öffentliche Funktion ZahlBruchFünftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Fünftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 5 zurück.
 Und kann so benutzt werden:
 	"<n> Fünftel"
@@ -259,7 +259,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 6 zurück.
 ]
-Die öffentliche Funktion ZahlBruchSechstel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Sechstel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 6 zurück.
 Und kann so benutzt werden:
 	"<n> Sechstel"
@@ -267,7 +267,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 7 zurück.
 ]
-Die öffentliche Funktion ZahlBruchSiebtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Siebtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 7 zurück.
 Und kann so benutzt werden:
 	"<n> Siebtel"
@@ -275,7 +275,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 8 zurück.
 ]
-Die öffentliche Funktion ZahlBruchAchtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Achtel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 8 zurück.
 Und kann so benutzt werden:
 	"<n> Achtel"
@@ -283,7 +283,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 9 zurück.
 ]
-Die öffentliche Funktion ZahlBruchNeuntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Neuntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 9 zurück.
 Und kann so benutzt werden:
 	"<n> Neuntel"
@@ -291,7 +291,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 10 zurück.
 ]
-Die öffentliche Funktion ZahlBruchZehntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Zehntel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 10 zurück.
 Und kann so benutzt werden:
 	"<n> Zehntel"
@@ -299,7 +299,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 11 zurück.
 ]
-Die öffentliche Funktion ZahlBruchElftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Elftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 11 zurück.
 Und kann so benutzt werden:
 	"<n> Elftel"
@@ -307,7 +307,7 @@ Und kann so benutzt werden:
 [
 	Gibt <n> durch 12 zurück.
 ]
-Die öffentliche Funktion ZahlBruchZwölftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+Die öffentliche Funktion Zahl_Bruch_Zwölftel mit dem Parameter n vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib n durch 12 zurück.
 Und kann so benutzt werden:
 	"<n> Zwölftel"
@@ -315,7 +315,7 @@ Und kann so benutzt werden:
 [
 	Gibt <z> mal 12 zurück.
 ]
-Die öffentliche Funktion ZahlDuzent mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Zahl_Duzent mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Gib z mal 12 zurück.
 Und kann so benutzt werden:
 	"<z> Dutzend"

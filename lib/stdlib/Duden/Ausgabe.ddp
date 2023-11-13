@@ -54,7 +54,7 @@ und kann so benutzt werden:
 [
 	Die Funktion SchreibeZeile_Zahl schreibt eine gegebene Zahl (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion SchreibeZeile_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Zahl mit dem Parameter p1 vom Typ Zahl, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
@@ -64,7 +64,7 @@ Und kann so benutzt werden:
 [
 	Die Funktion SchreibeZeile_Kommazahl schreibt eine gegebene Kommazahl (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion SchreibeZeile_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Kommazahl mit dem Parameter p1 vom Typ Kommazahl, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
@@ -74,7 +74,7 @@ Und kann so benutzt werden:
 [
 	Die Funktion SchreibeZeile_Boolean schreibt einen gegebenen Boolean (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion SchreibeZeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
@@ -84,7 +84,7 @@ Und kann so benutzt werden:
 [
 	Die Funktion SchreibeZeile_Buchstabe schreibt einen gegebenen Buchstaben (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion SchreibeZeile_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Buchstabe mit dem Parameter p1 vom Typ Buchstabe, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
@@ -94,7 +94,7 @@ Und kann so benutzt werden:
 [
 	Die Funktion SchreibeZeile_Text schreibt einen gegebenen Text (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion SchreibeZeile_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Text mit dem Parameter p1 vom Typ Text, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
