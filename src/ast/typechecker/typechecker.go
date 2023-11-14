@@ -314,6 +314,19 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		} else if lhs == ddptypes.TEXT {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
+	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
+		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
+			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der '%s' Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
+		}
+		if !isOfType(rhs, ddptypes.ZAHL) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
+		}
+
+		if ddptypes.IsList(lhs) {
+			t.latestReturnedType = lhs
+		} else if lhs == ddptypes.TEXT {
+			t.latestReturnedType = ddptypes.TEXT
+		}
 	case ast.BIN_FIELD_ACCESS:
 		if ident, isIdent := expr.Lhs.(*ast.Ident); isIdent {
 			if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {

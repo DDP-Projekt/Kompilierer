@@ -2158,6 +2158,47 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		}
 	}
 
+	// single index range
+	for p.match(token.BIS, token.AB) {
+		switch p.previous().Type {
+
+		// t bis zum n. Element
+		case token.BIS:
+			// bandage: fix for loop von...bis
+			if p.peek().Type != token.ZUM {
+				return lhs
+			}
+			p.consume(token.ZUM)
+			rhs := p.expression()
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: lhs.GetRange().Start,
+					End:   token.NewEndPos(p.previous()),
+				},
+				Tok:      rhs.Token(),
+				Lhs:      lhs,
+				Rhs:      rhs,
+				Operator: ast.BIN_SLICE_TO,
+			}
+			p.consume(token.DOT, token.ELEMENT)
+		// t ab dem n. Element
+		case token.AB:
+			p.consume(token.DEM)
+			rhs := p.expression()
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: lhs.GetRange().Start,
+					End:   token.NewEndPos(p.previous()),
+				},
+				Tok:      rhs.Token(),
+				Lhs:      lhs,
+				Rhs:      rhs,
+				Operator: ast.BIN_SLICE_FROM,
+			}
+			p.consume(token.DOT, token.ELEMENT)
+		}
+	}
+
 	return lhs
 }
 

@@ -1040,6 +1040,31 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
+	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
+		dest := c.NewAlloca(lhsTyp.IrType())
+
+		switch lhsTyp {
+		case c.ddpstring:
+			if e.Operator == ast.BIN_SLICE_FROM {
+				str_len := c.cbb.NewCall(c.ddpstring.lengthIrFun, lhs)
+				c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, rhs, str_len)
+			} else {
+				c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, newInt(1), rhs)
+			}
+		default:
+			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
+				if e.Operator == ast.BIN_SLICE_FROM {
+					lst_len := c.loadStructField(lhs, len_field_index)
+					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, rhs, lst_len)
+				} else {
+					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, newInt(1), rhs)
+				}
+			} else {
+				c.err("invalid Parameter Types for %s (%s, %s)", e.Operator.String(), lhsTyp.Name(), rhsTyp.Name())
+			}
+		}
+		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
+		c.latestIsTemp = true
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
