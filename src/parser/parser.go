@@ -947,6 +947,7 @@ func (p *parser) aliasDecl() ast.Statement {
 		if ok, isFun, existingAlias, toks := p.aliasExists(aliasTokens); ok {
 			p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, existingAlias.Decl().Name(), isFun))
 		} else {
+			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: *aliasTok, Func: funDecl, Args: paramTypes}
 			pTokens = toks
 		}
 	} else {
