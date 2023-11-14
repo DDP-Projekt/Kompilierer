@@ -42,4 +42,51 @@ Schreibe ('5' eine Zahl ist) auf eine Zeile.
 Schreibe ('6' eine Zahl ist) auf eine Zeile.
 Schreibe ('7' eine Zahl ist) auf eine Zeile.
 Schreibe ('8' eine Zahl ist) auf eine Zeile.
-Schreibe ('9' eine Zahl ist).
+Schreibe ('9' eine Zahl ist) auf eine Zeile.
+Schreibe "--- IstDeutscherBuchstabe Test ---" auf eine Zeile.
+Schreibe ('A' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('a' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('p' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('z' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('Z' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('ä' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('ö' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('ü' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('Ä' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('Ö' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('Ü' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe ('ß' ein deutscher Buchstabe ist) auf eine Zeile.
+Schreibe "--- Großgeschrieben Test ---" auf eine Zeile.
+Schreibe ('a' als großer Buchstabe) auf eine Zeile.
+Schreibe ('b' als großer Buchstabe) auf eine Zeile.
+Schreibe ('c' als großer Buchstabe) auf eine Zeile.
+Schreibe ('z' als großer Buchstabe) auf eine Zeile.
+Schreibe ('ä' als großer Buchstabe) auf eine Zeile.
+Schreibe ('ö' als großer Buchstabe) auf eine Zeile.
+Schreibe ('ü' als großer Buchstabe) auf eine Zeile.
+Schreibe ('A' als großer Buchstabe) auf eine Zeile.
+Schreibe ('Z' als großer Buchstabe) auf eine Zeile.
+Schreibe ('Ä' als großer Buchstabe) auf eine Zeile.
+Schreibe ('Ö' als großer Buchstabe) auf eine Zeile.
+Schreibe ('Ü' als großer Buchstabe) auf eine Zeile.
+Schreibe ('ß' als großer Buchstabe) auf eine Zeile.
+Schreibe "--- Kleingeschrieben Test ---" auf eine Zeile.
+Schreibe ('A' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('B' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('C' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('Z' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('Ä' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('Ö' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('Ü' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('a' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('z' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('ä' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('ö' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('ü' als kleiner Buchstabe) auf eine Zeile.
+Schreibe ('ß' als kleiner Buchstabe) auf eine Zeile.
+Schreibe "--- ASCII_Zeichen Test ---" auf eine Zeile.
+Schreibe (der ASCII Zeichen mit der Nummer 48) auf eine Zeile.
+Schreibe (der ASCII Zeichen mit der Nummer 65) auf eine Zeile.
+Schreibe (der ASCII Zeichen mit der Nummer 75) auf eine Zeile.
+Schreibe (der ASCII Zeichen mit der Nummer 100) auf eine Zeile.
+Schreibe (der ASCII Zeichen mit der Nummer 126) auf eine Zeile.

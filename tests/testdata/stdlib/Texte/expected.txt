@@ -2,22 +2,39 @@
 guh??
 guh??
 guh??
+
+
+
+
+
+
 wahr
+falsch
 falsch
 wahr
 falsch
+falsch
+falsch
 wahr
+wahr
+falsch
 falsch
 wahr
 falsch
-wahr
 falsch
 wahr
+falsch
+falsch
+falsch
+wahr
+falsch
+falsch
 falsch
 Hello World! 
 Hello World! Hi.
 
 wahr
+falsch
 2
 ein test
 kein test
