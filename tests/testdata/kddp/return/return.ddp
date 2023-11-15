@@ -1,0 +1,96 @@
+Die Funktion r_nichts gibt nichts zurück, macht:
+	Verlasse die Funktion.
+Und kann so benutzt werden:
+	"return nichts"
+
+Die Funktion r_zahl gibt eine Zahl zurück, macht:
+	Gib 2 zurück.
+Und kann so benutzt werden:
+	"return zahl"
+
+Die Funktion r_kommazahl gibt eine Kommazahl zurück, macht:
+	Gib 2,0 zurück.
+Und kann so benutzt werden:
+	"return kommazahl"
+
+Die Funktion r_buchstabe gibt einen Buchstaben zurück, macht:
+	Gib 'A' zurück.
+Und kann so benutzt werden:
+	"return buchstabe"
+
+Die Funktion r_bool_lit_w gibt einen Boolean zurück, macht:
+	Gib wahr zurück.
+Und kann so benutzt werden:
+	"return wahr"
+
+Die Funktion r_bool_lit_f gibt einen Boolean zurück, macht:
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"return falsch"
+
+Die Funktion r_bool_wahr_wenn_wahr gibt einen Boolean zurück, macht:
+	Gib wahr, wenn wahr ist zurück.
+Und kann so benutzt werden:
+	"return wahr wenn wahr"
+
+Die Funktion r_bool_falsch_wenn_wahr gibt einen Boolean zurück, macht:
+	Gib falsch, wenn wahr ist zurück.
+Und kann so benutzt werden:
+	"return falsch wenn wahr"
+
+Die Funktion r_bool_wahr_wenn_falsch gibt einen Boolean zurück, macht:
+	Gib wahr, wenn falsch ist zurück.
+Und kann so benutzt werden:
+	"return wahr wenn falsch"
+
+Die Funktion r_bool_falsch_wenn_falsch gibt einen Boolean zurück, macht:
+	Gib falsch, wenn falsch ist zurück.
+Und kann so benutzt werden:
+	"return falsch wenn falsch"
+
+Die Funktion r_text gibt einen Text zurück, macht:
+	Gib "hi" zurück.
+Und kann so benutzt werden:
+	"return text"
+
+Die Funktion r_zahl_list gibt eine Zahlen Liste zurück, macht:
+	Gib eine Liste, die aus 1, 3, 5 besteht zurück.
+Und kann so benutzt werden:
+	"return zahlen liste"
+
+Die Funktion r_kommazahl_list gibt eine Kommazahlen Liste zurück, macht:
+	Gib eine Liste, die aus 1,4, 3,0, 5,1 besteht zurück.
+Und kann so benutzt werden:
+	"return kommazahlen liste"
+
+Die Funktion r_buchstabe_list gibt eine Buchstaben Liste zurück, macht:
+	Gib eine Liste, die aus 'A', 'B', 'C' besteht zurück.
+Und kann so benutzt werden:
+	"return buchstaben liste"
+
+Die Funktion r_bool_list gibt eine Boolean Liste zurück, macht:
+	Gib eine Liste, die aus wahr, falsch besteht zurück.
+Und kann so benutzt werden:
+	"return boolean liste"
+
+Die Funktion r_text_list gibt eine Text Liste zurück, macht:
+	Gib eine Liste, die aus "hallo", "welt" besteht zurück.
+Und kann so benutzt werden:
+	"return text liste"
+
+Binde "Duden/Ausgabe" ein.
+Schreibe (return zahl) auf eine Zeile.
+Schreibe (return kommazahl) auf eine Zeile.
+Schreibe (return buchstabe) auf eine Zeile.
+Schreibe (return wahr) auf eine Zeile.
+Schreibe (return falsch) auf eine Zeile.
+Schreibe (return wahr wenn wahr) auf eine Zeile.
+Schreibe (return falsch wenn wahr) auf eine Zeile.
+Schreibe (return wahr wenn falsch) auf eine Zeile.
+Schreibe (return falsch wenn falsch) auf eine Zeile.
+Schreibe (return text) auf eine Zeile.
+Schreibe (return zahlen liste) auf eine Zeile.
+Schreibe (return kommazahlen liste) auf eine Zeile.
+Schreibe (return buchstaben liste) auf eine Zeile.
+Schreibe (return boolean liste) auf eine Zeile.
+Schreibe (return text liste) auf eine Zeile.

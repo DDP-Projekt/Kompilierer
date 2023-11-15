@@ -27,15 +27,16 @@ type parser struct {
 	errorHandler ddperror.Handler // a function to which errors are passed
 	lastError    ddperror.Error   // latest reported error
 
-	module            *ast.Module
-	predefinedModules map[string]*ast.Module            // modules that were passed as environment, might not all be used
-	aliases           *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames         map[string]ddptypes.Type          // map of struct names to struct types
-	currentFunction   string                            // function which is currently being parsed
-	panicMode         bool                              // flag to not report following errors
-	errored           bool                              // wether the parser found an error
-	resolver          *resolver.Resolver                // used to resolve every node directly after it has been parsed
-	typechecker       *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	module                *ast.Module
+	predefinedModules     map[string]*ast.Module            // modules that were passed as environment, might not all be used
+	aliases               *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
+	typeNames             map[string]ddptypes.Type          // map of struct names to struct types
+	currentFunction       string                            // function which is currently being parsed
+	isCurrentFunctionBool bool                              // wether the current function returns a boolean
+	panicMode             bool                              // flag to not report following errors
+	errored               bool                              // wether the parser found an error
+	resolver              *resolver.Resolver                // used to resolve every node directly after it has been parsed
+	typechecker           *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -561,6 +562,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	Typ := p.parseReturnType()
 	if Typ == nil {
 		valid = false
+	}
+	if Typ == ddptypes.BOOLEAN {
+		p.isCurrentFunctionBool = true
 	}
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
@@ -1519,7 +1523,13 @@ func (p *parser) forStatement() ast.Statement {
 
 func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
-	expr := p.expression()
+	var expr ast.Expression
+	if p.isCurrentFunctionBool {
+		expr = p.assignRhs()
+	} else {
+		expr = p.expression()
+	}
+
 	p.consume(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
 	if p.currentFunction == "" {
