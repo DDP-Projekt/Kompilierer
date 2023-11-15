@@ -307,11 +307,12 @@ func (p *parser) assignRhs() ast.Expression {
 	var expr ast.Expression // the final expression
 
 	if p.match(token.TRUE, token.FALSE) {
+		tok := p.previous() // wahr or falsch token
 		// parse possible wahr/falsch wenn syntax
 		if p.match(token.COMMA) {
 			p.consume(token.WENN)
 			// if it is false, we add a unary bool-negate into the ast
-			if tok := &p.tokens[p.cur-2]; tok.Type == token.FALSE {
+			if tok.Type == token.FALSE {
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
 				expr = &ast.UnaryExpr{
 					Range: token.Range{
@@ -328,11 +329,6 @@ func (p *parser) assignRhs() ast.Expression {
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
 			expr = p.expression()
-
-			// validate that nothing follows after the literal
-			if _, ok := expr.(*ast.BoolLit); !ok {
-				p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), ddperror.MsgGotExpected("ein Ausdruck", "ein Literal"))
-			}
 		}
 	} else {
 		expr = p.expression() // no wahr/falsch, so a normal expression
