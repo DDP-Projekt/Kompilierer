@@ -129,6 +129,8 @@ const (
 	FAHRE
 	SCHLEIFE
 	FORT
+	IM
+	BEREICH
 
 	DOT    // .
 	COMMA  // ,
@@ -266,6 +268,8 @@ var tokenStrings = [...]string{
 	FAHRE:         "Fahre",
 	SCHLEIFE:      "Schleife",
 	FORT:          "fort",
+	IM:            "im",
+	BEREICH:       "Bereich",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -404,6 +408,8 @@ var KeywordMap = map[string]TokenType{
 	"fahre":          FAHRE,
 	"Schleife":       SCHLEIFE,
 	"fort":           FORT,
+	"im":             IM,
+	"Bereich":        BEREICH,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

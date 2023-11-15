@@ -77,7 +77,7 @@ Lösche das Element an der Stelle 5 aus text.
 Schreibe text auf eine Zeile. [keintest]
 
 [Lösche_Text_Bereich]
-Lösche alle Elemente von 1 bis 4 aus text.
+Lösche alle Elemente im Bereich von 1 bis 4 aus text.
 Schreibe text auf eine Zeile. [test]
 
 [Fülle_Text]
