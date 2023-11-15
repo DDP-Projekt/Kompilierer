@@ -1909,9 +1909,9 @@ func (p *parser) unary() ast.Expression {
 }
 
 func (p *parser) negate() ast.Expression {
-	if p.match(token.NEGATE) {
+	for p.match(token.NEGATE) {
 		tok := p.previous()
-		rhs := p.unary()
+		rhs := p.negate()
 		return &ast.UnaryExpr{
 			Range: token.Range{
 				Start: token.NewStartPos(tok),
@@ -1929,55 +1929,55 @@ func (p *parser) negate() ast.Expression {
 // TODO: check precedence
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
-	if p.match(token.DIE) {
-		lhs := p.unary()
-		p.consume(token.DOT, token.WURZEL)
-		tok := p.previous()
-		p.consume(token.VON)
-		// root is implemented as pow(degree, 1/radicant)
-		expr := p.unary()
+	if lhs == nil && p.match(token.DIE, token.DER) {
+		if p.match(token.LOGARITHMUS) {
+			tok := p.previous()
+			p.consume(token.VON)
+			numerus := p.expression()
+			p.consume(token.ZUR, token.BASIS)
+			rhs := p.unary()
 
-		return &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   lhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: ast.BIN_POW,
-			Rhs: &ast.BinaryExpr{
-				Lhs: &ast.IntLit{
-					Literal: lhs.Token(),
-					Value:   1,
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: numerus.GetRange().Start,
+					End:   rhs.GetRange().End,
 				},
 				Tok:      *tok,
-				Operator: ast.BIN_DIV,
-				Rhs:      lhs,
-			},
+				Lhs:      numerus,
+				Operator: ast.BIN_LOG,
+				Rhs:      rhs,
+			}
+		} else {
+			lhs = p.unary()
+			p.consume(token.DOT, token.WURZEL)
+			tok := p.previous()
+			p.consume(token.VON)
+			// root is implemented as pow(degree, 1/radicant)
+			expr := p.unary()
+
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   lhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: ast.BIN_POW,
+				Rhs: &ast.BinaryExpr{
+					Lhs: &ast.IntLit{
+						Literal: lhs.Token(),
+						Value:   1,
+					},
+					Tok:      *tok,
+					Operator: ast.BIN_DIV,
+					Rhs:      lhs,
+				},
+			}
 		}
+	} else if lhs == nil {
+		lhs = p.postfix()
 	}
 
-	// TODO: grammar
-	if p.matchN(token.DER, token.LOGARITHMUS) {
-		tok := p.previous()
-		p.consume(token.VON)
-		numerus := p.expression()
-		p.consume(token.ZUR, token.BASIS)
-		rhs := p.unary()
-
-		return &ast.BinaryExpr{
-			Range: token.Range{
-				Start: numerus.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      numerus,
-			Operator: ast.BIN_LOG,
-			Rhs:      rhs,
-		}
-	}
-
-	lhs = p.primary(lhs)
 	for p.match(token.HOCH) {
 		tok := p.previous()
 		rhs := p.unary()
@@ -1993,6 +1993,11 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 		}
 	}
 	return lhs
+}
+
+func (p *parser) postfix() ast.Expression {
+	lhs := p.primary(nil)
+	return p.cast(lhs)
 }
 
 // when called from power() lhs might be a funcCall
@@ -2068,83 +2073,12 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			}
 		}
 	}
+	return lhs
+}
 
-	// indexing
-	for p.match(token.AN) {
-		p.consume(token.DER, token.STELLE)
-		tok := p.previous()
-		rhs := p.primary(nil)
-		lhs = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: lhs.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      lhs,
-			Operator: ast.BIN_INDEX,
-			Rhs:      rhs,
-		}
-	}
+// postfix
 
-	// TODO: check this with precedence
-	// 		 remember to also check p.assigneable()
-	// 		 also check the order of the following 4 operators
-	//		 and maybe outsource them into seperate functions
-	for p.match(token.VON) {
-		tok := p.previous()
-		operand := lhs
-		mid := p.primary(nil)
-		if p.match(token.BIS) {
-			rhs := p.primary(nil)
-			lhs = &ast.TernaryExpr{
-				Range: token.Range{
-					Start: operand.GetRange().Start,
-					End:   rhs.GetRange().End,
-				},
-				Tok:      *tok,
-				Lhs:      operand,
-				Mid:      mid,
-				Rhs:      rhs,
-				Operator: ast.TER_SLICE,
-			}
-		} else {
-			// disgusting hack around indexing vs field_access precedence
-			// in combination with von ... bis
-			if indexing, isBin := mid.(*ast.BinaryExpr); isBin && indexing.Operator == ast.BIN_INDEX {
-				lhs = &ast.BinaryExpr{
-					Range: token.Range{
-						Start: lhs.GetRange().Start,
-						End:   indexing.GetRange().End,
-					},
-					Tok: indexing.Tok,
-					Lhs: &ast.BinaryExpr{
-						Range: token.Range{
-							Start: operand.GetRange().Start,
-							End:   mid.GetRange().End,
-						},
-						Tok:      *tok,
-						Lhs:      operand,
-						Operator: ast.BIN_FIELD_ACCESS,
-						Rhs:      indexing.Lhs,
-					},
-					Operator: ast.BIN_INDEX,
-					Rhs:      indexing.Rhs,
-				}
-			} else {
-				lhs = &ast.BinaryExpr{
-					Range: token.Range{
-						Start: operand.GetRange().Start,
-						End:   mid.GetRange().End,
-					},
-					Tok:      *tok,
-					Lhs:      operand,
-					Operator: ast.BIN_FIELD_ACCESS,
-					Rhs:      mid,
-				}
-			}
-		}
-	}
-
+func (p *parser) cast(lhs ast.Expression) ast.Expression {
 	// type-casting
 	for p.match(token.ALS) {
 		Type := p.parseType()
@@ -2157,7 +2091,66 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			Lhs:  lhs,
 		}
 	}
+	return p.field_access(lhs)
+}
 
+func (p *parser) field_access(lhs ast.Expression) ast.Expression {
+	for p.match(token.VON) {
+		von := p.previous()
+		rhs := p.primary(nil)
+		lhs = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *von,
+			Lhs:      lhs,
+			Operator: ast.BIN_FIELD_ACCESS,
+			Rhs:      rhs,
+		}
+	}
+	return p.indexing(lhs)
+}
+
+func (p *parser) indexing(lhs ast.Expression) ast.Expression {
+	// indexing
+	for p.match(token.AN) {
+		p.consume(token.DER, token.STELLE)
+		tok := p.previous()
+		rhs := p.postfix()
+		lhs = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *tok,
+			Lhs:      lhs,
+			Operator: ast.BIN_INDEX,
+			Rhs:      rhs,
+		}
+	}
+	return p.slicing(lhs)
+}
+
+func (p *parser) slicing(lhs ast.Expression) ast.Expression {
+	// slicing
+	for p.match(token.VON) {
+		von := p.previous()
+		mid := p.expression()
+		p.consume(token.BIS)
+		rhs := p.primary(nil)
+		lhs = &ast.TernaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *von,
+			Lhs:      lhs,
+			Mid:      mid,
+			Rhs:      rhs,
+			Operator: ast.TER_SLICE,
+		}
+	}
 	return lhs
 }
 
