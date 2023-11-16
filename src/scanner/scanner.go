@@ -153,9 +153,7 @@ func (s *Scanner) NextToken() token.Token {
 		}
 	}
 
-	msg := fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char))
-	s.err(ddperror.SYN_UNEXPECTED_TOKEN, s.currentRange(), msg)
-	return s.errorToken(msg)
+	return s.errorToken(fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char)))
 }
 
 func (s *Scanner) scanEscape(quote rune) bool {
@@ -195,9 +193,7 @@ func (s *Scanner) string() token.Token {
 	}
 
 	if s.atEnd() {
-		msg := "ein Offenes Text Literal"
-		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
-		return s.errorToken(msg)
+		return s.errorToken("ein Offenes Text Literal")
 	}
 
 	s.advance()
@@ -219,9 +215,7 @@ func (s *Scanner) char() token.Token {
 	}
 
 	if s.atEnd() {
-		msg := "ein Offenes Buchstaben Literal"
-		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
-		return s.errorToken(msg)
+		return s.errorToken("ein Offenes Buchstaben Literal")
 	}
 
 	s.advance()
