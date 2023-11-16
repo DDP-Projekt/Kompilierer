@@ -25,7 +25,7 @@ Die öffentliche Funktion Trim_Anfang mit den Parametern text und zeichen vom Ty
 		Wenn index größer als die Länge von text ist, dann:
 			Speichere "" in text.
 			Verlasse die Funktion.
-	Speichere text im Bereich von index bis (die Länge von text) in text.
+	Speichere text ab dem index. Element in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> vor <text>"
 
@@ -56,7 +56,7 @@ Die öffentliche Funktion Trim_Ende mit den Parametern text und zeichen vom Typ 
 			Speichere "" in text.
 			Verlasse die Funktion.
 
-	Speichere text im Bereich von 1 bis index in text.
+	Speichere text bis zum index. Element in text.
 Und kann so benutzt werden:
 	"Entferne alle <zeichen> nach <text>"
 
@@ -144,7 +144,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Beginnt_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
-	Gib (text im Bereich von 1 bis (die Länge von suchText)) gleich suchText ist zurück.
+	Gib (text bis zum (die Länge von suchText). Element) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Anfang von <text> steht"
 
@@ -162,7 +162,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Endet_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
 	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
-	Gib (text im Bereich von (die Länge von text minus die Länge von suchText plus 1) bis (die Länge von text)) gleich suchText ist zurück.
+	Gib (text ab dem (die Länge von text minus die Länge von suchText plus 1). Element) gleich suchText ist zurück.
 Und kann so benutzt werden:
 	"<suchText> am Ende von <text> steht"
 
@@ -196,12 +196,12 @@ Und kann so benutzt werden:
 	Fügt einen Text 
 ]
 Die öffentliche Funktion Text_In_Text_Einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Text, gibt nichts zurück, macht:
-	Speichere text im Bereich von 1 bis (index minus 1) verkettet mit elm verkettet mit text im Bereich von index bis (die Länge von text) in text.
+	Speichere text bis zum (index minus 1). Element verkettet mit elm verkettet mit text ab dem index. Element in text.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
 Die öffentliche Funktion Buchstabe_In_Text_Einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
-	Speichere text im Bereich von 1 bis (index minus 1) verkettet mit elm verkettet mit text im Bereich von index bis (die Länge von text) in text.
+	Speichere text bis zum (index minus 1). Element verkettet mit elm verkettet mit text ab dem index. Element in text.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
@@ -232,11 +232,11 @@ Die öffentliche Funktion Lösche_Text mit den Parametern text und index vom Typ
 	Wenn index gleich 1 ist und die Länge von text größer als 1 ist, dann:
 		Speichere "" in text.
 	Wenn aber index gleich 1 ist, dann:
-		Speichere text im Bereich von 2 bis (die Länge von text) in text.
+		Speichere text ab dem 2. Element in text.
 	Wenn aber index gleich die Länge von text ist, dann:
-		Speichere text im Bereich von 1 bis (die Länge von text minus 1) in text.
+		Speichere text bis zum (die Länge von text minus 1). Element in text.
 	Sonst:
-		Speichere text im Bereich von 1 bis (index minus 1) verkettet mit text im Bereich von (index plus 1) bis (die Länge von text) in text.
+		Speichere text bis zum (index minus 1). Element verkettet mit text ab dem (index plus 1). Element in text.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <text>"
 
@@ -245,9 +245,9 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Text_Bereich mit den Parametern text, start und end vom Typ Text Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Wenn start gleich 1 ist, dann:
-		Speichere text im Bereich von (end plus 1) bis (die Länge von text) in text.
+		Speichere text ab dem (end plus 1). Element in text.
 	Sonst:
-		Speichere text im Bereich von 1 bis (start minus 1) verkettet mit text im Bereich von (end plus 1) bis (die Länge von text) in text.
+		Speichere text bis zum (start minus 1). Element verkettet mit text ab dem (end plus 1). Element in text.
 Und kann so benutzt werden:
 	"Lösche alle Elemente im Bereich von <start> bis <end> aus <text>"
 
@@ -386,11 +386,11 @@ Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Tex
 	Die Zahl endIndex ist der Index von zeichen in text.
 	Solange endIndex ungleich -1 ist und endIndex ungleich die Länge von text ist, mache:
 		Wenn endIndex ungleich 1 ist, dann:
-			Speichere endliste verkettet mit text im Bereich von 1 bis (endIndex minus 1) in endliste.
-			Speichere text im Bereich von (endIndex plus 1) bis (die Länge von text) in text.
+			Speichere endliste verkettet mit text bis zum (endIndex minus 1). Element in endliste.
+			Speichere text ab dem (endIndex plus 1). Element in text.
 		Sonst:
 			Speichere endliste verkettet mit "" in endliste.
-			Speichere text im Bereich von 2 bis (die Länge von text) in text.
+			Speichere text ab dem 2. Element in text.
 		Speichere der Index von zeichen in text in endIndex.
 	
 	Speichere endliste verkettet mit text in endliste.
