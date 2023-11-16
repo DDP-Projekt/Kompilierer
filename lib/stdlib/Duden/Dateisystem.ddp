@@ -102,7 +102,7 @@ Und kann so benutzt werden:
 [
 	Equavilent zu C's stat.st_mtime formatiert als Text
 ]
-Die öffentliche Funktion Änderung_Datum mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+Die öffentliche Funktion AEnderung_Datum mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"das Datum der letzten Änderung der Datei <Pfad>"
@@ -118,7 +118,7 @@ Und kann so benutzt werden:
 [
 	Equavilent zu C's stat.st_size
 ]
-Die öffentliche Funktion Datei_Größe mit dem Parameter Pfad vom Typ Text, gibt eine Zahl zurück,
+Die öffentliche Funktion Datei_Groesse mit dem Parameter Pfad vom Typ Text, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"die Größe der Datei <Pfad>" oder
