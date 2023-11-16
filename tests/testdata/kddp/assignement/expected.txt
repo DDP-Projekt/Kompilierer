@@ -1,2 +1,2 @@
 2,33,55
-wahr,falsch,wahr,wahr
+wahr,falsch,wahr,falsch

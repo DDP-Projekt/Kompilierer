@@ -23,7 +23,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist
 ]
 Die öffentliche Funktion Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
-	Gib '/' am Anfang von t steht zurück.
+	Gib wahr, wenn '/' am Anfang von t steht zurück.
 Und kann so benutzt werden:
 	"<t> ein Absoluter Pfad ist"
 

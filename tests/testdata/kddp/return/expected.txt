@@ -1,0 +1,15 @@
+2
+2
+A
+wahr
+falsch
+wahr
+falsch
+falsch
+wahr
+hi
+1, 3, 5
+1,4, 3, 5,1
+A, B, C
+wahr, falsch
+hallo, welt

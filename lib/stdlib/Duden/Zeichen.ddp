@@ -2,7 +2,7 @@
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' '), eine neue Zeile ('\n'), ein Tabulator ('\t') oder ein Wagenrücklauf ('\r') ist.
 ]
 Die öffentliche Funktion Ist_Leer mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
+	Gib wahr, wenn b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
 Und kann so benutzt werden:
 	"<b> ein leeres Zeichen ist"
 
@@ -38,7 +38,7 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' ') ist. 
 ]
 Die öffentliche Funktion Ist_Leerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b gleich ' ' ist zurück.
+	Gib wahr, wenn b gleich ' ' ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Leerzeichen ist"
 
@@ -46,7 +46,7 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn der Buchstabe b eine Zahl (Code 48-57) ist. 
 ]
 Die öffentliche Funktion Buchstabe_Ist_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
+	Gib wahr, wenn b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> eine Zahl ist"
 
@@ -54,7 +54,7 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn der Buchstabe b ein Kontrollzeichen (Code 0-31) ist. 
 ]
 Die öffentliche Funktion Ist_Kontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
+	Gib wahr, wenn b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
 Und kann so benutzt werden:
 	[Wenn] "<b> ein Kontrollzeichen ist"
 
@@ -78,7 +78,7 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe oder eine Zahl ist. 
 ]
 Die öffentliche Funktion Ist_Deutscher_Buchstabe_Oder_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Boolean zurück, macht:
-	Gib b ein deutscher Buchstabe ist oder b eine Zahl ist zurück.
+	Gib wahr, wenn b ein deutscher Buchstabe ist oder b eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"<b> ein deutscher Buchstabe oder eine Zahl ist"
 

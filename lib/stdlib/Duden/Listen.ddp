@@ -120,7 +120,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -374,7 +374,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Boolean Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Boolean mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -501,7 +501,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
@@ -628,7 +628,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Text Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 

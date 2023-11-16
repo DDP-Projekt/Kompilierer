@@ -27,15 +27,16 @@ type parser struct {
 	errorHandler ddperror.Handler // a function to which errors are passed
 	lastError    ddperror.Error   // latest reported error
 
-	module            *ast.Module
-	predefinedModules map[string]*ast.Module            // modules that were passed as environment, might not all be used
-	aliases           *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames         map[string]ddptypes.Type          // map of struct names to struct types
-	currentFunction   string                            // function which is currently being parsed
-	panicMode         bool                              // flag to not report following errors
-	errored           bool                              // wether the parser found an error
-	resolver          *resolver.Resolver                // used to resolve every node directly after it has been parsed
-	typechecker       *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	module                *ast.Module
+	predefinedModules     map[string]*ast.Module            // modules that were passed as environment, might not all be used
+	aliases               *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
+	typeNames             map[string]ddptypes.Type          // map of struct names to struct types
+	currentFunction       string                            // function which is currently being parsed
+	isCurrentFunctionBool bool                              // wether the current function returns a boolean
+	panicMode             bool                              // flag to not report following errors
+	errored               bool                              // wether the parser found an error
+	resolver              *resolver.Resolver                // used to resolve every node directly after it has been parsed
+	typechecker           *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -307,11 +308,12 @@ func (p *parser) assignRhs() ast.Expression {
 	var expr ast.Expression // the final expression
 
 	if p.match(token.TRUE, token.FALSE) {
+		tok := p.previous() // wahr or falsch token
 		// parse possible wahr/falsch wenn syntax
 		if p.match(token.COMMA) {
 			p.consume(token.WENN)
 			// if it is false, we add a unary bool-negate into the ast
-			if tok := &p.tokens[p.cur-2]; tok.Type == token.FALSE {
+			if tok.Type == token.FALSE {
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
 				expr = &ast.UnaryExpr{
 					Range: token.Range{
@@ -328,11 +330,6 @@ func (p *parser) assignRhs() ast.Expression {
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
 			expr = p.expression()
-
-			// validate that nothing follows after the literal
-			if _, ok := expr.(*ast.BoolLit); !ok {
-				p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), ddperror.MsgGotExpected("ein Ausdruck", "ein Literal"))
-			}
 		}
 	} else {
 		expr = p.expression() // no wahr/falsch, so a normal expression
@@ -565,6 +562,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	Typ := p.parseReturnType()
 	if Typ == nil {
 		valid = false
+	}
+	if Typ == ddptypes.BOOLEAN {
+		p.isCurrentFunctionBool = true
 	}
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
@@ -1523,7 +1523,13 @@ func (p *parser) forStatement() ast.Statement {
 
 func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
-	expr := p.expression()
+	var expr ast.Expression
+	if p.isCurrentFunctionBool {
+		expr = p.assignRhs()
+	} else {
+		expr = p.expression()
+	}
+
 	p.consume(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
 	if p.currentFunction == "" {
