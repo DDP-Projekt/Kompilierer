@@ -2025,6 +2025,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 		case token.BIS:
 			// bandage: fix for loop von...bis
 			if p.peek().Type != token.ZUM {
+				p.decrease()
 				return lhs
 			}
 			p.consume(token.ZUM)
