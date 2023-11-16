@@ -119,9 +119,10 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
-	if !ast.IsExternFunc(decl) {
+	// already typechecked in blockStmt
+	/*if !ast.IsExternFunc(decl) {
 		decl.Body.Accept(t)
-	}
+	}*/
 
 	// TODO: error on the type-name ranges
 	if decl.IsPublic {
