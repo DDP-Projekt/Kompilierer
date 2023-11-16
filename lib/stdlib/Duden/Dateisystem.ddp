@@ -90,3 +90,44 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Verschiebe <Pfad> nach <NeuerName>" oder
 	"<Pfad> erfolgreich nach <NeuerName> verschoben wurde"
+
+[
+	Equavilent zu C's stat.st_atime formatiert als Text
+]
+Die öffentliche Funktion Zugriff_Datum mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"das Datum des letzten Zugriffs der Datei <Pfad>"
+
+[
+	Equavilent zu C's stat.st_mtime formatiert als Text
+]
+Die öffentliche Funktion Änderung_Datum mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"das Datum der letzten Änderung der Datei <Pfad>"
+
+[
+	Equavilent zu C's stat.st_ctime formatiert als Text
+]
+Die öffentliche Funktion Status_Datum mit dem Parameter Pfad vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"das Datum der letzten Statusänderung der Datei <Pfad>"
+
+[
+	Equavilent zu C's stat.st_size
+]
+Die öffentliche Funktion Datei_Größe mit dem Parameter Pfad vom Typ Text, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"die Größe der Datei <Pfad>" oder
+	"die Größe der Datei <Pfad> in Byte"
+
+[
+	Equavilent zu C's stat.st_mode
+]
+Die öffentliche Funktion Datei_Modus mit dem Parameter Pfad vom Typ Text, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"den Modus der Datei <Pfad>"
