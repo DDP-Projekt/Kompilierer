@@ -6,6 +6,7 @@
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -132,4 +133,57 @@ ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 		FREE(char, path_copy);
 	}
 	return rename(Pfad->str, NeuerName->str) == 0;
+}
+
+static void formatDateStr(ddpstring *str, struct tm *time) {
+	// make string
+	str->str = NULL;
+	str->cap = 0;
+
+	// format string
+	char buff[30];
+	int size = sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon + 1, time->tm_year + 1900);
+
+	str->cap = size+1;
+	str->str = ALLOCATE(char, str->cap);
+	strcpy(str->str, buff);
+	str->str[str->cap-1] = '\0';
+}
+
+void Zugriff_Datum(ddpstring* ret, ddpstring *Pfad) {
+	struct stat st;
+	stat(Pfad->str, &st);
+	struct tm *tm = localtime(&st.st_atime);
+
+	formatDateStr(ret, tm);
+}
+
+void Änderung_Datum(ddpstring* ret, ddpstring *Pfad) {
+	struct stat st;
+	stat(Pfad->str, &st);
+	struct tm *tm = localtime(&st.st_mtime);
+
+	formatDateStr(ret, tm);
+}
+
+void Status_Datum(ddpstring* ret, ddpstring *Pfad) {
+	struct stat st;
+	stat(Pfad->str, &st);
+	struct tm *tm = localtime(&st.st_ctime);
+
+	formatDateStr(ret, tm);
+}
+
+ddpint Datei_Größe(ddpstring *Pfad) {
+	struct stat st;
+	stat(Pfad->str, &st);
+
+	return (ddpint)st.st_size;
+}
+
+ddpint Datei_Modus(ddpstring *Pfad) {
+	struct stat st;
+	stat(Pfad->str, &st);
+
+	return (ddpint)st.st_mode;
 }
