@@ -131,6 +131,9 @@ const (
 	FORT
 	IM
 	BEREICH
+	AB
+	ZUM
+	ELEMENT
 
 	DOT    // .
 	COMMA  // ,
@@ -270,6 +273,9 @@ var tokenStrings = [...]string{
 	FORT:          "fort",
 	IM:            "im",
 	BEREICH:       "Bereich",
+	AB:            "ab",
+	ZUM:           "zum",
+	ELEMENT:       "Element",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -410,6 +416,9 @@ var KeywordMap = map[string]TokenType{
 	"fort":           FORT,
 	"im":             IM,
 	"Bereich":        BEREICH,
+	"ab":             AB,
+	"zum":            ZUM,
+	"Element":        ELEMENT,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

@@ -70,6 +70,8 @@ const (
 	BIN_LESS_EQ                     // kleiner als, oder
 	BIN_GREATER_EQ                  // größer als, oder
 	BIN_FIELD_ACCESS                // von
+	BIN_SLICE_TO                    // bis zum
+	BIN_SLICE_FROM                  // ab dem
 )
 
 func (op BinaryOperator) String() string {
@@ -120,6 +122,10 @@ func (op BinaryOperator) String() string {
 		return "größer oder"
 	case BIN_FIELD_ACCESS:
 		return "von"
+	case BIN_SLICE_TO:
+		return "bis zum"
+	case BIN_SLICE_FROM:
+		return "ab dem"
 	}
 	panic(fmt.Errorf("unbekannter binärer Operator %d", op))
 }
