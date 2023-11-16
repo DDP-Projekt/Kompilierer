@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <wait.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -186,4 +187,41 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 	stat(Pfad->str, &st);
 
 	return (ddpint)st.st_mode;
+}
+
+// UNIX: https://stackoverflow.com/a/2180347
+// ToDo: Windows (maybe WinAPI CopyFile())
+ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
+    if (!Pfad->str || !Kopiepfad->str) {
+        return (ddpbool)false;
+    }
+
+    pid_t pid = fork();
+
+	if (pid < 0) {
+		return (ddpbool)false;
+    }
+    else if (pid == 0) { // child
+		// to not reinvent the wheel
+        execl("/bin/cp", "/bin/cp", Pfad->str, Kopiepfad->str, (char*)0);
+    } 
+    else { // parent
+		int childExitStatus;
+		// you could just call wait() as long as you are only expecting to have one child process at a time.
+        pid_t ws = waitpid(pid, &childExitStatus, WNOHANG);
+        if (ws == -1) {
+			return (ddpbool)false;
+        }
+
+		// exit code in childExitStatus
+        if (WIFEXITED(childExitStatus) && WEXITSTATUS(childExitStatus)) {
+            return (ddpbool)false;
+        }
+
+		if (WIFSTOPPED(childExitStatus)) { // stopped
+			return (ddpbool)false;
+		}
+    }
+
+	return (ddpbool)true;
 }
