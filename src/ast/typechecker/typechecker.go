@@ -20,18 +20,23 @@ type Typechecker struct {
 	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
 	latestReturnedType ddptypes.Type    // type of the last visited expression
 	Module             *ast.Module      // the module that is being typechecked
+	panicMode          *bool            // panic mode synchronized with the parser and resolver
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string) *Typechecker {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Typechecker, error) {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
+	}
+	if panicMode == nil {
+		return nil, fmt.Errorf("panicMode must not be nil")
 	}
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
 		CurrentTable:       Mod.Ast.Symbols,
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
-	}
+		panicMode:          panicMode,
+	}, nil
 }
 
 // typecheck a single node
@@ -63,7 +68,10 @@ func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
 // helper for errors
 func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string) {
 	t.Module.Ast.Faulty = true
-	t.ErrorHandler(ddperror.New(code, Range, msg, t.Module.FileName))
+	if !*t.panicMode {
+		*t.panicMode = true
+		t.ErrorHandler(ddperror.New(code, Range, msg, t.Module.FileName))
+	}
 }
 
 // helper to not always pass range and file

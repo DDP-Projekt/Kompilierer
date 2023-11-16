@@ -102,8 +102,13 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	parser.resolver = resolver.New(parser.module, parser.errorHandler, name)
-	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name)
+	var err error
+	if parser.resolver, err = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+		panic(err)
+	}
+	if parser.typechecker, err = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+		panic(err)
+	}
 
 	return parser
 }
