@@ -1451,7 +1451,11 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if ast.IsExternFunc(fun.funcDecl) {
 		for i := range fun.funcDecl.ParamNames {
 			if !fun.funcDecl.ParamTypes[i].IsReference {
-				c.freeNonPrimitive(args[i], c.toIrType(fun.funcDecl.ParamTypes[i].Type))
+				if irReturnType.IsPrimitive() {
+					c.freeNonPrimitive(args[i], c.toIrType(fun.funcDecl.ParamTypes[i].Type))
+				} else {
+					c.freeNonPrimitive(args[i+1], c.toIrType(fun.funcDecl.ParamTypes[i].Type))
+				}
 			}
 		}
 	}
