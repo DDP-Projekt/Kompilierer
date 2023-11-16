@@ -199,7 +199,7 @@ Die öffentliche Funktion Hat_Token gibt einen Boolean zurück, macht:
 	Wenn die Länge von Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
 	Speichere den nächsten Text in Eingabe_Puffer.
-	Gib [wahr wenn] die Länge von Eingabe_Puffer größer als 0 ist zurück.
+	Gib wahr, wenn die Länge von Eingabe_Puffer größer als 0 ist zurück.
 Und kann so benutzt werden:
 	"eine Eingabe vorhanden ist"
 
@@ -208,7 +208,7 @@ Und kann so benutzt werden:
 	zu einer Zahl umgewandelt werden kann.
 ]
 Die öffentliche Funktion Hat_Zahl gibt einen Boolean zurück, macht:
-	Gib eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
+	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe eine Zahl ist" oder
 	"die naechste Eingabe eine Zahl ist"
@@ -218,6 +218,6 @@ Und kann so benutzt werden:
 	gelesen werden kann.
 ]
 Die öffentliche Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
-	Gib nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
+	Gib wahr, wenn nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
 Und kann so benutzt werden:
 	"ein Buchstabe vorhanden ist"

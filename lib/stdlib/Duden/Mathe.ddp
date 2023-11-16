@@ -258,7 +258,7 @@ Und kann so benutzt werden:
 	Auch: Ob divident modulo divisor = 0 ist. 
 ]
 Die öffentliche Funktion Ist_Teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
-	Gib dividend modulo divisor gleich 0 ist zurück.
+	Gib wahr, wenn dividend modulo divisor gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<dividend> durch <divisor> teilbar ist"
 
