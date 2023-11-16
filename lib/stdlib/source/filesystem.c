@@ -158,7 +158,7 @@ void Zugriff_Datum(ddpstring* ret, ddpstring *Pfad) {
 	formatDateStr(ret, tm);
 }
 
-void Änderung_Datum(ddpstring* ret, ddpstring *Pfad) {
+void AEnderung_Datum(ddpstring* ret, ddpstring *Pfad) {
 	struct stat st;
 	stat(Pfad->str, &st);
 	struct tm *tm = localtime(&st.st_mtime);
@@ -174,7 +174,7 @@ void Status_Datum(ddpstring* ret, ddpstring *Pfad) {
 	formatDateStr(ret, tm);
 }
 
-ddpint Datei_Größe(ddpstring *Pfad) {
+ddpint Datei_Groesse(ddpstring *Pfad) {
 	struct stat st;
 	stat(Pfad->str, &st);
 
