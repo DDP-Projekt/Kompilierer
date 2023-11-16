@@ -2004,37 +2004,32 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 	lhs = p.indexing(lhs)
-	for p.match(token.IM) {
-		p.consume(token.BEREICH, token.VON)
-		von := p.previous()
-		mid := p.expression()
-		p.consume(token.BIS)
-		rhs := p.indexing(nil)
-		lhs = &ast.TernaryExpr{
-			Range: token.Range{
-				Start: lhs.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *von,
-			Lhs:      lhs,
-			Mid:      mid,
-			Rhs:      rhs,
-			Operator: ast.TER_SLICE,
-		}
-	}
-
-	// single index range
-	for p.match(token.BIS, token.AB) {
+	for p.match(token.IM, token.BIS, token.AB) {
 		switch p.previous().Type {
-
+		// im Bereich von ... bis ...
+		case token.IM:
+			p.consume(token.BEREICH, token.VON)
+			von := p.previous()
+			mid := p.expression()
+			p.consume(token.BIS)
+			rhs := p.indexing(nil)
+			lhs = &ast.TernaryExpr{
+				Range: token.Range{
+					Start: lhs.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *von,
+				Lhs:      lhs,
+				Mid:      mid,
+				Rhs:      rhs,
+				Operator: ast.TER_SLICE,
+			}
 		// t bis zum n. Element
 		case token.BIS:
-			// bandage: fix for loop von...bis
-			if p.peek().Type != token.ZUM {
+			if !p.match(token.ZUM) {
 				p.decrease()
 				return lhs
 			}
-			p.consume(token.ZUM)
 			rhs := p.expression()
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
