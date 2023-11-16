@@ -147,7 +147,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Lies_Buchstabe_Gepuffert gibt einen Buchstaben zurück, macht:
 	Wenn die Länge von Eingabe_Puffer ungleich 0 ist, dann:
 		Der Buchstabe Rückgabe ist Eingabe_Puffer an der Stelle 1.
-		Speichere Eingabe_Puffer von 2 bis (die Länge von Eingabe_Puffer) in Eingabe_Puffer.
+		Speichere Eingabe_Puffer im Bereich von 2 bis (die Länge von Eingabe_Puffer) in Eingabe_Puffer.
 		Gib Rückgabe zurück.
 	
 	Wenn Gepufferter_Buchstabe als Zahl ungleich 0 ist, dann:

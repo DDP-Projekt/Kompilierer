@@ -1910,9 +1910,9 @@ func (p *parser) unary() ast.Expression {
 }
 
 func (p *parser) negate() ast.Expression {
-	if p.match(token.NEGATE) {
+	for p.match(token.NEGATE) {
 		tok := p.previous()
-		rhs := p.unary()
+		rhs := p.negate()
 		return &ast.UnaryExpr{
 			Range: token.Range{
 				Start: token.NewStartPos(tok),
@@ -1930,55 +1930,55 @@ func (p *parser) negate() ast.Expression {
 // TODO: check precedence
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
-	if p.match(token.DIE) {
-		lhs := p.unary()
-		p.consume(token.DOT, token.WURZEL)
-		tok := p.previous()
-		p.consume(token.VON)
-		// root is implemented as pow(degree, 1/radicant)
-		expr := p.unary()
+	if lhs == nil && p.match(token.DIE, token.DER) {
+		if p.match(token.LOGARITHMUS) {
+			tok := p.previous()
+			p.consume(token.VON)
+			numerus := p.expression()
+			p.consume(token.ZUR, token.BASIS)
+			rhs := p.unary()
 
-		return &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   lhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: ast.BIN_POW,
-			Rhs: &ast.BinaryExpr{
-				Lhs: &ast.IntLit{
-					Literal: lhs.Token(),
-					Value:   1,
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: numerus.GetRange().Start,
+					End:   rhs.GetRange().End,
 				},
 				Tok:      *tok,
-				Operator: ast.BIN_DIV,
-				Rhs:      lhs,
-			},
+				Lhs:      numerus,
+				Operator: ast.BIN_LOG,
+				Rhs:      rhs,
+			}
+		} else {
+			lhs = p.unary()
+			p.consume(token.DOT, token.WURZEL)
+			tok := p.previous()
+			p.consume(token.VON)
+			// root is implemented as pow(degree, 1/radicant)
+			expr := p.unary()
+
+			lhs = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   lhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: ast.BIN_POW,
+				Rhs: &ast.BinaryExpr{
+					Lhs: &ast.IntLit{
+						Literal: lhs.Token(),
+						Value:   1,
+					},
+					Tok:      *tok,
+					Operator: ast.BIN_DIV,
+					Rhs:      lhs,
+				},
+			}
 		}
 	}
 
-	// TODO: grammar
-	if p.matchN(token.DER, token.LOGARITHMUS) {
-		tok := p.previous()
-		p.consume(token.VON)
-		numerus := p.expression()
-		p.consume(token.ZUR, token.BASIS)
-		rhs := p.unary()
+	lhs = p.slicing(lhs) // make sure postfix operators after a function call are parsed
 
-		return &ast.BinaryExpr{
-			Range: token.Range{
-				Start: numerus.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      numerus,
-			Operator: ast.BIN_LOG,
-			Rhs:      rhs,
-		}
-	}
-
-	lhs = p.primary(lhs)
 	for p.match(token.HOCH) {
 		tok := p.previous()
 		rhs := p.unary()
@@ -1996,85 +1996,35 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 	return lhs
 }
 
-// when called from power() lhs might be a funcCall
-func (p *parser) primary(lhs ast.Expression) ast.Expression {
-	if lhs == nil {
-		lhs = p.alias()
-	}
-	if lhs == nil { // funccall has the highest precedence (aliases + operator overloading)
-		switch tok := p.advance(); tok.Type {
-		case token.FALSE:
-			lhs = &ast.BoolLit{Literal: *p.previous(), Value: false}
-		case token.TRUE:
-			lhs = &ast.BoolLit{Literal: *p.previous(), Value: true}
-		case token.INT:
-			lhs = p.parseIntLit()
-		case token.FLOAT:
-			lit := p.previous()
-			if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
-				lhs = &ast.FloatLit{Literal: *lit, Value: val}
-			} else {
-				p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Kommazahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
-				lhs = &ast.FloatLit{Literal: *lit, Value: 0}
-			}
-		case token.CHAR:
-			lit := p.previous()
-			lhs = &ast.CharLit{Literal: *lit, Value: p.parseChar(lit.Literal)}
-		case token.STRING:
-			lit := p.previous()
-			lhs = &ast.StringLit{Literal: *lit, Value: p.parseString(lit.Literal)}
-		case token.LPAREN:
-			lhs = p.grouping()
-		case token.IDENTIFIER:
-			lhs = &ast.Ident{
-				Literal: *p.previous(),
-			}
-		// TODO: grammar
-		case token.EINE, token.EINER: // list literals
-			begin := p.previous()
-			if begin.Type == token.EINER && p.match(token.LEEREN) {
-				typ := p.parseListType()
-				lhs = &ast.ListLit{
-					Tok:    *begin,
-					Range:  token.NewRange(begin, p.previous()),
-					Type:   typ.(ddptypes.ListType),
-					Values: nil,
-				}
-			} else if p.match(token.LEERE) {
-				typ := p.parseListType()
-				lhs = &ast.ListLit{
-					Tok:    *begin,
-					Range:  token.NewRange(begin, p.previous()),
-					Type:   typ.(ddptypes.ListType),
-					Values: nil,
-				}
-			} else {
-				p.consume(token.LISTE, token.COMMA, token.DIE, token.AUS)
-				values := append(make([]ast.Expression, 0, 2), p.expression())
-				for p.match(token.COMMA) {
-					values = append(values, p.expression())
-				}
-				p.consume(token.BESTEHT)
-				lhs = &ast.ListLit{
-					Tok:    *begin,
-					Range:  token.NewRange(begin, p.previous()),
-					Values: values,
-				}
-			}
-		default:
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Literal", "ein Name"))
-			lhs = &ast.BadExpr{
-				Err: p.lastError,
-				Tok: *tok,
-			}
+func (p *parser) slicing(lhs ast.Expression) ast.Expression {
+	lhs = p.indexing(lhs)
+	for p.match(token.IM) {
+		p.consume(token.BEREICH, token.VON)
+		von := p.previous()
+		mid := p.expression()
+		p.consume(token.BIS)
+		rhs := p.indexing(nil)
+		lhs = &ast.TernaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *von,
+			Lhs:      lhs,
+			Mid:      mid,
+			Rhs:      rhs,
+			Operator: ast.TER_SLICE,
 		}
 	}
+	return lhs
+}
 
-	// indexing
+func (p *parser) indexing(lhs ast.Expression) ast.Expression {
+	lhs = p.field_access(lhs)
 	for p.match(token.AN) {
 		p.consume(token.DER, token.STELLE)
 		tok := p.previous()
-		rhs := p.primary(nil)
+		rhs := p.field_access(nil)
 		lhs = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
@@ -2086,67 +2036,32 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			Rhs:      rhs,
 		}
 	}
+	return lhs
+}
 
-	// TODO: check this with precedence
-	// 		 remember to also check p.assigneable()
-	// 		 also check the order of the following 4 operators
-	//		 and maybe outsource them into seperate functions
+// x von y von z = x von (y von z)
+
+func (p *parser) field_access(lhs ast.Expression) ast.Expression {
+	lhs = p.type_cast(lhs)
 	for p.match(token.VON) {
-		tok := p.previous()
-		operand := lhs
-		mid := p.primary(nil)
-		if p.match(token.BIS) {
-			rhs := p.primary(nil)
-			lhs = &ast.TernaryExpr{
-				Range: token.Range{
-					Start: operand.GetRange().Start,
-					End:   rhs.GetRange().End,
-				},
-				Tok:      *tok,
-				Lhs:      operand,
-				Mid:      mid,
-				Rhs:      rhs,
-				Operator: ast.TER_SLICE,
-			}
-		} else {
-			// disgusting hack around indexing vs field_access precedence
-			// in combination with von ... bis
-			if indexing, isBin := mid.(*ast.BinaryExpr); isBin && indexing.Operator == ast.BIN_INDEX {
-				lhs = &ast.BinaryExpr{
-					Range: token.Range{
-						Start: lhs.GetRange().Start,
-						End:   indexing.GetRange().End,
-					},
-					Tok: indexing.Tok,
-					Lhs: &ast.BinaryExpr{
-						Range: token.Range{
-							Start: operand.GetRange().Start,
-							End:   mid.GetRange().End,
-						},
-						Tok:      *tok,
-						Lhs:      operand,
-						Operator: ast.BIN_FIELD_ACCESS,
-						Rhs:      indexing.Lhs,
-					},
-					Operator: ast.BIN_INDEX,
-					Rhs:      indexing.Rhs,
-				}
-			} else {
-				lhs = &ast.BinaryExpr{
-					Range: token.Range{
-						Start: operand.GetRange().Start,
-						End:   mid.GetRange().End,
-					},
-					Tok:      *tok,
-					Lhs:      operand,
-					Operator: ast.BIN_FIELD_ACCESS,
-					Rhs:      mid,
-				}
-			}
+		von := p.previous()
+		rhs := p.field_access(nil) // recursive call to enable x von y von z (right-associative)
+		lhs = &ast.BinaryExpr{
+			Range: token.Range{
+				Start: lhs.GetRange().Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *von,
+			Lhs:      lhs,
+			Operator: ast.BIN_FIELD_ACCESS,
+			Rhs:      rhs,
 		}
 	}
+	return lhs
+}
 
-	// type-casting
+func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
+	lhs = p.primary(lhs)
 	for p.match(token.ALS) {
 		Type := p.parseType()
 		lhs = &ast.CastExpr{
@@ -2158,62 +2073,89 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			Lhs:  lhs,
 		}
 	}
-
 	return lhs
 }
 
-// either ast.Ident, ast.Indexing or ast.FieldAccess
-// p.previous() must be of Type token.IDENTIFIER or token.LPAREN
-// TODO: fix precedence with braces
-func (p *parser) assigneable() ast.Assigneable {
-	var assigneable_impl func(bool) ast.Assigneable
-	assigneable_impl = func(isInFieldAcess bool) ast.Assigneable {
-		isParenthesized := p.previous().Type == token.LPAREN
-		if isParenthesized {
-			p.consume(token.IDENTIFIER)
+// when called from power() lhs might be a funcCall
+func (p *parser) primary(lhs ast.Expression) ast.Expression {
+	if lhs != nil {
+		return lhs
+	}
+
+	// funccall has the highest precedence (aliases + operator overloading)
+	lhs = p.alias()
+	if lhs != nil {
+		return lhs
+	}
+
+	switch tok := p.advance(); tok.Type {
+	case token.FALSE:
+		lhs = &ast.BoolLit{Literal: *p.previous(), Value: false}
+	case token.TRUE:
+		lhs = &ast.BoolLit{Literal: *p.previous(), Value: true}
+	case token.INT:
+		lhs = p.parseIntLit()
+	case token.FLOAT:
+		lit := p.previous()
+		if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
+			lhs = &ast.FloatLit{Literal: *lit, Value: val}
+		} else {
+			p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Kommazahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+			lhs = &ast.FloatLit{Literal: *lit, Value: 0}
 		}
-		ident := &ast.Ident{
+	case token.CHAR:
+		lit := p.previous()
+		lhs = &ast.CharLit{Literal: *lit, Value: p.parseChar(lit.Literal)}
+	case token.STRING:
+		lit := p.previous()
+		lhs = &ast.StringLit{Literal: *lit, Value: p.parseString(lit.Literal)}
+	case token.LPAREN:
+		lhs = p.grouping()
+	case token.IDENTIFIER:
+		lhs = &ast.Ident{
 			Literal: *p.previous(),
 		}
-		var ass ast.Assigneable = ident
-
-		for p.match(token.VON) {
-			if p.match(token.IDENTIFIER) {
-				rhs := assigneable_impl(true)
-				ass = &ast.FieldAccess{
-					Rhs:   rhs,
-					Field: ident,
-				}
-			} else {
-				p.consume(token.LPAREN)
-				rhs := assigneable_impl(false)
-				ass = &ast.FieldAccess{
-					Rhs:   rhs,
-					Field: ident,
-				}
+	// TODO: grammar
+	case token.EINE, token.EINER: // list literals
+		begin := p.previous()
+		if begin.Type == token.EINER && p.match(token.LEEREN) {
+			typ := p.parseListType()
+			lhs = &ast.ListLit{
+				Tok:    *begin,
+				Range:  token.NewRange(begin, p.previous()),
+				Type:   typ.(ddptypes.ListType),
+				Values: nil,
+			}
+		} else if p.match(token.LEERE) {
+			typ := p.parseListType()
+			lhs = &ast.ListLit{
+				Tok:    *begin,
+				Range:  token.NewRange(begin, p.previous()),
+				Type:   typ.(ddptypes.ListType),
+				Values: nil,
+			}
+		} else {
+			p.consume(token.LISTE, token.COMMA, token.DIE, token.AUS)
+			values := append(make([]ast.Expression, 0, 2), p.expression())
+			for p.match(token.COMMA) {
+				values = append(values, p.expression())
+			}
+			p.consume(token.BESTEHT)
+			lhs = &ast.ListLit{
+				Tok:    *begin,
+				Range:  token.NewRange(begin, p.previous()),
+				Values: values,
 			}
 		}
-
-		if !isInFieldAcess {
-			for p.match(token.AN) {
-				p.consume(token.DER, token.STELLE)
-				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
-				ass = &ast.Indexing{
-					Lhs:   ass,
-					Index: index,
-				}
-				if !p.match(token.COMMA) {
-					break
-				}
-			}
+	default:
+		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Literal", "ein Name"))
+		lhs = &ast.BadExpr{
+			Err: p.lastError,
+			Tok: *tok,
 		}
-
-		if isParenthesized {
-			p.consume(token.RPAREN)
-		}
-		return ass
 	}
-	return assigneable_impl(false)
+
+	return lhs
 }
 
 func (p *parser) grouping() ast.Expression {
@@ -2470,6 +2412,60 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(mostFitting, args)
+}
+
+// either ast.Ident, ast.Indexing or ast.FieldAccess
+// p.previous() must be of Type token.IDENTIFIER or token.LPAREN
+// TODO: fix precedence with braces
+func (p *parser) assigneable() ast.Assigneable {
+	var assigneable_impl func(bool) ast.Assigneable
+	assigneable_impl = func(isInFieldAcess bool) ast.Assigneable {
+		isParenthesized := p.previous().Type == token.LPAREN
+		if isParenthesized {
+			p.consume(token.IDENTIFIER)
+		}
+		ident := &ast.Ident{
+			Literal: *p.previous(),
+		}
+		var ass ast.Assigneable = ident
+
+		for p.match(token.VON) {
+			if p.match(token.IDENTIFIER) {
+				rhs := assigneable_impl(true)
+				ass = &ast.FieldAccess{
+					Rhs:   rhs,
+					Field: ident,
+				}
+			} else {
+				p.consume(token.LPAREN)
+				rhs := assigneable_impl(false)
+				ass = &ast.FieldAccess{
+					Rhs:   rhs,
+					Field: ident,
+				}
+			}
+		}
+
+		if !isInFieldAcess {
+			for p.match(token.AN) {
+				p.consume(token.DER, token.STELLE)
+				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
+				ass = &ast.Indexing{
+					Lhs:   ass,
+					Index: index,
+				}
+				if !p.match(token.COMMA) {
+					break
+				}
+			}
+		}
+
+		if isParenthesized {
+			p.consume(token.RPAREN)
+		}
+		return ass
+	}
+	return assigneable_impl(false)
 }
 
 /*** Helper functions ***/
