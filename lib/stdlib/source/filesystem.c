@@ -27,6 +27,7 @@
 #define PATH_SEPERATOR "/\\"// set of possible seperators
 #else
 #include <unistd.h>
+#include <fcntl.h>
 #define PATH_SEPERATOR "/"// set of possible seperators
 #define mkdir(arg) mkdir(arg, 0700)
 #endif // DDPOS_WINDOWS
@@ -189,39 +190,56 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 	return (ddpint)st.st_mode;
 }
 
-// UNIX: https://stackoverflow.com/a/2180347
+// UNIX: https://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
 // ToDo: Windows (maybe WinAPI CopyFile())
 ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
+#ifdef DDPOS_WINDOWS
+#error "Datei_Kopieren() not implemented for Windows"
+#else // DDPOW_LINUX
     if (!Pfad->str || !Kopiepfad->str) {
         return (ddpbool)false;
     }
 
-    pid_t pid = fork();
+	int fd_to, fd_from;
 
-	if (pid < 0) {
+	if ((fd_from = open(Pfad->str, O_RDONLY)) < 0)
 		return (ddpbool)false;
-    }
-    else if (pid == 0) { // child
-		// to not reinvent the wheel
-        execl("/bin/cp", "/bin/cp", Pfad->str, Kopiepfad->str, (char*)0);
-    } 
-    else { // parent
-		int childExitStatus;
-		// you could just call wait() as long as you are only expecting to have one child process at a time.
-        pid_t ws = waitpid(pid, &childExitStatus, WNOHANG);
-        if (ws == -1) {
-			return (ddpbool)false;
-        }
+	if ((fd_to = open(Kopiepfad->str, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+		goto out_error;
+	
+	char buff[1 << 13]; // 8KB
+	ssize_t nread;
+	while ((nread = read(fd_from, buff, sizeof(buff))) > 0) {
+		char* out_ptr = buff;
+		do {
+            ssize_t nwritten = write(fd_to, out_ptr, nread);
 
-		// exit code in childExitStatus
-        if (WIFEXITED(childExitStatus) && WEXITSTATUS(childExitStatus)) {
-            return (ddpbool)false;
-        }
+            if (nwritten >= 0) {
+                nread -= nwritten;
+                out_ptr += nwritten;
+            } else if (errno != EINTR) {
+                goto out_error;
+            }
+        } while (nread > 0);
+	}
 
-		if (WIFSTOPPED(childExitStatus)) { // stopped
-			return (ddpbool)false;
-		}
-    }
+	if (nread == 0) {
+		// TODO: check this
+		struct stat from_info;
+		if (fstat(fd_from, &from_info) >= 0) {
+			fchmod(fd_to, from_info.st_mode);
+		} 
 
-	return (ddpbool)true;
+		close(fd_from);
+		close(fd_to);
+		return (ddpbool)true;
+	}
+
+	out_error:
+		close(fd_from);
+		if (fd_to >= 0)
+			close(fd_to);
+
+	return (ddpbool)false;
+#endif // DDPOS_WINDOWS
 }
