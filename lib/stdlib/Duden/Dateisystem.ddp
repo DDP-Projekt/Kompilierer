@@ -131,3 +131,11 @@ Die öffentliche Funktion Datei_Modus mit dem Parameter Pfad vom Typ Text, gibt 
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"den Modus der Datei <Pfad>"
+
+[
+	Kopiert die Datei am Pfad nach Kopiepfad. !! Achtung: Kann existierende Dateien überschreiben !!
+]
+Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Boolean zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Kopiere die Datei <Pfad> nach <Kopiepfad>"
