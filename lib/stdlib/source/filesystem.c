@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <wait.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -20,6 +19,7 @@
 #ifdef DDPOS_WINDOWS
 #include <io.h>
 #include <direct.h>
+#include <WinBase.h>
 #define access _access
 #define stat _stat
 #define mkdir _mkdir
@@ -191,10 +191,9 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 }
 
 // UNIX: https://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
-// ToDo: Windows (maybe WinAPI CopyFile())
 ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
 #ifdef DDPOS_WINDOWS
-#error "Datei_Kopieren() not implemented for Windows"
+return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 #else // DDPOW_LINUX
     if (!Pfad->str || !Kopiepfad->str) {
         return (ddpbool)false;
