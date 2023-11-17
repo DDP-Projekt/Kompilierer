@@ -28,7 +28,7 @@ Und kann so benutzt werden:
 	"<t> ein Absoluter Pfad ist"
 
 [
-	Gibt den Pfad ohne den letzen Element zurück. 
+	Gibt den Pfad ohne das letze Element zurück. 
 	Falls der Pfad leer ist, wird ein "." zurück gegeben.
 	Falls der Pfad nur aus "/" gefolg von nicht-"/" Zeichen, wird "/" zurückgegeben.
 ]
@@ -37,7 +37,7 @@ Die öffentliche Funktion Ordner_Pfad mit dem Parameter t vom Typ Text, gibt ein
 	
 	Solange i größer als 0 ist, mache:
 		Wenn t an der Stelle i gleich '/' ist, dann:
-			Der Text dir ist t im Bereich von 1 bis i.
+			Der Text dir ist t bis zum i. Element.
 			Entferne alle '/' nach dir.
 			Wenn die Länge von dir gleich 0 ist, gib "/" zurück.
 
@@ -56,7 +56,7 @@ Die öffentliche Funktion Basis_Pfad mit dem Parameter t vom Typ Text, gibt eine
 	Die Zahl i ist die Länge von t2.
 	Solange i größer als 0 ist, mache:
 		Wenn t2 an der Stelle i gleich '/' ist, dann:
-			Gib t2 im Bereich von (i plus 1) bis (die Länge von t2) zurück.
+			Gib t2 ab dem (i plus 1). Element zurück.
 		Verringere i um 1.
 	Gib "." zurück.
 Und kann so benutzt werden:
@@ -71,7 +71,7 @@ Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt ein
 	Die Zahl i ist die Länge von t.
 	Solange i größer als 0 ist, mache:
 		Wenn t an der Stelle i gleich '/' ist, gib "" zurück.
-		Wenn t an der Stelle i gleich '.' ist, gib t im Bereich von i bis (die Länge von t) zurück.
+		Wenn t an der Stelle i gleich '.' ist, gib t ab dem i. Element zurück.
 		Verringere i um 1.
 	Gib "" zurück.
 Und kann so benutzt werden:
@@ -85,7 +85,7 @@ Die öffentliche Funktion Datei_Name mit dem Parameter t vom Typ Text, gibt eine
 	Wenn bf gleich "." ist, gib "" zurück.
 	Die Zahl i ist 1.
 	Solange i kleiner als, oder die Länge von bf ist und bf an der Stelle i ungleich '.' ist, erhöhe i um 1.
-	Gib bf im Bereich von 1 bis (i minus 1) zurück.
+	Gib bf bis zum (i minus 1). Element zurück.
 Und kann so benutzt werden:
 	"den Dateinamen von <t>",
 	"der Dateiname von <t>"
@@ -131,7 +131,7 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 					Wenn die Länge von path gleich 1 ist, dann:
 						Speichere "" in path.
 					Sonst
-						Speichere path im Bereich von 1 bis (die Länge von path minus 1) in path.
+						Speichere path bis zum (die Länge von path minus 1). Element in path.
 				Solange die Länge von path größer als dotdot ist und path an der Stelle (die Länge von path minus 1) ungleich '/' ist.
 			Wenn aber rooted gleich falsch ist, dann:
 				[ cannot backtrack, but not rooted, so append .. element ]

@@ -46,6 +46,7 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	}
 
 	scan := &Scanner{
+		file:             filePath,
 		src:              nil,
 		errorHandler:     errorHandler,
 		mode:             mode,
@@ -194,7 +195,7 @@ func (s *Scanner) string() token.Token {
 	}
 
 	if s.atEnd() {
-		msg := "Offenes Text Literal"
+		msg := "ein Offenes Text Literal"
 		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
 		return s.errorToken(msg)
 	}
@@ -218,7 +219,7 @@ func (s *Scanner) char() token.Token {
 	}
 
 	if s.atEnd() {
-		msg := "Offenes Buchstaben Literal"
+		msg := "ein Offenes Buchstaben Literal"
 		s.err(ddperror.SYN_MALFORMED_LITERAL, s.currentRange(), msg)
 		return s.errorToken(msg)
 	}
