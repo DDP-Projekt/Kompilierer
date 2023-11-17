@@ -257,7 +257,7 @@ Und kann so benutzt werden:
 	Ob der divident durch den divisor teilbar ist.
 	Auch: Ob divident modulo divisor = 0 ist. 
 ]
-Die öffentliche Funktion Ist_Teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn dividend modulo divisor gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<dividend> durch <divisor> teilbar ist"
@@ -321,7 +321,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die gegebene Kommazahl eine ganze Zahl ist. (...; -2,0; -1,0; 0,0; 1,0; 2,0; ...)
 ]
-Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ganze_Zahl mit dem Parameter x vom Typ Kommazahl, gibt einen Wahrheitswert zurück, macht:
 	Gib (x als Zahl) als Kommazahl gleich x ist zurück.
 Und kann so benutzt werden:
 	"<x> eine ganze Zahl ist"
@@ -329,7 +329,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die gegebene Zahl eine gerade Zahl ist. (x mod 2 = 0)
 ]
-Die öffentliche Funktion Gerade_Zahl mit dem Parameter x vom Typ Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Gerade_Zahl mit dem Parameter x vom Typ Zahl, gibt einen Wahrheitswert zurück, macht:
 	Gib x modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"
@@ -337,7 +337,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die gegebene Kommazahl eine gerade Zahl ist. ((int)x mod 2 = 0)
 ]
-Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt einen Wahrheitswert zurück, macht:
 	Gib x als Zahl modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"

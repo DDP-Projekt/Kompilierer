@@ -1,45 +1,45 @@
 Binde "Duden/Ausgabe" ein.
 
-Schreibe den Boolean (2 gleich 2 ist).
+Schreibe den Wahrheitswert (2 gleich 2 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (2 gleich 1 ist).
+Schreibe den Wahrheitswert (2 gleich 1 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (2 ungleich 2 ist).
+Schreibe den Wahrheitswert (2 ungleich 2 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (1 ungleich 2 ist).
+Schreibe den Wahrheitswert (1 ungleich 2 ist).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean (2,222 gleich 2,222 ist).
+Schreibe den Wahrheitswert (2,222 gleich 2,222 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (2,223 gleich 2,222 ist).
+Schreibe den Wahrheitswert (2,223 gleich 2,222 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (2,222 ungleich 2,222 ist).
+Schreibe den Wahrheitswert (2,222 ungleich 2,222 ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (2,222 ungleich 2,223 ist).
+Schreibe den Wahrheitswert (2,222 ungleich 2,223 ist).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean (wahr gleich wahr ist).
+Schreibe den Wahrheitswert (wahr gleich wahr ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (wahr gleich falsch ist).
+Schreibe den Wahrheitswert (wahr gleich falsch ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (falsch ungleich falsch ist).
+Schreibe den Wahrheitswert (falsch ungleich falsch ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (wahr ungleich falsch ist).
+Schreibe den Wahrheitswert (wahr ungleich falsch ist).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean ('Ü' gleich 'Ü' ist).
+Schreibe den Wahrheitswert ('Ü' gleich 'Ü' ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ('Ü' gleich 'Ä' ist).
+Schreibe den Wahrheitswert ('Ü' gleich 'Ä' ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ('a' ungleich 'a' ist).
+Schreibe den Wahrheitswert ('a' ungleich 'a' ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ('2' ungleich 'a' ist).
+Schreibe den Wahrheitswert ('2' ungleich 'a' ist).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean ("hallo" gleich "hallo" ist).
+Schreibe den Wahrheitswert ("hallo" gleich "hallo" ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ("test" gleich "24" ist).
+Schreibe den Wahrheitswert ("test" gleich "24" ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ("über den Wolken" ungleich "über den Wolken" ist).
+Schreibe den Wahrheitswert ("über den Wolken" ungleich "über den Wolken" ist).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean ("hi" ungleich "tschüss" ist).
+Schreibe den Wahrheitswert ("hi" ungleich "tschüss" ist).

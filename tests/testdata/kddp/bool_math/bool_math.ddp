@@ -1,23 +1,23 @@
 Binde "Duden/Ausgabe" ein.
 
-Schreibe den Boolean (wahr und wahr).
+Schreibe den Wahrheitswert (wahr und wahr).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (wahr und falsch).
+Schreibe den Wahrheitswert (wahr und falsch).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (falsch und wahr).
+Schreibe den Wahrheitswert (falsch und wahr).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (falsch und falsch).
+Schreibe den Wahrheitswert (falsch und falsch).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean (wahr oder wahr).
+Schreibe den Wahrheitswert (wahr oder wahr).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (wahr oder falsch).
+Schreibe den Wahrheitswert (wahr oder falsch).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (falsch oder wahr).
+Schreibe den Wahrheitswert (falsch oder wahr).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (falsch oder falsch).
+Schreibe den Wahrheitswert (falsch oder falsch).
 Schreibe den Buchstaben '\n'.
 
-Schreibe den Boolean (nicht wahr).
+Schreibe den Wahrheitswert (nicht wahr).
 Schreibe den Buchstaben ','.
-Schreibe den Boolean (nicht falsch).
+Schreibe den Wahrheitswert (nicht falsch).

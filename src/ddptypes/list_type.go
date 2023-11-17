@@ -15,8 +15,8 @@ func (listType ListType) String() string {
 			return "Zahlen Liste"
 		case KOMMAZAHL:
 			return "Kommazahlen Liste"
-		case BOOLEAN:
-			return "Boolean Liste"
+		case WAHRHEITSWERT:
+			return "Wahrheitswert Liste"
 		case BUCHSTABE:
 			return "Buchstaben Liste"
 		case TEXT:

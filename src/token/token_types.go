@@ -67,7 +67,7 @@ const (
 	ZAHLEN
 	KOMMAZAHL
 	KOMMAZAHLEN
-	BOOLEAN
+	WAHRHEITSWERT
 	BUCHSTABE
 	BUCHSTABEN
 	TEXT
@@ -209,7 +209,7 @@ var tokenStrings = [...]string{
 	ZAHLEN:        "Zahlen",
 	KOMMAZAHL:     "Kommazahl",
 	KOMMAZAHLEN:   "Kommazahlen",
-	BOOLEAN:       "Boolean",
+	WAHRHEITSWERT: "Wahrheitswert",
 	BUCHSTABE:     "Buchstabe",
 	BUCHSTABEN:    "Buchstaben",
 	TEXT:          "Text",
@@ -332,7 +332,7 @@ var KeywordMap = map[string]TokenType{
 	"Zahlen":         ZAHLEN,
 	"Kommazahl":      KOMMAZAHL,
 	"Kommazahlen":    KOMMAZAHLEN,
-	"Boolean":        BOOLEAN,
+	"Wahrheitswert":  WAHRHEITSWERT,
 	"Buchstabe":      BUCHSTABE,
 	"Buchstaben":     BUCHSTABEN,
 	"Text":           TEXT,

@@ -22,7 +22,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist
 ]
-Die öffentliche Funktion Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn '/' am Anfang von t steht zurück.
 Und kann so benutzt werden:
 	"<t> ein Absoluter Pfad ist"
@@ -105,7 +105,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Wenn t gleich "" ist, gib "." zurück.
-	Der Boolean rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
+	Der Wahrheitswert rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
 	Die Zahl n ist die Länge von t.
 	Der Text path ist "". [ output text ]
 	Die Zahl r ist 1. [ next index to process ]

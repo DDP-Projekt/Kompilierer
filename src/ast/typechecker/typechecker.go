@@ -196,7 +196,7 @@ func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
 func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) ast.VisitResult {
-	t.latestReturnedType = ddptypes.BOOLEAN
+	t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	return ast.VisitRecurse
 }
 func (t *Typechecker) VisitCharLit(expr *ast.CharLit) ast.VisitResult {
@@ -237,11 +237,11 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
 	case ast.UN_NOT:
-		if !isOfType(rhs, ddptypes.BOOLEAN) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.BOOLEAN)
+		if !isOfType(rhs, ddptypes.WAHRHEITSWERT) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.WAHRHEITSWERT)
 		}
 
-		t.latestReturnedType = ddptypes.BOOLEAN
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.UN_LOGIC_NOT:
 		if !isOfType(rhs, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
@@ -345,8 +345,8 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		validate(ddptypes.ZAHL)
 		t.latestReturnedType = ddptypes.ZAHL
 	case ast.BIN_AND, ast.BIN_OR:
-		validate(ddptypes.BOOLEAN)
-		t.latestReturnedType = ddptypes.BOOLEAN
+		validate(ddptypes.WAHRHEITSWERT)
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_LEFT_SHIFT, ast.BIN_RIGHT_SHIFT:
 		validate(ddptypes.ZAHL)
 		t.latestReturnedType = ddptypes.ZAHL
@@ -354,10 +354,10 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		if lhs != rhs {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
-		t.latestReturnedType = ddptypes.BOOLEAN
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_GREATER, ast.BIN_LESS, ast.BIN_GREATER_EQ, ast.BIN_LESS_EQ:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
-		t.latestReturnedType = ddptypes.BOOLEAN
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_LOGIC_AND, ast.BIN_LOGIC_OR, ast.BIN_LOGIC_XOR:
 		validate(ddptypes.ZAHL)
 		t.latestReturnedType = ddptypes.ZAHL
@@ -405,7 +405,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 			if !isOfType(lhs, ddptypes.BUCHSTABE, ddptypes.TEXT) {
 				castErr()
 			}
-		case ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BOOLEAN, ddptypes.TEXT:
+		case ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.WAHRHEITSWERT, ddptypes.TEXT:
 			if !isOfType(lhs, exprType.Underlying) {
 				castErr()
 			}
@@ -422,8 +422,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 				castErr()
 			}
-		case ddptypes.BOOLEAN:
-			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.BOOLEAN) {
+		case ddptypes.WAHRHEITSWERT:
+			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT) {
 				castErr()
 			}
 		case ddptypes.BUCHSTABE:
@@ -567,9 +567,9 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 }
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
-	if conditionType != ddptypes.BOOLEAN {
+	if conditionType != ddptypes.WAHRHEITSWERT {
 		t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
-			"Die Bedingung einer Wenn-Anweisung muss vom Typ Boolean sein, war aber vom Typ %s",
+			"Die Bedingung einer Wenn-Anweisung muss ein Wahrheitswert sein, war aber vom Typ %s",
 			conditionType,
 		)
 	}
@@ -583,9 +583,9 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
-		if conditionType != ddptypes.BOOLEAN {
+		if conditionType != ddptypes.WAHRHEITSWERT {
 			t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
-				"Die Bedingung einer %s muss vom Typ Boolean sein, war aber vom Typ %s",
+				"Die Bedingung einer %s muss ein Wahrheitswert sein, war aber vom Typ %s",
 				stmt.While.Type,
 				conditionType,
 			)

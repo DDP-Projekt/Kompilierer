@@ -4,7 +4,7 @@ Binde "Duden/Ausgabe" ein.
 [ Listen initialisieren ]
 Die Zahlen Liste listZ ist eine Liste, die aus 1, 4, 5 besteht.
 Die Kommazahlen Liste listK ist eine Liste, die aus 3,14, 0,183, 2,5 besteht.
-Die Boolean Liste listB ist eine Liste, die aus wahr, falsch, wahr besteht.
+Die Wahrheitswert Liste listB ist eine Liste, die aus wahr, falsch, wahr besteht.
 Die Buchstaben Liste listC ist eine Liste, die aus 'a', 'b', 'c' besteht.
 Die Text Liste listT ist eine Liste, die aus "hi", "yo", "test" besteht.
 
@@ -169,11 +169,11 @@ Schreibe listT.
 
 Schreibe den Text "-- empty tests --" auf eine Zeile.
 [empty test]
-Schreibe den Boolean (listZ leer ist) auf eine Zeile.
-Schreibe den Boolean (listK leer ist) auf eine Zeile.
-Schreibe den Boolean (listB leer ist) auf eine Zeile.
-Schreibe den Boolean (listC leer ist) auf eine Zeile.
-Schreibe den Boolean (listT leer ist) auf eine Zeile.
+Schreibe den Wahrheitswert (listZ leer ist) auf eine Zeile.
+Schreibe den Wahrheitswert (listK leer ist) auf eine Zeile.
+Schreibe den Wahrheitswert (listB leer ist) auf eine Zeile.
+Schreibe den Wahrheitswert (listC leer ist) auf eine Zeile.
+Schreibe den Wahrheitswert (listT leer ist) auf eine Zeile.
 
 Schreibe den Text "-- Aneinandergehängt_C test --" auf eine Zeile.
 [Aneinandergehängt_C test]

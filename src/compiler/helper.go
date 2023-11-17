@@ -54,7 +54,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpintlist
 		case ddptypes.KOMMAZAHL:
 			return c.ddpfloatlist
-		case ddptypes.BOOLEAN:
+		case ddptypes.WAHRHEITSWERT:
 			return c.ddpboollist
 		case ddptypes.BUCHSTABE:
 			return c.ddpcharlist
@@ -69,7 +69,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpinttyp
 		case ddptypes.KOMMAZAHL:
 			return c.ddpfloattyp
-		case ddptypes.BOOLEAN:
+		case ddptypes.WAHRHEITSWERT:
 			return c.ddpbooltyp
 		case ddptypes.BUCHSTABE:
 			return c.ddpchartyp

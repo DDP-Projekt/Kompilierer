@@ -103,7 +103,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebenen Text den gegebenen Buchstaben enthält. 
 ]
-Die öffentliche Funktion Text_Enthält_Buchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Enthält_Buchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt einen Wahrheitswert zurück, macht:
 	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -112,7 +112,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text (text) den Subtext (suchText) enthält.
 ]
-Die öffentliche Funktion Text_Enthält_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Enthält_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn text gleich suchText ist, gib wahr zurück.
 
 	Die Zahl startIndex ist 0.
@@ -133,7 +133,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text mit dem gegebenen Buchstaben anfängt.
 ]
-Die öffentliche Funktion Beginnt_Mit_Buchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Beginnt_Mit_Buchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib wahr, wenn (text an der Stelle 1) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
@@ -142,7 +142,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) anfängt.
 ]
-Die öffentliche Funktion Beginnt_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Beginnt_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
 	Gib (text bis zum (die Länge von suchText). Element) gleich suchText ist zurück.
 Und kann so benutzt werden:
@@ -151,7 +151,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text mit dem gegebenen Buchstaben endet.
 ]
-Die öffentliche Funktion Endet_Mit_Buchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Endet_Mit_Buchstabe mit den Parametern text und buchstabe vom Typ Text und Buchstabe, gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib falsch zurück.
 	Gib (text an der Stelle (die Länge von text)) gleich buchstabe ist zurück.
 Und kann so benutzt werden:
@@ -160,7 +160,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der gegebene Text mit dem gegebenen Text (suchText) endet.
 ]
-Die öffentliche Funktion Endet_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Endet_Mit_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von text gleich 0 ist oder die Länge von suchText gleich 0 ist, gib falsch zurück.
 	Gib (text ab dem (die Länge von text minus die Länge von suchText plus 1). Element) gleich suchText ist zurück.
 Und kann so benutzt werden:
@@ -278,7 +278,7 @@ Und kann so benutzt werden:
 [
 	Gibt ob der gegebene Text leer ist zurück
 ]
-Die öffentliche Funktion Ist_Text_Leer mit dem Parameter text vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Text_Leer mit dem Parameter text vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von text gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<text> leer ist"
@@ -286,7 +286,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob ein Text in eine Zahl umgewandelt werden kann
 ]
-Die öffentliche Funktion Text_Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Text_Ist_Zahl mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Die Zahl l ist die Länge von t.
 	Wenn l kleiner als 1 ist, gib falsch zurück.
 
@@ -459,7 +459,7 @@ Und kann so benutzt werden:
 	z.B.:
 		f([wahr, falsch, falsch], '-') -> "wahr-falsch-falsch"
 ]
-Die öffentliche Funktion Verbinden_Boolean mit den Parametern liste und trennzeichen vom Typ Boolean Liste und Buchstabe, gibt einen Text zurück, macht:
+Die öffentliche Funktion Verbinden_Wahrheitswert mit den Parametern liste und trennzeichen vom Typ Wahrheitswert Liste und Buchstabe, gibt einen Text zurück, macht:
 	Der Text ret ist ein leerer Text.
 	Für jede Zahl i von 1 bis die Länge von liste, mache:
 		Wenn i kleiner als die Länge von liste ist, Speichere ret verkettet mit (liste an der Stelle i) als Text verkettet mit trennzeichen in ret.

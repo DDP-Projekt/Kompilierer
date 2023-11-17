@@ -6,10 +6,10 @@ Binde "Duden/Eingabe" ein.
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
 
-Der Boolean ist_Spieler_1_dran ist wahr.
+Der Wahrheitswert ist_Spieler_1_dran ist wahr.
 Die Zahlen Liste Spielfeld ist 9 Mal 0.
 
-Die Funktion spieler1dran gibt einen Boolean zurück, macht:
+Die Funktion spieler1dran gibt einen Wahrheitswert zurück, macht:
     Gib ist_Spieler_1_dran zurück.
 Und kann so benutzt werden:
     "Spieler 1 dran ist"
@@ -25,12 +25,12 @@ Die Funktion momentane_Spieler gibt eine Zahl zurück, macht:
 Und kann so benutzt werden:
     "die Zahl für den aktuellen Spieler"
 
-Die Funktion spiel_nicht_gewonnen gibt einen Boolean zurück, macht:
+Die Funktion spiel_nicht_gewonnen gibt einen Wahrheitswert zurück, macht:
     Die Zahl Spieler_zahl ist 0.
     Wenn Spieler 1 dran ist, speichere 2 in Spieler_zahl.
     Sonst speichere 1 in Spieler_zahl.
 
-    Der Boolean Gewonnen ist wahr, wenn
+    Der Wahrheitswert Gewonnen ist wahr, wenn
         Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 2 ist und Spielfeld an der Stelle 1 gleich Spielfeld an der Stelle 3 ist und Spielfeld an der Stelle 1 gleich Spieler_zahl ist oder
         Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 5 ist und Spielfeld an der Stelle 4 gleich Spielfeld an der Stelle 6 ist und Spielfeld an der Stelle 4 gleich Spieler_zahl ist oder
         Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 8 ist und Spielfeld an der Stelle 7 gleich Spielfeld an der Stelle 9 ist und Spielfeld an der Stelle 7 gleich Spieler_zahl ist oder
@@ -44,7 +44,7 @@ Die Funktion spiel_nicht_gewonnen gibt einen Boolean zurück, macht:
 Und kann so benutzt werden:
     "das Spiel nicht gewonnen ist"
 
-Die Funktion spiel_unentschieden gibt einen Boolean zurück, macht:
+Die Funktion spiel_unentschieden gibt einen Wahrheitswert zurück, macht:
     Für jede Zahl feld in Spielfeld, wenn feld gleich 0 ist, gib falsch zurück.
     [ Falls alle felder belegt sind ] Gib wahr zurück.
 Und kann so benutzt werden:

@@ -26,7 +26,7 @@ Schreibe zf auf eine Zeile.
 Negiere zf.
 Schreibe zf auf eine Zeile.
 
-Der Boolean b ist wahr.
+Der Wahrheitswert b ist wahr.
 Negiere b.
 Schreibe b auf eine Zeile.
 Negiere b.
@@ -64,7 +64,7 @@ Negiere zfl an der Stelle 2.
 Schreibe (zfl an der Stelle 2) auf eine Zeile.
 
 
-Die Boolean Liste bl ist eine Liste, die aus wahr, wahr, falsch besteht.
+Die Wahrheitswert Liste bl ist eine Liste, die aus wahr, wahr, falsch besteht.
 Negiere bl an der Stelle 2.
 Schreibe (bl an der Stelle 2) auf eine Zeile.
 Negiere bl an der Stelle 2.

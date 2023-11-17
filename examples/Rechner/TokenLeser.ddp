@@ -34,7 +34,7 @@ Und kann so benutzt werden:
 	"<ausdruck> als Mathematischen Ausdruck"
 
 
-Die öffentliche Funktion IstOperator mit dem Parameter symbol vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion IstOperator mit dem Parameter symbol vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn der Index von symbol in Schlüsselwörter größer als 3 ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:

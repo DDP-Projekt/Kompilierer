@@ -10,7 +10,7 @@ Die Funktion kommazahlref mit dem Parameter a vom Typ Kommazahlen Referenz, gibt
 Und kann so benutzt werden:
 	"Inkrementiere <a>"
 
-Die Funktion boolref mit dem Parameter a vom Typ Boolean Referenz, gibt nichts zurück, macht:
+Die Funktion boolref mit dem Parameter a vom Typ Wahrheitswert Referenz, gibt nichts zurück, macht:
 	Negiere a.
 Und kann so benutzt werden:
 	"Negierere <a>"
@@ -31,7 +31,7 @@ Inkrementiere zahl.
 Die Kommazahl kommazahl ist 1,5.
 Inkrementiere kommazahl.
 
-Der Boolean bool ist wahr.
+Der Wahrheitswert bool ist wahr.
 Negierere bool.
 
 Der Text text ist "Hallo Welt!".
