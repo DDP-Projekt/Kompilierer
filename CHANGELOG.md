@@ -11,6 +11,8 @@ Legende:
 
 ## In Entwicklung
 
+- [Fix] `kddp update` ignoriert die -jetzt flag nicht mehr
+- [Fix] `kddp update` updated jetzt auch den Duden
 - [Fix] Bessere Fehlermeldungen [#28](https://github.com/DDP-Projekt/Kompilierer/pull/28)
 - [Added] Duden/Dateisystem Funktionen
 - [Fix] Double-Free Fehler in externen Funktionen

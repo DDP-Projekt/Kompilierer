@@ -87,14 +87,16 @@ func (cmd *UpdateCommand) Run() error {
 			return nil
 		}
 
-		fmt.Printf("DDP jetzt updaten? (j/n): ")
-		var answer string
-		if _, err := fmt.Scanln(&answer); err != nil {
-			return fmt.Errorf("Fehler beim Lesen der Eingabe:\n\t%w", err)
-		}
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "j" && answer != "y" {
-			return nil
+		if !cmd.now {
+			fmt.Printf("DDP jetzt updaten? (j/n): ")
+			var answer string
+			if _, err := fmt.Scanln(&answer); err != nil {
+				return fmt.Errorf("Fehler beim Lesen der Eingabe:\n\t%w", err)
+			}
+			answer = strings.TrimSpace(strings.ToLower(answer))
+			if answer != "j" && answer != "y" {
+				return nil
+			}
 		}
 
 		archive_type := ".zip"
@@ -204,7 +206,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 	return nil
 }
 
-// updates the lib directory
+// updates the lib directory and the Duden directory
 func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err error) {
 	empty_dir := func(path string) error {
 		if err := os.RemoveAll(path); err != nil {
@@ -214,19 +216,24 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 	}
 
 	err = empty_dir(ddppath.Lib)
+	if delete_err := empty_dir(ddppath.Duden); delete_err != nil {
+		err = errors.Join(err, delete_err)
+	}
 
 	// write a regex that matches all files in the lib directory where lib could be preceeded by anything
 	const (
-		lib_regex_replace_pattern = `.*[\/\\]lib[\/\\]`
-		lib_regex_pattern         = lib_regex_replace_pattern + `.*`
+		lib_regex_replace_pattern   = `.*[\/\\]lib[\/\\]`
+		lib_regex_pattern           = lib_regex_replace_pattern + `.*`
+		duden_regex_replace_pattern = `.*[\/\\]Duden[\/\\]`
+		duden_regex_pattern         = duden_regex_replace_pattern + `.*`
 	)
 	lib_regex := regexp.MustCompile(lib_regex_pattern)
 	lib_replace_regex := regexp.MustCompile(lib_regex_replace_pattern)
+	duden_regex := regexp.MustCompile(duden_regex_pattern)
+	duden_replace_regex := regexp.MustCompile(duden_regex_replace_pattern)
 
 	if it_err := archive.IterateElementsFunc(func(path string, isDir bool, r io.Reader, size uint64) error {
-		if lib_regex.MatchString(path) {
-			path = lib_replace_regex.ReplaceAllString(path, "")
-			path = filepath.Join(ddppath.Lib, path)
+		create_file := func(path string) error {
 			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return fmt.Errorf("Fehler beim Erstellen des Ordners:\n\t%w", err)
 			}
@@ -245,6 +252,17 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 			if cmd.verbose {
 				fmt.Printf("\n")
 			}
+			return nil
+		}
+
+		if lib_regex.MatchString(path) {
+			path = lib_replace_regex.ReplaceAllString(path, "")
+			path = filepath.Join(ddppath.Lib, path)
+			return create_file(path)
+		} else if duden_regex.MatchString(path) {
+			path = duden_replace_regex.ReplaceAllString(path, "")
+			path = filepath.Join(ddppath.Duden, path)
+			return create_file(path)
 		}
 		return nil
 	}); it_err != nil {
