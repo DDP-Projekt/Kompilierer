@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/DDP-Projekt/Kompilierer/cmd/internal/gcc"
 	"github.com/DDP-Projekt/Kompilierer/cmd/internal/linker"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
@@ -26,6 +27,7 @@ type BuildCommand struct {
 	verbose          bool   // print verbose output, specified by the --verbose flag
 	link_modules     bool   // wether to link the llvm modules together
 	link_list_defs   bool   // wether to link the list-defs into the main module
+	gcc_executable   string // path to the gcc executable
 }
 
 func NewBuildCommand() *BuildCommand {
@@ -40,6 +42,7 @@ func NewBuildCommand() *BuildCommand {
 		verbose:          false,
 		link_modules:     true,
 		link_list_defs:   true,
+		gcc_executable:   gcc.Cmd(),
 	}
 }
 
@@ -53,6 +56,7 @@ func (cmd *BuildCommand) Init(args []string) error {
 	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Gibt wortreiche Informationen während des Befehls")
 	cmd.fs.BoolVar(&cmd.link_modules, "module_linken", cmd.link_modules, "Ob alle Module in das Hauptmodul gelinkt werden sollen")
 	cmd.fs.BoolVar(&cmd.link_list_defs, "list_defs_linken", cmd.link_list_defs, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
+	cmd.fs.StringVar(&cmd.gcc_executable, "gcc_executable", cmd.gcc_executable, "Pfad zum gcc, der genutzt werden soll")
 
 	if err := parseFlagSet(cmd.fs, args); err != nil {
 		return fmt.Errorf("Fehler beim Parsen der Argumente: %w", err)
@@ -74,6 +78,9 @@ func (cmd *BuildCommand) Run() error {
 			fmt.Printf(format+"\n", args...)
 		}
 	}
+
+	// set the gcc executable
+	gcc.SetGcc(cmd.gcc_executable)
 
 	// determine the final output type (by file extension)
 	compOutType := compiler.OutputIR
