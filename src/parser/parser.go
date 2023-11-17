@@ -102,8 +102,13 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	parser.resolver = resolver.New(parser.module, parser.errorHandler, name)
-	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name)
+	var err error
+	if parser.resolver, err = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+		panic(err)
+	}
+	if parser.typechecker, err = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+		panic(err)
+	}
 
 	return parser
 }
@@ -1077,11 +1082,25 @@ func (p *parser) importStatement() ast.Statement {
 
 // either consumes the neccesery . or adds a postfix do-while or repeat
 func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
-	if p.match(token.DOT) {
+	if p.match(token.DOT) || p.panicMode {
 		return stmt
 	}
-	p.checkStatement(stmt)
-	count := p.expression()
+	// p.checkStatement(stmt)
+
+	cur := p.cur
+	count, err := p.expressionOrErr()
+	p.panicMode = false
+	if p.peek().Type == token.COUNT_MAL {
+		p.checkStatement(stmt)
+		if err != nil {
+			p.err(err.Code, err.Range, err.Msg)
+		}
+	} else {
+		p.cur = cur
+		p.consume(token.DOT)
+		return stmt
+	}
+
 	if !p.match(token.COUNT_MAL) {
 		count_tok := count.Token()
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
@@ -1605,6 +1624,19 @@ func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 
 func (p *parser) expressionStatement() ast.Statement {
 	return p.finishStatement(&ast.ExprStmt{Expr: p.expression()})
+}
+
+// attempts to parse an expression but returns a possible error
+func (p *parser) expressionOrErr() (ast.Expression, *ddperror.Error) {
+	errHndl := p.errorHandler
+
+	var err *ddperror.Error
+	p.errorHandler = func(e ddperror.Error) {
+		err = &e
+	}
+	expr := p.expression()
+	p.errorHandler = errHndl
+	return expr, err
 }
 
 // entry for expression parsing
