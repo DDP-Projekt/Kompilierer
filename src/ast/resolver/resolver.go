@@ -28,18 +28,23 @@ type Resolver struct {
 	CurrentTable *ast.SymbolTable // needed state, public for the parser
 	Module       *ast.Module      // the module that is being resolved
 	LoopDepth    uint             // for break and continue statements
+	panicMode    *bool            // panic mode synchronized with the parser and resolver
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string) *Resolver {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Resolver, error) {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
+	}
+	if panicMode == nil {
+		return nil, fmt.Errorf("panicMode must not be nil")
 	}
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: Mod.Ast.Symbols,
 		Module:       Mod,
-	}
+		panicMode:    panicMode,
+	}, nil
 }
 
 // resolve a single node
@@ -63,7 +68,10 @@ func (r *Resolver) exitScope() {
 // helper for errors
 func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 	r.Module.Ast.Faulty = true
-	r.ErrorHandler(ddperror.New(code, Range, msg, r.Module.FileName))
+	if !*r.panicMode {
+		*r.panicMode = true
+		r.ErrorHandler(ddperror.New(code, Range, msg, r.Module.FileName))
+	}
 }
 
 func (*Resolver) BaseVisitor() {}
