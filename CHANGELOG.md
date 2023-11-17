@@ -2,19 +2,20 @@
 
 Der Changelog von DDP. Sortiert nach Release.
 
-Legende:
-    - Added:    Etwas wurde hinzugefügt
-    - Changed:  Etwas wurde geändert
-    - Removed:  Etwas wurde entfernt
-    - Fix:      Ein Bug wurde repariert.
-    - Breaking: Die Änderung macht alte Programme kaputt
+**Legende**:
+ - Added:    Etwas wurde hinzugefügt
+ - Changed:  Etwas wurde geändert
+ - Removed:  Etwas wurde entfernt
+ - Fix:      Ein Bug wurde repariert.
+ - Breaking: Die Änderung macht alte Programme kaputt
 
-## In Entwicklung
+## In Entwicklung (v1.0.0-alpha)
 
 - [Fix] `kddp update` ignoriert die -jetzt flag nicht mehr
 - [Fix] `kddp update` updated jetzt auch den Duden
+- [Added] Datei_Kopieren Funktion zu Duden/Dateisystem 
 - [Fix] Bessere Fehlermeldungen [#28](https://github.com/DDP-Projekt/Kompilierer/pull/28)
-- [Added] Duden/Dateisystem Funktionen
+- [Added] Datei-info Funktionen zu Duden/Dateisystem 
 - [Fix] Double-Free Fehler in externen Funktionen
 - [Breaking] `von...bis` wurde zu `im Bereich von...bis` umbenannt
 - [Added] Syntax wie in Deklarationen für boolesche Rückgabewerte
@@ -31,3 +32,4 @@ Legende:
 - [Added] Strukturen [#5](https://github.com/DDP-Projekt/Kompilierer/issues/5)
 
 ## v0.0.1-alpha
+- Erster Release von DDP
