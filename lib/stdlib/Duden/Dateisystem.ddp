@@ -135,7 +135,7 @@ Und kann so benutzt werden:
 [
 	Kopiert die Datei am Pfad nach Kopiepfad. !! Achtung: Kann existierende Dateien überschreiben !!
 ]
-Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Kopiere die Datei <Pfad> nach <Kopiepfad>"
