@@ -281,11 +281,39 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 	return (ddpint)st.st_mode;
 }
 
+#ifdef DDPOS_WINDOWS
+static void write_error_win(ddpstringref ref, const char* fmt, ...) {
+	char errbuff[1024];
+
+	va_list argptr;
+	va_start(argptr, fmt);
+
+	int len = vsprintf(errbuff, fmt, argptr);
+	
+	va_end(argptr);
+
+	DWORD error_code = GetLastError();
+	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &errbuff[len], sizeof(errbuff)-len, NULL)) {
+		sprintf(&errbuff[len], "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
+	}
+	len = strlen(errbuff);
+
+	ref->str = ddp_reallocate(ref->str, ref->cap, len+1);
+	memcpy(ref->str, errbuff, len);
+	ref->cap = len+1;
+	ref->str[ref->cap-1] = '\0';	
+}
+#endif // DDPOS_WINDOWS
+
 // UNIX: https://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
 ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad, ddpstringref Fehler) {
 #ifdef DDPOS_WINDOWS
-// TODO: Fehler
-return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
+	if (CopyFileA(Pfad->str, Kopiepfad->str, FALSE) == 0) {
+		write_error_win(Fehler, "Fehler beim Kopieren von '%s' nach '%s': ", Pfad->str, Kopiepfad->str);
+		return (ddpbool)false;
+	}
+	return (ddpbool)true;
 #else // DDPOW_LINUX
     if (!Pfad->str || !Kopiepfad->str) {
         return (ddpbool)false;
