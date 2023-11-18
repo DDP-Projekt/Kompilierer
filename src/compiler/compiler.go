@@ -1311,14 +1311,14 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}
-		case ddptypes.BOOLEAN:
+		case ddptypes.WAHRHEITSWERT:
 			switch lhsTyp {
 			case c.ddpinttyp:
 				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 			case c.ddpbooltyp:
 				c.latestReturn = lhs
 			default:
-				c.err("invalid Parameter Type for BOOLEAN: %s", lhsTyp.Name())
+				c.err("invalid Parameter Type for WAHRHEITSWERT: %s", lhsTyp.Name())
 			}
 		case ddptypes.BUCHSTABE:
 			switch lhsTyp {

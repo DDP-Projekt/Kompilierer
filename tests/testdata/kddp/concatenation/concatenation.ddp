@@ -23,13 +23,13 @@ Schreibe den Buchstaben '\n'.
 Schreibe die Kommazahlen Liste (42,2 verkettet mit 69,2).
 Schreibe den Buchstaben '\n'.
 
-Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
+Schreibe die Wahrheitswert Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit wahr).
+Schreibe die Wahrheitswert Liste (eine Liste, die aus wahr, falsch, wahr besteht verkettet mit wahr).
 Schreibe den Buchstaben '\n'.
-Schreibe die Boolean Liste (falsch verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
+Schreibe die Wahrheitswert Liste (falsch verkettet mit einer Liste, die aus wahr, falsch, wahr besteht).
 Schreibe den Buchstaben '\n'.
-Schreibe die Boolean Liste (wahr verkettet mit falsch).
+Schreibe die Wahrheitswert Liste (wahr verkettet mit falsch).
 Schreibe den Buchstaben '\n'.
 
 Schreibe die Buchstaben Liste (eine Liste, die aus 'a', 'b', 'c' besteht verkettet mit einer Liste, die aus 'a', 'b', 'c' besteht).

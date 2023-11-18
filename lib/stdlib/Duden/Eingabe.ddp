@@ -2,7 +2,7 @@ Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
 
 [wird von Extern_Lies_Buchstabe gesetzt falls während des Lesens EOF auftrat]
-Der Boolean war_eof ist falsch.
+Der Wahrheitswert war_eof ist falsch.
 
 [
 	Bessere Aliase um mit war_eof zu arbeiten 
@@ -12,7 +12,7 @@ Der Boolean war_eof ist falsch.
 [
 	Gibt wahr zurück wenn ein EOF Zeichen gelesen wurde.
 ]
-Die öffentliche Funktion War_EOF gibt einen Boolean zurück, macht:
+Die öffentliche Funktion War_EOF gibt einen Wahrheitswert zurück, macht:
 	Gib war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe zu Ende gewesen ist"
@@ -20,7 +20,7 @@ Und kann so benutzt werden:
 [
 	Gibt wahr zurück wenn noch kein EOF Zeichen gelesen wurde.
 ]
-Die öffentliche Funktion Ist_Nicht_EOF gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Nicht_EOF gibt einen Wahrheitswert zurück, macht:
 	Gib nicht war_eof zurück.
 Und kann so benutzt werden:
 	"die Benutzereingabe nicht vorbei ist"
@@ -39,7 +39,7 @@ Und kann so benutzt werden:
 	Lies einen einzelnen Buchstaben aus der Standardeingabe
 	und setzt gegebenenfalls die war_eof Variable.
 ]
-Die Funktion extern_lies_buchstabe mit dem Parameter war_eof vom Typ Boolean Referenz, gibt einen Buchstaben zurück,
+Die Funktion extern_lies_buchstabe mit dem Parameter war_eof vom Typ Wahrheitswert Referenz, gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"das nächste Zeichen mit <war_eof> aktualisiert"
@@ -195,7 +195,7 @@ Und kann so benutzt werden:
 	Gibt an ob etwas mit einer der obigen Funktionen
 	gelesen werden kann.
 ]
-Die öffentliche Funktion Hat_Token gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Token gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
 	Speichere den nächsten Text in Eingabe_Puffer.
@@ -207,7 +207,7 @@ Und kann so benutzt werden:
 	Gibt an ob die nächste Eingabe (direkt oder im Puffer)
 	zu einer Zahl umgewandelt werden kann.
 ]
-Die öffentliche Funktion Hat_Zahl gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Zahl gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe eine Zahl ist" oder
@@ -217,7 +217,7 @@ Und kann so benutzt werden:
 	Gibt an ob ein Buchstabe (direkt oder aus dem Puffer)
 	gelesen werden kann.
 ]
-Die öffentliche Funktion Hat_Buchstabe gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Hat_Buchstabe gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
 Und kann so benutzt werden:
 	"ein Buchstabe vorhanden ist"

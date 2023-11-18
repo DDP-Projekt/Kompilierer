@@ -31,7 +31,7 @@ kz an der Stelle 6 ist 4,2.
 Schreibe kz.
 Schreibe '\n'.
 
-Die Boolean Liste b ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr, falsch besteht.
+Die Wahrheitswert Liste b ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr, falsch besteht.
 Schreibe b.
 Schreibe '\n'.
 b an der Stelle 1 ist falsch.

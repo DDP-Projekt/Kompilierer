@@ -46,7 +46,7 @@ und kann so benutzt werden:
 [
 	Entspricht C's `isatty` funktion.
 ]
-Die öffentliche Funktion Ist_Befehlszeile gibt einen Boolean zurück,
+Die öffentliche Funktion Ist_Befehlszeile gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Benutzereingabe eine Befehlszeile ist"

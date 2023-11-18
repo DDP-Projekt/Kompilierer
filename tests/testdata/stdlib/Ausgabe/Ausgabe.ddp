@@ -3,8 +3,8 @@ Binde "Duden/Ausgabe" ein.
 [Schreibe tests]
 Schreibe die Zahl 15.
 Schreibe die Kommazahl 42,222.
-Schreibe den Boolean wahr.
-Schreibe den Boolean falsch.
+Schreibe den Wahrheitswert wahr.
+Schreibe den Wahrheitswert falsch.
 Schreibe den Buchstaben 'Ü'.
 Schreibe den Text "hallo Üä+".
 Schreibe den Buchstaben '\n'.
@@ -12,8 +12,8 @@ Schreibe den Buchstaben '\n'.
 [Schreibe Zeile tests]
 Schreibe die Zahl 15 auf eine Zeile.
 Schreibe die Kommazahl 42,222 auf eine Zeile.
-Schreibe den Boolean wahr auf eine Zeile.
-Schreibe den Boolean falsch auf eine Zeile.
+Schreibe den Wahrheitswert wahr auf eine Zeile.
+Schreibe den Wahrheitswert falsch auf eine Zeile.
 Schreibe den Buchstaben 'Ü' auf eine Zeile.
 Schreibe den Text "hallo Üä+" auf eine Zeile.
 
@@ -45,7 +45,7 @@ Schreibe (eine Liste, die aus 1,4, 2,2, 3,14 besteht).
 
 Schreibe '\n'.
 
-Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht).
+Schreibe die Wahrheitswert Liste (eine Liste, die aus wahr, falsch, wahr besteht).
 Schreibe (eine Liste, die aus wahr, falsch, wahr besteht).
 
 Schreibe '\n'.
@@ -66,7 +66,7 @@ Schreibe (eine Liste, die aus 1,4, 2,2, 3,14 besteht) mit dem Seperator " ".
 
 Schreibe '\n'.
 
-Schreibe die Boolean Liste (eine Liste, die aus wahr, falsch, wahr besteht) mit dem Seperator " ".
+Schreibe die Wahrheitswert Liste (eine Liste, die aus wahr, falsch, wahr besteht) mit dem Seperator " ".
 Schreibe (eine Liste, die aus wahr, falsch, wahr besteht) mit dem Seperator " ".
 
 Schreibe '\n'.

@@ -1,25 +1,25 @@
 Binde "Duden/Ausgabe" ein.
 
-Die Funktion istWahr gibt einen Boolean zurück, macht:
+Die Funktion istWahr gibt einen Wahrheitswert zurück, macht:
 	Schreibe den Text "istWahr\n".
 	Gib wahr zurück.
 Und kann so benutzt werden:
 	"istWahr"
 
-Die Funktion istFalsch gibt einen Boolean zurück, macht:
+Die Funktion istFalsch gibt einen Wahrheitswert zurück, macht:
 	Schreibe den Text "istFalsch\n".
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"istFalsch"
 
-Schreibe den Boolean (istWahr und istFalsch).
+Schreibe den Wahrheitswert (istWahr und istFalsch).
 Schreibe den Buchstaben '\n'.
-Schreibe den Boolean (istWahr und istWahr).
+Schreibe den Wahrheitswert (istWahr und istWahr).
 Schreibe den Buchstaben '\n'.
-Schreibe den Boolean (istFalsch und istWahr).
+Schreibe den Wahrheitswert (istFalsch und istWahr).
 Schreibe den Buchstaben '\n'.
-Schreibe den Boolean (istFalsch oder istWahr).
+Schreibe den Wahrheitswert (istFalsch oder istWahr).
 Schreibe den Buchstaben '\n'.
-Schreibe den Boolean (istWahr oder istFalsch).
+Schreibe den Wahrheitswert (istWahr oder istFalsch).
 Schreibe den Buchstaben '\n'.
-Schreibe den Boolean (istFalsch oder istFalsch).
+Schreibe den Wahrheitswert (istFalsch oder istFalsch).

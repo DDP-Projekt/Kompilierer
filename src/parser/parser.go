@@ -143,14 +143,14 @@ func (p *parser) synchronize() {
 		case token.DIE:
 			switch p.peekN(1).Type {
 			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN,
-				token.BUCHSTABEN, token.TEXT, token.BOOLEAN, token.FUNKTION:
+				token.BUCHSTABEN, token.TEXT, token.WAHRHEITSWERT, token.FUNKTION:
 				{
 					return
 				}
 			}
 		case token.DER:
 			switch p.peekN(1).Type {
-			case token.BOOLEAN, token.TEXT, token.BUCHSTABE, token.ALIAS:
+			case token.WAHRHEITSWERT, token.TEXT, token.BUCHSTABE, token.ALIAS:
 				{
 					return
 				}
@@ -408,7 +408,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 	var expr ast.Expression
 
-	if typ != ddptypes.BOOLEAN && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
+	if typ != ddptypes.WAHRHEITSWERT && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.match(token.COUNT_MAL) {
 			value := p.expression()
@@ -568,7 +568,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if Typ == nil {
 		valid = false
 	}
-	if Typ == ddptypes.BOOLEAN {
+	if Typ == ddptypes.WAHRHEITSWERT {
 		p.isCurrentFunctionBool = true
 	}
 
@@ -1148,7 +1148,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
-		if typ == ddptypes.BOOLEAN {
+		if typ == ddptypes.WAHRHEITSWERT {
 			operator = ast.UN_NOT
 		}
 		return &ast.AssignStmt{
@@ -1220,7 +1220,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
-		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.BOOLEAN {
+		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.WAHRHEITSWERT {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -2624,7 +2624,7 @@ func (p *parser) parseIntLit() *ast.IntLit {
 // wether the next token indicates a typename
 func (p *parser) isTypeName(t *token.Token) bool {
 	switch t.Type {
-	case token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE, token.TEXT,
+	case token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE, token.TEXT,
 		token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN:
 		return true
 	case token.IDENTIFIER:
@@ -2643,8 +2643,8 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 		return ddptypes.ZAHL
 	case token.KOMMAZAHL:
 		return ddptypes.KOMMAZAHL
-	case token.BOOLEAN:
-		return ddptypes.BOOLEAN
+	case token.WAHRHEITSWERT:
+		return ddptypes.WAHRHEITSWERT
 	case token.BUCHSTABE:
 		return ddptypes.BUCHSTABE
 	case token.TEXT:
@@ -2658,7 +2658,7 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found
 func (p *parser) parseType() ddptypes.Type {
-	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
+	if !p.match(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil
@@ -2667,7 +2667,7 @@ func (p *parser) parseType() ddptypes.Type {
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
 		return p.tokenTypeToType(p.previous().Type)
-	case token.BOOLEAN, token.TEXT:
+	case token.WAHRHEITSWERT, token.TEXT:
 		if !p.match(token.LISTE) {
 			return p.tokenTypeToType(p.previous().Type)
 		}
@@ -2702,7 +2702,7 @@ func (p *parser) parseType() ddptypes.Type {
 // returns nil and errors if no typename was found
 // returns a ddptypes.ListType
 func (p *parser) parseListType() ddptypes.Type {
-	if !p.match(token.BOOLEAN, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
+	if !p.match(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 		return nil
 	}
@@ -2713,7 +2713,7 @@ func (p *parser) parseListType() ddptypes.Type {
 		p.advance()
 	}
 	switch p.peekN(-2).Type {
-	case token.BOOLEAN, token.TEXT:
+	case token.WAHRHEITSWERT, token.TEXT:
 		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
 		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
@@ -2735,7 +2735,7 @@ func (p *parser) parseListType() ddptypes.Type {
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found
 func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
-	if !p.match(token.ZAHL, token.KOMMAZAHL, token.BOOLEAN, token.BUCHSTABE,
+	if !p.match(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil, false // void indicates error
@@ -2744,7 +2744,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 	switch p.previous().Type {
 	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
 		return p.tokenTypeToType(p.previous().Type), false
-	case token.BOOLEAN, token.TEXT:
+	case token.WAHRHEITSWERT, token.TEXT:
 		if p.match(token.LISTE) {
 			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
 		} else if p.match(token.LISTEN) {

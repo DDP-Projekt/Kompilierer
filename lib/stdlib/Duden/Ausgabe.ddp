@@ -17,12 +17,12 @@ und kann so benutzt werden:
 	"Schreibe <p1>"
 
 [
-	Die Funktion Schreibe_Boolean schreibt einen gegebenen Boolean (p1) in den Standart Output Stream.
+	Die Funktion Schreibe_Wahrheitswert schreibt einen gegebenen Wahrheitswert (p1) in den Standart Output Stream.
 ]
-Die öffentliche Funktion Schreibe_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück,
+Die öffentliche Funktion Schreibe_Wahrheitswert mit dem Parameter p1 vom Typ Wahrheitswert, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"Schreibe den Boolean <p1>" oder
+	"Schreibe den Wahrheitswert <p1>" oder
 	"Schreibe <p1>"
 
 [
@@ -72,13 +72,13 @@ Und kann so benutzt werden:
 	"Schreibe <p1> auf eine Zeile"
 
 [
-	Die Funktion SchreibeZeile_Boolean schreibt einen gegebenen Boolean (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
+	Die Funktion SchreibeZeile_Wahrheitswert schreibt einen gegebenen Wahrheitswert (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion Schreibe_Zeile_Boolean mit dem Parameter p1 vom Typ Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Zeile_Wahrheitswert mit dem Parameter p1 vom Typ Wahrheitswert, gibt nichts zurück, macht:
 	Schreibe p1.
 	Schreibe '\n'.
 Und kann so benutzt werden:
-	"Schreibe den Boolean <p1> auf eine Zeile" oder
+	"Schreibe den Wahrheitswert <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
 [
@@ -130,9 +130,9 @@ Und kann so benutzt werden:
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 [
-	Die Funktion Schreibe_Boolean_Liste_Getrennt schreibt alle Elemente einer gegebenen Boolean Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Stream.
+	Die Funktion Schreibe_Wahrheitswert_Liste_Getrennt schreibt alle Elemente einer gegebenen Wahrheitswert Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Stream.
 ]
-Die öffentliche Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern liste und seperator vom Typ Boolean Liste und Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Wahrheitswert_Liste_Getrennt mit den Parametern liste und seperator vom Typ Wahrheitswert Liste und Text, gibt nichts zurück, macht:
 	Wenn die Länge von liste größer als 0 ist, dann:
 		Wenn die Länge von liste größer als 1 ist, dann:
 			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
@@ -140,7 +140,7 @@ Die öffentliche Funktion Schreibe_Boolean_Liste_Getrennt mit den Parametern lis
 				Schreibe seperator.
 		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
-	"Schreibe die Boolean Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe die Wahrheitswert Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 [
@@ -190,12 +190,12 @@ Und kann so benutzt werden:
 	"Schreibe <p1>"
 
 [
-	Die Funktion Schreibe_Boolean_Liste schreibt alle Elemente einer Boolean Liste getrennt mit einem Komma in den Standart Output Stream.
+	Die Funktion Schreibe_Wahrheitswert_Liste schreibt alle Elemente einer Wahrheitswert Liste getrennt mit einem Komma in den Standart Output Stream.
 ]
-Die öffentliche Funktion Schreibe_Boolean_Liste mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Wahrheitswert_Liste mit dem Parameter p1 vom Typ Wahrheitswert Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 Und kann so benutzt werden:
-	"Schreibe die Boolean Liste <p1>" oder
+	"Schreibe die Wahrheitswert Liste <p1>" oder
 	"Schreibe <p1>"
 
 [
@@ -237,13 +237,13 @@ Und kann so benutzt werden:
 	"Schreibe <p1> auf eine Zeile"
 
 [
-	Die Funktion Schreibe_Boolean_Liste schreibt alle Elemente einer Boolean Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+	Die Funktion Schreibe_Wahrheitswert_Liste schreibt alle Elemente einer Wahrheitswert Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
 ]
-Die öffentliche Funktion Schreibe_Boolean_Liste_Zeile mit dem Parameter p1 vom Typ Boolean Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Schreibe_Wahrheitswert_Liste_Zeile mit dem Parameter p1 vom Typ Wahrheitswert Liste, gibt nichts zurück, macht:
 	Schreibe p1 mit dem Seperator ", ".
 	Schreibe '\n'.
 Und kann so benutzt werden:
-	"Schreibe die Boolean Liste <p1> auf eine Zeile" oder
+	"Schreibe die Wahrheitswert Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
 [

@@ -35,13 +35,13 @@ Und kann so benutzt werden:
 	"Werte den obersten Ausdruck aus",
 	"werte den obersten Ausdruck aus"
 
-Die Funktion RegelnAuswerten gibt einen Boolean zurück, macht:
+Die Funktion RegelnAuswerten gibt einen Wahrheitswert zurück, macht:
 	Wenn dasAktuelleSymbol leer ist, gib falsch zurück.
 
-	Der Boolean KLAufOderWert ist wahr, wenn dasAktuelleSymbol gleich "(" ist oder dasAktuelleSymbol eine Zahl ist.
-	Der Boolean DollarVal ist wahr, wenn (das 1. Element des Kellers gleich "$" ist und
+	Der Wahrheitswert KLAufOderWert ist wahr, wenn dasAktuelleSymbol gleich "(" ist oder dasAktuelleSymbol eine Zahl ist.
+	Der Wahrheitswert DollarVal ist wahr, wenn (das 1. Element des Kellers gleich "$" ist und
 	(das oberste Element des Kellers) eine Zahl ist).
-	Der Boolean ValOpVal ist wahr, wenn (das 2. Element des Kellers) eine Zahl ist und
+	Der Wahrheitswert ValOpVal ist wahr, wenn (das 2. Element des Kellers) eine Zahl ist und
 	(das 1. Element des Kellers) ein Operator ist und (das oberste Element des Kellers) eine Zahl ist.
 
 	[Regel 1-3]

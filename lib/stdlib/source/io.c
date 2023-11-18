@@ -38,7 +38,7 @@ void Schreibe_Kommazahl(ddpfloat p1) {
 	}
 }
 
-void Schreibe_Boolean(ddpbool p1) {
+void Schreibe_Wahrheitswert(ddpbool p1) {
 	printf(p1 ? "wahr" : "falsch");
 }
 

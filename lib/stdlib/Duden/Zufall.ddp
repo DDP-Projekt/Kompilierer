@@ -17,9 +17,9 @@ und kann so benutzt werden:
 	"einer zufälligen Zahl zwischen <a> und <b>"
 
 [
-	Gibt einen boolean Wert zurück der mit einer Wahrscheinlichkeit von p% wahr ist. 
+	Gibt einen Wahrheitswert zurück der mit einer Wahrscheinlichkeit von p% wahr ist. 
 ]
-Die öffentliche Funktion Zufalls_Boolean mit dem Parameter p vom Typ Kommazahl, gibt einen Boolean zurück,
+Die öffentliche Funktion Zufalls_Wahrheitswert mit dem Parameter p vom Typ Kommazahl, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"ein Ereignis mit Wahrscheinlichkeit <p> Prozent eingetroffen"

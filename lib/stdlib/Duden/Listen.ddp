@@ -110,7 +110,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Zahl in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Wahrheitswert zurück, macht:
 	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -119,7 +119,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
-Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -237,7 +237,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Kommazahl in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Wahrheitswert zurück, macht:
 	Für jede Kommazahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -246,99 +246,99 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Kommazahlen Liste leer ist.
 ]
-Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
 
-[ Boolean Listen Funktionen ]
+[ Wahrheitswert Listen Funktionen ]
 [
-	Löscht alle Booleans aus der gegebenen Boolean Liste.
+	Löscht alle Wahrheitswerts aus der gegebenen Wahrheitswert Liste.
 ]
-Die öffentliche Funktion Leere_Boolean mit dem Parameter liste vom Typ Boolean Listen Referenz, gibt nichts zurück, macht:
-	Speichere eine leere Boolean Liste in liste.
+Die öffentliche Funktion Leere_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Wahrheitswert Liste in liste.
 Und kann so benutzt werden:
 	"Leere <liste>"
 
 [Hilfsfunktion für Hinzufügen_X]
-Die Funktion efficient_list_append_bool mit den Parametern list, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,
+Die Funktion efficient_list_append_bool mit den Parametern list, elem und elem_size vom Typ Wahrheitswert Listen Referenz, Wahrheitswert Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_append_bool <list> <elem> <elem_size>"
 
 [
-	Fügt einen Boolean am Ende der gegeben Boolean Liste hinzu.
+	Fügt einen Wahrheitswert am Ende der gegeben Wahrheitswert Liste hinzu.
 ]
-Die öffentliche Funktion Hinzufügen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Hinzufügen_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt nichts zurück, macht:
 	efficient_list_append_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
 
 [Hilfsfunktion für EinfügenX]
-Die Funktion efficient_list_insert_bool mit den Parametern list, index, elem und elem_size vom Typ Boolean Listen Referenz, Zahl, Boolean Referenz und Zahl, gibt nichts zurück,
+Die Funktion efficient_list_insert_bool mit den Parametern list, index, elem und elem_size vom Typ Wahrheitswert Listen Referenz, Zahl, Wahrheitswert Referenz und Zahl, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_insert_bool <list> <index> <elem> <elem_size>"
 
 [
-	Fügt einen Boolean vor einem Index in der gegebenen Boolean Liste ein.
+	Fügt einen Wahrheitswert vor einem Index in der gegebenen Wahrheitswert Liste ein.
 ]
-Die öffentliche Funktion Einfügen_Boolean mit den Parametern liste, index und elm vom Typ Boolean Listen Referenz, Zahl und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Wahrheitswert mit den Parametern liste, index und elm vom Typ Wahrheitswert Listen Referenz, Zahl und Wahrheitswert, gibt nichts zurück, macht:
 	efficient_list_insert_bool liste (index minus 1) elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
 [Hilfsfunktion für Einfügen_Bereich_X]
-Die Funktion efficient_list_insert_range_bool mit den Parametern list, index, range und elem_size vom Typ Boolean Listen Referenz, Zahl, Boolean Listen Referenz und Zahl, gibt nichts zurück,	
+Die Funktion efficient_list_insert_range_bool mit den Parametern list, index, range und elem_size vom Typ Wahrheitswert Listen Referenz, Zahl, Wahrheitswert Listen Referenz und Zahl, gibt nichts zurück,	
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_insert_range_bool <list> <index> <range> <elem_size>"
 
 [
-	Fügt eine Boolean Liste vor einem Index in der gegebenen Boolean Liste ein.
+	Fügt eine Wahrheitswert Liste vor einem Index in der gegebenen Wahrheitswert Liste ein.
 	Es wird nicht überprüft ob der Index valide ist.
 ]
-Die öffentliche Funktion Einfügen_Bereich_Boolean mit den Parametern liste, index und range vom Typ Boolean Listen Referenz, Zahl und Boolean Liste, gibt nichts zurück, macht:
+Die öffentliche Funktion Einfügen_Bereich_Wahrheitswert mit den Parametern liste, index und range vom Typ Wahrheitswert Listen Referenz, Zahl und Wahrheitswert Liste, gibt nichts zurück, macht:
 	efficient_list_insert_range_bool liste (index minus 1) range (die Größe von wahr).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
 [Hilfsfunktion für EinfügenX]
-Die Funktion efficient_list_prepend_bool mit den Parametern liste, elem und elem_size vom Typ Boolean Listen Referenz, Boolean Referenz und Zahl, gibt nichts zurück,	
+Die Funktion efficient_list_prepend_bool mit den Parametern liste, elem und elem_size vom Typ Wahrheitswert Listen Referenz, Wahrheitswert Referenz und Zahl, gibt nichts zurück,	
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_prepend_bool <liste> <elem> <elem_size>"
 
 [
-	Fügt einen Boolean am Anfang der gegeben Boolean Liste hinzu.
+	Fügt einen Wahrheitswert am Anfang der gegeben Wahrheitswert Liste hinzu.
 ]
-Die öffentliche Funktion Voranstellen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
+Die öffentliche Funktion Voranstellen_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
 	efficient_list_prepend_bool liste elm (die Größe von elm).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 [Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_bool mit den Parametern list, start, end und elem_size vom Typ Boolean Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,		
+Die Funktion efficient_list_delete_range_bool mit den Parametern list, start, end und elem_size vom Typ Wahrheitswert Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,		
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_delete_range_bool <list> <start> <end> <elem_size>"
 
 [
-	Entfernt den Boolean an dem gegeben Index aus der gegeben Boolean Liste.
+	Entfernt den Wahrheitswert an dem gegeben Index aus der gegeben Wahrheitswert Liste.
 ]
-Die öffentliche Funktion Lösche_Element_Boolean mit den Parametern liste und index vom Typ Boolean Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Element_Wahrheitswert mit den Parametern liste und index vom Typ Wahrheitswert Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	efficient_list_delete_range_bool liste index index (die Größe von wahr).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
-	Entfernt alle Booleans aus der Liste im Bereich [start, end] (inklusiv)
+	Entfernt alle Wahrheitswerts aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_Boolean mit den Parametern liste, start und end vom Typ Boolean Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die öffentliche Funktion Lösche_Bereich_Wahrheitswert mit den Parametern liste, start und end vom Typ Wahrheitswert Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von wahr).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
@@ -346,34 +346,34 @@ Und kann so benutzt werden:
 [
 	Füllt die gegebene Kommazahlen Liste mit der gegebenen Kommazahl.
 ]
-Die öffentliche Funktion Füllen_Boolean mit den Parametern liste und elm vom Typ Boolean Listen Referenz und Boolean, gibt nichts zurück, macht:
-	Die Boolean Liste neueListe ist die Länge von liste Mal elm.
+Die öffentliche Funktion Füllen_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt nichts zurück, macht:
+	Die Wahrheitswert Liste neueListe ist die Länge von liste Mal elm.
 	Speichere neueListe in liste.
 Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 [
-	Gibt den Index des gegebenen Booleans aus der Liste zurück oder -1 wenn der Boolean nicht in der Liste vorhanden ist.
+	Gibt den Index des gegebenen Wahrheitswerts aus der Liste zurück oder -1 wenn der Wahrheitswert nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Index_Von_Boolean mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 [
-	Gibt zurück ob der Boolean in der Liste vorhanden ist.
+	Gibt zurück ob der Wahrheitswert in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Boolean mit den Parametern liste und elm vom Typ Boolean Liste und Boolean, gibt einen Boolean zurück, macht:
-	Für jeden Boolean b in liste, wenn b gleich elm ist, gib wahr zurück.
+Die öffentliche Funktion Enthält_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt einen Wahrheitswert zurück, macht:
+	Für jeden Wahrheitswert b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> enthält"
 
 [
-	Gibt zurück ob die Boolean Liste leer ist.
+	Gibt zurück ob die Wahrheitswert Liste leer ist.
 ]
-Die öffentliche Funktion Ist_Leer_Boolean mit dem Parameter liste vom Typ Boolean Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -491,7 +491,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der Buchstabe in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Wahrheitswert zurück, macht:
 	Für jeden Buchstaben b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -500,7 +500,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
-Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
@@ -618,7 +618,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob der Text in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Enthält_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Wahrheitswert zurück, macht:
 	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
@@ -627,7 +627,7 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Text Liste leer ist.
 ]
-Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"

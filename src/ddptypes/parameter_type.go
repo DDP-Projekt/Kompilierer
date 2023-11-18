@@ -22,7 +22,7 @@ func (paramType ParameterType) String() string {
 			return paramType.Type.String() + "en Referenz"
 		case BUCHSTABE:
 			return "Buchstaben Referenz"
-		case BOOLEAN, TEXT:
+		case WAHRHEITSWERT, TEXT:
 			return paramType.Type.String() + " Referenz"
 		}
 	}

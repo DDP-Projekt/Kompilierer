@@ -56,8 +56,8 @@ Leere text.
 Schreibe den Text text auf eine Zeile. []
 
 [IstTextLeer]
-Schreibe den Boolean (text leer ist) auf eine Zeile. [wahr]
-Schreibe den Boolean ("text" leer ist) auf eine Zeile. [falsch]
+Schreibe den Wahrheitswert (text leer ist) auf eine Zeile. [wahr]
+Schreibe den Wahrheitswert ("text" leer ist) auf eine Zeile. [falsch]
 
 text ist "test".
 

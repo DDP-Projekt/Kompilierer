@@ -14,7 +14,7 @@ ddpint ZufallsZahl(ddpint a, ddpint b) {
 	return (ddpint)(genrand64_int64() % ((b) - (a+1)) + (a+1));
 }
 
-ddpbool ZufallsBoolean(ddpfloat p) {
+ddpbool ZufallsWahrheitswert(ddpfloat p) {
 	if (p < 0) {
 		return 0; // for 0% or below it is always false
 	} else if (p > 100) {

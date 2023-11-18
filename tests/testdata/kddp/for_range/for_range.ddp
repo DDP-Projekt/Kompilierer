@@ -30,14 +30,14 @@ Für jede Kommazahl z in kzl, mache:
 Für jede Kommazahl z in kzl, Schreibe z.
 Schreibe den Buchstaben '\n'.
 
-Für jeden Boolean z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, mache:
+Für jeden Wahrheitswert z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, mache:
 	Schreibe z.
-Für jeden Boolean z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, Schreibe z.
+Für jeden Wahrheitswert z in einer Liste, die aus wahr, falsch, wahr, falsch besteht, Schreibe z.
 Schreibe den Buchstaben '\n'.
-Die Boolean Liste bl ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr besteht.
-Für jeden Boolean z in bl, mache:
+Die Wahrheitswert Liste bl ist eine Liste, die aus wahr, falsch, wahr, falsch, wahr besteht.
+Für jeden Wahrheitswert z in bl, mache:
 	Schreibe z.
-Für jeden Boolean z in bl, Schreibe z.
+Für jeden Wahrheitswert z in bl, Schreibe z.
 Schreibe den Buchstaben '\n'.
 
 Für jeden Buchstaben z in einer Liste, die aus 'a', 'b', 'c', 'ü' besteht, mache:

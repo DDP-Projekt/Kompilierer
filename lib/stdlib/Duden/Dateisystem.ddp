@@ -23,7 +23,7 @@ und kann so benutzt werden:
 [
 	Überprüft ob der gegebene Pfad existiert (egal ob als Ordner oder Datei)
 ]
-Die öffentliche Funktion Existiert_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Existiert_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die Datei <Pfad> existiert" oder
@@ -33,7 +33,7 @@ und kann so benutzt werden:
 [
 	Überprüft ob der gegebene Pfad ein Ordner ist
 ]
-Die öffentliche Funktion Ist_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Ist_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"<Pfad> ein Ordner ist"
@@ -41,7 +41,7 @@ und kann so benutzt werden:
 [
 	Überprüft ob der gegebene Pfad eine Datei ist
 ]
-Die öffentliche Funktion Ist_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück, macht:
+Die öffentliche Funktion Ist_Datei mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von Pfad gleich 0 ist oder Pfad ein Ordner ist, gib falsch zurück.
 	Gib wahr zurück.
 Und kann so benutzt werden:
@@ -53,7 +53,7 @@ Und kann so benutzt werden:
 
 	Gibt zurück ob das Erstellen erfolgreich war.
 ]
-Die öffentliche Funktion Erstelle_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Erstelle_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Erstelle den Ordner <Pfad>" oder
@@ -67,7 +67,7 @@ und kann so benutzt werden:
 
 	Gibt zurück ob das Löschen erfolgreich war.
 ]
-Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Lösche <Pfad>" oder
@@ -85,7 +85,7 @@ und kann so benutzt werden:
 
 	Gibt zurück ob das Umbenennen erfolgreich war.
 ]
-Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName vom Typ Text und Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Verschiebe <Pfad> nach <NeuerName>" oder
@@ -135,7 +135,7 @@ Und kann so benutzt werden:
 [
 	Kopiert die Datei am Pfad nach Kopiepfad. !! Achtung: Kann existierende Dateien überschreiben !!
 ]
-Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Boolean zurück,
+Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Kopiere die Datei <Pfad> nach <Kopiepfad>"

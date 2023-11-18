@@ -2,11 +2,11 @@ Binde "Duden/Ausgabe" ein.
 
 Schreibe die Kommazahl (42 als Kommazahl).
 Schreibe den Buchstaben ';'.
-Schreibe den Boolean (1 als Boolean).
+Schreibe den Wahrheitswert (1 als Wahrheitswert).
 Schreibe den Buchstaben ';'.
-Schreibe den Boolean (0 als Boolean).
+Schreibe den Wahrheitswert (0 als Wahrheitswert).
 Schreibe den Buchstaben ';'.
-Schreibe den Boolean ((-1) als Boolean).
+Schreibe den Wahrheitswert ((-1) als Wahrheitswert).
 Schreibe den Buchstaben ';'.
 Schreibe den Buchstaben (69 als Buchstabe).
 Schreibe den Buchstaben ';'.
@@ -41,7 +41,7 @@ Schreibe die Zahlen Liste (2 als Zahlen Liste).
 Schreibe den Buchstaben ';'.
 Schreibe die Kommazahlen Liste (2,2 als Kommazahlen Liste).
 Schreibe den Buchstaben ';'.
-Schreibe die Boolean Liste (wahr als Boolean Liste).
+Schreibe die Wahrheitswert Liste (wahr als Wahrheitswert Liste).
 Schreibe den Buchstaben ';'.
 Schreibe die Buchstaben Liste ('Ü' als Buchstaben Liste).
 Schreibe den Buchstaben ';'.
@@ -50,4 +50,4 @@ Schreibe den Buchstaben '\n'.
 
 Schreibe die Zahl ("123" als Zahl als Kommazahl als Text als Zahl).
 Schreibe den Buchstaben ';'.
-Schreibe den Boolean ("0" als Kommazahl als Zahl als Text als Zahl als Boolean).
+Schreibe den Wahrheitswert ("0" als Kommazahl als Zahl als Text als Zahl als Wahrheitswert).
