@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -32,22 +33,90 @@
 #define mkdir(arg) mkdir(arg, 0700)
 #endif // DDPOS_WINDOWS
 
+
+static void write_error(ddpstringref ref, const char* fmt, ...) {
+	char errbuff[1024];
+
+	va_list argptr;
+	va_start(argptr, fmt);
+
+	int len = vsprintf(errbuff, fmt, argptr);
+	
+	va_end(argptr);
+
+	ref->str = ddp_reallocate(ref->str, ref->cap, len+1);
+	memcpy(ref->str, errbuff, len);
+	ref->cap = len+1;
+	ref->str[ref->cap-1] = '\0';
+}
+
+ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
+	FILE* file = fopen(Pfad->str, "r");
+	ddpint ret = -1;
+	if (file) {
+		fseek(file, 0, SEEK_END); // seek the last byte in the file
+		size_t string_size = ftell(file) + 1; // file_size + '\0'
+		rewind(file); // go back to file start
+		ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
+		ref->cap = string_size;
+		size_t read = fread(ref->str, sizeof(char), string_size-1, file);
+		ref->str[ref->cap-1] = '\0';
+		if (read != string_size-1) {
+			ret = -1;
+			write_error(ref, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
+		} else {
+			ret = read;
+		}
+		fclose(file);
+	} else {
+		ret = -1;
+		write_error(ref, "Fehler beim Lesen von '%s': %s", Pfad->str, strerror(errno));
+	}
+
+	return ret;
+}
+
+ddpint Schreibe_Text_Datei(ddpstring* Pfad, ddpstring* text, ddpstringref fehler) {
+	FILE* file = fopen(Pfad->str, "w");
+	ddpint ret = -1;
+	if (file) {
+		ret = fprintf(file, text->str);
+		fclose(file);
+		if (ret < 0) {
+			ret = -1;
+			write_error(fehler, "Fehler beim Schreiben zu '%s': %s", Pfad->str, strerror(errno));
+		}
+	} else {
+		write_error(fehler, "Fehler beim Schreiben zu '%s': %s", Pfad->str, strerror(errno));
+	}
+	return ret;
+}
+
 ddpbool Existiert_Pfad(ddpstring* Pfad) {
 	return access(Pfad->str, F_OK) == 0;
 }
 
-ddpbool Erstelle_Ordner(ddpstring* Pfad) {
+ddpbool Erstelle_Ordner(ddpstring* Pfad, ddpstringref Fehler) {
 	// recursively create every directory needed to create the final one
 	char* it = Pfad->str;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
-		if (mkdir(Pfad->str) != 0) return false;
+		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
+			write_error(Fehler, "Fehler beim Erstellen von '%s': %s", Pfad->str, strerror(errno));
+			return false;
+		}
 		*it = '/';
 		it++;
 	}
 
 	// == '/' because it might have already been created
-	return Pfad->str[Pfad->cap - 2] == '/' || mkdir(Pfad->str) == 0;
+	if (Pfad->str[Pfad->cap - 2] == '/') return true;
+
+	if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
+		write_error(Fehler, "Fehler beim Erstellen von '%s': %s", Pfad->str, strerror(errno));
+		return false;
+	}
+	return true;
 }
 
 ddpbool Ist_Ordner(ddpstring* Pfad) {
@@ -67,57 +136,75 @@ ddpbool Ist_Ordner(ddpstring* Pfad) {
 }
 
 // copied from https://stackoverflow.com/questions/2256945/removing-a-non-empty-directory-programmatically-in-c-or-c
-static int remove_directory(const char *path) {
+static int remove_directory(const char *path, ddpstringref Fehler) {
 	DIR *d = opendir(path);
-	size_t path_len = strlen(path);
-	int r = -1;
-
-	if (d) {
-		struct dirent *p;
-		r = 0;
-		while (!r && (p = readdir(d))) {
-			int r2 = -1;
-			char *buf;
-			size_t len;
-
-			// Skip the names "." and ".." as we don't want to recurse on them.
-			if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
-				continue;
-
-			len = path_len + strlen(p->d_name) + 2;
-			buf = ALLOCATE(char, len);
-
-			if (buf) {
-				struct stat statbuf;
-
-				snprintf(buf, len, "%s/%s", path, p->d_name);
-				if (!stat(buf, &statbuf)) {
-					if (S_ISDIR(statbuf.st_mode))
-						r2 = remove_directory(buf);
-					else
-						r2 = unlink(buf);
-				}
-				FREE(char, buf);
-			}
-			r = r2;
-		}
-		closedir(d);
+	if (!d) {
+		write_error(Fehler, "Fehler beim Öffnen von '%s': %s", path, strerror(errno));
+		return -1;
 	}
 
-	if (!r)
-		r = rmdir(path);
+	size_t path_len = strlen(path);
+	struct dirent *p;
+	int r = 0;
+	errno = 0;
+	while (!r && (p = readdir(d))) {
+		int r2 = -1;
+		char *buf;
+		size_t len;
+
+		// Skip the names "." and ".." as we don't want to recurse on them.
+		if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
+			continue;
+
+		len = path_len + strlen(p->d_name) + 2;
+		buf = ALLOCATE(char, len);
+
+		if (buf) {
+			struct stat statbuf;
+
+			snprintf(buf, len, "%s/%s", path, p->d_name);
+			if (stat(buf, &statbuf) == 0) {
+				if (S_ISDIR(statbuf.st_mode))
+					r2 = remove_directory(buf, Fehler);
+				else
+					if ((r2 = unlink(buf)) != 0) {
+						write_error(Fehler, "Fehler beim Löschen von '%s': %s", buf, strerror(errno));
+					}
+			} else {
+				write_error(Fehler, "Fehler beim Lesen von '%s': %s", buf, strerror(errno));
+			}
+			FREE(char, buf);
+		}
+		r = r2;
+		errno = 0;
+	}
+	if (errno != 0) {
+		write_error(Fehler, "Fehler beim Lesen von '%s': %s", path, strerror(errno));
+		r = -1;
+	}
+	closedir(d);
+
+	if (!r && rmdir(path) != 0) {
+		write_error(Fehler, "Fehler beim Löschen von '%s': %s", path, strerror(errno));
+		r = -1;
+	}
 
 	return r;
 }
 
-ddpbool Loesche_Pfad(ddpstring* Pfad) {
+ddpbool Loesche_Pfad(ddpstring* Pfad, ddpstringref Fehler) {
 	if (Ist_Ordner(Pfad)) {
-		return remove_directory(Pfad->str) == 0;
+		return remove_directory(Pfad->str, Fehler) == 0;
 	}
-	return unlink(Pfad->str) == 0;
+
+	if (unlink(Pfad->str) != 0) {
+		write_error(Fehler, "Fehler beim Löschen von '%s': %s", Pfad->str, strerror(errno));
+		return false;
+	}
+	return true;
 }
 
-ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
+ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName, ddpstringref Fehler) {
 	struct stat path_stat;
 	// https://stackoverflow.com/questions/64276902/mv-command-implementation-in-c-not-moving-files-to-different-directory
 	if (stat(NeuerName->str, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
@@ -134,10 +221,14 @@ ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 
 		FREE(char, path_copy);
 	}
-	return rename(Pfad->str, NeuerName->str) == 0;
+	if (rename(Pfad->str, NeuerName->str) != 0) {
+		write_error(Fehler, "Fehler beim Verschieben von '%s' nach '%s': %s", Pfad->str, NeuerName->str, strerror(errno));
+		return false;
+	}
+	return true;
 }
 
-static void formatDateStr(ddpstring *str, struct tm *time) {
+static void formatDateStr(ddpstringref str, struct tm *time) {
 	// make string
 	str->str = NULL;
 	str->cap = 0;
@@ -191,8 +282,9 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 }
 
 // UNIX: https://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
-ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
+ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad, ddpstringref Fehler) {
 #ifdef DDPOS_WINDOWS
+// TODO: Fehler
 return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 #else // DDPOW_LINUX
     if (!Pfad->str || !Kopiepfad->str) {
@@ -201,8 +293,10 @@ return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 
 	int fd_to, fd_from;
 
-	if ((fd_from = open(Pfad->str, O_RDONLY)) < 0)
+	if ((fd_from = open(Pfad->str, O_RDONLY)) < 0) {
+		write_error(Fehler, "Fehler beim Öffnen von '%s': %s", Pfad->str, strerror(errno));
 		return (ddpbool)false;
+	}
 	if ((fd_to = open(Kopiepfad->str, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
 		goto out_error;
 	
@@ -223,18 +317,13 @@ return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 	}
 
 	if (nread == 0) {
-		// TODO: check this
-		struct stat from_info;
-		if (fstat(fd_from, &from_info) >= 0) {
-			fchmod(fd_to, from_info.st_mode);
-		} 
-
 		close(fd_from);
 		close(fd_to);
 		return (ddpbool)true;
 	}
 
 	out_error:
+		write_error(Fehler, "Fehler beim Kopieren von '%s' nach '%s': %s", Pfad->str, Kopiepfad->str, strerror(errno));
 		close(fd_from);
 		if (fd_to >= 0)
 			close(fd_to);

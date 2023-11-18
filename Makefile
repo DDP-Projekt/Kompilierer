@@ -57,7 +57,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete
+.PHONY = all clean clean-outdir debug kddp duden stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -69,22 +69,24 @@ kddp:
 	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
-stdlib:
+duden:
+	@echo "copying duden"
+	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+
+stdlib: duden
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug:
+stdlib-debug: duden
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 runtime:
