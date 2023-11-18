@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung (v1.0.0-alpha)
 
+- [Breaking] `Boolean` zu `Wahrheitswert` umbennant
 - [Fix] `kddp update` ignoriert die -jetzt flag nicht mehr
 - [Fix] `kddp update` updated jetzt auch den Duden
 - [Added] Datei_Kopieren Funktion zu Duden/Dateisystem 
