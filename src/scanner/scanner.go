@@ -153,7 +153,7 @@ func (s *Scanner) NextToken() token.Token {
 		}
 	}
 
-	return s.errorToken(fmt.Sprintf("Unerwartetes Zeichen '%s'", string(char)))
+	return s.newToken(token.SYMBOL)
 }
 
 func (s *Scanner) scanEscape(quote rune) bool {
