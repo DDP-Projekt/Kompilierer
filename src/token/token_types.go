@@ -6,6 +6,7 @@ const (
 	IDENTIFIER
 	ALIAS_PARAMETER // <x> only found in function aliases
 	COMMENT         // [...]
+	SYMBOL          // any symbol not matched otherwise (?, !, ~, ...)
 
 	INT    // 1 2
 	FLOAT  // 2,2 3,4
@@ -148,6 +149,7 @@ var tokenStrings = [...]string{
 	IDENTIFIER:      "ein Name",
 	ALIAS_PARAMETER: "ein Alias Parameter",
 	COMMENT:         "ein Kommentar",
+	SYMBOL:          "ein Symbol",
 
 	INT:    "eine Zahl",
 	FLOAT:  "eine Kommazahl",

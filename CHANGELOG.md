@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung (v1.0.0-alpha)
 
+- [Added]: Beliebige utf-8 Symbole sind jetzt in Aliasen erlaubt
 - [Breaking] `Boolean` zu `Wahrheitswert` umbennant
 - [Fix] `kddp update` ignoriert die -jetzt flag nicht mehr
 - [Fix] `kddp update` updated jetzt auch den Duden
