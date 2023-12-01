@@ -1504,7 +1504,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			globalDecl := c.mod.NewGlobal(decl.Name(), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
-			c.scp.addVar(decl.Name(), globalDecl, Typ, false)
+			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
 			retType := c.toIrType(decl.Type) // get the llvm type
 			retTypeIr := retType.IrType()
