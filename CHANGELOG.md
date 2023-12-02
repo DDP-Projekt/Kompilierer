@@ -11,7 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
-## v1.0.0-alpha
+## v0.1.0-alpha
 
 - [Added]: Beliebige utf-8 Symbole sind jetzt in Aliasen erlaubt
 - [Breaking] `Boolean` zu `Wahrheitswert` umbennant
