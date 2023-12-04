@@ -421,8 +421,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		default:
 			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
-	} else {
-		switch expr.Type.(ddptypes.PrimitiveType) {
+	} else if exprType, ok := expr.Type.(ddptypes.PrimitiveType); ok {
+		switch exprType {
 		case ddptypes.ZAHL:
 			if !ddptypes.IsPrimitive(lhs) {
 				castErr()
@@ -446,6 +446,10 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		default:
 			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
+	} else if exprType, ok := expr.Type.(*ddptypes.StructType); ok {
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, exprType)
+	} else {
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse

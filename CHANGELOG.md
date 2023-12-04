@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] typecheck crash bei Typumwandlungen zu invaliden Typen
+
 ## v0.1.0-alpha
 
 - [Added]: Beliebige utf-8 Symbole sind jetzt in Aliasen erlaubt
