@@ -58,10 +58,10 @@ func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 // calls Evaluate but uses ddperror.EmptyHandler as error handler
 // and doesn't change the Module.Ast.Faulty flag
 func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
-	errHndl, faulty := t.ErrorHandler, t.Module.Ast.Faulty
+	errHndl, faulty, panicMode := t.ErrorHandler, t.Module.Ast.Faulty, *t.panicMode
 	t.ErrorHandler = ddperror.EmptyHandler
 	ty := t.Evaluate(expr)
-	t.ErrorHandler, t.Module.Ast.Faulty = errHndl, faulty
+	t.ErrorHandler, t.Module.Ast.Faulty, *t.panicMode = errHndl, faulty, panicMode
 	return ty
 }
 
