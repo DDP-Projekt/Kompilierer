@@ -2751,7 +2751,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 	result := ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
 	switch p.previous().Type {
 	case token.WAHRHEITSWERT, token.TEXT:
-		result = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
+		result = ddptypes.ListType{Underlying: p.tokenTypeToType(p.previous().Type)}
 	case token.ZAHLEN:
 		result = ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
@@ -2760,7 +2760,6 @@ func (p *parser) parseListType() ddptypes.ListType {
 		result = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
 		if Type, exists := p.typeNames[p.previous().Literal]; exists {
-			p.consume(token.LISTE)
 			result = ddptypes.ListType{Underlying: Type}
 		} else {
 			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
