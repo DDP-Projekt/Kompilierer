@@ -30,6 +30,7 @@ const (
 	UNGLEICH     // ungleich
 	KLEINER      // kleiner (als)
 	GRÖßER       // größer (als)(, oder) groesser (als)(, oder)
+	ZWISCHEN     // zwischen <a> und <b>
 	NEGATE       // -
 	IST          // ist
 	LINKS        // links
@@ -173,6 +174,7 @@ var tokenStrings = [...]string{
 	UNGLEICH:     "ungleich",
 	KLEINER:      "kleiner",
 	GRÖßER:       "größer",
+	ZWISCHEN:     "zwischen",
 	NEGATE:       "-",
 	IST:          "ist",
 	LINKS:        "Links",
@@ -311,6 +313,7 @@ var KeywordMap = map[string]TokenType{
 	"kleiner":        KLEINER,
 	"größer":         GRÖßER,
 	"groesser":       GRÖßER,
+	"zwischen":       ZWISCHEN,
 	"ist":            IST,
 	"der":            DER,
 	"die":            DIE,

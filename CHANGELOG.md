@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added]: zwischen operator hinzugefügt
 - [Fix] typecheck crash bei Typumwandlungen zu invaliden Typen
 
 ## v0.1.0-alpha
