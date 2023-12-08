@@ -1806,32 +1806,63 @@ func (p *parser) equality() ast.Expression {
 
 func (p *parser) comparison() ast.Expression {
 	expr := p.bitShift()
-	for p.match(token.GRÖßER, token.KLEINER) {
+	for p.match(token.GRÖßER, token.KLEINER, token.ZWISCHEN) {
 		tok := p.previous()
-		operator := ast.BIN_GREATER
-		if tok.Type == token.KLEINER {
-			operator = ast.BIN_LESS
-		}
-		p.consume(token.ALS)
-		if p.match(token.COMMA) {
-			p.consume(token.ODER)
-			if tok.Type == token.GRÖßER {
-				operator = ast.BIN_GREATER_EQ
-			} else {
-				operator = ast.BIN_LESS_EQ
-			}
-		}
+		if tok.Type == token.ZWISCHEN {
+			mid := p.bitShift()
+			p.consume(token.UND)
+			rhs := p.bitShift()
 
-		rhs := p.bitShift()
-		expr = &ast.BinaryExpr{
-			Range: token.Range{
+			rang := token.Range{
 				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: operator,
-			Rhs:      rhs,
+			}
+			// expr > mid && expr < rhs
+			expr = &ast.BinaryExpr{
+				Range: rang,
+				Tok:   *tok,
+				Lhs: &ast.BinaryExpr{
+					Range:    rang,
+					Tok:      *tok,
+					Lhs:      expr,
+					Rhs:      mid,
+					Operator: ast.BIN_GREATER,
+				},
+				Rhs: &ast.BinaryExpr{
+					Range:    rang,
+					Tok:      *tok,
+					Lhs:      expr,
+					Rhs:      rhs,
+					Operator: ast.BIN_LESS,
+				},
+				Operator: ast.BIN_AND,
+			}
+		} else {
+			operator := ast.BIN_GREATER
+			if tok.Type == token.KLEINER {
+				operator = ast.BIN_LESS
+			}
+			p.consume(token.ALS)
+			if p.match(token.COMMA) {
+				p.consume(token.ODER)
+				if tok.Type == token.GRÖßER {
+					operator = ast.BIN_GREATER_EQ
+				} else {
+					operator = ast.BIN_LESS_EQ
+				}
+			}
+
+			rhs := p.bitShift()
+			expr = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: operator,
+				Rhs:      rhs,
+			}
 		}
 		p.consume(token.IST)
 	}
