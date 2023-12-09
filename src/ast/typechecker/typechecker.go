@@ -398,6 +398,17 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 		} else if lhs == ddptypes.TEXT {
 			t.latestReturnedType = ddptypes.TEXT
 		}
+	case ast.TER_BETWEEN:
+		if !isOfType(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Lhs, lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		if !isOfType(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		if !isOfType(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	default:
 		panic(fmt.Errorf("unbekannter ternärer Operator '%s'", expr.Operator))
 	}

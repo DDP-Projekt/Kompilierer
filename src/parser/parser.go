@@ -1813,29 +1813,16 @@ func (p *parser) comparison() ast.Expression {
 			p.consume(token.UND)
 			rhs := p.bitShift()
 
-			rang := token.Range{
-				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
-			}
 			// expr > mid && expr < rhs
-			expr = &ast.BinaryExpr{
-				Range: rang,
-				Tok:   *tok,
-				Lhs: &ast.BinaryExpr{
-					Range:    rang,
-					Tok:      *tok,
-					Lhs:      expr,
-					Rhs:      mid,
-					Operator: ast.BIN_GREATER,
+			expr = &ast.TernaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
 				},
-				Rhs: &ast.BinaryExpr{
-					Range:    rang,
-					Tok:      *tok,
-					Lhs:      expr,
-					Rhs:      rhs,
-					Operator: ast.BIN_LESS,
-				},
-				Operator: ast.BIN_AND,
+				Lhs:      expr,
+				Mid:      mid,
+				Rhs:      rhs,
+				Operator: ast.TER_BETWEEN,
 			}
 		} else {
 			operator := ast.BIN_GREATER
