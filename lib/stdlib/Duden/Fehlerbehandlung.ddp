@@ -1,0 +1,69 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
+
+Der Text Fehlermeldung ist "".
+Der Wahrheitswert Fehlermeldung_Valide ist falsch.
+Die Zahl Fehlerbehandlungs_Methode ist 0.
+
+[Bitflags was bei der Fehlerbehandlunb passieren soll]
+Die Zahl LaufzeitfehlerFlag ist 1.
+Die Zahl SchreibeFehlerFlag ist 1 um 1 Bit nach Links verschoben.
+
+Die öffentliche Funktion Gab_Fehler gibt einen Wahrheitswert zurück, macht:
+	Gib Fehlermeldung_Valide zurück.
+Und kann so benutzt werden:
+	"es einen Fehler gab" oder
+	"es dabei einen Fehler gab"
+
+Die öffentliche Funktion Loesche_Fehler gibt nichts zurück, macht:
+	Speichere falsch in Fehlermeldung_Valide.
+Und kann so benutzt werden:
+	"Lösche den letzten Fehler" oder
+	"lösche den letzten Fehler"
+
+Die öffentliche Funktion Letzter_Fehler gibt einen Text zurück, macht:
+	Wenn Fehlermeldung_Valide, gib Fehlermeldung zurück.
+	Gib "" zurück.
+Und kann so benutzt werden:
+	"der letzte Fehler",
+	"den letzten Fehler" oder
+	"dem letzten Fehler"
+
+Die öffentliche Funktion Aktiviere_Fehler_Schreiben gibt nichts zurück, macht:
+	Speichere Fehlerbehandlungs_Methode logisch oder SchreibeFehlerFlag in Fehlerbehandlungs_Methode.
+Und kann so benutzt werden:
+	"Schreibe ab jetzt alle Fehler"
+
+Die öffentliche Funktion Deaktiviere_Fehler_Schreiben gibt nichts zurück, macht:
+	Speichere Fehlerbehandlungs_Methode logisch und (logisch nicht SchreibeFehlerFlag) in Fehlerbehandlungs_Methode.
+Und kann so benutzt werden:
+	"Schreibe ab jetzt keine Fehler mehr"
+
+Die öffentliche Funktion Aktiviere_Laufzeitfehler gibt nichts zurück, macht:
+	Speichere Fehlerbehandlungs_Methode logisch oder LaufzeitfehlerFlag in Fehlerbehandlungs_Methode.
+Und kann so benutzt werden:
+	"Brich das Programm bei Fehlern ab",
+	"brich das Programm bei Fehlern ab"
+
+Die öffentliche Funktion Deaktiviere_Laufzeitfehler gibt nichts zurück, macht:
+	Speichere Fehlerbehandlungs_Methode logisch und (logisch nicht LaufzeitfehlerFlag) in Fehlerbehandlungs_Methode.
+Und kann so benutzt werden:
+	"Brich das Programm bei Fehlern nicht mehr ab",
+	"brich das Programm bei Fehlern nicht mehr ab"
+
+Die öffentliche Funktion Setze_Fehler mit dem Parameter Fehler vom Typ Text, gibt nichts zurück, macht:
+	Speichere Fehler in Fehlermeldung.
+	Speichere wahr in Fehlermeldung_Valide.
+
+	Wenn (Fehlerbehandlungs_Methode logisch und SchreibeFehlerFlag) größer als 0 ist, dann:
+		Schreibe den Fehler Fehlermeldung.
+
+	Wenn (Fehlerbehandlungs_Methode logisch und LaufzeitfehlerFlag) größer als 0 ist, dann:
+		Löse einen Laufzeitfehler mit der Nachricht Fehlermeldung und dem Code 1 aus.
+Und kann so benutzt werden:
+	"Melde den Fehler <Fehler>",
+	"Melde <Fehler>",
+	"melde den Fehler <Fehler>",
+	"melde <Fehler>",
+	"Löse den Fehler <Fehler> aus" oder
+	"löse den Fehler <Fehler> aus"
