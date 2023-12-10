@@ -85,3 +85,14 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (0,0 zwischen -1,0 und 0,0 ist).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (0,2 zwischen -1,0 und 0,0 ist).
+
+Schreibe '\n'.
+
+Die Funktion foo gibt eine Zahl zurück, macht:
+	Schreibe "foo" auf eine Zeile.
+	Gib 1 zurück.
+Und kann so benutzt werden:
+	"foo"
+
+Schreibe (foo zwischen 0 und 5 ist) auf eine Zeile.
+Schreibe (foo zwischen 1 und 5 ist) auf eine Zeile.
