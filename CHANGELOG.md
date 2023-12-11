@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] crash bei Einbindungen von öffentlichen Kombinationen
 - [Added]: zwischen operator hinzugefügt
 - [Fix] typecheck crash bei Typumwandlungen zu invaliden Typen
 

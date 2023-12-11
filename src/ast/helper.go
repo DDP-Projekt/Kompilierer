@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -26,7 +27,8 @@ func IsGlobalScope(table *SymbolTable) bool {
 }
 
 // applies fun to all declarations imported by imprt
-// if len(imprt.ImportedSymbols) == 0, it is applied to all imprt.Module.PublicDecls
+// if len(imprt.ImportedSymbols) == 0, it is applied to all imprt.Module.PublicDecls,
+// in which case the declarations are sorted by occurence in the source file
 // otherwise to every tok in imprt.ImportedSymbols is used
 //
 //   - name is the name of the declaration (or the literal of imprt.ImportedSymbols if no decl is found)
@@ -42,8 +44,20 @@ func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declarat
 			return
 		}
 
-		for name, decl := range imprt.Module.PublicDecls {
-			if !fun(name, decl, imprt.FileName) {
+		decls := make([]Declaration, 0, len(imprt.Module.PublicDecls))
+		for _, decl := range imprt.Module.PublicDecls {
+			decls = append(decls, decl)
+		}
+
+		// sort by occurence in the source file
+		sort.Slice(decls, func(i, j int) bool {
+			start := decls[i].GetRange().Start
+			startj := decls[j].GetRange().Start
+			return start.Line < startj.Line || start.Column < startj.Column
+		})
+
+		for _, decl := range decls {
+			if !fun(decl.Name(), decl, imprt.FileName) {
 				break
 			}
 		}
