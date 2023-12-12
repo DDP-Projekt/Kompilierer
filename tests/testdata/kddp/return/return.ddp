@@ -29,22 +29,22 @@ Und kann so benutzt werden:
 	"return falsch"
 
 Die Funktion r_bool_wahr_wenn_wahr gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn wahr ist zurück.
+	Gib wahr, wenn wahr zurück.
 Und kann so benutzt werden:
 	"return wahr wenn wahr"
 
 Die Funktion r_bool_falsch_wenn_wahr gibt einen Wahrheitswert zurück, macht:
-	Gib falsch, wenn wahr ist zurück.
+	Gib falsch, wenn wahr zurück.
 Und kann so benutzt werden:
 	"return falsch wenn wahr"
 
 Die Funktion r_bool_wahr_wenn_falsch gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn falsch ist zurück.
+	Gib wahr, wenn falsch zurück.
 Und kann so benutzt werden:
 	"return wahr wenn falsch"
 
 Die Funktion r_bool_falsch_wenn_falsch gibt einen Wahrheitswert zurück, macht:
-	Gib falsch, wenn falsch ist zurück.
+	Gib falsch, wenn falsch zurück.
 Und kann so benutzt werden:
 	"return falsch wenn falsch"
 
