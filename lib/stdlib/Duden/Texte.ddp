@@ -11,6 +11,46 @@ Und kann so benutzt werden:
 	"einen leeren Text"
 
 [
+	Entfernt eine feste Anzahl von Buchstaben vom Anfang eines gegebenen Textes.
+	Ist die Länge des Textes kürzer als die zu löschende Anzahl, gibt die Funktion einen leeren Text zurück.
+	Werte für Anzahl kleiner als 0 wird wie 0 gewertet.
+	z.B.: 
+		Der Text t ist "abcdef".
+		Entferne 3 Buchstaben am Anfang von t.
+		t: "def"
+
+		Der Text t ist "abc".
+		Entferne 5 Buchstaben am Anfang von t.
+		t: ""
+]
+Die öffentliche Funktion Entferne_Anzahl_Vorne mit den Parametern text und anzahl vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
+    Wenn nicht ((die Länge von text) größer als anzahl ist), dann:
+        Speichere "" in text.
+    Sonst speichere text von anzahl plus 1 bis (die Länge von text) in text.
+Und kann so benutzt werden:
+    "Entferne <anzahl> Buchstaben am Anfang von <text>"
+
+[
+	Entfernt eine feste Anzahl von Buchstaben vom Ende eines gegebenen Textes.
+	Ist die Länge des Textes kürzer als die zu löschende Anzahl, gibt die Funktion einen leeren Text zurück.
+	Werte für Anzahl kleiner als 0 wird wie 0 gewertet.
+	z.B.: 
+		Der Text t ist "abcdef".
+		Entferne 3 Buchstaben am Ende von t.
+		t: "abc"
+
+		Der Text t ist "abc".
+		Entferne 5 Buchstaben am Ende von t.
+		t: ""
+]
+Die öffentliche Funktion Entferne_Anzahl_Hinten mit den Parametern text und anzahl vom Typ Text Referenz und Zahl, gibt nichts zurück, macht:
+    Wenn nicht ((die Länge von text) größer als anzahl ist), dann:
+        Speichere "" in text.
+    Sonst speichere text von 1 bis (die Länge von text minus anzahl) in text.
+Und kann so benutzt werden:
+    "Entferne <anzahl> Buchstaben am Ende von <text>"
+
+[
 	Entfernt alle gegebenen Buchstaben vom Anfang eines gegebenen Textes.
 	z.B.: 
 		Der Text t ist "aaaaaaahallo"
