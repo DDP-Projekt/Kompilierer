@@ -124,6 +124,7 @@ func (p *parser) parse() *ast.Module {
 		}
 	}
 
+	p.module.Ast.Faulty = p.errored
 	return p.module
 }
 
