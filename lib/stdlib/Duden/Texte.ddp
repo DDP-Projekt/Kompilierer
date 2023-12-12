@@ -68,7 +68,7 @@ Die öffentliche Funktion Entferne_Anzahl_Vorne mit den Parametern text und anza
         Gib "" zurück.
     Gib text ab dem (anzahl plus 1). Element zurück.
 Und kann so benutzt werden:
-    "<text> mit den ersten <anzahl> Buchstaben enfernt"
+    "<text> mit den ersten <anzahl> Buchstaben entfernt"
 
 [
 	Entfernt eine feste Anzahl von Buchstaben vom Ende eines gegebenen Textes.
@@ -88,7 +88,7 @@ Die öffentliche Funktion Entferne_Anzahl_Hinten mit den Parametern text und anz
         Gib "" zurück.
     Gib text bis zum (die Länge von text minus anzahl). Element zurück.
 Und kann so benutzt werden:
-    "<text> mit den letzten <anzahl> Buchstaben enfernt"
+    "<text> mit den letzten <anzahl> Buchstaben entfernt"
 
 [
 	Entfernt alle gegebenen Buchstaben vom Anfang eines gegebenen Textes.
