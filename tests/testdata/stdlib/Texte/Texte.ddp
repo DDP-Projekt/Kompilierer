@@ -26,15 +26,15 @@ Schreibe (Entferne_Anzahl_Vorne_Text) auf eine Zeile. [Hello World!]
 
 [Entferne_Anzahl_Hinten_Mutierend]
 Der Text Entferne_Anzahl_Hinten_Mutierend_Text ist "Hello world!".
-Entferne 0 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Mutierend_Text.
+Entferne 0 Buchstaben am Ende von Entferne_Anzahl_Hinten_Mutierend_Text.
 Schreibe (Entferne_Anzahl_Hinten_Mutierend_Text) auf eine Zeile. [Hello World!]
-Entferne 6 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Mutierend_Text.
+Entferne 6 Buchstaben am Ende von Entferne_Anzahl_Hinten_Mutierend_Text.
 Schreibe (Entferne_Anzahl_Hinten_Mutierend_Text) auf eine Zeile. [Hello ]
-Entferne 2 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Mutierend_Text.
+Entferne 2 Buchstaben am Ende von Entferne_Anzahl_Hinten_Mutierend_Text.
 Schreibe (Entferne_Anzahl_Hinten_Mutierend_Text) auf eine Zeile. [Hell]
-Entferne -21489159 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Mutierend_Text.
+Entferne -21489159 Buchstaben am Ende von Entferne_Anzahl_Hinten_Mutierend_Text.
 Schreibe (Entferne_Anzahl_Hinten_Mutierend_Text) auf eine Zeile. [Hell]
-Entferne 21489159 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Mutierend_Text.
+Entferne 21489159 Buchstaben am Ende von Entferne_Anzahl_Hinten_Mutierend_Text.
 Schreibe (Entferne_Anzahl_Hinten_Mutierend_Text) auf eine Zeile. []
 
 [Entferne_Anzahl_Hinten]
