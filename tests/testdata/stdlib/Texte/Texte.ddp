@@ -16,7 +16,6 @@ Schreibe (Entferne_Anzahl_Vorne_Text) auf eine Zeile. [orld!]
 Entferne 21489159 Buchstaben am Anfang von Entferne_Anzahl_Vorne_Text.
 Schreibe (Entferne_Anzahl_Vorne_Text) auf eine Zeile. []
 
-
 [Entferne_Anzahl_Hinten]
 Der Text Entferne_Anzahl_Hinten_Text ist "Hello world!".
 Entferne 0 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Text.
@@ -29,9 +28,6 @@ Entferne -21489159 Buchstaben am Anfang von Entferne_Anzahl_Hinten_Text.
 Schreibe (Entferne_Anzahl_Hinten_Text) auf eine Zeile. [Hell]
 Entferne 21489159 Buchstaben am Anfang von Entferne_Anzahl_Vorne_Text.
 Schreibe (Entferne_Anzahl_Vorne_Text) auf eine Zeile. []
-
-
-
 
 Schreibe ("    guh??" mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, guh??]
 Schreibe ("guh??   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, guh??]
