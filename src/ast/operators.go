@@ -137,12 +137,15 @@ func (TernaryOperator) Operator() {}
 const (
 	TER_INVALID TernaryOperator = iota
 	TER_SLICE                   // von bis
+	TER_BETWEEN                 // zwischen
 )
 
 func (op TernaryOperator) String() string {
 	switch op {
 	case TER_SLICE:
 		return "von_bis"
+	case TER_BETWEEN:
+		return "zwischen"
 	}
 	panic(fmt.Errorf("unbekannter ternärer Operator %d", op))
 }

@@ -58,10 +58,10 @@ func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 // calls Evaluate but uses ddperror.EmptyHandler as error handler
 // and doesn't change the Module.Ast.Faulty flag
 func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
-	errHndl, faulty := t.ErrorHandler, t.Module.Ast.Faulty
+	errHndl, faulty, panicMode := t.ErrorHandler, t.Module.Ast.Faulty, *t.panicMode
 	t.ErrorHandler = ddperror.EmptyHandler
 	ty := t.Evaluate(expr)
-	t.ErrorHandler, t.Module.Ast.Faulty = errHndl, faulty
+	t.ErrorHandler, t.Module.Ast.Faulty, *t.panicMode = errHndl, faulty, panicMode
 	return ty
 }
 
@@ -398,6 +398,17 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 		} else if lhs == ddptypes.TEXT {
 			t.latestReturnedType = ddptypes.TEXT
 		}
+	case ast.TER_BETWEEN:
+		if !isOfType(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Lhs, lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		if !isOfType(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		if !isOfType(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		}
+		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	default:
 		panic(fmt.Errorf("unbekannter ternärer Operator '%s'", expr.Operator))
 	}
@@ -421,8 +432,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		default:
 			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
-	} else {
-		switch expr.Type.(ddptypes.PrimitiveType) {
+	} else if exprType, ok := expr.Type.(ddptypes.PrimitiveType); ok {
+		switch exprType {
 		case ddptypes.ZAHL:
 			if !ddptypes.IsPrimitive(lhs) {
 				castErr()
@@ -446,6 +457,10 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		default:
 			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 		}
+	} else if exprType, ok := expr.Type.(*ddptypes.StructType); ok {
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, exprType)
+	} else {
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse

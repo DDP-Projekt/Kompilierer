@@ -204,7 +204,7 @@ func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	// TODO: pretty print imports
 	nodes := make([]Node, 0)
 
-	IterateImportedDecls(stmt, func(name string, decl Declaration, tok token.Token) bool {
+	IterateImportedDecls(stmt, func(_ string, decl Declaration, tok token.Token) bool {
 		if decl != nil {
 			nodes = append(nodes, decl)
 		}

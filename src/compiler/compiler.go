@@ -1267,6 +1267,34 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		}
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
 		c.latestIsTemp = true
+	case ast.TER_BETWEEN:
+		switch lhsTyp {
+		case c.ddpinttyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs))
+			case c.ddpfloattyp:
+				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+			default:
+				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+			}
+		case c.ddpfloattyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+			case c.ddpfloattyp:
+				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs))
+			default:
+				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+			}
+		default:
+			c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+		}
+		c.latestReturnType = c.ddpbooltyp
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}

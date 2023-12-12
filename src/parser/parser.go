@@ -124,6 +124,7 @@ func (p *parser) parse() *ast.Module {
 		}
 	}
 
+	p.module.Ast.Faulty = p.errored
 	return p.module
 }
 
@@ -1806,32 +1807,50 @@ func (p *parser) equality() ast.Expression {
 
 func (p *parser) comparison() ast.Expression {
 	expr := p.bitShift()
-	for p.match(token.GRÖßER, token.KLEINER) {
+	for p.match(token.GRÖßER, token.KLEINER, token.ZWISCHEN) {
 		tok := p.previous()
-		operator := ast.BIN_GREATER
-		if tok.Type == token.KLEINER {
-			operator = ast.BIN_LESS
-		}
-		p.consume(token.ALS)
-		if p.match(token.COMMA) {
-			p.consume(token.ODER)
-			if tok.Type == token.GRÖßER {
-				operator = ast.BIN_GREATER_EQ
-			} else {
-				operator = ast.BIN_LESS_EQ
-			}
-		}
+		if tok.Type == token.ZWISCHEN {
+			mid := p.bitShift()
+			p.consume(token.UND)
+			rhs := p.bitShift()
 
-		rhs := p.bitShift()
-		expr = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: operator,
-			Rhs:      rhs,
+			// expr > mid && expr < rhs
+			expr = &ast.TernaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Lhs:      expr,
+				Mid:      mid,
+				Rhs:      rhs,
+				Operator: ast.TER_BETWEEN,
+			}
+		} else {
+			operator := ast.BIN_GREATER
+			if tok.Type == token.KLEINER {
+				operator = ast.BIN_LESS
+			}
+			p.consume(token.ALS)
+			if p.match(token.COMMA) {
+				p.consume(token.ODER)
+				if tok.Type == token.GRÖßER {
+					operator = ast.BIN_GREATER_EQ
+				} else {
+					operator = ast.BIN_LESS_EQ
+				}
+			}
+
+			rhs := p.bitShift()
+			expr = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: operator,
+				Rhs:      rhs,
+			}
 		}
 		p.consume(token.IST)
 	}
@@ -2240,7 +2259,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ.(ddptypes.ListType),
+				Type:   typ,
 				Values: nil,
 			}
 		} else if p.match(token.LEERE) {
@@ -2248,7 +2267,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ.(ddptypes.ListType),
+				Type:   typ,
 				Values: nil,
 			}
 		} else {
@@ -2740,36 +2759,34 @@ func (p *parser) parseType() ddptypes.Type {
 
 // parses tokens into a DDPType which must be a list type
 // expects the next token to be the start of the type
-// returns nil and errors if no typename was found
+// returns VoidList and errors if no typename was found
 // returns a ddptypes.ListType
-func (p *parser) parseListType() ddptypes.Type {
+func (p *parser) parseListType() ddptypes.ListType {
 	if !p.match(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
-		return nil
+		return ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
 	}
 
-	if !p.consume(token.LISTE) {
-		// report the error on the LISTE token, but still advance
-		// because there is a valid token afterwards
-		p.advance()
-	}
-	switch p.peekN(-2).Type {
+	result := ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
+	switch p.previous().Type {
 	case token.WAHRHEITSWERT, token.TEXT:
-		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
+		result = ddptypes.ListType{Underlying: p.tokenTypeToType(p.previous().Type)}
 	case token.ZAHLEN:
-		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
+		result = ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
-		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
+		result = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
-		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+		result = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
-		if Type, exists := p.typeNames[p.peekN(-2).Literal]; exists {
-			return ddptypes.ListType{Underlying: Type}
+		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+			result = ddptypes.ListType{Underlying: Type}
+		} else {
+			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peekN(-2).Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 	}
+	p.consume(token.LISTE)
 
-	return nil // unreachable
+	return result
 }
 
 // parses tokens into a DDPType and returns wether the type is a reference type
