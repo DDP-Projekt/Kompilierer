@@ -13,5 +13,6 @@ extern void Setze_Fehler(ddpstring* Fehler);
 void ddp_error(const char* prefix, bool use_errno, ...);
 
 #if DDPOS_WINDOWS
+// same as ddp_error, but uses GetLastError() instead of errno
 void ddp_error_win(const char* prefix, ...);
 #endif
