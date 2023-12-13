@@ -80,6 +80,7 @@ Und kann so benutzt werden:
 [
 	Meldet einen Fehler und löst die entsprechenden Aktionen (Schreiben, Laufzeitfehler) aus,
 	falls diese Optionen gesetzt waren
+	Der letzte Fehler wird überschrieben
 
 	Standardmäßig wird nur der letzte Fehler gesetzt
 ]

@@ -6,20 +6,26 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-void ddp_error(const char *prefix, bool use_errno) {
+#define ERROR_BUFFER_SIZE 1024
+
+void ddp_error(const char *prefix, bool use_errno, ...) {
+	char error_buffer[ERROR_BUFFER_SIZE];
+	va_list args;
+	va_start(args, use_errno);
+	vsnprintf(error_buffer, ERROR_BUFFER_SIZE, prefix, args);
+	va_end(args);
+
 	ddpstring error = { 0 };
-	error.cap = strlen(prefix) + 1;
+	error.cap = strlen(error_buffer) + 1;
+	error.str = ALLOCATE(char, error.cap);
+	memcpy(error.str, error_buffer, error.cap);
 
 	if (use_errno) {
 		char* error_message = strerror(errno);
-		error.cap += strlen(error_message);
-		error.str = ALLOCATE(char, error.cap);
-		strcpy(error.str, prefix);
+		size_t msg_len = strlen(error_message);
+		error.str = GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
+		error.cap += msg_len;
 		strcat(error.str, error_message);
-	}
-	else {
-		error.str = ALLOCATE(char, error.cap);
-		strcpy(error.str, prefix);
 	}
 
 	// will free error.str
@@ -27,9 +33,17 @@ void ddp_error(const char *prefix, bool use_errno) {
 }
 
 #if DDPOS_WINDOWS
-void ddp_error_win(const char* prefix) {
+void ddp_error_win(const char* prefix, ...) {
+	char error_buffer[ERROR_BUFFER_SIZE];
+	va_list args;
+	va_start(args, prefix);
+	vsnprintf(error_buffer, ERROR_BUFFER_SIZE, prefix, args);
+	va_end(args);
+
 	ddpstring error = { 0 };
 	error.cap = strlen(prefix) + 1;
+	error.str = ALLOCATE(char, error.cap);
+	memcpy(error.str, error_buffer, error.cap);
 
 	LPSTR error_message = NULL;
 	DWORD error_code = GetLastError();
@@ -38,9 +52,9 @@ void ddp_error_win(const char* prefix) {
 		error_message = "Failed to get Error Message from WinAPI";
 	}
 
-	error.cap += strlen(error_message);
-	error.str = ALLOCATE(char, error.cap);
-	strcpy(error.str, prefix);
+	size_t msg_len = strlen(error_message);
+	error.str = GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
+	error.cap += msg_len;
 	strcat(error.str, error_message);
 	LocalFree(error_message);
 

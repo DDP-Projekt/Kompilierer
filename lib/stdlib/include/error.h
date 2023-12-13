@@ -10,8 +10,8 @@ extern void Setze_Fehler(ddpstring* Fehler);
 //
 // passes an OS-specific error message prefixed with prefix
 // to Setzte_Fehler
-void ddp_error(const char* prefix, bool use_errno);
+void ddp_error(const char* prefix, bool use_errno, ...);
 
 #if DDPOS_WINDOWS
-void ddp_error_win(const char* prefix);
+void ddp_error_win(const char* prefix, ...);
 #endif
