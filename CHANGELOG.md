@@ -11,13 +11,16 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Duden/Fehlerbehandlung wird nun überall im Duden benutzt
+- [Fix] Erstelle_Ordner gibt keinen Fehler mehr zurück, wenn einer der Ordner bereits existiert
+- [Added] Duden/Fehlerbehandlung
 - [Fix] crash bei Einbindungen von öffentlichen Kombinationen
 - [Added]: zwischen operator hinzugefügt
 - [Fix] typecheck crash bei Typumwandlungen zu invaliden Typen
 
 ## v0.1.0-alpha
 
-- [Added]: Beliebige utf-8 Symbole sind jetzt in Aliasen erlaubt
+- [Added] Beliebige utf-8 Symbole sind jetzt in Aliasen erlaubt
 - [Breaking] `Boolean` zu `Wahrheitswert` umbennant
 - [Fix] `kddp update` ignoriert die -jetzt flag nicht mehr
 - [Fix] `kddp update` updated jetzt auch den Duden

@@ -1,6 +1,7 @@
 #include "ddptypes.h"
 #include "ddpwindows.h"
 #include "ddpmemory.h"
+#include "error.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <libgen.h>
@@ -41,13 +42,21 @@ ddpbool Erstelle_Ordner(ddpstring* Pfad) {
 	char* it = Pfad->str;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
-		if (mkdir(Pfad->str) != 0) return false;
+		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
+			ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
+			return false;
+		}
 		*it = '/';
 		it++;
 	}
 
 	// == '/' because it might have already been created
-	return Pfad->str[Pfad->cap - 2] == '/' || mkdir(Pfad->str) == 0;
+	if (Pfad->str[Pfad->cap - 2] == '/') return true;
+	else if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
+		ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
+		return false;
+	}
+	return true;
 }
 
 ddpbool Ist_Ordner(ddpstring* Pfad) {
@@ -62,7 +71,10 @@ ddpbool Ist_Ordner(ddpstring* Pfad) {
 	}
 
 	struct stat path_stat;
-	if (stat(Pfad->str, &path_stat) != 0) return false;
+	if (stat(Pfad->str, &path_stat) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return false;
+	}
 	return S_ISDIR(path_stat.st_mode);
 }
 
@@ -102,10 +114,17 @@ static int remove_directory(const char *path) {
 			r = r2;
 		}
 		closedir(d);
+	} else {
+		ddp_error("Fehler beim Öffnen des Ordners '%s': ", true, path);
+		return -1;
 	}
 
-	if (!r)
+	if (!r) {
 		r = rmdir(path);
+	} else {
+		ddp_error("Fehler beim Löschen des Ordners '%s': ", true, path);
+		return -1;
+	}
 
 	return r;
 }
@@ -114,13 +133,22 @@ ddpbool Loesche_Pfad(ddpstring* Pfad) {
 	if (Ist_Ordner(Pfad)) {
 		return remove_directory(Pfad->str) == 0;
 	}
-	return unlink(Pfad->str) == 0;
+	if (unlink(Pfad->str) != 0) {
+		ddp_error("Fehler beim Löschen des Pfades '%s': ", true, Pfad->str);
+		return false;
+	}
+	return true;
 }
 
 ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 	struct stat path_stat;
+	if (stat(NeuerName->str, &path_stat) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, NeuerName->str);
+		return false;
+	}
+
 	// https://stackoverflow.com/questions/64276902/mv-command-implementation-in-c-not-moving-files-to-different-directory
-	if (stat(NeuerName->str, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+	if (S_ISDIR(path_stat.st_mode)) {
 		char* path_copy = ALLOCATE(char, Pfad->cap);
 		memcpy(path_copy, Pfad->str, Pfad->cap);
 
@@ -134,7 +162,11 @@ ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 
 		FREE(char, path_copy);
 	}
-	return rename(Pfad->str, NeuerName->str) == 0;
+	if (rename(Pfad->str, NeuerName->str) != 0) {
+		ddp_error("Fehler beim Verschieben des Pfades '%s' nach '%s': ", true, Pfad->str, NeuerName->str);
+		return false;
+	}
+	return true;
 }
 
 static void formatDateStr(ddpstring *str, struct tm *time) {
@@ -154,7 +186,11 @@ static void formatDateStr(ddpstring *str, struct tm *time) {
 
 void Zugriff_Datum(ddpstring* ret, ddpstring *Pfad) {
 	struct stat st;
-	stat(Pfad->str, &st);
+	if (stat(Pfad->str, &st) != 0) {
+		*ret = (ddpstring){ 0 };
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return;
+	}
 	struct tm *tm = localtime(&st.st_atime);
 
 	formatDateStr(ret, tm);
@@ -162,7 +198,11 @@ void Zugriff_Datum(ddpstring* ret, ddpstring *Pfad) {
 
 void AEnderung_Datum(ddpstring* ret, ddpstring *Pfad) {
 	struct stat st;
-	stat(Pfad->str, &st);
+	if (stat(Pfad->str, &st) != 0) {
+		*ret = (ddpstring){ 0 };
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return;
+	}
 	struct tm *tm = localtime(&st.st_mtime);
 
 	formatDateStr(ret, tm);
@@ -170,7 +210,11 @@ void AEnderung_Datum(ddpstring* ret, ddpstring *Pfad) {
 
 void Status_Datum(ddpstring* ret, ddpstring *Pfad) {
 	struct stat st;
-	stat(Pfad->str, &st);
+	if (stat(Pfad->str, &st) != 0) {
+		*ret = (ddpstring){ 0 };
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return;
+	}
 	struct tm *tm = localtime(&st.st_ctime);
 
 	formatDateStr(ret, tm);
@@ -178,14 +222,20 @@ void Status_Datum(ddpstring* ret, ddpstring *Pfad) {
 
 ddpint Datei_Groesse(ddpstring *Pfad) {
 	struct stat st;
-	stat(Pfad->str, &st);
+	if (stat(Pfad->str, &st) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return -1;
+	}
 
 	return (ddpint)st.st_size;
 }
 
 ddpint Datei_Modus(ddpstring *Pfad) {
 	struct stat st;
-	stat(Pfad->str, &st);
+	if (stat(Pfad->str, &st) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		return -1;
+	}
 
 	return (ddpint)st.st_mode;
 }
@@ -241,4 +291,39 @@ return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 
 	return (ddpbool)false;
 #endif // DDPOS_WINDOWS
+}
+
+ddpint Lies_Text_Datei(ddpstring* Pfad, ddpstringref ref) {
+	FILE* file = fopen(Pfad->str, "r");
+	if (file) {
+		fseek(file, 0, SEEK_END); // seek the last byte in the file
+		size_t string_size = ftell(file) + 1; // file_size + '\0'
+		rewind(file); // go back to file start
+		ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
+		ref->cap = string_size;
+		size_t read = fread(ref->str, sizeof(char), string_size-1, file);
+		fclose(file);
+		ref->str[ref->cap-1] = '\0';
+		if (read != string_size-1) {
+			ddp_error("Fehler beim Lesen der Datei '%s': ", true, Pfad->str);
+		}
+		return (ddpint)read;
+	}
+	ddp_error("Fehler beim Öffnen der Datei '%s': ", true, Pfad->str);
+	return -1;
+}
+
+ddpint Schreibe_Text_Datei(ddpstring* Pfad, ddpstring* text) {
+	FILE* file = fopen(Pfad->str, "w");
+	if (file) {
+		int ret = fprintf(file, text->str);
+		fclose(file);
+		if (ret < 0) {
+			ddp_error("Fehler beim Schreiben der Datei '%s': ", true, Pfad->str);
+			return ret;
+		}
+		return (ddpint)ret;
+	}
+	ddp_error("Fehler beim Öffnen der Datei '%s': ", true, Pfad->str);
+	return -1;
 }

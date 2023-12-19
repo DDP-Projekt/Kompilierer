@@ -1,18 +1,18 @@
+[ Wird für die Externen Funktionen benötigt ]
+Binde "Duden/Fehlerbehandlung" ein.
+
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
-	Falls möglich Fehler auftreten, werden diese in fehler gespeichert.
 ]
-Die öffentliche Funktion Schreibe_Text_Datei mit den Parametern Pfad, text und fehler vom Typ Text, Text und Text Referenz, gibt eine Zahl zurück,
+Die öffentliche Funktion Schreibe_Text_Datei mit den Parametern Pfad und text vom Typ Text und Text, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"Schreibe den Text <text> in die Datei <Pfad> und speichere einen möglichen Fehler in <fehler>" oder
-	"Schreibe den Text <text> in die Datei <Pfad> und speichere einen moeglichen Fehler in <fehler>" oder
-	"die Anzahl der Bytes, die von <text> in <Pfad> geschrieben wurden, wobei ein möglicher Fehler in <fehler> gespeichert wurde" oder
-	"die Anzahl der Bytes, die von <text> in <Pfad> geschrieben wurden, wobei ein moeglicher Fehler in <fehler> gespeichert wurde"
+	"Schreibe den Text <text> in die Datei <Pfad>" oder
+	"schreibe den Text <text> in die Datei <Pfad>" oder
+	"die Anzahl der Bytes, die von <text> in <Pfad> geschrieben wurde"
 
 [
 	Die Funktion Lies_Text_Datei speichert den Inhalt der Datei, die an dem gegebenen Pfad liegt, in ref und gibt die Anzahl der Bytes der gelesenen Datei zurück.
-	Wenn ein Fehler auftreten sollte, ist der zurückgegebene Wert negativ und die Fehler meldung in ref geschrieben
 ]
 Die öffentliche Funktion Lies_Text_Datei mit den Parametern Pfad und ref vom Typ Text und Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
@@ -133,7 +133,8 @@ Und kann so benutzt werden:
 	"den Modus der Datei <Pfad>"
 
 [
-	Kopiert die Datei am Pfad nach Kopiepfad. !! Achtung: Kann existierende Dateien überschreiben !!
+	Kopiert die Datei am Pfad nach Kopiepfad. 
+	!! Achtung: Kann existierende Dateien überschreiben !!
 ]
 Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
