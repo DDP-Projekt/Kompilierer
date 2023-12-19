@@ -42,7 +42,7 @@ ddpbool Erstelle_Ordner(ddpstring* Pfad) {
 	char* it = Pfad->str;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
-		if (mkdir(Pfad->str) != 0) {
+		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
 			ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
 			return false;
 		}
@@ -52,7 +52,7 @@ ddpbool Erstelle_Ordner(ddpstring* Pfad) {
 
 	// == '/' because it might have already been created
 	if (Pfad->str[Pfad->cap - 2] == '/') return true;
-	else if (mkdir(Pfad->str) != 0) {
+	else if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
 		ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
 		return false;
 	}
