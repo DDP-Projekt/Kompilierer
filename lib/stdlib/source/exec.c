@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <error.h>
 
 #if DDPOS_WINDOWS
 #include "ddpwindows.h"
@@ -19,22 +20,6 @@
 #define BUFF_SIZE 512
 
 #if DDPOS_WINDOWS
-static void write_error(ddpstringref ref, const char* prefix) {
-	char errbuff[1024];
-
-	DWORD error_code = GetLastError();
-	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), errbuff, sizeof(errbuff), NULL)) {
-		sprintf(errbuff, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
-	}
-	
-	size_t len = strlen(prefix) + strlen(errbuff) + 1;
-	ref->str = ddp_reallocate(ref->str, ref->cap, len);
-	ref->str[0] = '\0';
-	ref->cap = len;
-	strcat(ref->str, prefix);
-	strcat(ref->str, errbuff);
-}
 
 // creates a pipe and sets the inherit_handle to be inherited
 static bool create_pipe(HANDLE pipe_handles[], int inherit_handle) {
@@ -80,16 +65,16 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 	// for stdout and stderr we want to inherit the write end to the child, as it writes to those pipes
 	// for stdin we inherit the read end because the child because it reads from it
 	if (!create_pipe(stdout_pipe, WRITE_END)) {
-		write_error(err, "Fehler beim Öffnen der Pipe: ");
+		ddp_error_win("Fehler beim Öffnen der Pipe: ");
 		return -1;
 	}
 	if (need_stderr && !create_pipe(stderr_pipe, WRITE_END)) {
-		write_error(err, "Fehler beim Öffnen der Pipe: ");
+		ddp_error_win("Fehler beim Öffnen der Pipe: ");
 		close_pipe(stdout_pipe);
 		return -1;
 	}
 	if (!create_pipe(stdin_pipe, READ_END)) {
-		write_error(err, "Fehler beim Öffnen der Pipe: ");
+		ddp_error_win("Fehler beim Öffnen der Pipe: ");
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
 			close_pipe(stderr_pipe);
@@ -125,7 +110,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 	// start the actual child process
 	PROCESS_INFORMATION pi;
 	if (!CreateProcessA(path->str, argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
-		write_error(err, "Fehler beim Erstellen des Unter Prozesses: ");
+		ddp_error_win("Fehler beim Erstellen des Unter Prozesses: ")
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
 			close_pipe(stderr_pipe);
@@ -149,7 +134,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
     DWORD len_written = 0;
 	DWORD len_to_write = strlen(input->str);
     if (!WriteFile(stdin_pipe[WRITE_END], input->str, len_to_write, &len_written, NULL) || len_written != len_to_write) {
-		write_error(err, "Fehler beim schreiben der Eingabe: ");
+		ddp_error_win("Fehler beim schreiben der Eingabe: ");
 		// terminate the running process
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);
@@ -180,23 +165,6 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 
 #define COMMAND_NOT_FOUND 127
 
-// helper to output an error
-static void write_error(ddpstringref ref, const char* fmt, ...) {
-	char errbuff[1024];
-
-	va_list argptr;
-	va_start(argptr, fmt);
-
-	int len = vsprintf(errbuff, fmt, argptr);
-	
-	va_end(argptr);
-
-	ref->str = ddp_reallocate(ref->str, ref->cap, len+1);
-	memcpy(ref->str, errbuff, len);
-	ref->cap = len+1;
-	ref->str[ref->cap-1] = '\0';
-}
-
 // reads everything from the given pipe into out
 // then closes the pipe
 // returns the new size of out
@@ -224,7 +192,7 @@ static void read_pipe(int fd, ddpstringref out) {
 // and erroutput out-variables
 // erroutput may be equal to stdoutput if they shall be read together
 // but not NULL
-static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref err,
+static ddpint execute_process(ddpstring* path, ddpstringlist* args,
     ddpstring* input, ddpstringref stdoutput, ddpstringref erroutput)
 {
     int stdout_fd[2];
@@ -235,17 +203,17 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 
     // prepare the pipes
     if (pipe(stdout_fd)) {
-        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
+		ddp_error("Fehler beim Öffnen der Pipe: ", true);
         return -1;
     }
     if (need_stderr && pipe(stderr_fd)) {
-        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
+		ddp_error("Fehler beim Öffnen der Pipe: ", true);
         close(stdout_fd[0]);
         close(stdout_fd[1]);
         return -1;
     }
     if (pipe(stdin_fd)) {
-        write_error(err, "Fehler beim Öffnen der Pipe: %s", strerror(errno));
+		ddp_error("Fehler beim Öffnen der Pipe: ", true);
         close(stdout_fd[0]);
         close(stdout_fd[1]);
         if (need_stderr) {
@@ -270,7 +238,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
     // create the supprocess
     switch (fork()) {
     case -1: // error
-        write_error(err, "Fehler beim Erstellen des Unter Prozesses: %s", strerror(errno));
+		ddp_error("Fehler beim Erstellen des Unter Prozesses: ", true);
         return -1;
     case 0: { // child
         close(stdout_fd[READ_END]);
@@ -298,19 +266,22 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
         close(stdin_fd[READ_END]);
 
         if (write(stdin_fd[WRITE_END], input->str, input->cap) < 0) {
-			write_error(err, "Fehler beim schreiben der Eingabe: %s", strerror(errno));
+			ddp_error("Fehler beim schreiben der Eingabe: ", true);
             return -1;
         }
         close(stdin_fd[WRITE_END]);
 
         int exit_code;
         if (wait(&exit_code) == -1) {
-            write_error(err, "Fehler beim Warten auf den Unter Prozess: %s", strerror(errno));
+			ddp_error("Fehler beim Warten auf den Unter Prozess: ", true);
             return -1;
         }
 
 		if (WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == COMMAND_NOT_FOUND) {
-			read_pipe((need_stderr ? stderr_fd : stdout_fd)[READ_END], err);
+			read_pipe((need_stderr ? stderr_fd : stdout_fd)[READ_END], erroutput);
+			ddp_error("Fehler beim Starten des Unter Prozesses: %s", false, erroutput->str);
+			ddp_free_string(erroutput);
+			*erroutput = (ddpstring){0};
 			return -1;
 		}
 
@@ -330,10 +301,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 
 #endif // DDPOS_WINDOWS
 
-ddpint Programm_Ausfuehren(ddpstring* ProgrammName, ddpstringlist* Argumente, ddpstringref Fehler,
+ddpint Programm_Ausfuehren(ddpstring* ProgrammName, ddpstringlist* Argumente,
     ddpstring* StandardEingabe, ddpstringref StandardAusgabe, ddpstringref StandardFehlerAusgabe) {
-    // clear error
-    ddp_reallocate(Fehler->str, Fehler->cap, 1);
-    Fehler->str[0] = '\0';
-    return execute_process(ProgrammName, Argumente, Fehler, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
+    return execute_process(ProgrammName, Argumente, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
 }
