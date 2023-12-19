@@ -53,7 +53,7 @@ static void read_pipe(HANDLE handle, ddpstringref out) {
 }
 
 // TODO: use err
-static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref err,
+static ddpint execute_process(ddpstring* path, ddpstringlist* args,
     ddpstring* input, ddpstringref stdoutput, ddpstringref erroutput)
 {
 	HANDLE stdout_pipe[2];
@@ -110,7 +110,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args, ddpstringref
 	// start the actual child process
 	PROCESS_INFORMATION pi;
 	if (!CreateProcessA(path->str, argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
-		ddp_error_win("Fehler beim Erstellen des Unter Prozesses: ")
+		ddp_error_win("Fehler beim Erstellen des Unter Prozesses: ");
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
 			close_pipe(stderr_pipe);
