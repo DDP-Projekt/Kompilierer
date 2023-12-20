@@ -11,7 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
-- [Added] Duden/Fehlerbehandlung wird nun überall im Duden benutzt
+- [Fix] Bei geklammerten Referenz Argumenten werden Fehler jetzt korrekt gemeldet
+- [Breaking] Duden/Fehlerbehandlung wird nun überall im Duden benutzt
 - [Fix] Erstelle_Ordner gibt keinen Fehler mehr zurück, wenn einer der Ordner bereits existiert
 - [Added] Duden/Fehlerbehandlung
 - [Fix] crash bei Einbindungen von öffentlichen Kombinationen

@@ -2456,11 +2456,7 @@ func (p *parser) alias() ast.Expression {
 					}
 
 					if paramType.IsReference {
-						if tokens[0].Type == token.LPAREN {
-							tokens = append(tokens[1:len(tokens)-2], eof)
-							argParser.tokens = tokens
-						}
-						argParser.advance() // consume the identifier for assigneable() to work
+						argParser.advance() // consume the identifier or LPAREN for assigneable() to work
 						cached_arg.Arg = argParser.assigneable()
 					} else {
 						cached_arg.Arg = argParser.expression() // parse the argument
