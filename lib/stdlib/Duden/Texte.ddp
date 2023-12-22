@@ -564,7 +564,7 @@ Die öffentliche Funktion Hamming_Distanz mit den Parametern t1 und t2 vom Typ T
 		Wenn t1 an der Stelle i ungleich t2 an der Stelle i ist, erhöhe summe um 1.
 	Gib summe zurück.
 Und kann so benutzt werden:
-	"die Zahl der Änderungen benötigt um <t1> in <t2> umzuwandeln",
+	"die Zahl der Änderungen benötigt um <t1> in <t2> umzuwandeln" oder
 	"die Hamming-Distanz zwischen <t1> und <t2>"
 
 Binde Min3 aus "Duden/Mathe" ein.
@@ -579,34 +579,27 @@ Binde Min3 aus "Duden/Mathe" ein.
 		"Die Deutsche Programmiersprache" und "The German Programming language" ist 19
 ]
 Die öffentliche Funktion Levenshtein_Distanz mit den Parametern t1 und t2 vom Typ Text und Text, gibt eine Zahl zurück, macht:
-	Die Zahl m ist die Länge von t1.
-	Die Zahl n ist die Länge von t2.
+	Die Zahlen Liste cost ist die Länge von t2 plus 1 Mal 0.
+	Die Zahlen Liste newCost ist die Länge von t2 plus 1 Mal 0.
 
-	Die Zahlen Liste cost ist n plus 1 Mal 0.
-	Die Zahlen Liste newCost ist n plus 1 Mal 0.
-
-	Für jede Zahl i von 0 bis n, mache:
+	Für jede Zahl i von 0 bis die Länge von t2, mache:
 		Speichere i in cost an der Stelle (i plus 1).
 
-	Für jede Zahl i von 0 bis m minus 1, mache:
-		Speichere (i plus 1) in newCost an der Stelle 1.
+	Für jede Zahl i von 1 bis die Länge von t1, mache:
+		Speichere i in newCost an der Stelle 1.
 	
-		Für jede Zahl j von 0 bis n minus 1, mache:
-			Die Zahl deletionCost ist cost an der Stelle (j plus 2) plus 1.
-			Die Zahl insertionCost ist newCost an der Stelle (j plus 1) plus 1.
-			Die Zahl substitutionCost ist 0.
-		
-			Wenn t1 an der Stelle (i plus 1) gleich t2 an der Stelle (j plus 1) ist, dann:
-				Speichere cost an der Stelle (j plus 1) in substitutionCost.
-			Sonst:
-				Speichere cost an der Stelle (j plus 1) plus 1 in substitutionCost.
+		Für jede Zahl j von 1 bis die Länge von t2, mache:
+			Die Zahl deletionCost ist cost an der Stelle (j plus 1) plus 1.
+			Die Zahl insertionCost ist newCost an der Stelle j plus 1.
+			Die Zahl substitutionCost ist cost an der Stelle j.
+
+			Wenn t1 an der Stelle i ungleich t2 an der Stelle j ist, erhöhe substitutionCost um 1.
 			
-			
-			Die Zahl c ist (die kleinere Zahl von deletionCost, insertionCost und substitutionCost).
-			Speichere c in newCost an der Stelle (j plus 2).
+			Speichere die kleinere Zahl von deletionCost, insertionCost und substitutionCost in newCost an der Stelle (j plus 1).
 		Die Zahlen Liste temp ist cost.
 		Speichere newCost in cost.
 		Speichere temp in newCost.
-	Gib cost an der Stelle (n plus 1) zurück.
+	Gib cost an der Stelle (die Länge von t2 plus 1) zurück.
 Und kann so benutzt werden:
+	"wie ähnlich <t1> und <t2> sind" oder
 	"die Levenshtein-Distanz zwischen <t1> und <t2>"
