@@ -140,4 +140,20 @@ Schreibe ((eine Liste, die aus "abc", "", "def" besteht) mit dem Trennzeichen '-
 Schreibe ((eine Liste, die aus 'a', 'b', 'c' besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
 Schreibe ((eine Liste, die aus 1, 234, 56789, 0 besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
 Schreibe ((eine Liste, die aus 1,4, 0 durch 0, 82,0 besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
-Schreibe ((eine Liste, die aus wahr, falsch, falsch besteht) mit dem Trennzeichen '-' zum Text verbunden).
+Schreibe ((eine Liste, die aus wahr, falsch, falsch besteht) mit dem Trennzeichen '-' zum Text verbunden) auf eine Zeile.
+
+[Hamming_Distanz]
+Schreibe (die Hamming-Distanz zwischen "karolin" und "karolin") auf eine Zeile.
+Schreibe (die Hamming-Distanz zwischen "karolin" und "karoli") auf eine Zeile.
+Schreibe (die Hamming-Distanz zwischen "karolin" und "kathrin") auf eine Zeile.
+Schreibe (die Hamming-Distanz zwischen "karolin" und "kerstin") auf eine Zeile.
+Schreibe (die Hamming-Distanz zwischen "kathrin" und "kerstin") auf eine Zeile.
+
+[Levenshtein_Distanz]
+Schreibe (die Levenshtein-Distanz zwischen "Bar" und "Bar") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "Bar" und "Bir") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "Bar" und "Bier") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "Bar" und "Ba") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "kitten" und "sitting") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "Google" und "Facebook") auf eine Zeile.
+Schreibe (die Levenshtein-Distanz zwischen "Die Deutsche Programmiersprache" und "The German Programming language").

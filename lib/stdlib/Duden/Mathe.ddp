@@ -46,6 +46,18 @@ Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
 [
+	Wenn a >= b >= c ist wird a zurückgegeben.
+	Wenn b >= a >= c ist wird b zurückgegeben.
+	Wenn a < b < c ist wird c zurückgegeben.
+]
+Die öffentliche Funktion Max3 mit den Parametern a, b und c vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
+	Wenn a größer als, oder b ist und a größer als, oder c ist, gib a zurück.
+	Wenn b größer als, oder a ist und b größer als, oder c ist, gib b zurück.
+	Gib c zurück.
+Und kann so benutzt werden:
+	"die größere Zahl von <a>, <b> und <c>"
+
+[
 	Wenn a <= b ist wird a zurückgegeben.
 	Wenn a > b ist wird b zurückgegeben.
 ]
@@ -54,6 +66,18 @@ Die öffentliche Funktion Min mit den Parametern a und b vom Typ Zahl und Zahl, 
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
+
+[
+	Wenn a <= b <= c ist wird a zurückgegeben.
+	Wenn b <= a <= c ist wird b zurückgegeben.
+	Wenn a > b > c ist wird c zurückgegeben.
+]
+Die öffentliche Funktion Min3 mit den Parametern a, b und c vom Typ Zahl, Zahl und Zahl, gibt eine Zahl zurück, macht:
+	Wenn a kleiner als, oder b ist und a kleiner als, oder c ist, gib a zurück.
+	Wenn b kleiner als, oder a ist und b kleiner als, oder c ist, gib b zurück.
+	Gib c zurück.
+Und kann so benutzt werden:
+	"die kleinere Zahl von <a>, <b> und <c>"
 
 [
 	Wenn wert > max ist, wird max zurückgegeben.
@@ -78,6 +102,18 @@ Und kann so benutzt werden:
 	"die größere Zahl von <a> und <b>"
 
 [
+	Wenn a >= b >= c ist wird a zurückgegeben.
+	Wenn b >= a >= c ist wird b zurückgegeben.
+	Wenn a < b < c ist wird c zurückgegeben.
+]
+Die öffentliche Funktion Max3_Kommazahl mit den Parametern a, b und c vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a größer als, oder b ist und a größer als, oder c ist, gib a zurück.
+	Wenn b größer als, oder a ist und b größer als, oder c ist, gib b zurück.
+	Gib c zurück.
+Und kann so benutzt werden:
+	"die größere Zahl von <a>, <b> und <c>"
+
+[
 	Wenn a <= b ist wird a zurückgegeben.
 	Wenn a > b ist wird b zurückgegeben.
 ]
@@ -86,6 +122,18 @@ Die öffentliche Funktion Min_Kommazahl mit den Parametern a und b vom Typ Komma
 	Gib b zurück.
 Und kann so benutzt werden:
 	"die kleinere Zahl von <a> und <b>"
+
+[
+	Wenn a <= b <= c ist wird a zurückgegeben.
+	Wenn b <= a <= c ist wird b zurückgegeben.
+	Wenn a > b > c ist wird c zurückgegeben.
+]
+Die öffentliche Funktion Min3_Kommazahl mit den Parametern a, b und c vom Typ Kommazahl, Kommazahl und Kommazahl, gibt eine Kommazahl zurück, macht:
+	Wenn a kleiner als, oder b ist und a kleiner als, oder c ist, gib a zurück.
+	Wenn b kleiner als, oder a ist und b kleiner als, oder c ist, gib b zurück.
+	Gib c zurück.
+Und kann so benutzt werden:
+	"die kleinere Zahl von <a>, <b> und <c>"
 
 [
 	Wenn wert > max ist, wird max zurückgegeben.

@@ -5,9 +5,19 @@ Schreibe (die größere Zahl von 2 und 3) auf eine Zeile.
 Schreibe (die größere Zahl von 99 und 42) auf eine Zeile.
 Schreibe (die größere Zahl von 0 und 0) auf eine Zeile.
 
+Schreibe (die größere Zahl von 5, 2 und 3) auf eine Zeile.
+Schreibe (die größere Zahl von 2, 5 und 3) auf eine Zeile.
+Schreibe (die größere Zahl von 2, 3 und 5) auf eine Zeile.
+Schreibe (die größere Zahl von 0, 0 und 0) auf eine Zeile.
+
 Schreibe (die kleinere Zahl von -2 und 5) auf eine Zeile.
 Schreibe (die kleinere Zahl von 60 und 13) auf eine Zeile.
 Schreibe (die kleinere Zahl von 0 und 0) auf eine Zeile.
+
+Schreibe (die kleinere Zahl von 2, 5 und 3) auf eine Zeile.
+Schreibe (die kleinere Zahl von 5, 2 und 3) auf eine Zeile.
+Schreibe (die kleinere Zahl von 5, 3 und 2) auf eine Zeile.
+Schreibe (die kleinere Zahl von 0, 0 und 0) auf eine Zeile.
 
 Schreibe (7 zwischen -30 und 10) auf eine Zeile.
 Schreibe (45 zwischen 75 und 95) auf eine Zeile.
