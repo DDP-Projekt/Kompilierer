@@ -642,3 +642,63 @@ Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste v
 	Gib t zurück.
 Und kann so benutzt werden:
 	"<liste> aneinandergehängt"
+
+[
+	Gibt eine Zahlen Liste aus aufsteigenden Zahlen von start bis end (beide inklusiv) zurück.
+	z.B.:
+		f(1, 10) = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		f(5, 5) = {5}
+		f(-10, 10) = {-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+]
+Die öffentliche Funktion Aufsteigende_Zahlen mit den Parametern start und ende vom Typ Zahl und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste l ist ende minus start plus 1 Mal 0.
+	Für jede Zahl i von 0 bis ende minus start, mache:
+		Speichere start plus i in l an der Stelle (i plus 1).
+	Gib l zurück.
+Und kann so benutzt werden:
+	"eine aufsteigende Zahlen Liste von <start> bis <ende>"
+
+[
+	Gibt eine Zahlen Liste aus absteigenden Zahlen von start bis end (beide inklusiv) zurück.
+	z.B.:
+		f(0, 0) = {0}
+		f(10, 1) = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+		f(-10, 10) = {-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+]
+Die öffentliche Funktion Absteigende_Zahlen mit den Parametern start und ende vom Typ Zahl und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste l ist start minus ende plus 1 Mal 0.
+	Für jede Zahl i von start bis ende mit Schrittgröße -1, mache:
+		Speichere i in l an der Stelle (start minus i plus 1).
+	Gib l zurück.
+Und kann so benutzt werden:
+	"eine absteigende Zahlen Liste von <start> bis <ende>"
+
+[
+	Gibt eine <anzahl> lange Kommazahlen Liste aus gleich verteilten Kommazahlen von <start> bis <ende> (beide inklusiv) zurück.
+	Anzahl muss mindestens 2 sein, sonst wird {NaN} zurückgegeben.
+	z.B.:
+		f(1, 10, 2) = {1, 3, 5, 7, 9}
+		f(5, 5, 1) = {5}
+		f(-10, 10, 1) = {-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+]
+Die öffentliche Funktion Linspace mit den Parametern start, ende und anzahl vom Typ Kommazahl, Kommazahl und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste l ist anzahl Mal 0,0.
+	Für jede Zahl i von 0 bis anzahl minus 1, mache:
+		Speichere start plus (ende minus start) mal (i durch (anzahl minus 1)) in l an der Stelle (i plus 1).
+	Gib l zurück.
+Und kann so benutzt werden:
+	"eine lineare Kommazahlen Liste von <start> bis <ende> mit <anzahl> Elementen"
+
+[
+	Gibt eine <anzahl> lange Kommazahlen Liste aus gleich verteilten Kommazahlen von start bis end (beide inklusiv) auf einer Logarithmischen Skala.
+	Anzahl muss mindestens 2 sein, sonst wird {NaN} zurückgegeben.
+	z.B.:
+		f(1,0, 5,0, 5) = {10, 100, 1000, 10000, 100000}
+]
+Die öffentliche Funktion Logspace mit den Parametern start, ende und anzahl vom Typ Kommazahl, Kommazahl und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste l ist anzahl Mal 0,0.
+	Für jede Zahl i von 0 bis anzahl minus 1, mache:
+		Speichere 10 hoch (start plus (ende minus start) mal (i durch (anzahl minus 1))) in l an der Stelle (i plus 1).
+	Gib l zurück.
+Und kann so benutzt werden:
+	"eine logarithmische Kommazahlen Liste von <start> bis <ende> mit <anzahl> Elementen"

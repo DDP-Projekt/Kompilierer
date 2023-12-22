@@ -177,4 +177,30 @@ Schreibe den Wahrheitswert (listT leer ist) auf eine Zeile.
 
 Schreibe den Text "-- Aneinandergehängt_C test --" auf eine Zeile.
 [Aneinandergehängt_C test]
-Schreibe den Text ((eine Liste, die aus 'h', 'a', 'l', 'l', 'o' besteht) aneinandergehängt).
+Schreibe den Text ((eine Liste, die aus 'h', 'a', 'l', 'l', 'o' besteht) aneinandergehängt) auf eine Zeile.
+[Aufsteigende_Zahlen test]
+Schreibe den Text "-- Aufsteigende_Zahlen test --" auf eine Zeile.
+Schreibe (eine aufsteigende Zahlen Liste von 0 bis 0) auf eine Zeile.
+Schreibe (eine aufsteigende Zahlen Liste von 5 bis 8) auf eine Zeile.
+Schreibe (eine aufsteigende Zahlen Liste von 1 bis 10) auf eine Zeile.
+Schreibe (eine aufsteigende Zahlen Liste von -10 bis 10) auf eine Zeile.
+
+[Absteigende_Zahlen test]
+Schreibe den Text "-- Absteigende_Zahlen test --" auf eine Zeile.
+Schreibe (eine absteigende Zahlen Liste von 0 bis 0) auf eine Zeile.
+Schreibe (eine absteigende Zahlen Liste von 8 bis 5) auf eine Zeile.
+Schreibe (eine absteigende Zahlen Liste von 10 bis 1) auf eine Zeile.
+Schreibe (eine absteigende Zahlen Liste von 10 bis -10) auf eine Zeile.
+
+[Linspace test]
+Schreibe den Text "-- Linspace test --" auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von 1,0 bis 5,0 mit 5 Elementen) auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von 2,0 bis 3,0 mit 5 Elementen) auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von -5,0 bis 7,0 mit 7 Elementen) auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von 2,0 bis 2,0 mit 2 Elementen) auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von 0,0 bis 3,0 mit 4 Elementen) auf eine Zeile.
+Schreibe (eine lineare Kommazahlen Liste von 2,0 bis 3,0 mit 17 Elementen) auf eine Zeile.
+
+[Logspace test]
+Schreibe den Text "-- Logspace test --" auf eine Zeile.
+Schreibe (eine logarithmische Kommazahlen Liste von 1,0 bis 5,0 mit 5 Elementen).
