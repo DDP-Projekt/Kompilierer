@@ -1,0 +1,9 @@
+Die öffentliche Funktion SHA_256 mit dem Parameter text vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<text> mit SHA-256 gehashed"
+
+Die öffentliche Funktion SHA_512 mit dem Parameter text vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<text> mit SHA-512 gehashed"
