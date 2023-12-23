@@ -405,3 +405,13 @@ Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl
 	Gib x als Zahl modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"
+
+Die Funktion Kehrwert_Zahl mit dem Parameter x vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 durch x zurück.
+Und kann so benutzt werden:
+	"den Kehrwert von <x>"
+
+Die Funktion Kehrwert_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 durch x zurück.
+Und kann so benutzt werden:
+	"den Kehrwert von <x>"
