@@ -269,16 +269,6 @@ und kann so benutzt werden:
 	"der Hyperbelkosinus von <v>" oder
 	"den Hyperbelkosinus von <v>"
 
-Die öffentliche Funktion Bogenmaß_Zu_Grad mit dem Parameter w vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
-	Gib w mal 180 durch PI zurück.
-Und kann so benutzt werden:
-	"<w> in Grad"
-
-Die Funktion Grad_Zu_Bogenmaß mit dem Parameter w vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
-	Gib w durch 180 mal PI zurück.
-Und kann so benutzt werden:
-	"<w> in Bogenmaß"
-
 [
 	Berechnet den Hyperbeltangens von v.
 ]
@@ -288,11 +278,42 @@ und kann so benutzt werden:
 	"der Hyperbeltangens von <v>" oder
 	"den Hyperbeltangens von <v>"
 
+[
+	Berechnet den Polarwinkel des Punktes (x, y). Ergebnis in Bogenmaß.
+	r = atan2(y, x)
+]
 Die öffentliche Funktion atan2 mit den Parametern x und y vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Polarwinkel des Punktes (<y>, <x>)" oder
 	"der Winkel des Punktes (<y>, <x>)"
+
+[
+	Wandelt die Kommazahl w von Bogenmaß in Grad um.
+	r = w * 180 / PI
+]
+Die öffentliche Funktion Bogenmaß_Zu_Grad mit dem Parameter w vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib w mal 180 durch PI zurück.
+Und kann so benutzt werden:
+	"<w> in Grad"
+
+[
+	Wandelt die Zahl w von Gradmaß in Bogenmaß um.
+	r = w / 180 * PI
+]
+Die öffentliche Funktion Grad_Zu_Bogenmaß_Zahl mit dem Parameter w vom Typ Zahl, gibt eine Kommazahl zurück, macht:
+	Gib w durch 180 mal PI zurück.
+Und kann so benutzt werden:
+	"<w> in Bogenmaß"
+
+[
+	Wandelt die Kommazahl w von Gradmaß in Bogenmaß um.
+	r = w / 180 * PI
+]
+Die öffentliche Funktion Grad_Zu_Bogenmaß mit dem Parameter w vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib w durch 180 mal PI zurück.
+Und kann so benutzt werden:
+	"<w> in Bogenmaß"
 
 [
 	Eine Funktion, die den größten gemeinsamen Teiler zweier Zahlen, <a> und <b>, als Zahl zurück gibt.
@@ -406,11 +427,17 @@ Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"
 
+[
+	Gibt den Kehrwert (1/x) einer Zahl zurück.
+]
 Die Funktion Kehrwert_Zahl mit dem Parameter x vom Typ Zahl, gibt eine Kommazahl zurück, macht:
 	Gib 1 durch x zurück.
 Und kann so benutzt werden:
 	"den Kehrwert von <x>"
 
+[
+	Gibt den Kehrwert (1/x) einer Kommazahl zurück.
+]
 Die Funktion Kehrwert_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
 	Gib 1 durch x zurück.
 Und kann so benutzt werden:

@@ -1,0 +1,5 @@
+Binde "Duden/Kryptographie" ein.
+Binde "Duden/Ausgabe" ein.
+
+Schreibe ("abc" mit SHA-256 gehashed) auf eine Zeile.
+Schreibe ("abc" mit SHA-512 gehashed) auf eine Zeile.

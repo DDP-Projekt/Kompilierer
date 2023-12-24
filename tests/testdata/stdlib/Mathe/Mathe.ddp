@@ -52,4 +52,19 @@ Schreibe die Kommazahl PHI auf eine Zeile.
 Schreibe (4,0 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (4,6 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (3,0 eine gerade Zahl ist) auf eine Zeile.
-Schreibe (4,2 eine gerade Zahl ist).
+Schreibe (4,2 eine gerade Zahl ist) auf eine Zeile.
+
+Schreibe (der Winkel des Punktes (1,0, 1,0)) auf eine Zeile.
+Schreibe (der Winkel des Punktes (-1,0, 1,0)) auf eine Zeile.
+Schreibe (der Winkel des Punktes (-1,0, -1,0)) auf eine Zeile.
+Schreibe (der Winkel des Punktes (1,0, -1,0)) auf eine Zeile.
+
+Schreibe ((PI durch 2) in Grad) auf eine Zeile.
+Schreibe (PI in Grad) auf eine Zeile.
+Schreibe ((PI mal (3 durch 2)) in Grad) auf eine Zeile.
+Schreibe ((2 mal PI) in Grad) auf eine Zeile.
+
+Schreibe (90 in Bogenmaß) auf eine Zeile.
+Schreibe (180 in Bogenmaß) auf eine Zeile.
+Schreibe (270 in Bogenmaß) auf eine Zeile.
+Schreibe (360 in Bogenmaß).
