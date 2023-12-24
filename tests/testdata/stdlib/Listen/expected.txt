@@ -47,6 +47,24 @@ hi, yo, test, neu
 wahr, wahr, falsch, wahr, falsch
 8, a, b, c, d
 8, hi, yo, test, neu
+-- Erste_N_Elemente tests --
+8, 1, 4
+8,5, 3,14, 0,183
+wahr, wahr, falsch
+8, a, b
+8, hi, yo
+-- Letzten_N_Elemente tests --
+4, 5, 9
+0,183, 2,5, 5,5
+falsch, wahr, falsch
+b, c, d
+yo, test, neu
+-- Spiegeln tests --
+9, 5, 4, 1, 8
+5,5, 2,5, 0,183, 3,14, 8,5
+falsch, wahr, falsch, wahr, wahr
+d, c, b, a, 8
+neu, test, yo, hi, 8
 -- fill tests --
 0, 0, 0, 0, 0
 0, 0, 0, 0, 0

@@ -134,6 +134,30 @@ Schreibe '\n'.
 Schreibe listT.
 Schreibe '\n'.
 
+[Erste_N_Elemente tests]
+Schreibe den Text "-- Erste_N_Elemente tests --" auf eine Zeile.
+Schreibe (die ersten 3 Elemente von listZ) auf eine Zeile.
+Schreibe (die ersten 3 Elemente von listK) auf eine Zeile.
+Schreibe (die ersten 3 Elemente von listB) auf eine Zeile.
+Schreibe (die ersten 3 Elemente von listC) auf eine Zeile.
+Schreibe (die ersten 3 Elemente von listT) auf eine Zeile.
+
+[Letzten_N_Elemente tests]
+Schreibe den Text "-- Letzten_N_Elemente tests --" auf eine Zeile.
+Schreibe (die letzten 3 Elemente von listZ) auf eine Zeile.
+Schreibe (die letzten 3 Elemente von listK) auf eine Zeile.
+Schreibe (die letzten 3 Elemente von listB) auf eine Zeile.
+Schreibe (die letzten 3 Elemente von listC) auf eine Zeile.
+Schreibe (die letzten 3 Elemente von listT) auf eine Zeile.
+
+[Spiegeln tests]
+Schreibe den Text "-- Spiegeln tests --" auf eine Zeile.
+Schreibe (listZ gespiegelt) auf eine Zeile.
+Schreibe (listK gespiegelt) auf eine Zeile.
+Schreibe (listB gespiegelt) auf eine Zeile.
+Schreibe (listC gespiegelt) auf eine Zeile.
+Schreibe (listT gespiegelt) auf eine Zeile.
+
 Schreibe den Text "-- fill tests --" auf eine Zeile.
 [ fill tests ]
 Fülle listZ mit 0.

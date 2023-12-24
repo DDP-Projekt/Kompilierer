@@ -124,6 +124,28 @@ Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen L
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Zahl mit den Parametern liste und n vom Typ Zahlen Liste und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Zahl mit den Parametern liste und n vom Typ Zahlen Liste und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste neu ist die Länge von liste Mal 0.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 [ Kommazahlen Listen Funktionen]
 [
@@ -251,6 +273,28 @@ Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kom
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Kommazahl mit den Parametern liste und n vom Typ Kommazahlen Liste und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Kommazahl mit den Parametern liste und n vom Typ Kommazahlen Liste und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste neu ist die Länge von liste Mal 0,0.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 [ Wahrheitswert Listen Funktionen ]
 [
@@ -378,6 +422,28 @@ Die öffentliche Funktion Ist_Leer_Wahrheitswert mit dem Parameter liste vom Typ
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Wahrheitswert mit den Parametern liste und n vom Typ Wahrheitswert Liste und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Wahrheitswert mit den Parametern liste und n vom Typ Wahrheitswert Liste und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt eine Wahrheitswert Liste zurück, macht:
+	Die Wahrheitswert Liste neu ist die Länge von liste Mal falsch.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 [ Buchstaben Listen Funktionen ]
 [
@@ -505,6 +571,28 @@ Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buc
 Und kann so benutzt werden:
 	"<liste> leer ist"
 
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Buchstabe mit den Parametern liste und n vom Typ Buchstaben Liste und Zahl, gibt eine Buchstaben Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Buchstabe mit den Parametern liste und n vom Typ Buchstaben Liste und Zahl, gibt eine Buchstaben Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt eine Buchstaben Liste zurück, macht:
+	Die Buchstaben Liste neu ist die Länge von liste Mal ' '.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 [ Text Listen Funktionen ]
 [
@@ -631,6 +719,29 @@ Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Lis
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<liste> leer ist"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Text mit den Parametern liste und n vom Typ Text Liste und Zahl, gibt eine Text Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Text mit den Parametern liste und n vom Typ Text Liste und Zahl, gibt eine Text Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Text mit dem Parameter liste vom Typ Text Liste, gibt eine Text Liste zurück, macht:
+	Die Text Liste neu ist die Länge von liste Mal "".
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 [
 	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
