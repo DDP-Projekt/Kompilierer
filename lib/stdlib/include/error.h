@@ -1,5 +1,10 @@
 #include "ddptypes.h"
 
+/*
+    The extern functions below require Duden/Fehlerbehandlung
+    to be imported in the DDP code
+*/
+
 extern ddpbool Gab_Fehler();
 extern void Loesche_Fehler();
 extern void Letzter_Fehler(ddpstringref Fehler);

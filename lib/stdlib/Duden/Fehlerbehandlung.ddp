@@ -1,3 +1,22 @@
+[
+	Dieses Modul stellt Funktionen zur Fehlerbehandlung bereit.
+	Im Allgemeinen sieht die Fehlerbehandlung so aus:
+
+		Rufe_Funktion_auf_die_Fehler_melden_kann.
+		Wenn es einen Fehler gab, dann:
+			[Behandle den Fehler]
+
+	Und um Fehler selber zu melden:
+	
+		Wenn (Fehlerbedingung) dann:
+			Melde den Fehler "Fehlermeldung"
+			Gib "Standardwert" zurück.
+
+	Alle Module, die Fehler melden können, müssen dieses Modul einbinden.
+	Das gilt insbesondere auch für Module, die nur in externen C Funktionen
+	Fehler melden, z.B. Duden/UnterProzess!
+]
+
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
 
