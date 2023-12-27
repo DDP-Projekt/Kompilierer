@@ -1,11 +1,23 @@
-Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Text zurück,
+Wir nennen die öffentliche Kombination aus
+	dem öffentlichen Text text mit Standardwert "",
+	der öffentlichen Text Liste groups mit Standardwert einer leeren Text Liste,
+einen Treffer,
+und erstellen sie so:
+	"einen Treffer mit dem Text <text>"
+
+Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"erster Treffer <muster> <text>"
 
-Die öffentliche Funktion Regex_Alle_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt eine Text Liste zurück,
+Die öffentliche Funktion Regex_N_Treffer mit den Parametern muster, text und n vom Typ Text, Text und Zahl, gibt eine Treffer Liste zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
+	"<n> Treffer <muster> <text>"
+
+Die öffentliche Funktion Regex_Alle_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt eine Treffer Liste zurück, macht:
+	Gib (-1 Treffer muster text) zurück.
+Und kann so benutzt werden:
 	"alle Treffer <muster> <text>"
 
 Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,

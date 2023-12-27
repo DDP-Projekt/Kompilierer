@@ -8,134 +8,176 @@
 #include <math.h>
 #include <ddpmemory.h>
 
-pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *muster) {
-    int errornumber;
-    size_t erroroffset;
+typedef struct Treffer {
+	ddpstring text;
+	ddpstringlist groups;
+} Treffer;
 
-    // Compile the regular expression
-    pcre2_code *re = pcre2_compile(
-        pattern,				// the pattern
-        PCRE2_ZERO_TERMINATED,	// indicates pattern is zero-terminated
-        0,						// default options
-        &errornumber,			// for error number
-        &erroroffset,			// for error offset
-        NULL					// use default compile context
+typedef struct TrefferList {
+	Treffer* arr;
+	ddpint len;
+	ddpint cap;
+} TrefferList;
+
+pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *muster) {
+	int errornumber;
+	size_t erroroffset;
+
+	// Compile the regular expression
+	pcre2_code *re = pcre2_compile(
+		pattern,				// the pattern
+		PCRE2_ZERO_TERMINATED,	// indicates pattern is zero-terminated
+		0,						// default options
+		&errornumber,			// for error number
+		&erroroffset,			// for error offset
+		NULL					// use default compile context
 	);                 
 
-    // Handle compilation errors
-    if (re == NULL) {
-        PCRE2_UCHAR buffer[256];
-        pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
-		ddp_error("Regex-Feher in '%s' bei Spalte %d: %s\n", true, muster->str, (int)erroroffset, buffer);
-    }
+	// Handle compilation errors
+	if (re == NULL) {
+		PCRE2_UCHAR buffer[256];
+		pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
+		ddp_error("Regex-Feher in '%s' bei Spalte %d: %s\n", false, muster->str, (int)erroroffset, buffer);
+	}
 
 	return re;
 }
 
-void Regex_Erster_Treffer(ddpstring *ret, ddpstring *muster, ddpstring *text) {
+void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
-    PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
+	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
 
 	pcre2_code *re = compile_regex(pattern, subject, muster);
 	if (re == NULL) return;
 
-    // Create the match data
-    pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	// Create the match data
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
-    // Perform the match
-    int rc = pcre2_match(
-        re,			// the compiled pattern
-        subject,	// the subject string
-        text->cap,	// the length of the subject
-        0,			// start at offset 0 in the subject
-        0,			// default options
-        match_data,	// block for storing the result
-        NULL		// use default match context
+	// Perform the match
+	int rc = pcre2_match(
+		re,			// the compiled pattern
+		subject,	// the subject string
+		text->cap,	// the length of the subject
+		0,			// start at offset 0 in the subject
+		0,			// default options
+		match_data,	// block for storing the result
+		NULL		// use default match context
 	);                 
 
-    // Check the result
-    if (rc < 0) { // Match failed
+	// Check the result
+	if (rc < 0) { // Match failed
 		if (rc == PCRE2_ERROR_NOMATCH) {
-			ddp_string_from_constant(ret, "");
+			ddp_string_from_constant(&ret->text, "");
 		}
 		else {
 			PCRE2_UCHAR buffer[256];
-        	pcre2_get_error_message(rc, buffer, sizeof(buffer));
+			pcre2_get_error_message(rc, buffer, sizeof(buffer));
 			ddp_error("Match-Fehler in '%s': %s\n", true, muster->str, buffer);
 		}
-    }
+	}
 	else {
-		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-		int len = ovector[1] - ovector[0];
-		char *temp = ALLOCATE(char, len+1);
-		strncpy(temp, text->str + ovector[0], len);
-		temp[len] = '\0';
-		ddp_string_from_constant(ret, temp);
-		
-		FREE_ARRAY(char, temp, len+1);
-    }
+		PCRE2_UCHAR *substring;
+		PCRE2_SIZE substring_length;
+		pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
 
-    // Free up the regular expression and match data
-    pcre2_code_free(re);
-    pcre2_match_data_free(match_data);
+		ddp_string_from_constant(&ret->text, (char*)substring);
+		ddp_ddpstringlist_from_constants(&ret->groups, rc-1);
+		
+		for (int i = 1; i < rc; i++) {
+			pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
+			
+			ddp_string_from_constant(&ret->groups.arr[i-1], (char*)substring);
+		}
+		
+		pcre2_substring_free(substring);
+	}
+
+	// Free up the regular expression and match data
+	pcre2_code_free(re);
+	pcre2_match_data_free(match_data);
 }
 
-void Regex_Alle_Treffer(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
-    PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
-    PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
+void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpint n) {
+	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
+	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
 
-    pcre2_code *re = compile_regex(pattern, subject, muster);
+	pcre2_code *re = compile_regex(pattern, subject, muster);
 	if (re == NULL) return;
 
-    // Create the match data
-    pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	// Create the match data
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+
+	// Initialize an empty list into ret
+	ret->len = 0;
+	ret->cap = 0;
+	ret->arr = ddp_reallocate(NULL, 0, 0);
 
 	PCRE2_SIZE start_offset = 0;
+	int i = 0;
+	// Perform the match
+	while(i < n || n == -1) {
+		int rc = pcre2_match(
+			re,			// the compiled pattern
+			subject,	// the subject string
+			text->cap,	// the length of the subject
+			start_offset,
+			0,			// default options
+			match_data,	// block for storing the result
+			NULL		// use default match context
+		);
 
-	ddp_ddpstringlist_from_constants(ret, 0);
+		if (rc < 0) {
+			if (rc != PCRE2_ERROR_NOMATCH) {
+				PCRE2_UCHAR buffer[256];
+				pcre2_get_error_message(rc, buffer, sizeof(buffer));
+				ddp_error("Match-Fehler in '%s': %s\n", false, muster->str, buffer);
+			}
+			break;
+		}
 
-    // Perform the match
-    while(pcre2_match(
-        re,			// the compiled pattern
-        subject,	// the subject string
-        text->cap,	// the length of the subject
-        start_offset,
-        0,			// default options
-        match_data,	// block for storing the result
-        NULL		// use default match context
-	) > 0) {
-		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-		start_offset = ovector[1];
+		PCRE2_UCHAR *substring;
+		PCRE2_SIZE substring_length;
 
-		int len = ovector[1] - ovector[0];
-		char *temp = ALLOCATE(char, len+1);
-		strncpy(temp, text->str + ovector[0], len);
-		temp[len] = '\0';
+		pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
 
-		ddpstring ddpstr;
-		ddp_string_from_constant(&ddpstr, temp);
+		Treffer *tr = ALLOCATE(Treffer, 1);
+		ddp_string_from_constant(&tr->text, (char*)substring);
+		pcre2_substring_free(substring);
+
+		ddp_ddpstringlist_from_constants(&tr->groups, rc-1);
+		
+		for (int i = 1; i < rc; i++) {
+			pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
+			
+			ddp_string_from_constant(&tr->groups.arr[i-1], (char*)substring);
+			pcre2_substring_free(substring);
+		}
 		
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
 			ret->cap = GROW_CAPACITY(ret->cap);
-			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(ddpstring), ret->cap * sizeof(ddpstring));
+			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
 		}
 
-		memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(ddpstring)], &ddpstr, sizeof(ddpstring));
+		memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(Treffer)], tr, sizeof(Treffer));
 		ret->len++;
+		FREE(Treffer, tr);
 
-		FREE_ARRAY(char, temp, len+1);
-	}                 
+		start_offset = pcre2_get_ovector_pointer(match_data)[1];
+		i++;
+	}
 
-    // Free up the regular expression and match data
-    pcre2_code_free(re);
-    pcre2_match_data_free(match_data);
+	// Free up the regular expression and match data
+	pcre2_code_free(re);
+	pcre2_match_data_free(match_data);
 }
+
+// TODO: subtitute
 
 // return true if regex is a valid pcre regex
 bool Ist_Regex(ddpstring *muster) {
 	int errornumber;
-    size_t erroroffset;
+	size_t erroroffset;
 
 	return pcre2_compile((PCRE2_SPTR)muster->str, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL) != NULL;
 }
