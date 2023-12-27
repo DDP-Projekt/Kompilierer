@@ -43,6 +43,22 @@ pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *mus
 	return re;
 }
 
+void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_count){
+	PCRE2_UCHAR *substring;
+	PCRE2_SIZE substring_length;
+	pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
+
+	ddp_string_from_constant(&tr->text, (char*)substring);
+	ddp_ddpstringlist_from_constants(&tr->groups, capture_count-1);
+	
+	for (int i = 1; i < capture_count; i++) {
+		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
+		
+		ddp_string_from_constant(&tr->groups.arr[i-1], (char*)substring);
+	}
+	pcre2_substring_free(substring);
+}
+
 void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
@@ -68,6 +84,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	if (rc < 0) { // Match failed
 		if (rc == PCRE2_ERROR_NOMATCH) {
 			ddp_string_from_constant(&ret->text, "");
+			ddp_ddpstringlist_from_constants(&ret->groups, 0);
 		}
 		else {
 			PCRE2_UCHAR buffer[256];
@@ -76,20 +93,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 		}
 	}
 	else {
-		PCRE2_UCHAR *substring;
-		PCRE2_SIZE substring_length;
-		pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
-
-		ddp_string_from_constant(&ret->text, (char*)substring);
-		ddp_ddpstringlist_from_constants(&ret->groups, rc-1);
-		
-		for (int i = 1; i < rc; i++) {
-			pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
-			
-			ddp_string_from_constant(&ret->groups.arr[i-1], (char*)substring);
-		}
-		
-		pcre2_substring_free(substring);
+		make_Treffer(ret, match_data, rc);
 	}
 
 	// Free up the regular expression and match data
@@ -110,7 +114,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	// Initialize an empty list into ret
 	ret->len = 0;
 	ret->cap = 0;
-	ret->arr = ddp_reallocate(NULL, 0, 0);
+	ret->arr = ALLOCATE(Treffer, 0);
 
 	PCRE2_SIZE start_offset = 0;
 	int i = 0;
@@ -135,33 +139,19 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 			break;
 		}
 
-		PCRE2_UCHAR *substring;
-		PCRE2_SIZE substring_length;
-
-		pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
-
-		Treffer *tr = ALLOCATE(Treffer, 1);
-		ddp_string_from_constant(&tr->text, (char*)substring);
-		pcre2_substring_free(substring);
-
-		ddp_ddpstringlist_from_constants(&tr->groups, rc-1);
+		Treffer tr;
+		make_Treffer(&tr, match_data, rc);
 		
-		for (int i = 1; i < rc; i++) {
-			pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
-			
-			ddp_string_from_constant(&tr->groups.arr[i-1], (char*)substring);
-			pcre2_substring_free(substring);
-		}
-		
+		// incrase list size if needed
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
 			ret->cap = GROW_CAPACITY(ret->cap);
 			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
 		}
 
-		memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(Treffer)], tr, sizeof(Treffer));
+		// append new element
+		memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(Treffer)], &tr, sizeof(Treffer));
 		ret->len++;
-		FREE(Treffer, tr);
 
 		start_offset = pcre2_get_ovector_pointer(match_data)[1];
 		i++;
