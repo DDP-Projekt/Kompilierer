@@ -59,11 +59,11 @@ void ddp_replace_char_in_string(ddpstring* str, ddpchar ch, ddpint index) {
 		memmove(str->str + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
 	} else {
 		size_t newStrCap = str->cap - oldCharLen + newCharLen;
-		char* newStr = ALLOCATE(char, newStrCap);
+		char* newStr = DDP_ALLOCATE(char, newStrCap);
 		memcpy(newStr, str->str, i); // copy everything before the new char
 		memcpy(newStr + i, newChar, newCharLen);
 		memcpy(newStr + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
-		FREE_ARRAY(char, str->str, str->cap);
+		DDP_FREE_ARRAY(char, str->str, str->cap);
 		str->cap = newStrCap;
 		str->str = newStr;
 	}
@@ -77,7 +77,7 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 void ddp_string_slice(ddpstring* ret, ddpstring* str, ddpint index1, ddpint index2) {
 	DBGLOG("_ddp_string_slice: %p, ret: %p", str, ret);
 	ret->cap = 1;
-	ret->str = ALLOCATE(char, 1);
+	ret->str = DDP_ALLOCATE(char, 1);
 	ret->str[0] = '\0';
 
 	if (str->cap <= 1)
@@ -175,7 +175,7 @@ void ddp_int_to_string(ddpstring* ret, ddpint i) {
 	char buffer[21];
 	int len = sprintf(buffer, "%lld", i);
 
-	char* string = ALLOCATE(char, len + 1); // the char array of the string + null-terminator
+	char* string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
 	memcpy(string, buffer, len);
 	string[len] = '\0';
 
@@ -190,7 +190,7 @@ void ddp_float_to_string(ddpstring* ret, ddpfloat f) {
 	char buffer[50];
 	int len = sprintf(buffer, "%.16g", f);
 
-	char* string = ALLOCATE(char, len + 1); // the char array of the string + null-terminator
+	char* string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
 	memcpy(string, buffer, len);
 	string[len] = '\0';
 
@@ -206,11 +206,11 @@ void ddp_bool_to_string(ddpstring* ret, ddpbool b) {
 
 	if (b) {
 		ret->cap = 5;
-		string = ALLOCATE(char, 5);
+		string = DDP_ALLOCATE(char, 5);
 		memcpy(string, "wahr", 5);
 	} else {
 		ret->cap = 7;
-		string = ALLOCATE(char, 7);
+		string = DDP_ALLOCATE(char, 7);
 		memcpy(string, "falsch", 7);
 	}
 	ret->str = string;
@@ -225,7 +225,7 @@ void ddp_char_to_string(ddpstring* ret, ddpchar c) {
 		num_bytes = 0;
 	}
 
-	char* string = ALLOCATE(char, num_bytes + 1);
+	char* string = DDP_ALLOCATE(char, num_bytes + 1);
 	memcpy(string, temp, num_bytes);
 	string[num_bytes] = '\0';
 

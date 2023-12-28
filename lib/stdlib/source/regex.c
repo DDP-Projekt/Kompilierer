@@ -19,7 +19,7 @@ typedef struct TrefferList {
 	ddpint cap;
 } TrefferList;
 
-pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *muster) {
+static pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *muster) {
 	int errornumber;
 	size_t erroroffset;
 
@@ -43,7 +43,7 @@ pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *mus
 	return re;
 }
 
-void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_count){
+static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_count){
 	PCRE2_UCHAR *substring;
 	PCRE2_SIZE substring_length;
 	pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
@@ -112,9 +112,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
 	// Initialize an empty list into ret
-	ret->len = 0;
-	ret->cap = 0;
-	ret->arr = ALLOCATE(Treffer, 0);
+	*ret = DDP_EMPTY_LIST(TrefferList);
 
 	PCRE2_SIZE start_offset = 0;
 	int i = 0;
@@ -145,7 +143,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 		// incrase list size if needed
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
-			ret->cap = GROW_CAPACITY(ret->cap);
+			ret->cap = DDP_GROW_CAPACITY(ret->cap);
 			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
 		}
 
@@ -162,12 +160,17 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	pcre2_match_data_free(match_data);
 }
 
-// TODO: subtitute
+// TODO: substitute
 
 // return true if regex is a valid pcre regex
-bool Ist_Regex(ddpstring *muster) {
+ddpbool Ist_Regex(ddpstring *muster) {
 	int errornumber;
 	size_t erroroffset;
 
-	return pcre2_compile((PCRE2_SPTR)muster->str, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL) != NULL;
+	pcre2_code* re = pcre2_compile((PCRE2_SPTR)muster->str, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, NULL);
+	if (re == NULL) {
+		return false;
+	}
+	pcre2_code_free(re);
+	return true;
 }

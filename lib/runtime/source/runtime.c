@@ -25,7 +25,7 @@ static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 
 // converts the command line arguments into a ddpstringlist
 static void handle_args(int argc, char** argv) {
-	cmd_args = (ddpstringlist){ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
+	cmd_args = (ddpstringlist){DDP_ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
 	DBGLOG("handle_args: %p", &cmd_args);
 
 	for (int i = 0; i < argc; i++) {

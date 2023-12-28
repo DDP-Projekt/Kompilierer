@@ -15,7 +15,7 @@ typedef void* generic_ref;
 static void grow_if_needed(generic_list_ref list, ddpint elem_size) {
 	if (list->len == list->cap) {
 		ddpint old_cap = list->cap;
-		list->cap = GROW_CAPACITY(list->cap);
+		list->cap = DDP_GROW_CAPACITY(list->cap);
 		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
 	}
 }
@@ -175,7 +175,7 @@ void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_li
 	ddpint new_len = list->len + other->len;
 	if (new_len > list->cap) {
 		ddpint old_cap = list->cap;
-		list->cap = GROW_CAPACITY(new_len);
+		list->cap = DDP_GROW_CAPACITY(new_len);
 		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
 	}
 
@@ -203,7 +203,6 @@ void efficient_list_insert_range_char(ddpcharlistref list, ddpint index, ddpchar
 void efficient_list_insert_range_string(ddpstringlistref list, ddpint index, ddpstringlistref other, ddpint elem_size) {
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 	for (ddpint i = 0; i < other->len; i++) {
-		other->arr[i].cap = 0;
-		other->arr[i].str = NULL;
+		other->arr[i] = DDP_EMPTY_STRING;
 	}
 }

@@ -97,7 +97,7 @@ static int remove_directory(const char *path) {
 				continue;
 
 			len = path_len + strlen(p->d_name) + 2;
-			buf = ALLOCATE(char, len);
+			buf = DDP_ALLOCATE(char, len);
 
 			if (buf) {
 				struct stat statbuf;
@@ -109,7 +109,7 @@ static int remove_directory(const char *path) {
 					else
 						r2 = unlink(buf);
 				}
-				FREE(char, buf);
+				DDP_FREE(char, buf);
 			}
 			r = r2;
 		}
@@ -149,18 +149,18 @@ ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 
 	// https://stackoverflow.com/questions/64276902/mv-command-implementation-in-c-not-moving-files-to-different-directory
 	if (S_ISDIR(path_stat.st_mode)) {
-		char* path_copy = ALLOCATE(char, Pfad->cap);
+		char* path_copy = DDP_ALLOCATE(char, Pfad->cap);
 		memcpy(path_copy, Pfad->str, Pfad->cap);
 
 		char* base = basename(path_copy);
 		size_t len_base = strlen(base);
 
-		NeuerName->str = GROW_ARRAY(char, NeuerName->str, NeuerName->cap, NeuerName->cap + len_base + 1);
+		NeuerName->str = DDP_GROW_ARRAY(char, NeuerName->str, NeuerName->cap, NeuerName->cap + len_base + 1);
 		strcat(NeuerName->str, "/");
 		strcat(NeuerName->str, base);
 		NeuerName->cap = NeuerName->cap + len_base + 1;
 
-		FREE(char, path_copy);
+		DDP_FREE(char, path_copy);
 	}
 	if (rename(Pfad->str, NeuerName->str) != 0) {
 		ddp_error("Fehler beim Verschieben des Pfades '%s' nach '%s': ", true, Pfad->str, NeuerName->str);
@@ -170,16 +170,15 @@ ddpbool Pfad_Verschieben(ddpstring* Pfad, ddpstring* NeuerName) {
 }
 
 static void formatDateStr(ddpstring *str, struct tm *time) {
-	// make string
-	str->str = NULL;
-	str->cap = 0;
+	// make string empty
+	*str = DDP_EMPTY_STRING;
 
 	// format string
 	char buff[30];
 	int size = sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon + 1, time->tm_year + 1900);
 
 	str->cap = size+1;
-	str->str = ALLOCATE(char, str->cap);
+	str->str = DDP_ALLOCATE(char, str->cap);
 	strcpy(str->str, buff);
 	str->str[str->cap-1] = '\0';
 }

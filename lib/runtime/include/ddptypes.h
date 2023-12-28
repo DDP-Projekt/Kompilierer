@@ -94,14 +94,21 @@ extern void ddp_free_ddpstringlist(ddpstringlist* list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpstringlist(ddpstringlist* ret, ddpstringlist* list);
 
+// useful macros to work with ddp types
+
+#define DDP_GROWTH_FACTOR (1.5)
+#define DDP_BASE_CAPACITY (8)
+// helper macro to calculate the new capacity of an array
+#define DDP_GROW_CAPACITY(capacity) \
+    (capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
+
+#define DDP_EMPTY_STRING \
+	(ddpstring){NULL, 0}
+
+#define DDP_EMPTY_LIST(type) \
+	(type){NULL, 0, 0}
 
 // useful typedefs to use when interfacing with ddp code
-
-#define GROWTH_FACTOR (1.5)
-#define BASE_CAPACITY (8)
-// helper macro to calculate the new capacity of an array
-#define GROW_CAPACITY(capacity) \
-    (capacity < BASE_CAPACITY ? BASE_CAPACITY : (ddpint)ceil(capacity * GROWTH_FACTOR))
 
 typedef ddpint* ddpintref;
 typedef ddpfloat* ddpfloatref;

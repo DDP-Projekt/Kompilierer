@@ -42,7 +42,7 @@ void Betriebssystem(ddpstring* ret) {
 	#define OS "Linux"
 #endif
 	ret->cap = sizeof(OS);
-	ret->str = ALLOCATE(char, sizeof(OS));
+	ret->str = DDP_ALLOCATE(char, sizeof(OS));
 	memcpy(ret->str, OS, sizeof(OS));
 #undef OS
 }

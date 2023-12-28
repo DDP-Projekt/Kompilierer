@@ -88,7 +88,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
 	for (ddpint i = 0; i < args->len; i++) {
 		argv_size += args->arr[i].cap; // the nullterminator is used for the trailing space
 	}
-	argv = ALLOCATE(char, argv_size);
+	argv = DDP_ALLOCATE(char, argv_size);
 	argv[0] = '\0'; // make sure strcat works
 	strcat(argv, path->str);
 	strcat(argv, " ");
@@ -116,10 +116,10 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
 			close_pipe(stderr_pipe);
 		}
 		close_pipe(stdin_pipe);
-		FREE_ARRAY(char, argv, argv_size); // free the arguments
+		DDP_FREE_ARRAY(char, argv, argv_size); // free the arguments
 		return -1;
 	}
-	FREE_ARRAY(char, argv, argv_size); // free the arguments
+	DDP_FREE_ARRAY(char, argv, argv_size); // free the arguments
 
 	// you NEED to close these, or it will not work
 	CloseHandle(pi.hThread);
@@ -171,8 +171,7 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
 static void read_pipe(int fd, ddpstringref out) {
 	ddp_free_string(out);
 
-	out->cap = 0;
-	out->str = NULL;
+	*out = DDP_EMPTY_STRING;
 	char buff[BUFF_SIZE];
 	int nread;
 	while ((nread = read(fd, buff, sizeof(buff))) > 0) {
@@ -225,12 +224,12 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
 
     // prepare the arguments
     const size_t argc = args->len + 1;
-    char** process_args = ALLOCATE(char*, argc+1); // + 1 for the terminating NULL
+    char** process_args = DDP_ALLOCATE(char*, argc+1); // + 1 for the terminating NULL
 
-    process_args[0] = ALLOCATE(char, strlen(path->str)+1);
+    process_args[0] = DDP_ALLOCATE(char, strlen(path->str)+1);
     strcpy(process_args[0], path->str);
     for (int i = 1; i < argc; i++) {
-        process_args[i] = ALLOCATE(char, strlen(args->arr[i-1].str)+1);
+        process_args[i] = DDP_ALLOCATE(char, strlen(args->arr[i-1].str)+1);
         strcpy(process_args[i], args->arr[i-1].str);
     }
     process_args[argc] = NULL;
@@ -256,9 +255,9 @@ static ddpint execute_process(ddpstring* path, ddpstringlist* args,
     default: { // parent
         // free the arguments
         for (int i = 0; i < argc; i++) {
-            FREE_ARRAY(char, process_args[i], strlen(process_args[i])+1);
+            DDP_FREE_ARRAY(char, process_args[i], strlen(process_args[i])+1);
         }
-        FREE_ARRAY(char*, process_args, argc+1);
+        DDP_FREE_ARRAY(char*, process_args, argc+1);
         
         close(stdout_fd[WRITE_END]);
         if (need_stderr)

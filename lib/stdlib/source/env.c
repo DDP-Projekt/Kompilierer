@@ -10,18 +10,17 @@
 #include "ddpwindows.h"
 
 void Hole_Umgebungsvariable(ddpstring* ret, ddpstring* Name) {
-	ret->str = NULL;
-	ret->cap = 0;
+	*ret = DDP_EMPTY_STRING;
 
 	const char* env = getenv(Name->str);
 	if (env) {
 		ret->cap = strlen(env) + 1;
-		ret->str = ALLOCATE(char, ret->cap);
+		ret->str = DDP_ALLOCATE(char, ret->cap);
 		strcpy(ret->str, env);
 		ret->str[ret->cap-1] = '\0';
 	} else {
 		ret->cap = 1;
-		ret->str = ALLOCATE(char, 1);
+		ret->str = DDP_ALLOCATE(char, 1);
 		ret->str[0] = '\0';
 	}
 }

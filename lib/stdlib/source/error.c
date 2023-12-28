@@ -17,13 +17,13 @@ void ddp_error(const char *prefix, bool use_errno, ...) {
 
 	ddpstring error = { 0 };
 	error.cap = strlen(error_buffer) + 1;
-	error.str = ALLOCATE(char, error.cap);
+	error.str = DDP_ALLOCATE(char, error.cap);
 	memcpy(error.str, error_buffer, error.cap);
 
 	if (use_errno) {
 		char* error_message = strerror(errno);
 		size_t msg_len = strlen(error_message);
-		error.str = GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
+		error.str = DDP_GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
 		error.cap += msg_len;
 		strcat(error.str, error_message);
 	}
@@ -42,7 +42,7 @@ void ddp_error_win(const char* prefix, ...) {
 
 	ddpstring error = { 0 };
 	error.cap = strlen(prefix) + 1;
-	error.str = ALLOCATE(char, error.cap);
+	error.str = DDP_ALLOCATE(char, error.cap);
 	memcpy(error.str, error_buffer, error.cap);
 
 	LPSTR error_message = NULL;
@@ -53,7 +53,7 @@ void ddp_error_win(const char* prefix, ...) {
 	}
 
 	size_t msg_len = strlen(error_message);
-	error.str = GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
+	error.str = DDP_GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
 	error.cap += msg_len;
 	strcat(error.str, error_message);
 	LocalFree(error_message);

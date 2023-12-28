@@ -21,9 +21,8 @@ void Zeit_Lokal(ddpstring* ret) {
 	time_t t = time(NULL);
  	struct tm tm = *localtime(&t);
 
-	// make string
-	ret->str = NULL;
-	ret->cap = 0;
+	// make string empty
+	*ret = DDP_EMPTY_STRING;
 
 	// format string
 	char buff[30];

@@ -74,7 +74,7 @@ uint64_t genrand64_int64()
 
 	// genrand64_int64 is called by every mt18837 functions, so we initialize the engine here
 	if (context == NULL) {
-		context = ALLOCATE(mt19937_64, 1);
+		context = DDP_ALLOCATE(mt19937_64, 1);
 		init_genrand64(context, time(NULL));
 	}
 
