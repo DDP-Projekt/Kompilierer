@@ -25,13 +25,13 @@ static pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstri
 
 	// Compile the regular expression
 	pcre2_code *re = pcre2_compile(
-		pattern,				// the pattern
-		PCRE2_ZERO_TERMINATED,	// indicates pattern is zero-terminated
-		0,						// default options
-		&errornumber,			// for error number
-		&erroroffset,			// for error offset
-		NULL					// use default compile context
-	);                 
+		pattern,               // the pattern
+		PCRE2_ZERO_TERMINATED, // indicates pattern is zero-terminated
+		0,                     // default options
+		&errornumber,          // for error number
+		&erroroffset,          // for error offset
+		NULL                   // use default compile context
+	);
 
 	// Handle compilation errors
 	if (re == NULL) {
@@ -50,10 +50,10 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 
 	ddp_string_from_constant(&tr->text, (char*)substring);
 	ddp_ddpstringlist_from_constants(&tr->groups, capture_count-1);
-	
+
 	for (int i = 1; i < capture_count; i++) {
 		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
-		
+
 		ddp_string_from_constant(&tr->groups.arr[i-1], (char*)substring);
 	}
 	pcre2_substring_free(substring);
@@ -64,33 +64,36 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
 
 	pcre2_code *re = compile_regex(pattern, subject, muster);
-	if (re == NULL) return;
+	if (re == NULL) {
+		ddp_string_from_constant(&ret->text, "");
+		ddp_ddpstringlist_from_constants(&ret->groups, 0);
+		return;
+	}
 
 	// Create the match data
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
 	// Perform the match
 	int rc = pcre2_match(
-		re,			// the compiled pattern
-		subject,	// the subject string
-		text->cap,	// the length of the subject
-		0,			// start at offset 0 in the subject
-		0,			// default options
-		match_data,	// block for storing the result
-		NULL		// use default match context
-	);                 
+		re,         // the compiled pattern
+		subject,    // the subject string
+		text->cap,  // the length of the subject
+		0,          // start at offset 0 in the subject
+		0,          // default options
+		match_data, // block for storing the result
+		NULL        // use default match context
+	);
 
 	// Check the result
 	if (rc < 0) { // Match failed
-		if (rc == PCRE2_ERROR_NOMATCH) {
-			ddp_string_from_constant(&ret->text, "");
-			ddp_ddpstringlist_from_constants(&ret->groups, 0);
-		}
-		else {
+		if (rc != PCRE2_ERROR_NOMATCH) {
 			PCRE2_UCHAR buffer[256];
 			pcre2_get_error_message(rc, buffer, sizeof(buffer));
 			ddp_error("Match-Fehler in '%s': %s\n", true, muster->str, buffer);
 		}
+
+		ddp_string_from_constant(&ret->text, "");
+		ddp_ddpstringlist_from_constants(&ret->groups, 0);
 	}
 	else {
 		make_Treffer(ret, match_data, rc);
@@ -105,27 +108,27 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
 
+	// Initialize an empty list into ret
+	*ret = DDP_EMPTY_LIST(TrefferList);
+
 	pcre2_code *re = compile_regex(pattern, subject, muster);
 	if (re == NULL) return;
 
 	// Create the match data
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
-	// Initialize an empty list into ret
-	*ret = DDP_EMPTY_LIST(TrefferList);
-
 	PCRE2_SIZE start_offset = 0;
 	int i = 0;
 	// Perform the match
-	while(i < n || n == -1) {
+	while (i < n || n == -1) {
 		int rc = pcre2_match(
-			re,			// the compiled pattern
-			subject,	// the subject string
-			text->cap,	// the length of the subject
+			re,           // the compiled pattern
+			subject,      // the subject string
+			text->cap,    // the length of the subject
 			start_offset,
-			0,			// default options
-			match_data,	// block for storing the result
-			NULL		// use default match context
+			0,            // default options
+			match_data,   // block for storing the result
+			NULL          // use default match context
 		);
 
 		if (rc < 0) {
@@ -139,7 +142,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 
 		Treffer tr;
 		make_Treffer(&tr, match_data, rc);
-		
+
 		// incrase list size if needed
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
@@ -161,6 +164,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 }
 
 // TODO: substitute
+// TODO: split
 
 // return true if regex is a valid pcre regex
 ddpbool Ist_Regex(ddpstring *muster) {
