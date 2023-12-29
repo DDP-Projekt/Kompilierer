@@ -22,6 +22,16 @@ Die öffentliche Funktion Regex_Alle_Treffer mit den Parametern muster und text 
 Und kann so benutzt werden:
 	"alle Treffer <muster> <text>"
 
+Die öffentliche Funktion Regex_Erster_Treffer_Ersetzen mit den Parametern muster, text und ersatz vom Typ Text, Text und Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"den ersten Treffer mit dem Regex <muster> auf <text> mit <ersatz> ersetzt"
+
+Die öffentliche Funktion Regex_Alle_Treffer_Ersetzen mit den Parametern muster, text und ersatz vom Typ Text, Text und Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"alle Treffer mit dem Regex <muster> auf <text> mit <ersatz> ersetzt"
+
 Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:

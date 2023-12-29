@@ -46,17 +46,15 @@ static pcre2_code* compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstri
 static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_count){
 	PCRE2_UCHAR *substring;
 	PCRE2_SIZE substring_length;
-	pcre2_substring_get_bynumber(match_data, 0, &substring, &substring_length);
 
-	ddp_string_from_constant(&tr->text, (char*)substring);
 	ddp_ddpstringlist_from_constants(&tr->groups, capture_count-1);
-
-	for (int i = 1; i < capture_count; i++) {
+	for (int i = 0; i < capture_count; i++) {
 		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
 
-		ddp_string_from_constant(&tr->groups.arr[i-1], (char*)substring);
+		ddp_string_from_constant(i == 0 ? &tr->text : &tr->groups.arr[i-1], (char*)substring);
+
+		pcre2_substring_free(substring);
 	}
-	pcre2_substring_free(substring);
 }
 
 void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
@@ -72,6 +70,12 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 
 	// Create the match data
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	if (match_data == NULL) {
+		pcre2_code_free(re);
+		ddp_string_from_constant(&ret->text, "");
+		ddp_ddpstringlist_from_constants(&ret->groups, 0);
+		return;
+	}
 
 	// Perform the match
 	int rc = pcre2_match(
@@ -116,6 +120,10 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 
 	// Create the match data
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	if (match_data == NULL) {
+		pcre2_code_free(re);
+		return;
+	}
 
 	PCRE2_SIZE start_offset = 0;
 	int i = 0;
@@ -163,7 +171,64 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	pcre2_match_data_free(match_data);
 }
 
-// TODO: substitute
+#define SUBSTITUTE_BUFFER_SIZE 2048
+static void substitute(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz, bool all) {
+	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
+	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
+	PCRE2_SPTR replacement = (PCRE2_SPTR)ersatz->str; // The replacement string
+
+	ddp_string_from_constant(ret, "");
+	pcre2_code *re = compile_regex(pattern, subject, muster);
+	if (re == NULL) return;
+
+	// Create the match data
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	if (match_data == NULL) {
+		pcre2_code_free(re);
+		return;
+	}
+
+	PCRE2_UCHAR result[SUBSTITUTE_BUFFER_SIZE] = "";
+	size_t result_length = SUBSTITUTE_BUFFER_SIZE;
+	// Perform the match
+	int rc = pcre2_substitute(
+		re,                    // the compiled pattern
+		subject,               // the subject string
+		PCRE2_ZERO_TERMINATED,
+		0,                     // start at offset 0 in the subject
+		all ? PCRE2_SUBSTITUTE_GLOBAL : 0,
+		match_data,            // block for storing the result
+		NULL,                  // use default match context
+		replacement,           // the replacement string
+		PCRE2_ZERO_TERMINATED,
+		result,                // where to put the result
+		&result_length         // where to put the result length
+	);
+
+	// Free up the regular expression and match data
+	pcre2_code_free(re);
+	pcre2_match_data_free(match_data);
+
+	// Check the result
+	if (rc < 0) {
+		if (rc != PCRE2_ERROR_NOMATCH) {
+			PCRE2_UCHAR buffer[256];
+			pcre2_get_error_message(rc, buffer, sizeof(buffer));
+			ddp_error("Match-Fehler in '%s': %s\n", false, muster->str, buffer);
+		}
+	}
+
+	ddp_string_from_constant(ret, (char*)result);
+}
+
+void Regex_Erster_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz) {
+	substitute(ret, muster, text, ersatz, false);
+}
+
+void Regex_Alle_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz) {
+	substitute(ret, muster, text, ersatz, true);
+}
+
 // TODO: split
 
 // return true if regex is a valid pcre regex
