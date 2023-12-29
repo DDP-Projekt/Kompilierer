@@ -229,7 +229,92 @@ void Regex_Alle_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *t
 	substitute(ret, muster, text, ersatz, true);
 }
 
-// TODO: split
+void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
+	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
+	PCRE2_SPTR subject = (PCRE2_SPTR)text->str; // The string to match against
+
+	// Initialize an empty list into ret
+	ddp_ddpstringlist_from_constants(ret, 0);
+
+	pcre2_code *re = compile_regex(pattern, subject, muster);
+	if (re == NULL) return;
+
+	// Create the match data
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+	if (match_data == NULL) {
+		pcre2_code_free(re);
+		return;
+	}
+
+	PCRE2_SIZE start_offset = 0;
+	int i = 0;
+	// Perform the match
+	while (true) {	
+		int rc = pcre2_match(
+			re,           // the compiled pattern
+			subject,      // the subject string
+			text->cap,    // the length of the subject
+			start_offset,
+			0,            // default options
+			match_data,   // block for storing the result
+			NULL          // use default match context
+		);
+
+		if (rc < 0) {
+			if (rc != PCRE2_ERROR_NOMATCH) {
+				PCRE2_UCHAR buffer[256];
+				pcre2_get_error_message(rc, buffer, sizeof(buffer));
+				ddp_error("Match-Fehler in '%s': %s\n", false, muster->str, buffer);
+			}
+			break;
+		}
+
+		int start = pcre2_get_ovector_pointer(match_data)[0];
+
+		ddpstring r;
+		r.str = DDP_ALLOCATE(char, start - start_offset + 1);
+		strncpy(r.str, text->str + start_offset, start - start_offset);
+
+		r.str[start - start_offset] = '\0';
+		r.cap = start - start_offset + 1;
+
+		// incrase list size if needed
+		if (ret->len == ret->cap) {
+			ddpint old_cap = ret->cap;
+			ret->cap = DDP_GROW_CAPACITY(ret->cap);
+			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
+		}
+
+		// append new element
+		memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(ddpstring)], &r, sizeof(ddpstring));
+		ret->len++;
+
+		start_offset = pcre2_get_ovector_pointer(match_data)[1];
+		i++;
+	}
+
+	// incrase list size if needed
+	if (ret->len == ret->cap) {
+		ddpint old_cap = ret->cap;
+		ret->cap = DDP_GROW_CAPACITY(ret->cap);
+		ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
+	}
+
+	ddpstring r;
+	r.str = DDP_ALLOCATE(char, strlen(text->str) - start_offset + 1);
+	strncpy(r.str, text->str + start_offset, strlen(text->str) - start_offset);
+
+	r.str[strlen(text->str) - start_offset] = '\0';
+	r.cap = strlen(text->str) - start_offset + 1;
+
+	// append new element
+	memcpy(&((uint8_t*)ret->arr)[ret->len * sizeof(ddpstring)], &r, sizeof(ddpstring));
+	ret->len++;
+
+	// Free up the regular expression and match data
+	pcre2_code_free(re);
+	pcre2_match_data_free(match_data);
+}
 
 // return true if regex is a valid pcre regex
 ddpbool Ist_Regex(ddpstring *muster) {

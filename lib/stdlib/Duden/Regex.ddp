@@ -7,6 +7,11 @@ einen Treffer,
 und erstellen sie so:
 	"einen Treffer mit dem Text <text>"
 
+Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<muster> ein Regex ist"
+
 Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -32,7 +37,7 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"alle Treffer mit dem Regex <muster> auf <text> mit <ersatz> ersetzt"
 
-Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
+Die öffentliche Funktion Regex_Spalten mit den Parametern muster und text vom Typ Text und Text, gibt eine Text Liste zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"<muster> ein Regex ist"
+	"den Text <text> am Regex <muster> gespalten"
