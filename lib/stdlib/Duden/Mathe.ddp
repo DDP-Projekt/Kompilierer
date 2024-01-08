@@ -200,7 +200,7 @@ Und kann so benutzt werden:
 [
 	Berechnet den Sinus von v.
 ]
-Die öffentliche Funktion sin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Sinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Sinus von <v>" oder 
@@ -209,7 +209,7 @@ und kann so benutzt werden:
 [
 	Berechnet den Kosinus von v.
 ]
-Die öffentliche Funktion cos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Kosinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Kosinus von <v>" oder
@@ -218,7 +218,7 @@ und kann so benutzt werden:
 [
 	Berechnet den Tangens von v.
 ]
-Die öffentliche Funktion tan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Tangens mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Tangens von <v>" oder
@@ -227,7 +227,7 @@ und kann so benutzt werden:
 [
 	Berechnet den Arkussinus von v. (sin⁻¹)
 ]
-Die öffentliche Funktion asin mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Arkussinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkussinus von <v>" oder
@@ -236,7 +236,7 @@ und kann so benutzt werden:
 [
 	Berechnet den Arkuskosinus von v. (cos⁻¹)
 ]
-Die öffentliche Funktion acos mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Arkuskosinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkuskosinus von <v>" oder
@@ -245,16 +245,43 @@ und kann so benutzt werden:
 [
 	Berechnet den Arkustangens von v. (tan⁻¹)
 ]
-Die öffentliche Funktion atan mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Arkustangens mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Arkustangens von <v>" oder 
 	"den Arkustangens von <v>"
 
 [
+	Berechnet den Kosekans (1/sin) von v.
+]
+Die öffentliche Funktion Kosekans mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 durch (der Sinus von v) zurück.
+Und kann so benutzt werden:
+	"der Kosekans von <v>" oder
+	"den Kosekans von <v>"
+
+[
+	Berechnet den Sekans (1/cos) von v.
+]
+Die öffentliche Funktion Sekans mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 durch (der Kosinus von v) zurück.
+Und kann so benutzt werden:
+	"der Sekans von <v>" oder
+	"den Sekans von <v>"
+
+[
+	Berechnet den Kotangens (1/tan) von v.
+]
+Die öffentliche Funktion Kotangens mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 durch (der Tangens von v) zurück.
+Und kann so benutzt werden:
+	"der Kotangens von <v>" oder
+	"den Kotangens von <v>"
+
+[
 	Berechnet den Hyperbelsinus von v.
 ]
-Die öffentliche Funktion sinh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Hyperbelsinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelsinus von <v>" oder
@@ -263,7 +290,7 @@ und kann so benutzt werden:
 [
 	Berechnet den Hyperbelkosinus von v.
 ]
-Die öffentliche Funktion cosh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Hyperbelkosinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbelkosinus von <v>" oder
@@ -272,17 +299,60 @@ und kann so benutzt werden:
 [
 	Berechnet den Hyperbeltangens von v.
 ]
-Die öffentliche Funktion tanh mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Hyperbeltangens mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Hyperbeltangens von <v>" oder
 	"den Hyperbeltangens von <v>"
 
 [
+	Berechnet den Areahyperbelsinus von v.
+]
+Die öffentliche Funktion Areahyperbelsinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"der Areahyperbelsinus von <v>" oder
+	"den Areahyperbelsinus von <v>"
+
+[
+	Berechnet den Areahyperbelkosinus von v.
+]
+Die öffentliche Funktion Areahyperbelkosinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"der Areahyperbelkosinus von <v>" oder
+	"den Areahyperbelkosinus von <v>"
+
+[
+	Berechnet den Arkushyperbeltangens von v.
+]
+Die öffentliche Funktion Areahyperbeltangens mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"der Areahyperbeltangens von <v>" oder
+	"den Areahyperbeltangens von <v>"
+
+[
+	Berechnet den Versinus (1-cos) von v.
+]
+Die öffentliche Funktion Versinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 minus (der Kosinus von v) zurück.
+Und kann so benutzt werden:
+	"der Versinus von <v>"
+
+[
+	Berechnet den Koversinus (1-sin) von v.
+]
+Die öffentliche Funktion Koversinus mit dem Parameter v vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib 1 minus (der Sinus von v) zurück.
+Und kann so benutzt werden:
+	"der Koversinus von <v>"
+
+[
 	Berechnet den Polarwinkel des Punktes (x, y). Ergebnis in Bogenmaß.
 	r = atan2(y, x)
 ]
-Die öffentliche Funktion atan2 mit den Parametern x und y vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Winkel mit den Parametern x und y vom Typ Kommazahl und Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"der Polarwinkel des Punktes (<y>, <x>)" oder
@@ -442,3 +512,19 @@ Die Funktion Kehrwert_Kommazahl mit dem Parameter x vom Typ Kommazahl, gibt eine
 	Gib 1 durch x zurück.
 Und kann so benutzt werden:
 	"den Kehrwert von <x>"
+
+[
+	Berechnet den natürlichen Logarithmus von x. (logₑ(x))
+]
+Die öffentliche Funktion Natürlicher_Logarithmus mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück, macht:
+	Gib der Logarithmus von x zur Basis E zurück.
+Und kann so benutzt werden:
+	"der natürlicher Logarithmus von <x>"
+
+[
+	Berechnet die Gaußsche Fehlerfunktion von x. (erf(x))
+]
+Die öffentliche Funktion Gaußsche_Fehlerfunktion mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Die Gaußsche Fehlerfunktion von <x>"
