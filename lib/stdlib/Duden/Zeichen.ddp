@@ -1,3 +1,50 @@
+Die öffentliche Funktion Leerzeichen gibt einen Buchstaben zurück, macht:
+	Gib ' ' zurück.
+Und kann so benutzt werden:
+	"einem Leerzeichen",
+	"ein Leerzeichen",
+	"Leerzeichen"
+
+Die öffentliche Funktion Neue_Zeile gibt einen Buchstaben zurück, macht:
+	Gib '\n' zurück.
+Und kann so benutzt werden:
+	"eine neue Zeile",
+	"neue Zeile"
+
+Die öffentliche Funktion Wagenrücklauf gibt einen Buchstaben zurück, macht:
+	Gib '\r' zurück.
+Und kann so benutzt werden:
+	"einen Wagenrücklauf",
+	"ein Wagenrücklauf"
+
+Die öffentliche Funktion Tabulator gibt einen Buchstaben zurück, macht:
+	Gib '\t' zurück.
+Und kann so benutzt werden:
+	"einem Tabulator",
+	"ein Tabulator",
+	"Tabulator"
+
+Die öffentliche Funktion Rückstrich gibt einen Buchstaben zurück, macht:
+	Gib '\\' zurück.
+Und kann so benutzt werden:
+	"einem Rückstrich",
+	"ein Rückstrich",
+	"Rückstrich"
+
+Die öffentliche Funktion Anführungszeichen gibt einen Buchstaben zurück, macht:
+	Gib '"' zurück.
+Und kann so benutzt werden:
+	"einem Anfühungszeichen",
+	"ein Anfühungszeichen",
+	"Aufühungszeichen"
+
+Die öffentliche Funktion Apostroph gibt einen Buchstaben zurück, macht:
+	Gib '\'' zurück.
+Und kann so benutzt werden:
+	"einem Apostroph",
+	"ein Apostroph",
+	"Apostroph"
+
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' '), eine neue Zeile ('\n'), ein Tabulator ('\t') oder ein Wagenrücklauf ('\r') ist.
 ]
