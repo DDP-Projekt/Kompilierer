@@ -10,7 +10,7 @@
 
 typedef struct Treffer {
 	ddpstring text;
-	ddpstringlist groups;
+	ddpstringlist gruppen;
 } Treffer;
 
 typedef struct TrefferList {
@@ -47,11 +47,11 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 	PCRE2_UCHAR *substring;
 	PCRE2_SIZE substring_length;
 
-	ddp_ddpstringlist_from_constants(&tr->groups, capture_count-1);
+	ddp_ddpstringlist_from_constants(&tr->gruppen, capture_count-1);
 	for (int i = 0; i < capture_count; i++) {
 		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
 
-		ddp_string_from_constant(i == 0 ? &tr->text : &tr->groups.arr[i-1], (char*)substring);
+		ddp_string_from_constant(i == 0 ? &tr->text : &tr->gruppen.arr[i-1], (char*)substring);
 
 		pcre2_substring_free(substring);
 	}
@@ -64,7 +64,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	pcre2_code *re = compile_regex(pattern, subject, muster);
 	if (re == NULL) {
 		ddp_string_from_constant(&ret->text, "");
-		ddp_ddpstringlist_from_constants(&ret->groups, 0);
+		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
 		return;
 	}
 
@@ -73,7 +73,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	if (match_data == NULL) {
 		pcre2_code_free(re);
 		ddp_string_from_constant(&ret->text, "");
-		ddp_ddpstringlist_from_constants(&ret->groups, 0);
+		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
 		return;
 	}
 
@@ -97,7 +97,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 		}
 
 		ddp_string_from_constant(&ret->text, "");
-		ddp_ddpstringlist_from_constants(&ret->groups, 0);
+		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
 	}
 	else {
 		make_Treffer(ret, match_data, rc);

@@ -2,7 +2,7 @@ Binde "Duden/Fehlerbehandlung" ein.
 
 Wir nennen die öffentliche Kombination aus
 	dem öffentlichen Text text mit Standardwert "",
-	der öffentlichen Text Liste groups mit Standardwert einer leeren Text Liste,
+	der öffentlichen Text Liste gruppen mit Standardwert einer leeren Text Liste,
 einen Treffer,
 und erstellen sie so:
 	"einen Treffer mit dem Text <text>"
@@ -15,15 +15,15 @@ und kann so benutzt werden:
 Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"erster Treffer <muster> <text>"
+	"der erster Treffer von <muster> auf <text>"
 
 Die öffentliche Funktion Regex_N_Treffer mit den Parametern muster, text und n vom Typ Text, Text und Zahl, gibt eine Treffer Liste zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"<n> Treffer <muster> <text>"
+	"die ersten <n> Treffer von <muster> auf <text>"
 
 Die öffentliche Funktion Regex_Alle_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt eine Treffer Liste zurück, macht:
-	Gib (-1 Treffer muster text) zurück.
+	Gib (die ersten -1 Treffer von muster auf text) zurück.
 Und kann so benutzt werden:
 	"alle Treffer <muster> <text>"
 
