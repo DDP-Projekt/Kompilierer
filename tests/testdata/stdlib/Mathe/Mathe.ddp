@@ -42,4 +42,7 @@ Schreibe die Kommazahl PHI auf eine Zeile.
 Schreibe (4,0 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (4,6 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (3,0 eine gerade Zahl ist) auf eine Zeile.
-Schreibe (4,2 eine gerade Zahl ist).
+Schreibe (4,2 eine gerade Zahl ist) auf eine Zeile.
+
+Schreibe (5 Fakultät) auf eine Zeile.
+Schreibe (5!).

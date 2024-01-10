@@ -350,4 +350,5 @@ Die öffentliche Funktion Fakultät mit dem Parameter x vom Typ Zahl, gibt eine 
 	Wenn x gleich 0 ist, gib 1 zurück.
     Gib (x mal ((x minus 1) Fakultät)) zurück. 
 Und kann so benutzt werden:
-    "<x> Fakultät"
+    "<x> Fakultät" oder
+	"<x>!"
