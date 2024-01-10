@@ -341,3 +341,13 @@ Die öffentliche Funktion Gerade_Kommazahl mit dem Parameter x vom Typ Kommazahl
 	Gib x als Zahl modulo 2 gleich 0 ist zurück.
 Und kann so benutzt werden:
 	"<x> eine gerade Zahl ist"
+
+[
+	Gibt die Fakultät der gegebenen Zahl zurück. (x!)
+]
+Die öffentliche Funktion Fakultät mit dem Parameter x vom Typ Zahl, gibt eine Zahl zurück, macht:
+    Wenn x kleiner als 0 ist, Speichere (x mal -1) als Zahl in x.
+	Wenn x gleich 0 ist, gib 1 zurück.
+    Gib (x mal ((x minus 1) Fakultät)) zurück. 
+Und kann so benutzt werden:
+    "<x> Fakultät"
