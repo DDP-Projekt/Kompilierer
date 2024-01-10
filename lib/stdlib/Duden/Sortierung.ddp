@@ -105,3 +105,23 @@ Die öffentliche Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste
 Und kann so benutzt werden:
 	"<liste> sortiert" oder
 	"<liste> mit quick-sort sortiert"
+
+[
+	Eine Funktion, die die Zahlen Liste <liste> mit dem Insertion-Sort Algorithmus sortiert und die sortierte Liste zurück gibt.
+	Der Algorithmus ist Iterativ implementiert.
+]
+Die öffentliche Funktion InsertionSort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Die Zahl schlüssel ist 0.
+	Die Zahl j ist 0.
+	Die Zahl l ist die Länge von liste.
+	Wenn l kleiner als 3 ist, gib liste zurück.
+	Für jede Zahl i von 2 bis l, mache:
+		Speichere (liste an der Stelle i) als Zahl in schlüssel. 
+		Speichere (i minus 1) als Zahl in j.
+		Solange (j größer als, oder 1 ist) und schlüssel kleiner als liste an der Stelle j ist, mache:
+			Speichere (liste an der Stelle j) als Zahl in liste an der Stelle (j plus 1).
+			Speichere (j minus 1) als Zahl in j.
+		Speichere (schlüssel) als Zahl in liste an der Stelle (j plus 1).
+	Gib liste zurück.
+Und kann so benutzt werden:
+	"<liste> mit insertion-sort sortiert"

@@ -3,3 +3,6 @@ Binde "Duden/Ausgabe" ein.
 
 [ Quicksort tests ]
 Schreibe ((eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht) sortiert). [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
+
+[ Insertionsort test ]
+Schreibe ((eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht) mit insertion-sort sortiert). [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
