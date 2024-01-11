@@ -147,6 +147,32 @@ Die öffentliche Funktion Spiegeln_Zahl mit dem Parameter liste vom Typ Zahlen L
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
+[
+	Berechnet die Summe aller Zahlen in der gegebenen Zahlen Liste.
+	l := {e1, e2, e3, ..., en}
+	f(l) = e1 + e2 + e3 + ... + en
+]
+Die öffentliche Funktion Summe_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+	Die Zahl summe ist 0.
+	Für jede Zahl z in liste, erhöhe summe um z.
+	Gib summe zurück.
+Und kann so benutzt werden:
+	"Die Summe aller Zahlen in <liste>"
+
+[
+	Berechnet das Produkt aller Zahlen in der gegebenen Zahlen Liste.
+	l := {e1, e2, e3, ..., en}
+	f(l) = e1 * e2 * e3 * ... * en
+	f({}) = 0
+]
+Die öffentliche Funktion Produkt_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+	Wenn die Länge von liste gleich 0 ist, gib 0 zurück.
+	Die Zahl prod ist 1.
+	Für jede Zahl z in liste, vervielfache prod um z.
+	Gib prod zurück.
+Und kann so benutzt werden:
+	"Das Produkt aller Zahlen in <liste>"
+
 [ Kommazahlen Listen Funktionen]
 [
 	Löscht alle Kommazahlen aus der gegebenen Kommazahlen Liste.
@@ -295,6 +321,32 @@ Die öffentliche Funktion Spiegeln_Kommazahl mit dem Parameter liste vom Typ Kom
 	Gib neu zurück.
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
+
+[
+	Berechnet die Summe aller Zahlen in der gegebenen Zahlen Liste.
+	l := {e1, e2, e3, ..., en}
+	f(l) = e1 + e2 + e3 + ... + en
+]
+Die öffentliche Funktion Summe_Kommazahlen_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Die Kommazahl summe ist 0,0.
+	Für jede Kommazahl z in liste, erhöhe summe um z.
+	Gib summe zurück.
+Und kann so benutzt werden:
+	"Die Summe aller Kommazahlen in <liste>"
+
+[
+	Berechnet das Produkt aller Kommazahlen in der gegebenen Kommazahlen Liste.
+	l := {e1, e2, e3, ..., en}
+	f(l) = e1 * e2 * e3 * ... * en
+	f({}) = 0,0
+]
+Die öffentliche Funktion Produkt_Kommazahlen_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Wenn die Länge von liste gleich 0 ist, gib 0,0 zurück.
+	Die Kommazahl prod ist 1,0.
+	Für jede Kommazahl z in liste, vervielfache prod um z.
+	Gib prod zurück.
+Und kann so benutzt werden:
+	"Das Produkt aller Kommazahlen in <liste>"
 
 [ Wahrheitswert Listen Funktionen ]
 [
@@ -594,6 +646,16 @@ Die öffentliche Funktion Spiegeln_Buchstabe mit dem Parameter liste vom Typ Buc
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
+[
+	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
+]
+Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
+	Der Text t ist "".
+	Für jeden Buchstabe b in liste, speichere t verkettet mit b in t.
+	Gib t zurück.
+Und kann so benutzt werden:
+	"<liste> aneinandergehängt"
+
 [ Text Listen Funktionen ]
 [
 	Löscht alle Texte aus der gegebenen Text Liste.
@@ -744,15 +806,14 @@ Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
 [
-	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
+	Verkettet alle Texte in der gegebenen Text liste.
 ]
-Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
-	Der Text t ist "".
-	Für jeden Buchstabe b in liste, mache:
-		Speichere t verkettet mit b in t.
-	Gib t zurück.
+Die Funktion Verketten_Text_Liste mit dem Parameter liste vom Typ Text Liste, gibt einen Text zurück, macht:
+	Der Text text ist "".
+	Für jeden Text t in liste, speichere text verkettet mit t in text.
+	Gib text zurück.
 Und kann so benutzt werden:
-	"<liste> aneinandergehängt"
+	"alle Texte in <liste> aneinandergehängt"
 
 [
 	Gibt eine Zahlen Liste aus aufsteigenden Zahlen von start bis end (beide inklusiv) zurück.
