@@ -157,7 +157,7 @@ Die öffentliche Funktion Summe_Zahlen_Liste mit dem Parameter liste vom Typ Zah
 	Für jede Zahl z in liste, erhöhe summe um z.
 	Gib summe zurück.
 Und kann so benutzt werden:
-	"Die Summe aller Zahlen in <liste>"
+	"die Summe aller Zahlen in <liste>"
 
 [
 	Berechnet das Produkt aller Zahlen in der gegebenen Zahlen Liste.
@@ -171,7 +171,51 @@ Die öffentliche Funktion Produkt_Zahlen_Liste mit dem Parameter liste vom Typ Z
 	Für jede Zahl z in liste, vervielfache prod um z.
 	Gib prod zurück.
 Und kann so benutzt werden:
-	"Das Produkt aller Zahlen in <liste>"
+	"das Produkt aller Zahlen in <liste>"
+
+[
+	Berechnet die Summe jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Summe_Zahl mit den Parametern l1 und l2 vom Typ Zahlen Liste und Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, erhöhe erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Zahl aus <l1> mit <l2> addiert"
+
+[
+	Berechnet die Differenz jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Differenz_Zahl mit den Parametern l1 und l2 vom Typ Zahlen Liste und Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, verringere erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Zahl aus <l1> mit <l2> subtrahiert"
+
+[
+	Berechnet das Produkt jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Produkt_Zahl mit den Parametern l1 und l2 vom Typ Zahlen Liste und Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Die Zahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, vervielfache erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Zahl aus <l1> mit <l2> multipliziert"
+
+[
+	Berechnet den Quotient jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Quotient_Zahl mit den Parametern l1 und l2 vom Typ Zahlen Liste und Zahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste erg ist die Länge von l1 Mal 0,0.
+	Für jede Zahl i von 1 bis die Länge von l1, speichere (l1 an der Stelle i) durch (l2 an der Stelle i) in erg an der Stelle i.
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Zahl aus <l1> mit <l2> dividiert"
 
 [ Kommazahlen Listen Funktionen]
 [
@@ -332,7 +376,7 @@ Die öffentliche Funktion Summe_Kommazahlen_Liste mit dem Parameter liste vom Ty
 	Für jede Kommazahl z in liste, erhöhe summe um z.
 	Gib summe zurück.
 Und kann so benutzt werden:
-	"Die Summe aller Kommazahlen in <liste>"
+	"die Summe aller Kommazahlen in <liste>"
 
 [
 	Berechnet das Produkt aller Kommazahlen in der gegebenen Kommazahlen Liste.
@@ -346,7 +390,51 @@ Die öffentliche Funktion Produkt_Kommazahlen_Liste mit dem Parameter liste vom 
 	Für jede Kommazahl z in liste, vervielfache prod um z.
 	Gib prod zurück.
 Und kann so benutzt werden:
-	"Das Produkt aller Kommazahlen in <liste>"
+	"das Produkt aller Kommazahlen in <liste>"
+
+[
+	Berechnet die Summe jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Summe_Kommazahl mit den Parametern l1 und l2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, erhöhe erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Kommazahl aus <l1> mit <l2> addiert"
+
+[
+	Berechnet die Differenz jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Differenz_Kommazahl mit den Parametern l1 und l2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, verringere erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Kommazahl aus <l1> mit <l2> subtrahiert"
+
+[
+	Berechnet das Produkt jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Produkt_Kommazahl mit den Parametern l1 und l2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, vervielfache erg an der Stelle i um (l2 an der Stelle i).
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Kommazahl aus <l1> mit <l2> multipliziert"
+
+[
+	Berechnet den Quotient jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Quotient_Kommazahl mit den Parametern l1 und l2 vom Typ Kommazahlen Liste und Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste erg ist die Länge von l1 Mal 0,0.
+	Für jede Zahl i von 1 bis die Länge von l1, speichere erg an der Stelle i durch (l2 an der Stelle i) in erg an der Stelle i.
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jede Kommazahl aus <l1> mit <l2> dividiert"
 
 [ Wahrheitswert Listen Funktionen ]
 [
@@ -808,12 +896,23 @@ Und kann so benutzt werden:
 [
 	Verkettet alle Texte in der gegebenen Text liste.
 ]
-Die Funktion Verketten_Text_Liste mit dem Parameter liste vom Typ Text Liste, gibt einen Text zurück, macht:
+Die öffentliche Funktion Verketten_Text_Liste mit dem Parameter liste vom Typ Text Liste, gibt einen Text zurück, macht:
 	Der Text text ist "".
 	Für jeden Text t in liste, speichere text verkettet mit t in text.
 	Gib text zurück.
 Und kann so benutzt werden:
 	"alle Texte in <liste> aneinandergehängt"
+
+[
+	Verkettet jedes Elements aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Verketten_Text mit den Parametern l1 und l2 vom Typ Text Liste und Text Liste, gibt eine Text Liste zurück, macht:
+	Die Text Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, speichere (l1 an der Stelle i) verkettet mit (l2 an der Stelle i) in erg an der Stelle i.
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jeden Text aus <l1> mit <l2> verkettet"
 
 [
 	Gibt eine Zahlen Liste aus aufsteigenden Zahlen von start bis end (beide inklusiv) zurück.

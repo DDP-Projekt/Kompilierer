@@ -227,4 +227,20 @@ Schreibe (eine lineare Kommazahlen Liste von 2,0 bis 3,0 mit 17 Elementen) auf e
 
 [Logspace test]
 Schreibe den Text "-- Logspace test --" auf eine Zeile.
-Schreibe (eine logarithmische Kommazahlen Liste von 1,0 bis 5,0 mit 5 Elementen).
+Schreibe (eine logarithmische Kommazahlen Liste von 1,0 bis 5,0 mit 5 Elementen) auf eine Zeile.
+
+Schreibe den Text "-- List Rechenoperationen test --" auf eine Zeile.
+Schreibe (die Summe aller Zahlen in (eine Liste, die aus 1, 2, 3, 4, 5, 6, 7, 8, 9 besteht)) auf eine Zeile.
+Schreibe (die Summe aller Kommazahlen in (eine Liste, die aus 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7, 8,8, 9,9 besteht)) auf eine Zeile.
+Schreibe (das Produkt aller Zahlen in (eine Liste, die aus 1, 2, 3, 4, 5, 6, 7, 8, 9 besteht)) auf eine Zeile.
+Schreibe (das Produkt aller Kommazahlen in (eine Liste, die aus 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7, 8,8, 9,9 besteht)) auf eine Zeile.
+
+Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste, die aus 4, 5, 6 besteht) addiert) auf eine Zeile.
+Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 3,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) addiert) auf eine Zeile.
+Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste, die aus 4, 5, 6 besteht) subtrahiert) auf eine Zeile.
+Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 3,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) subtrahiert) auf eine Zeile.
+Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste, die aus 4, 5, 6 besteht) multipliziert) auf eine Zeile.
+Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 4,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) multipliziert) auf eine Zeile.
+Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste, die aus 4, 5, 6 besteht) dividiert) auf eine Zeile.
+Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 3,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) dividiert) auf eine Zeile.
+Schreibe (jeden Text aus (einer Liste, die aus "a", "b" besteht) mit (einer Liste, die aus "c", "d" besteht) verkettet).
