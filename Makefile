@@ -4,6 +4,7 @@ RUN_DIR = ./lib/runtime/
 
 KDDP_BIN = ""
 STD_BIN = libddpstdlib.a
+STD_BIN_PCRE2 = libpcre2-8.a
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -57,7 +58,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete download-pcre2
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -73,18 +74,22 @@ stdlib:
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
+	$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+	$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 stdlib-debug:
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
+	$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2)
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+	$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 runtime:
@@ -126,6 +131,14 @@ clean: clean-outdir
 clean-outdir:
 	@echo "deleting output directorie"
 	$(RM) $(OUT_DIR)
+
+download-pcre2:
+	@echo "downloading pcre2.tar.gz"
+	curl -L https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz -o pcre2.tar.gz
+	mkdir $(STD_DIR)pcre2
+	tar -xzf pcre2.tar.gz -C $(STD_DIR)pcre2 --strip-components=1
+	rm ./pcre2.tar.gz
+	cd $(STD_DIR)pcre2 ; ./configure
 
 download-llvm:
 # clone the submodule

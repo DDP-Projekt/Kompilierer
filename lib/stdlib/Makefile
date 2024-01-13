@@ -1,5 +1,6 @@
 OUT_FILE_NAME = libddpstdlib.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
+PCRE2_OUT_FILE_NAME = libpcre2-8.a
 
 .PHONY = all clean debug
 .DEFAULT_GOAL = all
@@ -7,7 +8,7 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 CC = gcc
 CCFLAGS = -c -Wall -Werror -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
 DEBUGFLAGS = -DDDP_DEBUG
-INC = -I./include/ -I../runtime/include/
+INC = -I./include/ -I../runtime/include/ -I./pcre2/src/
 
 AR = ar rcs
 RM = rm -f
@@ -27,7 +28,11 @@ OBJS_DEBUG = $(OBJS:.o=_debug.o)
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC)  $< -o $@
 
-all: $(OUT_FILE_NAME)
+all: $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME)
+
+$(PCRE2_OUT_FILE_NAME):
+	cd ./pcre2 ; $(MAKE)
+	cp ./pcre2/.libs/$(PCRE2_OUT_FILE_NAME) .
 
 debug: $(OUT_FILE_NAME_DEBUG)
 
@@ -38,7 +43,8 @@ $(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
 	$(AR) $(OUT_FILE_NAME_DEBUG) $(OBJS_DEBUG)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+	cd ./pcre2 && $(MAKE) clean
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend

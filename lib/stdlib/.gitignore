@@ -2,3 +2,4 @@
 *.lib
 *.a
 *.depend
+/pcre2/*
