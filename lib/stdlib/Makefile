@@ -22,6 +22,15 @@ SRCS = $(wildcard source/*.c source/*/*.c)
 OBJS = $(SRCS:.c=.o)
 OBJS_DEBUG = $(OBJS:.o=_debug.o)
 
+# pcre2 only needs to be compiled on windows
+ifneq ($(OS),Windows_NT)
+	undefine PCRE2_OUT_FILE_NAME
+else
+$(PCRE2_OUT_FILE_NAME):
+	cd ./pcre2 ; $(MAKE)
+	cp ./pcre2/.libs/$(PCRE2_OUT_FILE_NAME) .
+endif
+
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) $< -o $@
 
@@ -30,11 +39,7 @@ OBJS_DEBUG = $(OBJS:.o=_debug.o)
 
 all: $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME)
 
-$(PCRE2_OUT_FILE_NAME):
-	cd ./pcre2 ; $(MAKE)
-	cp ./pcre2/.libs/$(PCRE2_OUT_FILE_NAME) .
-
-debug: $(OUT_FILE_NAME_DEBUG)
+debug: $(OUT_FILE_NAME_DEBUG) $(PCRE2_OUT_FILE_NAME)
 
 $(OUT_FILE_NAME): $(OBJS)
 	$(AR) $(OUT_FILE_NAME) $(OBJS)
@@ -44,7 +49,9 @@ $(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
 
 clean:
 	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
-	cd ./pcre2 && $(MAKE) clean
+	@if [ -d ./pcre2 ]; then \
+		cd ./pcre2 && $(MAKE) clean; \
+	fi
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend
