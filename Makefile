@@ -74,22 +74,30 @@ stdlib:
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
-	$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2)
+	@if [ -f $(STD_DIR)$(STD_BIN_PCRE2) ]; then \
+		$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2); \
+	fi
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT)
+	@if [ -d ./lib/stdlib/pcre2 ]; then \
+		$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT); \
+	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 stdlib-debug:
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
-	$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2)
+	@if [ -f $(STD_DIR)$(STD_BIN_PCRE2) ]; then \
+		$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2); \
+	fi
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT)
+	@if [ -d ./lib/stdlib/pcre2 ]; then \
+		$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT); \
+	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
 runtime:
