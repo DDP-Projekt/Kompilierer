@@ -479,11 +479,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			Mod: p.module,
 		}
 	}
-	name := p.previous()
+	funcName := p.previous()
 
 	// early error report if the name is already used
-	if _, existed, _ := p.scope().LookupDecl(name.Literal); existed { // insert the name of the current function
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed { // insert the name of the current function
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, funcName.Range, ddperror.MsgNameAlreadyExists(funcName.Literal))
+	}
+
+	// a paramName is allowed if it does not override a struct or function declaration
+	// other variables are allowed to be overridden because of name-shadowing
+	paramNameAllowed := func(name *token.Token) bool {
+		_, exists, isVar := p.scope().LookupDecl(name.Literal)
+		return !exists || (exists && isVar)
 	}
 
 	// parse the parameter declaration
@@ -501,13 +508,22 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 		}
 		validate(p.consume(token.IDENTIFIER))
-		paramNames = append(paramNames, *p.previous()) // append the first parameter name
+		firstName := p.previous()
+		if !paramNameAllowed(firstName) { // check that the parameter name is not already used
+			perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
+		}
+		paramNames = append(paramNames, *firstName) // append the first parameter name
 		paramComments = append(paramComments, p.getLeadingOrTrailingComment())
 		if !singleParameter {
 			// helper function to avoid too much repitition
 			addParamName := func(name *token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
 					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+					return
+				}
+				if !paramNameAllowed(name) { // check that the parameter name is not already used
+					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+					return
 				}
 				paramNames = append(paramNames, *name)                                 // append the parameter name
 				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
@@ -655,7 +671,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Range:         token.NewRange(begin, p.previous()),
 		CommentTok:    comment,
 		Tok:           *begin,
-		NameTok:       *name,
+		NameTok:       *funcName,
 		IsPublic:      isPublic,
 		Mod:           p.module,
 		ParamNames:    paramNames,
@@ -676,7 +692,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
-		p.currentFunction = name.Literal
+		p.currentFunction = funcName.Literal
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
@@ -686,7 +702,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal,
+			name := paramNames[i].Literal
+			if !paramNameAllowed(&paramNames[i]) { // check that the parameter name is not already used
+				name = "$" + name
+			}
+
+			bodyTable.InsertDecl(name,
 				&ast.VarDecl{
 					NameTok:    paramNames[i],
 					IsPublic:   false,
@@ -714,7 +735,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	} else { // the function is defined in an extern file
 		// insert the name of the current function
-		if existed := p.scope().InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
+		if existed := p.scope().InsertDecl(funcName.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration

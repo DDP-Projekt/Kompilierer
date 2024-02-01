@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Funktionsparameter können nun nicht mehr Funktions- oder Kombinationsdeklarationen überschreiben
+
 ## v0.2.0-alpha
 
 - [Fix] Bei geklammerten Referenz Argumenten werden Fehler jetzt korrekt gemeldet
