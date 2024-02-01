@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
@@ -325,4 +326,180 @@ ddpint Schreibe_Text_Datei(ddpstring* Pfad, ddpstring* text) {
 	}
 	ddp_error("Fehler beim Öffnen der Datei '%s': ", true, Pfad->str);
 	return -1;
+}
+
+/* Generalized buffered File IO */
+
+#define BUFFER_SIZE 4096
+
+#define MODUS_NUR_LESEN 1
+#define MODUS_NUR_SCHREIBEN 2
+#define MODUS_LESEN_SCHREIBEN 4
+
+#define MODUS_ERSTELLEN 8
+#define MODUS_ANHAENGEN 16
+#define MODUS_TRUNKIEREN 32
+
+typedef struct {
+	ddpint fd;
+	ddpstring Pfad;
+	ddpint Modus;
+	ddpbool Ist_EOF;
+	ddpstring Lese_Puffer; // used as byte buffer, might not be null-terminated
+	ddpstring Schreibe_Puffer; // used as byte buffer, might not be null-terminated
+	ddpint Lese_Puffer_Start;
+	ddpint Lese_Puffer_Ende;
+	ddpint Schreibe_Index;
+} Datei;
+
+typedef Datei* DateiRef;
+
+static int to_posix_mode(ddpint Modus) {
+	int ret = 0;
+	if ((Modus & MODUS_NUR_LESEN) == MODUS_NUR_LESEN) {
+		ret |= O_RDONLY;
+	} else if ((Modus & MODUS_NUR_SCHREIBEN) == MODUS_NUR_SCHREIBEN) {
+		ret |= O_WRONLY;
+	} else if ((Modus & MODUS_LESEN_SCHREIBEN) == MODUS_LESEN_SCHREIBEN) {
+		ret |= O_RDWR;
+	}
+
+	if ((Modus & MODUS_ERSTELLEN) == MODUS_ERSTELLEN) {
+		ret |= O_CREAT;
+	}
+	if ((Modus & MODUS_ANHAENGEN) == MODUS_ANHAENGEN) {
+		ret |= O_APPEND;
+	}
+	if ((Modus & MODUS_TRUNKIEREN) == MODUS_TRUNKIEREN) {
+		ret |= O_TRUNC;
+	}
+
+	return ret;
+}
+
+static bool is_read_mode(ddpint Modus) {
+	return (Modus & (MODUS_NUR_LESEN | MODUS_LESEN_SCHREIBEN)) != 0;
+}
+
+static bool is_write_mode(ddpint Modus) {
+	return (Modus & (MODUS_NUR_SCHREIBEN | MODUS_LESEN_SCHREIBEN)) != 0;
+}
+
+static int read_buff_len(DateiRef datei) {
+	return datei->Lese_Puffer_Ende - datei->Lese_Puffer_Start;
+}
+
+static int flush_write_buffer(DateiRef datei) {
+	if (datei->Schreibe_Index == 0) return 0;
+
+	int ret = write(datei->fd, datei->Schreibe_Puffer.str, datei->Schreibe_Index);
+	if (ret < 0) {
+		ddp_error("Fehler beim Schreiben der Datei '%s': ", true, datei->Pfad.str);
+	}
+
+	datei->Schreibe_Index = 0;
+	return ret;
+}
+
+// clears the read buffer and reads in the next chunk
+// returns the number of bytes read (Lese_Puffer_Ende)
+static int fill_read_buffer(DateiRef datei) {
+	if (is_read_mode(datei->Modus)) {
+		ddp_error("Fehler beim Lesen der Datei '%s': Die Datei wurde nicht zum Lesen geöffnet", false, datei->Pfad.str);
+		return -1;
+	}
+
+	if (datei->Ist_EOF) {
+		ddp_error("Fehler beim Lesen der Datei '%s': Das Ende der Datei ist erreicht", false, datei->Pfad.str);
+		return -1;
+	}
+
+	// allocate the buffer if needed
+	if (datei->Lese_Puffer.cap < BUFFER_SIZE) {
+		datei->Lese_Puffer.str = DDP_ALLOCATE(char, BUFFER_SIZE);
+		datei->Lese_Puffer.cap = BUFFER_SIZE;
+	}
+
+	// read in the next chunk
+	int ret = read(datei->fd, datei->Lese_Puffer.str, BUFFER_SIZE);
+	datei->Lese_Puffer_Start = 0;
+	datei->Lese_Puffer_Ende = ret;
+
+	if (ret < 0) {
+		ddp_error("Fehler beim Lesen der Datei '%s': ", true, datei->Pfad.str);
+		datei->Lese_Puffer_Ende = 0;
+	} else if (ret == 0) {
+		datei->Ist_EOF = true;
+	}
+
+	return ret;
+}
+
+void Datei_Oeffnen(DateiRef datei, ddpstring* Pfad, ddpint Modus) {
+	datei->Pfad = *Pfad;
+	Pfad->cap = 0;
+	Pfad->str = NULL;
+
+	datei->Modus = Modus;
+	datei->Ist_EOF = false;
+	datei->Lese_Puffer = DDP_EMPTY_STRING;
+	datei->Schreibe_Puffer = DDP_EMPTY_STRING;
+	datei->Lese_Puffer_Start = 0;
+	datei->Lese_Puffer_Ende = 0;
+	datei->Schreibe_Index = 0;
+
+	int flags = to_posix_mode(Modus);
+	if ((datei->fd = open(datei->Pfad.str, flags, 0666)) < 0) {
+		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, datei->Pfad.str);
+	}
+}
+
+void Datei_Schliessen(DateiRef datei) {
+	// attempt to close the file and report possible errors (very rare)
+	if (datei->fd >= 0) {
+		if (close(datei->fd) < 0) {
+			ddp_error("Fehler beim Schließen der Datei '%s': ", true, datei->Pfad.str);
+		}
+	}
+
+	// reset the file to it's initial state
+	datei->fd = -1;
+	ddp_free_string(&datei->Pfad);
+	datei->Pfad = DDP_EMPTY_STRING;
+	datei->Modus = 0;
+	datei->Ist_EOF = false;
+	ddp_free_string(&datei->Lese_Puffer);
+	datei->Lese_Puffer = DDP_EMPTY_STRING;
+	ddp_free_string(&datei->Schreibe_Puffer);
+	datei->Schreibe_Puffer = DDP_EMPTY_STRING;
+	datei->Lese_Puffer_Start = 0;
+	datei->Lese_Puffer_Ende = 0;
+	datei->Schreibe_Index = 0;
+}
+
+#define DDP_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define DDP_MIN(a, b) ((a) < (b) ? (a) : (b))
+
+void Datei_Lies_N_Zeichen(ddpstring* ret, DateiRef datei, ddpint N) {
+	*ret = DDP_EMPTY_STRING;
+	if (N <= 0) {
+		return;
+	}
+
+	ret->str = DDP_ALLOCATE(char, N+1);
+	ret->cap = N+1;
+	ret->str[N] = '\0';
+	
+	for (ddpint copied = 0; copied < N;) {
+		if (read_buf_len(datei) == 0) {
+			if (fill_read_buffer(datei) <= 0) {
+				return;
+			}
+		}
+
+		ddpint copy_amount = DDP_MIN(read_buff_len(datei), N-copied);
+		memcpy(ret->str+copied, datei->Lese_Puffer.str+datei->Lese_Puffer_Start, copy_amount);
+		datei->Lese_Puffer_Start += copy_amount;
+		copied += copy_amount;
+	}
 }

@@ -140,3 +140,115 @@ Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad v
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Kopiere die Datei <Pfad> nach <Kopiepfad>"
+
+[
+
+	Allgemeine Datei Eingabe/Ausgabe
+
+]
+
+[
+	Bit-Flags für den Modus der Datei.
+	!!! Dürfen nicht verändert werden !!! -> in Zukunft als Funktionen implementieren.
+
+	!!! Müssen mit den C Flags übereinstimmen !!!
+]
+
+Die öffentliche Zahl MODUS_NUR_LESEN ist 1.
+Die öffentliche Zahl MODUS_NUR_SCHREIBEN ist 2.
+Die öffentliche Zahl MODUS_LESEN_SCHREIBEN ist 4.
+
+Die öffentliche Zahl MODUS_ERSTELLEN ist 8.
+Die öffentliche Zahl MODUS_ANHAENGEN ist 16.
+Die öffentliche Zahl MODUS_TRUNKIEREN ist 32.
+
+[
+	Eine Kombination, die Daten über eine Datei enthält, von der gelesen oder in die geschrieben werden kann.
+	Das Lesen und Schreiben ist gepuffert.
+]
+Wir nennen die öffentliche Kombination aus
+	der Zahl fd mit Standardwert -1,
+	dem Text Pfad mit Standardwert "",
+	der Zahl Modus mit Standardwert 0,
+	dem Wahrheitswert Ist_EOF mit Standardwert falsch, wenn wahr,
+	dem Text Lese_Puffer mit Standardwert "",
+	dem Text Schreibe_Puffer mit Standardwert "",
+	der Zahl Lese_Puffer_Start mit Standardwert 0,
+	der Zahl Lese_Puffer_Ende mit Standardwert 0,
+	der Zahl Schreibe_Index mit Standardwert 0,
+eine Datei,
+und erstellen sie so:
+	"noch nicht offen"
+
+[
+	Öffnet Datei im Modus mit dem Pfad.
+	Dabei ist Modus eine Sammlung von Bit-Flags, die die Art des Zugriffs auf die Datei bestimmen.
+]
+Die öffentliche Funktion Datei_Oeffnen mit den Parametern datei, Pfad und Modus vom Typ Datei Referenz, Text und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"öffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"oeffne <datei> mit dem Pfad <Pfad> im Modus <Modus>"
+
+[
+	Öffnet Datei mit Pfad zum Lesen, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Lesen"
+
+[
+	Öffnet Datei mit Pfad zum Schreiben, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Schreiben mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Schreiben"
+
+[
+	Öffnet Datei mit Pfad zum Lesen und Schreiben, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Schreiben mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben"
+
+[
+	Schließt die Datei und gibt alle damit assoziierten Ressourcen frei.
+	Muss aufgerufen werden, wenn die Datei nicht mehr gebraucht wird.
+
+	Nach dem Schließen kann die Datei Variable erneut geöffnet werden.
+]
+Die öffentliche Funktion Datei_Schliessen mit dem Parameter datei vom Typ Datei Referenz, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schließe <datei>" oder
+	"Schliesse <datei>" oder
+	"schließe <datei>" oder
+	"schliesse <datei>"
+
+Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib Ist_EOF von datei zurück.
+Und kann so benutzt werden:
+	"<datei> zuende"
+
+Die öffentliche Funktion Datei_Lies_N_Zeichen mit den Parametern datei und N vom Typ Datei Referenz und Zahl, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Lies <N> Zeichen aus <datei>" oder
+	"lies <N> Zeichen aus <datei>"
