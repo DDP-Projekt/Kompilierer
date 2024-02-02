@@ -160,3 +160,19 @@ Die öffentliche Funktion ASCII_Zeichen mit dem Parameter id vom Typ Zahl, gibt 
 	Gib id als Buchstabe zurück.
 Und kann so benutzt werden:
 	"der ASCII Zeichen mit der Nummer <id>"
+
+[
+	Gibt zurück ob die ASCII-Nummer von z1 größer als z2 ist.
+]
+Die öffentliche Funktion ASCII_Größer mit den Parametern z1 und z2 vom Typ Buchstabe und Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn z1 als Zahl größer als z2 als Zahl ist zurück.
+Und kann so benutzt werden:
+	"der ASCII-Wert von <z1> größer als <z2>"
+
+[
+	Gibt zurück ob die ASCII-Nummer von z1 kleiner als z2 ist.
+]
+Die öffentliche Funktion ASCII_Kleiner mit den Parametern z1 und z2 vom Typ Buchstabe und Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn z1 als Zahl kleiner als z2 als Zahl ist zurück.
+Und kann so benutzt werden:
+	"der ASCII-Wert von <z1> kleiner als <z2>"

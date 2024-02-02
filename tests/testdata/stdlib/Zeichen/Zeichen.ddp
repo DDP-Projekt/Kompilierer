@@ -90,3 +90,11 @@ Schreibe (der ASCII Zeichen mit der Nummer 65) auf eine Zeile.
 Schreibe (der ASCII Zeichen mit der Nummer 75) auf eine Zeile.
 Schreibe (der ASCII Zeichen mit der Nummer 100) auf eine Zeile.
 Schreibe (der ASCII Zeichen mit der Nummer 126) auf eine Zeile.
+Schreibe "--- ASCII_Größer Test ---" auf eine Zeile.
+Schreibe (der ASCII-Wert von 'Z' größer als 'A') auf eine Zeile.
+Schreibe (der ASCII-Wert von 'Z' größer als 'Ö') auf eine Zeile.
+Schreibe (der ASCII-Wert von 'A' größer als 'A') auf eine Zeile.
+Schreibe "--- ASCII_Kleiner Test ---" auf eine Zeile.
+Schreibe (der ASCII-Wert von 'Z' kleiner als 'A') auf eine Zeile.
+Schreibe (der ASCII-Wert von 'Z' kleiner als 'Ö') auf eine Zeile.
+Schreibe (der ASCII-Wert von 'A' kleiner als 'A') auf eine Zeile.
