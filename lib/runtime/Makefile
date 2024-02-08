@@ -29,7 +29,7 @@ LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) source/main.o
+all: $(OUT_FILE_NAME) source/main.o compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
@@ -39,18 +39,17 @@ $(OUT_FILE_NAME): $(LIB_OBJS)
 $(OUT_FILE_NAME_DEBUG): $(LIB_OBJS_DEBUG)
 	$(AR) $(OUT_FILE_NAME_DEBUG) $(LIB_OBJS_DEBUG)
 
-compile_commands.json: clean $(SRCS) $(HEADERS)
+compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
-		$(MAKE) --always-make --dry-run \
-		| grep -wE \'$(CC)\' \
-		| grep -w '-c' \
-		| jq -nR '[inputs|{"arguments": [split(" ").map_values(\".\")], "directory": }]' > compile_commands.json; \
-	else
-		bear -- $(MAKE) all
+		$(MAKE) $(OUT_FILE_NAME) --always-make --dry-run \
+		| grep -w '$(CC) -c' \
+		| go run ../create_compile_commands.go > compile_commands.json; \
+	else \
+		$(MAKE) clean && bear -- $(MAKE) all; \
 	fi
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend

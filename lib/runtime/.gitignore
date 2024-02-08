@@ -2,5 +2,5 @@
 *.lib
 *.a
 *.depend
-.cache/*
+/.cache/*
 compile_commands.json
