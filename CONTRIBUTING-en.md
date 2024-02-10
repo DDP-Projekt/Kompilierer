@@ -1,6 +1,6 @@
 # Contributing to DDP
 
-DDP is and will always be open source and any contributions are welcome! You can contribute to this project by submitting pull requests.
+DDP is and will always be open source and any contributions are welcome! You can contribute to this project by submitting pull requests to the `dev` branch.
 
 Instructions for setting up a development environment are written below.
 

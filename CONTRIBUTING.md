@@ -1,5 +1,5 @@
 # Zu DDP beitragen
-DDP ist und wird immer Open-Source bleiben und alle Beiträge sind willkommen! Jeder kann durch Github Pull-Requests zu dem Projekt beitragen.
+DDP ist und wird immer Open-Source bleiben und alle Beiträge sind willkommen! Jeder kann durch Github Pull-Requests zur `dev` branch zu dem Projekt beitragen.
 
 # Den DDP Kompilierer bauen
 
