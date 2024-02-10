@@ -1,4 +1,4 @@
 {
-	"C_Cpp.formatting": "disabled",
+	"C_Cpp.formatting": "clangFormat",
 	"go.lintTool": "staticcheck",
 }
