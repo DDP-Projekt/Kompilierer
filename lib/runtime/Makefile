@@ -41,11 +41,11 @@ $(OUT_FILE_NAME_DEBUG): $(LIB_OBJS_DEBUG)
 
 compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
-		$(MAKE) $(OUT_FILE_NAME) --always-make --dry-run \
+		'$(MAKE)' $(OUT_FILE_NAME) --always-make --dry-run \
 		| grep -w '$(CC) -c' \
 		| go run ../create_compile_commands.go > compile_commands.json; \
 	else \
-		$(MAKE) clean && bear -- $(MAKE) all; \
+		'$(MAKE)' clean && bear -- '$(MAKE)' all; \
 	fi
 
 clean:

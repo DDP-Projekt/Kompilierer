@@ -27,7 +27,7 @@ ifneq ($(OS),Windows_NT)
 	undefine PCRE2_OUT_FILE_NAME
 else
 $(PCRE2_OUT_FILE_NAME):
-	cd ./pcre2 ; $(MAKE)
+	cd ./pcre2 ; '$(MAKE)'
 	cp ./pcre2/.libs/$(PCRE2_OUT_FILE_NAME) .
 endif
 
@@ -49,17 +49,17 @@ $(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
 
 compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
-		$(MAKE) $(OUT_FILE_NAME) --always-make --dry-run \
+		'$(MAKE)' $(OUT_FILE_NAME) --always-make --dry-run \
 		| grep -w '$(CC) -c' \
 		| go run ../create_compile_commands.go > compile_commands.json; \
 	else \
-		$(MAKE) clean && bear -- $(MAKE) all; \
+		'$(MAKE)' clean && bear -- '$(MAKE)' all; \
 	fi
 
 clean:
 	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
 	@if [ -d ./pcre2 ]; then \
-		cd ./pcre2 && $(MAKE) clean; \
+		cd ./pcre2 && '$(MAKE)' clean; \
 	fi
 
 .depend: $(SRCS) $(HEADERS)
