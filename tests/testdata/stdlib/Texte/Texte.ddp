@@ -159,9 +159,9 @@ Schreibe (die Levenshtein-Distanz zwischen "Google" und "Facebook") auf eine Zei
 Schreibe (die Levenshtein-Distanz zwischen "Die Deutsche Programmiersprache" und "The German Programming language") auf eine Zeile.
 
 [Vergleiche_Text]
-Schreibe ("abc" mit "def" verglichen kleiner als 0) auf eine Zeile. [wahr]
-Schreibe ("def" mit "abc" verglichen größer als 0) auf eine Zeile. [wahr]
-Schreibe ("abc" mit "abc" verglichen gleich 0) auf eine Zeile. [wahr]
-Schreibe ("Haallo" mit "Haallö" verglichen kleiner als 0) auf eine Zeile. [wahr]
-Schreibe ("Haallö" mit "Haallöchen" verglichen gleich -1) auf eine Zeile. [wahr]
-Schreibe ("Haallöchen" mit "Haallö" verglichen gleich 1). [wahr]
+Schreibe ("abc" mit "def" verglichen kleiner als 0 ist) auf eine Zeile. [wahr]
+Schreibe ("def" mit "abc" verglichen größer als 0 ist) auf eine Zeile. [wahr]
+Schreibe ("abc" mit "abc" verglichen gleich 0 ist) auf eine Zeile. [wahr]
+Schreibe ("Haallo" mit "Haallö" verglichen kleiner als 0 ist) auf eine Zeile. [wahr]
+Schreibe ("Haallö" mit "Haallöchen" verglichen gleich -1 ist) auf eine Zeile. [wahr]
+Schreibe ("Haallöchen" mit "Haallö" verglichen gleich 1 ist). [wahr]
