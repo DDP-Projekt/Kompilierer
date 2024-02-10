@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Externe Funktionsnamen in random.c
+- [Fix] Bei allen geklammerten Argumenten werden Fehler jetzt korrekt gemeldet
+
 ## v0.2.0-alpha
 
 - [Fix] Bei geklammerten Referenz Argumenten werden Fehler jetzt korrekt gemeldet

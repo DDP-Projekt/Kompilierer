@@ -528,3 +528,14 @@ Die öffentliche Funktion Gaußsche_Fehlerfunktion mit dem Parameter x vom Typ K
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Die Gaußsche Fehlerfunktion von <x>"
+
+[
+	Gibt die Fakultät der gegebenen Zahl zurück. (x!)
+]
+Die öffentliche Funktion Fakultät mit dem Parameter x vom Typ Zahl, gibt eine Zahl zurück, macht:
+    Wenn x kleiner als 0 ist, Speichere (x mal -1) als Zahl in x.
+	Wenn x gleich 0 ist, gib 1 zurück.
+    Gib (x mal ((x minus 1) Fakultät)) zurück. 
+Und kann so benutzt werden:
+    "<x> Fakultät" oder
+	"<x>!"

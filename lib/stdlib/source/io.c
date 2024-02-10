@@ -5,15 +5,16 @@
 	Duden/Datei_Ausgabe.ddp
 	Duden/Datei_Eingabe.ddp
 */
-#include "ddptypes.h"
-#include "utf8/utf8.h"
 #include "ddpmemory.h"
+#include "ddptypes.h"
+#include "ddpwindows.h"
 #include "debug.h"
+#include "utf8/utf8.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include "ddpwindows.h"
+
 #ifdef DDPOS_WINDOWS
 #include <io.h>
 #endif // DDPOS_WINDOWS
@@ -27,13 +28,11 @@ void Schreibe_Zahl(ddpint p1) {
 }
 
 void Schreibe_Kommazahl(ddpfloat p1) {
-	if (isinf(p1)){
+	if (isinf(p1)) {
 		printf("Unendlich");
-	}
-	else if (isnan(p1)) {
+	} else if (isnan(p1)) {
 		printf("Keine Zahl (NaN)");
-	}
-	else {
+	} else {
 		printf("%.16g", p1);
 	}
 }
@@ -48,33 +47,35 @@ void Schreibe_Buchstabe(ddpchar p1) {
 	printf("%s", temp);
 }
 
-void Schreibe_Text(ddpstring* p1) {
+void Schreibe_Text(ddpstring *p1) {
 	printf("%s", p1->str);
 }
 
-void Schreibe_Fehler(ddpstring* fehler) {
+void Schreibe_Fehler(ddpstring *fehler) {
 	fprintf(stderr, "%s", fehler->str);
 }
 
 #ifdef DDPOS_WINDOWS
 // wrapper to get an error message for GetLastError()
 // expects fmt to be of format "<message>%s"
-static void runtime_error_getlasterror(int exit_code, const char* fmt) {
+static void runtime_error_getlasterror(int exit_code, const char *fmt) {
 	char error_buffer[1024];
 	DWORD error_code = GetLastError();
 	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, sizeof(error_buffer), NULL)) {
+						NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, sizeof(error_buffer), NULL)) {
 		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
 	}
 	ddp_runtime_error(exit_code, fmt, error_buffer);
 }
 
-static HANDLE* get_stdin_handle() {
+static HANDLE *get_stdin_handle() {
 	static HANDLE stdin_hndl;
 	static bool initialized = false;
 	if (!initialized) {
 		stdin_hndl = GetStdHandle(STD_INPUT_HANDLE);
-		if (stdin_hndl == INVALID_HANDLE_VALUE) runtime_error_getlasterror(1, "GetStdHandle failed: %s");
+		if (stdin_hndl == INVALID_HANDLE_VALUE) {
+			runtime_error_getlasterror(1, "GetStdHandle failed: %s");
+		}
 	}
 	return &stdin_hndl;
 }
@@ -87,26 +88,34 @@ ddpchar extern_lies_buchstabe(ddpboolref war_eof) {
 		wchar_t buff[2];
 		char mbStr[5];
 		unsigned long read;
-		if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) runtime_error_getlasterror(1, "ReadConsoleW failed: %s");
+		if (ReadConsoleW(*get_stdin_handle(), buff, 1, &read, NULL) == 0) {
+			runtime_error_getlasterror(1, "ReadConsoleW failed: %s");
+		}
 		int size = WideCharToMultiByte(CP_UTF8, 0, buff, read, mbStr, sizeof(mbStr), NULL, NULL);
-		if (size == 0) runtime_error_getlasterror(1, "WideCharToMultiByte (1) failed: %s");
+		if (size == 0) {
+			runtime_error_getlasterror(1, "WideCharToMultiByte (1) failed: %s");
+		}
 		mbStr[size] = '\0';
 		ddpchar ch = utf8_string_to_char(mbStr);
-		if (ch == 26) *war_eof = true; // set eof for ctrl+Z
+		if (ch == 26) {
+			*war_eof = true; // set eof for ctrl+Z
+		}
 		return ch;
 	} else {
 #endif // DDPOS_WINDOWS
-	char temp[5];
-	temp[0] = getchar();
-	if (temp[0] == EOF)  {
-		clearerr(stdin);
-		*war_eof = true;
-		return 0;
-	}
-	int i = utf8_indicated_num_bytes(temp[0]);
-	for (int j = 1; j < i; j++) temp[j] = getchar();
-	temp[i] = '\0';
-	return utf8_string_to_char(temp);
+		char temp[5];
+		temp[0] = getchar();
+		if (temp[0] == EOF) {
+			clearerr(stdin);
+			*war_eof = true;
+			return 0;
+		}
+		int i = utf8_indicated_num_bytes(temp[0]);
+		for (int j = 1; j < i; j++) {
+			temp[j] = getchar();
+		}
+		temp[i] = '\0';
+		return utf8_string_to_char(temp);
 #ifdef DDPOS_WINDOWS
 	}
 #endif // DDPOS_WINDOWS

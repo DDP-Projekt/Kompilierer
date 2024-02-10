@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 // print the error message to stderr and exit with exit_code
-void ddp_runtime_error(int exit_code, const char* fmt, ...) {
+void ddp_runtime_error(int exit_code, const char *fmt, ...) {
 	va_list argptr;
 	va_start(argptr, fmt);
 
@@ -14,6 +14,6 @@ void ddp_runtime_error(int exit_code, const char* fmt, ...) {
 
 	va_end(argptr);
 
- 	ddp_end_runtime();
+	ddp_end_runtime();
 	exit(exit_code);
 }

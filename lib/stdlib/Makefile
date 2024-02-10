@@ -32,12 +32,12 @@ $(PCRE2_OUT_FILE_NAME):
 endif
 
 %.o: %.c
-	$(CC) $(CCFLAGS) $(INC) $< -o $@
+	$(CC) $(CCFLAGS) $(INC) -o $@ $<
 
 %_debug.o: %.c
-	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC)  $< -o $@
+	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME)
+all: $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG) $(PCRE2_OUT_FILE_NAME)
 
@@ -47,8 +47,17 @@ $(OUT_FILE_NAME): $(OBJS)
 $(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
 	$(AR) $(OUT_FILE_NAME_DEBUG) $(OBJS_DEBUG)
 
+compile_commands.json: $(SRCS) $(HEADERS)
+	@if [ ! -f bear ]; then \
+		$(MAKE) $(OUT_FILE_NAME) --always-make --dry-run \
+		| grep -w '$(CC) -c' \
+		| go run ../create_compile_commands.go > compile_commands.json; \
+	else \
+		$(MAKE) clean && bear -- $(MAKE) all; \
+	fi
+
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
 	@if [ -d ./pcre2 ]; then \
 		cd ./pcre2 && $(MAKE) clean; \
 	fi
