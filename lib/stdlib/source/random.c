@@ -11,7 +11,7 @@ ddpfloat Zufalls_Kommazahl(ddpfloat a, ddpfloat b) {
 }
 
 ddpint Zufalls_Zahl(ddpint a, ddpint b) {
-	return (ddpint)(genrand64_int64() % ((b) - (a+1)) + (a+1));
+	return (ddpint)(genrand64_int64() % ((b) - (a + 1)) + (a + 1));
 }
 
 ddpbool Zufalls_Wahrheitswert(ddpfloat p) {

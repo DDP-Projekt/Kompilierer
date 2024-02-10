@@ -1,16 +1,17 @@
 #include "ddpmemory.h"
 #include "ddptypes.h"
-#include <string.h>
 #include <math.h>
+#include <string.h>
+
 
 typedef struct {
-	void* arr;
+	void *arr;
 	ddpint len;
 	ddpint cap;
 } generic_list;
 
-typedef generic_list* generic_list_ref;
-typedef void* generic_ref;
+typedef generic_list *generic_list_ref;
+typedef void *generic_ref;
 
 static void grow_if_needed(generic_list_ref list, ddpint elem_size) {
 	if (list->len == list->cap) {
@@ -22,7 +23,7 @@ static void grow_if_needed(generic_list_ref list, ddpint elem_size) {
 
 static void efficient_list_append(generic_list_ref list, generic_ref elem, ddpint elem_size) {
 	grow_if_needed(list, elem_size);
-	memcpy(&((uint8_t*)list->arr)[list->len * elem_size], elem, elem_size);
+	memcpy(&((uint8_t *)list->arr)[list->len * elem_size], elem, elem_size);
 	list->len++;
 }
 
@@ -50,7 +51,7 @@ void efficient_list_append_string(ddpstringlistref list, ddpstringref elem, ddpi
 
 static void efficient_list_prepend(generic_list_ref list, generic_ref elem, ddpint elem_size) {
 	grow_if_needed(list, elem_size);
-	memmove(&((uint8_t*)list->arr)[elem_size], list->arr, list->len * elem_size);
+	memmove(&((uint8_t *)list->arr)[elem_size], list->arr, list->len * elem_size);
 	memcpy(list->arr, elem, elem_size);
 	list->len++;
 }
@@ -77,7 +78,7 @@ void efficient_list_prepend_string(ddpstringlistref list, ddpstringref elem, ddp
 	elem->str = NULL;
 }
 
-#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len) - 1 : (index)))
+#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len)-1 : (index)))
 
 // the range is inclusive [start, end]
 // the indices are 0-based (like in C, not like in DDP)
@@ -93,7 +94,7 @@ static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddp
 	end = CLAMP(end, list->len);
 
 	ddpint new_len = list->len - (end - start + 1);
-	memmove(&((uint8_t*)list->arr)[start * elem_size], &((uint8_t*)list->arr)[(end + 1) * elem_size], (list->len - end - 1) * elem_size);
+	memmove(&((uint8_t *)list->arr)[start * elem_size], &((uint8_t *)list->arr)[(end + 1) * elem_size], (list->len - end - 1) * elem_size);
 	list->len = new_len;
 }
 
@@ -139,8 +140,8 @@ void efficient_list_insert(generic_list_ref list, ddpint index, generic_ref elem
 	}
 
 	grow_if_needed(list, elem_size);
-	memmove(&((uint8_t*)list->arr)[(index + 1) * elem_size], &((uint8_t*)list->arr)[index * elem_size], (list->len - index) * elem_size);
-	memcpy(&((uint8_t*)list->arr)[index * elem_size], elem, elem_size);
+	memmove(&((uint8_t *)list->arr)[(index + 1) * elem_size], &((uint8_t *)list->arr)[index * elem_size], (list->len - index) * elem_size);
+	memcpy(&((uint8_t *)list->arr)[index * elem_size], elem, elem_size);
 	list->len++;
 }
 
@@ -179,8 +180,8 @@ void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_li
 		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
 	}
 
-	memmove(&((uint8_t*)list->arr)[(index + other->len) * elem_size], &((uint8_t*)list->arr)[index * elem_size], (list->len - index) * elem_size);
-	memcpy(&((uint8_t*)list->arr)[index * elem_size], other->arr, other->len * elem_size);
+	memmove(&((uint8_t *)list->arr)[(index + other->len) * elem_size], &((uint8_t *)list->arr)[index * elem_size], (list->len - index) * elem_size);
+	memcpy(&((uint8_t *)list->arr)[index * elem_size], other->arr, other->len * elem_size);
 	list->len = new_len;
 }
 

@@ -8,9 +8,9 @@
 
 #include "ddpwindows.h"
 
-#include "debug.h"
-#include "ddptypes.h"
 #include "ddpmemory.h"
+#include "ddptypes.h"
+#include "debug.h"
 
 // should not be needed in production
 // mainly for debugging
@@ -24,7 +24,7 @@ void SignalHandler(int signal) {
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 
 // converts the command line arguments into a ddpstringlist
-static void handle_args(int argc, char** argv) {
+static void handle_args(int argc, char **argv) {
 	cmd_args = (ddpstringlist){ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
 	DBGLOG("handle_args: %p", &cmd_args);
 
@@ -34,7 +34,7 @@ static void handle_args(int argc, char** argv) {
 }
 
 // initialize runtime stuff
-void ddp_init_runtime(int argc, char** argv) {
+void ddp_init_runtime(int argc, char **argv) {
 	DBGLOG("init_runtime");
 #ifdef DDPOS_WINDOWS
 	// the locales behaviour seems to change from time to time on windows
@@ -45,7 +45,7 @@ void ddp_init_runtime(int argc, char** argv) {
 	// enable utf-8 printing on windows
 	// both of the functioncalls below are needed
 	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8); 
+	SetConsoleOutputCP(CP_UTF8);
 #else
 	setlocale(LC_ALL, "de_DE.UTF-8");
 #endif // DDPOS_WINDOWS
@@ -56,7 +56,7 @@ void ddp_init_runtime(int argc, char** argv) {
 }
 
 // end the runtime
-void ddp_end_runtime() {
+void ddp_end_runtime(void) {
 	// to avoid stack overflows if a runtime_error causes another runtime_error
 	static bool ending = false;
 	if (ending) {
@@ -70,6 +70,6 @@ void ddp_end_runtime() {
 	ddp_free_ddpstringlist(&cmd_args);
 }
 
-void Befehlszeilenargumente(ddpstringlist* ret) {
+void Befehlszeilenargumente(ddpstringlist *ret) {
 	ddp_deep_copy_ddpstringlist(ret, &cmd_args);
 }

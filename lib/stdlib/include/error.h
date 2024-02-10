@@ -5,19 +5,19 @@
     to be imported in the DDP code
 */
 
-extern ddpbool Gab_Fehler();
-extern void Loesche_Fehler();
+extern ddpbool Gab_Fehler(void);
+extern void Loesche_Fehler(void);
 extern void Letzter_Fehler(ddpstringref Fehler);
 // frees Fehler
-extern void Setze_Fehler(ddpstring* Fehler);
+extern void Setze_Fehler(ddpstring *Fehler);
 
 // utility function for use in the c-source of the stdlib
 //
 // passes an OS-specific error message prefixed with prefix
 // to Setzte_Fehler
-void ddp_error(const char* prefix, bool use_errno, ...);
+void ddp_error(const char *prefix, bool use_errno, ...);
 
 #if DDPOS_WINDOWS
 // same as ddp_error, but uses GetLastError() instead of errno
-void ddp_error_win(const char* prefix, ...);
+void ddp_error_win(const char *prefix, ...);
 #endif

@@ -51,7 +51,7 @@
 #define MM 156
 #define MATRIX_A 0xB5026F5AA96619E9ULL
 #define UM 0xFFFFFFFF80000000ULL /* Most significant 33 bits */
-#define LM 0x7FFFFFFFULL         /* Least significant 31 bits */
+#define LM 0x7FFFFFFFULL		 /* Least significant 31 bits */
 
 typedef struct
 {
@@ -60,17 +60,16 @@ typedef struct
 } mt19937_64;
 
 /* initializes mt[NN] with a seed */
-static void init_genrand64(mt19937_64* context, uint64_t seed)
-{
+static void init_genrand64(mt19937_64 *context, uint64_t seed) {
 	context->mt[0] = seed;
-	for (context->mti = 1; context->mti < NN; context->mti++)
+	for (context->mti = 1; context->mti < NN; context->mti++) {
 		context->mt[context->mti] = (6364136223846793005ULL * (context->mt[context->mti - 1] ^ (context->mt[context->mti - 1] >> 62)) + context->mti);
+	}
 }
 
 /* generates a random number on [0, 2^64-1]-interval */
-uint64_t genrand64_int64()
-{
-	static mt19937_64* context = NULL;
+uint64_t genrand64_int64() {
+	static mt19937_64 *context = NULL;
 
 	// genrand64_int64 is called by every mt18837 functions, so we initialize the engine here
 	if (context == NULL) {
@@ -84,7 +83,7 @@ uint64_t genrand64_int64()
 	uint64_t result;
 
 	/* generate NN words at one time */
-	if (context->mti >= NN) { 
+	if (context->mti >= NN) {
 		size_t mid = NN / 2;
 		uint64_t stateMid = context->mt[mid];
 		uint64_t x;
@@ -96,8 +95,7 @@ uint64_t genrand64_int64()
 			* These modifications are offered for use under the original icense at
 			* the top of this file.
 			*/
-		for (i = 0, j = mid; i != mid - 1; i++, j++)
-		{
+		for (i = 0, j = mid; i != mid - 1; i++, j++) {
 			x = (context->mt[i] & UM) | (context->mt[i + 1] & LM);
 			context->mt[i] = context->mt[i + mid] ^ (x >> 1) ^ ((context->mt[i + 1] & 1) * MATRIX_A);
 			y = (context->mt[j] & UM) | (context->mt[j + 1] & LM);
@@ -123,19 +121,16 @@ uint64_t genrand64_int64()
 }
 
 /* generates a random number on [0,1]-real-interval */
-double genrand64_real1()
-{
+double genrand64_real1() {
 	return (genrand64_int64() >> 11) * (1.0 / 9007199254740991.0);
 }
 
 /* generates a random number on [0,1)-real-interval */
-double genrand64_real2()
-{
+double genrand64_real2() {
 	return (genrand64_int64() >> 11) * (1.0 / 9007199254740992.0);
 }
 
 /* generates a random number on (0,1)-real-interval */
-double genrand64_real3()
-{
+double genrand64_real3() {
 	return ((genrand64_int64() >> 12) + 0.5) * (1.0 / 4503599627370496.0);
 }
