@@ -11,6 +11,21 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Folgende Duden funktionen wurden hinzugefügt:
+  - Text- und Zeichenvergleichsfunktionen
+  - Elementweise Operationen für Listen
+  - Um Buchstaben und Text Listen zu einem Text aneinanderhängen
+  - Summe und Produkt für numerische Listen
+  - Wrapper Funktionen für ' ', '\n', '\r', '\t', '\\', '"' und '\'" in Duden/Zeichen 
+  - Natürlicher_Logarithmus, Gaußsche_Fehlerfunktion und Fakultät
+  - Kosekans, Sekans, Kotangens, Areahyperbelsinus, Areahyperbelkosinus, Areahyperbeltangens, Versinus und Koversinus
+  - einige Regex funktionen im neuen Duden/Regex Modul 
+  - Erste_N_Elemente_X, Letzten_N_Elemente_X und Spiegeln_X,
+  - SHA-256 und SHA-512 zum neuen Duden/Kryptographie Modul
+  - Bogenmaß_Zu_Grad, Grad_Zu_Bogenmaß, atan2 und Kehrwert
+  - Aufsteigende_Zahlen, Absteigende_Zahlen, Linspace und Logspace
+  - Hamming_Distanz und Levenshtein_Distanz
+  - Max3, Min3, Max3_Kommazahl und Min3_Kommazahl
 - [Fix] Externe Funktionsnamen in random.c
 - [Fix] Bei allen geklammerten Argumenten werden Fehler jetzt korrekt gemeldet
 
