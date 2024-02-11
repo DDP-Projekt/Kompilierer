@@ -1,0 +1,30 @@
+---
+BasedOnStyle:  LLVM
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+AlignConsecutiveMacros:
+  Enabled: false
+AlignEscapedNewlines: Right
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+BreakBeforeTernaryOperators: false
+BreakStringLiterals: false
+ColumnLimit: 0
+ContinuationIndentWidth: 4
+IncludeBlocks: Preserve
+IndentWidth: 4
+InsertBraces: true
+ReflowComments: false
+TabWidth: 4
+UseTab: Always
+...

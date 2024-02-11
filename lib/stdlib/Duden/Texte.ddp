@@ -603,3 +603,24 @@ Die öffentliche Funktion Levenshtein_Distanz mit den Parametern t1 und t2 vom T
 Und kann so benutzt werden:
 	"wie ähnlich <t1> und <t2> sind" oder
 	"die Levenshtein-Distanz zwischen <t1> und <t2>"
+
+[
+	Gibt 0 zurück wenn text1 gleich text2 ist.
+	Gibt >0 zurück wenn der erste ungleiche Buchstabe in text1 größer als text2 ist
+	Gibt <0 zurück wenn der erste ungleiche Buchstabe in text1 kleiner als text2 ist
+	
+	Wenn zwei Texte unterschiedlicher länge aber mit selben Präfix verglichen werden (z.B.: Haallö und Haallöchen)
+	gibt die Funktion -1 wenn text2 und 1 wenn text1 länger ist zurück. 
+]
+Die öffentliche Funktion Vergleiche_Text mit den Parametern text1 und text2 vom Typ Text und Text, gibt eine Zahl zurück, macht:
+	Wenn text1 gleich text2 ist, gib 0 zurück.
+
+	Die Zahl i ist 1.
+	Solange text1 an der Stelle i gleich text2 an der Stelle i ist, mache:
+		Erhöhe i um 1.
+		Wenn i größer als die Länge von text1 ist, gib -1 zurück.
+		Wenn i größer als die Länge von text2 ist, gib 1 zurück.
+		
+	Gib (text1 an der Stelle i) als Zahl minus (text2 an der Stelle i) als Zahl zurück.
+Und kann so benutzt werden:
+	"<text1> mit <text2> verglichen"

@@ -3,3 +3,5 @@
 *.a
 *.depend
 /pcre2/*
+/.cache/
+compile_commands.json

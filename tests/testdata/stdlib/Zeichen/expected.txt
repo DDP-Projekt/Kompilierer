@@ -83,3 +83,11 @@ A
 K
 d
 ~
+--- ASCII_Größer Test ---
+wahr
+falsch
+falsch
+--- ASCII_Kleiner Test ---
+falsch
+wahr
+falsch

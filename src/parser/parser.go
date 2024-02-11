@@ -2391,10 +2391,17 @@ func (p *parser) alias() ast.Expression {
 		return nil // no alias -> no function call
 	}
 
+	// sort the aliases in descending order
+	// Stable so equal aliases stay in the order they were defined
+	sort.SliceStable(matchedAliases, func(i, j int) bool {
+		return len(matchedAliases[i].GetTokens()) > len(matchedAliases[j].GetTokens())
+	})
+
 	// a argument that was already parsed
 	type cachedArg struct {
-		Arg     ast.Expression // expression (might be an assignable)
-		exprEnd int            // where the expression was over (p.cur for the token after)
+		Arg     ast.Expression   // expression (might be an assignable)
+		Errors  []ddperror.Error // the errors that occured while parsing the argument
+		exprEnd int              // where the expression was over (p.cur for the token after)
 	}
 
 	// a key for a cached argument
@@ -2413,10 +2420,6 @@ func (p *parser) alias() ast.Expression {
 		p.cur = start
 		args := map[string]ast.Expression{}
 		reported_errors := make([]ddperror.Error, 0)
-		// this error handler collects its errors in reported_errors
-		error_collector := func(err ddperror.Error) {
-			reported_errors = append(reported_errors, err)
-		}
 		mAliasTokens := mAlias.GetTokens()
 		mAliasArgs := mAlias.GetArgs()
 
@@ -2440,6 +2443,7 @@ func (p *parser) alias() ast.Expression {
 				if !ok { // if the argument was not already parsed
 					cached_arg = &cachedArg{}
 					exprStart := p.cur
+					isGrouping := false
 					switch pType {
 					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
 						p.advance() // single-token argument
@@ -2447,6 +2451,7 @@ func (p *parser) alias() ast.Expression {
 						p.advance()
 						p.match(token.INT, token.FLOAT, token.IDENTIFIER)
 					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
+						isGrouping = true
 						p.advance()
 						numLparens := 1
 						for numLparens > 0 && !p.atEnd() {
@@ -2466,8 +2471,11 @@ func (p *parser) alias() ast.Expression {
 					eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
 					tokens = append(tokens, eof)
 					argParser := &parser{
-						tokens:       tokens,
-						errorHandler: error_collector,
+						tokens: tokens,
+						errorHandler: func(err ddperror.Error) {
+							reported_errors = append(reported_errors, err)
+							cached_arg.Errors = append(cached_arg.Errors, err)
+						},
 						module: &ast.Module{
 							FileName: p.module.FileName,
 						},
@@ -2479,12 +2487,16 @@ func (p *parser) alias() ast.Expression {
 					if paramType.IsReference {
 						argParser.advance() // consume the identifier or LPAREN for assigneable() to work
 						cached_arg.Arg = argParser.assigneable()
+					} else if isGrouping {
+						argParser.advance() // consume the LPAREN for grouping() to work
+						cached_arg.Arg = argParser.grouping()
 					} else {
 						cached_arg.Arg = argParser.expression() // parse the argument
 					}
 					cached_args[cached_arg_key] = cached_arg
 				} else {
 					p.cur = cached_arg.exprEnd // skip the already parsed argument
+					reported_errors = append(reported_errors, cached_arg.Errors...)
 				}
 
 				// check if the argument type matches the prameter type
@@ -2518,12 +2530,6 @@ func (p *parser) alias() ast.Expression {
 		}
 		return args, reported_errors
 	}
-
-	// sort the aliases in descending order
-	// Stable so equal aliases stay in the order they were defined
-	sort.SliceStable(matchedAliases, func(i, j int) bool {
-		return len(matchedAliases[i].GetTokens()) > len(matchedAliases[j].GetTokens())
-	})
 
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {

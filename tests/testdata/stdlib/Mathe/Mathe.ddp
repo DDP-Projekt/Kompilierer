@@ -54,6 +54,9 @@ Schreibe (4,6 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (3,0 eine gerade Zahl ist) auf eine Zeile.
 Schreibe (4,2 eine gerade Zahl ist) auf eine Zeile.
 
+Schreibe (5 Fakultät) auf eine Zeile.
+Schreibe (5!) auf eine Zeile.
+
 Schreibe (der Winkel des Punktes (1,0, 1,0)) auf eine Zeile.
 Schreibe (der Winkel des Punktes (-1,0, 1,0)) auf eine Zeile.
 Schreibe (der Winkel des Punktes (-1,0, -1,0)) auf eine Zeile.

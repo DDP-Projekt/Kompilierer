@@ -81,3 +81,9 @@ wahr-falsch-falsch
 3
 8
 19
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
