@@ -245,10 +245,20 @@ und kann so benutzt werden:
 Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib Ist_EOF von datei zurück.
 Und kann so benutzt werden:
-	"<datei> zuende"
+	"<datei> zuende ist"
+
+Die öffentliche Funktion Datei_Nicht_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib nicht Ist_EOF von datei zurück.
+Und kann so benutzt werden:
+	"<datei> nicht zuende ist"
 
 Die öffentliche Funktion Datei_Lies_N_Zeichen mit den Parametern datei und N vom Typ Datei Referenz und Zahl, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"Lies <N> Zeichen aus <datei>" oder
-	"lies <N> Zeichen aus <datei>"
+	"die nächsten <N> Zeichen aus <datei>"
+
+Die öffentliche Funktion Datei_Lies_Zeile mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die nächste Zeile aus <datei>" oder
+	"die naechste Zeile aus <datei>"

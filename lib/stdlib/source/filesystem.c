@@ -1,6 +1,7 @@
 #include "ddpmemory.h"
 #include "ddptypes.h"
 #include "ddpwindows.h"
+#include "debug.h"
 #include "error.h"
 #include <dirent.h>
 #include <fcntl.h>
@@ -389,15 +390,19 @@ static bool is_read_mode(ddpint Modus) {
 	return (Modus & (MODUS_NUR_LESEN | MODUS_LESEN_SCHREIBEN)) != 0;
 }
 
-static bool is_write_mode(ddpint Modus) {
+/*static bool is_write_mode(ddpint Modus) {
 	return (Modus & (MODUS_NUR_SCHREIBEN | MODUS_LESEN_SCHREIBEN)) != 0;
-}
+}*/
 
 static int read_buff_len(DateiRef datei) {
 	return datei->Lese_Puffer_Ende - datei->Lese_Puffer_Start;
 }
 
-static int flush_write_buffer(DateiRef datei) {
+static char *read_buff_start_ptr(DateiRef datei) {
+	return datei->Lese_Puffer.str + datei->Lese_Puffer_Start;
+}
+
+/*static int flush_write_buffer(DateiRef datei) {
 	if (datei->Schreibe_Index == 0) {
 		return 0;
 	}
@@ -409,12 +414,12 @@ static int flush_write_buffer(DateiRef datei) {
 
 	datei->Schreibe_Index = 0;
 	return ret;
-}
+}*/
 
 // clears the read buffer and reads in the next chunk
 // returns the number of bytes read (Lese_Puffer_Ende)
 static int fill_read_buffer(DateiRef datei) {
-	if (is_read_mode(datei->Modus)) {
+	if (!is_read_mode(datei->Modus)) {
 		ddp_error("Fehler beim Lesen der Datei '%s': Die Datei wurde nicht zum Lesen geöffnet", false, datei->Pfad.str);
 		return -1;
 	}
@@ -446,13 +451,15 @@ static int fill_read_buffer(DateiRef datei) {
 }
 
 void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
+	ddp_free_string(&datei->Pfad);
 	datei->Pfad = *Pfad;
-	Pfad->cap = 0;
-	Pfad->str = NULL;
+	*Pfad = DDP_EMPTY_STRING;
 
 	datei->Modus = Modus;
 	datei->Ist_EOF = false;
+	ddp_free_string(&datei->Lese_Puffer);
 	datei->Lese_Puffer = DDP_EMPTY_STRING;
+	ddp_free_string(&datei->Schreibe_Puffer);
 	datei->Schreibe_Puffer = DDP_EMPTY_STRING;
 	datei->Lese_Puffer_Start = 0;
 	datei->Lese_Puffer_Ende = 0;
@@ -501,15 +508,78 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	ret->str[N] = '\0';
 
 	for (ddpint copied = 0; copied < N;) {
-		if (read_buf_len(datei) == 0) {
-			if (fill_read_buffer(datei) <= 0) {
+		if (read_buff_len(datei) == 0) {
+			int read = fill_read_buffer(datei);
+			if (read < 0) {
+				return;
+			} else if (read == 0) {
+				// EOF was reached so we need to move the null-terminator to the actual end of the string
+				ret->str[copied] = '\0';
 				return;
 			}
 		}
 
 		ddpint copy_amount = DDP_MIN(read_buff_len(datei), N - copied);
-		memcpy(ret->str + copied, datei->Lese_Puffer.str + datei->Lese_Puffer_Start, copy_amount);
+		memcpy(ret->str + copied, read_buff_start_ptr(datei), copy_amount);
 		datei->Lese_Puffer_Start += copy_amount;
 		copied += copy_amount;
 	}
+}
+
+void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
+	*ret = DDP_EMPTY_STRING;
+
+	while (!datei->Ist_EOF) {
+		if (read_buff_len(datei) == 0) {
+			int read = fill_read_buffer(datei);
+			if (read < 0) {
+				return;
+			} else if (read == 0) {
+				break;
+			}
+		}
+
+		// search for the next newline
+		char *newline = memchr(read_buff_start_ptr(datei), '\n', read_buff_len(datei));
+		if (newline) {
+			const size_t copy_amount = newline - read_buff_start_ptr(datei) + 1;
+
+			// allocate space for the string + '\n' (without '\0'!)
+			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			// copy the string and the newline
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(datei), copy_amount);
+			ret->cap += copy_amount;
+
+#ifdef DDPOS_WINDOWS
+			// check windows line endings
+			if (ret->str[ret->cap - 2] == '\r') {
+				ret->str[ret->cap - 2] = '\0';
+				ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap - 1);
+			} else {
+#endif
+				// the newline becomes the null terminator
+				ret->str[ret->cap - 1] = '\0';
+#ifdef DDPOS_WINDOWS
+			}
+#endif
+
+			datei->Lese_Puffer_Start += copy_amount; // consume the newline
+			return;
+		} else {
+			// no newline found, copy the whole buffer
+			const size_t copy_amount = read_buff_len(datei);
+
+			// allocate space for the string (without '\0'!)
+			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			// copy the string
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(datei), copy_amount);
+			ret->cap += copy_amount;
+
+			datei->Lese_Puffer_Start += copy_amount; // consume the whole buffer
+		}
+	}
+	// EOF reached
+	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
+	ret->str[ret->cap] = '\0';
+	ret->cap++;
 }
