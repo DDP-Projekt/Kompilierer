@@ -17,7 +17,7 @@ Und kann so benutzt werden:
 	Fügt eine Zahl am Ende der gegeben Zahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufügen_Zahl mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	efficient_list_append_int liste elm (die Größe von elm).
+	efficient_list_append_int liste elm (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -33,7 +33,7 @@ Und kann so benutzt werden:
 	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Zahl mit den Parametern liste, index und elm vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_insert_int liste (index minus 1) elm (die Größe von elm).
+	efficient_list_insert_int liste (index minus 1) elm (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
@@ -47,7 +47,7 @@ Und kann so benutzt werden:
 	Fügt eine Zahlen Liste vor einem Index in der gegebenen Zahlen Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Zahl mit den Parametern liste, index und range vom Typ Zahlen Listen Referenz, Zahl und Zahlen Liste, gibt nichts zurück, macht:
-	efficient_list_insert_range_int liste (index minus 1) range (die Größe von 0).
+	efficient_list_insert_range_int liste (index minus 1) range (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -62,7 +62,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Voranstellen_Zahl mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
-	efficient_list_prepend_int liste elm (die Größe von elm).
+	efficient_list_prepend_int liste elm (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -77,7 +77,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Element_Zahl mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_int liste index index (die Größe von 0).
+	efficient_list_delete_range_int liste index index (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -85,7 +85,7 @@ Und kann so benutzt werden:
 	Entfernt alle Zahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Zahl mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_int liste (start minus 1) (end minus 1) (die Größe von 0).
+	efficient_list_delete_range_int liste (start minus 1) (end minus 1) (die Größe von einer Zahl).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -236,7 +236,7 @@ Und kann so benutzt werden:
 	Fügt eine Kommazahl am Ende der gegeben Kommazahlen Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufügen_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
-	efficient_list_append_float liste elm (die Größe von elm).
+	efficient_list_append_float liste elm (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -252,7 +252,7 @@ Und kann so benutzt werden:
 	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Kommazahl mit den Parametern liste, index und elm vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahl, gibt nichts zurück, macht:
-	efficient_list_insert_float liste (index minus 1) elm (die Größe von elm).
+	efficient_list_insert_float liste (index minus 1) elm (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
@@ -266,7 +266,7 @@ Und kann so benutzt werden:
 	Fügt eine Kommazahlen Liste vor einem Index in der gegebenen Kommazahlen Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Kommazahl mit den Parametern liste, index und range vom Typ Kommazahlen Listen Referenz, Zahl und Kommazahlen Liste, gibt nichts zurück, macht:
-	efficient_list_insert_range_float liste (index minus 1) range (die Größe von 0,0).
+	efficient_list_insert_range_float liste (index minus 1) range (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -281,7 +281,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Voranstellen_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
-	efficient_list_prepend_float liste elm (die Größe von elm).
+	efficient_list_prepend_float liste elm (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -296,7 +296,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Element_Kommazahl mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_float liste index index (die Größe von 0,0).
+	efficient_list_delete_range_float liste index index (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -304,7 +304,7 @@ Und kann so benutzt werden:
 	Entfernt alle Kommazahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Kommazahl mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_float liste (start minus 1) (end minus 1) (die Größe von 0,0).
+	efficient_list_delete_range_float liste (start minus 1) (end minus 1) (die Größe von einer Kommazahl).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -455,7 +455,7 @@ Und kann so benutzt werden:
 	Fügt einen Wahrheitswert am Ende der gegeben Wahrheitswert Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufügen_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt nichts zurück, macht:
-	efficient_list_append_bool liste elm (die Größe von elm).
+	efficient_list_append_bool liste elm (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -470,7 +470,7 @@ Und kann so benutzt werden:
 	Fügt einen Wahrheitswert vor einem Index in der gegebenen Wahrheitswert Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Wahrheitswert mit den Parametern liste, index und elm vom Typ Wahrheitswert Listen Referenz, Zahl und Wahrheitswert, gibt nichts zurück, macht:
-	efficient_list_insert_bool liste (index minus 1) elm (die Größe von elm).
+	efficient_list_insert_bool liste (index minus 1) elm (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
@@ -485,7 +485,7 @@ Und kann so benutzt werden:
 	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Wahrheitswert mit den Parametern liste, index und range vom Typ Wahrheitswert Listen Referenz, Zahl und Wahrheitswert Liste, gibt nichts zurück, macht:
-	efficient_list_insert_range_bool liste (index minus 1) range (die Größe von wahr).
+	efficient_list_insert_range_bool liste (index minus 1) range (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -500,7 +500,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Voranstellen_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
-	efficient_list_prepend_bool liste elm (die Größe von elm).
+	efficient_list_prepend_bool liste elm (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -515,7 +515,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Element_Wahrheitswert mit den Parametern liste und index vom Typ Wahrheitswert Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_bool liste index index (die Größe von wahr).
+	efficient_list_delete_range_bool liste index index (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -523,7 +523,7 @@ Und kann so benutzt werden:
 	Entfernt alle Wahrheitswerts aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Wahrheitswert mit den Parametern liste, start und end vom Typ Wahrheitswert Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von wahr).
+	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von einem Wahrheitswert).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -604,7 +604,7 @@ Und kann so benutzt werden:
 	Fügt einen Buchstaben am Ende der gegeben Buchstaben Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufügen_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
-	efficient_list_append_char liste elm (die Größe von elm).
+	efficient_list_append_char liste elm (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -620,7 +620,7 @@ Und kann so benutzt werden:
 	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Buchstabe mit den Parametern liste, index und elm vom Typ Buchstaben Listen Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
-	efficient_list_insert_char liste (index minus 1) elm (die Größe von elm).
+	efficient_list_insert_char liste (index minus 1) elm (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
@@ -634,7 +634,7 @@ Und kann so benutzt werden:
 	Fügt eine Buchstaben Liste vor einem Index in der gegebenen Buchstaben Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Buchstabe mit den Parametern liste, index und range vom Typ Buchstaben Listen Referenz, Zahl und Buchstaben Liste, gibt nichts zurück, macht:
-	efficient_list_insert_range_char liste (index minus 1) range (die Größe von ' ').
+	efficient_list_insert_range_char liste (index minus 1) range (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -649,7 +649,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Voranstellen_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
-	efficient_list_prepend_char liste elm (die Größe von elm).
+	efficient_list_prepend_char liste elm (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -664,7 +664,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Element_Buchstabe mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_char liste index index (die Größe von ' ').
+	efficient_list_delete_range_char liste index index (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -672,7 +672,7 @@ Und kann so benutzt werden:
 	Entfernt alle Buchstaben aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Buchstabe mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_char liste (start minus 1) (end minus 1) (die Größe von ' ').
+	efficient_list_delete_range_char liste (start minus 1) (end minus 1) (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -763,7 +763,7 @@ Und kann so benutzt werden:
 	Fügt einen Text am Ende der gegeben Text Liste hinzu.
 ]
 Die öffentliche Funktion Hinzufügen_Text mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
-	efficient_list_append_string liste elm (die Größe von elm).
+	efficient_list_append_string liste elm (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
@@ -778,7 +778,7 @@ Und kann so benutzt werden:
 	Fügt einen Text vor einem Index in der gegebenen Text Liste ein.
 ]
 Die öffentliche Funktion Einfügen_Text mit den Parametern liste, index und elm vom Typ Text Listen Referenz, Zahl und Text, gibt nichts zurück, macht:
-	efficient_list_insert_string liste (index minus 1) elm (die Größe von elm).
+	efficient_list_insert_string liste (index minus 1) elm (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <liste>"
 
@@ -793,7 +793,7 @@ Und kann so benutzt werden:
 	Es wird nicht überprüft ob der Index valide ist.
 ]
 Die öffentliche Funktion Einfügen_Bereich_Text mit den Parametern liste, index und range vom Typ Text Listen Referenz, Zahl und Text Liste, gibt nichts zurück, macht:
-	efficient_list_insert_range_string liste (index minus 1) range (die Größe von "").
+	efficient_list_insert_range_string liste (index minus 1) range (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
 
@@ -808,7 +808,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Voranstellen_Text mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt nichts zurück, macht:
 	[Speichere elm verkettet mit liste in liste.]
-	efficient_list_prepend_string liste elm (die Größe von elm).
+	efficient_list_prepend_string liste elm (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
@@ -823,7 +823,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Lösche_Element_Text mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_string liste index index (die Größe von "").
+	efficient_list_delete_range_string liste index index (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -831,7 +831,7 @@ Und kann so benutzt werden:
 	Entfernt alle Texte aus der Liste im Bereich [start, end] (inklusiv)
 ]
 Die öffentliche Funktion Lösche_Bereich_Text mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_string liste (start minus 1) (end minus 1) (die Größe von "").
+	efficient_list_delete_range_string liste (start minus 1) (end minus 1) (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 

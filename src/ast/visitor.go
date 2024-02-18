@@ -44,6 +44,7 @@ type FullVisitor interface {
 	BinaryExprVisitor
 	TernaryExprVisitor
 	CastExprVisitor
+	TypeOpExprVisitor
 	GroupingVisitor
 	FuncCallVisitor
 	StructLiteralVisitor
@@ -148,6 +149,10 @@ type (
 	CastExprVisitor interface {
 		BaseVisitor
 		VisitCastExpr(*CastExpr) VisitResult
+	}
+	TypeOpExprVisitor interface {
+		BaseVisitor
+		VisitTypeOpExpr(*TypeOpExpr) VisitResult
 	}
 	GroupingVisitor interface {
 		BaseVisitor

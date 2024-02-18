@@ -1,0 +1,27 @@
+Binde "Duden/Ausgabe" ein.
+
+Schreibe (die Größe von einer Zahl) auf eine Zeile.
+Schreibe (die Größe von einer Kommazahl) auf eine Zeile.
+Schreibe (die Größe von einem Wahrheitswert) auf eine Zeile.
+Schreibe (die Größe von einem Buchstabe) auf eine Zeile.
+[Schreibe (die Größe von einem Text) auf eine Zeile.] [Implementations abhängig]
+
+Wir nennen die Kombination aus
+	der Zahl x mit Standardwert 1,
+	der Zahl y mit Standardwert 0,
+einen Vektor2,
+und erstellen sie so:
+	"ein Vektor aus <x> und <y>"
+
+Schreibe (die Größe von einem Vektor2) auf eine Zeile.
+Schreibe (der Standardwert von einem Vektor2 gleich ein Vektor aus 1 und 0 ist) auf eine Zeile.
+
+Wir nennen die Kombination aus
+	dem Vektor2 x_y mit Standardwert dem Standardwert von einem Vektor2,
+	der Zahl z mit Standardwert 22,
+einen Vektor3,
+und erstellen sie so:
+	"der Nullvektor3"
+
+Schreibe (die Größe von einem Vektor3) auf eine Zeile.
+Schreibe (der Standardwert von einem Vektor3 gleich der Nullvektor3 ist) auf eine Zeile.
