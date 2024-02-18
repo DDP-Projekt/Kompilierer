@@ -132,7 +132,7 @@ func (p *parser) parse() *ast.Module {
 func (p *parser) synchronize() {
 	p.panicMode = false
 
-	//p.advance() // maybe this needs to stay?
+	// p.advance() // maybe this needs to stay?
 	for !p.atEnd() {
 		if p.previous().Type == token.DOT { // a . ends statements, so we can continue parsing
 			return
@@ -217,7 +217,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		importStmt.Module = module
 	}
 
-	ast.IterateImportedDecls(importStmt, func(name string, decl ast.Declaration, tok token.Token) bool {
+	ast.IterateImportedDecls(importStmt, func(_ string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
 			return true
 		}
@@ -1945,7 +1945,7 @@ func (p *parser) unary() ast.Expression {
 		return p.power(expr)
 	}
 	// match the correct unary operator
-	if p.match(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.LOGISCH, token.DIE, token.DER, token.DEM) {
+	if p.match(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM) {
 		start := p.previous()
 
 		switch start.Type {
@@ -1955,12 +1955,12 @@ func (p *parser) unary() ast.Expression {
 				return p.negate()
 			}
 		case token.DER:
-			if !p.match(token.GRÖßE, token.LÄNGE, token.BETRAG) { // Betrag: nominativ, Größe/Länge: dativ
+			if !p.match(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT) { // Betrag: nominativ, Größe/Länge: dativ
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.DEM:
-			if !p.match(token.BETRAG) { // dativ
+			if !p.match(token.BETRAG, token.STANDARDWERT) { // dativ
 				p.decrease() // DEM does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
@@ -1969,15 +1969,18 @@ func (p *parser) unary() ast.Expression {
 				p.decrease() // LOGISCH does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
-		case token.BETRAG, token.LÄNGE, token.GRÖßE:
+		case token.BETRAG, token.LÄNGE, token.GRÖßE, token.STANDARDWERT:
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, start.Range, fmt.Sprintf("Vor '%s' fehlt der Artikel", start))
 		}
 
 		tok := p.previous()
 		operator := ast.UN_ABS
 		switch tok.Type {
-		case token.BETRAG, token.GRÖßE, token.LÄNGE:
+		case token.BETRAG, token.LÄNGE:
 			p.consume(token.VON)
+		case token.GRÖßE, token.STANDARDWERT:
+			p.consume(token.VON)
+			p.consumeAny(token.EINEM, token.EINER)
 		case token.NICHT:
 			if p.peekN(-2).Type == token.LOGISCH {
 				operator = ast.UN_LOGIC_NOT
@@ -1988,8 +1991,34 @@ func (p *parser) unary() ast.Expression {
 			if operator != ast.UN_LOGIC_NOT {
 				operator = ast.UN_NOT
 			}
-		case token.GRÖßE:
-			operator = ast.UN_SIZE
+		case token.GRÖßE, token.STANDARDWERT:
+			article := p.previous()
+			_type := p.parseType()
+			operator := ast.TYPE_SIZE
+			if tok.Type == token.STANDARDWERT {
+				operator = ast.TYPE_DEFAULT
+			}
+
+			// report grammar errors
+			if _type != nil {
+				switch _type.Gender() {
+				case ddptypes.FEMININ:
+					if article.Type != token.EINER {
+						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einer"))
+					}
+				default:
+					if article.Type != token.EINEM {
+						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einem"))
+					}
+				}
+			}
+
+			return &ast.TypeOpExpr{
+				Range:    token.NewRange(start, p.previous()),
+				Tok:      *start,
+				Operator: operator,
+				Rhs:      _type,
+			}
 		case token.LÄNGE:
 			operator = ast.UN_LEN
 		}
@@ -2459,6 +2488,7 @@ func (p *parser) alias() ast.Expression {
 							FileName: p.module.FileName,
 						},
 						aliases:     p.aliases,
+						typeNames:   p.typeNames,
 						resolver:    p.resolver,
 						typechecker: p.typechecker,
 					}

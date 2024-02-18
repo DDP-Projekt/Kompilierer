@@ -17,7 +17,6 @@ const (
 	UN_INVALID   UnaryOperator = iota
 	UN_ABS                     // Betrag von
 	UN_LEN                     // Länge von
-	UN_SIZE                    // Größe von
 	UN_NEGATE                  // -
 	UN_NOT                     // nicht
 	UN_LOGIC_NOT               // logisch nicht
@@ -29,8 +28,6 @@ func (op UnaryOperator) String() string {
 		return "Betrag"
 	case UN_LEN:
 		return "Länge"
-	case UN_SIZE:
-		return "Größe"
 	case UN_NEGATE:
 		return "-"
 	case UN_NOT:
@@ -148,4 +145,24 @@ func (op TernaryOperator) String() string {
 		return "zwischen"
 	}
 	panic(fmt.Errorf("unbekannter ternärer Operator %d", op))
+}
+
+type TypeOperator int
+
+func (TypeOperator) Operator() {}
+
+const (
+	TYPE_INVALID TypeOperator = iota
+	TYPE_SIZE                 // Größe
+	TYPE_DEFAULT              // Standardwert
+)
+
+func (op TypeOperator) String() string {
+	switch op {
+	case TYPE_SIZE:
+		return "Größe"
+	case TYPE_DEFAULT:
+		return "Standardwert"
+	}
+	panic(fmt.Errorf("unbekannter Typ-Operator %d", op))
 }

@@ -3,3 +3,5 @@ wahr,falsch,falsch,wahr
 wahr,falsch,falsch,wahr
 wahr,falsch,falsch,wahr
 wahr,falsch,falsch,wahr
+00,wahr,falsch,12,falsch,wahr
+00Vektor2,wahr,falsch,12v2,falsch,wahr

@@ -111,6 +111,7 @@ func (h *helperVisitor) VisitBadDecl(decl *BadDecl) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitVarDecl(decl *VarDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(VarDeclVisitor); ok {
@@ -118,6 +119,7 @@ func (h *helperVisitor) VisitVarDecl(decl *VarDecl) VisitResult {
 	}
 	return h.visitChildren(result, decl.InitVal)
 }
+
 func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FuncDeclVisitor); ok {
@@ -125,6 +127,7 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	}
 	return h.visitChildren(result, decl.Body)
 }
+
 func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
@@ -140,12 +143,14 @@ func (h *helperVisitor) VisitBadExpr(expr *BadExpr) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitIdent(expr *Ident) VisitResult {
 	if vis, ok := h.actualVisitor.(IdentVisitor); ok {
 		return vis.VisitIdent(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitIndexing(expr *Indexing) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(IndexingVisitor); ok {
@@ -153,6 +158,7 @@ func (h *helperVisitor) VisitIndexing(expr *Indexing) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Index)
 }
+
 func (h *helperVisitor) VisitFieldAccess(expr *FieldAccess) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FieldAccessVisitor); ok {
@@ -168,30 +174,35 @@ func (h *helperVisitor) VisitIntLit(expr *IntLit) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitFloatLit(expr *FloatLit) VisitResult {
 	if vis, ok := h.actualVisitor.(FloatLitVisitor); ok {
 		return vis.VisitFloatLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitBoolLit(expr *BoolLit) VisitResult {
 	if vis, ok := h.actualVisitor.(BoolLitVisitor); ok {
 		return vis.VisitBoolLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitCharLit(expr *CharLit) VisitResult {
 	if vis, ok := h.actualVisitor.(CharLitVisitor); ok {
 		return vis.VisitCharLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitStringLit(expr *StringLit) VisitResult {
 	if vis, ok := h.actualVisitor.(StringLitVisitor); ok {
 		return vis.VisitStringLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitListLit(expr *ListLit) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ListLitVisitor); ok {
@@ -211,6 +222,7 @@ func (h *helperVisitor) VisitListLit(expr *ListLit) VisitResult {
 		return VisitRecurse
 	}
 }
+
 func (h *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(UnaryExprVisitor); ok {
@@ -218,6 +230,7 @@ func (h *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(BinaryExprVisitor); ok {
@@ -225,6 +238,7 @@ func (h *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(TernaryExprVisitor); ok {
@@ -232,6 +246,7 @@ func (h *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Mid, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(CastExprVisitor); ok {
@@ -239,6 +254,15 @@ func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs)
 }
+
+func (h *helperVisitor) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(TypeOpExprVisitor); ok {
+		result = vis.VisitTypeOpExpr(expr)
+	}
+	return result
+}
+
 func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(GroupingVisitor); ok {
@@ -246,6 +270,7 @@ func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	}
 	return h.visitChildren(result, expr.Expr)
 }
+
 func (h *helperVisitor) VisitFuncCall(expr *FuncCall) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FuncCallVisitor); ok {
@@ -253,6 +278,7 @@ func (h *helperVisitor) VisitFuncCall(expr *FuncCall) VisitResult {
 	}
 	return h.visitChildren(result, h.sortArgs(expr.Args)...)
 }
+
 func (h *helperVisitor) VisitStructLiteral(expr *StructLiteral) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructLiteralVisitor); ok {
@@ -267,6 +293,7 @@ func (h *helperVisitor) VisitBadStmt(stmt *BadStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitDeclStmt(stmt *DeclStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(DeclStmtVisitor); ok {
@@ -274,6 +301,7 @@ func (h *helperVisitor) VisitDeclStmt(stmt *DeclStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Decl)
 }
+
 func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ExprStmtVisitor); ok {
@@ -281,12 +309,14 @@ func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Expr)
 }
+
 func (h *helperVisitor) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	if vis, ok := h.actualVisitor.(ImportStmtVisitor); ok {
 		return vis.VisitImportStmt(stmt)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(AssignStmtVisitor); ok {
@@ -297,6 +327,7 @@ func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Var, stmt.Rhs)
 }
+
 func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
 		scpVis.UpdateScope(stmt.Symbols)
@@ -314,6 +345,7 @@ func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 	}
 	return result
 }
+
 func (h *helperVisitor) VisitIfStmt(stmt *IfStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(IfStmtVisitor); ok {
@@ -321,6 +353,7 @@ func (h *helperVisitor) VisitIfStmt(stmt *IfStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Condition, stmt.Then, stmt.Else)
 }
+
 func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(WhileStmtVisitor); ok {
@@ -334,6 +367,7 @@ func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitForStmt(stmt *ForStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ForStmtVisitor); ok {
@@ -341,6 +375,7 @@ func (h *helperVisitor) VisitForStmt(stmt *ForStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Initializer, stmt.To, stmt.StepSize, stmt.Body)
 }
+
 func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ForRangeStmtVisitor); ok {
@@ -348,12 +383,14 @@ func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Initializer, stmt.In, stmt.Body)
 }
+
 func (h *helperVisitor) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
 	if vis, ok := h.actualVisitor.(BreakContineStmtVisitor); ok {
 		return vis.VisitBreakContinueStmt(stmt)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ReturnStmtVisitor); ok {

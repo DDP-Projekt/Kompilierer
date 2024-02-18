@@ -81,8 +81,6 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.structTypes[ddpType.String()]
 		}
 	}
-	c.err("illegal ddp type to ir type conversion (%s)", ddpType)
-	return nil // unreachable
 }
 
 // used to handle possible reference parameters

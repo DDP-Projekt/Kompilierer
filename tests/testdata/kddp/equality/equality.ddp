@@ -43,3 +43,64 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert ("über den Wolken" ungleich "über den Wolken" ist).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert ("hi" ungleich "tschüss" ist).
+Schreibe den Buchstaben '\n'.
+
+Wir nennen die Kombination aus
+	der Zahl x mit Standardwert 0,
+	der Zahl y mit Standardwert 0,
+einen Vektor2,
+und erstellen sie so:
+	"ein Vektor2 aus <x> und <y>" oder
+	"der Nullvektor2"
+
+Der Vektor2 v ist der Nullvektor2.
+Schreibe (x von v).
+Schreibe (y von v).
+Schreibe ','.
+
+Schreibe (v gleich v ist).
+Schreibe ','.
+Schreibe (v ungleich v ist).
+Schreibe ','.
+
+Der Vektor2 v2 ist ein Vektor2 aus 1 und 2.
+Schreibe (x von v2).
+Schreibe (y von v2).
+Schreibe ','.
+
+Schreibe (v gleich v2 ist).
+Schreibe ','.
+Schreibe (v ungleich v2 ist).
+Schreibe den Buchstaben '\n'.
+
+Wir nennen die Kombination aus
+	dem Vektor2 v mit Standardwert der Nullvektor2,
+	dem Text name mit Standardwert "Vektor2",
+einen BenannteVektor2,
+und erstellen sie so:
+	"ein BenanntenVektor2 aus <v> und <name>" oder
+	"der Vektor2 <name>" oder
+	"der benannte Nullvektor2"
+
+Der BenannteVektor2 nv ist der benannte Nullvektor2.
+
+Schreibe (x von v von nv).
+Schreibe (y von v von nv).
+Schreibe (name von nv).
+Schreibe ','.
+
+Schreibe (nv gleich nv ist).
+Schreibe ','.
+Schreibe (nv ungleich nv ist).
+Schreibe ','.
+
+Der BenannteVektor2 nv2 ist ein BenanntenVektor2 aus v2 und "v2".
+
+Schreibe (x von v von nv2).
+Schreibe (y von v von nv2).
+Schreibe (name von nv2).
+Schreibe ','.
+
+Schreibe (nv gleich nv2 ist).
+Schreibe ','.
+Schreibe (nv ungleich nv2 ist).

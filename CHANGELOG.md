@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] der Standardwert Operator gibt den Standardwert eines Typen zurück
+- [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
+- [Fix] Bug beim Vergleichen von Kombinationen
 - [Added] Folgende Duden funktionen wurden hinzugefügt:
   - Text- und Zeichenvergleichsfunktionen
   - Elementweise Operationen für Listen
