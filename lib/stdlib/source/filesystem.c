@@ -350,18 +350,118 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 #define MODUS_TRUNKIEREN 32
 
 typedef struct {
-	ddpint fd;
-	ddpstring Pfad;
-	ddpint Modus;
-	ddpbool Ist_EOF;
-	ddpstring Lese_Puffer;	   // used as byte buffer, might not be null-terminated
-	ddpstring Schreibe_Puffer; // used as byte buffer, might not be null-terminated
-	ddpint Lese_Puffer_Start;
-	ddpint Lese_Puffer_Ende;
-	ddpint Schreibe_Index;
-} Datei;
+	int fd;					// posix file descriptor
+	ddpint id;				// unique id for this file
+	ddpstring path;			// path to the file (which it was opened with)
+	ddpint mode;			// (ddp) mode the file was opened with
+	bool eof;				// whether the file has reached the end
+	ddpstring read_buffer;	// buffer for reading
+	ddpstring write_buffer; // buffer for writing
+	int read_buffer_start;	// start index of the read buffer
+	int read_buffer_end;	// end index of the read buffer
+	int write_index;		// index of the write buffer
+} InternalFile;
 
-typedef Datei *DateiRef;
+static struct {
+	InternalFile *files;
+	int cap;
+} open_files = {0};
+
+static ddpint cur_file_id = 1;
+
+// returns a fresh InternalFile
+static InternalFile new_internal_file(void) {
+	InternalFile file = {0};
+	file.fd = -1;
+	return file;
+}
+
+// zeros out an already created/used InternalFile
+static void zero_internal_file(InternalFile *file) {
+	ddp_free_string(&file->path);
+	ddp_free_string(&file->read_buffer);
+	ddp_free_string(&file->write_buffer);
+	*file = (InternalFile){0};
+	file->fd = -1;
+}
+
+// atexit handler to free all open files
+static void free_open_files(void) {
+	for (int i = 0; i < open_files.cap; i++) {
+		InternalFile *file = &open_files.files[i];
+		if (file->fd >= 0) {
+			if (close(file->fd) < 0) {
+				ddp_error("Fehler beim Schließen der Datei '%s': ", true, file->path.str);
+			}
+		}
+		zero_internal_file(file);
+	}
+	DDP_FREE_ARRAY(InternalFile, open_files.files, open_files.cap);
+}
+
+// searches for the first unused file descriptor and returns it
+// if no file descriptor is available, it will grow the array and return the new index
+static ddpint add_internal_file(void) {
+	// search for the first unused file descriptor
+	for (int i = 0; i < open_files.cap; i++) {
+		if (open_files.files[i].fd == -1) {
+			zero_internal_file(&open_files.files[i]);
+			return i;
+		}
+	}
+
+	// if no files were allocated yet, register the atexit function to free the files array on program exit
+	if (open_files.files == NULL) {
+		atexit(free_open_files);
+	}
+
+	// if no file descriptor is available, grow the array and return the new index
+
+	ddpint old_cap = open_files.cap;
+	open_files.cap = DDP_GROW_CAPACITY(open_files.cap);
+	open_files.files = DDP_GROW_ARRAY(InternalFile, open_files.files, old_cap, open_files.cap);
+
+	// the new files are initialized to 0
+	for (int i = old_cap; i < open_files.cap; i++) {
+		open_files.files[i] = new_internal_file();
+	}
+
+	return old_cap;
+}
+
+static InternalFile *get_internal_file(ddpint index, ddpint id) {
+	// check if the index is valid
+	if (index < 0 || index >= open_files.cap) {
+		ddp_error("Die Datei ist nicht geöffnet", false);
+		return NULL;
+	}
+	InternalFile *file = &open_files.files[index];
+	// check if the id is valid
+	// if the id is not valid, a copy of the file was probably used after it was already closed
+	if (file->id != id) {
+		ddp_error("Die Datei ist nicht mehr geöffnet", false);
+		return NULL;
+	}
+	return file;
+}
+
+// closes the file descriptor and zeros out the file
+static void close_internal_file(ddpint index) {
+	if (index < 0) {
+		ddp_error("Nicht offene Datei kann nicht geschlossen werden", false);
+		return;
+	}
+
+	InternalFile *file = &open_files.files[index];
+	// attempt to close the file and report possible errors (very rare)
+	if (file->fd >= 0) {
+		if (close(file->fd) < 0) {
+			ddp_error("Fehler beim Schließen der Datei '%s': ", true, file->path.str);
+		}
+	}
+
+	zero_internal_file(file);
+}
 
 static int to_posix_mode(ddpint Modus) {
 	int ret = 0;
@@ -394,12 +494,12 @@ static bool is_read_mode(ddpint Modus) {
 	return (Modus & (MODUS_NUR_SCHREIBEN | MODUS_LESEN_SCHREIBEN)) != 0;
 }*/
 
-static int read_buff_len(DateiRef datei) {
-	return datei->Lese_Puffer_Ende - datei->Lese_Puffer_Start;
+static int read_buff_len(InternalFile *file) {
+	return file->read_buffer_end - file->read_buffer_start;
 }
 
-static char *read_buff_start_ptr(DateiRef datei) {
-	return datei->Lese_Puffer.str + datei->Lese_Puffer_Start;
+static char *read_buff_start_ptr(InternalFile *file) {
+	return file->read_buffer.str + file->read_buffer_start;
 }
 
 /*static int flush_write_buffer(DateiRef datei) {
@@ -418,80 +518,72 @@ static char *read_buff_start_ptr(DateiRef datei) {
 
 // clears the read buffer and reads in the next chunk
 // returns the number of bytes read (Lese_Puffer_Ende)
-static int fill_read_buffer(DateiRef datei) {
-	if (!is_read_mode(datei->Modus)) {
-		ddp_error("Fehler beim Lesen der Datei '%s': Die Datei wurde nicht zum Lesen geöffnet", false, datei->Pfad.str);
+static int fill_read_buffer(InternalFile *file) {
+	// validate that the file can be read from
+	if (!is_read_mode(file->mode)) {
+		ddp_error("Fehler beim Lesen der Datei '%s': Die Datei wurde nicht zum Lesen geöffnet", false, file->path.str);
 		return -1;
 	}
-
-	if (datei->Ist_EOF) {
-		ddp_error("Fehler beim Lesen der Datei '%s': Das Ende der Datei ist erreicht", false, datei->Pfad.str);
+	if (file->eof) {
+		ddp_error("Fehler beim Lesen der Datei '%s': Das Ende der Datei ist erreicht", false, file->path.str);
 		return -1;
 	}
 
 	// allocate the buffer if needed
-	if (datei->Lese_Puffer.cap < BUFFER_SIZE) {
-		datei->Lese_Puffer.str = DDP_ALLOCATE(char, BUFFER_SIZE);
-		datei->Lese_Puffer.cap = BUFFER_SIZE;
+	if (file->read_buffer.cap < BUFFER_SIZE) {
+		file->read_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE);
+		file->read_buffer.cap = BUFFER_SIZE;
 	}
 
 	// read in the next chunk
-	int ret = read(datei->fd, datei->Lese_Puffer.str, BUFFER_SIZE);
-	datei->Lese_Puffer_Start = 0;
-	datei->Lese_Puffer_Ende = ret;
+	int ret = read(file->fd, file->read_buffer.str, BUFFER_SIZE);
+	file->read_buffer_start = 0;
+	file->read_buffer_end = ret;
 
 	if (ret < 0) {
-		ddp_error("Fehler beim Lesen der Datei '%s': ", true, datei->Pfad.str);
-		datei->Lese_Puffer_Ende = 0;
+		ddp_error("Fehler beim Lesen der Datei '%s': ", true, file->path.str);
+		file->read_buffer_end = 0;
 	} else if (ret == 0) {
-		datei->Ist_EOF = true;
+		file->eof = true;
 	}
 
 	return ret;
 }
 
+typedef struct {
+	ddpint index;
+	ddpint id;
+} Datei;
+
+typedef Datei *DateiRef;
+
 void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
-	ddp_free_string(&datei->Pfad);
-	datei->Pfad = *Pfad;
+	// create a new file and store the index in the DateiRef
+	datei->index = add_internal_file();
+	InternalFile *file = &open_files.files[datei->index];
+
+	// store other information in the file
+	file->path = *Pfad;
 	*Pfad = DDP_EMPTY_STRING;
+	file->mode = Modus;
 
-	datei->Modus = Modus;
-	datei->Ist_EOF = false;
-	ddp_free_string(&datei->Lese_Puffer);
-	datei->Lese_Puffer = DDP_EMPTY_STRING;
-	ddp_free_string(&datei->Schreibe_Puffer);
-	datei->Schreibe_Puffer = DDP_EMPTY_STRING;
-	datei->Lese_Puffer_Start = 0;
-	datei->Lese_Puffer_Ende = 0;
-	datei->Schreibe_Index = 0;
-
+	// actually open the file
 	int flags = to_posix_mode(Modus);
-	if ((datei->fd = open(datei->Pfad.str, flags, 0666)) < 0) {
-		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, datei->Pfad.str);
+	if ((file->fd = open(file->path.str, flags, 0666)) < 0) {
+		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, file->path.str);
+		close_internal_file(datei->index);
+		datei->index = -1;
 	}
+	// add validation information
+	file->id = cur_file_id++;
+	datei->id = file->id;
 }
 
 void Datei_Schliessen(DateiRef datei) {
-	// attempt to close the file and report possible errors (very rare)
-	if (datei->fd >= 0) {
-		if (close(datei->fd) < 0) {
-			ddp_error("Fehler beim Schließen der Datei '%s': ", true, datei->Pfad.str);
-		}
-	}
-
-	// reset the file to it's initial state
-	datei->fd = -1;
-	ddp_free_string(&datei->Pfad);
-	datei->Pfad = DDP_EMPTY_STRING;
-	datei->Modus = 0;
-	datei->Ist_EOF = false;
-	ddp_free_string(&datei->Lese_Puffer);
-	datei->Lese_Puffer = DDP_EMPTY_STRING;
-	ddp_free_string(&datei->Schreibe_Puffer);
-	datei->Schreibe_Puffer = DDP_EMPTY_STRING;
-	datei->Lese_Puffer_Start = 0;
-	datei->Lese_Puffer_Ende = 0;
-	datei->Schreibe_Index = 0;
+	// close the file and do some cleanup
+	close_internal_file(datei->index);
+	datei->index = -1;
+	datei->id = -1;
 }
 
 #define DDP_MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -499,17 +591,26 @@ void Datei_Schliessen(DateiRef datei) {
 
 void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	*ret = DDP_EMPTY_STRING;
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+
+	// early return if N is not positive
 	if (N <= 0) {
 		return;
 	}
 
+	// preallocate the string
 	ret->str = DDP_ALLOCATE(char, N + 1);
 	ret->cap = N + 1;
 	ret->str[N] = '\0';
 
+	// read buffer-sized chunks until N characters are read
 	for (ddpint copied = 0; copied < N;) {
-		if (read_buff_len(datei) == 0) {
-			int read = fill_read_buffer(datei);
+		if (read_buff_len(file) == 0) {
+			int read = fill_read_buffer(file);
 			if (read < 0) {
 				return;
 			} else if (read == 0) {
@@ -519,19 +620,26 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 			}
 		}
 
-		ddpint copy_amount = DDP_MIN(read_buff_len(datei), N - copied);
-		memcpy(ret->str + copied, read_buff_start_ptr(datei), copy_amount);
-		datei->Lese_Puffer_Start += copy_amount;
+		// copy the next chunk
+		ddpint copy_amount = DDP_MIN(read_buff_len(file), N - copied);
+		memcpy(ret->str + copied, read_buff_start_ptr(file), copy_amount);
+		file->read_buffer_start += copy_amount;
 		copied += copy_amount;
 	}
 }
 
 void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 	*ret = DDP_EMPTY_STRING;
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
 
-	while (!datei->Ist_EOF) {
-		if (read_buff_len(datei) == 0) {
-			int read = fill_read_buffer(datei);
+	// read buffer-sized chunks until a newline is found
+	while (!file->eof) {
+		if (read_buff_len(file) == 0) {
+			int read = fill_read_buffer(file);
 			if (read < 0) {
 				return;
 			} else if (read == 0) {
@@ -540,14 +648,14 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 		}
 
 		// search for the next newline
-		char *newline = memchr(read_buff_start_ptr(datei), '\n', read_buff_len(datei));
+		char *newline = memchr(read_buff_start_ptr(file), '\n', read_buff_len(file));
 		if (newline) {
-			const size_t copy_amount = newline - read_buff_start_ptr(datei) + 1;
+			const size_t copy_amount = newline - read_buff_start_ptr(file) + 1;
 
 			// allocate space for the string + '\n' (without '\0'!)
 			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
 			// copy the string and the newline
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(datei), copy_amount);
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
 			ret->cap += copy_amount;
 
 #ifdef DDPOS_WINDOWS
@@ -563,23 +671,31 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 			}
 #endif
 
-			datei->Lese_Puffer_Start += copy_amount; // consume the newline
+			file->read_buffer_start += copy_amount; // consume the newline
 			return;
 		} else {
 			// no newline found, copy the whole buffer
-			const size_t copy_amount = read_buff_len(datei);
+			const size_t copy_amount = read_buff_len(file);
 
 			// allocate space for the string (without '\0'!)
 			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
 			// copy the string
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(datei), copy_amount);
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
 			ret->cap += copy_amount;
 
-			datei->Lese_Puffer_Start += copy_amount; // consume the whole buffer
+			file->read_buffer_start += copy_amount; // consume the whole buffer
 		}
 	}
 	// EOF reached
 	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
 	ret->str[ret->cap] = '\0';
 	ret->cap++;
+}
+
+ddpbool Datei_Zuende(DateiRef datei) {
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return true;
+	}
+	return file->eof;
 }

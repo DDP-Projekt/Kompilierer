@@ -167,15 +167,8 @@ Die öffentliche Zahl MODUS_TRUNKIEREN ist 32.
 	Das Lesen und Schreiben ist gepuffert.
 ]
 Wir nennen die öffentliche Kombination aus
-	der Zahl fd mit Standardwert -1,
-	dem Text Pfad mit Standardwert "",
-	der Zahl Modus mit Standardwert 0,
-	dem Wahrheitswert Ist_EOF mit Standardwert falsch, wenn wahr,
-	dem Text Lese_Puffer mit Standardwert "",
-	dem Text Schreibe_Puffer mit Standardwert "",
-	der Zahl Lese_Puffer_Start mit Standardwert 0,
-	der Zahl Lese_Puffer_Ende mit Standardwert 0,
-	der Zahl Schreibe_Index mit Standardwert 0,
+	der Zahl index mit Standardwert -1,
+	der Zahl id mit Standardwert -1,
 eine Datei,
 und erstellen sie so:
 	"noch nicht offen"
@@ -242,13 +235,13 @@ und kann so benutzt werden:
 	"schließe <datei>" oder
 	"schliesse <datei>"
 
-Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib Ist_EOF von datei zurück.
+Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"<datei> zuende ist"
 
 Die öffentliche Funktion Datei_Nicht_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib nicht Ist_EOF von datei zurück.
+	Gib nicht datei zuende ist zurück.
 Und kann so benutzt werden:
 	"<datei> nicht zuende ist"
 
