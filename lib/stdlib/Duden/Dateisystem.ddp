@@ -255,3 +255,9 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die nächste Zeile aus <datei>" oder
 	"die naechste Zeile aus <datei>"
+
+Die öffentliche Funktion Datei_Lies_Wort mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"das nächste Wort aus <datei>" oder
+	"das naechste Wort aus <datei>"

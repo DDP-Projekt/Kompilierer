@@ -502,6 +502,11 @@ static char *read_buff_start_ptr(InternalFile *file) {
 	return file->read_buffer.str + file->read_buffer_start;
 }
 
+// points to the first byte after the last byte in the buffer
+static char *read_buff_end_ptr(InternalFile *file) {
+	return file->read_buffer.str + file->read_buffer_end;
+}
+
 /*static int flush_write_buffer(DateiRef datei) {
 	if (datei->Schreibe_Index == 0) {
 		return 0;
@@ -518,6 +523,7 @@ static char *read_buff_start_ptr(InternalFile *file) {
 
 // clears the read buffer and reads in the next chunk
 // returns the number of bytes read (Lese_Puffer_Ende)
+// 0 means EOF and -1 means error
 static int fill_read_buffer(InternalFile *file) {
 	// validate that the file can be read from
 	if (!is_read_mode(file->mode)) {
@@ -531,14 +537,17 @@ static int fill_read_buffer(InternalFile *file) {
 
 	// allocate the buffer if needed
 	if (file->read_buffer.cap < BUFFER_SIZE) {
-		file->read_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE);
-		file->read_buffer.cap = BUFFER_SIZE;
+		file->read_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE + 1);
+		file->read_buffer.cap = BUFFER_SIZE + 1;
+		file->read_buffer.str[BUFFER_SIZE] = '\0';
 	}
 
 	// read in the next chunk
 	int ret = read(file->fd, file->read_buffer.str, BUFFER_SIZE);
 	file->read_buffer_start = 0;
 	file->read_buffer_end = ret;
+	// important to null-terminate the buffer if less than BUFFER_SIZE bytes were read
+	file->read_buffer.str[ret] = '\0';
 
 	if (ret < 0) {
 		ddp_error("Fehler beim Lesen der Datei '%s': ", true, file->path.str);
@@ -569,6 +578,11 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 
 	// actually open the file
 	int flags = to_posix_mode(Modus);
+#ifdef DDPOS_WINDOWS
+	// open files in binary mode on windows, to not mess with line endings
+	// not needed (even mostly non-existent) on unix
+	flags |= O_BINARY;
+#endif // DDPOS_WINDOWS
 	if ((file->fd = open(file->path.str, flags, 0666)) < 0) {
 		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, file->path.str);
 		close_internal_file(datei->index);
@@ -628,6 +642,16 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	}
 }
 
+#define DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file) \
+	if (read_buff_len(file) == 0) {                \
+		int read = fill_read_buffer(file);         \
+		if (read < 0) {                            \
+			return;                                \
+		} else if (read == 0) {                    \
+			break;                                 \
+		}                                          \
+	}
+
 void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it
@@ -638,14 +662,7 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 
 	// read buffer-sized chunks until a newline is found
 	while (!file->eof) {
-		if (read_buff_len(file) == 0) {
-			int read = fill_read_buffer(file);
-			if (read < 0) {
-				return;
-			} else if (read == 0) {
-				break;
-			}
-		}
+		DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file);
 
 		// search for the next newline
 		char *newline = memchr(read_buff_start_ptr(file), '\n', read_buff_len(file));
@@ -675,6 +692,79 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 			return;
 		} else {
 			// no newline found, copy the whole buffer
+			const size_t copy_amount = read_buff_len(file);
+
+			// allocate space for the string (without '\0'!)
+			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			// copy the string
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
+			ret->cap += copy_amount;
+
+			file->read_buffer_start += copy_amount; // consume the whole buffer
+		}
+	}
+	// EOF reached
+	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
+	ret->str[ret->cap] = '\0';
+	ret->cap++;
+}
+
+void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
+	*ret = DDP_EMPTY_STRING;
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+
+	// skip leading whitespace
+	while (!file->eof) {
+		DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file);
+
+		bool found = false;
+		// search for the next non-whitespace character
+		const char *read_buff_end = read_buff_end_ptr(file);
+		for (char *it = read_buff_start_ptr(file); it < read_buff_end; it++) {
+			if (!isspace(*it)) {
+				// found the start of the word
+				file->read_buffer_start += it - read_buff_start_ptr(file);
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			break;
+		}
+		file->read_buffer_start = file->read_buffer_end; // consume the whole buffer
+	}
+
+	if (file->eof) {
+		return;
+	}
+
+	// read the word until a whitespace character is found
+	while (!file->eof) {
+		DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file);
+
+		// search for the next whitespace character
+		char *whitespace_pos = strpbrk(read_buff_start_ptr(file), " \t\n\v\f\r");
+		if (whitespace_pos) {
+			size_t copy_amount = whitespace_pos - read_buff_start_ptr(file);
+			if (whitespace_pos >= read_buff_end_ptr(file)) {
+				copy_amount = read_buff_len(file);
+			}
+
+			// allocate space for the string + null terminator
+			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount + 1);
+			// copy the string
+			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
+			ret->cap += copy_amount + 1; // + nullterminator
+			ret->str[ret->cap - 1] = '\0';
+
+			file->read_buffer_start += copy_amount; // consume up to but not including the whitespace
+			return;
+		} else {
+			// no whitespace found, copy the whole buffer
 			const size_t copy_amount = read_buff_len(file);
 
 			// allocate space for the string (without '\0'!)
