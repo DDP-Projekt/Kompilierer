@@ -223,6 +223,45 @@ Und kann so benutzt werden:
 	"oeffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben"
 
 [
+	Öffnet Pfad im gegebenen Modus und gibt die Datei zurück.
+	Dabei ist Modus eine Sammlung von Bit-Flags, die die Art des Zugriffs auf die Datei bestimmen.
+]
+Die öffentliche Funktion Datei_Oeffnen_Rückgabe mit den Parametern Pfad und Modus vom Typ Text und Zahl, gibt eine Datei zurück, macht:
+	Die Datei datei ist noch nicht offen.
+	Öffne datei mit dem Pfad Pfad im Modus Modus.
+	Gib datei zurück.
+Und kann so benutzt werden:
+	"<Pfad> im Modus <Modus> geöffnet" oder
+	"<Pfad> im Modus <Modus> geoeffnet"
+
+[
+	Öffnet Pfad zum Lesen und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Lesen geöffnet" oder
+	"<Pfad> zum Lesen geoeffnet"
+
+[
+	Öffnet Pfad zum Schreiben und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Schreiben_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Schreiben geöffnet" oder
+	"<Pfad> zum Schreiben geoeffnet"
+
+[
+	Öffnet Pfad zum Lesen und Schreiben und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Schreiben_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Lesen und Schreiben geöffnet" oder
+	"<Pfad> zum Lesen und Schreiben geoeffnet"
+
+[
 	Schließt die Datei und gibt alle damit assoziierten Ressourcen frei.
 	Muss aufgerufen werden, wenn die Datei nicht mehr gebraucht wird.
 
