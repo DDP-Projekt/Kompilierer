@@ -1,5 +1,6 @@
 [ Wird für die Externen Funktionen benötigt ]
 Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Texte" ein.
 
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
@@ -235,29 +236,73 @@ und kann so benutzt werden:
 	"schließe <datei>" oder
 	"schliesse <datei>"
 
+[
+	Ob die Datei zuende gelesen wurde.
+]
 Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"<datei> zuende ist"
 
+[
+	Ob die Datei nicht zuende gelesen wurde.
+]
 Die öffentliche Funktion Datei_Nicht_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib nicht datei zuende ist zurück.
 Und kann so benutzt werden:
 	"<datei> nicht zuende ist"
 
+[
+	Liest die nächsten N Byte aus der Datei und gibt sie als Text zurück.
+]
 Die öffentliche Funktion Datei_Lies_N_Zeichen mit den Parametern datei und N vom Typ Datei Referenz und Zahl, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die nächsten <N> Zeichen aus <datei>"
 
+[
+	Liest die nächste Zeile aus der Datei und gibt sie als Text zurück.
+]
 Die öffentliche Funktion Datei_Lies_Zeile mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"die nächste Zeile aus <datei>" oder
 	"die naechste Zeile aus <datei>"
 
+[
+	Liest das nächste Wort ohne Leerzeichen aus der Datei und gibt es als Text zurück.
+]
 Die öffentliche Funktion Datei_Lies_Wort mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"das nächste Wort aus <datei>" oder
 	"das naechste Wort aus <datei>"
+
+[
+	(das nächste Wort aus datei) als Zahl
+
+	Meldet einen Fehler, wenn das nächste Wort keine Zahl war.
+]
+Die öffentliche Funktion Datei_Lies_Zahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Zahl zurück, macht:
+	Der Text wort ist das nächste Wort aus datei.
+	Wenn nicht wort eine Zahl ist, dann:
+		Melde den Fehler "Keine Zahl gefunden".
+	Gib wort als Zahl zurück.
+Und kann so benutzt werden:
+	"die nächste Zahl aus <datei>" oder
+	"die naechste Zahl aus <datei>"
+
+[
+	(das nächste Wort aus datei) als Kommazahl
+
+	Meldet einen Fehler, wenn das nächste Wort keine Kommazahl war.
+]
+Die öffentliche Funktion Datei_Lies_Kommazahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Kommazahl zurück, macht:
+	Der Text wort ist das nächste Wort aus datei.
+	[jede Zahl kann auch als Kommazahl formatiert werden]
+	Wenn nicht wort eine Zahl ist, dann:
+		Melde den Fehler "Keine Kommazahl gefunden".
+	Gib wort als Kommazahl zurück.
+Und kann so benutzt werden:
+	"die nächste Kommazahl aus <datei>" oder
+	"die naechste Kommazahl aus <datei>"
