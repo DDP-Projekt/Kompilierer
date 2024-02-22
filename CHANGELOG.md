@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Breaking] Nachtragende Alias Declarationen wurden entfernt
 - [Added] der Standardwert Operator gibt den Standardwert eines Typen zurück
 - [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
 - [Fix] Bug beim Vergleichen von Kombinationen
