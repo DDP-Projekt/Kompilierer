@@ -159,6 +159,12 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitExpressionDecl(decl *ast.ExpressionDecl) ast.VisitResult {
+	// Don't do this, as the argument types are set to void in the declaration, and are only filled in once it is called
+	// t.Evaluate(decl.Expr)
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
@@ -560,6 +566,33 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 	}
 
 	t.latestReturnedType = expr.Struct.Type
+	return ast.VisitRecurse
+}
+
+func (t *Typechecker) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
+	expr.FilledSymbols = ast.NewSymbolTable(expr.Decl.Symbols.Enclosing)
+	for argName, arg := range expr.Args {
+		argType := t.Evaluate(arg)
+
+		tmp, _, _ := expr.Decl.Symbols.LookupDecl(argName)
+		argVar := tmp.(*ast.VarDecl)
+		argVar.Type = argType
+		expr.FilledSymbols.InsertDecl(argName, argVar)
+	}
+
+	t.CurrentTable = expr.FilledSymbols
+	errHndl := t.ErrorHandler
+	t.ErrorHandler = func(err ddperror.Error) {
+		err.File = t.Module.FileName
+		err.Range = expr.GetRange()
+		err.Msg = fmt.Sprintf("Im Ausdruck %s[%s]: %s", expr.Decl.Name(), expr.Decl.Mod.FileName, err.Msg)
+		errHndl(err)
+	}
+
+	t.latestReturnedType = t.Evaluate(expr.Decl.Expr)
+
+	t.ErrorHandler = errHndl
+	t.CurrentTable = t.CurrentTable.Enclosing
 	return ast.VisitRecurse
 }
 

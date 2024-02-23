@@ -136,6 +136,14 @@ func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	return h.visitChildren(result, sortedByRange(toInterfaceSlice[Declaration, Node](decl.Fields))...)
 }
 
+func (h *helperVisitor) VisitExpressionDecl(decl *ExpressionDecl) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(ExpressionDeclVisitor); ok {
+		result = vis.VisitExpressionDecl(decl)
+	}
+	return h.visitChildren(result, decl.Expr)
+}
+
 // if a BadExpr exists the AST is faulty
 func (h *helperVisitor) VisitBadExpr(expr *BadExpr) VisitResult {
 	if vis, ok := h.actualVisitor.(BadExprVisitor); ok {
@@ -283,6 +291,14 @@ func (h *helperVisitor) VisitStructLiteral(expr *StructLiteral) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructLiteralVisitor); ok {
 		result = vis.VisitStructLiteral(expr)
+	}
+	return h.visitChildren(result, h.sortArgs(expr.Args)...)
+}
+
+func (h *helperVisitor) VisitExpressionCall(expr *ExpressionCall) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(ExpressionCallVisitor); ok {
+		result = vis.VisitExpressionCall(expr)
 	}
 	return h.visitChildren(result, h.sortArgs(expr.Args)...)
 }

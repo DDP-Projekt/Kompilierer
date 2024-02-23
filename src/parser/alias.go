@@ -4,7 +4,7 @@ This file defines the functions used to parse Aliases
 package parser
 
 import (
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -13,6 +13,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// TODO: scoped alias ExpressionDecls
 func (p *parser) alias() ast.Expression {
 	start := p.cur // save start position to restore the state if no alias was recognized
 
@@ -77,11 +78,41 @@ func (p *parser) alias() ast.Expression {
 		return nil // no alias -> no function call
 	}
 
-	// sort the aliases in descending order
+	// sort the matched aliases by length and genericness
 	// Stable so equal aliases stay in the order they were defined
-	sort.SliceStable(matchedAliases, func(i, j int) bool {
-		return len(matchedAliases[i].GetTokens()) > len(matchedAliases[j].GetTokens())
+	slices.SortStableFunc(matchedAliases, func(a, b ast.Alias) int {
+		aTokens, bTokens := a.GetTokens(), b.GetTokens()
+
+		// compare the length first
+		if len(aTokens) < len(bTokens) { // less
+			return -1
+		} else if len(aTokens) > len(bTokens) { // greater
+			return 1
+		}
+
+		// next check for generic aliases
+
+		containsVoidArgs := func(args map[string]ddptypes.ParameterType) bool {
+			for _, arg := range args {
+				if ddptypes.IsVoid(arg.Type) {
+					return true
+				}
+			}
+			return false
+		}
+
+		aHasVoid, bHasVoid := containsVoidArgs(a.GetArgs()), containsVoidArgs(b.GetArgs())
+		if aHasVoid && !bHasVoid { // a is generic, so it is 'smaller'
+			return -1
+		} else if !aHasVoid && bHasVoid { // b is generic, so it is 'smaller'
+			return 1
+		}
+
+		// a and b are equal, so keep them stable
+		return 0
 	})
+	// descending order
+	slices.Reverse(matchedAliases)
 
 	// a argument that was already parsed
 	type cachedArg struct {
@@ -194,7 +225,9 @@ func (p *parser) alias() ast.Expression {
 					typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 
 					didMatch := true
-					if typ != paramType.Type {
+					if ddptypes.IsVoid(paramType.Type) { // void parameters are placeholders for generics, so they match everything
+						didMatch = true
+					} else if typ != paramType.Type {
 						didMatch = false
 					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);             // string-indexings may not be passed as char-reference
 					paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && // if the parameter is a char-reference
@@ -219,22 +252,48 @@ func (p *parser) alias() ast.Expression {
 	}
 
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
-		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
+		switch alias := alias.(type) {
+		case *ast.FuncAlias:
 			return &ast.FuncCall{
 				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
-				Name:  fnalias.Func.Name(),
-				Func:  fnalias.Func,
+				Name:  alias.Func.Name(),
+				Func:  alias.Func,
 				Args:  args,
 			}
-		}
+		case *ast.StructAlias:
+			return &ast.StructLiteral{
+				Range:  token.NewRange(&p.tokens[start], p.previous()),
+				Tok:    p.tokens[start],
+				Struct: alias.Struct,
+				Args:   args,
+			}
+		case *ast.ExpressionAlias:
+			filledInSymbols := ast.NewSymbolTable(alias.ExprDecl.Symbols.Enclosing)
+			for _, argName := range alias.Args {
+				temp, _, _ := alias.ExprDecl.Symbols.LookupDecl(argName)
+				templateDecl := temp.(*ast.VarDecl)
+				filledInSymbols.InsertDecl(argName, &ast.VarDecl{
+					Range:      templateDecl.Range,
+					CommentTok: templateDecl.CommentTok,
+					Type:       p.typechecker.EvaluateSilent(args[argName]),
+					NameTok:    templateDecl.NameTok,
+					IsPublic:   templateDecl.IsPublic,
+					Mod:        templateDecl.Mod,
+					InitVal:    args[argName],
+				})
+			}
 
-		stralias := alias.(*ast.StructAlias)
-		return &ast.StructLiteral{
-			Range:  token.NewRange(&p.tokens[start], p.previous()),
-			Tok:    p.tokens[start],
-			Struct: stralias.Struct,
-			Args:   args,
+			return &ast.ExpressionCall{
+				Range:         token.NewRange(&p.tokens[start], p.previous()),
+				Tok:           p.tokens[start],
+				Decl:          alias.ExprDecl,
+				Args:          args,
+				FilledSymbols: filledInSymbols,
+			}
+		default:
+			p.panic("unhandled alias type")
+			return nil // unreachable
 		}
 	}
 

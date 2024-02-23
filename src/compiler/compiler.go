@@ -556,6 +556,10 @@ func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitExpressionDecl(decl *ast.ExpressionDecl) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 	c.err("Es wurde ein invalider Ausdruck gefunden")
@@ -1537,6 +1541,12 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	result, resultType := c.evaluateStructLiteral(expr.Struct.Type, expr.Args)
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
 	c.latestIsTemp = true
+	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
+	// TODO:
+	c.err("ExpressionCall not implemented")
 	return ast.VisitRecurse
 }
 

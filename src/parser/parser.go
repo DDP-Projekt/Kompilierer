@@ -153,7 +153,7 @@ func (p *parser) declaration() ast.Statement {
 		switch t := p.peek().Type; t {
 		case token.ALIAS:
 			p.advance()
-			return p.aliasDecl()
+			return &ast.DeclStmt{Decl: p.expressionDecl(n - 1)}
 		case token.FUNKTION:
 			p.advance()
 			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
@@ -186,6 +186,7 @@ func (p *parser) checkStatement(stmt ast.Statement) {
 }
 
 // fils out importStmt.Module and updates the parser state accordingly
+// TODO: ExpressionDecls
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -343,13 +344,12 @@ func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
 }
 
 // returns (aliasExists, isFuncAlias, alias, pTokens)
-func (p *parser) aliasExists(alias []token.Token) (bool, bool, ast.Alias, []*token.Token) {
+func (p *parser) aliasExists(alias []token.Token) (bool, ast.Alias, []*token.Token) {
 	pTokens := toPointerSlice(alias[:len(alias)-1])
 	if ok, alias := p.aliases.Contains(pTokens); ok {
-		_, isFun := alias.(*ast.FuncAlias)
-		return alias != nil, isFun, alias, pTokens
+		return alias != nil, alias, pTokens
 	}
-	return false, false, nil, pTokens
+	return false, nil, pTokens
 }
 
 // helper to add an alias slice to the parser
@@ -363,8 +363,8 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 		// still leave it here just to be sure
 		alias := alias
 
-		if ok, isFun, existingAlias, pTokens := p.aliasExists(alias.GetTokens()); ok {
-			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(existingAlias.GetOriginal().Literal, existingAlias.Decl().Name(), isFun))
+		if ok, existingAlias, pTokens := p.aliasExists(alias.GetTokens()); ok {
+			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ast.MsgAliasAlreadyExists(existingAlias))
 		} else {
 			p.aliases.Insert(pTokens, alias)
 		}

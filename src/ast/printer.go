@@ -103,6 +103,11 @@ func (pr *printer) VisitStructDecl(decl *StructDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitExpressionDecl(decl *ExpressionDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("ExpressionDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic), decl.Expr)
+	return VisitRecurse
+}
+
 func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", &expr.Tok))
 	return VisitRecurse
@@ -206,6 +211,15 @@ func (pr *printer) VisitStructLiteral(expr *StructLiteral) VisitResult {
 		args = append(args, v)
 	}
 	pr.parenthesizeNode(fmt.Sprintf("StructLiteral[%s]", expr.Struct.Name()), args...)
+	return VisitRecurse
+}
+
+func (pr *printer) VisitExpressionCall(expr *ExpressionCall) VisitResult {
+	args := make([]Node, 0, len(expr.Args))
+	for _, v := range expr.Args {
+		args = append(args, v)
+	}
+	pr.parenthesizeNode(fmt.Sprintf("ExpressionCall[%s]", expr.Decl.Name()), args...)
 	return VisitRecurse
 }
 

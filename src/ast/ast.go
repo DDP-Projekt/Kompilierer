@@ -53,6 +53,15 @@ type (
 		Struct   *StructDecl              // the struct decl it refers to
 		Args     map[string]ddptypes.Type // types of the arguments (only those that the alias needs)
 	}
+
+	// wrapper for a expression alias
+	ExpressionAlias struct {
+		Tokens      []token.Token   // tokens of the alias
+		Original    token.Token     // the original string
+		ExprDecl    *ExpressionDecl // the expression decl it refers to
+		Args        []string        // names of the arguments (untyped)
+		cached_args map[string]ddptypes.ParameterType
+	}
 )
 
 func (alias *FuncAlias) GetTokens() []token.Token {
@@ -92,6 +101,31 @@ func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
 		}
 	}
 	return paramTypes
+}
+
+func (alias *ExpressionAlias) GetTokens() []token.Token {
+	return alias.Tokens
+}
+
+func (alias *ExpressionAlias) GetOriginal() token.Token {
+	return alias.Original
+}
+
+func (alias *ExpressionAlias) Decl() Declaration {
+	return alias.ExprDecl
+}
+
+func (alias *ExpressionAlias) GetArgs() map[string]ddptypes.ParameterType {
+	if alias.cached_args == nil {
+		alias.cached_args = map[string]ddptypes.ParameterType{}
+		for _, arg := range alias.Args {
+			alias.cached_args[arg] = ddptypes.ParameterType{
+				Type:        ddptypes.VoidType{},
+				IsReference: false,
+			}
+		}
+	}
+	return alias.cached_args
 }
 
 // basic Node interfaces
@@ -179,52 +213,77 @@ type (
 		Type    *ddptypes.StructType // the type resulting from this decl
 		Aliases []*StructAlias       // the constructors of the struct
 	}
+
+	// Der Alias ... steht für den Ausdruck ...
+	// nothing to do with the Expression type
+	ExpressionDecl struct {
+		Range        token.Range
+		CommentTok   *token.Token     // optional comment (also contained in ast.Comments)
+		Tok          token.Token      // Der
+		Alias        *ExpressionAlias // the alias
+		Expr         Expression       // the expression
+		InternalName string           // the internal name of the ExpressionDecl
+		IsPublic     bool             // wether the expression decl is marked with öffentliche
+		Mod          *Module          // the module in which the expression was declared
+		Symbols      *SymbolTable     // the symbol table of the expression (contains the arguments with void types and nil InitValues)
+	}
 )
 
-func (decl *BadDecl) String() string    { return "BadDecl" }
-func (decl *VarDecl) String() string    { return "VarDecl" }
-func (decl *FuncDecl) String() string   { return "FuncDecl" }
-func (decl *StructDecl) String() string { return "StructDecl" }
+func (decl *BadDecl) String() string        { return "BadDecl" }
+func (decl *VarDecl) String() string        { return "VarDecl" }
+func (decl *FuncDecl) String() string       { return "FuncDecl" }
+func (decl *StructDecl) String() string     { return "StructDecl" }
+func (decl *ExpressionDecl) String() string { return "ExpressionDecl" }
 
-func (decl *BadDecl) Token() token.Token    { return decl.Tok }
-func (decl *VarDecl) Token() token.Token    { return decl.NameTok }
-func (decl *FuncDecl) Token() token.Token   { return decl.Tok }
-func (decl *StructDecl) Token() token.Token { return decl.Tok }
+func (decl *BadDecl) Token() token.Token        { return decl.Tok }
+func (decl *VarDecl) Token() token.Token        { return decl.NameTok }
+func (decl *FuncDecl) Token() token.Token       { return decl.Tok }
+func (decl *StructDecl) Token() token.Token     { return decl.Tok }
+func (decl *ExpressionDecl) Token() token.Token { return decl.Tok }
 
-func (decl *BadDecl) GetRange() token.Range    { return decl.Err.Range }
-func (decl *VarDecl) GetRange() token.Range    { return decl.Range }
-func (decl *FuncDecl) GetRange() token.Range   { return decl.Range }
-func (decl *StructDecl) GetRange() token.Range { return decl.Range }
+func (decl *BadDecl) GetRange() token.Range        { return decl.Err.Range }
+func (decl *VarDecl) GetRange() token.Range        { return decl.Range }
+func (decl *FuncDecl) GetRange() token.Range       { return decl.Range }
+func (decl *StructDecl) GetRange() token.Range     { return decl.Range }
+func (decl *ExpressionDecl) GetRange() token.Range { return decl.Range }
 
 func (decl *BadDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitBadDecl(decl) }
 func (decl *VarDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitVarDecl(decl) }
 func (decl *FuncDecl) Accept(visitor FullVisitor) VisitResult   { return visitor.VisitFuncDecl(decl) }
 func (decl *StructDecl) Accept(visitor FullVisitor) VisitResult { return visitor.VisitStructDecl(decl) }
+func (decl *ExpressionDecl) Accept(visitor FullVisitor) VisitResult {
+	return visitor.VisitExpressionDecl(decl)
+}
 
-func (decl *BadDecl) declarationNode()    {}
-func (decl *VarDecl) declarationNode()    {}
-func (decl *FuncDecl) declarationNode()   {}
-func (decl *StructDecl) declarationNode() {}
+func (decl *BadDecl) declarationNode()        {}
+func (decl *VarDecl) declarationNode()        {}
+func (decl *FuncDecl) declarationNode()       {}
+func (decl *StructDecl) declarationNode()     {}
+func (decl *ExpressionDecl) declarationNode() {}
 
-func (decl *BadDecl) Name() string    { return "" }
-func (decl *VarDecl) Name() string    { return decl.NameTok.Literal }
-func (decl *FuncDecl) Name() string   { return decl.NameTok.Literal }
-func (decl *StructDecl) Name() string { return decl.NameTok.Literal }
+func (decl *BadDecl) Name() string        { return "" }
+func (decl *VarDecl) Name() string        { return decl.NameTok.Literal }
+func (decl *FuncDecl) Name() string       { return decl.NameTok.Literal }
+func (decl *StructDecl) Name() string     { return decl.NameTok.Literal }
+func (decl *ExpressionDecl) Name() string { return decl.InternalName }
 
-func (decl *BadDecl) Public() bool    { return false }
-func (decl *VarDecl) Public() bool    { return decl.IsPublic }
-func (decl *FuncDecl) Public() bool   { return decl.IsPublic }
-func (decl *StructDecl) Public() bool { return decl.IsPublic }
+func (decl *BadDecl) Public() bool        { return false }
+func (decl *VarDecl) Public() bool        { return decl.IsPublic }
+func (decl *FuncDecl) Public() bool       { return decl.IsPublic }
+func (decl *StructDecl) Public() bool     { return decl.IsPublic }
+func (decl *ExpressionDecl) Public() bool { return decl.IsPublic }
 
-func (decl *BadDecl) Comment() *token.Token    { return nil }
-func (decl *VarDecl) Comment() *token.Token    { return decl.CommentTok }
-func (decl *FuncDecl) Comment() *token.Token   { return decl.CommentTok }
-func (decl *StructDecl) Comment() *token.Token { return decl.CommentTok }
+func (decl *BadDecl) Comment() *token.Token        { return nil }
+func (decl *VarDecl) Comment() *token.Token        { return decl.CommentTok }
+func (decl *FuncDecl) Comment() *token.Token       { return decl.CommentTok }
+func (decl *StructDecl) Comment() *token.Token     { return decl.CommentTok }
+func (decl *ExpressionDecl) Comment() *token.Token { return decl.CommentTok }
 
-func (decl *BadDecl) Module() *Module    { return decl.Mod }
-func (decl *VarDecl) Module() *Module    { return decl.Mod }
-func (decl *FuncDecl) Module() *Module   { return decl.Mod }
-func (decl *StructDecl) Module() *Module { return decl.Mod }
+func (decl *BadDecl) Module() *Module        { return decl.Mod }
+func (decl *VarDecl) Module() *Module        { return decl.Mod }
+func (decl *FuncDecl) Module() *Module       { return decl.Mod }
+func (decl *StructDecl) Module() *Module     { return decl.Mod }
+func (decl *ExpressionDecl) Module() *Module { return decl.Mod }
 
 // Expressions
 type (
@@ -362,45 +421,60 @@ type (
 		// only the ones needed by the alias used
 		Args map[string]Expression
 	}
+
+	// invokation of the alias of a ExpressionDecl
+	ExpressionCall struct {
+		Range token.Range
+		Tok   token.Token // first token of the call
+		// the expression declaration this call refers to
+		// is set by the parser, or nil if the name was not found
+		Decl *ExpressionDecl
+		Args map[string]Expression
+		// copy of Decl.Symbols
+		// but with the variable types filled in properly
+		FilledSymbols *SymbolTable
+	}
 )
 
-func (expr *BadExpr) String() string       { return "BadExpr" }
-func (expr *Ident) String() string         { return "Ident" }
-func (expr *Indexing) String() string      { return "Indexing" }
-func (expr *FieldAccess) String() string   { return "FieldAccess" }
-func (expr *IntLit) String() string        { return "IntLit" }
-func (expr *FloatLit) String() string      { return "FloatLit" }
-func (expr *BoolLit) String() string       { return "BoolLit" }
-func (expr *CharLit) String() string       { return "CharLit" }
-func (expr *StringLit) String() string     { return "StringLit" }
-func (expr *ListLit) String() string       { return "ListLit" }
-func (expr *UnaryExpr) String() string     { return "UnaryExpr" }
-func (expr *BinaryExpr) String() string    { return "BinaryExpr" }
-func (expr *TernaryExpr) String() string   { return "BinaryExpr" }
-func (expr *CastExpr) String() string      { return "CastExpr" }
-func (expr *TypeOpExpr) String() string    { return "TypeOpExpr" }
-func (expr *Grouping) String() string      { return "Grouping" }
-func (expr *FuncCall) String() string      { return "FuncCall" }
-func (expr *StructLiteral) String() string { return "StructLiteral" }
+func (expr *BadExpr) String() string        { return "BadExpr" }
+func (expr *Ident) String() string          { return "Ident" }
+func (expr *Indexing) String() string       { return "Indexing" }
+func (expr *FieldAccess) String() string    { return "FieldAccess" }
+func (expr *IntLit) String() string         { return "IntLit" }
+func (expr *FloatLit) String() string       { return "FloatLit" }
+func (expr *BoolLit) String() string        { return "BoolLit" }
+func (expr *CharLit) String() string        { return "CharLit" }
+func (expr *StringLit) String() string      { return "StringLit" }
+func (expr *ListLit) String() string        { return "ListLit" }
+func (expr *UnaryExpr) String() string      { return "UnaryExpr" }
+func (expr *BinaryExpr) String() string     { return "BinaryExpr" }
+func (expr *TernaryExpr) String() string    { return "BinaryExpr" }
+func (expr *CastExpr) String() string       { return "CastExpr" }
+func (expr *TypeOpExpr) String() string     { return "TypeOpExpr" }
+func (expr *Grouping) String() string       { return "Grouping" }
+func (expr *FuncCall) String() string       { return "FuncCall" }
+func (expr *StructLiteral) String() string  { return "StructLiteral" }
+func (expr *ExpressionCall) String() string { return "ExpressionCall" }
 
-func (expr *BadExpr) Token() token.Token       { return expr.Tok }
-func (expr *Ident) Token() token.Token         { return expr.Literal }
-func (expr *Indexing) Token() token.Token      { return expr.Lhs.Token() }
-func (expr *FieldAccess) Token() token.Token   { return expr.Field.Token() }
-func (expr *IntLit) Token() token.Token        { return expr.Literal }
-func (expr *FloatLit) Token() token.Token      { return expr.Literal }
-func (expr *BoolLit) Token() token.Token       { return expr.Literal }
-func (expr *CharLit) Token() token.Token       { return expr.Literal }
-func (expr *StringLit) Token() token.Token     { return expr.Literal }
-func (expr *ListLit) Token() token.Token       { return expr.Tok }
-func (expr *UnaryExpr) Token() token.Token     { return expr.Tok }
-func (expr *BinaryExpr) Token() token.Token    { return expr.Tok }
-func (expr *TernaryExpr) Token() token.Token   { return expr.Tok }
-func (expr *CastExpr) Token() token.Token      { return expr.Lhs.Token() }
-func (expr *TypeOpExpr) Token() token.Token    { return expr.Tok }
-func (expr *Grouping) Token() token.Token      { return expr.LParen }
-func (expr *FuncCall) Token() token.Token      { return expr.Tok }
-func (expr *StructLiteral) Token() token.Token { return expr.Tok }
+func (expr *BadExpr) Token() token.Token        { return expr.Tok }
+func (expr *Ident) Token() token.Token          { return expr.Literal }
+func (expr *Indexing) Token() token.Token       { return expr.Lhs.Token() }
+func (expr *FieldAccess) Token() token.Token    { return expr.Field.Token() }
+func (expr *IntLit) Token() token.Token         { return expr.Literal }
+func (expr *FloatLit) Token() token.Token       { return expr.Literal }
+func (expr *BoolLit) Token() token.Token        { return expr.Literal }
+func (expr *CharLit) Token() token.Token        { return expr.Literal }
+func (expr *StringLit) Token() token.Token      { return expr.Literal }
+func (expr *ListLit) Token() token.Token        { return expr.Tok }
+func (expr *UnaryExpr) Token() token.Token      { return expr.Tok }
+func (expr *BinaryExpr) Token() token.Token     { return expr.Tok }
+func (expr *TernaryExpr) Token() token.Token    { return expr.Tok }
+func (expr *CastExpr) Token() token.Token       { return expr.Lhs.Token() }
+func (expr *TypeOpExpr) Token() token.Token     { return expr.Tok }
+func (expr *Grouping) Token() token.Token       { return expr.LParen }
+func (expr *FuncCall) Token() token.Token       { return expr.Tok }
+func (expr *StructLiteral) Token() token.Token  { return expr.Tok }
+func (expr *ExpressionCall) Token() token.Token { return expr.Tok }
 
 func (expr *BadExpr) GetRange() token.Range { return expr.Err.Range }
 func (expr *Ident) GetRange() token.Range   { return token.NewRange(&expr.Literal, &expr.Literal) }
@@ -411,58 +485,61 @@ func (expr *Indexing) GetRange() token.Range {
 func (expr *FieldAccess) GetRange() token.Range {
 	return token.Range{Start: expr.Field.GetRange().Start, End: expr.Rhs.GetRange().End}
 }
-func (expr *IntLit) GetRange() token.Range        { return expr.Literal.Range }
-func (expr *FloatLit) GetRange() token.Range      { return expr.Literal.Range }
-func (expr *BoolLit) GetRange() token.Range       { return expr.Literal.Range }
-func (expr *CharLit) GetRange() token.Range       { return expr.Literal.Range }
-func (expr *StringLit) GetRange() token.Range     { return expr.Literal.Range }
-func (expr *ListLit) GetRange() token.Range       { return expr.Range }
-func (expr *UnaryExpr) GetRange() token.Range     { return expr.Range }
-func (expr *BinaryExpr) GetRange() token.Range    { return expr.Range }
-func (expr *TernaryExpr) GetRange() token.Range   { return expr.Range }
-func (expr *CastExpr) GetRange() token.Range      { return expr.Range }
-func (expr *TypeOpExpr) GetRange() token.Range    { return expr.Range }
-func (expr *Grouping) GetRange() token.Range      { return expr.Range }
-func (expr *FuncCall) GetRange() token.Range      { return expr.Range }
-func (expr *StructLiteral) GetRange() token.Range { return expr.Range }
+func (expr *IntLit) GetRange() token.Range         { return expr.Literal.Range }
+func (expr *FloatLit) GetRange() token.Range       { return expr.Literal.Range }
+func (expr *BoolLit) GetRange() token.Range        { return expr.Literal.Range }
+func (expr *CharLit) GetRange() token.Range        { return expr.Literal.Range }
+func (expr *StringLit) GetRange() token.Range      { return expr.Literal.Range }
+func (expr *ListLit) GetRange() token.Range        { return expr.Range }
+func (expr *UnaryExpr) GetRange() token.Range      { return expr.Range }
+func (expr *BinaryExpr) GetRange() token.Range     { return expr.Range }
+func (expr *TernaryExpr) GetRange() token.Range    { return expr.Range }
+func (expr *CastExpr) GetRange() token.Range       { return expr.Range }
+func (expr *TypeOpExpr) GetRange() token.Range     { return expr.Range }
+func (expr *Grouping) GetRange() token.Range       { return expr.Range }
+func (expr *FuncCall) GetRange() token.Range       { return expr.Range }
+func (expr *StructLiteral) GetRange() token.Range  { return expr.Range }
+func (expr *ExpressionCall) GetRange() token.Range { return expr.Range }
 
-func (expr *BadExpr) Accept(v FullVisitor) VisitResult       { return v.VisitBadExpr(expr) }
-func (expr *Ident) Accept(v FullVisitor) VisitResult         { return v.VisitIdent(expr) }
-func (expr *Indexing) Accept(v FullVisitor) VisitResult      { return v.VisitIndexing(expr) }
-func (expr *FieldAccess) Accept(v FullVisitor) VisitResult   { return v.VisitFieldAccess(expr) }
-func (expr *IntLit) Accept(v FullVisitor) VisitResult        { return v.VisitIntLit(expr) }
-func (expr *FloatLit) Accept(v FullVisitor) VisitResult      { return v.VisitFloatLit(expr) }
-func (expr *BoolLit) Accept(v FullVisitor) VisitResult       { return v.VisitBoolLit(expr) }
-func (expr *CharLit) Accept(v FullVisitor) VisitResult       { return v.VisitCharLit(expr) }
-func (expr *StringLit) Accept(v FullVisitor) VisitResult     { return v.VisitStringLit(expr) }
-func (expr *ListLit) Accept(v FullVisitor) VisitResult       { return v.VisitListLit(expr) }
-func (expr *UnaryExpr) Accept(v FullVisitor) VisitResult     { return v.VisitUnaryExpr(expr) }
-func (expr *BinaryExpr) Accept(v FullVisitor) VisitResult    { return v.VisitBinaryExpr(expr) }
-func (expr *TernaryExpr) Accept(v FullVisitor) VisitResult   { return v.VisitTernaryExpr(expr) }
-func (expr *CastExpr) Accept(v FullVisitor) VisitResult      { return v.VisitCastExpr(expr) }
-func (expr *TypeOpExpr) Accept(v FullVisitor) VisitResult    { return v.VisitTypeOpExpr(expr) }
-func (expr *Grouping) Accept(v FullVisitor) VisitResult      { return v.VisitGrouping(expr) }
-func (expr *FuncCall) Accept(v FullVisitor) VisitResult      { return v.VisitFuncCall(expr) }
-func (expr *StructLiteral) Accept(v FullVisitor) VisitResult { return v.VisitStructLiteral(expr) }
+func (expr *BadExpr) Accept(v FullVisitor) VisitResult        { return v.VisitBadExpr(expr) }
+func (expr *Ident) Accept(v FullVisitor) VisitResult          { return v.VisitIdent(expr) }
+func (expr *Indexing) Accept(v FullVisitor) VisitResult       { return v.VisitIndexing(expr) }
+func (expr *FieldAccess) Accept(v FullVisitor) VisitResult    { return v.VisitFieldAccess(expr) }
+func (expr *IntLit) Accept(v FullVisitor) VisitResult         { return v.VisitIntLit(expr) }
+func (expr *FloatLit) Accept(v FullVisitor) VisitResult       { return v.VisitFloatLit(expr) }
+func (expr *BoolLit) Accept(v FullVisitor) VisitResult        { return v.VisitBoolLit(expr) }
+func (expr *CharLit) Accept(v FullVisitor) VisitResult        { return v.VisitCharLit(expr) }
+func (expr *StringLit) Accept(v FullVisitor) VisitResult      { return v.VisitStringLit(expr) }
+func (expr *ListLit) Accept(v FullVisitor) VisitResult        { return v.VisitListLit(expr) }
+func (expr *UnaryExpr) Accept(v FullVisitor) VisitResult      { return v.VisitUnaryExpr(expr) }
+func (expr *BinaryExpr) Accept(v FullVisitor) VisitResult     { return v.VisitBinaryExpr(expr) }
+func (expr *TernaryExpr) Accept(v FullVisitor) VisitResult    { return v.VisitTernaryExpr(expr) }
+func (expr *CastExpr) Accept(v FullVisitor) VisitResult       { return v.VisitCastExpr(expr) }
+func (expr *TypeOpExpr) Accept(v FullVisitor) VisitResult     { return v.VisitTypeOpExpr(expr) }
+func (expr *Grouping) Accept(v FullVisitor) VisitResult       { return v.VisitGrouping(expr) }
+func (expr *FuncCall) Accept(v FullVisitor) VisitResult       { return v.VisitFuncCall(expr) }
+func (expr *StructLiteral) Accept(v FullVisitor) VisitResult  { return v.VisitStructLiteral(expr) }
+func (expr *ExpressionCall) Accept(v FullVisitor) VisitResult { return v.VisitExpressionCall(expr) }
 
-func (expr *BadExpr) expressionNode()       {}
-func (expr *Ident) expressionNode()         {}
-func (expr *Indexing) expressionNode()      {}
-func (expr *FieldAccess) expressionNode()   {}
-func (expr *IntLit) expressionNode()        {}
-func (expr *FloatLit) expressionNode()      {}
-func (expr *BoolLit) expressionNode()       {}
-func (expr *CharLit) expressionNode()       {}
-func (expr *StringLit) expressionNode()     {}
-func (expr *ListLit) expressionNode()       {}
-func (expr *UnaryExpr) expressionNode()     {}
-func (expr *BinaryExpr) expressionNode()    {}
-func (expr *TernaryExpr) expressionNode()   {}
-func (expr *CastExpr) expressionNode()      {}
-func (expr *TypeOpExpr) expressionNode()    {}
-func (expr *Grouping) expressionNode()      {}
-func (expr *FuncCall) expressionNode()      {}
-func (expr *StructLiteral) expressionNode() {}
+func (expr *BadExpr) expressionNode()        {}
+func (expr *Ident) expressionNode()          {}
+func (expr *Indexing) expressionNode()       {}
+func (expr *FieldAccess) expressionNode()    {}
+func (expr *IntLit) expressionNode()         {}
+func (expr *FloatLit) expressionNode()       {}
+func (expr *BoolLit) expressionNode()        {}
+func (expr *CharLit) expressionNode()        {}
+func (expr *StringLit) expressionNode()      {}
+func (expr *ListLit) expressionNode()        {}
+func (expr *UnaryExpr) expressionNode()      {}
+func (expr *BinaryExpr) expressionNode()     {}
+func (expr *TernaryExpr) expressionNode()    {}
+func (expr *CastExpr) expressionNode()       {}
+func (expr *TypeOpExpr) expressionNode()     {}
+func (expr *Grouping) expressionNode()       {}
+func (expr *FuncCall) expressionNode()       {}
+func (expr *StructLiteral) expressionNode()  {}
+func (expr *ExpressionCall) expressionNode() {}
 
 func (expr *Ident) assigneable()       {}
 func (expr *Indexing) assigneable()    {}

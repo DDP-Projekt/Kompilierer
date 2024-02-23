@@ -140,6 +140,13 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (r *Resolver) VisitExpressionDecl(decl *ast.ExpressionDecl) ast.VisitResult {
+	r.setScope(decl.Symbols)
+	r.visit(decl.Expr)
+	r.exitScope()
+	return ast.VisitRecurse
+}
+
 // if a BadExpr exists the AST is faulty
 func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	r.Module.Ast.Faulty = true
@@ -248,6 +255,13 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.VisitResult {
 }
 
 func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
+	for _, arg := range expr.Args {
+		r.visit(arg)
+	}
+	return ast.VisitRecurse
+}
+
+func (r *Resolver) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
 	for _, arg := range expr.Args {
 		r.visit(arg)
 	}

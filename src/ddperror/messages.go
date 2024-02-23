@@ -27,13 +27,7 @@ func MsgNameAlreadyExists(name string) string {
 	return fmt.Sprintf("Der Name %s steht bereits für eine Variable, Funktion oder Struktur", name)
 }
 
-func MsgAliasAlreadyExists(alias, name string, isFunc bool) string {
-	typ := "Struktur"
-	if isFunc {
-		typ = "Funktion"
-	}
-	return fmt.Sprintf("Der Alias %s steht bereits für die %s '%s'", alias, typ, name)
-}
+// MsgAliasAlreadyExists can be found in /ast/helper.go to avoid circular imports
 
 const (
 	MSG_MISSING_RETURN         = "Am Ende einer Funktion, die etwas zurück gibt, muss eine Rückgabe Anweisung stehen"

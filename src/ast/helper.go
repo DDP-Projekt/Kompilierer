@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -72,4 +73,17 @@ func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declarat
 			}
 		}
 	}
+}
+
+// originally in ddperror/messages.go but moved here to avoid circular imports
+func MsgAliasAlreadyExists(alias Alias) string {
+	typ := "die Funktion"
+	switch alias.(type) {
+	case *StructAlias:
+		typ = "die Struktur"
+	case *ExpressionAlias:
+		typ = "den Ausdruck"
+	default:
+	}
+	return fmt.Sprintf("Der Alias %s steht bereits für %s '%s'", alias.GetOriginal().Literal, typ, alias.Decl().Name())
 }

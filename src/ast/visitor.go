@@ -25,6 +25,7 @@ type FullVisitor interface {
 	VarDeclVisitor
 	FuncDeclVisitor
 	StructDeclVisitor
+	ExpressionDeclVisitor
 
 	/*
 		Expressions
@@ -48,6 +49,7 @@ type FullVisitor interface {
 	GroupingVisitor
 	FuncCallVisitor
 	StructLiteralVisitor
+	ExpressionCallVisitor
 
 	/*
 		Statements
@@ -92,6 +94,10 @@ type (
 	StructDeclVisitor interface {
 		BaseVisitor
 		VisitStructDecl(*StructDecl) VisitResult
+	}
+	ExpressionDeclVisitor interface {
+		BaseVisitor
+		VisitExpressionDecl(*ExpressionDecl) VisitResult
 	}
 
 	BadExprVisitor interface {
@@ -165,6 +171,10 @@ type (
 	StructLiteralVisitor interface {
 		BaseVisitor
 		VisitStructLiteral(*StructLiteral) VisitResult
+	}
+	ExpressionCallVisitor interface {
+		BaseVisitor
+		VisitExpressionCall(*ExpressionCall) VisitResult
 	}
 
 	BadStmtVisitor interface {
