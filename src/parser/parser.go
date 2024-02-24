@@ -18,6 +18,12 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+type aliasPair struct {
+	old     ast.Alias
+	new     ast.Alias
+	pTokens []*token.Token
+}
+
 // holds state when parsing a .ddp file into an AST
 type parser struct {
 	tokens       []token.Token    // the tokens to parse (without comments)
@@ -26,16 +32,17 @@ type parser struct {
 	errorHandler ddperror.Handler // a function to which errors are passed
 	lastError    ddperror.Error   // latest reported error
 
-	module                *ast.Module
-	predefinedModules     map[string]*ast.Module            // modules that were passed as environment, might not all be used
-	aliases               *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames             map[string]ddptypes.Type          // map of struct names to struct types
-	currentFunction       string                            // function which is currently being parsed
-	isCurrentFunctionBool bool                              // wether the current function returns a boolean
-	panicMode             bool                              // flag to not report following errors
-	errored               bool                              // wether the parser found an error
-	resolver              *resolver.Resolver                // used to resolve every node directly after it has been parsed
-	typechecker           *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	module                 *ast.Module
+	predefinedModules      map[string]*ast.Module            // modules that were passed as environment, might not all be used
+	aliases                *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
+	typeNames              map[string]ddptypes.Type          // map of struct names to struct types
+	currentFunction        string                            // function which is currently being parsed
+	isCurrentFunctionBool  bool                              // wether the current function returns a boolean
+	panicMode              bool                              // flag to not report following errors
+	errored                bool                              // wether the parser found an error
+	resolver               *resolver.Resolver                // used to resolve every node directly after it has been parsed
+	typechecker            *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	scope_replaced_aliases map[*ast.SymbolTable][]aliasPair  // aliases that were replaced in the given scope and have to be restored on scope exit
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -84,13 +91,14 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			},
 			PublicDecls: make(map[string]ast.Declaration),
 		},
-		predefinedModules: modules,
-		aliases:           at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:         make(map[string]ddptypes.Type),
-		panicMode:         false,
-		errored:           false,
-		resolver:          &resolver.Resolver{},
-		typechecker:       &typechecker.Typechecker{},
+		predefinedModules:      modules,
+		aliases:                at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
+		typeNames:              make(map[string]ddptypes.Type),
+		panicMode:              false,
+		errored:                false,
+		resolver:               &resolver.Resolver{},
+		typechecker:            &typechecker.Typechecker{},
+		scope_replaced_aliases: make(map[*ast.SymbolTable][]ast.Alias),
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
@@ -318,7 +326,9 @@ func (p *parser) scope() *ast.SymbolTable {
 
 // create a sub-scope of the current scope
 func (p *parser) newScope() *ast.SymbolTable {
-	return ast.NewSymbolTable(p.resolver.CurrentTable)
+	scope := ast.NewSymbolTable(p.resolver.CurrentTable)
+	p.scope_replaced_aliases[scope] = nil
+	return scope
 }
 
 // set the current scope for the resolver and typechecker
@@ -328,7 +338,37 @@ func (p *parser) setScope(symbols *ast.SymbolTable) {
 
 // exit the current scope of the resolver and typechecker
 func (p *parser) exitScope() {
+	// restore the old alias state
+	for _, pair := range p.scope_replaced_aliases[p.scope()] {
+		if pair.old != nil {
+			p.aliases.Insert(pair.pTokens, pair.old)
+		} else {
+			p.aliases.Delete(pair.pTokens)
+		}
+	}
+
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
+}
+
+func (p *parser) overwrite_alias(scope *ast.SymbolTable, alias ast.Alias, pTokens []*token.Token) {
+	// error if the alias already exists in the given scope
+outer:
+	for _, pair := range p.scope_replaced_aliases[scope] {
+		if len(pair.pTokens) != len(pTokens) {
+			continue
+		}
+		// compare element wise
+		for i, t := range pair.pTokens {
+			if !tokenEqual(t, pTokens[i]) {
+				continue outer
+			}
+			p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, alias.GetOriginal().Range, ast.MsgAliasAlreadyExists(alias))
+			return
+		}
+	}
+
+	old_alias := p.aliases.Insert(pTokens, alias)
+	p.scope_replaced_aliases[scope] = append(p.scope_replaced_aliases[scope], aliasPair{old: old_alias, new: alias, pTokens: pTokens})
 }
 
 func (p *parser) errVal(err ddperror.Error) {

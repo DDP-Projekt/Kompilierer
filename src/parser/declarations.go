@@ -330,7 +330,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if err := p.validateFunctionAlias(alias, paramNames, paramTypes); err == nil { // check that the alias fits the function
+			} else if err := p.validateFunctionAlias(v, alias, paramNames, paramTypes); err == nil { // check that the alias fits the function
 				if ok, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ast.MsgAliasAlreadyExists(existingAlias))
 				} else {
@@ -438,10 +438,15 @@ func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }      
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
-func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) *ddperror.Error {
+func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) *ddperror.Error {
+	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
+		return &err
+	}
+
 	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) { // validate that the alias contains as many parameters as the function
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+			aliasTok.Range,
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(paramNames), count),
 			p.module.FileName,
 		)
@@ -450,7 +455,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []t
 	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+			aliasTok.Range,
 			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
@@ -472,7 +477,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []t
 				delete(nameSet, k)
 			} else {
 				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+					aliasTok.Range,
 					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 					p.module.FileName,
 				)
@@ -487,10 +492,15 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []t
 // and that no ILLEGAL tokens are present
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
-func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
+func (p *parser) validateStructAlias(aliasTok *token.Token, aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
+	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
+		return &err, nil
+	}
+
 	if count := countElements(aliasTokens, isAliasExpr); count > len(fields) { // validate that the alias contains as many parameters as the struct
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+			aliasTok.Range,
 			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
 			p.module.FileName,
 		)
@@ -499,7 +509,7 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+			aliasTok.Range,
 			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
@@ -524,7 +534,7 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 				delete(nameSet, k)
 			} else {
 				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+					aliasTok.Range,
 					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 					p.module.FileName,
 				)
@@ -620,7 +630,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		if aliasTokens, err := scanner.ScanAlias(*rawAlias, errHandleWrapper); err == nil && !didError {
 			if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, rawAlias.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if err, args := p.validateStructAlias(aliasTokens, fieldsForValidation); err == nil {
+			} else if err, args := p.validateStructAlias(rawAlias, aliasTokens, fieldsForValidation); err == nil {
 				if ok, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, rawAlias.Range, ast.MsgAliasAlreadyExists(existingAlias))
 				} else {
@@ -663,11 +673,15 @@ func (p *parser) structDeclaration() ast.Declaration {
 	return decl
 }
 
-func (p *parser) validateExpressionAlias(aliasTokens []token.Token) ([]string, *ddperror.Error) {
+func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []token.Token) ([]string, *ddperror.Error) {
+	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
+		return nil, &err
+	}
 	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+			aliasTok.Range,
 			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
@@ -683,7 +697,7 @@ func (p *parser) validateExpressionAlias(aliasTokens []token.Token) ([]string, *
 			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 			if _, exists := parameters[k]; exists {
 				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+					aliasTok.Range,
 					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 					p.module.FileName,
 				)
@@ -723,15 +737,20 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	var alias *ast.ExpressionAlias
 	didError := false
 	errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-	if alias, err := scanner.ScanAlias(*aliasTok, errHandleWrapper); err == nil && !didError {
-		if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-			p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-		} else if parameters, err := p.validateExpressionAlias(alias); err == nil { // check that the alias fits the function
-			if ok, existingAlias, pTokens := p.aliasExists(alias); ok {
-				p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ast.MsgAliasAlreadyExists(existingAlias))
-			} else {
-				alias := &ast.ExpressionAlias{Tokens: alias, Original: *aliasTok, ExprDecl: nil, Args: parameters}
-				p.aliases.Insert(pTokens, alias)
+	if aliasTokens, err := scanner.ScanAlias(*aliasTok, errHandleWrapper); err == nil && !didError {
+		if parameters, err := p.validateExpressionAlias(aliasTok, aliasTokens); err == nil { // check that the alias fits the function
+			// create the alias
+			alias = &ast.ExpressionAlias{Tokens: aliasTokens, Original: *aliasTok, ExprDecl: nil, Args: parameters}
+
+			// if the alias is in a non-global scope, overwrite the alias
+			if !ast.IsGlobalScope(p.scope()) {
+				p.overwrite_alias(p.scope(), alias, toPointerSlice(aliasTokens))
+			} else { // if the alias is in the global scope, just proceed normally like with functions or structs
+				if ok, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ast.MsgAliasAlreadyExists(existingAlias))
+				} else {
+					p.aliases.Insert(pTokens, alias)
+				}
 			}
 		} else {
 			p.errVal(*err)
