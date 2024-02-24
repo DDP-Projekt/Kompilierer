@@ -69,11 +69,9 @@ func (t *Trie[K, V]) Insert(key []K, value V) V {
 func (t *Trie[K, V]) Delete(key []K) V {
 	var v V
 	node := t.root
-	way := []*trieNode[K, V]{node}
 	for _, k := range key {
 		if child, ok := node.children.Get(k); ok {
 			node = child
-			way = append(way, node)
 		} else {
 			return v // key not found
 		}
@@ -81,17 +79,6 @@ func (t *Trie[K, V]) Delete(key []K) V {
 	result := node.value
 	node.value = v
 	node.hasValue = false
-
-	// recursively delete each node up the three that has no value and no children
-	for i := len(way) - 1; i > 0; i-- {
-		node = way[i]
-		if node.hasValue || node.children.Len() > 0 {
-			break
-		}
-		parent := way[i-1]
-		parent.children.Delete(node.key)
-	}
-
 	return result
 }
 
