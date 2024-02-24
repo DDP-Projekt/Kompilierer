@@ -701,10 +701,12 @@ func (p *parser) validateExpressionAlias(aliasTokens []token.Token) ([]string, *
 }
 
 // used for generating the internal names
+// NOTE: maybe make this atomic if concurrency is used in the future
 var expressionDeclCount = 0
 
 // parses and expression Declaration
 // startDepth is the int passed to p.peekN(n) to get to the DIE token of the declaration
+// TODO: scoped aliases
 func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	begin := p.peekN(startDepth)
 	comment := p.commentBeforePos(begin.Range.Start)
@@ -754,6 +756,14 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	p.setScope(symbols)
 	expr := p.expression()
 	p.exitScope()
+
+	name := fmt.Sprintf("$expr_decl_%d", expressionDeclCount)
+	var NameTok *token.Token
+	if p.match(token.MIT) {
+		p.consume(token.NAMEN, token.IDENTIFIER)
+		NameTok = p.previous()
+		name = NameTok.Literal
+	}
 	p.consume(token.DOT)
 
 	alias.ExprDecl = &ast.ExpressionDecl{
@@ -762,7 +772,8 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		Tok:          *begin,
 		Alias:        alias,
 		Expr:         expr,
-		InternalName: fmt.Sprintf("$expr_decl_%d", expressionDeclCount),
+		NameTok:      NameTok,
+		AssignedName: name,
 		IsPublic:     isPublic,
 		Mod:          p.module,
 		Symbols:      symbols,

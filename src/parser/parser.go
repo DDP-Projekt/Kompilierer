@@ -186,7 +186,6 @@ func (p *parser) checkStatement(stmt ast.Statement) {
 }
 
 // fils out importStmt.Module and updates the parser state accordingly
-// TODO: ExpressionDecls
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -260,6 +259,8 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
 			p.typeNames[decl.Name()] = decl.Type
+		case *ast.ExpressionDecl:
+			aliases = append(aliases, decl.Alias)
 		default: // for VarDecls or BadDecls we don't need to add any aliases
 			needAddAliases = false
 		}

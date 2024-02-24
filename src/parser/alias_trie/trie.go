@@ -1,4 +1,4 @@
-package parser
+package alias_trie
 
 import (
 	"fmt"
@@ -41,7 +41,8 @@ func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 }
 
 // insert a value into the trie
-func (t *Trie[K, V]) Insert(key []K, value V) {
+// returns the previous value for the key or the default value if there was none
+func (t *Trie[K, V]) Insert(key []K, value V) V {
 	var v V
 	node := t.root
 	for _, k := range key {
@@ -58,8 +59,40 @@ func (t *Trie[K, V]) Insert(key []K, value V) {
 			node = child
 		}
 	}
+	result := node.value
 	node.value = value
 	node.hasValue = true
+	return result
+}
+
+// deletes a value from the trie and returns it
+func (t *Trie[K, V]) Delete(key []K) V {
+	var v V
+	node := t.root
+	way := []*trieNode[K, V]{node}
+	for _, k := range key {
+		if child, ok := node.children.Get(k); ok {
+			node = child
+			way = append(way, node)
+		} else {
+			return v // key not found
+		}
+	}
+	result := node.value
+	node.value = v
+	node.hasValue = false
+
+	// recursively delete each node up the three that has no value and no children
+	for i := len(way) - 1; i > 0; i-- {
+		node = way[i]
+		if node.hasValue || node.children.Len() > 0 {
+			break
+		}
+		parent := way[i-1]
+		parent.children.Delete(node.key)
+	}
+
+	return result
 }
 
 // generate keys for the trie

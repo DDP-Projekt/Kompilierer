@@ -1,4 +1,4 @@
-package parser
+package ordered_map
 
 type CompFunc[K any] func(K, K) bool
 
@@ -66,6 +66,10 @@ func (m *OrderedMap[K, V]) Delete(key K) {
 	if ok {
 		m.data = append(m.data[:i], m.data[i+2:]...)
 	}
+}
+
+func (m *OrderedMap[K, V]) Len() int {
+	return len(m.data) / 2
 }
 
 // collects all the keys in the map

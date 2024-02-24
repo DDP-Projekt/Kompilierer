@@ -1,9 +1,15 @@
-package parser
+package alias_trie
 
 import (
 	"reflect"
 	"testing"
 )
+
+func assertEqual[T comparable](t *testing.T, expected, actual T) {
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
 
 // write a test for Trie
 func TestTrie(t *testing.T) {
@@ -17,10 +23,10 @@ func TestTrie(t *testing.T) {
 		},
 	)
 	// insert some values
-	trie.Insert([]int{1, 2, 3}, "three")
-	trie.Insert([]int{1, 2, 3, 4}, "four")
-	trie.Insert([]int{1, 2, 3, 4, 5}, "five")
-	trie.Insert([]int{1, 2, 3, 4, 5, 6}, "six")
+	assertEqual(t, trie.Insert([]int{1, 2, 3}, "three"), "")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4}, "four"), "")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4, 5}, "five"), "")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4, 5, 6}, "six"), "")
 
 	makeKeys := func(n int) TrieKeyGen[int] {
 		i := 0
@@ -78,4 +84,20 @@ func TestTrie(t *testing.T) {
 		t.Errorf("Expected true, got false")
 	}
 
+	assertEqual(t, trie.Insert([]int{1, 2, 3}, "three2"), "three")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4}, "four2"), "four")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4, 5}, "five2"), "five")
+	assertEqual(t, trie.Insert([]int{1, 2, 3, 4, 5, 6}, "six2"), "six")
+
+	// check if the keys are deleted correctly
+	assertEqual(t, trie.Delete([]int{1, 2, 3}), "three2")
+	if values := trie.Search(makeKeys(6)); !reflect.DeepEqual(values, []string{"four2", "five2", "six2"}) {
+		t.Errorf("Expected value %v, got %v", []string{"four2", "five2", "six2"}, values)
+	}
+	assertEqual(t, trie.Delete([]int{1, 2, 3, 4, 5, 6}), "six2")
+	if values := trie.Search(makeKeys(6)); !reflect.DeepEqual(values, []string{"four2", "five2"}) {
+		t.Errorf("Expected value %v, got %v", []string{"four2", "five2"}, values)
+	}
+
+	assertEqual(t, trie.Insert([]int{1, 2, 3}, "three3"), "")
 }

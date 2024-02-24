@@ -222,7 +222,8 @@ type (
 		Tok          token.Token      // Der
 		Alias        *ExpressionAlias // the alias
 		Expr         Expression       // the expression
-		InternalName string           // the internal name of the ExpressionDecl
+		NameTok *token.Token // non-nil if an explicit name was given
+		AssignedName string           // the internal or given name of the ExpressionDecl
 		IsPublic     bool             // wether the expression decl is marked with öffentliche
 		Mod          *Module          // the module in which the expression was declared
 		Symbols      *SymbolTable     // the symbol table of the expression (contains the arguments with void types and nil InitValues)
@@ -265,7 +266,7 @@ func (decl *BadDecl) Name() string        { return "" }
 func (decl *VarDecl) Name() string        { return decl.NameTok.Literal }
 func (decl *FuncDecl) Name() string       { return decl.NameTok.Literal }
 func (decl *StructDecl) Name() string     { return decl.NameTok.Literal }
-func (decl *ExpressionDecl) Name() string { return decl.InternalName }
+func (decl *ExpressionDecl) Name() string { return decl.AssignedName }
 
 func (decl *BadDecl) Public() bool        { return false }
 func (decl *VarDecl) Public() bool        { return decl.IsPublic }

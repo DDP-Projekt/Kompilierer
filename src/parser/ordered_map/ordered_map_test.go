@@ -1,9 +1,15 @@
-package parser
+package ordered_map
 
 import (
 	"reflect"
 	"testing"
 )
+
+func assertEqual[T comparable](t *testing.T, expected, actual T) {
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
 
 // write a test for SliceMap
 func TestSliceMap(t *testing.T) {
@@ -14,9 +20,13 @@ func TestSliceMap(t *testing.T) {
 		return a < b
 	})
 	// set some values
+	assertEqual(t, m.Len(), 0)
 	m.Set(1, "one")
+	assertEqual(t, m.Len(), 1)
 	m.Set(2, "two")
+	assertEqual(t, m.Len(), 2)
 	m.Set(3, "three")
+	assertEqual(t, m.Len(), 3)
 	// check if the values are set correctly
 	if v, ok := m.Get(1); !ok || v != "one" {
 		t.Errorf("Expected value %v, got %v", "one", v)
@@ -37,6 +47,7 @@ func TestSliceMap(t *testing.T) {
 	}
 	// delete a value
 	m.Delete(2)
+	assertEqual(t, m.Len(), 2)
 	// check if the value is deleted
 	if v, ok := m.Get(2); ok || v != "" {
 		t.Errorf("Expected value %v, got %v", "", v)

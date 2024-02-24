@@ -138,6 +138,7 @@ const (
 	ZUM
 	ELEMENT
 	AUSDRUCK
+	NAMEN
 
 	DOT    // .
 	COMMA  // ,
@@ -284,6 +285,7 @@ var tokenStrings = [...]string{
 	ZUM:           "zum",
 	ELEMENT:       "Element",
 	AUSDRUCK:      "Ausdruck",
+	NAMEN:         "Namen",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -430,6 +432,7 @@ var KeywordMap = map[string]TokenType{
 	"zum":            ZUM,
 	"Element":        ELEMENT,
 	"Ausdruck":       AUSDRUCK,
+	"Namen":          NAMEN,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
