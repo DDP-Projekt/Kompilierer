@@ -1,0 +1,13 @@
+Binde "Duden/Ausgabe" ein.
+
+Der Alias "eins" steht für den Ausdruck 1.
+Der Alias "zwei" steht für den Ausdruck 2 mit Namen zwei_alias.
+
+Schreibe eins auf eine Zeile.
+Schreibe zwei auf eine Zeile.
+Schreibe (eins plus zwei) auf eine Zeile.
+
+Der Alias "<a> mit <b> multipliziert" steht für den Ausdruck a mal b.
+
+Schreibe (eins mit zwei multipliziert) auf eine Zeile.
+Schreibe (eins mit (zwei plus zwei) multipliziert) auf eine Zeile.

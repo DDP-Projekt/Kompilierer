@@ -570,6 +570,12 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
+	// if the "variable" is from an expressionCall, it might not need to be loaded
+	if Var.fromExprCall {
+		c.latestReturn, c.latestReturnType, c.latestIsTemp = Var.val, Var.typ, false
+		return ast.VisitRecurse
+	}
+
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
 		c.latestReturn = c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 	} else { // non-primitives are used by pointer
@@ -622,6 +628,7 @@ func (c *compiler) VisitIntLit(e *ast.IntLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newInt(e.Value)
 	c.latestReturnType = c.ddpinttyp
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -629,6 +636,7 @@ func (c *compiler) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
 	c.latestReturnType = c.ddpfloattyp
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -636,6 +644,7 @@ func (c *compiler) VisitBoolLit(e *ast.BoolLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = constant.NewBool(e.Value)
 	c.latestReturnType = c.ddpbooltyp
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -643,6 +652,7 @@ func (c *compiler) VisitCharLit(e *ast.CharLit) ast.VisitResult {
 	c.commentNode(c.cbb, e, "")
 	c.latestReturn = newIntT(ddpchar, int64(e.Value))
 	c.latestReturnType = c.ddpchartyp
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -763,6 +773,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -787,6 +798,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 		return ast.VisitRecurse
 	case ast.BIN_OR:
 		lhs, _, _ := c.evaluate(e.Lhs)
@@ -804,6 +816,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
 		rhs, rhsTyp, _ := c.evaluate(e.Rhs)
@@ -813,6 +826,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			fieldPtr := c.indexStruct(rhs, fieldIndex)
 			if fieldType.IsPrimitive() {
 				c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+				c.latestIsTemp = true
 			} else {
 				dest := c.NewAlloca(fieldType.IrType())
 				c.deepCopyInto(dest, fieldPtr, fieldType)
@@ -928,6 +942,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
+		c.latestIsTemp = true
 	case ast.BIN_MINUS:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -956,6 +971,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
+		c.latestIsTemp = true
 	case ast.BIN_MULT:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -984,6 +1000,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
+		c.latestIsTemp = true
 	case ast.BIN_DIV:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1012,6 +1029,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpfloattyp
+		c.latestIsTemp = true
 	case ast.BIN_INDEX:
 		switch lhsTyp {
 		case c.ddpstring:
@@ -1101,6 +1119,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["pow"].irFunc, lhs, rhs)
 		c.latestReturnType = c.ddpfloattyp
+		c.latestIsTemp = true
 	case ast.BIN_LOG:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1125,29 +1144,38 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		log10_base := c.cbb.NewCall(c.functions["log10"].irFunc, rhs)
 		c.latestReturn = c.cbb.NewFDiv(log10_num, log10_base)
 		c.latestReturnType = c.ddpfloattyp
+		c.latestIsTemp = true
 	case ast.BIN_LOGIC_AND:
 		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_LOGIC_OR:
 		c.latestReturn = c.cbb.NewOr(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_LOGIC_XOR:
 		c.latestReturn = c.cbb.NewXor(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_MOD:
 		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_LEFT_SHIFT:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_RIGHT_SHIFT:
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestIsTemp = true
 	case ast.BIN_EQUAL:
 		c.compare_values(lhs, rhs, lhsTyp)
+		c.latestIsTemp = true
 	case ast.BIN_UNEQUAL:
 		equal := c.compare_values(lhs, rhs, lhsTyp)
 		c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		c.latestIsTemp = true
 	case ast.BIN_LESS:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1172,6 +1200,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			}
 		}
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 	case ast.BIN_LESS_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1198,6 +1227,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 	case ast.BIN_GREATER:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1224,6 +1254,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 	case ast.BIN_GREATER_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
@@ -1250,6 +1281,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 	}
 	return ast.VisitRecurse
 }
@@ -1302,6 +1334,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 		}
 		c.latestReturnType = c.ddpbooltyp
+		c.latestIsTemp = true
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}
@@ -1336,6 +1369,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
 			}
+			c.latestIsTemp = true
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1347,6 +1381,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}
+			c.latestIsTemp = true
 		case ddptypes.WAHRHEITSWERT:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1356,6 +1391,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for WAHRHEITSWERT: %s", lhsTyp.Name())
 			}
+			c.latestIsTemp = true
 		case ddptypes.BUCHSTABE:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1365,6 +1401,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for BUCHSTABE: %s", lhsTyp.Name())
 			}
+			c.latestIsTemp = true
 		case ddptypes.TEXT:
 			if lhsTyp == c.ddpstring {
 				c.latestReturn = lhs
@@ -1415,6 +1452,7 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 	default:
 		c.err("invalid TypeOpExpr Operator: %d", e.Operator)
 	}
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -1497,6 +1535,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	// compile the actual function call
 	if irReturnType.IsPrimitive() {
 		c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
+		c.latestIsTemp = true
 	} else {
 		c.cbb.NewCall(fun.irFunc, args...)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(ret, irReturnType)
@@ -1545,8 +1584,24 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 }
 
 func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
-	// TODO:
-	c.err("ExpressionCall not implemented")
+	c.scp = newScope(c.scp)
+
+	// compile the arguments
+	for argName, arg := range expr.Args {
+		val, typ, isTemporary := c.evaluate(arg)
+
+		if isTemporary { // non-variable arguments have to be freed
+			// val might be an intermediate value, so it has to be treated specially in Ident
+			c.scp.addExprCallArg(argName, val, typ)
+		} else { // variables are captured by reference and may not be freed
+			c.scp.addProtected(argName, val, typ, false)
+		}
+	}
+
+	// compile the expression
+	c.latestReturn, c.latestReturnType, c.latestIsTemp = c.evaluate(expr.Decl.Expr)
+
+	c.scp = c.exitScope(c.scp)
 	return ast.VisitRecurse
 }
 

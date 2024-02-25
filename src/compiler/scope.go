@@ -6,10 +6,11 @@ import (
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val       value.Value // alloca or global-Def in the ir
-	typ       ddpIrType   // ir type of the variable
-	isRef     bool
-	protected bool // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
+	val          value.Value // alloca or global-Def in the ir
+	typ          ddpIrType   // ir type of the variable
+	fromExprCall bool        // wether this is an argument of a expression call, in which case it might not be a alloca or global-Def
+	isRef        bool
+	protected    bool // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
 }
 
 // wraps local variables of a scope + the enclosing scope
@@ -43,12 +44,17 @@ func (s *scope) lookupVar(name string) varwrapper {
 
 // add a variable to the scope
 func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
+	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: false}
 	return val
 }
 
 func (scope *scope) addProtected(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
+	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: true}
+	return val
+}
+
+func (scope *scope) addExprCallArg(name string, val value.Value, ty ddpIrType) value.Value {
+	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: true, isRef: false, protected: false}
 	return val
 }
 

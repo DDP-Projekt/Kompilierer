@@ -673,10 +673,10 @@ func (p *parser) structDeclaration() ast.Declaration {
 	return decl
 }
 
-func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []token.Token) ([]string, *ddperror.Error) {
+func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []token.Token) ([]string, map[string]*token.Token, *ddperror.Error) {
 	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
-		return nil, &err
+		return nil, nil, &err
 	}
 	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
 		err := ddperror.New(
@@ -685,10 +685,11 @@ func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []to
 			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
-		return nil, &err
+		return nil, nil, &err
 	}
 
 	parameters := map[string]struct{}{} // set that holds the parameter names contained in the alias
+	parameterTokens := map[string]*token.Token{}
 
 	// validate that each parameter is contained in the alias exactly once
 	// and fill in the AliasInfo
@@ -701,9 +702,13 @@ func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []to
 					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 					p.module.FileName,
 				)
-				return nil, &err
+				return nil, nil, &err
 			} else {
 				parameters[k] = struct{}{}
+				tok := v
+				tok.Literal = k
+				tok.Type = token.IDENTIFIER
+				parameterTokens[k] = &tok
 				aliasTokens[i].AliasInfo = &ddptypes.ParameterType{
 					Type:        ddptypes.VoidType{},
 					IsReference: false,
@@ -711,7 +716,7 @@ func (p *parser) validateExpressionAlias(aliasTok *token.Token, aliasTokens []to
 			}
 		}
 	}
-	return maps.Keys(parameters), nil
+	return maps.Keys(parameters), parameterTokens, nil
 }
 
 // used for generating the internal names
@@ -734,12 +739,14 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	p.consume(token.STRING)
 	aliasTok := p.previous()
 
+	parameterTokens := map[string]*token.Token{}
 	var alias *ast.ExpressionAlias
 	didError := false
 	errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 	if aliasTokens, err := scanner.ScanAlias(*aliasTok, errHandleWrapper); err == nil && !didError {
-		if parameters, err := p.validateExpressionAlias(aliasTok, aliasTokens); err == nil { // check that the alias fits the function
+		if parameters, pTokens, err := p.validateExpressionAlias(aliasTok, aliasTokens); err == nil { // check that the alias fits the function
 			// create the alias
+			parameterTokens = pTokens
 			alias = &ast.ExpressionAlias{Tokens: aliasTokens, Original: *aliasTok, ExprDecl: nil, Args: parameters}
 
 			// if the alias is in a non-global scope, overwrite the alias
@@ -762,10 +769,10 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	symbols := p.newScope()
 	for _, argName := range alias.Args {
 		symbols.InsertDecl(argName, &ast.VarDecl{
-			Range:      aliasTok.Range,
+			Range:      parameterTokens[argName].Range,
 			CommentTok: nil,
 			Type:       ddptypes.VoidType{},
-			NameTok:    *aliasTok,
+			NameTok:    *parameterTokens[argName],
 			IsPublic:   false,
 			Mod:        p.module,
 			InitVal:    nil,

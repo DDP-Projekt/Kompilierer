@@ -570,16 +570,6 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 }
 
 func (t *Typechecker) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
-	expr.FilledSymbols = ast.NewSymbolTable(expr.Decl.Symbols.Enclosing)
-	for argName, arg := range expr.Args {
-		argType := t.Evaluate(arg)
-
-		tmp, _, _ := expr.Decl.Symbols.LookupDecl(argName)
-		argVar := tmp.(*ast.VarDecl)
-		argVar.Type = argType
-		expr.FilledSymbols.InsertDecl(argName, argVar)
-	}
-
 	t.CurrentTable = expr.FilledSymbols
 	errHndl := t.ErrorHandler
 	t.ErrorHandler = func(err ddperror.Error) {

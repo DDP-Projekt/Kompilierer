@@ -98,7 +98,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		errored:                false,
 		resolver:               &resolver.Resolver{},
 		typechecker:            &typechecker.Typechecker{},
-		scope_replaced_aliases: make(map[*ast.SymbolTable][]ast.Alias),
+		scope_replaced_aliases: make(map[*ast.SymbolTable][]aliasPair),
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
