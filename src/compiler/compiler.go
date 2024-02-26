@@ -1592,6 +1592,9 @@ func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult
 
 		if isTemporary { // non-variable arguments have to be freed
 			// val might be an intermediate value, so it has to be treated specially in Ident
+			if !typ.IsPrimitive() {
+				val = c.scp.claimTemporary(val)
+			}
 			c.scp.addExprCallArg(argName, val, typ)
 		} else { // variables are captured by reference and may not be freed
 			c.scp.addProtected(argName, val, typ, false)
@@ -1599,9 +1602,18 @@ func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult
 	}
 
 	// compile the expression
-	c.latestReturn, c.latestReturnType, c.latestIsTemp = c.evaluate(expr.Decl.Expr)
+	result, resultType, isTemp := c.evaluate(expr.Decl.Expr)
+	// temporary results may not be freed and have to be moved to the outer scope
+	if !c.latestReturnType.IsPrimitive() && isTemp {
+		result = c.scp.claimTemporary(result)
+	}
 
 	c.scp = c.exitScope(c.scp)
+
+	if !c.latestReturnType.IsPrimitive() && isTemp {
+		result, resultType = c.scp.addTemporary(result, resultType)
+	}
+	c.latestReturn, c.latestReturnType, c.latestIsTemp = result, resultType, true
 	return ast.VisitRecurse
 }
 
