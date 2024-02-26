@@ -11,3 +11,7 @@ Der Alias "<a> mit <b> multipliziert" steht für den Ausdruck a mal b.
 
 Schreibe (eins mit zwei multipliziert) auf eine Zeile.
 Schreibe (eins mit (zwei plus zwei) multipliziert) auf eine Zeile.
+
+Der Alias "<a> mit <b> zusammengefügt" steht für den Ausdruck a verkettet mit b.
+
+Schreibe ("Hallo" mit " Welt" zusammengefügt) auf eine Zeile.

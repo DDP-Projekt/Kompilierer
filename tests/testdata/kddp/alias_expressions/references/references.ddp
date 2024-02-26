@@ -1,0 +1,17 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion foo mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
+    Gib a verkettet mit b zurück.
+Und kann so benutzt werden:
+    "<a> und <b> verkettet"
+
+Die Funktion bar mit den Parametern a und b vom Typ Text Referenz und Text Referenz, gibt einen Text zurück, macht:
+    Speichere a verkettet mit b in a.
+    Speichere a in b.
+    Gib "bar" zurück.
+Und kann so benutzt werden:
+    "<a> und <b> verkettet"
+
+Der Alias "<a> mit <b> zusammengefügt" steht für den Ausdruck a und b verkettet.
+
+Schreibe ("Hallo" mit " Welt" zusammengefügt) auf eine Zeile.
