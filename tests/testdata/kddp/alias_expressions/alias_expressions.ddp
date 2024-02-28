@@ -15,3 +15,8 @@ Schreibe (eins mit (zwei plus zwei) multipliziert) auf eine Zeile.
 Der Alias "<a> mit <b> zusammengefügt" steht für den Ausdruck a verkettet mit b.
 
 Schreibe ("Hallo" mit " Welt" zusammengefügt) auf eine Zeile.
+
+Der Alias "<a> geschrieben" steht für den Ausdruck Schreibe a auf eine Zeile.
+
+"Hallo" geschrieben.
+22 geschrieben.

@@ -14,4 +14,11 @@ Und kann so benutzt werden:
 
 Der Alias "<a> mit <b> zusammengefügt" steht für den Ausdruck a und b verkettet.
 
+Der Text a ist "Hallo".
+Der Text b ist " Welt".
 Schreibe ("Hallo" mit " Welt" zusammengefügt) auf eine Zeile.
+Schreibe a auf eine Zeile.
+Schreibe b auf eine Zeile.
+Schreibe (a mit b zusammengefügt) auf eine Zeile.
+Schreibe a auf eine Zeile.
+Schreibe b auf eine Zeile.
