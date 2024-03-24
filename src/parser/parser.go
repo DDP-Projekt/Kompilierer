@@ -11,7 +11,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/resolver"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
@@ -35,7 +34,6 @@ type parser struct {
 	module                 *ast.Module
 	predefinedModules      map[string]*ast.Module            // modules that were passed as environment, might not all be used
 	aliases                *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames              map[string]ddptypes.Type          // map of struct names to struct types
 	currentFunction        string                            // function which is currently being parsed
 	isCurrentFunctionBool  bool                              // wether the current function returns a boolean
 	panicMode              bool                              // flag to not report following errors
@@ -93,7 +91,6 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		},
 		predefinedModules:      modules,
 		aliases:                at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:              make(map[string]ddptypes.Type),
 		panicMode:              false,
 		errored:                false,
 		resolver:               &resolver.Resolver{},
@@ -110,10 +107,10 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	var err error
-	if parser.resolver, err = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+	if parser.resolver, err = resolver.New(parser.module, parser.errorHandler, &parser.panicMode); err != nil {
 		panic(err)
 	}
-	if parser.typechecker, err = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
+	if parser.typechecker, err = typechecker.New(parser.module, parser.errorHandler, &parser.panicMode); err != nil {
 		panic(err)
 	}
 
@@ -266,7 +263,6 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			aliases = append(aliases, toInterfaceSlice[*ast.FuncAlias, ast.Alias](decl.Aliases)...)
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
-			p.typeNames[decl.Name()] = decl.Type
 		case *ast.ExpressionDecl:
 			aliases = append(aliases, decl.Alias)
 		default: // for VarDecls or BadDecls we don't need to add any aliases

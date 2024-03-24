@@ -108,6 +108,15 @@ func MakePanicHandler() Handler {
 	}
 }
 
+// creates a Handler that appends the passed ddperror.Error to the passed slice
+func MakeCollectingHandler(destinations ...*[]Error) Handler {
+	return func(err Error) {
+		for _, dest := range destinations {
+			*dest = append(*dest, err)
+		}
+	}
+}
+
 // helper to create the common error header of all handlers
 // prints the error type, code and place
 func makeErrorHeader(err Error, file string) string {

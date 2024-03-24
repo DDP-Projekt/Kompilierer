@@ -32,7 +32,7 @@ type Resolver struct {
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Resolver, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, panicMode *bool) (*Resolver, error) {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -141,9 +141,21 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 }
 
 func (r *Resolver) VisitExpressionDecl(decl *ast.ExpressionDecl) ast.VisitResult {
-	r.setScope(decl.Symbols)
-	r.visit(decl.Expr)
-	r.exitScope()
+	if decl.Expr != nil {
+		oldScope := r.CurrentTable
+		r.setScope(decl.Scope)
+		r.visit(decl.Expr)
+		r.setScope(oldScope)
+	}
+
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
+	}
+
+	// insert the expressionDecl into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
 	return ast.VisitRecurse
 }
 
@@ -288,6 +300,8 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	if stmt.Module == nil {
 		return ast.VisitRecurse
 	}
+	// here for ExpressionDecls to work with their scope limits
+	r.CurrentTable.AddImportStmt(stmt)
 
 	var errRange token.Range
 	checkTypeDependency := func(decl ast.Declaration) {

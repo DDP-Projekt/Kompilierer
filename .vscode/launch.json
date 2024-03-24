@@ -17,6 +17,17 @@
 			]
 		},
 		{
+			"name": "Launch parse build/test.ddp",
+			"type": "go",
+			"request": "launch",
+			"mode": "debug",
+			"program": "${workspaceFolder}/cmd/kddp/",
+			"args": [
+				"parse",
+				"${workspaceFolder}/build/test.ddp"
+			]
+		},
+		{
 			"name": "Launch dump-list-defs to build/ddp_list_defs",
 			"type": "go",
 			"request": "launch",

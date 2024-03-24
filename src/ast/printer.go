@@ -104,7 +104,12 @@ func (pr *printer) VisitStructDecl(decl *StructDecl) VisitResult {
 }
 
 func (pr *printer) VisitExpressionDecl(decl *ExpressionDecl) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("ExpressionDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic), decl.Expr)
+	str := fmt.Sprintf("ExpressionDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic)
+	if decl.Expr != nil {
+		pr.parenthesizeNode(str, decl.Expr)
+	} else {
+		pr.parenthesizeNode(str)
+	}
 	return VisitRecurse
 }
 

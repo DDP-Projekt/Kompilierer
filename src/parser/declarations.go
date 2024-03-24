@@ -650,24 +650,18 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 
 	decl := &ast.StructDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Tok:        *begin,
-		NameTok:    *name,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		Fields:     fields,
-		Type:       structType,
-		Aliases:    structAliases,
+		Range:    token.NewRange(begin, p.previous()),
+		NameTok:  *name,
+		IsPublic: isPublic,
+		Mod:      p.module,
+		Fields:   fields,
+		Type:     structType,
+		Aliases:  structAliases,
 	}
 
 	for i := range structAliases {
 		structAliases[i].Struct = decl
 		p.aliases.Insert(structAliasTokens[i], structAliases[i])
-	}
-
-	if _, exists := p.typeNames[decl.Name()]; !exists {
-		p.typeNames[decl.Name()] = decl.Type
 	}
 
 	return decl
@@ -764,6 +758,15 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		}
 	}
 
+	name := fmt.Sprintf("$expr_decl_%d", expressionDeclCount)
+	expressionDeclCount++
+	var NameTok *token.Token
+	if p.match(token.MIT) {
+		p.consume(token.NAMEN, token.IDENTIFIER)
+		NameTok = p.previous()
+		name = NameTok.Literal
+	}
+
 	p.consume(token.STEHT, token.FÜR, token.DEN, token.AUSDRUCK)
 
 	symbols := p.newScope()
@@ -779,18 +782,21 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		})
 	}
 
-	p.setScope(symbols)
-	expr := p.expression()
-	p.exitScope()
-
-	name := fmt.Sprintf("$expr_decl_%d", expressionDeclCount)
-	var NameTok *token.Token
-	if p.match(token.MIT) {
-		p.consume(token.NAMEN, token.IDENTIFIER)
-		NameTok = p.previous()
-		name = NameTok.Literal
+	var expr ast.Expression = nil
+	var tokens []token.Token = nil
+	// simple case, we just parse a expression
+	if len(alias.Args) == 0 {
+		expr = p.expression()
+		p.consume(token.DOT)
+	} else { // complex case, we need to save the tokens to be reparsed each time
+		for !p.atEnd() && p.peek().Line() == begin.Line() {
+			tokens = append(tokens, *p.advance())
+		}
 	}
-	p.consume(token.DOT)
+
+	if p.previous().Type != token.DOT {
+		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, token.DOT))
+	}
 
 	alias.ExprDecl = &ast.ExpressionDecl{
 		Range:        token.NewRange(begin, p.previous()),
@@ -798,13 +804,13 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		Tok:          *begin,
 		Alias:        alias,
 		Expr:         expr,
+		Tokens:       tokens,
 		NameTok:      NameTok,
 		AssignedName: name,
 		IsPublic:     isPublic,
 		Mod:          p.module,
-		Symbols:      symbols,
+		Scope:        symbols.WithLimit(p.previous().Range.End),
 	}
-	expressionDeclCount++
 
 	return alias.ExprDecl
 }

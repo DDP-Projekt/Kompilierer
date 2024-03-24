@@ -141,6 +141,9 @@ func (h *helperVisitor) VisitExpressionDecl(decl *ExpressionDecl) VisitResult {
 	if vis, ok := h.actualVisitor.(ExpressionDeclVisitor); ok {
 		result = vis.VisitExpressionDecl(decl)
 	}
+	if decl.Expr == nil {
+		return VisitRecurse
+	}
 	return h.visitChildren(result, decl.Expr)
 }
 

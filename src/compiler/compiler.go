@@ -556,6 +556,7 @@ func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: capture referenced globals
 func (c *compiler) VisitExpressionDecl(decl *ast.ExpressionDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
@@ -1583,6 +1584,7 @@ func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: handle captured globals
 func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
 	c.scp = newScope(c.scp)
 
@@ -1673,6 +1675,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.insertFunction(decl.Name(), decl, irFunc)
 		case *ast.StructDecl:
 			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
+		case *ast.ExpressionDecl:
+			// nothing to do here
 		case *ast.BadDecl:
 			c.err("BadDecl in import")
 		default:

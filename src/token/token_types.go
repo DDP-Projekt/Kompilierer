@@ -184,7 +184,7 @@ var tokenStrings = [...]string{
 	RECHTS:       "Rechts",
 	GRÖßE:        "Größe",
 	LÄNGE:        "Länge",
-	KONTRA:       "kontr",
+	KONTRA:       "kontra",
 	VERKETTET:    "verkettet",
 	ERHÖHE:       "Erhöhe",
 	VERRINGERE:   "Verringere",

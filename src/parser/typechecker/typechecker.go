@@ -23,7 +23,7 @@ type Typechecker struct {
 	panicMode          *bool            // panic mode synchronized with the parser and resolver
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Typechecker, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, panicMode *bool) (*Typechecker, error) {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -570,6 +570,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 }
 
 func (t *Typechecker) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult {
+	lastTable := t.CurrentTable
 	t.CurrentTable = expr.FilledSymbols
 	errHndl := t.ErrorHandler
 	t.ErrorHandler = func(err ddperror.Error) {
@@ -579,10 +580,14 @@ func (t *Typechecker) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitRes
 		errHndl(err)
 	}
 
-	t.latestReturnedType = t.Evaluate(expr.Decl.Expr)
+	if expr.Expr != nil {
+		t.latestReturnedType = t.Evaluate(expr.Expr)
+	} else {
+		t.latestReturnedType = t.Evaluate(expr.Decl.Expr)
+	}
 
 	t.ErrorHandler = errHndl
-	t.CurrentTable = t.CurrentTable.Enclosing
+	t.CurrentTable = lastTable
 	return ast.VisitRecurse
 }
 

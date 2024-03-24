@@ -13,6 +13,11 @@ func IsExternFunc(fun *FuncDecl) bool {
 	return fun.Body == nil
 }
 
+// wether this ExpressionDecl needs to be reparsed each time it is used
+func NeedsReparsing(decl ExpressionDecl) bool {
+	return decl.Expr == nil
+}
+
 // trims the "" from the literal
 func TrimStringLit(lit *token.Token) string {
 	if lit == nil {

@@ -73,6 +73,12 @@ func (p *parser) alias() ast.Expression {
 		return p.advance(), true
 	})
 
+	curScope := p.scope()
+	matchedAliases = filter(matchedAliases, func(a ast.Alias) bool {
+		_, ok, _ := curScope.LookupDecl(a.Decl().Name())
+		return ok
+	})
+
 	if len(matchedAliases) == 0 { // check if any alias was matched
 		p.cur = start
 		return nil // no alias -> no function call
@@ -185,19 +191,14 @@ func (p *parser) alias() ast.Expression {
 					tokens := make([]token.Token, p.cur-exprStart, p.cur-exprStart+1)
 					copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
 					// append the EOF needed for the parser
-					eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
-					tokens = append(tokens, eof)
+					tokens = append(tokens, token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil})
 					argParser := &parser{
-						tokens: tokens,
-						errorHandler: func(err ddperror.Error) {
-							reported_errors = append(reported_errors, err)
-							cached_arg.Errors = append(cached_arg.Errors, err)
-						},
+						tokens:       tokens,
+						errorHandler: ddperror.MakeCollectingHandler(&reported_errors, &cached_arg.Errors),
 						module: &ast.Module{
 							FileName: p.module.FileName,
 						},
 						aliases:     p.aliases,
-						typeNames:   p.typeNames,
 						resolver:    p.resolver,
 						typechecker: p.typechecker,
 					}
@@ -269,9 +270,9 @@ func (p *parser) alias() ast.Expression {
 				Args:   args,
 			}
 		case *ast.ExpressionAlias:
-			filledInSymbols := ast.NewSymbolTable(alias.ExprDecl.Symbols.Enclosing)
+			filledInSymbols := ast.NewSymbolTable(alias.ExprDecl.Scope.Enclosing)
 			for _, argName := range alias.Args {
-				temp, _, _ := alias.ExprDecl.Symbols.LookupDecl(argName)
+				temp, _, _ := alias.ExprDecl.Scope.LookupDecl(argName)
 				templateDecl := temp.(*ast.VarDecl)
 				filledInSymbols.InsertDecl(argName, &ast.VarDecl{
 					Range:      templateDecl.Range,
@@ -284,12 +285,43 @@ func (p *parser) alias() ast.Expression {
 				})
 			}
 
+			var expr ast.Expression
+			if ast.NeedsReparsing(*alias.ExprDecl) {
+				errors := make([]ddperror.Error, 0)
+				tokens := make([]token.Token, len(alias.ExprDecl.Tokens))
+				copy(tokens, alias.ExprDecl.Tokens)
+				// append the EOF needed for the parser
+				tokens[len(alias.ExprDecl.Tokens)-1] = token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tokens[len(alias.ExprDecl.Tokens)-1].Range, AliasInfo: nil}
+				exprParser := &parser{
+					tokens:       tokens, // remove the .
+					errorHandler: ddperror.MakeCollectingHandler(&errors),
+					module: &ast.Module{
+						FileName: p.module.FileName,
+					},
+					aliases:     p.aliases,
+					resolver:    p.resolver,
+					typechecker: p.typechecker,
+				}
+
+				scope := exprParser.scope()          // save the scope, as &exprParser.resolver == &p.resolver
+				exprParser.setScope(filledInSymbols) // set the scope to the limited scope
+				expr = exprParser.expression()       // parse the expression in the context of the original scope
+				exprParser.setScope(scope)           // restore the old scope
+
+				errRange := token.NewRange(&p.tokens[start], p.previous())
+				for _, err := range errors {
+					err.Range = errRange
+					p.errorHandler(err)
+				}
+			}
+
 			return &ast.ExpressionCall{
 				Range:         token.NewRange(&p.tokens[start], p.previous()),
 				Tok:           p.tokens[start],
 				Decl:          alias.ExprDecl,
 				Args:          args,
 				FilledSymbols: filledInSymbols,
+				Expr:          expr,
 			}
 		default:
 			p.panic("unhandled alias type")
@@ -317,4 +349,14 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(mostFitting, args)
+}
+
+func filter[T any](s []T, f func(T) bool) []T {
+	r := make([]T, 0, len(s))
+	for _, v := range s {
+		if f(v) {
+			r = append(r, v)
+		}
+	}
+	return r
 }

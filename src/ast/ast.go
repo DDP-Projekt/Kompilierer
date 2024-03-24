@@ -221,12 +221,13 @@ type (
 		CommentTok   *token.Token     // optional comment (also contained in ast.Comments)
 		Tok          token.Token      // Der
 		Alias        *ExpressionAlias // the alias
-		Expr         Expression       // the expression
-		NameTok *token.Token // non-nil if an explicit name was given
+		Expr         Expression       // the expression or nil if it needs reparsing
+		Tokens       []token.Token    // if Expr is nil, these tokens need to be reparsed (excluding the final ., which is still included)
+		NameTok      *token.Token     // non-nil if an explicit name was given
 		AssignedName string           // the internal or given name of the ExpressionDecl
 		IsPublic     bool             // wether the expression decl is marked with öffentliche
 		Mod          *Module          // the module in which the expression was declared
-		Symbols      *SymbolTable     // the symbol table of the expression (contains the arguments with void types and nil InitValues)
+		Scope        *SymbolTable     // the symbol table of the expression (contains the arguments with void types and the limit)
 	}
 )
 
@@ -425,15 +426,12 @@ type (
 
 	// invokation of the alias of a ExpressionDecl
 	ExpressionCall struct {
-		Range token.Range
-		Tok   token.Token // first token of the call
-		// the expression declaration this call refers to
-		// is set by the parser, or nil if the name was not found
-		Decl *ExpressionDecl
-		Args map[string]Expression
-		// copy of Decl.Symbols
-		// but with the variable types filled in properly
-		FilledSymbols *SymbolTable
+		Range         token.Range
+		Tok           token.Token     // first token of the call
+		Decl          *ExpressionDecl // the expression declaration this call refers to
+		Args          map[string]Expression
+		FilledSymbols *SymbolTable // copy of Decl.Symbols but with the variable types filled in properly
+		Expr          Expression   // the reparsed expression (nil, if Decl.Expr != nil)
 	}
 )
 

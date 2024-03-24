@@ -1,7 +1,7 @@
 Binde "Duden/Ausgabe" ein.
 
 Der Alias "eins" steht für den Ausdruck 1.
-Der Alias "zwei" steht für den Ausdruck 2 mit Namen zwei_alias.
+Der Alias "zwei" mit Namen zwei_alias steht für den Ausdruck 2.
 
 Schreibe eins auf eine Zeile.
 Schreibe zwei auf eine Zeile.
