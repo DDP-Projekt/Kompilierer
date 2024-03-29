@@ -13,7 +13,7 @@ RUN_BIN_MAIN = main.o
 RUN_BIN_MAIN_DEBUG = $(RUN_BIN_MAIN:.o=_debug.o)
 DDP_LIST_DEFS_NAME = ddp_list_types_defs
 
-DDP_LIST_DEFS_OUTPUT_TYPES = --llvm_ir --object
+DDP_LIST_DEFS_OUTPUT_TYPES = --llvm-ir --object
 
 LLVM_SRC_DIR=./llvm-project/llvm/
 LLVM_BUILD_DIR=./llvm_build/

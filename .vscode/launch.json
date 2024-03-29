@@ -13,7 +13,7 @@
 				"-o",
 				"${workspaceFolder}/build/test.exe",
 				"--wortreich",
-				"--nichts_loeschen"
+				"--nichts-loeschen"
 			]
 		},
 		{
@@ -26,7 +26,7 @@
 				"dump-list-defs",
 				"-o",
 				"${workspaceFolder}/build/ddp_list_defs",
-				"--llvm_ir"
+				"--llvm-ir"
 			]
 		}
 	]
