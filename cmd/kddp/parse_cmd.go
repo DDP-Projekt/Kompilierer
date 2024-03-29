@@ -12,9 +12,9 @@ import (
 )
 
 var parseCmd = &cobra.Command{
-	Use:   "parse [-o <Ausgabe Datei>] <Datei>",
-	Short: "Parset eine .ddp Datei in einen Abstrakten Syntaxbaum",
-	Long:  `Parset eine .ddp Datei in einen Abstrakten Syntaxbaum und gibt diesen aus`,
+	Use:   "parse [-o Ausgabe-Datei] <Datei>",
+	Short: "Parst eine .ddp Datei in einen Abstrakten Syntaxbaum",
+	Long:  `Parst eine .ddp Datei in einen Abstrakten Syntaxbaum und gibt diesen aus`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := args[0]
@@ -58,5 +58,5 @@ var parseCmd = &cobra.Command{
 var parseOutputPath string // flag for parse
 
 func init() {
-	parseCmd.Flags().StringVarP(&parseOutputPath, "output", "o", "", "Optionaler Pfad zur Ausgabedatei")
+	parseCmd.Flags().StringVarP(&parseOutputPath, "ausgabe", "o", "", "Optionaler Pfad zur Ausgabedatei")
 }

@@ -9,12 +9,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const rootUsage = `kddp <Befehl> [Optionen] [Argumente]`
-
 // rootCmd is the root command of the kddp compiler
 var rootCmd = &cobra.Command{
-	Use:     rootUsage,
-	Short:   "DDP Kompilierer",
+	Use:     "kddp <Befehl> [Optionen] [Argumente]",
+	Short:   "Der DDP Kompilierer",
 	Long:    `Der Kompilierer der deutschen Programmiersprache (DDP)`,
 	Version: fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
 }
@@ -28,11 +26,12 @@ func init() {
 
 	// sub commands
 	rootCmd.AddCommand(
-		versionCmd,
-		dumpListDefsCommand,
-		parseCmd,
 		buildCmd,
 		runCmd,
+		versionCmd,
+		updateCmd,
+		parseCmd,
+		dumpListDefsCommand,
 	)
 
 	setDefaultCommandOptions(rootCmd)
@@ -82,7 +81,7 @@ Globale Optionen:
 Weitere Hilfe Themen:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-Probiere "{{.CommandPath}} hilfe <Befehl>" oder "{{.CommandPath}} <Befehl> -h|--hilfe" für mehr Informationen zu einem Befehl.{{end}}
+Probiere "{{.CommandPath}} hilfe <Befehl>" oder "{{.CommandPath}} <Befehl> [-h | --hilfe]" für mehr Informationen zu einem Befehl.{{end}}
 `)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }

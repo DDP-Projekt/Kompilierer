@@ -11,7 +11,7 @@ import (
 )
 
 var dumpListDefsCommand = &cobra.Command{
-	Use:    "dump-list-defs [Optionen]",
+	Use:    "dump-list-defs [-o <Ausgabe Datei>] [--asm] [--llvm-ir] [--llvm-bc] [--object]",
 	Short:  "wird nur intern verwendet",
 	Long:   `Schreibt die Definitionen der eingebauten Listen Typen in die gegebene Ausgbe Datei. Wird nur intern verwendet`,
 	Hidden: true, // only used internally
@@ -63,7 +63,7 @@ var (
 )
 
 func init() {
-	dumpListDefsCommand.Flags().StringVarP(&listDefsOutputPath, "output", "o", listDefsOutputPath, "Ausgabe Datei")
+	dumpListDefsCommand.Flags().StringVarP(&listDefsOutputPath, "ausgabe", "o", listDefsOutputPath, "Ausgaben Datei Muster (ohne Dateiendung)")
 	dumpListDefsCommand.Flags().BoolVar(&asm, "asm", asm, "ob die assembly Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&llvm_ir, "llvm-ir", llvm_ir, "ob die llvm ir Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&llvm_bc, "llvm-bc", llvm_bc, "ob die llvm bitcode Variante ausgegeben werden soll")

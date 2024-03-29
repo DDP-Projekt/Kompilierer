@@ -9,9 +9,9 @@ import (
 )
 
 var versionCmd = &cobra.Command{
-	Use:   "version [Optionen]",
-	Short: "Zeigt die Version des Kompilierers",
-	Long:  `Zeigt die Version des Kompilierers, sowie weitere Informationen zu genutzten GCC, LLVM und Go Versionen`,
+	Use:   "version [--go-build-info]",
+	Short: "Zeigt Versionsinformationen des Kompilierers",
+	Long:  `Zeigt Informationen zur Version des Kompilierers, sowie der verwendeten GCC, LLVM und Go Versionen an.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
 

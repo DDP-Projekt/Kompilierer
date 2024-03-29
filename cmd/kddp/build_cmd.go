@@ -15,7 +15,7 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "kompiliere [-o <Ausgabe Datei>] [--main <main.o Datei>] [--gcc-flags <GCC Flags>] [--extern-gcc-flags <GCC Flags>] [--nodeletes] [--verbose] [--link-modules] [--link-list-defs] [--gcc-executable <Pfad zu gcc>] <Datei>",
+	Use:   "kompiliere [-o Ausgabe-Datei [--main main.o] [--gcc-flags GCC-Flags] [--extern-gcc-flags Externe-GCC-Flags] [--nodeletes] [--verbose] [--link-modules] [--link-list-defs] [--gcc-executable Pfad-zu-GCC>] <Datei>",
 	Short: "Kompiliert eine .ddp Datei",
 	Long:  `Kompiliert eine .ddp Datei in eine ausführbare, llvm oder objekt Datei.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -178,14 +178,14 @@ var (
 )
 
 func init() {
-	buildCmd.Flags().StringVarP(&buildOutputPath, "ausgabe", "o", "", "Optionaler Pfad der Ausgabedatei.")
+	buildCmd.Flags().StringVarP(&buildOutputPath, "ausgabe", "o", "", "Optionaler Pfad der Ausgabedatei (.exe, .ll, .o, .obj, .s, .asm).")
 	buildCmd.Flags().StringVar(&buildMainPath, "main", "", "Optionaler Pfad zur main.o Datei")
 	buildCmd.Flags().StringVar(&buildGCCFlags, "gcc-optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
 	buildCmd.Flags().StringVar(&buildExternGCCFlags, "externe-gcc-optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
 	buildCmd.Flags().BoolVar(&buildNoDeletes, "nichts-loeschen", false, "Keine temporären Dateien löschen")
 	buildCmd.Flags().BoolVar(&buildLinkModules, "module-linken", true, "Ob alle Module in das Hauptmodul gelinkt werden sollen")
 	buildCmd.Flags().BoolVar(&buildLinkListDefs, "list-defs-linken", true, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
-	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zum gcc, der genutzt werden soll")
+	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zur gcc executable, die genutzt werden soll")
 }
 
 // helper function

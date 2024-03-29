@@ -10,7 +10,7 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "starte  <Datei>",
+	Use:   "starte [--gcc-optionen GCC-Optionen] [--externe-gcc-optionen Externe-GCC-Optionen] <Datei>",
 	Short: "Kompiliert und führt die angegebene .ddp Datei aus",
 	Long:  `Kompiliert und führt die angegebene .ddp Datei aus.`,
 	Args:  cobra.MinimumNArgs(1),

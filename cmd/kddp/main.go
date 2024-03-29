@@ -16,33 +16,13 @@ func main() {
 	}
 }
 
-func runCommands() error {
-	// if no sub-command is provided, error
-	if len(os.Args) < 2 {
-		return fmt.Errorf(
-			`Nutzung: kddp <Befehl> <Optionen>
-Für mehr Informationen probiere $kddp hilfe
-`)
-	}
-
-	// run the specified sub-command
-	subcmd := os.Args[1]
-	for _, cmd := range commands {
-		if cmd.Name() == subcmd {
-			if err := cmd.Init(os.Args[2:]); err != nil {
-				return err
-			}
-			return cmd.Run()
-		}
-	}
-
-	return fmt.Errorf("Unbekannter Befehl '%s'\nFür eine Liste aller Befehle probiere $kddp hilfe", subcmd)
-}
-
 func handle_panics() {
 	if err := recover(); err != nil {
 		fmt.Fprintf(os.Stderr,
-			"Unerwarteter Fehler: %v\nDieser Fehler ist vermutlich ein Bug im DDP-Kompilierer.\nBitte erstelle einen Issue unter https://github.com/DDP-Projekt/Kompilierer oder melde ihn anderweitig den Entwicklern.\n",
+			`Unerwarteter Fehler: %v
+Dieser Fehler ist vermutlich ein Bug im DDP-Kompilierer.
+Bitte erstelle einen Issue unter https://github.com/DDP-Projekt/Kompilierer oder melde ihn anderweitig den Entwicklern.
+`,
 			err)
 		os.Exit(1)
 	}
