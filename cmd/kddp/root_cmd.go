@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -87,6 +88,9 @@ Probiere "{{.CommandPath}} hilfe <Befehl>" oder "{{.CommandPath}} <Befehl> -h|--
 }
 
 func normalizeHelpFlagGerman(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	// for backwards compatibility, replace underscores with dashes
+	name = strings.ReplaceAll(name, "_", "-")
+
 	switch name {
 	case "hilfe":
 		return "help"
