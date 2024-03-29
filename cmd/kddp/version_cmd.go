@@ -40,7 +40,7 @@ var versionCmd = &cobra.Command{
 }
 
 var (
-	versionGoBuildInfo bool
+	versionGoBuildInfo bool // flag for version
 
 	DDPVERSION     string = "undefined"
 	LLVMVERSION    string = "undefined"

@@ -42,9 +42,6 @@ type Command interface {
 }
 
 var commands = []Command{
-	NewHelpCommand(),
-	NewBuildCommand(),
-	NewParseCommand(),
 	NewRunCommand(),
 	NewUpdateCommand(),
 }

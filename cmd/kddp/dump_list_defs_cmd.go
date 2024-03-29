@@ -11,9 +11,10 @@ import (
 )
 
 var dumpListDefsCommand = &cobra.Command{
-	Use:   "dump-list-defs [Optionen]",
-	Short: "wird nur intern verwendet",
-	Long:  `Schreibt die Definitionen der eingebauten Listen Typen in die gegebene Ausgbe Datei. Wird nur intern verwendet`,
+	Use:    "dump-list-defs [Optionen]",
+	Short:  "wird nur intern verwendet",
+	Long:   `Schreibt die Definitionen der eingebauten Listen Typen in die gegebene Ausgbe Datei. Wird nur intern verwendet`,
+	Hidden: true, // only used internally
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outputTypes := []compiler.OutputType{}
 		if asm {
@@ -39,7 +40,7 @@ var dumpListDefsCommand = &cobra.Command{
 			case compiler.OutputBC:
 				ext = ".bc"
 			}
-			file, err := os.OpenFile(changeExtension(filePath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+			file, err := os.OpenFile(changeExtension(listDefsOutputPath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("Fehler beim Öffnen der Ausgabedatei: %w", err)
 			}
@@ -54,15 +55,15 @@ var dumpListDefsCommand = &cobra.Command{
 }
 
 var (
-	filePath = ddppath.LIST_DEFS_NAME
-	asm      bool
-	llvm_ir  bool
-	llvm_bc  bool
-	object   bool
+	listDefsOutputPath = ddppath.LIST_DEFS_NAME // flag for dump-list-defs
+	asm                bool                     // flag for dump-list-defs
+	llvm_ir            bool                     // flag for dump-list-defs
+	llvm_bc            bool                     // flag for dump-list-defs
+	object             bool                     // flag for dump-list-defs
 )
 
 func init() {
-	dumpListDefsCommand.Flags().StringVarP(&filePath, "output", "o", filePath, "Ausgabe Datei")
+	dumpListDefsCommand.Flags().StringVarP(&listDefsOutputPath, "output", "o", listDefsOutputPath, "Ausgabe Datei")
 	dumpListDefsCommand.Flags().BoolVar(&asm, "asm", asm, "ob die assembly Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&llvm_ir, "llvm-ir", llvm_ir, "ob die llvm ir Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&llvm_bc, "llvm-bc", llvm_bc, "ob die llvm bitcode Variante ausgegeben werden soll")

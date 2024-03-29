@@ -18,6 +18,7 @@ var rootCmd = &cobra.Command{
 	Version: fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
 }
 
+// global verbose flag for all commands
 var verbose bool
 
 func init() {
@@ -28,6 +29,8 @@ func init() {
 	rootCmd.AddCommand(
 		versionCmd,
 		dumpListDefsCommand,
+		parseCmd,
+		buildCmd,
 	)
 
 	setDefaultCommandOptions(rootCmd)
@@ -108,6 +111,7 @@ func germanizeVersionFlag(cmd *cobra.Command) {
 
 func setDefaultCommandOptions(cmd *cobra.Command) {
 	cmd.DisableFlagsInUseLine = true
+	cmd.SetErrPrefix("Fehler:")
 	// make the default help flag german
 	germanizeHelpFlag(cmd)
 	germanizeVersionFlag(cmd)

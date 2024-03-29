@@ -64,17 +64,17 @@ func (cmd *RunCommand) Run() error {
 		exePath = filepath.Join(outDir, "ddp.exe")
 	}
 
-	buildCmd := NewBuildCommand()
-	buildCmd.filePath = cmd.filePath
-	buildCmd.outPath = exePath
-	buildCmd.verbose = cmd.verbose
-	buildCmd.gcc_flags = cmd.gcc_flags
-	buildCmd.extern_gcc_flags = cmd.extern_gcc_flags
+	// buildCmd := NewBuildCommand()
+	// buildCmd.filePath = cmd.filePath
+	// buildCmd.outPath = exePath
+	// buildCmd.verbose = cmd.verbose
+	// buildCmd.gcc_flags = cmd.gcc_flags
+	// buildCmd.extern_gcc_flags = cmd.extern_gcc_flags
 
-	print("Kompiliere den Quellcode")
-	if err = buildCmd.Run(); err != nil {
-		return fmt.Errorf("Fehler beim Kompilieren: %w", err)
-	}
+	// print("Kompiliere den Quellcode")
+	// if err = buildCmd.Run(); err != nil {
+	// 	return fmt.Errorf("Fehler beim Kompilieren: %w", err)
+	// }
 
 	print("Starte das Programm\n")
 	args := cmd.fs.Args()
