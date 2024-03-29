@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = cobra.Command{
+var versionCmd = &cobra.Command{
 	Use:   "version [Optionen]",
 	Short: "Zeigt die Version des Kompilierers",
 	Long:  `Zeigt die Version des Kompilierers, sowie weitere Informationen zu genutzten GCC, LLVM und Go Versionen`,

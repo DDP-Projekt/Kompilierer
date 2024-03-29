@@ -318,11 +318,11 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 	}
 
 	cmd.infof("Generiere ddp_list_types_defs.*")
-	list_defs_cmd := NewDumpListDefsCommand()
-	list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
-	if run_err := list_defs_cmd.Run(); run_err != nil {
-		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
-	}
+	// list_defs_cmd := NewDumpListDefsCommand()
+	// list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
+	// if run_err := list_defs_cmd.Run(); run_err != nil {
+	// 	return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
+	// }
 
 	return err
 }

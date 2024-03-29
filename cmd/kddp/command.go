@@ -46,6 +46,5 @@ var commands = []Command{
 	NewBuildCommand(),
 	NewParseCommand(),
 	NewRunCommand(),
-	NewDumpListDefsCommand(),
 	NewUpdateCommand(),
 }

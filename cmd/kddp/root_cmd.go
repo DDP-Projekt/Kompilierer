@@ -12,11 +12,10 @@ const rootUsage = `kddp <Befehl> [Optionen] [Argumente]`
 
 // rootCmd is the root command of the kddp compiler
 var rootCmd = &cobra.Command{
-	Use:                   rootUsage,
-	DisableFlagsInUseLine: true,
-	Short:                 "DDP Kompilierer",
-	Long:                  `Der Kompilierer der deutschen Programmiersprache (DDP)`,
-	Version:               fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
+	Use:     rootUsage,
+	Short:   "DDP Kompilierer",
+	Long:    `Der Kompilierer der deutschen Programmiersprache (DDP)`,
+	Version: fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
 }
 
 var verbose bool
@@ -26,10 +25,12 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "wortreich", "w", false, "Gibt wortreiche Informationen aus")
 
 	// sub commands
-	rootCmd.AddCommand(&versionCmd)
+	rootCmd.AddCommand(
+		versionCmd,
+		dumpListDefsCommand,
+	)
 
-	germanizeHelpFlag(rootCmd)
-	germanizeVersionFlag(rootCmd)
+	setDefaultCommandOptions(rootCmd)
 
 	// make the default help command german
 	rootCmd.InitDefaultHelpCmd()
@@ -45,9 +46,7 @@ Gib einfach ` + rootCmd.Name() + ` hilfe [Pfad zum Befehl] für vollständige In
 			rootCmd.SetHelpCommand(cmd)
 		}
 
-		// make the default flags of all sub commands german
-		germanizeHelpFlag(cmd)
-		germanizeVersionFlag(cmd)
+		setDefaultCommandOptions(cmd)
 	}
 
 	// make the default help topic command german
@@ -105,4 +104,11 @@ func germanizeVersionFlag(cmd *cobra.Command) {
 	if versionFlag := cmd.Flags().Lookup("version"); versionFlag != nil {
 		versionFlag.Usage = "Zeigt die Version des Kompilierers"
 	}
+}
+
+func setDefaultCommandOptions(cmd *cobra.Command) {
+	cmd.DisableFlagsInUseLine = true
+	// make the default help flag german
+	germanizeHelpFlag(cmd)
+	germanizeVersionFlag(cmd)
 }
