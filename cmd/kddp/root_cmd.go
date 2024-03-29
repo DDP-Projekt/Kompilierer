@@ -31,6 +31,7 @@ func init() {
 		dumpListDefsCommand,
 		parseCmd,
 		buildCmd,
+		runCmd,
 	)
 
 	setDefaultCommandOptions(rootCmd)
