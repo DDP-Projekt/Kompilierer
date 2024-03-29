@@ -10,11 +10,8 @@ func main() {
 	// catch panics and instead set the returned error
 	defer handle_panics()
 
-	// run sub-commands like build or help
-	if err := runCommands(); err != nil {
-		if err.Error() != "" {
-			fmt.Fprintf(os.Stderr, "\n%s\n", err)
-		}
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

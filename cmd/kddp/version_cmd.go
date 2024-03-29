@@ -1,73 +1,53 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"runtime"
 	"runtime/debug"
+
+	"github.com/spf13/cobra"
 )
 
-// $kddp version provides information about the version of the used kddp build
-type VersionCommand struct {
-	fs         *flag.FlagSet
-	verbose    bool
-	build_info bool
-}
+var versionCmd = cobra.Command{
+	Use:   "version [Optionen]",
+	Short: "Zeigt die Version des Kompilierers",
+	Long:  `Zeigt die Version des Kompilierers, sowie weitere Informationen zu genutzten GCC, LLVM und Go Versionen`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Printf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
 
-func NewVersionCommand() *VersionCommand {
-	return &VersionCommand{
-		fs:         flag.NewFlagSet("version", flag.ExitOnError),
-		verbose:    false,
-		build_info: false,
-	}
-}
+		if bi, ok := debug.ReadBuildInfo(); ok {
+			if verbose {
+				fmt.Printf("Go Version: %s\n", bi.GoVersion)
+			}
 
-func (cmd *VersionCommand) Init(args []string) error {
-	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Zeige wortreiche Informationen")
-	cmd.fs.BoolVar(&cmd.build_info, "go_build_info", cmd.build_info, "Zeige Go build Informationen")
-	return parseFlagSet(cmd.fs, args)
+			if versionGoBuildInfo {
+				fmt.Printf("Go build info:\n")
+				for _, v := range bi.Settings {
+					fmt.Printf("%s: %s\n", v.Key, v.Value)
+				}
+			}
+		} else if verbose {
+			fmt.Printf("Go Version: undefined\n")
+		}
+
+		if verbose {
+			fmt.Printf("GCC Version: %s ; Full: %s\n", GCCVERSION, GCCVERSIONFULL)
+			fmt.Printf("LLVM Version: %s\n", LLVMVERSION)
+		}
+
+		return nil
+	},
 }
 
 var (
+	versionGoBuildInfo bool
+
 	DDPVERSION     string = "undefined"
 	LLVMVERSION    string = "undefined"
 	GCCVERSION     string = "undefined"
 	GCCVERSIONFULL string = "undefined"
 )
 
-func (cmd *VersionCommand) Run() error {
-	fmt.Printf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH)
-
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		if cmd.verbose {
-			fmt.Printf("Go Version: %s\n", bi.GoVersion)
-		}
-
-		if cmd.build_info {
-			fmt.Printf("Go build info:\n")
-			for _, v := range bi.Settings {
-				fmt.Printf("%s: %s\n", v.Key, v.Value)
-			}
-		}
-	} else if cmd.verbose {
-		fmt.Printf("Go Version: undefined\n")
-	}
-
-	if cmd.verbose {
-		fmt.Printf("GCC Version: %s ; Full: %s\n", GCCVERSION, GCCVERSIONFULL)
-		fmt.Printf("LLVM Version: %s\n", LLVMVERSION)
-	}
-
-	return nil
-}
-
-func (cmd *VersionCommand) Name() string {
-	return cmd.fs.Name()
-}
-
-func (cmd *VersionCommand) Usage() string {
-	return `version <Optionen>: Zeige informationen zu dieser DDP Version
-Optionen:
-	--wortreich: Zeige wortreiche Informationen
-	--go_build_info: Zeige Go build Informationen`
+func init() {
+	versionCmd.Flags().BoolVar(&versionGoBuildInfo, "go-build-info", false, "Zeige Go build Informationen")
 }
