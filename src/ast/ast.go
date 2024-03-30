@@ -84,7 +84,7 @@ func (alias *StructAlias) Decl() Declaration {
 }
 
 func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
-	paramTypes := map[string]ddptypes.ParameterType{}
+	paramTypes := make(map[string]ddptypes.ParameterType, len(alias.Args))
 	for name, arg := range alias.Args {
 		paramTypes[name] = ddptypes.ParameterType{
 			Type:        arg,

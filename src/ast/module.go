@@ -37,7 +37,7 @@ func (module *Module) GetIncludeFilename() string {
 
 // calls VisitAst on all Asts of module and it's imports
 func VisitModuleRec(module *Module, visitor BaseVisitor) {
-	visitModuleRec(module, visitor, make(map[*Module]struct{}))
+	visitModuleRec(module, visitor, make(map[*Module]struct{}, len(module.Imports)+1))
 }
 
 func visitModuleRec(module *Module, visitor BaseVisitor, visited map[*Module]struct{}) {
@@ -59,7 +59,7 @@ func visitModuleRec(module *Module, visitor BaseVisitor, visited map[*Module]str
 // a single time per module
 func IterateModuleImports(module *Module, fun func(*Module)) {
 	if module != nil {
-		iterateModuleImportsRec(module, fun, make(map[*Module]struct{}))
+		iterateModuleImportsRec(module, fun, make(map[*Module]struct{}, len(module.Imports)+1))
 	}
 }
 
