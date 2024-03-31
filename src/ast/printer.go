@@ -14,11 +14,12 @@ const (
 
 // simple visitor to print an AST
 type printer struct {
+	ast          *Ast
 	currentIdent int
 	returned     string
 }
 
-func (pr *printer) printIdent() {
+func (pr *printer) printIndent() {
 	for i := 0; i < pr.currentIdent; i++ {
 		pr.print("   ")
 	}
@@ -34,13 +35,32 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 
 	for _, node := range nodes {
 		pr.print("\n")
-		pr.printIdent()
+		pr.printIndent()
 		node.Accept(pr)
+
+		md := pr.ast.GetMetadata(node)
+		if len(md.Attachments) == 0 {
+			continue
+		}
+
+		pr.print("\n")
+		pr.printIndent()
+		pr.print("Meta[")
+		pr.currentIdent++
+
+		for kind, attachement := range md.Attachments {
+			pr.print("\n")
+			pr.printIndent()
+			pr.print(fmt.Sprintf("\"%s\": %s\n", kind, attachement))
+		}
+		pr.currentIdent--
+		pr.printIndent()
+		pr.print("]\n")
 	}
 
 	pr.currentIdent--
 	if len(nodes) != 0 {
-		pr.printIdent()
+		pr.printIndent()
 	}
 
 	pr.print(")\n")

@@ -30,6 +30,10 @@ func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) MetadataAttachme
 
 // adds metadata to the given node
 func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
+	if ast.metadata == nil {
+		ast.metadata = make(map[Node]Metadata, 8)
+	}
+
 	md := ast.metadata[node]
 	if md.Attachments == nil {
 		md.Attachments = make(map[MetadataKind]MetadataAttachment)
@@ -40,7 +44,7 @@ func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
 
 // returns a string representation of the AST as S-Expressions
 func (ast *Ast) String() string {
-	printer := &printer{}
+	printer := &printer{ast: ast}
 	for _, stmt := range ast.Statements {
 		stmt.Accept(printer)
 	}
@@ -49,7 +53,7 @@ func (ast *Ast) String() string {
 
 // print the AST to stdout
 func (ast *Ast) Print() {
-	printer := &printer{}
+	printer := &printer{ast: ast}
 	for _, stmt := range ast.Statements {
 		stmt.Accept(printer)
 	}
