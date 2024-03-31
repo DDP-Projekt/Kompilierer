@@ -96,7 +96,7 @@ func (t *Typechecker) errExpected(operator ast.Operator, expr ast.Expression, go
 	t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, msg+" aber hat '%s' bekommen", got)
 }
 
-func (*Typechecker) BaseVisitor() {}
+func (*Typechecker) Visitor() {}
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}

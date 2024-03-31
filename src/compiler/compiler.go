@@ -395,7 +395,7 @@ func (c *compiler) exitScope(scp *scope) *scope {
 	return scp.enclosing
 }
 
-func (*compiler) BaseVisitor() {}
+func (*compiler) Visitor() {}
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {

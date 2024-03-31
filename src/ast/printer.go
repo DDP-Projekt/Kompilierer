@@ -60,7 +60,7 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 	return pr.returned
 }
 
-func (*printer) BaseVisitor() {}
+func (*printer) Visitor() {}
 
 func (pr *printer) VisitBadDecl(decl *BadDecl) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", &decl.Tok))

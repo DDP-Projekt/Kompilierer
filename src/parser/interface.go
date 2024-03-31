@@ -31,6 +31,10 @@ type Options struct {
 	// ErrorHandler used during scanning and parsing
 	// May be nil
 	ErrorHandler ddperror.Handler
+	// MetaAnalyzers are called after the parsing is done
+	// and the ast is complete.
+	//
+	MetaAnalyzers []ast.FullVisitor
 }
 
 func (options *Options) ToScannerOptions(scannerMode scanner.Mode) scanner.Options {
