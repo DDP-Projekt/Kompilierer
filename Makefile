@@ -24,6 +24,7 @@ CXX=g++
 RM = rm -rf
 CP = cp -rf
 MKDIR = mkdir -p
+SED = sed -u
 
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
@@ -174,10 +175,10 @@ endif
 TEST_DIRS = 
 
 test:
-	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory:
-	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 # runs all tests and test-memory
 # everything is done manually to ensure the build is finished
