@@ -8,12 +8,13 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-// represents an Abstract Syntax Tree for a token.DDP program
+// represents an Abstract Syntax Tree for a DDP program
 type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
-	Faulty     bool // set if the ast has any errors (doesn't matter what from which phase they came)
+	Faulty     bool              // set if the ast has any errors (doesn't matter what from which phase they came)
+	Meta       map[Node]Metadata // metadata for each node
 }
 
 // invoke the Visitor for each top level statement in the Ast
