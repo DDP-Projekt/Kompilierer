@@ -18,19 +18,6 @@ type printer struct {
 	returned     string
 }
 
-// print the AST to stdout
-func (ast *Ast) Print() {
-	printer := &printer{}
-	WalkAst(ast, printer)
-	fmt.Println(printer.returned)
-}
-
-func (ast *Ast) String() string {
-	printer := &printer{}
-	WalkAst(ast, printer)
-	return printer.returned
-}
-
 func (pr *printer) printIdent() {
 	for i := 0; i < pr.currentIdent; i++ {
 		pr.print("   ")

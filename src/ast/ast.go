@@ -14,14 +14,46 @@ type Ast struct {
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
 	Faulty     bool              // set if the ast has any errors (doesn't matter what from which phase they came)
-	Meta       map[Node]Metadata // metadata for each node
+	metadata   map[Node]Metadata // metadata for each node
 }
 
-// invoke the Visitor for each top level statement in the Ast
-func WalkAst(ast *Ast, visitor FullVisitor) {
-	for _, stmt := range ast.Statements {
-		stmt.Accept(visitor)
+// returns all the metadata attached to the given node
+func (ast *Ast) GetMetadata(node Node) Metadata {
+	return ast.metadata[node]
+}
+
+// returns the metadata of the given kind attached to the given node
+func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) MetadataAttachment {
+	md := ast.GetMetadata(node)
+	return md.Attachments[kind]
+}
+
+// adds metadata to the given node
+func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
+	md := ast.metadata[node]
+	if md.Attachments == nil {
+		md.Attachments = make(map[MetadataKind]MetadataAttachment)
 	}
+	md.Attachments[attachment.Kind()] = attachment
+	ast.metadata[node] = md
+}
+
+// returns a string representation of the AST as S-Expressions
+func (ast *Ast) String() string {
+	printer := &printer{}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	return printer.returned
+}
+
+// print the AST to stdout
+func (ast *Ast) Print() {
+	printer := &printer{}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	fmt.Println(printer.returned)
 }
 
 type (
