@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 	"github.com/spf13/cobra"
@@ -29,7 +31,14 @@ var parseCmd = &cobra.Command{
 				return fmt.Errorf("Fehler beim Lesen von stdin: %w", err)
 			}
 		}
-		module, err := parser.Parse(parser.Options{FileName: filePath, Source: src, ErrorHandler: ddperror.MakeBasicHandler(os.Stderr)})
+		module, err := parser.Parse(parser.Options{
+			FileName:     filePath,
+			Source:       src,
+			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
+			Annotators: []ast.Annotator{
+				&annotators.ConstFuncParamAnnotator{},
+			},
+		})
 		if err != nil {
 			return fmt.Errorf("Fehler beim Parsen: %w", err)
 		}

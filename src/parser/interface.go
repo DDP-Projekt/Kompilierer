@@ -85,9 +85,11 @@ func Parse(options Options) (*ast.Module, error) {
 		module.FileName = path
 	}
 
-	// run the annotators
-	for _, annotator := range options.Annotators {
-		ast.VisitModuleRec(module, annotator)
+	if !module.Ast.Faulty {
+		// run the annotators
+		for _, annotator := range options.Annotators {
+			ast.VisitModuleRec(module, annotator)
+		}
 	}
 
 	return module, nil

@@ -18,13 +18,14 @@ type Ast struct {
 }
 
 // returns all the metadata attached to the given node
-func (ast *Ast) GetMetadata(node Node) Metadata {
-	return ast.metadata[node]
+func (ast *Ast) GetMetadata(node Node) (Metadata, bool) {
+	md, ok := ast.metadata[node]
+	return md, ok
 }
 
 // returns the metadata of the given kind attached to the given node
 func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) MetadataAttachment {
-	md := ast.GetMetadata(node)
+	md, _ := ast.GetMetadata(node)
 	return md.Attachments[kind]
 }
 
@@ -40,6 +41,15 @@ func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
 	}
 	md.Attachments[attachment.Kind()] = attachment
 	ast.metadata[node] = md
+}
+
+// removes metadata of the given kind from the given node
+func (ast *Ast) RemoveAttachment(node Node, kind MetadataKind) {
+	md, ok := ast.GetMetadata(node)
+	if ok {
+		delete(md.Attachments, kind)
+		ast.metadata[node] = md
+	}
 }
 
 // returns a string representation of the AST as S-Expressions

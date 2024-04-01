@@ -80,8 +80,6 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 	// mark the module as visited
 	visited[module] = struct{}{}
 
-	visitSingleModule(module, visitor)
-
 	// sort imports by include order
 	imports := make([]*ImportStmt, len(module.Imports))
 	copy(imports, module.Imports)
@@ -95,6 +93,8 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 			visitModuleRec(imprt.Module, visitor, visited)
 		}
 	}
+
+	visitSingleModule(module, visitor)
 }
 
 // visits the given node and all its children recursively
