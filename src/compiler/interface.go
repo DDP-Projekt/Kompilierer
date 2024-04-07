@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
@@ -53,15 +54,25 @@ type Options struct {
 	// wether the generated code for lists should be
 	// linked into the main module
 	LinkInListDefs bool
+	// level of optimizations
+	//	-  0: no optimizations
+	//	-  1: only LLVM optimizations
+	//	- >2: all optimizations
+	OptimizationLevel uint
 }
 
 func (options *Options) ToParserOptions() parser.Options {
+	var annos []ast.Annotator
+	if options.OptimizationLevel >= 2 {
+		annos = append(annos, &annotators.ConstFuncParamAnnotator{})
+	}
 	return parser.Options{
 		FileName:     options.FileName,
 		Source:       options.Source,
 		Tokens:       nil,
 		Modules:      nil,
 		ErrorHandler: options.ErrorHandler,
+		Annotators:   annos,
 	}
 }
 
@@ -118,7 +129,7 @@ func Compile(options Options) (*Result, error) {
 
 	if !options.LinkInModules {
 		irBuff := &bytes.Buffer{}
-		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler).compile(irBuff, true)
+		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler, options.OptimizationLevel).compile(irBuff, true)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +183,9 @@ func Compile(options Options) (*Result, error) {
 				options.Log("Kompiliere llvm-ir zu Assembler")
 			}
 
-			llctx.optimizeModule(mod)
+			if options.OptimizationLevel >= 1 {
+				llctx.optimizeModule(mod)
+			}
 
 			if _, err := llctx.compileModule(mod, file_type, options.To); err != nil {
 				return nil, fmt.Errorf("Fehler beim Kompilieren von llvm-ir: %w", err)
@@ -198,7 +211,7 @@ func Compile(options Options) (*Result, error) {
 	dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) io.Writer {
 		ll_modules_ir[m.FileName] = &bytes.Buffer{}
 		return ll_modules_ir[m.FileName]
-	}, options.ErrorHandler)
+	}, options.ErrorHandler, options.OptimizationLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -262,11 +275,12 @@ func Compile(options Options) (*Result, error) {
 }
 
 // writes the definitions of the inbuilt ddp list types to w
-func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler) error {
+// optimizationLevel is the same as in the compiler Options
+func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) error {
 	defer panic_wrapper()
 
 	irBuff := bytes.Buffer{}
-	if err := newCompiler(nil, errorHandler).dumpListDefinitions(&irBuff); err != nil {
+	if err := newCompiler(nil, errorHandler, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
 		return err
 	}
 
@@ -282,7 +296,9 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 	}
 	defer list_mod.Dispose()
 
-	llctx.optimizeModule(list_mod)
+	if optimizationLevel >= 1 {
+		llctx.optimizeModule(list_mod)
+	}
 
 	switch outputType {
 	case OutputIR:

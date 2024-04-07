@@ -13,7 +13,9 @@
 				"-o",
 				"${workspaceFolder}/build/test.exe",
 				"--wortreich",
-				"--nichts-loeschen"
+				"--nichts-loeschen",
+				"-O",
+				"2"
 			]
 		},
 		{

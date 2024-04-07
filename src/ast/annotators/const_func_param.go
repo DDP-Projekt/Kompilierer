@@ -11,13 +11,13 @@ const ConstFuncParamMetaKind ast.MetadataKind = "ConstFuncParam"
 
 type ConstFuncParamMeta struct {
 	// wether each parameter is const
-	Params map[string]bool
+	IsConst map[string]bool
 }
 
 var _ ast.MetadataAttachment = (*ConstFuncParamMeta)(nil)
 
 func (m ConstFuncParamMeta) String() string {
-	return fmt.Sprintf("ConstFuncParamMeta[%v]", m.Params)
+	return fmt.Sprintf("ConstFuncParamMeta[%v]", m.IsConst)
 }
 
 func (m ConstFuncParamMeta) Kind() ast.MetadataKind {
@@ -53,10 +53,10 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 	// if the function is extern, we have to assume that the parameters are not const
 	if ast.IsExternFunc(decl) {
 		attachement := ConstFuncParamMeta{
-			Params: make(map[string]bool, len(decl.ParamNames)),
+			IsConst: make(map[string]bool, len(decl.ParamNames)),
 		}
 		for _, name := range decl.ParamNames {
-			attachement.Params[name.Literal] = false
+			attachement.IsConst[name.Literal] = false
 		}
 		a.CurrentModule.Ast.AddAttachement(decl, attachement)
 		return ast.VisitSkipChildren
@@ -64,7 +64,7 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 
 	a.currentParams = make(map[*ast.VarDecl]bool, len(decl.ParamNames))
 	attachement := ConstFuncParamMeta{
-		Params: make(map[string]bool, len(decl.ParamNames)),
+		IsConst: make(map[string]bool, len(decl.ParamNames)),
 	}
 	// track all the function parameters
 	// and initially assume they are const
@@ -72,7 +72,7 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 		param, exists, isVar := decl.Body.Symbols.LookupDecl(name.Literal)
 		if exists && isVar {
 			a.currentParams[param.(*ast.VarDecl)] = true
-			attachement.Params[name.Literal] = true
+			attachement.IsConst[name.Literal] = true
 		}
 	}
 	a.CurrentModule.Ast.AddAttachement(decl, attachement)
@@ -83,8 +83,8 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 
 func (a *ConstFuncParamAnnotator) VisitFuncCall(call *ast.FuncCall) ast.VisitResult {
 	var isConst map[string]bool
-	if attachement := a.CurrentModule.Ast.GetMetadataByKind(call.Func, ConstFuncParamMetaKind); attachement != nil {
-		isConst = attachement.(ConstFuncParamMeta).Params
+	if attachement, ok := a.CurrentModule.Ast.GetMetadataByKind(call.Func, ConstFuncParamMetaKind); ok {
+		isConst = attachement.(ConstFuncParamMeta).IsConst
 	}
 
 	currentParams := maps.Keys(a.currentParams)
@@ -140,10 +140,16 @@ func doesReferenceVarMutable(expr ast.Expression, decls []*ast.VarDecl) []*ast.V
 }
 
 func (a *ConstFuncParamAnnotator) overwriteAttachement() {
+	attachement := ConstFuncParamMeta{
+		IsConst: make(map[string]bool, len(a.currentParams)),
+	}
 	// overwrite the attachement
-	attachement := a.CurrentModule.Ast.GetMetadataByKind(a.currentDecl, ConstFuncParamMetaKind).(ConstFuncParamMeta)
+	if att, ok := a.CurrentModule.Ast.GetMetadataByKind(a.currentDecl, ConstFuncParamMetaKind); ok {
+		attachement = att.(ConstFuncParamMeta)
+	}
+
 	for param := range a.currentParams {
-		attachement.Params[param.Name()] = a.currentParams[param]
+		attachement.IsConst[param.Name()] = a.currentParams[param]
 	}
 	a.CurrentModule.Ast.AddAttachement(a.currentDecl, attachement)
 }
