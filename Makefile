@@ -59,7 +59,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete download-pcre2
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete test-with-optimizations download-pcre2
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -190,6 +190,10 @@ test-complete:
 	'$(MAKE)' test 
 	'$(MAKE)' debug 
 	'$(MAKE)' test-memory
+
+# runs all the tests with optimizations enabled
+test-with-optimizations:
+	'$(MAKE)' KDDP_ARGS="-O 2" test-complete
 
 help:
 	@echo "Targets:"
