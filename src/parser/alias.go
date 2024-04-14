@@ -97,14 +97,14 @@ func (p *parser) alias() ast.Expression {
 	}
 
 	// used for the algorithm below to parse each argument only once
-	cached_args := map[cachedArgKey]*cachedArg{}
+	cached_args := make(map[cachedArgKey]*cachedArg, 4)
 	// attempts to evaluate the arguments for the passed alias and checks if types match
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
 	// it also returns all errors that might have occured while doing so
 	checkAlias := func(mAlias ast.Alias, typeSensitive bool) (map[string]ast.Expression, []ddperror.Error) {
 		p.cur = start
-		args := map[string]ast.Expression{}
+		args := make(map[string]ast.Expression, 4)
 		reported_errors := make([]ddperror.Error, 0)
 		mAliasTokens := mAlias.GetTokens()
 		mAliasArgs := mAlias.GetArgs()

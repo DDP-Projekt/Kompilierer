@@ -5,14 +5,7 @@ import (
 	"testing"
 )
 
-// write a test for SliceMap
-func TestSliceMap(t *testing.T) {
-	// create a new SliceMap
-	m := New[int, string](func(a, b int) bool {
-		return a == b
-	}, func(a, b int) bool {
-		return a < b
-	})
+func testMap(m *OrderedMap[int, string], t *testing.T) {
 	// set some values
 	m.Set(1, "one")
 	m.Set(2, "two")
@@ -49,4 +42,39 @@ func TestSliceMap(t *testing.T) {
 	if values := m.Values(); !reflect.DeepEqual(values, []string{"one", "three"}) {
 		t.Errorf("Expected values %v, got %v", []string{"one", "three"}, values)
 	}
+}
+
+// write a test for OrderedMap
+func TestOrderedMap(t *testing.T) {
+	// create a new OrderedMap
+	m := New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 0)
+	testMap(m, t)
+}
+
+func TestOrderedMapCapacity(t *testing.T) {
+	// create a new OrderedMap
+	m := New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 1)
+	testMap(m, t)
+	// create a new OrderedMap
+	m = New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 3)
+	testMap(m, t)
+	// create a new OrderedMap
+	m = New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 50)
+	testMap(m, t)
 }

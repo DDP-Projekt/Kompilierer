@@ -35,6 +35,9 @@ var parseCmd = &cobra.Command{
 			FileName:     filePath,
 			Source:       src,
 			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
+			Annotators: []ast.Annotator{
+				&annotators.ConstFuncParamAnnotator{},
+			},
 		})
 		if err != nil {
 			return fmt.Errorf("Fehler beim Parsen: %w", err)

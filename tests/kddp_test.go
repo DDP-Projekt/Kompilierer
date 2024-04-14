@@ -17,7 +17,9 @@ import (
 
 var (
 	test_dirs_flag = flag.String("test_dirs", "", "")
+	kddp_args_flag = flag.String("kddp_args", "", "")
 	test_dirs      []string
+	kddp_args      []string
 	timeout        = 10
 	diff_cmd       = ""
 )
@@ -27,6 +29,10 @@ func TestMain(m *testing.M) {
 	test_dirs = strings.Split(*test_dirs_flag, " ")
 	if *test_dirs_flag == "" {
 		test_dirs = []string{}
+	}
+	kddp_args = strings.Split(*kddp_args_flag, " ")
+	if *kddp_args_flag == "" {
+		kddp_args = []string{}
 	}
 	if cmd, err := exec.LookPath("diff"); err == nil {
 		diff_cmd = cmd
@@ -90,7 +96,12 @@ func TestBuildExamples(t *testing.T) {
 			// build dpp file
 			ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
 			defer cf()
-			cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", path, "-o", changeExtension(path, ".exe"), "--wortreich")
+			args := append([]string{
+				"kompiliere", path,
+				"-o", changeExtension(path, ".exe"),
+				"--wortreich",
+			}, kddp_args...)
+			cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", args...)
 			// get build output
 			if out, err := cmd.CombinedOutput(); err != nil {
 				if err := ctx.Err(); err != nil {

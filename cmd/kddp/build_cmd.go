@@ -138,6 +138,7 @@ var buildCmd = &cobra.Command{
 			DeleteIntermediateFiles: !buildNoDeletes,
 			LinkInModules:           buildLinkModules,
 			LinkInListDefs:          buildLinkListDefs,
+			OptimizationLevel:       buildOptimizationLevel,
 		})
 		if err != nil {
 			return fmt.Errorf("Fehler beim Kompilieren: %w", err)
@@ -167,14 +168,15 @@ var buildCmd = &cobra.Command{
 }
 
 var (
-	buildOutputPath     string // flag for kompiliere
-	buildMainPath       string // flag for kompiliere
-	buildGCCFlags       string // flag for kompiliere
-	buildExternGCCFlags string // flag for kompiliere
-	buildNoDeletes      bool   // flag for kompiliere
-	buildLinkModules    bool   // flag for kompiliere
-	buildLinkListDefs   bool   // flag for kompiliere
-	buildGCCExecutable  string // flag for kompiliere
+	buildOutputPath        string // flag for kompiliere
+	buildMainPath          string // flag for kompiliere
+	buildGCCFlags          string // flag for kompiliere
+	buildExternGCCFlags    string // flag for kompiliere
+	buildNoDeletes         bool   // flag for kompiliere
+	buildLinkModules       bool   // flag for kompiliere
+	buildLinkListDefs      bool   // flag for kompiliere
+	buildGCCExecutable     string // flag for kompiliere
+	buildOptimizationLevel uint   // flag for kompiliere
 )
 
 func init() {
@@ -186,6 +188,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&buildLinkModules, "module-linken", true, "Ob alle Module in das Hauptmodul gelinkt werden sollen")
 	buildCmd.Flags().BoolVar(&buildLinkListDefs, "list-defs-linken", true, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
 	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zur gcc executable, die genutzt werden soll")
+	buildCmd.Flags().UintVarP(&buildOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
 }
 
 // helper function

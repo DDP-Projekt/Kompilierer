@@ -45,7 +45,7 @@ var dumpListDefsCommand = &cobra.Command{
 				return fmt.Errorf("Fehler beim Öffnen der Ausgabedatei: %w", err)
 			}
 			defer file.Close()
-			if err := compiler.DumpListDefinitions(file, outType, ddperror.MakeBasicHandler(os.Stderr)); err != nil {
+			if err := compiler.DumpListDefinitions(file, outType, ddperror.MakeBasicHandler(os.Stderr), listDefsOptimizationLevel); err != nil {
 				return err
 			}
 		}
@@ -55,11 +55,12 @@ var dumpListDefsCommand = &cobra.Command{
 }
 
 var (
-	listDefsOutputPath = ddppath.LIST_DEFS_NAME // flag for dump-list-defs
-	asm                bool                     // flag for dump-list-defs
-	llvm_ir            bool                     // flag for dump-list-defs
-	llvm_bc            bool                     // flag for dump-list-defs
-	object             bool                     // flag for dump-list-defs
+	listDefsOutputPath        = ddppath.LIST_DEFS_NAME // flag for dump-list-defs
+	asm                       bool                     // flag for dump-list-defs
+	llvm_ir                   bool                     // flag for dump-list-defs
+	llvm_bc                   bool                     // flag for dump-list-defs
+	object                    bool                     // flag for dump-list-defs
+	listDefsOptimizationLevel uint                     // flag for dump-list-defs
 )
 
 func init() {
@@ -68,4 +69,5 @@ func init() {
 	dumpListDefsCommand.Flags().BoolVar(&llvm_ir, "llvm-ir", llvm_ir, "ob die llvm ir Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&llvm_bc, "llvm-bc", llvm_bc, "ob die llvm bitcode Variante ausgegeben werden soll")
 	dumpListDefsCommand.Flags().BoolVar(&object, "object", object, "ob eine Objekt Datei ausgegeben werden soll")
+	dumpListDefsCommand.Flags().UintVarP(&listDefsOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
 }
