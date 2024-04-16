@@ -44,3 +44,19 @@ void Betriebssystem(ddpstring *ret) {
 	memcpy(ret->str, OS, sizeof(OS));
 #undef OS
 }
+
+void Arbeitsverzeichnis(ddpstring *ret) {
+	char buffer[PATH_MAX];
+	if (getcwd(buffer, sizeof(buffer)) != NULL) {
+		char *string = DDP_ALLOCATE(char, PATH_MAX + 1);
+		memcpy(string, buffer, PATH_MAX);
+		
+		ret->str = string;
+		ret->str[PATH_MAX] = '\0';
+		ret->cap = PATH_MAX + 1;
+		return;
+	}
+	
+	ret->str = "";
+	ret->cap = 0;
+}
