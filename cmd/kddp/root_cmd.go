@@ -11,10 +11,12 @@ import (
 
 // rootCmd is the root command of the kddp compiler
 var rootCmd = &cobra.Command{
-	Use:     "kddp <Befehl> [Optionen] [Argumente]",
-	Short:   "Der DDP Kompilierer",
-	Long:    `Der Kompilierer der deutschen Programmiersprache (DDP)`,
-	Version: fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
+	Use:           "kddp <Befehl> [Optionen] [Argumente]",
+	Short:         "Der DDP Kompilierer",
+	Long:          `Der Kompilierer der deutschen Programmiersprache (DDP)`,
+	Version:       fmt.Sprintf("%s %s %s\n", DDPVERSION, runtime.GOOS, runtime.GOARCH),
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // global verbose flag for all commands
