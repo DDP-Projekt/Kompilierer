@@ -1,13 +1,6 @@
 Binde "Duden/Pfade" ein.
 Binde "Duden/Ausgabe" ein.
 
-[ BasisPfad Tests ]
-Schreibe (den Basispfad von "/a/b/c/d") auf eine Zeile.
-Schreibe (den Basispfad von "/a/b/c/") auf eine Zeile.
-Schreibe (den Basispfad von "./b") auf eine Zeile.
-Schreibe (den Basispfad von "hi.txt") auf eine Zeile.
-Schreibe (den Basispfad von "") auf eine Zeile.
-
 [ OrdnerPfad Tests ]
 Schreibe (den Ordnerpfad von "/a/b/c") auf eine Zeile.
 Schreibe (den Ordnerpfad von "a/b/c") auf eine Zeile.
@@ -15,20 +8,43 @@ Schreibe (den Ordnerpfad von "/a/") auf eine Zeile.
 Schreibe (den Ordnerpfad von "a/") auf eine Zeile.
 Schreibe (den Ordnerpfad von "a") auf eine Zeile.
 Schreibe (den Ordnerpfad von "/") auf eine Zeile.
+Schreibe (den Ordnerpfad von "..") auf eine Zeile.
+Schreibe (den Ordnerpfad von ".") auf eine Zeile.
 Schreibe (den Ordnerpfad von "") auf eine Zeile.
 
-[ Erweiterung Tests ]
-Schreibe (die Erweiterung der Datei bei "/a/b/c/bar.css") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei "/") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei ".") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei "") auf eine Zeile.
+[ Basisname Tests ]
+Schreibe (den Basisnamen von "/a/b/c/d.png") auf eine Zeile.
+Schreibe (den Basisnamen von "/a/b/c/d") auf eine Zeile.
+Schreibe (den Basisnamen von "/a/b/c/") auf eine Zeile.
+Schreibe (den Basisnamen von "/a/b/c///") auf eine Zeile.
+Schreibe (den Basisnamen von "./b") auf eine Zeile.
+Schreibe (den Basisnamen von "hi.txt") auf eine Zeile.
+Schreibe (den Basisnamen von ".") auf eine Zeile.
+Schreibe (den Basisnamen von "..") auf eine Zeile.
+Schreibe (den Basisnamen von "") auf eine Zeile.
 
 [ DateiName Tests ]
 Schreibe (den Dateinamen von "/a/b/c/test.txt") auf eine Zeile.
+Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
+Schreibe (den Dateinamen von "test.exe") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c/") auf eine Zeile.
 Schreibe (den Dateinamen von "/a/b/c") auf eine Zeile.
-Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
+Schreibe (den Dateinamen von "/") auf eine Zeile.
+Schreibe (den Dateinamen von ".") auf eine Zeile.
+Schreibe (den Dateinamen von "..") auf eine Zeile.
+Schreibe (den Dateinamen von "noext") auf eine Zeile.
 Schreibe (den Dateinamen von "") auf eine Zeile.
+
+[ Erweiterung Tests ]
+Schreibe (die Erweiterung der Datei bei "/a/b/c/bar.css") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "/a/b/c/foo.tar.gz") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "bar.css") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "/a/b.trap/c/noext") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "/") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei ".") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "..") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "noext") auf eine Zeile.
+Schreibe (die Erweiterung der Datei bei "") auf eine Zeile.
 
 [ Säubern Tests ]
 Schreibe (der Pfad "a/c" gesäubert) auf eine Zeile.
