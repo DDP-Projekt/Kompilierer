@@ -45,15 +45,16 @@ void Betriebssystem(ddpstring *ret) {
 #undef OS
 }
 
+#define MAX_PATH_LENGTH 4096 // windows is 260 (without reg edit), linux 4096
 void Arbeitsverzeichnis(ddpstring *ret) {
-	char buffer[PATH_MAX];
+	char buffer[MAX_PATH_LENGTH];
 	if (getcwd(buffer, sizeof(buffer)) != NULL) {
-		char *string = DDP_ALLOCATE(char, PATH_MAX + 1);
-		memcpy(string, buffer, PATH_MAX);
+		char *string = DDP_ALLOCATE(char, MAX_PATH_LENGTH + 1);
+		memcpy(string, buffer, MAX_PATH_LENGTH);
 		
 		ret->str = string;
-		ret->str[PATH_MAX] = '\0';
-		ret->cap = PATH_MAX + 1;
+		ret->str[MAX_PATH_LENGTH] = '\0';
+		ret->cap = MAX_PATH_LENGTH + 1;
 		return;
 	}
 	
