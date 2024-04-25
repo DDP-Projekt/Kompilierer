@@ -524,7 +524,7 @@ Und kann so benutzt werden:
 [
 	Berechnet die Gaußsche Fehlerfunktion von x. (erf(x))
 ]
-Die öffentliche Funktion Gaußsche_Fehlerfunktion mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück,
+Die öffentliche Funktion Gausssche_Fehlerfunktion mit dem Parameter x vom Typ Kommazahl, gibt eine Kommazahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Die Gaußsche Fehlerfunktion von <x>"

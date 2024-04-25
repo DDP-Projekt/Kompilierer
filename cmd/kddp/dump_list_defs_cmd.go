@@ -1,99 +1,73 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
 	"github.com/DDP-Projekt/Kompilierer/src/compiler"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/spf13/cobra"
 )
 
-// $kddp dumplistdefs dumps the list definitions to the specified file
-type DumpListDefsCommand struct {
-	fs *flag.FlagSet // FlagSet for the arguments
-	// arguments
-	filePath string // output file path
-	asm      bool   // wether to output assembly
-	llvm_ir  bool   // wether to output llvm ir
-	llvm_bc  bool   // wether to output llvm bitcode
-	object   bool   // wether to output an object file
-}
-
-func NewDumpListDefsCommand() *DumpListDefsCommand {
-	return &DumpListDefsCommand{
-		fs:       flag.NewFlagSet("dump-list-defs", flag.ExitOnError),
-		filePath: ddppath.LIST_DEFS_NAME,
-		asm:      false,
-		llvm_ir:  false,
-		llvm_bc:  false,
-		object:   false,
-	}
-}
-
-func (cmd *DumpListDefsCommand) Init(args []string) error {
-	// a input .ddp file is necessary
-	if len(args) < 1 {
-		return fmt.Errorf("Der starte Befehl braucht eine Eingabedatei")
-	}
-
-	// set all the flags
-	cmd.fs.StringVar(&cmd.filePath, "o", cmd.filePath, "Ausgabe Datei")
-	cmd.fs.BoolVar(&cmd.asm, "asm", cmd.asm, "Wether to output assembly")
-	cmd.fs.BoolVar(&cmd.llvm_ir, "llvm_ir", cmd.llvm_ir, "Wether to output llvm ir")
-	cmd.fs.BoolVar(&cmd.llvm_bc, "llvm_bc", cmd.llvm_bc, "Wether to output llvm bitcode")
-	cmd.fs.BoolVar(&cmd.object, "object", cmd.object, "Wether to output object file")
-	return parseFlagSet(cmd.fs, args)
-}
-
-func (cmd *DumpListDefsCommand) Run() error {
-	outputTypes := []compiler.OutputType{}
-	if cmd.asm {
-		outputTypes = append(outputTypes, compiler.OutputAsm)
-	}
-	if cmd.llvm_ir {
-		outputTypes = append(outputTypes, compiler.OutputIR)
-	}
-	if cmd.llvm_bc {
-		outputTypes = append(outputTypes, compiler.OutputBC)
-	}
-	if cmd.object {
-		outputTypes = append(outputTypes, compiler.OutputObj)
-	}
-
-	for _, outType := range outputTypes {
-		ext := ".ll"
-		switch outType {
-		case compiler.OutputAsm:
-			ext = ".asm"
-		case compiler.OutputObj:
-			ext = ".o"
-		case compiler.OutputBC:
-			ext = ".bc"
+var dumpListDefsCommand = &cobra.Command{
+	Use:    "dump-list-defs [-o <Ausgabe Datei>] [--asm] [--llvm-ir] [--llvm-bc] [--object]",
+	Short:  "wird nur intern verwendet",
+	Long:   `Schreibt die Definitionen der eingebauten Listen Typen in die gegebene Ausgbe Datei. Wird nur intern verwendet`,
+	Hidden: true, // only used internally
+	RunE: func(cmd *cobra.Command, args []string) error {
+		outputTypes := []compiler.OutputType{}
+		if asm {
+			outputTypes = append(outputTypes, compiler.OutputAsm)
 		}
-		file, err := os.OpenFile(changeExtension(cmd.filePath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("Fehler beim Öffnen der Ausgabedatei: %w", err)
+		if llvm_ir {
+			outputTypes = append(outputTypes, compiler.OutputIR)
 		}
-		defer file.Close()
-		if err := compiler.DumpListDefinitions(file, outType, ddperror.MakeBasicHandler(os.Stderr)); err != nil {
-			return err
+		if llvm_bc {
+			outputTypes = append(outputTypes, compiler.OutputBC)
 		}
-	}
+		if object {
+			outputTypes = append(outputTypes, compiler.OutputObj)
+		}
 
-	return nil
+		for _, outType := range outputTypes {
+			ext := ".ll"
+			switch outType {
+			case compiler.OutputAsm:
+				ext = ".asm"
+			case compiler.OutputObj:
+				ext = ".o"
+			case compiler.OutputBC:
+				ext = ".bc"
+			}
+			file, err := os.OpenFile(changeExtension(listDefsOutputPath, ext), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("Fehler beim Öffnen der Ausgabedatei: %w", err)
+			}
+			defer file.Close()
+			if err := compiler.DumpListDefinitions(file, outType, ddperror.MakeBasicHandler(os.Stderr), listDefsOptimizationLevel); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	},
 }
 
-func (cmd *DumpListDefsCommand) Name() string {
-	return cmd.fs.Name()
-}
+var (
+	listDefsOutputPath        = ddppath.LIST_DEFS_NAME // flag for dump-list-defs
+	asm                       bool                     // flag for dump-list-defs
+	llvm_ir                   bool                     // flag for dump-list-defs
+	llvm_bc                   bool                     // flag for dump-list-defs
+	object                    bool                     // flag for dump-list-defs
+	listDefsOptimizationLevel uint                     // flag for dump-list-defs
+)
 
-func (cmd *DumpListDefsCommand) Usage() string {
-	return `dump-list-defs <Optionen>: Schreibt die Definitionen der eingebauten Listen Typen in die gegebene Ausgbe Datei
-Optionen:
-	-o: Ausgabe Datei
-	--asm: ob assembly ausgegeben werden soll
-	--llvm_ir: ob llvm ir ausgegeben werden soll
-	--object: ob eine Objekt Datei ausgageben werden soll`
+func init() {
+	dumpListDefsCommand.Flags().StringVarP(&listDefsOutputPath, "ausgabe", "o", listDefsOutputPath, "Ausgaben Datei Muster (ohne Dateiendung)")
+	dumpListDefsCommand.Flags().BoolVar(&asm, "asm", asm, "ob die assembly Variante ausgegeben werden soll")
+	dumpListDefsCommand.Flags().BoolVar(&llvm_ir, "llvm-ir", llvm_ir, "ob die llvm ir Variante ausgegeben werden soll")
+	dumpListDefsCommand.Flags().BoolVar(&llvm_bc, "llvm-bc", llvm_bc, "ob die llvm bitcode Variante ausgegeben werden soll")
+	dumpListDefsCommand.Flags().BoolVar(&object, "object", object, "ob eine Objekt Datei ausgegeben werden soll")
+	dumpListDefsCommand.Flags().UintVarP(&listDefsOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
 }

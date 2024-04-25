@@ -15,16 +15,24 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var test_dirs_flag = flag.String("test_dirs", "", "")
-var test_dirs []string
-var timeout = 10
-var diff_cmd = ""
+var (
+	test_dirs_flag = flag.String("test_dirs", "", "")
+	kddp_args_flag = flag.String("kddp_args", "", "")
+	test_dirs      []string
+	kddp_args      []string
+	timeout        = 10
+	diff_cmd       = ""
+)
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	test_dirs = strings.Split(*test_dirs_flag, " ")
 	if *test_dirs_flag == "" {
 		test_dirs = []string{}
+	}
+	kddp_args = strings.Split(*kddp_args_flag, " ")
+	if *kddp_args_flag == "" {
+		kddp_args = []string{}
 	}
 	if cmd, err := exec.LookPath("diff"); err == nil {
 		diff_cmd = cmd
@@ -37,7 +45,6 @@ func TestKDDP(t *testing.T) {
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		return runTests(t, "kddp", path, root, d, err, false)
 	})
-
 	if err != nil {
 		t.Errorf("Error walking the test directory: %s", err)
 	}
@@ -48,7 +55,6 @@ func TestStdlib(t *testing.T) {
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		return runTests(t, "stdlib", path, root, d, err, false)
 	})
-
 	if err != nil {
 		t.Errorf("Error walking the test directory: %s", err)
 	}
@@ -73,6 +79,47 @@ func TestMemory(t *testing.T) {
 			t.Errorf("Error walking the test directory: %s", err)
 		}
 	})
+}
+
+func TestBuildExamples(t *testing.T) {
+	root := "../examples"
+	if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		path = filepath.ToSlash(path)
+
+		t.Run(strings.TrimPrefix(path, root+"/"), func(t *testing.T) {
+			t.Parallel()
+
+			if filepath.ToSlash(filepath.Dir(path)) != root || path == root || filepath.Ext(path) != ".ddp" {
+				t.SkipNow()
+			}
+
+			// build dpp file
+			ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
+			defer cf()
+			args := append([]string{
+				"kompiliere", path,
+				"-o", changeExtension(path, ".exe"),
+				"--wortreich",
+			}, kddp_args...)
+			cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", args...)
+			// get build output
+			if out, err := cmd.CombinedOutput(); err != nil {
+				if err := ctx.Err(); err != nil {
+					t.Errorf("context error: %s", err)
+				}
+				// error if failed
+				t.Errorf("compilation failed: %s\ncompiler output: %s", err, string(out))
+				return
+			} else {
+				// remove exe if successful
+				defer os.Remove(changeExtension(path, ".exe"))
+			}
+		})
+
+		return nil
+	}); err != nil {
+		t.Errorf("Error walking the examples directory: %s", err)
+	}
 }
 
 func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err error, testMemory bool) error {

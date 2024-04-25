@@ -187,8 +187,9 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 		} else {
 			f1, f2 = c.indexStruct(struct1, int64(i)), c.indexStruct(struct2, int64(i))
 		}
-		is_equal := c.compare_values(f1, f2, field)
-		c.createIfElese(is_equal, func() {
+		equal := c.compare_values(f1, f2, field)
+		is_not_equal := c.cbb.NewXor(equal, newInt(1))
+		c.createIfElese(is_not_equal, func() {
 			c.cbb.NewRet(constant.False)
 		}, nil)
 	}

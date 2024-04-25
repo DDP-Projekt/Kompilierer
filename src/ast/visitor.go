@@ -9,14 +9,17 @@ const (
 	VisitBreak                           // visiting is stopped
 )
 
-type BaseVisitor interface {
-	BaseVisitor() // dummy function for the interface
+// base interface for all visitors
+// this interface itself is useless,
+// implement one of the sub-interfaces for the actual functionality
+type Visitor interface {
+	Visitor() // dummy function for the interface
 }
 
 // interface for visiting DDP expressions, statements and declarations
 // see the Visitor pattern
 type FullVisitor interface {
-	BaseVisitor
+	Visitor
 	/*
 		Declarations
 	*/
@@ -44,6 +47,7 @@ type FullVisitor interface {
 	BinaryExprVisitor
 	TernaryExprVisitor
 	CastExprVisitor
+	TypeOpExprVisitor
 	GroupingVisitor
 	FuncCallVisitor
 	StructLiteralVisitor
@@ -67,147 +71,142 @@ type FullVisitor interface {
 }
 
 type (
-	ScopeVisitor interface {
-		UpdateScope(*SymbolTable)
-	}
-	ConditionalVisitor interface {
-		ShouldVisit(Node) bool
-	}
-)
-
-type (
 	BadDeclVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBadDecl(*BadDecl) VisitResult
 	}
 	VarDeclVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitVarDecl(*VarDecl) VisitResult
 	}
 	FuncDeclVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitFuncDecl(*FuncDecl) VisitResult
 	}
 	StructDeclVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitStructDecl(*StructDecl) VisitResult
 	}
 
 	BadExprVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBadExpr(*BadExpr) VisitResult
 	}
 	IdentVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitIdent(*Ident) VisitResult
 	}
 	IndexingVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitIndexing(*Indexing) VisitResult
 	}
 	FieldAccessVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitFieldAccess(*FieldAccess) VisitResult
 	}
 	IntLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitIntLit(*IntLit) VisitResult
 	}
 	FloatLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitFloatLit(*FloatLit) VisitResult
 	}
 	BoolLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBoolLit(*BoolLit) VisitResult
 	}
 	CharLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitCharLit(*CharLit) VisitResult
 	}
 	StringLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitStringLit(*StringLit) VisitResult
 	}
 	ListLitVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitListLit(*ListLit) VisitResult
 	}
 	UnaryExprVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitUnaryExpr(*UnaryExpr) VisitResult
 	}
 	BinaryExprVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBinaryExpr(*BinaryExpr) VisitResult
 	}
 	TernaryExprVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitTernaryExpr(*TernaryExpr) VisitResult
 	}
 	CastExprVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitCastExpr(*CastExpr) VisitResult
 	}
+	TypeOpExprVisitor interface {
+		Visitor
+		VisitTypeOpExpr(*TypeOpExpr) VisitResult
+	}
 	GroupingVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitGrouping(*Grouping) VisitResult
 	}
 	FuncCallVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitFuncCall(*FuncCall) VisitResult
 	}
 	StructLiteralVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitStructLiteral(*StructLiteral) VisitResult
 	}
 
 	BadStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBadStmt(*BadStmt) VisitResult
 	}
 	DeclStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitDeclStmt(*DeclStmt) VisitResult
 	}
 	ExprStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitExprStmt(*ExprStmt) VisitResult
 	}
 	ImportStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitImportStmt(*ImportStmt) VisitResult
 	}
 	AssignStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitAssignStmt(*AssignStmt) VisitResult
 	}
 	BlockStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBlockStmt(*BlockStmt) VisitResult
 	}
 	IfStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitIfStmt(*IfStmt) VisitResult
 	}
 	WhileStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitWhileStmt(*WhileStmt) VisitResult
 	}
 	ForStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitForStmt(*ForStmt) VisitResult
 	}
 	ForRangeStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitForRangeStmt(*ForRangeStmt) VisitResult
 	}
 	BreakContineStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitBreakContinueStmt(*BreakContinueStmt) VisitResult
 	}
 	ReturnStmtVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitReturnStmt(*ReturnStmt) VisitResult
 	}
 )

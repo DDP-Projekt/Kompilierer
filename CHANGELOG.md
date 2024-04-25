@@ -98,6 +98,12 @@ Der Changelog von DDP. Sortiert nach Release.
         - Hamming_Distanz
         - Levenshtein_Distanz
         - Vergleiche_Text 
+- [Added] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
+- [Added] Befehlszeilenargument "-O/--optimierungs-stufe" um die Optimierungsstufe zu setzen
+- [Changed] Befehlszeilenargumente benutzen nun "-" anstatt "_" (z.B. --nichts-loeschen anstatt --nichts_loeschen). "_" kann allerdings immernoch benutzt werden
+- [Added] der Standardwert Operator gibt den Standardwert eines Typen zurück
+- [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
+- [Fix] Bug beim Vergleichen von Kombinationen
 - [Fix] Externe Funktionsnamen in random.c
 - [Fix] Bei allen geklammerten Argumenten werden Fehler jetzt korrekt gemeldet
 

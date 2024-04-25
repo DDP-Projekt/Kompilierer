@@ -14,24 +14,12 @@ const (
 
 // simple visitor to print an AST
 type printer struct {
+	ast          *Ast
 	currentIdent int
 	returned     string
 }
 
-// print the AST to stdout
-func (ast *Ast) Print() {
-	printer := &printer{}
-	WalkAst(ast, printer)
-	fmt.Println(printer.returned)
-}
-
-func (ast *Ast) String() string {
-	printer := &printer{}
-	WalkAst(ast, printer)
-	return printer.returned
-}
-
-func (pr *printer) printIdent() {
+func (pr *printer) printIndent() {
 	for i := 0; i < pr.currentIdent; i++ {
 		pr.print("   ")
 	}
@@ -47,25 +35,45 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 
 	for _, node := range nodes {
 		pr.print("\n")
-		pr.printIdent()
+		pr.printIndent()
 		node.Accept(pr)
+
+		md, ok := pr.ast.GetMetadata(node)
+		if !ok || len(md.Attachments) == 0 {
+			continue
+		}
+
+		pr.print("\n")
+		pr.printIndent()
+		pr.print("Meta[")
+		pr.currentIdent++
+
+		for kind, attachement := range md.Attachments {
+			pr.print("\n")
+			pr.printIndent()
+			pr.print(fmt.Sprintf("\"%s\": %s\n", kind, attachement))
+		}
+		pr.currentIdent--
+		pr.printIndent()
+		pr.print("]\n")
 	}
 
 	pr.currentIdent--
 	if len(nodes) != 0 {
-		pr.printIdent()
+		pr.printIndent()
 	}
 
 	pr.print(")\n")
 	return pr.returned
 }
 
-func (*printer) BaseVisitor() {}
+func (*printer) Visitor() {}
 
 func (pr *printer) VisitBadDecl(decl *BadDecl) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadDecl[%s]", &decl.Tok))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 	msg := fmt.Sprintf("VarDecl[%s: %s]", decl.Name(), decl.Type)
 	if decl.CommentTok != nil {
@@ -74,6 +82,7 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 	pr.parenthesizeNode(msg, decl.InitVal)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %v, %s]", decl.Name(), literals(decl.ParamNames), decl.ParamTypes, commentLiterals(decl.ParamComments), decl.Type)
 	if IsExternFunc(decl) {
@@ -89,6 +98,7 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (pr *printer) VisitStructDecl(decl *StructDecl) VisitResult {
 	msg := fmt.Sprintf("StructDecl[%s: Public(%v)]", decl.Name(), decl.IsPublic)
 
@@ -104,38 +114,47 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", &expr.Tok))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("Ident[%s]", expr.Literal.Literal))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitIndexing(expr *Indexing) VisitResult {
 	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitFieldAccess(expr *FieldAccess) VisitResult {
 	pr.parenthesizeNode("FieldAccess", expr.Field, expr.Rhs)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitIntLit(expr *IntLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitFloatLit(expr *FloatLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("FloatLit(%f)", expr.Value))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitBoolLit(expr *BoolLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BoolLit(%v)", expr.Value))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitCharLit(expr *CharLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("CharLit(%c)", expr.Value))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitStringLit(expr *StringLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("StringLit[%s]", expr.Token().Literal))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitListLit(expr *ListLit) VisitResult {
 	if expr.Values == nil {
 		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type))
@@ -148,26 +167,37 @@ func (pr *printer) VisitListLit(expr *ListLit) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (pr *printer) VisitUnaryExpr(expr *UnaryExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("UnaryExpr[%s]", expr.Operator), expr.Rhs)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitBinaryExpr(expr *BinaryExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BinaryExpr[%s]", expr.Operator), expr.Lhs, expr.Rhs)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("TernaryExpr[%s]", expr.Operator), expr.Lhs, expr.Mid, expr.Rhs)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
 	return VisitRecurse
 }
+
+func (pr *printer) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeOpExpr[%s]: %s", expr.Operator, expr.Rhs))
+	return VisitRecurse
+}
+
 func (pr *printer) VisitGrouping(expr *Grouping) VisitResult {
 	pr.parenthesizeNode("Grouping", expr.Expr)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitFuncCall(expr *FuncCall) VisitResult {
 	args := make([]Node, 0, len(expr.Args))
 	for _, v := range expr.Args {
@@ -176,6 +206,7 @@ func (pr *printer) VisitFuncCall(expr *FuncCall) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("FuncCall[%s]", expr.Name), args...)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitStructLiteral(expr *StructLiteral) VisitResult {
 	args := make([]Node, 0, len(expr.Args))
 	for _, v := range expr.Args {
@@ -189,14 +220,17 @@ func (pr *printer) VisitBadStmt(stmt *BadStmt) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadStmt[%s]", &stmt.Tok))
 	return VisitRecurse
 }
+
 func (pr *printer) VisitDeclStmt(stmt *DeclStmt) VisitResult {
 	pr.parenthesizeNode("DeclStmt", stmt.Decl)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitExprStmt(stmt *ExprStmt) VisitResult {
 	pr.parenthesizeNode("ExprStmt", stmt.Expr)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	if stmt.Module == nil {
 		return VisitRecurse
@@ -204,7 +238,7 @@ func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	// TODO: pretty print imports
 	nodes := make([]Node, 0)
 
-	IterateImportedDecls(stmt, func(_ string, decl Declaration, tok token.Token) bool {
+	IterateImportedDecls(stmt, func(_ string, decl Declaration, _ token.Token) bool {
 		if decl != nil {
 			nodes = append(nodes, decl)
 		}
@@ -214,10 +248,12 @@ func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	pr.parenthesizeNode("ImportStmt", nodes...)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitAssignStmt(stmt *AssignStmt) VisitResult {
 	pr.parenthesizeNode("AssignStmt", stmt.Var, stmt.Rhs)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 	args := make([]Node, len(stmt.Statements))
 	for i, v := range stmt.Statements {
@@ -226,6 +262,7 @@ func (pr *printer) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 	pr.parenthesizeNode("BlockStmt", args...)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitIfStmt(stmt *IfStmt) VisitResult {
 	if stmt.Else != nil {
 		pr.parenthesizeNode("IfStmt", stmt.Condition, stmt.Then, stmt.Else)
@@ -234,18 +271,22 @@ func (pr *printer) VisitIfStmt(stmt *IfStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (pr *printer) VisitWhileStmt(stmt *WhileStmt) VisitResult {
 	pr.parenthesizeNode("WhileStmt", stmt.Condition, stmt.Body)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitForStmt(stmt *ForStmt) VisitResult {
 	pr.parenthesizeNode("ForStmt", stmt.Initializer, stmt.To, stmt.StepSize, stmt.Body)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 	pr.parenthesizeNode("ForRangeStmt", stmt.Initializer, stmt.In, stmt.Body)
 	return VisitRecurse
 }
+
 func (pr *printer) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
 	if stmt.Tok.Type == token.VERLASSE {
 		pr.parenthesizeNode("BreakContinueStmt[break]")
@@ -254,6 +295,7 @@ func (pr *printer) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	if stmt.Value == nil {
 		pr.parenthesizeNode("ReturnStmt[void]")

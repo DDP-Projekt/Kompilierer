@@ -35,31 +35,12 @@ func (module *Module) GetIncludeFilename() string {
 	return TrimStringLit(module.FileNameToken)
 }
 
-// calls VisitAst on all Asts of module and it's imports
-func VisitModuleRec(module *Module, visitor BaseVisitor) {
-	visitModuleRec(module, visitor, make(map[*Module]struct{}))
-}
-
-func visitModuleRec(module *Module, visitor BaseVisitor, visited map[*Module]struct{}) {
-	// return if already visited
-	if _, ok := visited[module]; ok {
-		return
-	}
-	visited[module] = struct{}{}
-	for _, imprt := range module.Imports {
-		if imprt.Module != nil {
-			visitModuleRec(imprt.Module, visitor, visited)
-		}
-	}
-	VisitAst(module.Ast, visitor)
-}
-
 // Calls fun with module and every module it imports recursively
 // meaning fun is called on module, all of its imports and all of their imports and so on
 // a single time per module
 func IterateModuleImports(module *Module, fun func(*Module)) {
 	if module != nil {
-		iterateModuleImportsRec(module, fun, make(map[*Module]struct{}))
+		iterateModuleImportsRec(module, fun, make(map[*Module]struct{}, len(module.Imports)+1))
 	}
 }
 
