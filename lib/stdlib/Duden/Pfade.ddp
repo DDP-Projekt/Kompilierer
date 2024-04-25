@@ -117,7 +117,7 @@ Und kann so benutzt werden:
 [
 	Nimmt einen Relativen UNIX Pfad t und gibt den vollständigen absoluten Pfad zurück.
 ]
-Die öffentliche Funktion UNIX_VollständigerPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion UNIX_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Der Text cwd ist der Arbeitsverzeichnis.
 	Gib die UNIX Pfade cwd und t verbunden zurück.
 Und kann so benutzt werden:
@@ -194,7 +194,7 @@ Und kann so benutzt werden:
 	f("noext") = ""
 	f("") = ""
 ]
-Die öffentliche Funktion UNIX_Datei_Name mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion UNIX_Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Die Zahl i ist die Länge von t.
 	Die Zahl ende ist -1.
 	Solange i größer als 0 ist, mache:
@@ -307,7 +307,7 @@ Und kann so benutzt werden:
 [
 	Nimmt einen Relativen Windows Pfad t und gibt den vollständigen absoluten Pfad zurück.
 ]
-Die öffentliche Funktion Windows_VollständigerPfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion Windows_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Der Text cwd ist der Arbeitsverzeichnis.
 	Gib die Windows Pfade cwd und t verbunden zurück.
 Und kann so benutzt werden:
@@ -358,7 +358,7 @@ Und kann so benutzt werden:
 [
 	Gibt den Dateinamen einer Datei zurück. Wenn der Windows Pfad nicht im Format von '*\*.*', '*\*.*' oder '*:*.*' ist wird ein leerer Text zurück gegeben.
 ]
-Die öffentliche Funktion Windows_Datei_Name mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion Windows_Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Die Zahl i ist die Länge von t.
 	Die Zahl ende ist -1.
 	Solange i größer als 0 ist, mache:
