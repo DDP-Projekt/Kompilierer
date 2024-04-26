@@ -18,7 +18,7 @@ ddpint ddp_string_length(ddpstring *str) {
 
 ddpchar ddp_string_index(ddpstring *str, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
 	size_t i = 0, len = index;
@@ -28,7 +28,7 @@ ddpchar ddp_string_index(ddpstring *str, ddpint index) {
 	}
 
 	if (str->str[i] == 0) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
 	return utf8_string_to_char(str->str + i);
@@ -36,7 +36,7 @@ ddpchar ddp_string_index(ddpstring *str, ddpint index) {
 
 void ddp_replace_char_in_string(ddpstring *str, ddpchar ch, ddpint index) {
 	if (index > str->cap || index < 1 || str->cap <= 1) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
 	size_t i = 0, len = index;
@@ -46,7 +46,7 @@ void ddp_replace_char_in_string(ddpstring *str, ddpchar ch, ddpint index) {
 	}
 
 	if (str->str[i] == 0) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war %ld, Text Länge war %ld)\n", index, utf8_strlen(str->str));
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
 	size_t oldCharLen = utf8_num_bytes(str->str + i);
@@ -90,7 +90,7 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 	index1 = clamp(index1, 1, start_length);
 	index2 = clamp(index2, 1, start_length);
 	if (index2 < index1) {
-		ddp_runtime_error(1, "Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n", index1, index2);
+		ddp_runtime_error(1, "Invalide Indexe (Index 1 war "DDP_INT_FMT", Index 2 war "DDP_INT_FMT")\n", index1, index2);
 	}
 
 	index1--, index2--; // ddp indices start at 1, c indices at 0
@@ -179,7 +179,7 @@ void ddp_int_to_string(ddpstring *ret, ddpint i) {
 	DBGLOG("_ddp_int_to_string: %p", ret);
 
 	char buffer[21];
-	int len = sprintf(buffer, "%lld", i);
+	int len = sprintf(buffer, DDP_INT_FMT, i);
 
 	char *string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
 	memcpy(string, buffer, len);
@@ -194,7 +194,7 @@ void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
 	DBGLOG("_ddp_float_to_string: %p", ret);
 
 	char buffer[50];
-	int len = sprintf(buffer, "%.16g", f);
+	int len = sprintf(buffer, DDP_FLOAT_FMT, f);
 
 	char *string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
 	memcpy(string, buffer, len);

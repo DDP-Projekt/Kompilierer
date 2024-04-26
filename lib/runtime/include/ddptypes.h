@@ -127,4 +127,11 @@ typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
 
+
+#define DDP_INT_FMT "%lld"
+#define DDP_FLOAT_FMT "%.16g"
+#define DDP_BOOL_FMT "%d"
+#define DDP_CHAR_FMT "%d"
+#define DDP_STRING_FMT "%s"
+
 #endif // DDP_TYPES_H
