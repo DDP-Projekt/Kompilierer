@@ -11,6 +11,93 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Breaking] Folgende Duden Funktionen wurden umbennant:
+    - Pfade:
+        - Ist_Absolut -> UNIX_Ist_Absolut 
+        - Säubern -> UNIX_Säubern 
+        - Verbinden -> UNIX_Verbinden 
+        - Ordner_Pfad -> UNIX_Ordnerpfad 
+        - Basis_Pfad -> UNIX_Basisname  
+        - Erweiterung -> UNIX_Erweiterung 
+        - Datei_Name -> UNIX_Dateiname 
+    - Mathe: 
+        - sin -> Sinus
+        - cos -> Kosinus
+        - tan -> tangens
+        - asin -> Arkussinus
+        - acos -> Arkuskosinus
+        - atan -> Arkustangens
+        - sinh -> Hyperbelsinus
+        - cosh -> Hyperbelkosinus
+        - tanh -> Hyperbeltangens 
+- [Added] Folgende Duden Funktionen wurden hinzugefügt (siehe die [Bedienungsanleitung](https://ddp.le0n.dev/Bedienungsanleitung/de/Programmierung/Standardbibliothek/) für eine Beschreibung):
+    - Pfade: 
+        - UNIX_Vollständiger_Pfad  
+        - Windows_Ist_Absolut 
+        - Windows_Saeubern 
+        - Windows_Pfad_Verbinden 
+        - Windows_Laufwerkbuchstabe 
+        - Windows_Vollständiger_Pfad 
+        - Windows_Ordnerpfad 
+        - Windows_Basisname 
+        - Windows_Dateiname 
+        - Windows_Erweiterung 
+    - Laufzeit: 
+        - Arbeitsverzeichnis 
+    - Zeichen: 
+        - Leerzeichen
+        - Neue_Zeile
+        - Wagenrücklauf
+        - Tabulator
+        - Rückstrich
+        - Anführungszeichen
+        - Apostroph
+        - ASCII_Größer
+        - ASCII_Kleiner,
+        - Ist_Lateinischer_Buchstabe
+        - Ist_Lateinischer_Buchstabe_Oder_Zahl 
+    - Regex: 
+        - Ist_Regex 
+        - Regex_Erster_Treffer 
+        - Regex_N_Treffer 
+        - Regex_Alle_Treffer 
+        - Regex_Erster_Treffer_Ersetzen 
+        - Regex_Alle_Treffer_Ersetzen 
+        - Regex_Spalten 
+    - Kryptographie: 
+        - SHA_256
+        - SHA_512 
+    - Listen: 
+        - Aufsteigende_Zahlen
+        - Absteigende_Zahlen, Linspace
+        - Logspace, Erste_N_Elemente_X
+        - Letzten_N_Elemente_X
+        - Spiegeln_X
+        - Summe_Zahlen_Liste
+        - Produkt_Zahlen_Liste
+        - Summe_Kommazahlen_Liste
+        - Produkt_Kommazahlen_Liste
+        - Verketten_Text_Liste 
+        - Elementweise_Summe_Zahl/Kommazahl
+        - Elementweise_Differenz_Zahl/Kommazahl
+        - Elementweise_Produkt_Zahl/Kommazahl
+        - Elementweise_Quotient_Zahl/Kommazahl
+        - Elementweise_Verketten_Text 
+    - Mathe: 
+        - Min3
+        - Min3_Kommazahl
+        - Max3
+        - Max3_Kommazahl
+        - Bogenmaß_Zu_Grad
+        - Winkel, Kehrwert_Zahl
+        - Kehrwert_Kommazahl
+        - Natürlicher_Logarithmus
+        - Gaußsche_Fehlerfunktion
+        - Fakultät *(Danke Franz Müller!)*
+    - Texte: 
+        - Hamming_Distanz
+        - Levenshtein_Distanz
+        - Vergleiche_Text 
 - [Fix] Der zwischen Operator crasht nun nicht mehr bei Kommazahl/Zahl kombinationen
 - [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Added] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
@@ -19,21 +106,6 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Added] der Standardwert Operator gibt den Standardwert eines Typen zurück
 - [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
 - [Fix] Bug beim Vergleichen von Kombinationen
-- [Added] Folgende Duden funktionen wurden hinzugefügt:
-  - Text- und Zeichenvergleichsfunktionen
-  - Elementweise Operationen für Listen
-  - Um Buchstaben und Text Listen zu einem Text aneinanderhängen
-  - Summe und Produkt für numerische Listen
-  - Wrapper Funktionen für ' ', '\n', '\r', '\t', '\\', '"' und '\'" in Duden/Zeichen 
-  - Natürlicher_Logarithmus, Gaußsche_Fehlerfunktion und Fakultät
-  - Kosekans, Sekans, Kotangens, Areahyperbelsinus, Areahyperbelkosinus, Areahyperbeltangens, Versinus und Koversinus
-  - einige Regex funktionen im neuen Duden/Regex Modul 
-  - Erste_N_Elemente_X, Letzten_N_Elemente_X und Spiegeln_X,
-  - SHA-256 und SHA-512 zum neuen Duden/Kryptographie Modul
-  - Bogenmaß_Zu_Grad, Grad_Zu_Bogenmaß, atan2 und Kehrwert
-  - Aufsteigende_Zahlen, Absteigende_Zahlen, Linspace und Logspace
-  - Hamming_Distanz und Levenshtein_Distanz
-  - Max3, Min3, Max3_Kommazahl und Min3_Kommazahl
 - [Fix] Externe Funktionsnamen in random.c
 - [Fix] Bei allen geklammerten Argumenten werden Fehler jetzt korrekt gemeldet
 
