@@ -338,7 +338,7 @@ Und kann so benutzt werden:
 	"der Windows Ordnerpfad von <t>"
 
 [
-	Gibt das letzte Element des gegebenen Windows Pfads zurück.
+	Gibt das letzte Element des gegebenen Windows Pfads zurück. Falls der Pfad leer ist, wird "." ausgegeben.
 ]
 Die öffentliche Funktion Windows_Basisname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Die Zahl ende ist die Länge von t.
@@ -387,3 +387,89 @@ Die öffentliche Funktion Windows_Erweiterung mit dem Parameter t vom Typ Text, 
 	Gib t ab dem extStart. Element zurück.
 Und kann so benutzt werden:
 	"die Windows Erweiterung der Datei bei <t>"
+
+
+[ 
+	UNIX + Windows Funktonen
+]
+
+[
+	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib t ein absoluter Windows Pfad ist zurück.
+	Gib t ein absoluter UNIX Pfad ist zurück.
+Und kann so benutzt werden:
+	"<t> ein absoluter Pfad ist"
+
+[
+	Säubert/Normalisiert den gegebenen Pfad:
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib der Windows Pfad t gesäubert zurück.
+	Gib der UNIX Pfad t gesäubert zurück.
+Und kann so benutzt werden:
+	"der Pfad <t> gesäubert"
+
+[
+	Verbindet zwei Pfade mit dem Trennzeichen und säubert zuletzt.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib die Windows Pfade a und b verbunden zurück.
+	Gib die UNIX Pfade a und b verbunden zurück.
+Und kann so benutzt werden:
+	"die Pfade <a> und <b> verbunden"
+
+[
+	Nimmt einen Relativen Pfad t und gibt den vollständigen absoluten Pfad zurück.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den absoluten Windows Pfad zu t zurück.
+	Gib den absoluten UNIX Pfad zu t zurück.
+Und kann so benutzt werden:
+	"den absoluten Pfad zu <t>",
+	"der absoluten Pfad zu <t>"
+
+[
+	Gibt den Pfad ohne das letze Element zurück. 
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Ordnerpfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Ordnerpfad von t zurück.
+	Gib den UNIX Ordnerpfad von t zurück.
+Und kann so benutzt werden:
+	"den Ordnerpfad von <t>",
+	"der Ordnerpfad von <t>"
+
+[	
+	Gibt den letzten Element eines UNIX Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
+]
+Die öffentliche Funktion Basisname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Basisnamen von t zurück.
+	Gib den UNIX Basisnamen von t zurück.
+Und kann so benutzt werden:
+	"den Basisnamen von <t>",
+	"der Basisname von <t>"
+
+[
+	Gibt den Dateinamen einer Datei zurück.
+]
+Die öffentliche Funktion Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Dateinamen von t zurück.
+	Gib den UNIX Dateinamen von t zurück.
+Und kann so benutzt werden:
+	"den Dateinamen von <t>",
+	"der Dateiname von <t>"
+
+[
+	Gibt die Erweiterung einer Datei zurück. Wenn der Pfad t ein Ordner ist oder leer ist, wird einen leeren Text zurück gegeben.
+]
+Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib die Windows Erweiterung der Datei bei t zurück.
+	Gib die UNIX Erweiterung der Datei bei t zurück.
+Und kann so benutzt werden:
+	"die Erweiterung der Datei bei <t>"
