@@ -6,11 +6,13 @@
 #include "debug.h"
 #include "utf8/utf8.h"
 #include <float.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 ddpint ddp_string_length(ddpstring *str) {
+	if (ddp_string_empty(str)) {
+		return 0;
+	}
 	return (ddpint)utf8_strlen(str->str);
 }
 
@@ -154,12 +156,11 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 	memcpy(&ret->str[str->cap - 1], temp, num_bytes);
 	ret->str[ret->cap - 1] = '\0';
 
-	str->str = NULL;
-	str->cap = 0;
+	*str = DDP_EMPTY_STRING;
 }
 
 ddpint ddp_string_to_int(ddpstring *str) {
-	if (str->cap == 0 || str->str[0] == '\0') {
+	if (ddp_string_empty(str)) {
 		return 0; // empty string
 	}
 
@@ -167,7 +168,7 @@ ddpint ddp_string_to_int(ddpstring *str) {
 }
 
 ddpfloat ddp_string_to_float(ddpstring *str) {
-	if (str->cap == 0 || str->str[0] == '\0') {
+	if (ddp_string_empty(str)) {
 		return 0; // empty string
 	}
 
@@ -242,7 +243,15 @@ ddpbool ddp_string_equal(ddpstring *str1, ddpstring *str2) {
 	if (str1 == str2) {
 		return true;
 	}
-	if (strlen(str1->str) != strlen(str2->str)) {
+	ddpint len1 = 0, len2 = 0;
+	if (str1->str != NULL) {
+		len1 = strlen(str1->str);
+	}
+	if (str2->str != NULL) {
+		len2 = strlen(str2->str);
+	}
+
+	if (len1 != len2) {
 		return false; // if the length is different, it's a quick false return
 	}
 	return memcmp(str1->str, str2->str, str1->cap) == 0;

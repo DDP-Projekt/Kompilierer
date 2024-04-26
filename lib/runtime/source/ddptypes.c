@@ -32,8 +32,13 @@ void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
 		return;
 	}
 	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
-	memcpy(cpy, str->str, str->cap);	  // copy the chars
+	memcpy(cpy, str->str, str->cap);		  // copy the chars
 	// set the fields of the copy
 	ret->str = cpy;
 	ret->cap = str->cap;
+}
+
+// returns wether the length of str is 0
+ddpbool ddp_string_empty(ddpstring *str) {
+	return str->str == NULL || str->cap <= 0 || (str->str[0] == '\0');
 }
