@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Der zwischen Operator crasht nun nicht mehr bei Kommazahl/Zahl kombinationen
+- [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Added] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
 - [Added] Befehlszeilenargument "-O/--optimierungs-stufe" um die Optimierungsstufe zu setzen
 - [Changed] Befehlszeilenargumente benutzen nun "-" anstatt "_" (z.B. --nichts-loeschen anstatt --nichts_loeschen). "_" kann allerdings immernoch benutzt werden

@@ -3,6 +3,8 @@ falsch,falsch,wahr,falsch,falsch,wahr,falsch,falsch
 wahr,wahr,falsch,wahr,wahr,falsch,wahr,wahr
 falsch,wahr,wahr,falsch,wahr,wahr,falsch,falsch
 falsch,falsch,wahr,falsch,falsch,falsch,wahr,falsch,falsch
+falsch,falsch,wahr,falsch,falsch,falsch,wahr,falsch,falsch
+wahr,wahr,wahr,wahr
 foo
 wahr
 foo

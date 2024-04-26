@@ -1300,22 +1300,80 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, rhs), c.cbb.NewICmp(enum.IPredSLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			case c.ddpfloattyp:
-				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			default:
 				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
+					)
+				case c.ddpfloattyp:
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			default:
 				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
