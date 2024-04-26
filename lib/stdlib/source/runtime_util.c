@@ -16,6 +16,12 @@
 #include <unistd.h>
 #endif // DDPOS_WINDOWS
 
+#ifdef DDPOS_WINDOWS
+#define DDP_MAX_PATH 260
+#else
+#define DDP_MAX_PATH 4096
+#endif
+
 void Programm_Beenden(ddpint code) {
 	ddp_end_runtime();
 	exit(code);
@@ -46,7 +52,7 @@ void Betriebssystem(ddpstring *ret) {
 }
 
 void Arbeitsverzeichnis(ddpstring *ret) {
-	char buffer[PATH_MAX];
+	char buffer[DDP_MAX_PATH];
 	if (getcwd(buffer, sizeof(buffer)) != NULL) {
 		int len = strlen(buffer) + 1;
 		char *string = DDP_ALLOCATE(char, len);
