@@ -1,4 +1,5 @@
 #include "winapi-path.h"
+#include <string.h>
 
 /*
  * Path Functions
@@ -189,7 +190,7 @@ char *PathAddBackslashA(char *lpszPath) {
 	size_t iLen;
 	char *prev = lpszPath;
 
-	if (!lpszPath || (iLen = strlen(lpszPath)) >= MAX_PATH) {
+	if (!lpszPath || (iLen = strlen(lpszPath)) >= DDP_MAX_WIN_PATH) {
 		return NULL;
 	}
 
@@ -210,7 +211,6 @@ char *PathAddBackslashA(char *lpszPath) {
 }
 
 bool PathIsRootA(const char *lpszPath) {
-
 	if (lpszPath && *lpszPath) {
 		if (*lpszPath == '\\') {
 			if (!lpszPath[1]) {
@@ -287,7 +287,7 @@ bool PathStripToRootA(char *lpszPath) {
 }
 
 char *PathCombine(char *lpszDest, const char *lpszDir, const char *lpszFile) {
-	char szTemp[MAX_PATH];
+	char szTemp[DDP_MAX_WIN_PATH];
 	bool bUseBoth = false, bStrip = false;
 
 	/* Invalid parameters */
@@ -301,11 +301,11 @@ char *PathCombine(char *lpszDest, const char *lpszDir, const char *lpszFile) {
 
 	if ((!lpszFile || !*lpszFile) && lpszDir) {
 		/* Use dir only */
-		lstrcpynA(szTemp, lpszDir, MAX_PATH);
+		lstrcpynA(szTemp, lpszDir, DDP_MAX_WIN_PATH);
 	} else if (!lpszDir || !*lpszDir || *lpszFile == '\\' || (*lpszFile && lpszFile[1] == ':')) {
 		if (!lpszDir || !*lpszDir || *lpszFile != '\\' || (lpszFile && (lpszFile[0] == '\\') && (lpszFile[1] == '\\'))) {
 			/* Use file only */
-			lstrcpynA(szTemp, lpszFile, MAX_PATH);
+			lstrcpynA(szTemp, lpszFile, DDP_MAX_WIN_PATH);
 		} else {
 			bUseBoth = true;
 			bStrip = true;
@@ -315,12 +315,12 @@ char *PathCombine(char *lpszDest, const char *lpszDir, const char *lpszFile) {
 	}
 
 	if (bUseBoth) {
-		lstrcpynA(szTemp, lpszDir, MAX_PATH);
+		lstrcpynA(szTemp, lpszDir, DDP_MAX_WIN_PATH);
 		if (bStrip) {
 			PathStripToRootA(szTemp);
 			lpszFile++; /* Skip '\' */
 		}
-		if (!PathAddBackslashA(szTemp) || strlen(szTemp) + strlen(lpszFile) >= MAX_PATH) {
+		if (!PathAddBackslashA(szTemp) || strlen(szTemp) + strlen(lpszFile) >= DDP_MAX_WIN_PATH) {
 			lpszDest[0] = 0;
 			return NULL;
 		}

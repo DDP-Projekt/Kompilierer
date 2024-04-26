@@ -1,19 +1,22 @@
 #include "ddpmemory.h"
 #include "ddptypes.h"
 #include "winapi-path.h"
-#include <stdio.h>
 #include <string.h>
 
-
+// TODO: Use PathCchCanonicalize 
 void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
-	char cleaned[MAX_PATH];
-	if (!PathCanonicalize(cleaned, path->str)) {
+	if (strlen(path->str) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
-		ret->str = DDP_ALLOCATE(char, 1);
-		ret->str[0] = '\0';
-		ret->cap = 1;
 		return;
 	}
+
+	char cleaned[DDP_MAX_WIN_PATH];
+	if (!PathCanonicalize(cleaned, path->str)) {
+		// TODO: Error Handling
+		*ret = DDP_EMPTY_STRING;
+		return;
+	}
+
 	int len = strlen(cleaned) + 1;
 	char *str = DDP_ALLOCATE(char, len);
 	memcpy(str, cleaned, len);
@@ -21,13 +24,17 @@ void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 	ret->cap = len;
 }
 
+// TODO: Use PathCchCombine
 void Windows_Pfad_Verbinden(ddpstring *ret, ddpstring *a, ddpstring *b) {
-	char joined[MAX_PATH];
-	if (!PathCombine(joined, a->str, b->str)) {
+	if (strlen(a->str) + 1 + strlen(b->str) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
-		ret->str = DDP_ALLOCATE(char, 1);
-		ret->str[0] = '\0';
-		ret->cap = 1;
+		return;
+	}
+
+	char joined[DDP_MAX_WIN_PATH];
+	if (!PathCombine(joined, a->str, b->str)) {
+		// TODO: Error Handling
+		*ret = DDP_EMPTY_STRING;
 		return;
 	}
 

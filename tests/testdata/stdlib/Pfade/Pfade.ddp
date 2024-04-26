@@ -1,5 +1,6 @@
 Binde "Duden/Pfade" ein.
 Binde "Duden/Ausgabe" ein.
+Binde Aneinandergehängt_Buchstabe aus "Duden/Listen" ein.
 
 [UNIX TESTS]
 
@@ -96,6 +97,9 @@ Schreibe (der Windows Pfad "C:" gesäubert) auf eine Zeile.
 Schreibe (der Windows Pfad ".." gesäubert) auf eine Zeile. [wollen wir dort \ ?]
 Schreibe (der Windows Pfad "." gesäubert) auf eine Zeile. [wollen wir dort \ ?]
 Schreibe (der Windows Pfad "" gesäubert) auf eine Zeile.
+
+Die Buchstaben Liste big ist 260 Mal 'a'.
+Schreibe (der Windows Pfad (big aneinandergehängt) gesäubert) auf eine Zeile.
 
 [ Windows_Pfad_Verbinden Tests ]
 Schreibe (die Windows Pfade "C:\\" und "admin" verbunden) auf eine Zeile.

@@ -66,5 +66,5 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Arbeitsverzeichnis gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"der Arbeitsverzeichnis",
-	"den Arbeitsverzeichnis"
+	"das Arbeitsverzeichnis",
+	"dem Arbeitsverzeichnis"

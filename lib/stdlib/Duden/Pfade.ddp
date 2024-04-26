@@ -118,7 +118,7 @@ Und kann so benutzt werden:
 	Nimmt einen Relativen UNIX Pfad t und gibt den vollständigen absoluten Pfad zurück.
 ]
 Die öffentliche Funktion UNIX_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Der Text cwd ist der Arbeitsverzeichnis.
+	Der Text cwd ist das Arbeitsverzeichnis.
 	Gib die UNIX Pfade cwd und t verbunden zurück.
 Und kann so benutzt werden:
 	"den absoluten UNIX Pfad zu <t>",
@@ -308,7 +308,7 @@ Und kann so benutzt werden:
 	Nimmt einen Relativen Windows Pfad t und gibt den vollständigen absoluten Pfad zurück.
 ]
 Die öffentliche Funktion Windows_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Der Text cwd ist der Arbeitsverzeichnis.
+	Der Text cwd ist das Arbeitsverzeichnis.
 	Gib die Windows Pfade cwd und t verbunden zurück.
 Und kann so benutzt werden:
 	"den absoluten Windows Pfad zu <t>",

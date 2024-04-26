@@ -48,7 +48,8 @@ void Schreibe_Buchstabe(ddpchar p1) {
 }
 
 void Schreibe_Text(ddpstring *p1) {
-	printf("%s", p1->str);
+	// {NULL, 0} is a valid string, so we need to check for NULL
+	printf("%s", p1->str ? p1->str : "");
 }
 
 void Schreibe_Fehler(ddpstring *fehler) {
