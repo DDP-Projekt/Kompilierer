@@ -363,7 +363,7 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 
 /* Generalized buffered File IO */
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 4095
 
 #define MODUS_NUR_LESEN 1
 #define MODUS_NUR_SCHREIBEN 2
@@ -402,6 +402,7 @@ static InternalFile new_internal_file(void) {
 
 // zeros out an already created/used InternalFile
 static void zero_internal_file(InternalFile *file) {
+	DDP_DBGLOG("zero_internal_file(%p, %d, " DDP_INT_FMT ")", file, file->fd, file->id);
 	ddp_free_string(&file->path);
 	ddp_free_string(&file->read_buffer);
 	ddp_free_string(&file->write_buffer);
@@ -411,21 +412,24 @@ static void zero_internal_file(InternalFile *file) {
 
 // atexit handler to free all open files
 static void free_open_files(void) {
+	DDP_DBGLOG("free_open_files()");
 	for (int i = 0; i < open_files.cap; i++) {
 		InternalFile *file = &open_files.files[i];
 		if (file->fd >= 0) {
 			if (close(file->fd) < 0) {
-				ddp_error("Fehler beim Schließen der Datei '%s': ", true, file->path.str);
+				// no need for error handling in atexit
 			}
 		}
 		zero_internal_file(file);
 	}
+	DDP_DBGLOG("free_open_files() - freeing files array");
 	DDP_FREE_ARRAY(InternalFile, open_files.files, open_files.cap);
 }
 
 // searches for the first unused file descriptor and returns it
 // if no file descriptor is available, it will grow the array and return the new index
 static ddpint add_internal_file(void) {
+	DDP_DBGLOG("add_internal_file()");
 	// search for the first unused file descriptor
 	for (int i = 0; i < open_files.cap; i++) {
 		if (open_files.files[i].fd == -1) {
@@ -440,7 +444,7 @@ static ddpint add_internal_file(void) {
 	}
 
 	// if no file descriptor is available, grow the array and return the new index
-
+	DDP_DBGLOG("add_internal_file() - growing files array");
 	ddpint old_cap = open_files.cap;
 	open_files.cap = DDP_GROW_CAPACITY(open_files.cap);
 	open_files.files = DDP_GROW_ARRAY(InternalFile, open_files.files, old_cap, open_files.cap);
@@ -592,6 +596,7 @@ typedef Datei *DateiRef;
 
 void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 	DDP_MIGHT_ERROR;
+	DDP_DBGLOG("Datei_Oeffnen(%p, %p, " DDP_INT_FMT ")", datei, Pfad, Modus);
 
 	// create a new file and store the index in the DateiRef
 	datei->index = add_internal_file();
@@ -621,6 +626,7 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 
 void Datei_Schliessen(DateiRef datei) {
 	DDP_MIGHT_ERROR;
+	DDP_DBGLOG("Datei_Schliessen(%p)", datei);
 
 	// close the file and do some cleanup
 	close_internal_file(datei->index);
@@ -707,11 +713,15 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
 			ret->cap += copy_amount;
 
+			DDP_DBGLOG("newline found: " DDP_INT_FMT ", %llu", ret->cap, copy_amount);
 #ifdef DDPOS_WINDOWS
 			// check windows line endings
 			if (ret->str[ret->cap - 2] == '\r') {
+				DDP_DBGLOG("carriage return found: " DDP_INT_FMT, ret->cap);
+				// the carriage return becomes the null terminator
 				ret->str[ret->cap - 2] = '\0';
 				ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap - 1);
+				ret->cap--;
 			} else {
 #endif
 				// the newline becomes the null terminator
@@ -818,6 +828,7 @@ void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
 
 ddpbool Datei_Zuende(DateiRef datei) {
 	DDP_MIGHT_ERROR;
+	DDP_DBGLOG("Datei_Zuende: " DDP_INT_FMT ", " DDP_INT_FMT, datei->index, datei->id)
 
 	InternalFile *file = get_internal_file(datei->index, datei->id);
 	if (!file) {

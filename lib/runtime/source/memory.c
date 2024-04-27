@@ -16,7 +16,7 @@ void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize) {
 		free(pointer);
 #ifdef DDP_DEBUG
 		allocatedBytes -= oldSize;
-		DBGLOG("freed %lu bytes, now at %llu bytesAllocated", oldSize, allocatedBytes);
+		DDP_DBGLOG("freed %lu bytes, now at %llu bytesAllocated", oldSize, allocatedBytes);
 #endif // DDP_DEBUG
 		return NULL;
 	}
@@ -32,7 +32,7 @@ void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize) {
 	void *result = realloc(pointer, newSize);
 #ifdef DDP_DEBUG
 	allocatedBytes += newSize - oldSize;
-	DBGLOG("allocated %lu bytes, now at %llu bytesAllocated", newSize - oldSize, allocatedBytes);
+	DDP_DBGLOG("allocated %lld bytes, now at %llu bytesAllocated", (ssize_t)(newSize - oldSize), allocatedBytes);
 #endif					  // DDP_DEBUG
 	if (result == NULL) { // out of memory
 		ddp_runtime_error(1, "out of memory\n");
