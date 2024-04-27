@@ -36,7 +36,7 @@ static pcre2_code *compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstri
 	if (re == NULL) {
 		PCRE2_UCHAR buffer[256];
 		pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
-		ddp_error("Regex-Feher in '"DDP_STRING_FMT"' bei Spalte %d: %s\n", false, muster->str, (int)erroroffset, buffer);
+		ddp_error("Regex-Feher in '" DDP_STRING_FMT "' bei Spalte %d: %s\n", false, muster->str, (int)erroroffset, buffer);
 	}
 
 	return re;
@@ -57,6 +57,8 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 }
 
 void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
+	DDP_MIGHT_ERROR;
+
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str;	  // The string to match against
 
@@ -92,7 +94,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 		if (rc != PCRE2_ERROR_NOMATCH) {
 			PCRE2_UCHAR buffer[256];
 			pcre2_get_error_message(rc, buffer, sizeof(buffer));
-			ddp_error("Match-Fehler in '"DDP_STRING_FMT"': %s\n", true, muster->str, buffer);
+			ddp_error("Match-Fehler in '" DDP_STRING_FMT "': %s\n", true, muster->str, buffer);
 		}
 
 		ret->text = DDP_EMPTY_STRING;
@@ -107,6 +109,8 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 }
 
 void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpint n) {
+	DDP_MIGHT_ERROR;
+
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str;	  // The string to match against
 
@@ -143,7 +147,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 			if (rc != PCRE2_ERROR_NOMATCH) {
 				PCRE2_UCHAR buffer[256];
 				pcre2_get_error_message(rc, buffer, sizeof(buffer));
-				ddp_error("Match-Fehler in '"DDP_STRING_FMT"': %s\n", false, muster->str, buffer);
+				ddp_error("Match-Fehler in '" DDP_STRING_FMT "': %s\n", false, muster->str, buffer);
 			}
 			break;
 		}
@@ -216,7 +220,7 @@ static void substitute(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpst
 		if (rc != PCRE2_ERROR_NOMATCH) {
 			PCRE2_UCHAR buffer[256];
 			pcre2_get_error_message(rc, buffer, sizeof(buffer));
-			ddp_error("Match-Fehler in '"DDP_STRING_FMT"': %s\n", false, muster->str, buffer);
+			ddp_error("Match-Fehler in '" DDP_STRING_FMT "': %s\n", false, muster->str, buffer);
 		}
 	}
 
@@ -224,14 +228,20 @@ static void substitute(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpst
 }
 
 void Regex_Erster_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz) {
+	DDP_MIGHT_ERROR;
+
 	substitute(ret, muster, text, ersatz, false);
 }
 
 void Regex_Alle_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz) {
+	DDP_MIGHT_ERROR;
+
 	substitute(ret, muster, text, ersatz, true);
 }
 
 void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
+	DDP_MIGHT_ERROR;
+
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str;	  // The string to match against
 
@@ -267,7 +277,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 			if (rc != PCRE2_ERROR_NOMATCH) {
 				PCRE2_UCHAR buffer[256];
 				pcre2_get_error_message(rc, buffer, sizeof(buffer));
-				ddp_error("Match-Fehler in '"DDP_STRING_FMT"': %s\n", false, muster->str, buffer);
+				ddp_error("Match-Fehler in '" DDP_STRING_FMT "': %s\n", false, muster->str, buffer);
 			}
 			break;
 		}
