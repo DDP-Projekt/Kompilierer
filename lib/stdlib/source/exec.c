@@ -1,7 +1,7 @@
 #include "ddpmemory.h"
 #include "ddpos.h"
 #include "ddptypes.h"
-#include <error.h>
+#include "error.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -302,5 +302,6 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 ddpint Programm_Ausfuehren(ddpstring *ProgrammName, ddpstringlist *Argumente,
 						   ddpstring *StandardEingabe, ddpstringref StandardAusgabe, ddpstringref StandardFehlerAusgabe) {
+	DDP_MIGHT_ERROR;
 	return execute_process(ProgrammName, Argumente, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
 }

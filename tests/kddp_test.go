@@ -86,6 +86,10 @@ func TestBuildExamples(t *testing.T) {
 	if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		path = filepath.ToSlash(path)
 
+		if len(test_dirs) > 0 && !slices.Contains(test_dirs, d.Name()) {
+			return nil
+		}
+
 		t.Run(strings.TrimPrefix(path, root+"/"), func(t *testing.T) {
 			t.Parallel()
 
@@ -151,12 +155,12 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		}
 
 		// get ddp file path
-		filename := filepath.Join(path, filepath.Base(path)) + ".ddp"
+		ddp_path := filepath.Join(path, filepath.Base(path)) + ".ddp"
 
 		// build dpp file
 		ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
 		defer cf()
-		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(filename, ".ddp"), "-o", changeExtension(filename, ".exe"), "--wortreich")
+		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(ddp_path, ".ddp"), "-o", changeExtension(ddp_path, ".exe"), "--wortreich")
 		// get build output
 		if out, err := cmd.CombinedOutput(); err != nil {
 			if err := ctx.Err(); err != nil {
@@ -167,13 +171,20 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 			return
 		} else {
 			// remove exe if successful
-			defer os.Remove(changeExtension(filename, ".exe"))
+			defer os.Remove(changeExtension(ddp_path, ".exe"))
 		}
 
 		// run ddp executeable
+		exe_path, err := filepath.Abs(ddp_path)
+		if err != nil {
+			t.Errorf("Could not get absolute path of %s: %s", ddp_path, err)
+			return
+		}
+
 		ctx, cf = context.WithTimeout(context.Background(), time.Second*10)
 		defer cf()
-		cmd = exec.CommandContext(ctx, changeExtension(filename, ".exe"))
+		cmd = exec.CommandContext(ctx, changeExtension(exe_path, ".exe"))
+		cmd.Dir = filepath.Dir(ddp_path)
 
 		// read input
 		input, err := os.Open(filepath.Join(path, "input.txt"))
