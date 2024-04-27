@@ -1,8 +1,11 @@
 package tests
 
 import (
+	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -52,6 +55,7 @@ func (v funcCallVisitor) VisitFuncCall(f *ast.FuncCall) ast.VisitResult {
 var (
 	duden_modules = make(map[string]*ast.Module, 30)
 	duden_funcs   = make(map[*ast.FuncDecl]struct{}, 100)
+	wd, _         = os.Getwd()
 )
 
 func init() {
@@ -93,12 +97,19 @@ func init() {
 }
 
 func TestStdlibCoverage(t *testing.T) {
-	t.Logf("Duden modules: %d", len(duden_modules))
-	t.Logf("Duden functions: %d", len(duden_funcs))
+	file, err := os.OpenFile("coverage.md", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		t.Fatalf("Error opening coverage file: %s", err)
+	}
+	defer file.Close()
+
+	fmt.Fprint(file, "# Duden Coverage\n\n")
+	fmt.Fprintf(file, "Duden Module: %d<br>\n", len(duden_modules))
+	fmt.Fprintf(file, "Duden Funktionen: %d<br><br>\n\n", len(duden_funcs))
 
 	const stdlib_testdata = "testdata/stdlib"
-	called_functions := make(map[*ast.FuncDecl]struct{}, len(duden_funcs))
-	err := filepath.WalkDir(stdlib_testdata, func(path string, d fs.DirEntry, err error) error {
+	called_functions := make(map[*ast.FuncDecl]int, len(duden_funcs))
+	err = filepath.WalkDir(stdlib_testdata, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || !d.IsDir() || path == stdlib_testdata {
 			return nil
 		}
@@ -116,8 +127,13 @@ func TestStdlibCoverage(t *testing.T) {
 		}
 
 		ast.VisitModule(module, funcCallVisitor(func(f *ast.FuncCall) {
-			if _, ok := duden_funcs[f.Func]; ok {
-				called_functions[f.Func] = struct{}{}
+			if _, ok := duden_funcs[f.Func]; !ok {
+				return
+			}
+			if n, ok := called_functions[f.Func]; ok {
+				called_functions[f.Func] = n + 1
+			} else {
+				called_functions[f.Func] = 1
 			}
 		}))
 
@@ -127,7 +143,66 @@ func TestStdlibCoverage(t *testing.T) {
 		t.Fatalf("Error walking the test directory: %s", err)
 	}
 
-	t.Logf("Called functions: %d", len(called_functions))
-	t.Logf("Uncovered functions: %d", len(duden_funcs)-len(called_functions))
-	t.Logf("Coverage: %.2f%%", float64(len(called_functions))/float64(len(duden_funcs))*100)
+	fmt.Fprintf(file, "Aufgerufene Funktionen: %d<br>\n", len(called_functions))
+	fmt.Fprintf(file, "Nicht aufgerufene Funktionen: %d<br>\n", len(duden_funcs)-len(called_functions))
+	fmt.Fprintf(file, "Coverage: %.2f%%\n\n", float64(len(called_functions))/float64(len(duden_funcs))*100)
+
+	fmt.Fprintf(file, "### Index\n\n")
+	for modName, mod := range duden_modules {
+		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
+		if err != nil {
+			modName = mod.FileName
+			t.Logf("Error getting relative path for %s: %s", modName, err)
+		}
+		fmt.Fprintf(file, "- [%s](#%s)\n", modName, strings.ToLower(strings.ReplaceAll(filepath.Base(modName), ".", "")))
+	}
+	fmt.Fprintln(file)
+
+	max_called_len := 0
+	for f := range called_functions {
+		if len(f.Name()) > max_called_len {
+			max_called_len = len(f.Name())
+		}
+	}
+
+	for modName, mod := range duden_modules {
+		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
+		if err != nil {
+			modName = mod.FileName
+			t.Logf("Error getting relative path for %s: %s", modName, err)
+		}
+
+		fmt.Fprintf(file, "### %s\n", getFileLink(t, modName, mod.FileName, -1))
+		fmt.Fprintf(file, "#### Aufgerufene Funktionen:\n\n")
+		fmt.Fprintf(file, "| Funktion | Aufrufe |\n")
+		fmt.Fprintf(file, "|----------|-------|\n")
+		for f, n := range called_functions {
+			if f.Module() == mod {
+				fmt.Fprintf(file, "| %s | %d |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())), n)
+				delete(duden_funcs, f)
+			}
+		}
+		fmt.Fprintf(file, "\n#### Nicht Aufgerufene Funktionen:\n\n")
+		fmt.Fprintf(file, "| Funktion |\n")
+		fmt.Fprintf(file, "|----------|\n")
+		for f := range duden_funcs {
+			if f.Module() == mod {
+				fmt.Fprintf(file, "| %s |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())))
+			}
+		}
+		fmt.Fprintln(file)
+	}
+}
+
+func getFileLink(t *testing.T, display, path string, line int) string {
+	linkPath, err := filepath.Rel(wd, path)
+	if err != nil {
+		linkPath = path
+		t.Logf("Error getting relative path for %s: %s", linkPath, err)
+	}
+	if line == -1 {
+		return fmt.Sprintf("[%s](%s)", display, filepath.ToSlash(linkPath))
+	} else {
+		return fmt.Sprintf("[%s](%s#L%d)", display, filepath.ToSlash(linkPath), line)
+	}
 }
