@@ -88,6 +88,36 @@ Schreibe den Wahrheitswert (0,2 zwischen -1,0 und 0,0 ist).
 
 Schreibe '\n'.
 
+Schreibe den Wahrheitswert (2 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (3 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (4 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (5 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (6 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (-1,0 zwischen 0,0 und -1,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (-0,2 zwischen 0,0 und -1,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (0,0 zwischen 0,0 und -1,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (0,2 zwischen 0,0 und -1,0 ist).
+
+Schreibe '\n'.
+
+Schreibe den Wahrheitswert (4 zwischen 5 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (4,0 zwischen 5,0 und 3 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (4,0 zwischen 5 und 3,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (4,0 zwischen 5,0 und 3,0 ist).
+
+Schreibe '\n'.
+
 Die Funktion foo gibt eine Zahl zurück, macht:
 	Schreibe "foo" auf eine Zeile.
 	Gib 1 zurück.

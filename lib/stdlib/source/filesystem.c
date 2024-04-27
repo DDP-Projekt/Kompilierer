@@ -47,7 +47,7 @@ ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
 		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-			ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
+			ddp_error("Fehler beim Erstellen des Ordners '"DDP_STRING_FMT"': ", true, Pfad->str);
 			return false;
 		}
 		*it = '/';
@@ -58,7 +58,7 @@ ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 	if (Pfad->str[Pfad->cap - 2] == '/') {
 		return true;
 	} else if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-		ddp_error("Fehler beim Erstellen des Ordners '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Erstellen des Ordners '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return false;
 	}
 	return true;
@@ -77,7 +77,7 @@ ddpbool Ist_Ordner(ddpstring *Pfad) {
 
 	struct stat path_stat;
 	if (stat(Pfad->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return false;
 	}
 	return S_ISDIR(path_stat.st_mode);
@@ -108,7 +108,7 @@ static int remove_directory(const char *path) {
 			if (buf) {
 				struct stat statbuf;
 
-				snprintf(buf, len, "%s/%s", path, p->d_name);
+				snprintf(buf, len, ""DDP_STRING_FMT"/"DDP_STRING_FMT"", path, p->d_name);
 				if (!stat(buf, &statbuf)) {
 					if (S_ISDIR(statbuf.st_mode)) {
 						r2 = remove_directory(buf);
@@ -122,14 +122,14 @@ static int remove_directory(const char *path) {
 		}
 		closedir(d);
 	} else {
-		ddp_error("Fehler beim Öffnen des Ordners '%s': ", true, path);
+		ddp_error("Fehler beim Öffnen des Ordners '"DDP_STRING_FMT"': ", true, path);
 		return -1;
 	}
 
 	if (!r) {
 		r = rmdir(path);
 	} else {
-		ddp_error("Fehler beim Löschen des Ordners '%s': ", true, path);
+		ddp_error("Fehler beim Löschen des Ordners '"DDP_STRING_FMT"': ", true, path);
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ ddpbool Loesche_Pfad(ddpstring *Pfad) {
 		return remove_directory(Pfad->str) == 0;
 	}
 	if (unlink(Pfad->str) != 0) {
-		ddp_error("Fehler beim Löschen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Löschen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return false;
 	}
 	return true;
@@ -150,7 +150,7 @@ ddpbool Loesche_Pfad(ddpstring *Pfad) {
 ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 	struct stat path_stat;
 	if (stat(NeuerName->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, NeuerName->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, NeuerName->str);
 		return false;
 	}
 
@@ -170,7 +170,7 @@ ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 		DDP_FREE(char, path_copy);
 	}
 	if (rename(Pfad->str, NeuerName->str) != 0) {
-		ddp_error("Fehler beim Verschieben des Pfades '%s' nach '%s': ", true, Pfad->str, NeuerName->str);
+		ddp_error("Fehler beim Verschieben des Pfades '"DDP_STRING_FMT"' nach '"DDP_STRING_FMT"': ", true, Pfad->str, NeuerName->str);
 		return false;
 	}
 	return true;
@@ -194,7 +194,7 @@ void Zugriff_Datum(ddpstring *ret, ddpstring *Pfad) {
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_atime);
@@ -206,7 +206,7 @@ void AEnderung_Datum(ddpstring *ret, ddpstring *Pfad) {
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_mtime);
@@ -218,7 +218,7 @@ void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_ctime);
@@ -229,7 +229,7 @@ void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
 ddpint Datei_Groesse(ddpstring *Pfad) {
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return -1;
 	}
 
@@ -239,7 +239,7 @@ ddpint Datei_Groesse(ddpstring *Pfad) {
 ddpint Datei_Modus(ddpstring *Pfad) {
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '%s': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
 		return -1;
 	}
 
@@ -314,11 +314,11 @@ ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 		fclose(file);
 		ref->str[ref->cap - 1] = '\0';
 		if (read != string_size - 1) {
-			ddp_error("Fehler beim Lesen der Datei '%s': ", true, Pfad->str);
+			ddp_error("Fehler beim Lesen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
 		}
 		return (ddpint)read;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '%s': ", true, Pfad->str);
+	ddp_error("Fehler beim Öffnen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
 	return -1;
 }
 
@@ -328,12 +328,12 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 		int ret = fprintf(file, text->str);
 		fclose(file);
 		if (ret < 0) {
-			ddp_error("Fehler beim Schreiben der Datei '%s': ", true, Pfad->str);
+			ddp_error("Fehler beim Schreiben der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
 			return ret;
 		}
 		return (ddpint)ret;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '%s': ", true, Pfad->str);
+	ddp_error("Fehler beim Öffnen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
 	return -1;
 }
 

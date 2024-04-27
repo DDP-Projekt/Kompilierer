@@ -88,7 +88,7 @@ static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddp
 	}
 
 	if (start > end) {
-		ddp_runtime_error(1, "start index ist größer als end index (%d, %d)", start, end);
+		ddp_runtime_error(1, "start index ist größer als end index ("DDP_INT_FMT", "DDP_INT_FMT")", start, end);
 	}
 	start = CLAMP(start, list->len);
 	end = CLAMP(end, list->len);
@@ -121,7 +121,7 @@ void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddp
 	}
 
 	if (start > end) {
-		ddp_runtime_error(1, "start index ist größer als end index (%d, %d)", start, end);
+		ddp_runtime_error(1, "start index ist größer als end index ("DDP_INT_FMT", "DDP_INT_FMT")", start, end);
 	}
 
 	// free the old strings before shallow-copying them
@@ -136,7 +136,7 @@ void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddp
 // the index is 0-based (like in C, not like in DDP)
 void efficient_list_insert(generic_list_ref list, ddpint index, generic_ref elem, ddpint elem_size) {
 	if (index < 0 || index > list->len) {
-		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)", index, list->len);
+		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war "DDP_INT_FMT", Listen Länge war "DDP_INT_FMT")", index, list->len);
 	}
 
 	grow_if_needed(list, elem_size);
@@ -170,7 +170,7 @@ void efficient_list_insert_string(ddpstringlistref list, ddpint index, ddpstring
 // the index is 0-based (like in C, not like in DDP)
 void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_list_ref other, ddpint elem_size) {
 	if (index < 0 || index > list->len) {
-		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)", index, list->len);
+		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war "DDP_INT_FMT", Listen Länge war "DDP_INT_FMT")", index, list->len);
 	}
 
 	ddpint new_len = list->len + other->len;

@@ -106,6 +106,26 @@ Und kann so benutzt werden:
 	[Wenn] "<b> ein Kontrollzeichen ist"
 
 [
+	Gibt wahr zurück wenn der Buchstabe b ein lateinischer Buchstabe (a-Z) ist. 
+]
+Die öffentliche Funktion Ist_Lateinischer_Buchstabe mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Die Zahl z ist b als Zahl.
+	Gib 
+		(z größer als, oder 65 ist und z kleiner als, oder 90 ist) [a-z] oder
+		(z größer als, oder 97 ist und z kleiner als, oder 122 ist) [A-Z]
+		zurück.
+Und kann so benutzt werden:
+	"<b> ein lateinischer Buchstabe ist"
+
+[
+	Gibt wahr zurück wenn der Buchstabe b ein lateinischer Buchstabe (a-Z) oder eine Zahl ist. 
+]
+Die öffentliche Funktion Ist_Lateinischer_Buchstabe_Oder_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn b ein lateinischer Buchstabe ist oder b eine Zahl ist zurück.
+Und kann so benutzt werden:
+	"<b> ein lateinischer Buchstabe oder eine Zahl ist"
+
+[
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe (a-Z, äöü, ÄÖÜ und ß) ist. 
 ]
 Die öffentliche Funktion Ist_Deutscher_Buchstabe mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:

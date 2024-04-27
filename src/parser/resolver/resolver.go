@@ -74,13 +74,14 @@ func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 	}
 }
 
-func (*Resolver) BaseVisitor() {}
+func (*Resolver) Visitor() {}
 
 // if a BadDecl exists the AST is faulty
 func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	r.Module.Ast.Faulty = true
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
@@ -95,6 +96,7 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// all of the below was already resolved by the parser
 
@@ -114,6 +116,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	*/
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
@@ -142,6 +145,7 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	r.Module.Ast.Faulty = true
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	// check if the variable exists
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
@@ -153,11 +157,13 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	r.visit(expr.Lhs)
 	r.visit(expr.Index)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	r.visit(expr.Rhs)
 	return ast.VisitRecurse
@@ -167,18 +173,23 @@ func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitFloatLit(expr *ast.FloatLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitBoolLit(expr *ast.BoolLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitCharLit(expr *ast.CharLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitStringLit(expr *ast.StringLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	if expr.Values != nil {
 		for _, v := range expr.Values {
@@ -190,10 +201,12 @@ func (r *Resolver) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	r.visit(expr.Rhs)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	// for field access the left operand should always be an *Ident
 	if expr.Operator != ast.BIN_FIELD_ACCESS {
@@ -204,20 +217,28 @@ func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	r.visit(expr.Rhs)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	r.visit(expr.Lhs)
 	r.visit(expr.Mid)
 	r.visit(expr.Rhs) // visit the actual expressions
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	r.visit(expr.Lhs) // visit the actual expressions
 	return ast.VisitRecurse
 }
+
+func (r *Resolver) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 	r.visit(expr.Expr)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.VisitResult {
 	// visit the passed arguments
 	for _, v := range expr.Args {
@@ -225,6 +246,7 @@ func (r *Resolver) VisitFuncCall(expr *ast.FuncCall) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	for _, arg := range expr.Args {
 		r.visit(arg)
@@ -237,10 +259,12 @@ func (r *Resolver) VisitBadStmt(stmt *ast.BadStmt) ast.VisitResult {
 	r.Module.Ast.Faulty = true
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitDeclStmt(stmt *ast.DeclStmt) ast.VisitResult {
 	r.visit(stmt.Decl)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.VisitResult {
 	r.visit(stmt.Expr)
 	return ast.VisitRecurse
@@ -301,6 +325,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	})
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
@@ -321,6 +346,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	r.visit(stmt.Rhs)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	if stmt.Symbols == nil {
 		r.setScope(stmt.Symbols) // set the current scope to the block
@@ -332,6 +358,7 @@ func (r *Resolver) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	r.visit(stmt.Condition)
 	if _, ok := stmt.Then.(*ast.BlockStmt); !ok {
@@ -344,11 +371,13 @@ func (r *Resolver) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	r.visit(stmt.Condition)
 	// r.visit(stmt.Body)
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	r.setScope(stmt.Body.Symbols)
 	// only visit the InitVal because the variable is already in the scope
@@ -361,6 +390,7 @@ func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	r.exitScope()
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
 	r.setScope(stmt.Body.Symbols)
 	// only visit the InitVal because the variable is already in the scope
@@ -370,12 +400,14 @@ func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
 	r.exitScope()
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) ast.VisitResult {
 	if r.LoopDepth == 0 {
 		r.err(ddperror.SEM_BREAK_CONTINUE_NOT_IN_LOOP, stmt.Tok.Range, "Break oder Continue darf nur in einer Schleife benutzt werden")
 	}
 	return ast.VisitRecurse
 }
+
 func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value == nil {
 		return ast.VisitRecurse

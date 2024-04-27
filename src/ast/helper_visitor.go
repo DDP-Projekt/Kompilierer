@@ -7,86 +7,133 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// helper class for visiting the AST
 type helperVisitor struct {
-	actualVisitor BaseVisitor
-	conditional   bool
+	actualVisitor Visitor
 }
 
-// a visitor that can be setup before visiting
-type SetupableVisitor interface {
-	BaseVisitor
-	// called before the first node is visited
-	// the passed visitor is the actual implementation that forwards the visits
-	// and can be saved to customize visit order
-	//
-	// should return true if the visitor should start visiting
-	Setup(FullVisitor) bool
-}
-
-// invokes visitor on each Node of ast
-// while checking if visitor implements
-// other *Visitor-Interfaces and invoking
-// them accordingly
-func VisitAst(ast *Ast, visitor BaseVisitor) {
-	h := &helperVisitor{
+// visits the AST of the given module
+//
+// visitor can implement any of the Visit<Node> interfaces, and
+// the corresponding method is called for each node
+//
+// if the given Visitor implements the ConditionalVisitor interface,
+// the ShouldVisit method is used to determine if a node should be visited
+//
+// if the given Visitor implements the ScopeSetter interface,
+// the SetScope method is called when the scope changes
+//
+// if the given Visitor implements the ModuleSetter interface,
+// the SetModule method is called before visiting the module
+func VisitModule(module *Module, visitor Visitor) {
+	helper := &helperVisitor{
 		actualVisitor: visitor,
-		conditional:   false,
 	}
-	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
-		h.conditional = true
+	visitSingleModule(module, helper)
+}
+
+// helper method to visit all nodes in a module
+func visitSingleModule(module *Module, v *helperVisitor) {
+	if modVis, ok := v.actualVisitor.(ModuleSetter); ok {
+		modVis.SetModule(module)
 	}
-	if setupVis, ok := h.actualVisitor.(SetupableVisitor); ok {
-		if !setupVis.Setup(h) {
-			return
-		}
+	if scpVis, ok := v.actualVisitor.(ScopeSetter); ok {
+		scpVis.SetScope(module.Ast.Symbols)
 	}
-	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok {
-		scpVis.UpdateScope(ast.Symbols)
-	}
-	for _, stmt := range ast.Statements {
-		if h.visit(stmt) == VisitBreak {
+
+	for _, stmt := range module.Ast.Statements {
+		if v.visit(stmt) == VisitBreak {
 			return
 		}
 	}
 }
 
-// invokes visitor on each Node of ast
-// while checking if visitor implements
-// other *Visitor-Interfaces and invoking
-// them accordingly
-// a optional SymbolTable may be passed if neccessery
-func VisitNode(visitor BaseVisitor, node Node, currentScope *SymbolTable) {
-	h := &helperVisitor{
+// visits the given module and all the modules it imports recursively
+//
+// visitor can implement any of the Visit<Node> interfaces, and
+// the corresponding method is called for each node
+//
+// imported modules are visited in the order they are included
+//
+// if the given Visitor implements the ConditionalVisitor interface,
+// the ShouldVisit method is used to determine if a node should be visited
+//
+// if the given Visitor implements the ScopeSetter interface,
+// the SetScope method is called when the scope changes
+//
+// if the given Visitor implements the ModuleSetter interface,
+// the SetModule method is called before visiting each module
+func VisitModuleRec(module *Module, visitor Visitor) {
+	helper := &helperVisitor{
 		actualVisitor: visitor,
-		conditional:   false,
 	}
-	if _, ok := h.actualVisitor.(ConditionalVisitor); ok {
-		h.conditional = true
-	}
-	if setupVis, ok := h.actualVisitor.(SetupableVisitor); ok {
-		if !setupVis.Setup(h) {
-			return
-		}
-	}
-	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && currentScope != nil {
-		scpVis.UpdateScope(currentScope)
-	}
-	h.visit(node)
+	visitModuleRec(module, helper, make(map[*Module]struct{}, len(module.Imports)+1))
 }
 
+// implementation of VisitModuleRec
+func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]struct{}) {
+	// return if already visited
+	if _, ok := visited[module]; ok {
+		return
+	}
+
+	// mark the module as visited
+	visited[module] = struct{}{}
+
+	// sort imports by include order
+	imports := make([]*ImportStmt, len(module.Imports))
+	copy(imports, module.Imports)
+	sort.Slice(imports, func(i, j int) bool {
+		return imports[i].Range.Start.IsBefore(imports[j].Range.Start)
+	})
+
+	// visit imports
+	for _, imprt := range imports {
+		if imprt.Module != nil {
+			visitModuleRec(imprt.Module, visitor, visited)
+		}
+	}
+
+	visitSingleModule(module, visitor)
+}
+
+// visits the given node and all its children recursively
+//
+// visitor can implement any of the Visit<Node> interfaces, and
+// the corresponding method is called for each node
+//
+// if the given Visitor implements the ConditionalVisitor interface,
+// the ShouldVisit method is used to determine if a node should be visited
+//
+// if the given Visitor implements the ScopeSetter interface,
+// the SetScope method is called when the scope changes
+func VisitNode(visitor Visitor, node Node, currentScope *SymbolTable) {
+	helper := &helperVisitor{
+		actualVisitor: visitor,
+	}
+
+	if scpVis, ok := helper.actualVisitor.(ScopeSetter); ok && currentScope != nil {
+		scpVis.SetScope(currentScope)
+	}
+	helper.visit(node)
+}
+
+// helper method to check for nil nodes and conditional visitors
 func (h *helperVisitor) visit(node Node) VisitResult {
 	if isNil(node) {
 		return VisitRecurse
 	}
 
-	if h.conditional && h.actualVisitor.(ConditionalVisitor).ShouldVisit(node) {
+	condVis, isConditional := h.actualVisitor.(ConditionalVisitor)
+	if isConditional && condVis.ShouldVisit(node) {
 		return node.Accept(h)
-	} else if !h.conditional {
+	} else if !isConditional {
 		return node.Accept(h)
 	}
 	return VisitRecurse
 }
 
+// helper method to handle return values of child visits
 func (h *helperVisitor) visitChildren(result VisitResult, children ...Node) VisitResult {
 	switch result {
 	case VisitBreak:
@@ -97,13 +144,11 @@ func (h *helperVisitor) visitChildren(result VisitResult, children ...Node) Visi
 				return VisitBreak
 			}
 		}
-		return VisitRecurse
-	default:
-		return VisitRecurse
 	}
+	return VisitRecurse
 }
 
-func (*helperVisitor) BaseVisitor() {}
+func (*helperVisitor) Visitor() {}
 
 func (h *helperVisitor) VisitBadDecl(decl *BadDecl) VisitResult {
 	if vis, ok := h.actualVisitor.(BadDeclVisitor); ok {
@@ -111,6 +156,7 @@ func (h *helperVisitor) VisitBadDecl(decl *BadDecl) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitVarDecl(decl *VarDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(VarDeclVisitor); ok {
@@ -118,6 +164,7 @@ func (h *helperVisitor) VisitVarDecl(decl *VarDecl) VisitResult {
 	}
 	return h.visitChildren(result, decl.InitVal)
 }
+
 func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FuncDeclVisitor); ok {
@@ -125,12 +172,13 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	}
 	return h.visitChildren(result, decl.Body)
 }
+
 func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
 		result = vis.VisitStructDecl(decl)
 	}
-	return h.visitChildren(result, sortedByRange(toInterfaceSlice[Declaration, Node](decl.Fields))...)
+	return h.visitChildren(result, sortedByRange(decl.Fields)...)
 }
 
 // if a BadExpr exists the AST is faulty
@@ -140,12 +188,14 @@ func (h *helperVisitor) VisitBadExpr(expr *BadExpr) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitIdent(expr *Ident) VisitResult {
 	if vis, ok := h.actualVisitor.(IdentVisitor); ok {
 		return vis.VisitIdent(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitIndexing(expr *Indexing) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(IndexingVisitor); ok {
@@ -153,6 +203,7 @@ func (h *helperVisitor) VisitIndexing(expr *Indexing) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Index)
 }
+
 func (h *helperVisitor) VisitFieldAccess(expr *FieldAccess) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FieldAccessVisitor); ok {
@@ -168,30 +219,35 @@ func (h *helperVisitor) VisitIntLit(expr *IntLit) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitFloatLit(expr *FloatLit) VisitResult {
 	if vis, ok := h.actualVisitor.(FloatLitVisitor); ok {
 		return vis.VisitFloatLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitBoolLit(expr *BoolLit) VisitResult {
 	if vis, ok := h.actualVisitor.(BoolLitVisitor); ok {
 		return vis.VisitBoolLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitCharLit(expr *CharLit) VisitResult {
 	if vis, ok := h.actualVisitor.(CharLitVisitor); ok {
 		return vis.VisitCharLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitStringLit(expr *StringLit) VisitResult {
 	if vis, ok := h.actualVisitor.(StringLitVisitor); ok {
 		return vis.VisitStringLit(expr)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitListLit(expr *ListLit) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ListLitVisitor); ok {
@@ -211,6 +267,7 @@ func (h *helperVisitor) VisitListLit(expr *ListLit) VisitResult {
 		return VisitRecurse
 	}
 }
+
 func (h *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(UnaryExprVisitor); ok {
@@ -218,6 +275,7 @@ func (h *helperVisitor) VisitUnaryExpr(expr *UnaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(BinaryExprVisitor); ok {
@@ -225,6 +283,7 @@ func (h *helperVisitor) VisitBinaryExpr(expr *BinaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(TernaryExprVisitor); ok {
@@ -232,6 +291,7 @@ func (h *helperVisitor) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs, expr.Mid, expr.Rhs)
 }
+
 func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(CastExprVisitor); ok {
@@ -239,6 +299,15 @@ func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	}
 	return h.visitChildren(result, expr.Lhs)
 }
+
+func (h *helperVisitor) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(TypeOpExprVisitor); ok {
+		result = vis.VisitTypeOpExpr(expr)
+	}
+	return result
+}
+
 func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(GroupingVisitor); ok {
@@ -246,6 +315,7 @@ func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	}
 	return h.visitChildren(result, expr.Expr)
 }
+
 func (h *helperVisitor) VisitFuncCall(expr *FuncCall) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(FuncCallVisitor); ok {
@@ -253,6 +323,7 @@ func (h *helperVisitor) VisitFuncCall(expr *FuncCall) VisitResult {
 	}
 	return h.visitChildren(result, h.sortArgs(expr.Args)...)
 }
+
 func (h *helperVisitor) VisitStructLiteral(expr *StructLiteral) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructLiteralVisitor); ok {
@@ -267,6 +338,7 @@ func (h *helperVisitor) VisitBadStmt(stmt *BadStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitDeclStmt(stmt *DeclStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(DeclStmtVisitor); ok {
@@ -274,6 +346,7 @@ func (h *helperVisitor) VisitDeclStmt(stmt *DeclStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Decl)
 }
+
 func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ExprStmtVisitor); ok {
@@ -281,12 +354,14 @@ func (h *helperVisitor) VisitExprStmt(stmt *ExprStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Expr)
 }
+
 func (h *helperVisitor) VisitImportStmt(stmt *ImportStmt) VisitResult {
 	if vis, ok := h.actualVisitor.(ImportStmtVisitor); ok {
 		return vis.VisitImportStmt(stmt)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(AssignStmtVisitor); ok {
@@ -297,9 +372,10 @@ func (h *helperVisitor) VisitAssignStmt(stmt *AssignStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Var, stmt.Rhs)
 }
+
 func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) VisitResult {
-	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
-		scpVis.UpdateScope(stmt.Symbols)
+	if scpVis, ok := h.actualVisitor.(ScopeSetter); ok && stmt.Symbols != nil {
+		scpVis.SetScope(stmt.Symbols)
 	}
 
 	result := VisitRecurse
@@ -309,11 +385,12 @@ func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 
 	result = h.visitChildren(result, toInterfaceSlice[Statement, Node](stmt.Statements)...)
 
-	if scpVis, ok := h.actualVisitor.(ScopeVisitor); ok && stmt.Symbols != nil {
-		scpVis.UpdateScope(stmt.Symbols.Enclosing)
+	if scpVis, ok := h.actualVisitor.(ScopeSetter); ok && stmt.Symbols != nil {
+		scpVis.SetScope(stmt.Symbols.Enclosing)
 	}
 	return result
 }
+
 func (h *helperVisitor) VisitIfStmt(stmt *IfStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(IfStmtVisitor); ok {
@@ -321,6 +398,7 @@ func (h *helperVisitor) VisitIfStmt(stmt *IfStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Condition, stmt.Then, stmt.Else)
 }
+
 func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(WhileStmtVisitor); ok {
@@ -334,6 +412,7 @@ func (h *helperVisitor) VisitWhileStmt(stmt *WhileStmt) VisitResult {
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitForStmt(stmt *ForStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ForStmtVisitor); ok {
@@ -341,6 +420,7 @@ func (h *helperVisitor) VisitForStmt(stmt *ForStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Initializer, stmt.To, stmt.StepSize, stmt.Body)
 }
+
 func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ForRangeStmtVisitor); ok {
@@ -348,12 +428,14 @@ func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 	}
 	return h.visitChildren(result, stmt.Initializer, stmt.In, stmt.Body)
 }
+
 func (h *helperVisitor) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
 	if vis, ok := h.actualVisitor.(BreakContineStmtVisitor); ok {
 		return vis.VisitBreakContinueStmt(stmt)
 	}
 	return VisitRecurse
 }
+
 func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(ReturnStmtVisitor); ok {
@@ -376,9 +458,8 @@ func (h *helperVisitor) sortArgs(Args map[string]Expression) []Node {
 	return nil
 }
 
-func sortedByRange(nodes []Node) []Node {
-	nodesCopy := make([]Node, len(nodes))
-	copy(nodesCopy, nodes)
+func sortedByRange[T Node](nodes []T) []Node {
+	nodesCopy := toInterfaceSlice[T, Node](nodes)
 	sort.Slice(nodesCopy, func(i, j int) bool {
 		iRange, jRange := nodes[i].GetRange(), nodes[j].GetRange()
 		if iRange.Start.Line < jRange.Start.Line {

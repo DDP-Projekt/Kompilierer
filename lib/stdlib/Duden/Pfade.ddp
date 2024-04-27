@@ -1,10 +1,10 @@
-[
-	Pfad Manipulationsfunktionen. NUR FÜR UNIX!
-]
-
-
 Binde "Duden/Texte" ein.
-Binde Betriebssystem aus "Duden/Laufzeit" ein.
+Binde "Duden/Zeichen" ein.
+Binde Betriebssystem und Arbeitsverzeichnis aus "Duden/Laufzeit" ein.
+
+[
+	UNIX Funktionen
+]
 
 [
 	Gibt den Pfad-Trennzeichen, der dem Betriebssystem entspricht zurück.
@@ -20,75 +20,14 @@ Und kann so benutzt werden:
 	"das Pfad-Trennzeichen"
 
 [
-	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist
+	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist.
+	Der Rückgabewert ist wahr wenn der erste Buchstabe des gegebenen Textes ein '/' ist.
 ]
-Die öffentliche Funktion Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn '/' am Anfang von t steht zurück.
+Die öffentliche Funktion UNIX_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
+	Wenn die Länge von t gleich 0 ist, gib falsch zurück.
+	Gib wahr, wenn (t an der Stelle 1) gleich '/' ist zurück.
 Und kann so benutzt werden:
-	"<t> ein Absoluter Pfad ist"
-
-[
-	Gibt den Pfad ohne das letze Element zurück. 
-	Falls der Pfad leer ist, wird ein "." zurück gegeben.
-	Falls der Pfad nur aus "/" gefolg von nicht-"/" Zeichen, wird "/" zurückgegeben.
-]
-Die öffentliche Funktion Ordner_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Die Zahl i ist die Länge von t.
-	
-	Solange i größer als 0 ist, mache:
-		Wenn t an der Stelle i gleich '/' ist, dann:
-			Der Text dir ist t bis zum i. Element.
-			Entferne alle '/' nach dir.
-			Wenn die Länge von dir gleich 0 ist, gib "/" zurück.
-
-			Gib dir zurück.
-		Verringere i um 1.
-	Gib "." zurück.
-Und kann so benutzt werden:
-	"den Ordnerpfad von <t>"
-
-
-[
-	Gibt den letzten Element eines Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
-]
-Die öffentliche Funktion Basis_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Der Text t2 ist (t mit allen '/' danach entfernt).
-	Die Zahl i ist die Länge von t2.
-	Solange i größer als 0 ist, mache:
-		Wenn t2 an der Stelle i gleich '/' ist, dann:
-			Gib t2 ab dem (i plus 1). Element zurück.
-		Verringere i um 1.
-	Gib "." zurück.
-Und kann so benutzt werden:
-	"den Basispfad von <t>",
-	"der Basispfad von <t>"
-
-[
-	Gibt die Erweiterung einer Datei zurück. Wenn der Pfad eines Ordners gegeben wurde 
-	oder der Parameter t leer ist, wird einen leeren Text zurück gegeben.
-]
-Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Die Zahl i ist die Länge von t.
-	Solange i größer als 0 ist, mache:
-		Wenn t an der Stelle i gleich '/' ist, gib "" zurück.
-		Wenn t an der Stelle i gleich '.' ist, gib t ab dem i. Element zurück.
-		Verringere i um 1.
-	Gib "" zurück.
-Und kann so benutzt werden:
-	"die Erweiterung der Datei bei <t>"
-
-[
-	Gibt den Dateinamen einer Datei zurück.
-]
-Die öffentliche Funktion Datei_Name mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
-	Der Text bf ist der Basispfad von t.
-	Wenn bf gleich "." ist, gib "" zurück.
-	Die Zahl i ist 1.
-	Solange i kleiner als, oder die Länge von bf ist und bf an der Stelle i ungleich '.' ist, erhöhe i um 1.
-	Gib bf bis zum (i minus 1). Element zurück.
-Und kann so benutzt werden:
-	"den Dateinamen von <t>",
-	"der Dateiname von <t>"
+	"<t> ein absoluter UNIX Pfad ist"
 
 [
 	Säubert/Normalisiert einen UNIX Pfad:
@@ -103,7 +42,7 @@ Und kann so benutzt werden:
 	Entspricht Go's path.clean funktion
 	https://pkg.go.dev/path#Clean
 ]
-Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion UNIX_Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
 	Wenn t gleich "" ist, gib "." zurück.
 	Der Wahrheitswert rooted ist wahr, wenn t an der Stelle 1 gleich '/' ist.
 	Die Zahl n ist die Länge von t.
@@ -151,14 +90,386 @@ Die öffentliche Funktion Säubern mit dem Parameter t vom Typ Text, gibt einen 
 	Wenn path leer ist, speichere "." in path.
 	Gib path zurück.
 Und kann so benutzt werden:
-	"der Pfad <t> gesäubert"
+	"der UNIX Pfad <t> gesäubert"
 
 [
 	Verbindet zwei UNIX Pfade mit einem '/' und säubert zuletzt.
 ]
-Die öffentliche Funktion Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
+Die öffentliche Funktion UNIX_Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
 	Wenn a leer ist, gib b zurück.
 	Wenn b leer ist, gib a zurück.
-	Gib der Pfad (a verkettet mit '/' verkettet mit b) gesäubert zurück.
+	Gib der UNIX Pfad (a verkettet mit '/' verkettet mit b) gesäubert zurück.
+Und kann so benutzt werden:
+	"die UNIX Pfade <a> und <b> verbunden"
+
+[
+	Pfade Terminologie:
+
+	Beispiel: "/home/admin/data/test.tar.gz"
+
+	Vollständiger Pfad: "/home/admin/data/test.tar.gz"
+	Ordnerpfad: "/home/admin/data"
+	Basisname: "test.tar.gz"
+	Dateiname: "test"
+	Erweiterung: "tar.gz"
+]
+
+[
+	Nimmt einen Relativen UNIX Pfad t und gibt den vollständigen absoluten Pfad zurück.
+]
+Die öffentliche Funktion UNIX_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Der Text cwd ist das Arbeitsverzeichnis.
+	Gib die UNIX Pfade cwd und t verbunden zurück.
+Und kann so benutzt werden:
+	"den absoluten UNIX Pfad zu <t>",
+	"der absoluten UNIX Pfad zu <t>"
+
+[
+	Gibt den UNIX Pfad ohne das letze Element zurück. 
+	Falls der Pfad leer ist, wird ein "." zurück gegeben.
+	Falls der Pfad nur aus "/" gefolg von nicht-"/" Zeichen, wird "/" zurückgegeben.
+
+	f("/a/b/c") = "/a/b"
+	f("a/b/c") = "a/b"
+	f("/a/") = "/a"
+	f("a/") = "a"
+	f("a") = "."
+	f("/") = "/"
+	f("..") = "."
+	f(".") = "."
+	f("") = "."
+]
+Die öffentliche Funktion UNIX_Ordnerpfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich '/' ist, dann:
+			Der Text dir ist t bis zum i. Element.
+			Entferne alle '/' nach dir.
+			Wenn die Länge von dir gleich 0 ist, gib "/" zurück.
+
+			Gib dir zurück.
+		Verringere i um 1.
+	Gib "." zurück.
+Und kann so benutzt werden:
+	"den UNIX Ordnerpfad von <t>",
+	"der UNIX Ordnerpfad von <t>"
+
+[
+	Gibt den letzten Element eines UNIX Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
+
+	f("/a/b/c/d.png") = "d.png"
+	f("/a/b/c/d") = "d"
+	f("/a/b/c/") = "c"
+	f("/a/b/c///") = "c"
+	f("./b") = "b"
+	f("hi.txt") = "hi.txt"
+	f(".") = "."
+	f("..") = ".."
+	f("") = "."
+]
+Die öffentliche Funktion UNIX_Basisname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Der Text t2 ist (t mit allen '/' danach entfernt).
+	Die Zahl i ist die Länge von t2.
+	Wenn t2 gleich "" ist, gib "." zurück.
+	Solange i größer als 0 ist, mache:
+		Wenn t2 an der Stelle i gleich '/' ist, verlasse die Schleife.
+		Verringere i um 1.
+	Gib t2 ab dem (i plus 1). Element zurück.
+Und kann so benutzt werden:
+	"den UNIX Basisnamen von <t>",
+	"der UNIX Basisname von <t>"
+
+[
+	Gibt den Dateinamen einer Datei zurück. Wenn der UNIX Pfad nicht im Format von '*/*.*' ist wird ein leerer Text zurück gegeben.
+
+	f("/a/b/c/test.txt") = "test"
+	f("/a/b/c/test.txt.exe") = "test"
+	f("test.exe") = "test"
+	f("/a/b/c/") = ""
+	f("/a/b/c") = ""
+	f("/") = ""
+	f(".") = ""
+	f("..") = ""
+	f("noext") = ""
+	f("") = ""
+]
+Die öffentliche Funktion UNIX_Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	Die Zahl ende ist -1.
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich '.' ist, speichere i minus 1 in ende.
+		Wenn t an der Stelle i gleich '/' ist, verlasse die Schleife.
+		Verringere i um 1.
+	Wenn ende kleiner als 1 ist, gib "" zurück.
+	Gib t im Bereich von i plus 1 bis ende zurück.
+Und kann so benutzt werden:
+	"den UNIX Dateinamen von <t>",
+	"der UNIX Dateiname von <t>"
+
+[
+	Gibt die Erweiterung einer Datei zurück. Wenn der UNIX Pfad t ein Ordner ist oder leer ist, wird einen leeren Text zurück gegeben.
+
+	f("/a/b/c/bar.css") = "css"
+	f("/a/b/c/foo.tar.gz") = "tar.gz"
+	f("bar.css") = "css"
+	f("/a/b.trap/c/noext") = ""
+	f("/") = ""
+	f(".") = ""
+	f("..") = ""
+	f("noext") = ""
+	f("") = ""
+]
+Die öffentliche Funktion UNIX_Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	Die Zahl extStart ist i.
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich '/' ist, verlasse die Schleife.
+		Wenn t an der Stelle i gleich '.' ist, speichere i plus 1 in extStart.
+		Verringere i um 1.
+	Wenn extStart größer als, oder die Länge von t ist, gib "" zurück.
+	Gib t ab dem extStart. Element zurück.
+Und kann so benutzt werden:
+	"die UNIX Erweiterung der Datei bei <t>"
+
+
+[
+	Windows Funktionen
+]
+
+
+[
+	Gibt wahr zurück wenn der gegebene Windows Pfad mit einem "\" anfängt oder der zweite Buchstabe ein Doppelpunkt ist ("C:").
+]
+Die öffentliche Funktion Windows_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
+	Wenn t gleich "" ist, gib falsch zurück.
+	Wenn t an der Stelle 1 gleich '\\' ist, gib wahr zurück. [ "\Users\admin\" ]
+	Gib wahr, wenn die Länge von t größer als, oder 2 ist und (t an der Stelle 1) ein lateinischer Buchstabe ist und t an der Stelle 2 gleich ':' ist zurück. [ "C:\Users\admin\" ]
+Und kann so benutzt werden:
+    "<t> ein absoluter Windows Pfad ist"
+
+[
+	Säubert/Normalisiert einen gegebenen Windows Pfad. Entfernt keine doppelten Schrägstrichen (\\)! 
+
+	f("C:\\Users\\admin") = "C:\Users\admin"
+	f("C:\\Users\\admin\\") = "C:\Users\admin\"
+	f("C:\\Users\\admin\\..") = "C:\Users"
+	f("C:\\Users\\admin\\..\\") = "C:\Users\"
+	f("C:\\Users\\admin\\.") = "C:\Users\admin"
+	f("C:\\Users\\admin\\.\\") = "C:\Users\admin\"
+	f("C:\\Users\\..\\admin\\.") = "C:\admin"
+	f("C:\\Users\\\\admin") = "C:\Users\\admin"
+	f("C:\\..") = "C:\"
+	f("C:") = "C:\"
+	f("..") = "\"
+	f(".") = "\"
+	f("") = "\"
+]
+Die öffentliche Funktion Windows_Saeubern mit dem Parameter t vom Typ Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"der Windows Pfad <t> gesäubert"
+
+[
+	Verbindet zwei Windows Pfade und säubert zuletzt.
+]
+Die öffentliche Funktion Windows_Pfad_Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"die Windows Pfade <a> und <b> verbunden"
+
+[
+	Pfade Terminologie:
+
+	Beispiel: "C:\Users\admin\Documents\test.tar.gz"
+
+	Laufwerkbuchstabe: 'C'
+	Vollständiger Pfad: "C:\Users\admin\Documents\test.tar.gz"
+	Ordnerpfad: "C:\Users\admin\Documents"
+	Basisname: "test.tar.gz"
+	Dateiname: "test"
+	Erweiterung: "tar.gz"
+]
+
+[
+	Gibt den Laufwerkbuchstaben des gegebenen Windows Pfads zurück. Wenn keiner existiert wird ' ' zurück gegeben.
+	Falls der Laufwerkbuchstaben kein Buchstabe zwischen a-Z ist wird auch ' ' zurückgegeben. 
+]
+Die öffentliche Funktion Windows_Laufwerkbuchstabe mit dem Parameter t vom Typ Text, gibt einen Buchstaben zurück, macht:
+	Wenn die Länge von t kleiner als 2 ist, gib ' ' zurück.
+	Wenn t an der Stelle 2 ungleich ':' ist, gib ' ' zurück.
+	Wenn nicht (t an der Stelle 1) ein lateinischer Buchstabe ist, gib ' ' zurück.
+	Gib t an der Stelle 1 zurück.
+Und kann so benutzt werden:
+	"der Laufwerkbuchstabe von <t>",
+	"den Laufwerkbuchstaben von <t>"
+
+[
+	Nimmt einen Relativen Windows Pfad t und gibt den vollständigen absoluten Pfad zurück.
+]
+Die öffentliche Funktion Windows_Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Der Text cwd ist das Arbeitsverzeichnis.
+	Gib die Windows Pfade cwd und t verbunden zurück.
+Und kann so benutzt werden:
+	"den absoluten Windows Pfad zu <t>",
+	"der absoluten Windows Pfad zu <t>"
+
+[
+	Gibt den Windows Pfad ohne das letze Element zurück. 
+	Falls der Pfad leer ist, wird ein "." zurück gegeben.
+	Falls der Pfad nur aus "C:\" gefolgt von nicht-"/" oder nicht-"\" Zeichen, wird "C:\" zurückgegeben.
+	Falls der Pfad nur aus "\" oder "/" gefolgt von nicht-"/" oder nicht-"\" Zeichen, wird "\" zurückgegeben.
+]
+Die öffentliche Funktion Windows_Ordnerpfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	
+	Solange i größer als 0 ist, mache:
+		Wenn t an der Stelle i gleich '\\' ist oder t an der Stelle i gleich '/' ist, dann:
+			Der Text dir ist t bis zum i. Element.
+			Entferne alle '\\' nach dir.
+			Wenn die Länge von dir gleich 0 ist, gib "\\" zurück. [ "\abc" -> "\" ]
+			Wenn ':' am Ende von dir steht, gib dir verkettet mit '\\' zurück. [ "C:\abc" -> "C:\" ]
+
+			Gib dir zurück.
+		Verringere i um 1.
+	Gib "." zurück.
+Und kann so benutzt werden:
+	"den Windows Ordnerpfad von <t>",
+	"der Windows Ordnerpfad von <t>"
+
+[
+	Gibt das letzte Element des gegebenen Windows Pfads zurück. Falls der Pfad leer ist, wird "." ausgegeben.
+]
+Die öffentliche Funktion Windows_Basisname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl ende ist die Länge von t.
+	Wenn ende gleich 0 ist, gib "." zurück.
+	Solange t an der Stelle ende gleich '\\' ist oder t an der Stelle ende gleich '/' ist, verringere ende um 1.
+
+	Die Zahl i ist ende.
+	Solange i größer als 0 ist, mache:
+		Der Buchstabe curr ist t an der Stelle i.
+		Wenn (curr gleich '\\' ist oder curr gleich '/' ist oder curr gleich ':' ist), verlasse die Schleife.
+		Verringere i um 1.
+	Gib t im Bereich von (i plus 1) bis ende zurück.
+Und kann so benutzt werden:
+	"den Windows Basisnamen von <t>",
+	"der Windows Basisname von <t>"
+
+[
+	Gibt den Dateinamen einer Datei zurück. Wenn der Windows Pfad nicht im Format von '*\*.*', '*\*.*' oder '*:*.*' ist wird ein leerer Text zurück gegeben.
+]
+Die öffentliche Funktion Windows_Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	Die Zahl ende ist -1.
+	Solange i größer als 0 ist, mache:
+		Der Buchstabe curr ist t an der Stelle i.
+		Wenn curr gleich '.' ist, speichere i minus 1 in ende.
+		Wenn curr gleich '\\' ist oder curr gleich '/' ist oder curr gleich ':' ist, verlasse die Schleife.
+		Verringere i um 1.
+	Wenn ende kleiner als 1 ist, gib "" zurück.
+	Gib t im Bereich von i plus 1 bis ende zurück.
+Und kann so benutzt werden:
+	"den Windows Dateinamen von <t>",
+	"der Windows Dateiname von <t>"
+
+[
+	Gibt die Erweiterung einer Datei zurück. Wenn der Windows Pfad t ein Ordner ist oder leer ist, wird einen leeren Text zurück gegeben.
+]
+Die öffentliche Funktion Windows_Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Die Zahl i ist die Länge von t.
+	Die Zahl extStart ist i.
+	Solange i größer als 0 ist, mache:
+		Der Buchstabe curr ist t an der Stelle i.
+		Wenn curr gleich '.' ist, speichere i plus 1 in extStart.
+		Wenn curr gleich '\\' ist oder curr gleich '/' ist oder curr gleich ':' ist, verlasse die Schleife.
+		Verringere i um 1.
+	Wenn extStart größer als, oder die Länge von t ist, gib "" zurück.
+	Gib t ab dem extStart. Element zurück.
+Und kann so benutzt werden:
+	"die Windows Erweiterung der Datei bei <t>"
+
+
+[ 
+	UNIX + Windows Funktonen
+]
+
+[
+	Gibt zurück ob der gegebene UNIX Pfad ein absoluter oder relativer Pfad ist.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib t ein absoluter Windows Pfad ist zurück.
+	Gib t ein absoluter UNIX Pfad ist zurück.
+Und kann so benutzt werden:
+	"<t> ein absoluter Pfad ist"
+
+[
+	Säubert/Normalisiert den gegebenen Pfad:
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Säubern mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib der Windows Pfad t gesäubert zurück.
+	Gib der UNIX Pfad t gesäubert zurück.
+Und kann so benutzt werden:
+	"der Pfad <t> gesäubert"
+
+[
+	Verbindet zwei Pfade mit dem Trennzeichen und säubert zuletzt.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Pfad_Verbinden mit den Parametern a und b vom Typ Text und Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib die Windows Pfade a und b verbunden zurück.
+	Gib die UNIX Pfade a und b verbunden zurück.
 Und kann so benutzt werden:
 	"die Pfade <a> und <b> verbunden"
+
+[
+	Nimmt einen Relativen Pfad t und gibt den vollständigen absoluten Pfad zurück.
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Vollständiger_Pfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den absoluten Windows Pfad zu t zurück.
+	Gib den absoluten UNIX Pfad zu t zurück.
+Und kann so benutzt werden:
+	"den absoluten Pfad zu <t>",
+	"der absoluten Pfad zu <t>"
+
+[
+	Gibt den Pfad ohne das letze Element zurück. 
+	Jenachdem in welchem Betriebsystem die Funktion aufgerufen wird, läuft die Windows_x oder UNIX_x funktion.
+]
+Die öffentliche Funktion Ordnerpfad mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Ordnerpfad von t zurück.
+	Gib den UNIX Ordnerpfad von t zurück.
+Und kann so benutzt werden:
+	"den Ordnerpfad von <t>",
+	"der Ordnerpfad von <t>"
+
+[	
+	Gibt den letzten Element eines UNIX Pfades zurück. Falls der Pfad leer ist, wird "." ausgegeben.
+]
+Die öffentliche Funktion Basisname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Basisnamen von t zurück.
+	Gib den UNIX Basisnamen von t zurück.
+Und kann so benutzt werden:
+	"den Basisnamen von <t>",
+	"der Basisname von <t>"
+
+[
+	Gibt den Dateinamen einer Datei zurück.
+]
+Die öffentliche Funktion Dateiname mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib den Windows Dateinamen von t zurück.
+	Gib den UNIX Dateinamen von t zurück.
+Und kann so benutzt werden:
+	"den Dateinamen von <t>",
+	"der Dateiname von <t>"
+
+[
+	Gibt die Erweiterung einer Datei zurück. Wenn der Pfad t ein Ordner ist oder leer ist, wird einen leeren Text zurück gegeben.
+]
+Die öffentliche Funktion Erweiterung mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Wenn das Betriebssystem gleich "Windows" ist, gib die Windows Erweiterung der Datei bei t zurück.
+	Gib die UNIX Erweiterung der Datei bei t zurück.
+Und kann so benutzt werden:
+	"die Erweiterung der Datei bei <t>"

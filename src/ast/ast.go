@@ -8,19 +8,66 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-// represents an Abstract Syntax Tree for a token.DDP program
+// represents an Abstract Syntax Tree for a DDP program
 type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
-	Faulty     bool // set if the ast has any errors (doesn't matter what from which phase they came)
+	Faulty     bool              // set if the ast has any errors (doesn't matter what from which phase they came)
+	metadata   map[Node]Metadata // metadata for each node
 }
 
-// invoke the Visitor for each top level statement in the Ast
-func WalkAst(ast *Ast, visitor FullVisitor) {
-	for _, stmt := range ast.Statements {
-		stmt.Accept(visitor)
+// returns all the metadata attached to the given node
+func (ast *Ast) GetMetadata(node Node) (Metadata, bool) {
+	md, ok := ast.metadata[node]
+	return md, ok
+}
+
+// returns the metadata of the given kind attached to the given node
+func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) (MetadataAttachment, bool) {
+	md, ok := ast.GetMetadata(node)
+	return md.Attachments[kind], ok
+}
+
+// adds metadata to the given node
+func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
+	if ast.metadata == nil {
+		ast.metadata = make(map[Node]Metadata, 8)
 	}
+
+	md := ast.metadata[node]
+	if md.Attachments == nil {
+		md.Attachments = make(map[MetadataKind]MetadataAttachment)
+	}
+	md.Attachments[attachment.Kind()] = attachment
+	ast.metadata[node] = md
+}
+
+// removes metadata of the given kind from the given node
+func (ast *Ast) RemoveAttachment(node Node, kind MetadataKind) {
+	md, ok := ast.GetMetadata(node)
+	if ok {
+		delete(md.Attachments, kind)
+		ast.metadata[node] = md
+	}
+}
+
+// returns a string representation of the AST as S-Expressions
+func (ast *Ast) String() string {
+	printer := &printer{ast: ast}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	return printer.returned
+}
+
+// print the AST to stdout
+func (ast *Ast) Print() {
+	printer := &printer{ast: ast}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	fmt.Println(printer.returned)
 }
 
 type (
@@ -58,12 +105,15 @@ type (
 func (alias *FuncAlias) GetTokens() []token.Token {
 	return alias.Tokens
 }
+
 func (alias *FuncAlias) GetOriginal() token.Token {
 	return alias.Original
 }
+
 func (alias *FuncAlias) Decl() Declaration {
 	return alias.Func
 }
+
 func (alias *FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
 	return alias.Args
 }
@@ -71,14 +121,17 @@ func (alias *FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
 func (alias *StructAlias) GetTokens() []token.Token {
 	return alias.Tokens
 }
+
 func (alias *StructAlias) GetOriginal() token.Token {
 	return alias.Original
 }
+
 func (alias *StructAlias) Decl() Declaration {
 	return alias.Struct
 }
+
 func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
-	paramTypes := map[string]ddptypes.ParameterType{}
+	paramTypes := make(map[string]ddptypes.ParameterType, len(alias.Args))
 	for name, arg := range alias.Args {
 		paramTypes[name] = ddptypes.ParameterType{
 			Type:        arg,
@@ -321,6 +374,14 @@ type (
 		Lhs   Expression
 	}
 
+	// expressions that operate on types (Standardwert, Größe)
+	TypeOpExpr struct {
+		Range    token.Range
+		Tok      token.Token
+		Operator TypeOperator
+		Rhs      ddptypes.Type
+	}
+
 	Grouping struct {
 		Range  token.Range
 		LParen token.Token // (
@@ -364,6 +425,7 @@ func (expr *UnaryExpr) String() string     { return "UnaryExpr" }
 func (expr *BinaryExpr) String() string    { return "BinaryExpr" }
 func (expr *TernaryExpr) String() string   { return "BinaryExpr" }
 func (expr *CastExpr) String() string      { return "CastExpr" }
+func (expr *TypeOpExpr) String() string    { return "TypeOpExpr" }
 func (expr *Grouping) String() string      { return "Grouping" }
 func (expr *FuncCall) String() string      { return "FuncCall" }
 func (expr *StructLiteral) String() string { return "StructLiteral" }
@@ -382,6 +444,7 @@ func (expr *UnaryExpr) Token() token.Token     { return expr.Tok }
 func (expr *BinaryExpr) Token() token.Token    { return expr.Tok }
 func (expr *TernaryExpr) Token() token.Token   { return expr.Tok }
 func (expr *CastExpr) Token() token.Token      { return expr.Lhs.Token() }
+func (expr *TypeOpExpr) Token() token.Token    { return expr.Tok }
 func (expr *Grouping) Token() token.Token      { return expr.LParen }
 func (expr *FuncCall) Token() token.Token      { return expr.Tok }
 func (expr *StructLiteral) Token() token.Token { return expr.Tok }
@@ -391,6 +454,7 @@ func (expr *Ident) GetRange() token.Range   { return token.NewRange(&expr.Litera
 func (expr *Indexing) GetRange() token.Range {
 	return token.Range{Start: expr.Lhs.GetRange().Start, End: expr.Index.GetRange().End}
 }
+
 func (expr *FieldAccess) GetRange() token.Range {
 	return token.Range{Start: expr.Field.GetRange().Start, End: expr.Rhs.GetRange().End}
 }
@@ -404,6 +468,7 @@ func (expr *UnaryExpr) GetRange() token.Range     { return expr.Range }
 func (expr *BinaryExpr) GetRange() token.Range    { return expr.Range }
 func (expr *TernaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *CastExpr) GetRange() token.Range      { return expr.Range }
+func (expr *TypeOpExpr) GetRange() token.Range    { return expr.Range }
 func (expr *Grouping) GetRange() token.Range      { return expr.Range }
 func (expr *FuncCall) GetRange() token.Range      { return expr.Range }
 func (expr *StructLiteral) GetRange() token.Range { return expr.Range }
@@ -422,6 +487,7 @@ func (expr *UnaryExpr) Accept(v FullVisitor) VisitResult     { return v.VisitUna
 func (expr *BinaryExpr) Accept(v FullVisitor) VisitResult    { return v.VisitBinaryExpr(expr) }
 func (expr *TernaryExpr) Accept(v FullVisitor) VisitResult   { return v.VisitTernaryExpr(expr) }
 func (expr *CastExpr) Accept(v FullVisitor) VisitResult      { return v.VisitCastExpr(expr) }
+func (expr *TypeOpExpr) Accept(v FullVisitor) VisitResult    { return v.VisitTypeOpExpr(expr) }
 func (expr *Grouping) Accept(v FullVisitor) VisitResult      { return v.VisitGrouping(expr) }
 func (expr *FuncCall) Accept(v FullVisitor) VisitResult      { return v.VisitFuncCall(expr) }
 func (expr *StructLiteral) Accept(v FullVisitor) VisitResult { return v.VisitStructLiteral(expr) }
@@ -440,6 +506,7 @@ func (expr *UnaryExpr) expressionNode()     {}
 func (expr *BinaryExpr) expressionNode()    {}
 func (expr *TernaryExpr) expressionNode()   {}
 func (expr *CastExpr) expressionNode()      {}
+func (expr *TypeOpExpr) expressionNode()    {}
 func (expr *Grouping) expressionNode()      {}
 func (expr *FuncCall) expressionNode()      {}
 func (expr *StructLiteral) expressionNode() {}

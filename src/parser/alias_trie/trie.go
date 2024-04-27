@@ -7,6 +7,8 @@ import (
 	orderedmap "github.com/DDP-Projekt/Kompilierer/src/parser/ordered_map"
 )
 
+const defaultCapacity = 4
+
 // a single node of the trie
 type trieNode[K, V any] struct {
 	children *orderedmap.OrderedMap[K, *trieNode[K, V]] // children of the node
@@ -30,7 +32,7 @@ func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 	var v V
 	return &Trie[K, V]{
 		root: &trieNode[K, V]{
-			children: orderedmap.New[K, *trieNode[K, V]](key_eq, key_less),
+			children: orderedmap.New[K, *trieNode[K, V]](key_eq, key_less, defaultCapacity), // default capacity of four, has to be tested
 			key:      k,
 			value:    v,
 			hasValue: false,
@@ -49,7 +51,7 @@ func (t *Trie[K, V]) Insert(key []K, value V) {
 			node = child
 		} else {
 			child := &trieNode[K, V]{
-				children: orderedmap.New[K, *trieNode[K, V]](t.key_eq, t.key_less),
+				children: orderedmap.New[K, *trieNode[K, V]](t.key_eq, t.key_less, defaultCapacity),
 				key:      k,
 				value:    v,
 				hasValue: false,

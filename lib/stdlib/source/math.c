@@ -53,6 +53,6 @@ ddpfloat Winkel(ddpfloat x, ddpfloat y) {
 	return atan2((double)x, (double)y);
 }
 
-ddpfloat Gaußsche_Fehlerfunktion(ddpfloat x) {
+ddpfloat Gausssche_Fehlerfunktion(ddpfloat x) {
 	return erf((double)x);
 }

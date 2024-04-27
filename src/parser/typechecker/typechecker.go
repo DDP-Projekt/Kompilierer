@@ -96,12 +96,13 @@ func (t *Typechecker) errExpected(operator ast.Operator, expr ast.Expression, go
 	t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, msg+" aber hat '%s' bekommen", got)
 }
 
-func (*Typechecker) BaseVisitor() {}
+func (*Typechecker) Visitor() {}
 
 func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
 	if initialType != decl.Type {
@@ -118,6 +119,7 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// already typechecked in blockStmt
 	/*if !ast.IsExternFunc(decl) {
@@ -142,6 +144,7 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	for _, field := range decl.Fields {
 		// don't check BadDecls
@@ -160,6 +163,7 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
 	if !ok || !isVar {
@@ -169,6 +173,7 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	if typ := t.Evaluate(expr.Index); typ != ddptypes.ZAHL {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
@@ -186,6 +191,7 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	rhs := t.Evaluate(expr.Rhs)
 	if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
@@ -196,26 +202,32 @@ func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.ZAHL
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitFloatLit(expr *ast.FloatLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.KOMMAZAHL
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitBoolLit(expr *ast.BoolLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitCharLit(expr *ast.CharLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.BUCHSTABE
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.TEXT
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
@@ -237,6 +249,7 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
@@ -263,13 +276,12 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 		}
 
 		t.latestReturnedType = ddptypes.ZAHL
-	case ast.UN_SIZE:
-		t.latestReturnedType = ddptypes.ZAHL
 	default:
 		panic(fmt.Errorf("unbekannter unärer Operator '%s'", expr.Operator))
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	rhs := t.Evaluate(expr.Rhs)
@@ -375,6 +387,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	mid := t.Evaluate(expr.Mid)
@@ -414,6 +427,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
@@ -465,10 +479,24 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
 }
+
+func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
+	switch expr.Operator {
+	case ast.TYPE_SIZE:
+		t.latestReturnedType = ddptypes.ZAHL
+	case ast.TYPE_DEFAULT:
+		t.latestReturnedType = expr.Rhs
+	default:
+		panic(fmt.Errorf("unbekannter Typ-Operator '%s'", expr.Operator))
+	}
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 	expr.Expr.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 	symbol, _, _ := t.CurrentTable.LookupDecl(callExpr.Name)
 	decl := symbol.(*ast.FuncDecl)
@@ -507,6 +535,7 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 	t.latestReturnedType = decl.Type
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	for argName, arg := range expr.Args {
 		argType := t.Evaluate(arg)
@@ -538,17 +567,21 @@ func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) ast.VisitResult {
 	stmt.Decl.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) ast.VisitResult {
 	stmt.Expr.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	rhs := t.Evaluate(stmt.Rhs)
 	var lhs ddptypes.Type
@@ -581,6 +614,7 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	t.CurrentTable = stmt.Symbols
 	for _, stmt := range stmt.Statements {
@@ -589,6 +623,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	t.CurrentTable = t.CurrentTable.Enclosing
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	if conditionType != ddptypes.WAHRHEITSWERT {
@@ -603,6 +638,7 @@ func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
@@ -625,6 +661,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	stmt.Body.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	t.visit(stmt.Initializer)
 	iter_type := stmt.Initializer.Type
@@ -650,6 +687,7 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	stmt.Body.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
@@ -672,9 +710,11 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 	stmt.Body.Accept(t)
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) ast.VisitResult {
 	return ast.VisitRecurse
 }
+
 func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	var returnType ddptypes.Type = ddptypes.VoidType{}
 	if stmt.Value != nil {

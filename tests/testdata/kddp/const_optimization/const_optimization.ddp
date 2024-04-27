@@ -1,0 +1,15 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion Verändere mit dem Parameter t vom Typ Text Referenz, gibt nichts zurück, macht:
+	Speichere "t wurde verändert" in t.
+Und kann so benutzt werden:
+	"verändere <t>"
+
+Die Funktion Verändere2 mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+	verändere t.
+Und kann so benutzt werden:
+	"verändere <t> indirekt"
+
+Der Text t ist "Hallo Welt".
+verändere t indirekt.
+Schreibe t auf eine Zeile.

@@ -13,7 +13,7 @@ RUN_BIN_MAIN = main.o
 RUN_BIN_MAIN_DEBUG = $(RUN_BIN_MAIN:.o=_debug.o)
 DDP_LIST_DEFS_NAME = ddp_list_types_defs
 
-DDP_LIST_DEFS_OUTPUT_TYPES = --llvm_ir --object
+DDP_LIST_DEFS_OUTPUT_TYPES = --llvm-ir --object
 
 LLVM_SRC_DIR=./llvm-project/llvm/
 LLVM_BUILD_DIR=./llvm_build/
@@ -24,6 +24,7 @@ CXX=g++
 RM = rm -rf
 CP = cp -rf
 MKDIR = mkdir -p
+SED = sed -u
 
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
@@ -58,7 +59,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete download-pcre2
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete test-with-optimizations download-pcre2
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -172,12 +173,14 @@ endif
 # will hold the directories to run in the tests
 # if empty, all directories are run
 TEST_DIRS = 
+# will hold additional arguments to pass to kddp
+KDDP_ARGS = 
 
 test:
-	go test -v ./tests '-run=(TestKDDP|TestStdlib)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory:
-	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 # runs all tests and test-memory
 # everything is done manually to ensure the build is finished
@@ -187,6 +190,10 @@ test-complete:
 	'$(MAKE)' test 
 	'$(MAKE)' debug 
 	'$(MAKE)' test-memory
+
+# runs all the tests with optimizations enabled
+test-with-optimizations:
+	'$(MAKE)' KDDP_ARGS="-O 2" test-complete
 
 help:
 	@echo "Targets:"
