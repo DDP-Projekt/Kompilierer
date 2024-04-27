@@ -172,7 +172,8 @@ Wir nennen die öffentliche Kombination aus
 	der Zahl id mit Standardwert -1,
 eine Datei,
 und erstellen sie so:
-	"noch nicht offen"
+	"noch nicht offen" oder
+	"eine geschlossene Datei"
 
 [
 	Öffnet Datei im Modus mit dem Pfad.

@@ -1,0 +1,18 @@
+wahr
+wahr
+falsch
+falsch
+wahr
+falsch
+falsch
+wahr
+
+wahr
+falsch
+Fehler
+falsch
+wahr
+Hallo Welt
+Hello
+falsch
+ World

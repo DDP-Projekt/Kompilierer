@@ -42,12 +42,14 @@ ddpbool Existiert_Pfad(ddpstring *Pfad) {
 }
 
 ddpbool Erstelle_Ordner(ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	// recursively create every directory needed to create the final one
 	char *it = Pfad->str;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
 		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-			ddp_error("Fehler beim Erstellen des Ordners '"DDP_STRING_FMT"': ", true, Pfad->str);
+			ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad->str);
 			return false;
 		}
 		*it = '/';
@@ -58,13 +60,15 @@ ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 	if (Pfad->str[Pfad->cap - 2] == '/') {
 		return true;
 	} else if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-		ddp_error("Fehler beim Erstellen des Ordners '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return false;
 	}
 	return true;
 }
 
 ddpbool Ist_Ordner(ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	// remove possible trailing seperators
 	char *it = Pfad->str + Pfad->cap - 2; // last character in str
 	while (it >= Pfad->str) {
@@ -77,7 +81,7 @@ ddpbool Ist_Ordner(ddpstring *Pfad) {
 
 	struct stat path_stat;
 	if (stat(Pfad->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return false;
 	}
 	return S_ISDIR(path_stat.st_mode);
@@ -85,6 +89,8 @@ ddpbool Ist_Ordner(ddpstring *Pfad) {
 
 // copied from https://stackoverflow.com/questions/2256945/removing-a-non-empty-directory-programmatically-in-c-or-c
 static int remove_directory(const char *path) {
+	DDP_MIGHT_ERROR;
+
 	DIR *d = opendir(path);
 	size_t path_len = strlen(path);
 	int r = -1;
@@ -108,7 +114,7 @@ static int remove_directory(const char *path) {
 			if (buf) {
 				struct stat statbuf;
 
-				snprintf(buf, len, ""DDP_STRING_FMT"/"DDP_STRING_FMT"", path, p->d_name);
+				snprintf(buf, len, "" DDP_STRING_FMT "/" DDP_STRING_FMT "", path, p->d_name);
 				if (!stat(buf, &statbuf)) {
 					if (S_ISDIR(statbuf.st_mode)) {
 						r2 = remove_directory(buf);
@@ -122,14 +128,14 @@ static int remove_directory(const char *path) {
 		}
 		closedir(d);
 	} else {
-		ddp_error("Fehler beim Öffnen des Ordners '"DDP_STRING_FMT"': ", true, path);
+		ddp_error("Fehler beim Öffnen des Ordners '" DDP_STRING_FMT "': ", true, path);
 		return -1;
 	}
 
 	if (!r) {
 		r = rmdir(path);
 	} else {
-		ddp_error("Fehler beim Löschen des Ordners '"DDP_STRING_FMT"': ", true, path);
+		ddp_error("Fehler beim Löschen des Ordners '" DDP_STRING_FMT "': ", true, path);
 		return -1;
 	}
 
@@ -137,20 +143,24 @@ static int remove_directory(const char *path) {
 }
 
 ddpbool Loesche_Pfad(ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	if (Ist_Ordner(Pfad)) {
 		return remove_directory(Pfad->str) == 0;
 	}
 	if (unlink(Pfad->str) != 0) {
-		ddp_error("Fehler beim Löschen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Löschen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return false;
 	}
 	return true;
 }
 
 ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
+	DDP_MIGHT_ERROR;
+
 	struct stat path_stat;
 	if (stat(NeuerName->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, NeuerName->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, NeuerName->str);
 		return false;
 	}
 
@@ -170,7 +180,7 @@ ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 		DDP_FREE(char, path_copy);
 	}
 	if (rename(Pfad->str, NeuerName->str) != 0) {
-		ddp_error("Fehler beim Verschieben des Pfades '"DDP_STRING_FMT"' nach '"DDP_STRING_FMT"': ", true, Pfad->str, NeuerName->str);
+		ddp_error("Fehler beim Verschieben des Pfades '" DDP_STRING_FMT "' nach '" DDP_STRING_FMT "': ", true, Pfad->str, NeuerName->str);
 		return false;
 	}
 	return true;
@@ -191,10 +201,12 @@ static void formatDateStr(ddpstring *str, struct tm *time) {
 }
 
 void Zugriff_Datum(ddpstring *ret, ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_atime);
@@ -203,10 +215,12 @@ void Zugriff_Datum(ddpstring *ret, ddpstring *Pfad) {
 }
 
 void AEnderung_Datum(ddpstring *ret, ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_mtime);
@@ -215,10 +229,12 @@ void AEnderung_Datum(ddpstring *ret, ddpstring *Pfad) {
 }
 
 void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
 		*ret = (ddpstring){0};
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
 	struct tm *tm = localtime(&st.st_ctime);
@@ -227,9 +243,11 @@ void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
 }
 
 ddpint Datei_Groesse(ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return -1;
 	}
 
@@ -237,9 +255,11 @@ ddpint Datei_Groesse(ddpstring *Pfad) {
 }
 
 ddpint Datei_Modus(ddpstring *Pfad) {
+	DDP_MIGHT_ERROR;
+
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '"DDP_STRING_FMT"': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return -1;
 	}
 
@@ -303,6 +323,8 @@ out_error:
 }
 
 ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
+	DDP_MIGHT_ERROR;
+
 	FILE *file = fopen(Pfad->str, "r");
 	if (file) {
 		fseek(file, 0, SEEK_END);			  // seek the last byte in the file
@@ -314,26 +336,28 @@ ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 		fclose(file);
 		ref->str[ref->cap - 1] = '\0';
 		if (read != string_size - 1) {
-			ddp_error("Fehler beim Lesen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
+			ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
 		}
 		return (ddpint)read;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
+	ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
 	return -1;
 }
 
 ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
+	DDP_MIGHT_ERROR;
+
 	FILE *file = fopen(Pfad->str, "w");
 	if (file) {
 		int ret = fprintf(file, text->str);
 		fclose(file);
 		if (ret < 0) {
-			ddp_error("Fehler beim Schreiben der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
+			ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
 			return ret;
 		}
 		return (ddpint)ret;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '"DDP_STRING_FMT"': ", true, Pfad->str);
+	ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
 	return -1;
 }
 
@@ -567,6 +591,8 @@ typedef struct {
 typedef Datei *DateiRef;
 
 void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
+	DDP_MIGHT_ERROR;
+
 	// create a new file and store the index in the DateiRef
 	datei->index = add_internal_file();
 	InternalFile *file = &open_files.files[datei->index];
@@ -594,6 +620,8 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 }
 
 void Datei_Schliessen(DateiRef datei) {
+	DDP_MIGHT_ERROR;
+
 	// close the file and do some cleanup
 	close_internal_file(datei->index);
 	datei->index = -1;
@@ -604,6 +632,8 @@ void Datei_Schliessen(DateiRef datei) {
 #define DDP_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
+	DDP_MIGHT_ERROR;
+
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it
 	InternalFile *file = get_internal_file(datei->index, datei->id);
@@ -653,6 +683,8 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	}
 
 void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
+	DDP_MIGHT_ERROR;
+
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it
 	InternalFile *file = get_internal_file(datei->index, datei->id);
@@ -710,6 +742,8 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 }
 
 void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
+	DDP_MIGHT_ERROR;
+
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it
 	InternalFile *file = get_internal_file(datei->index, datei->id);
@@ -783,6 +817,8 @@ void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
 }
 
 ddpbool Datei_Zuende(DateiRef datei) {
+	DDP_MIGHT_ERROR;
+
 	InternalFile *file = get_internal_file(datei->index, datei->id);
 	if (!file) {
 		return true;
