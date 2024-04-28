@@ -28,6 +28,8 @@ void ddp_string_from_constant(ddpstring *ret, char *str);
 void ddp_free_string(ddpstring *str);
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str);
+// returns wether the length of str is 0
+ddpbool ddp_string_empty(ddpstring *str);
 
 typedef struct {
 	ddpint *arr; // the element array
@@ -99,26 +101,37 @@ extern void ddp_deep_copy_ddpstringlist(ddpstringlist *ret, ddpstringlist *list)
 #define DDP_BASE_CAPACITY (8)
 // helper macro to calculate the new capacity of an array
 #define DDP_GROW_CAPACITY(capacity) \
-    (capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
+	(capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
 
 #define DDP_EMPTY_STRING \
-	(ddpstring){NULL, 0}
+	(ddpstring) {        \
+		NULL, 0          \
+	}
 
 #define DDP_EMPTY_LIST(type) \
-	(type){NULL, 0, 0}
+	(type) {                 \
+		NULL, 0, 0           \
+	}
 
 // useful typedefs to use when interfacing with ddp code
 
-typedef ddpint* ddpintref;
-typedef ddpfloat* ddpfloatref;
-typedef ddpbool* ddpboolref;
-typedef ddpchar* ddpcharref;
-typedef ddpstring* ddpstringref;
+typedef ddpint *ddpintref;
+typedef ddpfloat *ddpfloatref;
+typedef ddpbool *ddpboolref;
+typedef ddpchar *ddpcharref;
+typedef ddpstring *ddpstringref;
 
 typedef ddpintlist *ddpintlistref;
 typedef ddpfloatlist *ddpfloatlistref;
 typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
+
+
+#define DDP_INT_FMT "%lld"
+#define DDP_FLOAT_FMT "%.16g"
+#define DDP_BOOL_FMT "%d"
+#define DDP_CHAR_FMT "%d"
+#define DDP_STRING_FMT "%s"
 
 #endif // DDP_TYPES_H

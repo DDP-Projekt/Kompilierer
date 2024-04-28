@@ -59,3 +59,12 @@ Die öffentliche Funktion Macht_Nichts gibt nichts zurück, macht:
 Und kann so benutzt werden:
 	"Tue nichts" oder
 	"tue nichts"
+
+[
+	Gibt den aktuellen Arbeitsverzeichnis zurück. 
+]
+Die öffentliche Funktion Arbeitsverzeichnis gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"das Arbeitsverzeichnis",
+	"dem Arbeitsverzeichnis"

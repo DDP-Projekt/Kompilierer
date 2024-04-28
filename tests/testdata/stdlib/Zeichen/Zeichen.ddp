@@ -43,6 +43,14 @@ Schreibe ('6' eine Zahl ist) auf eine Zeile.
 Schreibe ('7' eine Zahl ist) auf eine Zeile.
 Schreibe ('8' eine Zahl ist) auf eine Zeile.
 Schreibe ('9' eine Zahl ist) auf eine Zeile.
+
+Schreibe "--- IstLateinischerBuchstabe Test ---" auf eine Zeile.
+Schreibe ('A' ein lateinischer Buchstabe ist) auf eine Zeile.
+Schreibe ('a' ein lateinischer Buchstabe ist) auf eine Zeile.
+Schreibe ('p' ein lateinischer Buchstabe ist) auf eine Zeile.
+Schreibe ('z' ein lateinischer Buchstabe ist) auf eine Zeile.
+Schreibe ('Z' ein lateinischer Buchstabe ist) auf eine Zeile.
+
 Schreibe "--- IstDeutscherBuchstabe Test ---" auf eine Zeile.
 Schreibe ('A' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('a' ein deutscher Buchstabe ist) auf eine Zeile.
@@ -56,6 +64,7 @@ Schreibe ('Ä' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('Ö' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('Ü' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('ß' ein deutscher Buchstabe ist) auf eine Zeile.
+
 Schreibe "--- Großgeschrieben Test ---" auf eine Zeile.
 Schreibe ('a' als großer Buchstabe) auf eine Zeile.
 Schreibe ('b' als großer Buchstabe) auf eine Zeile.
