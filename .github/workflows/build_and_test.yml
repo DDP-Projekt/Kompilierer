@@ -2,7 +2,7 @@ name: Build DDP and run tests
 
 on:
   push:
-    branches: [ "master", "dev", "stdlib-test-coverage" ]
+    branches: [ "master", "dev" ]
   pull_request:
     branches: [ "master", "dev" ]
 
