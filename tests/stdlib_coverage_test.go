@@ -49,7 +49,7 @@ var (
 func (funcCallVisitor) Visitor() {}
 func (v funcCallVisitor) VisitFuncCall(f *ast.FuncCall) ast.VisitResult {
 	v(f)
-	return ast.VisitSkipChildren
+	return ast.VisitRecurse
 }
 
 var (
@@ -94,6 +94,11 @@ func init() {
 			}
 		}))
 	}
+}
+
+type moduleFuncInfo struct {
+	called int
+	total  int
 }
 
 func TestStdlibCoverage(t *testing.T) {
@@ -143,18 +148,37 @@ func TestStdlibCoverage(t *testing.T) {
 		t.Fatalf("Error walking the test directory: %s", err)
 	}
 
+	functions_per_module := make(map[*ast.Module]moduleFuncInfo, len(duden_modules))
+	for fun := range duden_funcs {
+		info := functions_per_module[fun.Module()]
+		info.total++
+		if _, ok := called_functions[fun]; ok {
+			info.called++
+		}
+		functions_per_module[fun.Module()] = info
+	}
+
 	fmt.Fprintf(file, "Aufgerufene Funktionen: %d<br>\n", len(called_functions))
 	fmt.Fprintf(file, "Nicht aufgerufene Funktionen: %d<br>\n", len(duden_funcs)-len(called_functions))
 	fmt.Fprintf(file, "Coverage: %.2f%%\n\n", float64(len(called_functions))/float64(len(duden_funcs))*100)
 
 	fmt.Fprintf(file, "### Index\n\n")
+	fmt.Fprintf(file, "| Module | Funktionen | Aufgerufene Funktionen | Nicht Aufgerufene Funktionen |\n")
+	fmt.Fprintf(file, "|--------|------------| ---------------------- | ---------------------------- |\n")
 	for modName, mod := range duden_modules {
 		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
 		if err != nil {
 			modName = mod.FileName
 			t.Logf("Error getting relative path for %s: %s", modName, err)
 		}
-		fmt.Fprintf(file, "- [%s](#%s)\n", modName, strings.ToLower(strings.ReplaceAll(filepath.Base(modName), ".", "")))
+		info := functions_per_module[mod]
+		fmt.Fprintf(file, "| [%s](#%s) | %d | %d | %d |\n",
+			modName,
+			strings.ToLower(strings.ReplaceAll(filepath.Base(modName), ".", "")),
+			info.total,
+			info.called,
+			info.total-info.called,
+		)
 	}
 	fmt.Fprintln(file)
 
