@@ -2,7 +2,7 @@ name: Build DDP and run tests
 
 on:
   push:
-    branches: [ "master", "dev" ]
+    branches: [ "master", "dev", "stdlib-test-coverage" ]
   pull_request:
     branches: [ "master", "dev" ]
 
@@ -35,6 +35,13 @@ jobs:
       
     - name: Run tests
       run: make test
+    
+    - name: Upload Coverage Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: tests/coverage.md
+        retention-days: 30
 
     - name: Build debug
       run: make -j$(nproc) debug
