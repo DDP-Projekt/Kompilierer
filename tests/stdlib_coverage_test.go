@@ -163,8 +163,8 @@ func TestStdlibCoverage(t *testing.T) {
 	fmt.Fprintf(file, "Coverage: %.2f%%\n\n", float64(len(called_functions))/float64(len(duden_funcs))*100)
 
 	fmt.Fprintf(file, "### Index\n\n")
-	fmt.Fprintf(file, "| Module | Funktionen | Aufgerufene Funktionen | Nicht Aufgerufene Funktionen |\n")
-	fmt.Fprintf(file, "|--------|------------| ---------------------- | ---------------------------- |\n")
+	fmt.Fprintf(file, "| Module | Funktionen | Aufgerufene Funktionen | Nicht Aufgerufene Funktionen | %% Aufgerufen |\n")
+	fmt.Fprintf(file, "|--------|------------| ---------------------- | ---------------------------- | -- |\n")
 	for modName, mod := range duden_modules {
 		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
 		if err != nil {
@@ -172,12 +172,13 @@ func TestStdlibCoverage(t *testing.T) {
 			t.Logf("Error getting relative path for %s: %s", modName, err)
 		}
 		info := functions_per_module[mod]
-		fmt.Fprintf(file, "| [%s](#%s) | %d | %d | %d |\n",
+		fmt.Fprintf(file, "| [%s](#%s) | %d | %d | %d | %.2f%% |\n",
 			modName,
 			strings.ToLower(strings.ReplaceAll(filepath.Base(modName), ".", "")),
 			info.total,
 			info.called,
 			info.total-info.called,
+			float32(info.called)/float32(info.total)*100,
 		)
 	}
 	fmt.Fprintln(file)
@@ -196,25 +197,36 @@ func TestStdlibCoverage(t *testing.T) {
 			t.Logf("Error getting relative path for %s: %s", modName, err)
 		}
 
+		info := functions_per_module[mod]
 		fmt.Fprintf(file, "### %s\n", getFileLink(t, modName, mod.FileName, -1))
 		fmt.Fprintf(file, "#### Aufgerufene Funktionen:\n\n")
-		fmt.Fprintf(file, "| Funktion | Aufrufe |\n")
-		fmt.Fprintf(file, "|----------|-------|\n")
-		for f, n := range called_functions {
-			if f.Module() == mod {
-				fmt.Fprintf(file, "| %s | %d |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())), n)
-				delete(duden_funcs, f)
+
+		if info.called > 0 {
+			fmt.Fprintf(file, "| Funktion | Aufrufe |\n")
+			fmt.Fprintf(file, "|----------|-------|\n")
+			for f, n := range called_functions {
+				if f.Module() == mod {
+					fmt.Fprintf(file, "| %s | %d |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())), n)
+					delete(duden_funcs, f)
+				}
 			}
+		} else {
+			fmt.Fprintf(file, "Keine\n")
 		}
+
 		fmt.Fprintf(file, "\n#### Nicht Aufgerufene Funktionen:\n\n")
-		fmt.Fprintf(file, "| Funktion |\n")
-		fmt.Fprintf(file, "|----------|\n")
-		for f := range duden_funcs {
-			if f.Module() == mod {
-				fmt.Fprintf(file, "| %s |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())))
+		if info.total-info.called > 0 {
+			fmt.Fprintf(file, "| Funktion |\n")
+			fmt.Fprintf(file, "|----------|\n")
+			for f := range duden_funcs {
+				if f.Module() == mod {
+					fmt.Fprintf(file, "| %s |\n", getFileLink(t, f.Name(), f.Mod.FileName, int(f.NameTok.Line())))
+				}
 			}
+			fmt.Fprintln(file)
+		} else {
+			fmt.Fprintf(file, "Keine\n")
 		}
-		fmt.Fprintln(file)
 	}
 }
 
