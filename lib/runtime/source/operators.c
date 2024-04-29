@@ -78,11 +78,9 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 
 void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint index2) {
 	DBGLOG("_ddp_string_slice: %p, ret: %p", str, ret);
-	ret->cap = 1;
-	ret->str = DDP_ALLOCATE(char, 1);
-	ret->str[0] = '\0';
+	*ret = DDP_EMPTY_STRING;
 
-	if (str->cap <= 1) {
+	if (ddp_string_empty(str)) {
 		return; // empty string can stay the same
 	}
 
