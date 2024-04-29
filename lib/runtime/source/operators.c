@@ -17,7 +17,11 @@ ddpint ddp_string_length(ddpstring *str) {
 }
 
 ddpchar ddp_string_index(ddpstring *str, ddpint index) {
-	if (index > str->cap || index < 1 || str->cap <= 1) {
+	if (index < 1) {
+		ddp_runtime_error(1, "Texte fangen bei Index 1 an. Es wurde wurde versucht "DDP_INT_FMT" zu indizieren\n", index);
+	}
+
+	if (index > str->cap || str->cap <= 1) {
 		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
@@ -35,7 +39,11 @@ ddpchar ddp_string_index(ddpstring *str, ddpint index) {
 }
 
 void ddp_replace_char_in_string(ddpstring *str, ddpchar ch, ddpint index) {
-	if (index > str->cap || index < 1 || str->cap <= 1) {
+	if (index < 1) {
+		ddp_runtime_error(1, "Texte fangen bei Index 1 an. Es wurde wurde versucht "DDP_INT_FMT" zu indizieren\n", index);
+	}
+	
+	if (index > str->cap || str->cap <= 1) {
 		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war "DDP_INT_FMT", Text Länge war "DDP_INT_FMT")\n", index, utf8_strlen(str->str));
 	}
 
