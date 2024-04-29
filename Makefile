@@ -39,12 +39,6 @@ else
 	LLVM_CMAKE_GENERATOR="Unix Makefiles"
 endif
 
-# check if ninja is installed and use it
-ifneq (, $(shell which ninja))
-	LLVM_CMAKE_GENERATOR=Ninja
-	LLVM_CMAKE_BUILD_TOOL=ninja
-endif
-
 OUT_DIR = ./build/DDP/
 
 .DEFAULT_GOAL = all
@@ -161,14 +155,10 @@ download-llvm:
 llvm: download-llvm
 # generate cmake build files
 	@echo "building llvm"
-ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)
-	@echo "found ninja, using it as cmake generator"
-endif
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL) ; $(LLVM_CMAKE_BUILD_TOOL) llvm-config
-
+	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config
 
 # will hold the directories to run in the tests
 # if empty, all directories are run
