@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 void Hole_Umgebungsvariable(ddpstring *ret, ddpstring *Name) {
 	*ret = DDP_EMPTY_STRING;
 

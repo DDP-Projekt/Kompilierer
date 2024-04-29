@@ -674,7 +674,11 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
-	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	if e.Value == "" {
+		c.cbb.NewStore(c.ddpstring.DefaultValue(), dest)
+	} else {
+		c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
 	return ast.VisitRecurse

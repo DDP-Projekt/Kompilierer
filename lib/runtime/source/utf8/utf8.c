@@ -55,6 +55,10 @@ int utf8_indicated_num_bytes(char c) {
 // returns the number of unicode characters in s
 // s must be null-terminated
 size_t utf8_strlen(char *s) {
+	if (s == NULL) {
+		return 0;
+	}
+
 	size_t i = 0, len = 0;
 	while (s[i] != 0) { // while not at null-terminator
 		if (!utf8_is_continuation(s[i])) {
@@ -68,6 +72,9 @@ size_t utf8_strlen(char *s) {
 // returns the number of bytes of the first unicode character in s
 // s must be null-terminated
 size_t utf8_num_bytes(char *s) {
+	if (s == NULL) {
+		return 0;
+	}
 	size_t len = strlen(s), num_bytes = 0;
 
 	// is valid single byte (ie 0xxx xxxx)
@@ -145,6 +152,9 @@ const utf_t *utf[] = {
 // decode the first codepoint in str
 // str must be null-terminated
 int32_t utf8_string_to_char(char *str) {
+	if (str == NULL) {
+		return -1;
+	}
 	int num_bytes = utf8_num_bytes(str);
 	int shift = utf[0]->bits_stored * (num_bytes - 1);
 	int32_t codep = (*str++ & utf[num_bytes]->mask) << shift;
