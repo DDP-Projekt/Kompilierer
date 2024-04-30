@@ -113,8 +113,9 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 		i2 += utf8_indicated_num_bytes(str->str[i2]);
 	}
 
-	ret->cap = (i2 - i1) + 2; // + 1 if indices are equal, + 2 because null-terminator
-	ret->str = ddp_reallocate(ret->str, sizeof(char) * 1, ret->cap);
+	ret->cap = (i2 - i1) + 1;				   // + 1 because null-terminator
+	ret->cap += utf8_num_bytes(str->str + i2); // + 1 because indices are inclusive
+	ret->str = ddp_reallocate(ret->str, 0, ret->cap);
 	memcpy(ret->str, str->str + i1, ret->cap - 1);
 	ret->str[ret->cap - 1] = '\0';
 }
