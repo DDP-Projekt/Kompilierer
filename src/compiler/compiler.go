@@ -674,7 +674,11 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
-	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	if e.Value == "" {
+		c.cbb.NewStore(c.ddpstring.DefaultValue(), dest)
+	} else {
+		c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
 	return ast.VisitRecurse
@@ -909,6 +913,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 		// the concat functions use the buffer of some of their arguments
 		// if those arguments aren't temporaries, we copy them
+		//
+		// the concat function is also required to free the memory of the claimed
+		// arguments or claim their memory for the result, so we do not have to free them
 		if claimsLhs && !isTempLhs {
 			dest := c.NewAlloca(lhsTyp.IrType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)

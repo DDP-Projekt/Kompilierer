@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 void Hole_Umgebungsvariable(ddpstring *ret, ddpstring *Name) {
 	*ret = DDP_EMPTY_STRING;
 
@@ -19,10 +18,6 @@ void Hole_Umgebungsvariable(ddpstring *ret, ddpstring *Name) {
 		ret->str = DDP_ALLOCATE(char, ret->cap);
 		strcpy(ret->str, env);
 		ret->str[ret->cap - 1] = '\0';
-	} else {
-		ret->cap = 1;
-		ret->str = DDP_ALLOCATE(char, 1);
-		ret->str[0] = '\0';
 	}
 }
 

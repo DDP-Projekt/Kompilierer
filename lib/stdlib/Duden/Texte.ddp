@@ -335,12 +335,8 @@ Und kann so benutzt werden:
 	Füllt den Text mit dem gegebenen Buchstaben
 ]
 Die öffentliche Funktion Fülle_Text mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
-	Der Text neuerText ist "".
-	Wiederhole:
-		Speichere neuerText verkettet mit elm in neuerText.
-	Die Länge von text Mal.
-
-	Speichere neuerText in text.
+	Für jede Zahl i von 1 bis die Länge von text, mache:
+		Speichere elm in text an der Stelle i.
 Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
