@@ -12,10 +12,12 @@
 name: "CodeQL"
 
 on:
-  push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "dev" ]
+  workflow_run:
+    workflows: [Build DDP and run tests]
+    types:
+      - completed
+    branches:
+      - dev
   schedule:
     - cron: '0 17 * * 5'
 
