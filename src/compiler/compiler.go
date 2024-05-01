@@ -830,6 +830,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
 		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb // in case c.evaluate has multiple blocks
