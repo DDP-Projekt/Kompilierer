@@ -113,6 +113,7 @@ int utf8_char_to_string(char *s, int32_t c) {
 		s[1] = 128 | (((char)c) & 63);
 		num_bytes = 2;
 	} else if (ch > 1114111 || (55296 <= ch && ch <= 57343)) {
+		s[0] = '\0';
 		return -1;
 	} else if (ch <= 65535) {
 		s[0] = 224 | (char)(c >> 12);

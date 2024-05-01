@@ -913,6 +913,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 		// the concat functions use the buffer of some of their arguments
 		// if those arguments aren't temporaries, we copy them
+		//
+		// the concat function is also required to free the memory of the claimed
+		// arguments or claim their memory for the result, so we do not have to free them
 		if claimsLhs && !isTempLhs {
 			dest := c.NewAlloca(lhsTyp.IrType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)

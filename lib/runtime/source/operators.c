@@ -120,6 +120,8 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 	ret->str[ret->cap - 1] = '\0';
 }
 
+// concatenate two strings
+// guarantees that any memory allocated by str1 is either claimed for the result or freed
 void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str2) {
 	DBGLOG("_ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
 
@@ -128,9 +130,11 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 		return;
 	} else if (ddp_string_empty(str1)) {
 		ddp_deep_copy_string(ret, str2);
+		ddp_free_string(str1);
 		return;
 	} else if (ddp_string_empty(str2)) {
-		ddp_deep_copy_string(ret, str1);
+		*ret = *str1;
+		*str1 = DDP_EMPTY_STRING;
 		return;
 	}
 
@@ -141,6 +145,8 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 	*str1 = DDP_EMPTY_STRING;
 }
 
+// concatenate a char to a string
+// guarantees that any memory allocated by str is either claimed for the result or freed
 void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 	DBGLOG("_ddp_char_string_verkettet: %p, ret: %p", str, ret);
 
@@ -151,6 +157,7 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 	}
 
 	if (ddp_string_empty(str)) {
+		ddp_free_string(str);
 		ddp_string_from_constant(ret, temp);
 		return;
 	}
@@ -163,6 +170,8 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 	*str = DDP_EMPTY_STRING;
 }
 
+// concatenate a string to a char
+// guarantees that any memory allocated by str is either claimed for the result or freed
 void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 	DBGLOG("_ddp_string_char_verkettet: %p, ret: %p", str, ret);
 
@@ -173,6 +182,7 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 	}
 
 	if (ddp_string_empty(str)) {
+		ddp_free_string(str);
 		ddp_string_from_constant(ret, temp);
 		return;
 	}
