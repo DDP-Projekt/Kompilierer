@@ -386,6 +386,14 @@ func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp b
 	}
 }
 
+func (c *compiler) freeTemporaries(scp *scope, force bool) {
+	for _, v := range scp.temporaries {
+		if !v.protected || force {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
+	}
+}
+
 // helper to exit a scope
 // frees all local variables
 // returns the enclosing scope
@@ -395,11 +403,7 @@ func (c *compiler) exitScope(scp *scope) *scope {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	for _, v := range scp.temporaries {
-		if !v.protected {
-			c.freeNonPrimitive(v.val, v.typ)
-		}
-	}
+	c.freeTemporaries(scp, false)
 	return scp.enclosing
 }
 
@@ -414,9 +418,7 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	for _, v := range c.cfscp.temporaries {
-		c.freeNonPrimitive(v.val, v.typ)
-	}
+	c.freeTemporaries(c.cfscp, true)
 	return c.cfscp.enclosing
 }
 
@@ -803,7 +805,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
 
 		c.cbb = trueBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		trueBlock = c.cbb
@@ -820,7 +826,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
 
 		c.cbb = falseBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb // in case c.evaluate has multiple blocks
@@ -2060,9 +2069,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 					c.freeNonPrimitive(Var.val, Var.typ)
 				}
 			}
-			for _, Var := range scp.temporaries {
-				c.freeNonPrimitive(Var.val, Var.typ)
-			}
+			c.freeTemporaries(scp, true)
 		}
 		c.exitFuncScope(c.functions[s.Func].funcDecl)
 	}
