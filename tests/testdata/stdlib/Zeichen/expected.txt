@@ -36,6 +36,12 @@ wahr
 wahr
 wahr
 wahr
+--- IstLateinischerBuchstabe Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
 --- IstDeutscherBuchstabe Test ---
 wahr
 wahr

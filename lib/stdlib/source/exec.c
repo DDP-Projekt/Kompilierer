@@ -1,7 +1,7 @@
 #include "ddpmemory.h"
 #include "ddpos.h"
 #include "ddptypes.h"
-#include <error.h>
+#include "error.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,7 +84,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 	// prepare the arguments
 	char *argv;
-	size_t argv_size = strlen(path->str) + 1;
+	size_t argv_size = ddp_strlen(path) + 1;
 	for (ddpint i = 0; i < args->len; i++) {
 		argv_size += args->arr[i].cap; // the nullterminator is used for the trailing space
 	}
@@ -131,7 +131,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 	// write stdin
 	DWORD len_written = 0;
-	DWORD len_to_write = strlen(input->str);
+	DWORD len_to_write = ddp_strlen(input);
 	if (!WriteFile(stdin_pipe[WRITE_END], input->str, len_to_write, &len_written, NULL) || len_written != len_to_write) {
 		ddp_error_win("Fehler beim schreiben der Eingabe: ");
 		// terminate the running process
@@ -224,7 +224,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 	const size_t argc = args->len + 1;
 	char **process_args = DDP_ALLOCATE(char *, argc + 1); // + 1 for the terminating NULL
 
-	process_args[0] = DDP_ALLOCATE(char, strlen(path->str) + 1);
+	process_args[0] = DDP_ALLOCATE(char, ddp_strlen(path) + 1);
 	strcpy(process_args[0], path->str);
 	for (int i = 1; i < argc; i++) {
 		process_args[i] = DDP_ALLOCATE(char, strlen(args->arr[i - 1].str) + 1);
@@ -302,5 +302,6 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 ddpint Programm_Ausfuehren(ddpstring *ProgrammName, ddpstringlist *Argumente,
 						   ddpstring *StandardEingabe, ddpstringref StandardAusgabe, ddpstringref StandardFehlerAusgabe) {
+	DDP_MIGHT_ERROR;
 	return execute_process(ProgrammName, Argumente, StandardEingabe, StandardAusgabe, StandardFehlerAusgabe);
 }

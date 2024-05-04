@@ -4,14 +4,15 @@ type CompFunc[K any] func(K, K) bool
 
 // a map that keeps it's keys sorted in ascending order
 type OrderedMap[K, V any] struct {
+	// data is a slice of alternating keys and values
 	data []any
 	eq   CompFunc[K] // wether a is equal to b (a == b)
 	less CompFunc[K] // wether a is less than b
 }
 
 // create a new OrderedMap with the given equality and less functions
-func New[K, V any](eq, less CompFunc[K]) *OrderedMap[K, V] {
-	return &OrderedMap[K, V]{make([]any, 0), eq, less}
+func New[K, V any](eq, less CompFunc[K], capacity int) *OrderedMap[K, V] {
+	return &OrderedMap[K, V]{make([]any, 0, capacity*2), eq, less}
 }
 
 // finds the given key using binary search and returns it's index and wether it exists

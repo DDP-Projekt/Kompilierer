@@ -74,7 +74,7 @@ func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 	}
 }
 
-func (*Resolver) BaseVisitor() {}
+func (*Resolver) Visitor() {}
 
 // if a BadDecl exists the AST is faulty
 func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {

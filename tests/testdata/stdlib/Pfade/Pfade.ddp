@@ -1,55 +1,170 @@
 Binde "Duden/Pfade" ein.
 Binde "Duden/Ausgabe" ein.
+Binde Aneinandergehängt_Buchstabe aus "Duden/Listen" ein.
 
-[ BasisPfad Tests ]
-Schreibe (den Basispfad von "/a/b/c/d") auf eine Zeile.
-Schreibe (den Basispfad von "/a/b/c/") auf eine Zeile.
-Schreibe (den Basispfad von "./b") auf eine Zeile.
-Schreibe (den Basispfad von "hi.txt") auf eine Zeile.
-Schreibe (den Basispfad von "") auf eine Zeile.
+[UNIX TESTS]
 
 [ OrdnerPfad Tests ]
-Schreibe (den Ordnerpfad von "/a/b/c") auf eine Zeile.
-Schreibe (den Ordnerpfad von "a/b/c") auf eine Zeile.
-Schreibe (den Ordnerpfad von "/a/") auf eine Zeile.
-Schreibe (den Ordnerpfad von "a/") auf eine Zeile.
-Schreibe (den Ordnerpfad von "a") auf eine Zeile.
-Schreibe (den Ordnerpfad von "/") auf eine Zeile.
-Schreibe (den Ordnerpfad von "") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "/a/b/c") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "a/b/c") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "/a/") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "a/") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "a") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "/") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "..") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von ".") auf eine Zeile.
+Schreibe (den UNIX Ordnerpfad von "") auf eine Zeile.
 
-[ Erweiterung Tests ]
-Schreibe (die Erweiterung der Datei bei "/a/b/c/bar.css") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei "/") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei ".") auf eine Zeile.
-Schreibe (die Erweiterung der Datei bei "") auf eine Zeile.
+[ Basisname Tests ]
+Schreibe (den UNIX Basisnamen von "/a/b/c/d.png") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "/a/b/c/d") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "/a/b/c/") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "/a/b/c///") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "./b") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "hi.txt") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von ".") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "..") auf eine Zeile.
+Schreibe (den UNIX Basisnamen von "") auf eine Zeile.
 
 [ DateiName Tests ]
-Schreibe (den Dateinamen von "/a/b/c/test.txt") auf eine Zeile.
-Schreibe (den Dateinamen von "/a/b/c/") auf eine Zeile.
-Schreibe (den Dateinamen von "/a/b/c") auf eine Zeile.
-Schreibe (den Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
-Schreibe (den Dateinamen von "") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "/a/b/c/test.txt") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "/a/b/c/test.txt.exe") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "test.exe") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "/a/b/c/") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "/a/b/c") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "/") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von ".") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "..") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "noext") auf eine Zeile.
+Schreibe (den UNIX Dateinamen von "") auf eine Zeile.
+
+[ Erweiterung Tests ]
+Schreibe (die UNIX Erweiterung der Datei bei "/a/b/c/bar.css") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "/a/b/c/foo.tar.gz") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "bar.css") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "/a/b.trap/c/noext") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "/") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei ".") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "..") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "noext") auf eine Zeile.
+Schreibe (die UNIX Erweiterung der Datei bei "") auf eine Zeile.
 
 [ Säubern Tests ]
-Schreibe (der Pfad "a/c" gesäubert) auf eine Zeile.
-Schreibe (der Pfad "a//c" gesäubert) auf eine Zeile.
-Schreibe (der Pfad "a/c/." gesäubert) auf eine Zeile.
-Schreibe (der Pfad "a/c/b/.." gesäubert) auf eine Zeile.
-Schreibe (der Pfad "/../a/c" gesäubert) auf eine Zeile.
-Schreibe (der Pfad "/../a/b/../././/c" gesäubert) auf eine Zeile.
-Schreibe (der Pfad "a/b/../../../xyz" gesäubert) auf eine Zeile.
-Schreibe (der Pfad ".." gesäubert) auf eine Zeile.
-Schreibe (der Pfad "" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "a/c" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "a//c" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "a/c/." gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "a/c/b/.." gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "/../a/c" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "/../a/b/../././/c" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "a/b/../../../xyz" gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad ".." gesäubert) auf eine Zeile.
+Schreibe (der UNIX Pfad "" gesäubert) auf eine Zeile.
 
 [ IstAbsout Tests ]
-Schreibe ("/a/b" ein Absoluter Pfad ist) auf eine Zeile.
-Schreibe ("a/b" ein Absoluter Pfad ist) auf eine Zeile.
-Schreibe ("" ein Absoluter Pfad ist) auf eine Zeile.
+Schreibe ("/a/b" ein absoluter UNIX Pfad ist) auf eine Zeile.
+Schreibe ("a/b" ein absoluter UNIX Pfad ist) auf eine Zeile.
+Schreibe ("" ein absoluter UNIX Pfad ist) auf eine Zeile.
 
 [ Verbinden Tests ]
-Schreibe (die Pfade "a" und "b/c" verbunden) auf eine Zeile.
-Schreibe (die Pfade "a/b" und "c" verbunden) auf eine Zeile.
-Schreibe (die Pfade "" und "a/b" verbunden) auf eine Zeile.
-Schreibe (die Pfade "a/b" und "" verbunden) auf eine Zeile.
-Schreibe (die Pfade "" und "" verbunden) auf eine Zeile.
-Schreibe (die Pfade "a/b" und "../../../xyz" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "a" und "b/c" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "a/b" und "c" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "" und "a/b" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "a/b" und "" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "" und "" verbunden) auf eine Zeile.
+Schreibe (die UNIX Pfade "a/b" und "../../../xyz" verbunden) auf eine Zeile.
+
+[WINDOWS TESTS]
+
+[ Windows_Ist_Absolut Tests ]
+Schreibe ("C:\\Users\\admin\\" ein absoluter Windows Pfad ist) auf eine Zeile.
+Schreibe ("\\Users\\admin\\" ein absoluter Windows Pfad ist) auf eine Zeile.
+Schreibe (":\\Users\\admin\\" ein absoluter Windows Pfad ist) auf eine Zeile.
+Schreibe (" :" ein absoluter Windows Pfad ist) auf eine Zeile.
+Schreibe ("" ein absoluter Windows Pfad ist) auf eine Zeile.
+
+[ Windows_Saeubern Tests ]
+Schreibe (der Windows Pfad "C:\\Users\\admin" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\你好" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\admin\\" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\admin\\.." gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\admin\\..\\" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\admin\\." gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\admin\\.\\" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\..\\admin\\." gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\Users\\\\admin" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:\\.." gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad "C:" gesäubert) auf eine Zeile.
+Schreibe (der Windows Pfad ".." gesäubert) auf eine Zeile. [wollen wir dort \ ?]
+Schreibe (der Windows Pfad "." gesäubert) auf eine Zeile. [wollen wir dort \ ?]
+[TODO: diesen Test fixen und expected.txt entsprechend anpassen]
+[Schreibe (der Windows Pfad "" gesäubert) auf eine Zeile.]
+
+Die Buchstaben Liste big ist 260 Mal 'a'.
+Schreibe (der Windows Pfad (big aneinandergehängt) gesäubert) auf eine Zeile.
+
+[ Windows_Pfad_Verbinden Tests ]
+Schreibe (die Windows Pfade "C:\\" und "admin" verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "C:\\" und "admin\\" verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "C:\\" und "admin\\.." verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "C:\\" und "admin\\." verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "C:\\.." und "admin" verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "C:\\admin\\.." und "admin\\" verbunden) auf eine Zeile.
+Schreibe (die Windows Pfade "\\a\\b" und "..\\..\\..\\xyz" verbunden) auf eine Zeile.
+
+[ Windows_Laufwerkbuchstabe Tests ]
+Schreibe (den Laufwerkbuchstaben von "A:\\asf\\gjnu") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von "F:\\asf\\gjnu") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von "X:\\asf\\gjnu") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von "C:") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von "C") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von ":") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von " :") auf eine Zeile.
+Schreibe (den Laufwerkbuchstaben von "") auf eine Zeile.
+
+[ Windows_Ordnerpfad Tests ]
+Schreibe (den Windows Ordnerpfad von "C:\\Users\\admin\\test.c") auf eine Zeile.
+Schreibe (den Windows Ordnerpfad von "\\Users\\admin\\test.c") auf eine Zeile.
+Schreibe (den Windows Ordnerpfad von "C:\\test.c") auf eine Zeile.
+Schreibe (den Windows Ordnerpfad von "\\test.c") auf eine Zeile.
+Schreibe (den Windows Ordnerpfad von "") auf eine Zeile.
+
+[ Windows_Basisname Tests ]
+Schreibe (den Windows Basisnamen von "C:\\a\\b.png") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "\\a\\b.png") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "C:\\a\b\\c") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "\\a\b\\c") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "C:/a/b/c//\\/") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "C:waa") auf eine Zeile.
+Schreibe (den Windows Basisnamen von ".\\b") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "hi.txt") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "..") auf eine Zeile.
+Schreibe (den Windows Basisnamen von ".") auf eine Zeile.
+Schreibe (den Windows Basisnamen von "") auf eine Zeile.
+
+[ Windows_DateiName Tests ]
+Schreibe (den Windows Dateinamen von "C:\\a\\b\\c\\test.txt") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "C:\\a\\b\\c\\test.txt.exe") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "C:/a/b/c/test.txt.exe") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "test.exe") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "\\a\\b\\c\\") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "\\a\\b\\c") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "\\") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "D:a.bat") auf eine Zeile.
+Schreibe (den Windows Dateinamen von ".") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "..") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "noext") auf eine Zeile.
+Schreibe (den Windows Dateinamen von "") auf eine Zeile.
+
+[ Windows_Erweiterung Tests ]
+Schreibe (die Windows Erweiterung der Datei bei "C:\\a\\b\\c\\bar.css") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "C:\\a\\b\\c\\foo.tar.gz") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "/a/b/c/foo.tar.gz") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "bar.css") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "C:a.bat") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "C:\\a\\b.trap\\c\\noext") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "C:\\") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "\\") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei ".") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "..") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "noext") auf eine Zeile.
+Schreibe (die Windows Erweiterung der Datei bei "") auf eine Zeile.

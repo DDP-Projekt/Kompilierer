@@ -401,8 +401,8 @@ void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool) *ir.Func {
 	var (
-		ret  *ir.Param = ir.NewParam("ret", listType.ptr)
-		list *ir.Param = ir.NewParam("list", listType.ptr)
+		ret  = ir.NewParam("ret", listType.ptr)
+		list = ir.NewParam("list", listType.ptr)
 		// index1/2 are values for later reassignement of the variables
 		// for readybility
 		index1 value.Value = ir.NewParam("index1", ddpint)

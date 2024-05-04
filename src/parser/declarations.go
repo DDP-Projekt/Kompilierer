@@ -313,7 +313,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	paramTypesMap := map[string]ddptypes.ParameterType{}
+	paramTypesMap := make(map[string]ddptypes.ParameterType, len(paramNames))
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
 			paramTypesMap[v.Literal] = paramTypes[i]
@@ -461,7 +461,7 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 		)
 		return &err
 	}
-	nameSet := map[string]ddptypes.ParameterType{} // set that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]ddptypes.ParameterType, len(paramNames)) // set that holds the parameter names contained in the alias and their corresponding type
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
 			nameSet[v.Literal] = paramTypes[i]
@@ -515,8 +515,8 @@ func (p *parser) validateStructAlias(aliasTok *token.Token, aliasTokens []token.
 		)
 		return &err, nil
 	}
-	nameSet := map[string]ddptypes.ParameterType{} // set that holds the parameter names contained in the alias and their corresponding type
-	args := map[string]ddptypes.Type{}             // the arguments of the alias
+	nameSet := make(map[string]ddptypes.ParameterType, len(fields)) // set that holds the parameter names contained in the alias and their corresponding type
+	args := make(map[string]ddptypes.Type, len(fields))             // the arguments of the alias
 	for _, v := range fields {
 		nameSet[v.Name()] = ddptypes.ParameterType{
 			Type:        v.Type,

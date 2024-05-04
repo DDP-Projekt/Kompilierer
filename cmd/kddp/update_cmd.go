@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,160 +19,138 @@ import (
 	"github.com/google/go-github/v55/github"
 	"github.com/minio/selfupdate"
 	cp "github.com/otiai10/copy"
+	"github.com/spf13/cobra"
 )
 
-// $kddp version provides information about the version of the used kddp build
-type UpdateCommand struct {
-	fs              *flag.FlagSet
-	verbose         bool
-	compare_version bool
-	pre_release     bool
-	use_archive     string // only meant for internal use
-	now             bool
-	gh              *github.Client
-	infof           func(format string, a ...any)
-}
+var updateCmd = &cobra.Command{
+	Use:   "update [--jetzt] [--vergleiche-version] [--pre-release]",
+	Short: "Aktualisiert kddp",
+	Long:  `Überprüft ob eine neue Version von kddp verfügbar ist und aktualisiert diesen gegebenenfalls`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		is_sub_process := updateUseArchive != ""
 
-func NewUpdateCommand() *UpdateCommand {
-	cmd := &UpdateCommand{
-		fs:              flag.NewFlagSet("update", flag.ExitOnError),
-		verbose:         false,
-		compare_version: false,
-		pre_release:     false,
-		use_archive:     "",
-		now:             false,
-		gh:              github.NewClient(nil),
-	}
-	cmd.infof = func(format string, a ...any) {
-		if cmd.verbose {
-			fmt.Printf(format+"\n", a...)
-		}
-	}
-	return cmd
-}
-
-func (cmd *UpdateCommand) Init(args []string) error {
-	cmd.fs.BoolVar(&cmd.verbose, "wortreich", cmd.verbose, "Zeige wortreiche Informationen")
-	cmd.fs.BoolVar(&cmd.compare_version, "vergleiche_version", cmd.compare_version, "Vergleicht nur die installierte Version mit der neuesten Version ohne zu updaten")
-	cmd.fs.BoolVar(&cmd.pre_release, "pre_release", cmd.pre_release, "pre-release Versionen mit einbeziehen")
-	cmd.fs.StringVar(&cmd.use_archive, "use_archive", cmd.use_archive, "Nur für interne Zwecke")
-	cmd.fs.BoolVar(&cmd.now, "jetzt", cmd.now, "Falls eine neue Version verfügbar ist, wird diese ohne zu fragen sofort heruntergeladen und installiert")
-	return parseFlagSet(cmd.fs, args)
-}
-
-var kddp_bin_name = exePath("kddp")
-
-func (cmd *UpdateCommand) Run() error {
-	is_sub_process := cmd.use_archive != ""
-
-	if !is_sub_process {
-		fmt.Printf("Aktuelle Version: %s\n", DDPVERSION)
-		latestRelease, err := cmd.getLatestRelease(cmd.pre_release)
-		if err != nil {
-			return fmt.Errorf("Fehler beim Abrufen der neuesten Version:\n\t%w", err)
-		}
-		latest_version := latestRelease.GetTagName()
-		fmt.Printf("Neueste Version:  %s\n\n", latest_version)
-
-		if is_newer, err := is_newer_version(latest_version, DDPVERSION); err != nil {
-			return err
-		} else if is_newer {
-			fmt.Println("Es ist eine neuere Version verfügbar")
-		} else {
-			fmt.Println("DDP ist auf dem neusten Stand")
-			return nil
-		}
-		if cmd.compare_version { // early return if only the version should be compared
-			return nil
-		}
-
-		if !cmd.now {
-			fmt.Printf("DDP jetzt updaten? (j/n): ")
-			var answer string
-			if _, err := fmt.Scanln(&answer); err != nil {
-				return fmt.Errorf("Fehler beim Lesen der Eingabe:\n\t%w", err)
+		if !is_sub_process {
+			fmt.Printf("Aktuelle Version: %s\n", DDPVERSION)
+			latestRelease, err := getLatestRelease(updatePreRelease)
+			if err != nil {
+				return fmt.Errorf("Fehler beim Abrufen der neuesten Version:\n\t%w", err)
 			}
-			answer = strings.TrimSpace(strings.ToLower(answer))
-			if answer != "j" && answer != "y" {
+			latest_version := latestRelease.GetTagName()
+			fmt.Printf("Neueste Version:  %s\n\n", latest_version)
+
+			if is_newer, err := is_newer_version(latest_version, DDPVERSION); err != nil {
+				return err
+			} else if is_newer {
+				fmt.Println("Es ist eine neuere Version verfügbar")
+			} else {
+				fmt.Println("DDP ist auf dem neusten Stand")
 				return nil
 			}
+			if updateCompareVersion { // early return if only the version should be compared
+				return nil
+			}
+
+			if updateNow {
+				fmt.Printf("DDP jetzt updaten? (j/n): ")
+				var answer string
+				if _, err := fmt.Scanln(&answer); err != nil {
+					return fmt.Errorf("Fehler beim Lesen der Eingabe:\n\t%w", err)
+				}
+				answer = strings.TrimSpace(strings.ToLower(answer))
+				if answer != "j" && answer != "y" {
+					return nil
+				}
+			}
+
+			archive_type := ".zip"
+			if runtime.GOOS == "linux" {
+				archive_type = ".tar.gz"
+			}
+			updateUseArchive = fmt.Sprintf("DDP-%s-%s-%s", latest_version, runtime.GOOS, runtime.GOARCH)
+			if runtime.GOOS == "windows" {
+				updateUseArchive += "-no-mingw"
+			}
+			updateUseArchive += archive_type
+			updateUseArchive = filepath.Join(ddppath.InstallDir, updateUseArchive)
+
+			if err := downloadAssetTo(filepath.Base(updateUseArchive), updateUseArchive, latestRelease); err != nil {
+				return fmt.Errorf("Fehler beim Herunterladen der neuesten Version:\n\t%w", err)
+			}
 		}
 
-		archive_type := ".zip"
-		if runtime.GOOS == "linux" {
-			archive_type = ".tar.gz"
-		}
-		cmd.use_archive = fmt.Sprintf("DDP-%s-%s-%s", latest_version, runtime.GOOS, runtime.GOARCH)
-		if runtime.GOOS == "windows" {
-			cmd.use_archive += "-no-mingw"
-		}
-		cmd.use_archive += archive_type
-		cmd.use_archive = filepath.Join(ddppath.InstallDir, cmd.use_archive)
-
-		if err := cmd.downloadAssetTo(filepath.Base(cmd.use_archive), cmd.use_archive, latestRelease); err != nil {
-			return fmt.Errorf("Fehler beim Herunterladen der neuesten Version:\n\t%w", err)
-		}
-	}
-
-	archive, err := archive_reader.New(cmd.use_archive)
-	if err != nil {
-		return err
-	}
-
-	if !is_sub_process {
-		cmd.infof("\nUpdate %s", kddp_bin_name)
-
-		// get the kddp.exe from the archive
-		kddp_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
-			return strings.HasSuffix(path, kddp_bin_name)
-		})
+		archive, err := archive_reader.New(updateUseArchive)
 		if err != nil {
 			return err
 		}
-		defer kddp_exe.Close()
 
-		if err := cmd.do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke " + kddp_bin_name, should_print: true}); err != nil {
-			return fmt.Errorf("Fehler beim Updaten von %s:\n\t%w", kddp_bin_name, err)
+		if !is_sub_process {
+			infof("\nUpdate %s", kddp_bin_name)
+
+			// get the kddp.exe from the archive
+			kddp_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
+				return strings.HasSuffix(path, kddp_bin_name)
+			})
+			if err != nil {
+				return err
+			}
+			defer kddp_exe.Close()
+
+			if err := do_selfupdate(&progressReader{r: kddp_exe, max: size, msg: "Entpacke " + kddp_bin_name, should_print: true}); err != nil {
+				return fmt.Errorf("Fehler beim Updaten von %s:\n\t%w", kddp_bin_name, err)
+			}
+
+			fmt.Println("\nUpdate war erfolgreich")
+
+			infof("Lösche %s", updateUseArchive)
+			archive.Close()
+			if err := os.Remove(updateUseArchive); err != nil {
+				return fmt.Errorf("Fehler beim Löschen der Archivdatei:\n\t%w", err)
+			}
+
+			return nil
+		}
+		defer archive.Close()
+
+		infof("Update Bibliotheken")
+		if bib_err := update_lib(archive); bib_err != nil {
+			err = fmt.Errorf("Fehler beim Updaten der Bibliotheken:\n\t%w", bib_err)
 		}
 
-		fmt.Println("\nUpdate war erfolgreich")
-
-		cmd.infof("Lösche %s", cmd.use_archive)
-		archive.Close()
-		if err := os.Remove(cmd.use_archive); err != nil {
-			return fmt.Errorf("Fehler beim Löschen der Archivdatei:\n\t%w", err)
+		infof("Update DDPLS")
+		if ls_err := update_ddpls(archive); ls_err != nil {
+			err = errors.Join(err, fmt.Errorf("Fehler beim Updaten von DDPLS:\n\t%w", ls_err))
 		}
-
-		return nil
-	}
-	defer archive.Close()
-
-	cmd.infof("Update Bibliotheken")
-	if bib_err := cmd.update_lib(archive); bib_err != nil {
-		err = fmt.Errorf("Fehler beim Updaten der Bibliotheken:\n\t%w", bib_err)
-	}
-
-	cmd.infof("Update DDPLS")
-	if ls_err := cmd.update_ddpls(archive); ls_err != nil {
-		err = errors.Join(err, fmt.Errorf("Fehler beim Updaten von DDPLS:\n\t%w", ls_err))
-	}
-	return err
+		return err
+	},
 }
 
-func (cmd *UpdateCommand) Name() string {
-	return cmd.fs.Name()
+var (
+	updateCompareVersion bool   // flag for update
+	updatePreRelease     bool   // flag for update
+	updateUseArchive     string // flag for update
+	updateNow            bool   // flag for update
+
+	gh            *github.Client // github client for the update command
+	kddp_bin_name = exePath("kddp")
+)
+
+func init() {
+	updateCmd.Flags().BoolVar(&updateCompareVersion, "vergleiche-version", false, "Vergleicht neue Version mit der installierten")
+	updateCmd.Flags().BoolVar(&updatePreRelease, "pre-release", false, "Aktualisiert auf eine Vorabversion")
+	updateCmd.Flags().StringVar(&updateUseArchive, "use-archive", "", "Nur für interne Zwecke")
+	updateCmd.Flags().Lookup("use-archive").Hidden = true
+	updateCmd.Flags().BoolVar(&updateNow, "jetzt", false, "Aktualisiert sofort ohne zu fragen")
+
+	gh = github.NewClient(nil)
 }
 
-func (cmd *UpdateCommand) Usage() string {
-	return `update <Optionen>: Updatet KDDP auf die neueste Version oder gibt aus ob eine neue Version verfügbar ist
-Optionen:
-	--wortreich: Zeige wortreiche Informationen
-	--vergleiche_version: Vergleiche die installierte Version mit der neuesten Version
-	--pre_release: pre-release Versionen mit einbeziehen
-	--jetzt: Falls eine neue Version verfügbar ist, wird diese ohne zu fragen sofort heruntergeladen und installiert`
+func infof(format string, a ...any) {
+	if verbose {
+		fmt.Printf(format+"\n", a...)
+	}
 }
 
-func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
+func do_selfupdate(kddp_exe io.Reader) error {
 	old_kddp := filepath.Join(ddppath.Bin, kddp_bin_name+".old")
 	if err := selfupdate.Apply(kddp_exe, selfupdate.Options{OldSavePath: old_kddp}); err != nil {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
@@ -186,20 +163,20 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 		}
 	}
 
-	cmd.infof("\nStarte neue Version von %s\n", kddp_bin_name)
+	infof("\nStarte neue Version von %s\n", kddp_bin_name)
 
 	execName := filepath.Join(ddppath.Bin, kddp_bin_name)
 	new_kddp := exec.Command(execName, "update",
-		fmt.Sprintf("--use_archive=%s", cmd.use_archive),
-		fmt.Sprintf("--wortreich=%v", cmd.verbose),
-		fmt.Sprintf("--pre_release=%v", cmd.pre_release),
+		fmt.Sprintf("--use_archive=%s", updateUseArchive),
+		fmt.Sprintf("--wortreich=%v", verbose),
+		fmt.Sprintf("--pre_release=%v", updatePreRelease),
 	)
 	new_kddp.Dir = ddppath.InstallDir
 	new_kddp.Stdout = os.Stdout
 	new_kddp.Stderr = os.Stderr
 	new_kddp.Stdin = os.Stdin
 
-	cmd.infof("Command: %s\n", new_kddp.String())
+	infof("Command: %s\n", new_kddp.String())
 	if err := new_kddp.Run(); err != nil {
 		return fmt.Errorf("Fehler beim Neustarten von kddp:\n\t%w", err)
 	}
@@ -207,7 +184,7 @@ func (cmd *UpdateCommand) do_selfupdate(kddp_exe io.Reader) error {
 }
 
 // updates the lib directory and the Duden directory
-func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err error) {
+func update_lib(archive *archive_reader.ArchiveReader) (err error) {
 	empty_dir := func(path string) error {
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("Fehler beim Löschen von %s:\n\t%w", path, err)
@@ -245,11 +222,11 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 				return fmt.Errorf("Fehler beim Erstellen der Datei:\n\t%w", err)
 			}
 			defer f.Close()
-			pr := &progressReader{r: r, max: size, msg: fmt.Sprintf("Entpacke %s", filepath.Base(path)), should_print: cmd.verbose}
+			pr := &progressReader{r: r, max: size, msg: fmt.Sprintf("Entpacke %s", filepath.Base(path)), should_print: verbose}
 			if _, err := io.Copy(f, pr); err != nil {
 				return fmt.Errorf("Fehler beim Entpacken von %s:\n\t%w", path, err)
 			}
-			if cmd.verbose {
+			if verbose {
 				fmt.Printf("\n")
 			}
 			return nil
@@ -281,7 +258,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 	}
 	// if there was an error we just recompile to be sure
 
-	cmd.infof("Bibliotheken werden neu kompiliert")
+	infof("Bibliotheken werden neu kompiliert")
 	make_cmd, ar_cmd := "make", "ar"
 	if _, err := os.Stat(ddppath.Mingw64); err == nil || !os.IsNotExist(err) {
 		make_cmd, ar_cmd = filepath.Join(ddppath.Mingw64, "bin", "mingw32-make.exe"), filepath.Join(ddppath.Mingw64, "bin", "ar.exe")
@@ -306,7 +283,7 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 		return errors.Join(fmt.Errorf("Fehler beim Kompilieren der Standardbibliothek:\n\t%w", run_err))
 	}
 
-	cmd.infof("Bibliotheken werden kopiert")
+	infof("Bibliotheken werden kopiert")
 	if cp_err := cp.Copy(filepath.Join(runtime_src, "libddpruntime.a"), filepath.Join(ddppath.Lib, "libddpruntime.a")); cp_err != nil {
 		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der Laufzeitbibliothek:\n\t%w", cp_err))
 	}
@@ -317,17 +294,17 @@ func (cmd *UpdateCommand) update_lib(archive *archive_reader.ArchiveReader) (err
 		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der Standardbibliothek:\n\t%w", cp_err))
 	}
 
-	cmd.infof("Generiere ddp_list_types_defs.*")
-	list_defs_cmd := NewDumpListDefsCommand()
-	list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
-	if run_err := list_defs_cmd.Run(); run_err != nil {
-		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
-	}
+	infof("Generiere ddp_list_types_defs.*")
+	// list_defs_cmd := NewDumpListDefsCommand()
+	// list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
+	// if run_err := list_defs_cmd.Run(); run_err != nil {
+	// 	return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
+	// }
 
 	return err
 }
 
-func (cmd *UpdateCommand) update_ddpls(archive *archive_reader.ArchiveReader) error {
+func update_ddpls(archive *archive_reader.ArchiveReader) error {
 	ddpls_bin_name := exePath("DDPLS")
 	// get the DDPLS.exe from the archive
 	ddpls_exe, _, size, err := archive.GetElementFunc(func(path string) bool {
@@ -408,12 +385,12 @@ func is_newer_version(a, b string) (bool, error) {
 
 // returns the latest version of kddp by checking the github releases
 // pass true to also check pre-releases
-func (cmd *UpdateCommand) getLatestRelease(pre_release bool) (*github.RepositoryRelease, error) {
+func getLatestRelease(pre_release bool) (*github.RepositoryRelease, error) {
 	if !pre_release {
-		release, _, err := cmd.gh.Repositories.GetLatestRelease(context.Background(), "DDP-Projekt", "Kompilierer")
+		release, _, err := gh.Repositories.GetLatestRelease(context.Background(), "DDP-Projekt", "Kompilierer")
 		return release, err
 	}
-	releases, _, err := cmd.gh.Repositories.ListReleases(context.Background(), "DDP-Projekt", "Kompilierer", &github.ListOptions{})
+	releases, _, err := gh.Repositories.ListReleases(context.Background(), "DDP-Projekt", "Kompilierer", &github.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Abrufen der Releases von Github:\n\t%w", err)
 	}
@@ -429,14 +406,14 @@ func (cmd *UpdateCommand) getLatestRelease(pre_release bool) (*github.Repository
 	return latestRelease, nil
 }
 
-func (cmd *UpdateCommand) downloadAssetTo(assetName, targetPath string, release *github.RepositoryRelease) error {
-	cmd.infof("searching for asset %s", assetName)
+func downloadAssetTo(assetName, targetPath string, release *github.RepositoryRelease) error {
+	infof("searching for asset %s", assetName)
 	for _, asset := range release.Assets {
 		name := asset.GetName()
-		cmd.infof("considering asset %s", name)
+		infof("considering asset %s", name)
 		if name == assetName {
-			cmd.infof("found asset")
-			r, _, err := cmd.gh.Repositories.DownloadReleaseAsset(context.Background(), "DDP-Projekt", "Kompilierer", asset.GetID(), http.DefaultClient)
+			infof("found asset")
+			r, _, err := gh.Repositories.DownloadReleaseAsset(context.Background(), "DDP-Projekt", "Kompilierer", asset.GetID(), http.DefaultClient)
 			if err != nil {
 				return fmt.Errorf("Fehler beim Herunterladen der Asset:\n\t%w", err)
 			}

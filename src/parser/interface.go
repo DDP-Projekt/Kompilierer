@@ -31,6 +31,9 @@ type Options struct {
 	// ErrorHandler used during scanning and parsing
 	// May be nil
 	ErrorHandler ddperror.Handler
+	// Annotators that are used to annotate the AST with additional information
+	// They are called after the parsing is done
+	Annotators []ast.Annotator
 }
 
 func (options *Options) ToScannerOptions(scannerMode scanner.Mode) scanner.Options {
@@ -81,6 +84,14 @@ func Parse(options Options) (*ast.Module, error) {
 		}
 		module.FileName = path
 	}
+
+	if !module.Ast.Faulty {
+		// run the annotators
+		for _, annotator := range options.Annotators {
+			ast.VisitModuleRec(module, annotator)
+		}
+	}
+
 	return module, nil
 }
 

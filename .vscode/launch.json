@@ -13,7 +13,21 @@
 				"-o",
 				"${workspaceFolder}/build/test.exe",
 				"--wortreich",
-				"--nichts_loeschen"
+				"--nichts-loeschen",
+				"-O",
+				"2"
+			]
+		},
+		{
+			"name": "Parse build/test.ddp",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/kddp/",
+			"args": [
+				"parse",
+				"${workspaceFolder}/build/test.ddp",
+				"--wortreich",
 			]
 		},
 		{
@@ -37,7 +51,7 @@
 				"dump-list-defs",
 				"-o",
 				"${workspaceFolder}/build/ddp_list_defs",
-				"--llvm_ir"
+				"--llvm-ir"
 			]
 		}
 	]

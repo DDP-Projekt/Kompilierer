@@ -16,7 +16,7 @@ type SymbolTable struct {
 func NewSymbolTable(enclosing *SymbolTable) *SymbolTable {
 	return &SymbolTable{
 		Enclosing:    enclosing,
-		Declarations: make(map[string]Declaration),
+		Declarations: make(map[string]Declaration, 8),
 		limit:        nil,
 	}
 }

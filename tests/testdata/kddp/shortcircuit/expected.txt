@@ -14,3 +14,7 @@ wahr
 istFalsch
 istFalsch
 falsch
+falsch
+falsch
+wahr
+falsch

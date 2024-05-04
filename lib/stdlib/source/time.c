@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 ddpint Zeit_Seit_Programmstart(void) {
-	return clock();
+	return (ddpint)((double)clock() / CLOCKS_PER_SEC * 1000.0);
 }
 
 void Zeit_Lokal(ddpstring *ret) {

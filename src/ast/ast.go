@@ -8,19 +8,66 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-// represents an Abstract Syntax Tree for a token.DDP program
+// represents an Abstract Syntax Tree for a DDP program
 type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
 	Symbols    *SymbolTable
-	Faulty     bool // set if the ast has any errors (doesn't matter what from which phase they came)
+	Faulty     bool              // set if the ast has any errors (doesn't matter what from which phase they came)
+	metadata   map[Node]Metadata // metadata for each node
 }
 
-// invoke the Visitor for each top level statement in the Ast
-func WalkAst(ast *Ast, visitor FullVisitor) {
-	for _, stmt := range ast.Statements {
-		stmt.Accept(visitor)
+// returns all the metadata attached to the given node
+func (ast *Ast) GetMetadata(node Node) (Metadata, bool) {
+	md, ok := ast.metadata[node]
+	return md, ok
+}
+
+// returns the metadata of the given kind attached to the given node
+func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) (MetadataAttachment, bool) {
+	md, ok := ast.GetMetadata(node)
+	return md.Attachments[kind], ok
+}
+
+// adds metadata to the given node
+func (ast *Ast) AddAttachement(node Node, attachment MetadataAttachment) {
+	if ast.metadata == nil {
+		ast.metadata = make(map[Node]Metadata, 8)
 	}
+
+	md := ast.metadata[node]
+	if md.Attachments == nil {
+		md.Attachments = make(map[MetadataKind]MetadataAttachment)
+	}
+	md.Attachments[attachment.Kind()] = attachment
+	ast.metadata[node] = md
+}
+
+// removes metadata of the given kind from the given node
+func (ast *Ast) RemoveAttachment(node Node, kind MetadataKind) {
+	md, ok := ast.GetMetadata(node)
+	if ok {
+		delete(md.Attachments, kind)
+		ast.metadata[node] = md
+	}
+}
+
+// returns a string representation of the AST as S-Expressions
+func (ast *Ast) String() string {
+	printer := &printer{ast: ast}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	return printer.returned
+}
+
+// print the AST to stdout
+func (ast *Ast) Print() {
+	printer := &printer{ast: ast}
+	for _, stmt := range ast.Statements {
+		stmt.Accept(printer)
+	}
+	fmt.Println(printer.returned)
 }
 
 type (
@@ -93,7 +140,7 @@ func (alias *StructAlias) Decl() Declaration {
 }
 
 func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
-	paramTypes := map[string]ddptypes.ParameterType{}
+	paramTypes := make(map[string]ddptypes.ParameterType, len(alias.Args))
 	for name, arg := range alias.Args {
 		paramTypes[name] = ddptypes.ParameterType{
 			Type:        arg,

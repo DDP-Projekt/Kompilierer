@@ -24,7 +24,7 @@
 */
 
 void Schreibe_Zahl(ddpint p1) {
-	printf("%lld", p1);
+	printf(DDP_INT_FMT, p1);
 }
 
 void Schreibe_Kommazahl(ddpfloat p1) {
@@ -33,7 +33,7 @@ void Schreibe_Kommazahl(ddpfloat p1) {
 	} else if (isnan(p1)) {
 		printf("Keine Zahl (NaN)");
 	} else {
-		printf("%.16g", p1);
+		printf(DDP_FLOAT_FMT, p1);
 	}
 }
 
@@ -44,15 +44,16 @@ void Schreibe_Wahrheitswert(ddpbool p1) {
 void Schreibe_Buchstabe(ddpchar p1) {
 	char temp[5];
 	utf8_char_to_string(temp, p1);
-	printf("%s", temp);
+	printf(DDP_STRING_FMT, temp);
 }
 
 void Schreibe_Text(ddpstring *p1) {
-	printf("%s", p1->str);
+	// {NULL, 0} is a valid string, so we need to check for NULL
+	printf(DDP_STRING_FMT, p1->str ? p1->str : "");
 }
 
 void Schreibe_Fehler(ddpstring *fehler) {
-	fprintf(stderr, "%s", fehler->str);
+	fprintf(stderr, DDP_STRING_FMT, fehler->str);
 }
 
 #ifdef DDPOS_WINDOWS
@@ -68,7 +69,7 @@ static void runtime_error_getlasterror(int exit_code, const char *fmt) {
 	ddp_runtime_error(exit_code, fmt, error_buffer);
 }
 
-static HANDLE *get_stdin_handle() {
+static HANDLE *get_stdin_handle(void) {
 	static HANDLE stdin_hndl;
 	static bool initialized = false;
 	if (!initialized) {

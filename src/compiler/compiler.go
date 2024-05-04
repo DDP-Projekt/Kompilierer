@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
@@ -26,13 +27,18 @@ import (
 //   - a map of .ll paths to their corresponding module
 //   - a set of all external dependendcies
 //   - an error
-func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer, errHndl ddperror.Handler) (map[string]struct{}, error) {
+func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
+	errHndl ddperror.Handler, optimizationLevel uint,
+) (map[string]struct{}, error) {
 	compiledMods := map[string]*ast.Module{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl)
+	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
 }
 
-func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer, compiledMods map[string]*ast.Module, dependencies map[string]struct{}, isMainModule bool, errHndl ddperror.Handler) (map[string]struct{}, error) {
+func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
+	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
+	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
+) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
 		return nil, fmt.Errorf("Fehlerhafter Quellcode im Modul '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
@@ -57,13 +63,13 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	}
 
 	// compile this module
-	if _, err := newCompiler(mod, errHndl).compile(destCreator(mod), isMainModule); err != nil {
+	if _, err := newCompiler(mod, errHndl, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
 		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
 	}
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
-		if _, err := compileWithImportsRec(imprt.Module, destCreator, compiledMods, dependencies, false, errHndl); err != nil {
+		if _, err := compileWithImportsRec(imprt.Module, destCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
 			return nil, err
 		}
 	}
@@ -79,10 +85,11 @@ type funcWrapper struct {
 
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
-	ddpModule    *ast.Module      // the module to be compiled
-	mod          *ir.Module       // the ir module (basically the ir file)
-	errorHandler ddperror.Handler // errors are passed to this function
-	result       *Result          // result of the compilation
+	ddpModule         *ast.Module      // the module to be compiled
+	mod               *ir.Module       // the ir module (basically the ir file)
+	errorHandler      ddperror.Handler // errors are passed to this function
+	optimizationLevel uint             // level of optimization
+	result            *Result          // result of the compilation
 
 	cbb              *ir.Block                   // current basic block in the ir
 	cf               *ir.Func                    // current function
@@ -114,14 +121,15 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler) *compiler {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) *compiler {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
 	return &compiler{
-		ddpModule:    module,
-		mod:          ir.NewModule(),
-		errorHandler: errorHandler,
+		ddpModule:         module,
+		mod:               ir.NewModule(),
+		errorHandler:      errorHandler,
+		optimizationLevel: optimizationLevel,
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 		},
@@ -378,6 +386,14 @@ func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp b
 	}
 }
 
+func (c *compiler) freeTemporaries(scp *scope, force bool) {
+	for _, v := range scp.temporaries {
+		if !v.protected || force {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
+	}
+}
+
 // helper to exit a scope
 // frees all local variables
 // returns the enclosing scope
@@ -387,15 +403,26 @@ func (c *compiler) exitScope(scp *scope) *scope {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	for _, v := range scp.temporaries {
-		if !v.protected {
-			c.freeNonPrimitive(v.val, v.typ)
-		}
-	}
+	c.freeTemporaries(scp, false)
 	return scp.enclosing
 }
 
-func (*compiler) BaseVisitor() {}
+func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
+	meta := annotators.ConstFuncParamMeta{}
+	if attachement, ok := fun.Module().Ast.GetMetadataByKind(fun, annotators.ConstFuncParamMetaKind); ok {
+		meta = attachement.(annotators.ConstFuncParamMeta)
+	}
+
+	for paramName, v := range c.cfscp.variables {
+		if !v.isRef && (!meta.IsConst[paramName] || c.optimizationLevel < 2) {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
+	}
+	c.freeTemporaries(c.cfscp, true)
+	return c.cfscp.enclosing
+}
+
+func (*compiler) Visitor() {}
 
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
@@ -459,10 +486,10 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
-	retType := c.toIrType(d.Type) // get the llvm type
+func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
+	retType := c.toIrType(decl.Type) // get the llvm type
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(d.ParamTypes)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.ParamTypes)) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -472,23 +499,23 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	}
 
 	// append all the other parameters
-	for i, typ := range d.ParamTypes {
-		ty := c.toIrParamType(typ)                                        // convert the type of the parameter
-		params = append(params, ir.NewParam(d.ParamNames[i].Literal, ty)) // add it to the list
+	for i, typ := range decl.ParamTypes {
+		ty := c.toIrParamType(typ)                                           // convert the type of the parameter
+		params = append(params, ir.NewParam(decl.ParamNames[i].Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(d.Name(), retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                  // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
-	if !d.IsPublic {
+	if !decl.IsPublic {
 		irFunc.Linkage = enum.LinkageInternal
 		irFunc.Visibility = enum.VisibilityDefault
 	}
 
-	c.insertFunction(d.Name(), d, irFunc)
+	c.insertFunction(decl.Name(), decl, irFunc)
 
 	// inbuilt or external functions are defined in c
-	if ast.IsExternFunc(d) {
+	if ast.IsExternFunc(decl) {
 		irFunc.Linkage = enum.LinkageExternal
 	} else {
 		fun, block := c.cf, c.cbb // safe the state before the function body
@@ -502,18 +529,18 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller has to take care of possible deep-copies
 		for i := range params {
-			irType := c.toIrType(d.ParamTypes[i].Type)
-			if d.ParamTypes[i].IsReference {
+			irType := c.toIrType(decl.ParamTypes[i].Type)
+			if decl.ParamTypes[i].IsReference {
 				// references are implemented similar to name-shadowing
 				// they basically just get another name in the function scope, which
 				// refers to the same variable allocation
-				c.scp.addVar(params[i].LocalIdent.Name(), params[i], irType, true)
+				c.scp.addVar(params[i].Name(), params[i], irType, true)
 			} else if !irType.IsPrimitive() { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
 			} else { // primitive types don't need any special handling
-				v := c.scp.addVar(params[i].LocalIdent.Name(), c.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -521,7 +548,7 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		// modified VisitBlockStmt
 		c.scp = newScope(c.scp) // a block gets its own scope
 		toplevelReturn := false
-		for _, stmt := range d.Body.Statements {
+		for _, stmt := range decl.Body.Statements {
 			c.visitNode(stmt)
 			// on toplevel return statements, ignore anything that follows
 			if _, ok := stmt.(*ast.ReturnStmt); ok {
@@ -544,7 +571,7 @@ func (c *compiler) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		if toplevelReturn {
 			c.scp = c.scp.enclosing
 		} else {
-			c.scp = c.exitScope(c.scp)
+			c.scp = c.exitFuncScope(decl)
 		}
 		c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
 	}
@@ -664,7 +691,11 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
-	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	if e.Value == "" {
+		c.cbb.NewStore(c.ddpstring.DefaultValue(), dest)
+	} else {
+		c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
 	return ast.VisitRecurse
@@ -790,7 +821,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
 
 		c.cbb = trueBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		trueBlock = c.cbb
@@ -808,7 +843,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
 
 		c.cbb = falseBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb // in case c.evaluate has multiple blocks
@@ -903,6 +942,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 		// the concat functions use the buffer of some of their arguments
 		// if those arguments aren't temporaries, we copy them
+		//
+		// the concat function is also required to free the memory of the claimed
+		// arguments or claim their memory for the result, so we do not have to free them
 		if claimsLhs && !isTempLhs {
 			dest := c.NewAlloca(lhsTyp.IrType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)
@@ -1312,22 +1354,80 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, rhs), c.cbb.NewICmp(enum.IPredSLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			case c.ddpfloattyp:
-				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			default:
 				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-				fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
+					)
+				case c.ddpfloattyp:
+					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs))
+				switch midTyp {
+				case c.ddpinttyp:
+					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+					)
+				case c.ddpfloattyp:
+					c.latestReturn = c.cbb.NewOr(
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
+						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+					)
+				default:
+					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+				}
 			default:
 				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
@@ -1501,6 +1601,11 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
 
+	meta := annotators.ConstFuncParamMeta{}
+	if attachement, ok := e.Func.Module().Ast.GetMetadataByKind(fun.funcDecl, annotators.ConstFuncParamMetaKind); ok {
+		meta = attachement.(annotators.ConstFuncParamMeta)
+	}
+
 	irReturnType := c.toIrType(fun.funcDecl.Type)
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
@@ -1520,7 +1625,8 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 			}
 		} else {
 			eval, valTyp, isTemp := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
-			if valTyp.IsPrimitive() {
+			if valTyp.IsPrimitive() ||
+				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Literal]) {
 				val = eval
 			} else { // function parameters need to be copied by the caller
 				dest := c.NewAlloca(valTyp.IrType())
@@ -2039,16 +2145,15 @@ func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) ast.VisitRes
 
 func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	exitScopeReturn := func() {
-		for scp := c.scp; scp != c.cfscp.enclosing; scp = scp.enclosing {
+		for scp := c.scp; scp != c.cfscp; scp = scp.enclosing {
 			for _, Var := range scp.variables {
 				if !Var.isRef {
 					c.freeNonPrimitive(Var.val, Var.typ)
 				}
 			}
-			for _, Var := range scp.temporaries {
-				c.freeNonPrimitive(Var.val, Var.typ)
-			}
+			c.freeTemporaries(scp, true)
 		}
+		c.exitFuncScope(c.functions[s.Func].funcDecl)
 	}
 
 	if s.Value == nil {
