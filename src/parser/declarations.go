@@ -719,7 +719,7 @@ var expressionDeclCount = 0
 
 // parses and expression Declaration
 // startDepth is the int passed to p.peekN(n) to get to the DIE token of the declaration
-// TODO: scoped aliases
+// TODO: grammar error reporting
 func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	begin := p.peekN(startDepth)
 	comment := p.commentBeforePos(begin.Range.Start)
@@ -728,34 +728,70 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		comment = nil
 	}
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
+	isSingleAlias := begin.Type == token.DER
 
-	p.consume(token.STRING)
-	aliasTok := p.previous()
-
-	parameterTokens := map[string]*token.Token{}
-	var alias *ast.ExpressionAlias
-	didError := false
-	errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-	if aliasTokens, err := scanner.ScanAlias(*aliasTok, errHandleWrapper); err == nil && !didError {
-		if parameters, pTokens, err := p.validateExpressionAlias(aliasTok, aliasTokens); err == nil { // check that the alias fits the function
-			// create the alias
-			parameterTokens = pTokens
-			alias = &ast.ExpressionAlias{Tokens: aliasTokens, Original: *aliasTok, ExprDecl: nil, Args: parameters}
-
-			// if the alias is in a non-global scope, overwrite the alias
-			if !ast.IsGlobalScope(p.scope()) {
-				p.overwrite_alias(p.scope(), alias, toPointerSlice(aliasTokens))
-			} else { // if the alias is in the global scope, just proceed normally like with functions or structs
-				if ok, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ast.MsgAliasAlreadyExists(existingAlias))
-				} else {
-					p.aliases.Insert(pTokens, alias)
+	parse_single_alias := func(expectedParamNames map[string]struct{}) (*ast.ExpressionAlias, map[string]*token.Token) {
+		aliasTok := p.previous()
+		parameterTokens := make(map[string]*token.Token, 8)
+		var alias *ast.ExpressionAlias
+		didError := false
+		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		if aliasTokens, err := scanner.ScanAlias(*aliasTok, errHandleWrapper); err == nil && !didError {
+			if parameters, pTokens, err := p.validateExpressionAlias(aliasTok, aliasTokens); err == nil { // check that the alias fits the function
+				if expectedParamNames != nil && !maps.EqualFunc(expectedParamNames, pTokens, func(struct{}, *token.Token) bool { return true }) {
+					p.err(ddperror.SEM_ALIAS_BAD_ARG_NAMES, aliasTok.Range, "Die Parameter Namen von Aliasen in einer Alias Deklaration müssen gleich sein")
+					return nil, nil
 				}
+
+				// create the alias
+				parameterTokens = pTokens
+				alias = &ast.ExpressionAlias{Tokens: aliasTokens, Original: *aliasTok, ExprDecl: nil, Args: parameters}
+
+				// if the alias is in a non-global scope, overwrite the alias
+				if !ast.IsGlobalScope(p.scope()) {
+					p.overwrite_alias(p.scope(), alias, toPointerSlice(aliasTokens))
+				} else { // if the alias is in the global scope, just proceed normally like with functions or structs
+					if ok, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
+						p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ast.MsgAliasAlreadyExists(existingAlias))
+					} else {
+						p.aliases.Insert(pTokens, alias)
+					}
+				}
+			} else {
+				p.errVal(*err)
 			}
-		} else {
-			p.errVal(*err)
 		}
+		return alias, parameterTokens
+	}
+
+	var (
+		aliases         = make([]*ast.ExpressionAlias, 0, 8)
+		parameterTokens map[string]*token.Token
+	)
+	if isSingleAlias {
+		p.consume(token.STRING)
+		alias, pTokens := parse_single_alias(nil)
+		aliases = append(aliases, alias)
+		parameterTokens = pTokens
+	} else {
+		p.consume(token.STRING)
+		alias, pTokens := parse_single_alias(nil)
+		aliases = append(aliases, alias)
+		parameterTokens = pTokens
+		expectedParamNames := make(map[string]struct{}, len(pTokens))
+		for k := range pTokens {
+			expectedParamNames[k] = struct{}{}
+		}
+
+		for p.match(token.COMMA) {
+			p.consume(token.STRING)
+			alias, _ := parse_single_alias(expectedParamNames)
+			aliases = append(aliases, alias)
+		}
+		p.consume(token.UND)
+		alias, pTokens = parse_single_alias(expectedParamNames)
+		aliases = append(aliases, alias)
 	}
 
 	name := fmt.Sprintf("$expr_decl_%d", expressionDeclCount)
@@ -767,7 +803,12 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		name = NameTok.Literal
 	}
 
-	p.consume(token.STEHT, token.FÜR, token.DEN, token.AUSDRUCK)
+	if isSingleAlias {
+		p.consume(token.STEHT)
+	} else {
+		p.consume(token.STEHEN)
+	}
+	p.consume(token.FÜR, token.DEN, token.AUSDRUCK)
 
 	symbols := p.newScope()
 	for _, argName := range alias.Args {
@@ -802,7 +843,7 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		Range:        token.NewRange(begin, p.previous()),
 		CommentTok:   comment,
 		Tok:          *begin,
-		Alias:        alias,
+		Aliases:      alias,
 		Expr:         expr,
 		Tokens:       tokens,
 		NameTok:      NameTok,

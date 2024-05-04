@@ -265,16 +265,16 @@ type (
 	// nothing to do with the Expression type
 	ExpressionDecl struct {
 		Range        token.Range
-		CommentTok   *token.Token     // optional comment (also contained in ast.Comments)
-		Tok          token.Token      // Der
-		Alias        *ExpressionAlias // the alias
-		Expr         Expression       // the expression or nil if it needs reparsing
-		Tokens       []token.Token    // if Expr is nil, these tokens need to be reparsed (excluding the final ., which is still included)
-		NameTok      *token.Token     // non-nil if an explicit name was given
-		AssignedName string           // the internal or given name of the ExpressionDecl
-		IsPublic     bool             // wether the expression decl is marked with öffentliche
-		Mod          *Module          // the module in which the expression was declared
-		Scope        *SymbolTable     // the symbol table of the expression (contains the arguments with void types and the limit)
+		CommentTok   *token.Token       // optional comment (also contained in ast.Comments)
+		Tok          token.Token        // Der
+		Aliases      []*ExpressionAlias // the aliases
+		Expr         Expression         // the expression or nil if it needs reparsing
+		Tokens       []token.Token      // if Expr is nil, these tokens need to be reparsed (excluding the final ., which is still included)
+		NameTok      *token.Token       // non-nil if an explicit name was given
+		AssignedName string             // the internal or given name of the ExpressionDecl
+		IsPublic     bool               // wether the expression decl is marked with öffentliche
+		Mod          *Module            // the module in which the expression was declared
+		Scope        *SymbolTable       // the symbol table of the expression (contains the arguments with void types and the limit)
 	}
 )
 

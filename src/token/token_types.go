@@ -120,7 +120,9 @@ const (
 	VERLASSE
 	COUNT_MAL
 	ALIAS
+	ALIASE
 	STEHT
+	STEHEN
 	OEFFENTLICHE
 	OEFFENTLICHEN
 	WIR
@@ -267,7 +269,9 @@ var tokenStrings = [...]string{
 	VERLASSE:      "Verlasse",
 	COUNT_MAL:     "Mal",
 	ALIAS:         "Alias",
+	ALIASE:        "Aliase",
 	STEHT:         "Steht",
+	STEHEN:        "Stehen",
 	OEFFENTLICHE:  "öffentliche",
 	OEFFENTLICHEN: "öffentlichen",
 	WIR:           "Wir",
@@ -412,7 +416,9 @@ var KeywordMap = map[string]TokenType{
 	"verlasse":       VERLASSE,
 	"Mal":            COUNT_MAL,
 	"Alias":          ALIAS,
+	"Aliase":         ALIASE,
 	"steht":          STEHT,
+	"stehen":         STEHEN,
 	"öffentliche":    OEFFENTLICHE,
 	"oeffentliche":   OEFFENTLICHE,
 	"öffentlichen":   OEFFENTLICHEN,

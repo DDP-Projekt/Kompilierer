@@ -34,6 +34,7 @@ const (
 	SEM_ALIAS_ALREADY_DEFINED                             // the alias already stands for a different function
 	SEM_ALIAS_MUST_BE_GLOBAL                              // a non-global alias declaration was found
 	SEM_ALIAS_BAD_NUM_ARGS                                // invalid number of arguments (too many or too few)
+	SEM_ALIAS_BAD_ARG_NAMES                               // the names of the alias are not valid
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public

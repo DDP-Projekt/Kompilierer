@@ -151,12 +151,12 @@ func (p *parser) declaration() ast.Statement {
 		}
 
 		n := -1
-		if p.match(token.OEFFENTLICHE) {
+		if p.match(token.OEFFENTLICHE, token.OEFFENTLICHEN) {
 			n = -2
 		}
 
 		switch t := p.peek().Type; t {
-		case token.ALIAS:
+		case token.ALIAS, token.ALIASE:
 			p.advance()
 			return &ast.DeclStmt{Decl: p.expressionDecl(n - 1)}
 		case token.FUNKTION:
@@ -264,7 +264,9 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
 		case *ast.ExpressionDecl:
-			aliases = append(aliases, decl.Alias)
+			for _, alias := range decl.Aliases {
+				aliases = append(aliases, alias)
+			}
 		default: // for VarDecls or BadDecls we don't need to add any aliases
 			needAddAliases = false
 		}
