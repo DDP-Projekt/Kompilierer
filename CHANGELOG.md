@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+## v0.3.0-alpha
+
 - [Breaking] Folgende Duden Funktionen wurden umbennant:
     - Pfade:
         - Ist_Absolut -> UNIX_Ist_Absolut 
