@@ -90,7 +90,7 @@ type (
 		VisitStructDecl(*StructDecl) VisitResult
 	}
 	ExpressionDeclVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitExpressionDecl(*ExpressionDecl) VisitResult
 	}
 
@@ -167,7 +167,7 @@ type (
 		VisitStructLiteral(*StructLiteral) VisitResult
 	}
 	ExpressionCallVisitor interface {
-		BaseVisitor
+		Visitor
 		VisitExpressionCall(*ExpressionCall) VisitResult
 	}
 
