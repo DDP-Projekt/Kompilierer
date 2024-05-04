@@ -109,6 +109,7 @@ Der Changelog von DDP. Sortiert nach Release.
         - Erster_Buchstabe 
         - Nter_Buchstabe 
         - Letzter_Buchstabe 
+        - Finde_Subtext 
 - [Fix] Der zwischen Operator crasht nun nicht mehr bei Kommazahl/Zahl kombinationen
 - [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Added] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
