@@ -3,6 +3,7 @@
 #include "ddpwindows.h"
 #include "debug.h"
 #include "error.h"
+#include "utf8/utf8.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -16,7 +17,7 @@
 #define _CRT_INTERNAL_NONSTDC_NAMES 1
 #include <sys/stat.h>
 #if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
-#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef DDPOS_WINDOWS
@@ -391,6 +392,9 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 
 /* Generalized buffered File IO */
 
+#define DDP_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define DDP_MIN(a, b) ((a) < (b) ? (a) : (b))
+
 #define BUFFER_SIZE 4095
 
 #define MODUS_NUR_LESEN 1
@@ -438,12 +442,15 @@ static void zero_internal_file(InternalFile *file) {
 	file->fd = -1;
 }
 
+static int flush_write_buffer(InternalFile *file);
+
 // atexit handler to free all open files
 static void free_open_files(void) {
 	DDP_DBGLOG("free_open_files()");
 	for (int i = 0; i < open_files.cap; i++) {
 		InternalFile *file = &open_files.files[i];
 		if (file->fd >= 0) {
+			flush_write_buffer(file);
 			if (close(file->fd) < 0) {
 				// no need for error handling in atexit
 			}
@@ -509,6 +516,9 @@ static void close_internal_file(ddpint index) {
 	}
 
 	InternalFile *file = &open_files.files[index];
+
+	flush_write_buffer(file);
+
 	// attempt to close the file and report possible errors (very rare)
 	if (file->fd >= 0) {
 		if (close(file->fd) < 0) {
@@ -546,9 +556,9 @@ static bool is_read_mode(ddpint Modus) {
 	return (Modus & (MODUS_NUR_LESEN | MODUS_LESEN_SCHREIBEN)) != 0;
 }
 
-/*static bool is_write_mode(ddpint Modus) {
+static bool is_write_mode(ddpint Modus) {
 	return (Modus & (MODUS_NUR_SCHREIBEN | MODUS_LESEN_SCHREIBEN)) != 0;
-}*/
+}
 
 static int read_buff_len(InternalFile *file) {
 	return file->read_buffer_end - file->read_buffer_start;
@@ -562,20 +572,6 @@ static char *read_buff_start_ptr(InternalFile *file) {
 static char *read_buff_end_ptr(InternalFile *file) {
 	return file->read_buffer.str + file->read_buffer_end;
 }
-
-/*static int flush_write_buffer(DateiRef datei) {
-	if (datei->Schreibe_Index == 0) {
-		return 0;
-	}
-
-	int ret = write(datei->fd, datei->Schreibe_Puffer.str, datei->Schreibe_Index);
-	if (ret < 0) {
-		ddp_error("Fehler beim Schreiben der Datei '%s': ", true, datei->Pfad.str);
-	}
-
-	datei->Schreibe_Index = 0;
-	return ret;
-}*/
 
 // clears the read buffer and reads in the next chunk
 // returns the number of bytes read (Lese_Puffer_Ende)
@@ -615,6 +611,59 @@ static int fill_read_buffer(InternalFile *file) {
 	return ret;
 }
 
+// validate that the file can be written to
+#define DDP_ENSURE_WRITE_MODE(file)                                                                                                \
+	if (!is_write_mode(file->mode)) {                                                                                              \
+		ddp_error("Fehler beim Schreiben in die Datei '%s': Die Datei wurde nicht zum Schreiben geöffnet", false, file->path.str); \
+		return;                                                                                                                    \
+	}
+
+static int flush_write_buffer(InternalFile *file) {
+	if (file->write_index == 0) {
+		return 0;
+	}
+
+	int ret = write(file->fd, file->write_buffer.str, file->write_index);
+	if (ret < 0) {
+		ddp_error("Fehler beim Schreiben der Datei '%s': ", true, file->path.str);
+		return -1;
+	}
+
+	file->write_index = 0;
+	return ret;
+}
+
+static int write_buffer_space(InternalFile *file) {
+	return file->write_buffer.cap - 1 - file->write_index;
+}
+
+static int write_to_buffer(InternalFile *file, const char *data, ddpint len) {
+	DDP_DBGLOG("write_to_buffer(%p, %p, " DDP_INT_FMT ")", file, data, len);
+	// allocate the buffer if needed
+	if (file->write_buffer.cap < BUFFER_SIZE) {
+		file->write_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE + 1);
+		file->write_buffer.cap = BUFFER_SIZE + 1;
+		file->write_buffer.str[BUFFER_SIZE] = '\0';
+	}
+
+	while (len > 0) {
+		int space = write_buffer_space(file);
+		if (space == 0) {
+			if (flush_write_buffer(file) < 0) {
+				return -1;
+			}
+			space = write_buffer_space(file);
+		}
+		space = DDP_MIN(space, len);
+		memcpy(file->write_buffer.str + file->write_index, data, space);
+		file->write_index += space;
+		data += space;
+		len -= space;
+	}
+
+	return len;
+}
+
 typedef struct {
 	ddpint index;
 	ddpint id;
@@ -643,8 +692,8 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 	flags |= O_BINARY;
 #endif // DDPOS_WINDOWS
 	if ((file->fd = open(file->path.str, flags, 0666)) < 0) {
-		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, file->path.str);
 		close_internal_file(datei->index);
+		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, file->path.str);
 		datei->index = -1;
 	}
 	// add validation information
@@ -661,9 +710,6 @@ void Datei_Schliessen(DateiRef datei) {
 	datei->index = -1;
 	datei->id = -1;
 }
-
-#define DDP_MAX(a, b) ((a) > (b) ? (a) : (b))
-#define DDP_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	DDP_MIGHT_ERROR;
@@ -863,4 +909,54 @@ ddpbool Datei_Zuende(DateiRef datei) {
 		return true;
 	}
 	return file->eof;
+}
+
+void Datei_Schreibe_Zahl(DateiRef datei, ddpint i) {
+	DDP_MIGHT_ERROR;
+
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+	DDP_ENSURE_WRITE_MODE(file);
+
+	char buff[21]; // max_digits + sign + null terminator
+	if (snprintf(buff, sizeof(buff), DDP_INT_FMT, i) < 0) {
+		ddp_error("Fehler beim Schreiben der Zahl: snprintf failed", false);
+		return;
+	}
+	write_to_buffer(file, buff, strlen(buff));
+}
+
+void Datei_Schreibe_Text(DateiRef datei, ddpstring *s) {
+	DDP_MIGHT_ERROR;
+
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+	DDP_ENSURE_WRITE_MODE(file);
+
+	write_to_buffer(file, s->str, s->cap - 1); // -1 to not write the null terminator
+}
+
+void Datei_Schreibe_Buchstabe(DateiRef datei, ddpchar c) {
+	DDP_MIGHT_ERROR;
+
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+	DDP_ENSURE_WRITE_MODE(file);
+
+	char buff[5]; // max utf-8 char length + null terminator
+	int num_bytes = utf8_char_to_string(buff, c);
+	if (num_bytes < 0) {
+		ddp_error("Fehler beim Schreiben des Buchstabens: " DDP_CHAR_FMT " is not valid utf8", false);
+		return;
+	}
+	write_to_buffer(file, buff, num_bytes);
 }

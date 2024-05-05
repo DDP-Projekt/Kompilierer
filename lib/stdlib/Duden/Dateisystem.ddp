@@ -1,6 +1,7 @@
 [ Wird für die Externen Funktionen benötigt ]
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Texte" ein.
+Binde "Duden/Zahlen" ein.
 
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
@@ -310,6 +311,28 @@ und kann so benutzt werden:
 	"die naechste Zeile aus <datei>"
 
 [
+	Liest die nächsten n Zeilen aus der Datei und gibt sie als Text Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Text Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Zeilen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Zeilen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Text Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Text Liste zurück.
+
+	Die Text Liste zeilen ist n Mal "".
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zeilen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Zeile aus datei in zeilen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zeilen bis zum (i minus 1). Element zurück.
+	Gib zeilen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Zeilen aus <datei>" oder
+	"die naechsten <n> Zeilen aus <datei>" oder
+	"den nächsten <n> Zeilen aus <datei>" oder
+	"den naechsten <n> Zeilen aus <datei>"
+
+[
 	Liest das nächste Wort ohne Leerzeichen aus der Datei und gibt es als Text zurück.
 ]
 Die öffentliche Funktion Datei_Lies_Wort mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
@@ -317,6 +340,28 @@ ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"das nächste Wort aus <datei>" oder
 	"das naechste Wort aus <datei>"
+
+[
+	Liest die nächsten n Worte aus der Datei und gibt sie als Text Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Text Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Worte zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Worte mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Text Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Text Liste zurück.
+
+	Die Text Liste worte ist n Mal "".
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib worte bis zum (i minus 1). Element zurück.
+		Speichere das nächste Wort aus datei in worte an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib worte bis zum (i minus 1). Element zurück.
+	Gib worte zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Worte aus <datei>" oder
+	"die naechsten <n> Worte aus <datei>" oder
+	"den nächsten <n> Worte aus <datei>" oder
+	"den naechsten <n> Worte aus <datei>"
 
 [
 	(das nächste Wort aus datei) als Zahl
@@ -333,6 +378,28 @@ Und kann so benutzt werden:
 	"die naechste Zahl aus <datei>"
 
 [
+	Liest die nächsten n Zahlen aus der Datei und gibt sie als Zahlen Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Zahlen Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Zahlen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Zahlen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Zahlen Liste zurück.
+
+	Die Zahlen Liste zahlen ist n Mal 0.
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zahlen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Zahl aus datei in zahlen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zahlen bis zum (i minus 1). Element zurück.
+	Gib zahlen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Zahlen aus <datei>" oder
+	"die naechsten <n> Zahlen aus <datei>" oder
+	"den nächsten <n> Zahlen aus <datei>" oder
+	"den naechsten <n> Zahlen aus <datei>"
+
+[
 	(das nächste Wort aus datei) als Kommazahl
 
 	Meldet einen Fehler, wenn das nächste Wort keine Kommazahl war.
@@ -346,3 +413,142 @@ Die öffentliche Funktion Datei_Lies_Kommazahl mit dem Parameter datei vom Typ D
 Und kann so benutzt werden:
 	"die nächste Kommazahl aus <datei>" oder
 	"die naechste Kommazahl aus <datei>"
+
+[
+	Liest die nächsten n Kommazahlen aus der Datei und gibt sie als Kommazahlen Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Kommazahlen Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Kommazahlen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Kommazahlen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Kommazahlen Liste zurück.
+
+	Die Kommazahlen Liste zahlen ist n Mal 0,0.
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zahlen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Kommazahl aus datei in zahlen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zahlen bis zum (i minus 1). Element zurück.
+	Gib zahlen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Kommazahlen aus <datei>" oder
+	"die naechsten <n> Kommazahlen aus <datei>" oder
+	"den nächsten <n> Kommazahlen aus <datei>" oder
+	"den naechsten <n> Kommazahlen aus <datei>"
+
+[TODO: Teste das alles]
+
+[
+	Schreibt die gegebene Zahl in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zahl mit den Parametern datei und zahl vom Typ Datei Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe die Zahl <zahl> in <datei>" oder
+	"schreibe die Zahl <zahl> in <datei>" oder
+	"Schreibe <zahl> in <datei>" oder
+	"schreibe <zahl> in <datei>"
+
+[
+	Schreibt den gegebenen Text in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Text mit den Parametern datei und text vom Typ Datei Referenz und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe die Kommazahl <text> in <datei>" oder
+	"schreibe die Kommazahl <text> in <datei>" oder
+	"Schreibe <text> in <datei>" oder
+	"schreibe <text> in <datei>"
+
+[
+	Schreibt die gegebene Kommazahl in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Kommazahl mit den Parametern datei und zahl vom Typ Datei Referenz und Kommazahl, gibt nichts zurück, macht:
+	Schreibe (zahl als Text) in datei.
+Und kann so benutzt werden:
+	"Schreibe die Kommazahl <zahl> in <datei>" oder
+	"schreibe die Kommazahl <zahl> in <datei>" oder
+	"Schreibe <zahl> in <datei>" oder
+	"schreibe <zahl> in <datei>"
+
+[
+	Schreibt den gegebenen Buchstaben in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Buchstabe mit den Parametern datei und buchstabe vom Typ Datei Referenz und Buchstabe, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe den Buchstaben <buchstabe> in <datei>" oder
+	"schreibe den Buchstaben <buchstabe> in <datei>" oder
+	"Schreibe <buchstabe> in <datei>" oder
+	"schreibe <buchstabe> in <datei>"
+
+[
+	Schreibt den gegebenen Wahrheitswert in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Wahrheitswert mit den Parametern datei und wahrheitswert vom Typ Datei Referenz und Wahrheitswert, gibt nichts zurück, macht:
+	Schreibe (wahrheitswert als Text) in datei.
+Und kann so benutzt werden:
+	"Schreibe den Wahrheitswert <wahrheitswert> in <datei>" oder
+	"schreibe den Wahrheitswert <wahrheitswert> in <datei>" oder
+	"Schreibe <wahrheitswert> in <datei>" oder
+	"schreibe <wahrheitswert> in <datei>"
+
+[
+	Schreibt die gegebene Zahl gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Zahl mit den Parametern datei und zahl vom Typ Datei Referenz und Zahl, gibt nichts zurück, macht:
+	Schreibe zahl in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe die Zahl <zahl> auf eine Zeile in <datei>" oder
+	"schreibe die Zahl <zahl> auf eine Zeile in <datei>" oder
+	"Schreibe <zahl> auf eine Zeile in <datei>" oder
+	"schreibe <zahl> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Text gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Text mit den Parametern datei und text vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Schreibe text in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Text <text> auf eine Zeile in <datei>" oder
+	"schreibe den Text <text> auf eine Zeile in <datei>" oder
+	"Schreibe <text> auf eine Zeile in <datei>" oder
+	"schreibe <text> auf eine Zeile in <datei>"
+
+[
+	Schreibt die gegebene Kommazahl gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Kommazahl mit den Parametern datei und zahl vom Typ Datei Referenz und Kommazahl, gibt nichts zurück, macht:
+	Schreibe zahl in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe die Kommazahl <zahl> auf eine Zeile in <datei>" oder
+	"schreibe die Kommazahl <zahl> auf eine Zeile in <datei>" oder
+	"Schreibe <zahl> auf eine Zeile in <datei>" oder
+	"schreibe <zahl> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Buchstaben gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Buchstabe mit den Parametern datei und buchstabe vom Typ Datei Referenz und Buchstabe, gibt nichts zurück, macht:
+	Schreibe buchstabe in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Buchstaben <buchstabe> auf eine Zeile in <datei>" oder
+	"schreibe den Buchstaben <buchstabe> auf eine Zeile in <datei>" oder
+	"Schreibe <buchstabe> auf eine Zeile in <datei>" oder
+	"schreibe <buchstabe> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Wahrheitswert gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Wahrheitswert mit den Parametern datei und wahrheitswert vom Typ Datei Referenz und Wahrheitswert, gibt nichts zurück, macht:
+	Schreibe wahrheitswert in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Wahrheitswert <wahrheitswert> auf eine Zeile in <datei>" oder
+	"schreibe den Wahrheitswert <wahrheitswert> auf eine Zeile in <datei>" oder
+	"Schreibe <wahrheitswert> auf eine Zeile in <datei>" oder
+	"schreibe <wahrheitswert> auf eine Zeile in <datei>"
