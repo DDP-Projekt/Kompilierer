@@ -438,15 +438,18 @@ func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }      
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
 func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) *ddperror.Error {
-	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) { // validate that the alias contains as many parameters as the function
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
+	// validate that the alias contains as many parameters as the function
+	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) {
+		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(paramNames), count),
 			p.module.FileName,
 		)
 		return &err
 	}
-	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
+
+	// validate that the alias does not contain illegal tokens
+	if countElements(aliasTokens, isIllegalToken) > 0 {
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
@@ -455,28 +458,42 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []t
 		)
 		return &err
 	}
-	nameSet := make(map[string]ddptypes.ParameterType, len(paramNames)) // set that holds the parameter names contained in the alias and their corresponding type
+
+	nameTypeMap := make(map[string]ddptypes.ParameterType, len(paramNames)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(paramNames))                   // set that holds the parameter names contained in the alias
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			nameSet[v.Literal] = paramTypes[i]
+			nameTypeMap[v.Literal] = paramTypes[i]
+			nameSet[v.Literal] = struct{}{}
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if isAliasExpr(v) {
-			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-			if argTyp, ok := nameSet[k]; ok {
-				aliasTokens[i].AliasInfo = &argTyp
-				delete(nameSet, k)
-			} else {
-				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
-					p.module.FileName,
-				)
-				return &err
-			}
+		if !isAliasExpr(v) {
+			continue
+		}
+
+		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
+		if _, ok := nameSet[k]; !ok {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+				fmt.Sprintf("Die Funktion hat keinen Parameter mit Namen %s", k),
+				p.module.FileName,
+			)
+			return &err
+		}
+
+		if argTyp, ok := nameTypeMap[k]; ok {
+			aliasTokens[i].AliasInfo = &argTyp
+			delete(nameTypeMap, k)
+		} else {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
+				p.module.FileName,
+			)
+			return &err
 		}
 	}
 	return nil
@@ -487,15 +504,18 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, paramNames []t
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
 func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
-	if count := countElements(aliasTokens, isAliasExpr); count > len(fields) { // validate that the alias contains as many parameters as the struct
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
+	// validate that the alias contains as many parameters as the struct
+	if count := countElements(aliasTokens, isAliasExpr); count > len(fields) {
+		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
 			p.module.FileName,
 		)
 		return &err, nil
 	}
-	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
+
+	// validate that the alias does not contain illegal tokens
+	if countElements(aliasTokens, isIllegalToken) > 0 {
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
@@ -504,31 +524,45 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		)
 		return &err, nil
 	}
-	nameSet := make(map[string]ddptypes.ParameterType, len(fields)) // set that holds the parameter names contained in the alias and their corresponding type
-	args := make(map[string]ddptypes.Type, len(fields))             // the arguments of the alias
+
+	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(fields))                   // set that holds the parameter names contained in the alias
+	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
 	for _, v := range fields {
-		nameSet[v.Name()] = ddptypes.ParameterType{
+		nameTypeMap[v.Name()] = ddptypes.ParameterType{
 			Type:        v.Type,
 			IsReference: false, // fields are never references
 		}
 		args[v.Name()] = v.Type
+		nameSet[v.Name()] = struct{}{}
 	}
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if isAliasExpr(v) {
-			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-			if argTyp, ok := nameSet[k]; ok {
-				aliasTokens[i].AliasInfo = &argTyp
-				delete(nameSet, k)
-			} else {
-				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
-					p.module.FileName,
-				)
-				return &err, nil
-			}
+		if !isAliasExpr(v) {
+			continue
+		}
+
+		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
+		if _, ok := nameSet[k]; !ok {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
+				p.module.FileName,
+			)
+			return &err, nil
+		}
+
+		if argTyp, ok := nameTypeMap[k]; ok {
+			aliasTokens[i].AliasInfo = &argTyp
+			delete(nameTypeMap, k)
+		} else {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
+				p.module.FileName,
+			)
+			return &err, nil
 		}
 	}
 	return nil, args
