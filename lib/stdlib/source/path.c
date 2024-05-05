@@ -3,9 +3,9 @@
 #include "winapi-path.h"
 #include <string.h>
 
-// TODO: Use PathCchCanonicalize 
+// TODO: Use PathCchCanonicalize
 void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
-	if (strlen(path->str) + 1 >= DDP_MAX_WIN_PATH) {
+	if (ddp_strlen(path) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}
@@ -26,7 +26,7 @@ void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 
 // TODO: Use PathCchCombine
 void Windows_Pfad_Verbinden(ddpstring *ret, ddpstring *a, ddpstring *b) {
-	if (strlen(a->str) + 1 + strlen(b->str) + 1 >= DDP_MAX_WIN_PATH) {
+	if (ddp_strlen(a) + 1 + ddp_strlen(b) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}

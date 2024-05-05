@@ -4,3 +4,4 @@
 *.dump.txt
 **/got.txt
 **/diff.txt
+coverage.md

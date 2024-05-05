@@ -19,7 +19,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v3
       with:
-          go-version: "1.20.0"
+          go-version: "1.22.2"
           check-latest: true
           cache: true
         
@@ -35,6 +35,13 @@ jobs:
       
     - name: Run tests
       run: make test
+    
+    - name: Upload Coverage Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: tests/coverage.md
+        retention-days: 30
 
     - name: Build debug
       run: make -j$(nproc) debug

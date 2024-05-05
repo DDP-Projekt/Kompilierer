@@ -11,6 +11,39 @@ Und kann so benutzt werden:
 	"einen leeren Text"
 
 [
+	Gibt den ersten Buchstaben von dem gegebenen Text zurück.
+]
+Die öffentliche Funktion Erster_Buchstabe mit dem Parameter t vom Typ Text, gibt einen Buchstaben zurück, macht:
+	Gib t an der Stelle 1 zurück.
+Und kann so benutzt werden:
+	"der erste Buchstabe von <t>",
+	"den ersten Buchstaben von <t>",
+	"dem ersten Buchstaben von <t>"
+
+[
+	Gibt den enten Buchstaben von dem gegebenen Text zurück.
+]
+Die öffentliche Funktion Nter_Buchstabe mit den Parametern n und t vom Typ Zahl und Text, gibt einen Buchstaben zurück, macht:
+	Gib t an der Stelle n zurück.
+Und kann so benutzt werden:
+	"der <n> Buchstabe von <t>",
+	"den <n> Buchstaben von <t>",
+	"dem <n> Buchstaben von <t>",
+	"der <n>. Buchstabe von <t>",
+	"den <n>. Buchstaben von <t>",
+	"dem <n>. Buchstaben von <t>"
+
+[
+	Gibt den letzten Buchstaben von dem gegebenen Text zurück.
+]
+Die öffentliche Funktion Letzter_Buchstabe mit dem Parameter t vom Typ Text, gibt einen Buchstabe zurück, macht:
+	Gib t an der Stelle (die Länge von t) zurück.
+Und kann so benutzt werden:
+	"der letzte Buchstabe von <t>",
+	"den letzten Buchstaben von <t>",
+	"dem letzten Buchstaben von <t>"
+
+[
 	Entfernt eine feste Anzahl von Buchstaben vom Anfang eines gegebenen Textes.
 	Ist die Länge des Textes kürzer als die zu löschende Anzahl, gibt die Funktion einen leeren Text zurück.
 	Werte für Anzahl kleiner als 0 wird wie 0 gewertet.
@@ -190,25 +223,82 @@ Und kann so benutzt werden:
 	"<text> <zeichen> enthält"
 
 [
+	Gibt zurück wie oft der gegebenen Text den gegebenen Buchstaben enthält. 
+]
+Die öffentliche Funktion Text_Anzahl_Buchstabe mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
+	Die Zahl anz ist 0.
+	Für jeden Buchstaben b in text, wenn b gleich zeichen ist, erhöhe anz um 1.
+	Gib anz zurück.
+Und kann so benutzt werden:
+	"die Anzahl der <zeichen> Buchstaben in <text>"
+
+[
 	Gibt zurück ob der gegebene Text (text) den Subtext (suchText) enthält.
 ]
 Die öffentliche Funktion Text_Enthält_Text mit den Parametern text und suchText vom Typ Text und Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn text gleich suchText ist, gib wahr zurück.
+	Die Zahl nt ist die Länge von text.
+	Die Zahl ns ist die Länge von suchText.
+	Wenn nt gleich 0 ist oder ns gleich 0 ist, gib falsch zurück.
 
-	Die Zahl startIndex ist 0.
-	Die Zahl endIndex ist die Länge von suchText.
-	Wenn endIndex gleich 0 ist, gib falsch zurück.
+	Die Zahl startIndex ist 1.
+	Die Zahl endIndex ist ns.
 
-	Solange endIndex kleiner als, oder die Länge von text ist, mache:
+	Solange endIndex kleiner als, oder nt ist, mache:
 		Der Text subtext ist text im Bereich von startIndex bis endIndex.
-
 		Wenn subtext gleich suchText ist, gib wahr zurück.
 		
-		Speichere startIndex plus die Länge von suchText in endIndex.
+		Speichere startIndex plus ns in endIndex.
 		Erhöhe startIndex um 1.
 	Gib falsch zurück.
 Und kann so benutzt werden:
 	"<text> <suchText> enthält"
+
+[
+	Gibt zurück wie oft der gegebene Text (text) den Subtext (suchText) enthält.
+]
+Die öffentliche Funktion Text_Anzahl_Text mit den Parametern text und suchText vom Typ Text und Text, gibt eine Zahl zurück, macht:
+	Die Zahl nt ist die Länge von text.
+	Die Zahl ns ist die Länge von suchText.
+	Wenn nt gleich 0 ist, gib 0 zurück.
+	Wenn ns gleich 0 ist, gib nt zurück.
+
+	Die Zahl startIndex ist 1.
+	Die Zahl endIndex ist ns.
+	Die Zahl anz ist 0.
+
+	Solange endIndex kleiner als, oder nt ist, mache:
+		Der Text subtext ist text im Bereich von startIndex bis endIndex.
+		Wenn subtext gleich suchText ist, erhöhe anz um 1.
+		
+		Speichere startIndex plus ns in endIndex.
+		Erhöhe startIndex um 1.
+	Gib anz zurück.
+Und kann so benutzt werden:
+	"die Anzahl der Subtexte <suchText> in <text>"
+
+[
+	Gibt zurück wie oft der gegebene Text (text) den Subtext (suchText) nicht überlappend enthält.
+]
+Die öffentliche Funktion Text_Anzahl_Text_Nicht_Überlappend mit den Parametern text und suchText vom Typ Text und Text, gibt eine Zahl zurück, macht:
+	Die Zahl nt ist die Länge von text.
+	Die Zahl ns ist die Länge von suchText.
+	Wenn nt gleich 0 ist, gib 0 zurück.
+	Wenn ns gleich 0 ist, gib nt zurück.
+
+	Die Zahl startIndex ist 1.
+	Die Zahl endIndex ist ns.
+	Die Zahl anz ist 0.
+
+	Solange endIndex kleiner als, oder nt ist, mache:
+		Der Text subtext ist text im Bereich von startIndex bis endIndex.
+		Wenn subtext gleich suchText ist, erhöhe anz um 1.
+		
+		Erhöhe startIndex um ns.
+		Erhöhe endIndex um ns.
+	Gib anz zurück.
+Und kann so benutzt werden:
+	"die Anzahl der nicht überlappenden Subtexte <suchText> in <text>"
 
 [
 	Gibt zurück ob der gegebene Text mit dem gegebenen Buchstaben anfängt.
@@ -273,13 +363,16 @@ Und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
 [
-	Fügt einen Text 
+	Fügt einen Text in einen anderen an dem gegebenen Index ein.
 ]
 Die öffentliche Funktion Text_In_Text_Einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Text, gibt nichts zurück, macht:
 	Speichere text bis zum (index minus 1). Element verkettet mit elm verkettet mit text ab dem index. Element in text.
 Und kann so benutzt werden:
 	"Setze <elm> an die Stelle <index> von <text>"
 
+[
+	Fügt einen Buchstaben in einen Text an dem gegebenen Index ein.
+]
 Die öffentliche Funktion Buchstabe_In_Text_Einfügen mit den Parametern text, index und elm vom Typ Text Referenz, Zahl und Buchstabe, gibt nichts zurück, macht:
 	Speichere text bis zum (index minus 1). Element verkettet mit elm verkettet mit text ab dem index. Element in text.
 Und kann so benutzt werden:
@@ -335,21 +428,70 @@ Und kann so benutzt werden:
 	Füllt den Text mit dem gegebenen Buchstaben
 ]
 Die öffentliche Funktion Fülle_Text mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
-	Der Text neuerText ist "".
-	Wiederhole:
-		Speichere neuerText verkettet mit elm in neuerText.
-	Die Länge von text Mal.
-
-	Speichere neuerText in text.
+	Für jede Zahl i von 1 bis die Länge von text, mache:
+		Speichere elm in text an der Stelle i.
 Und kann so benutzt werden:
 	"Fülle <text> mit <elm>"
 
 [
-	Gibt den index des gegebenen Buchstaben im Text zurück oder -1 falls es nicht gefunden wurde. 
+	Gibt die Buchstaben im gegebenen Textes als Buchstaben Liste zurück.
+		f("Hallo") -> ['H', 'a', 'l', 'l', 'l']
+]
+Die öffentliche Funktion Buchstaben_Text_BuchstabenListe mit dem Parameter text vom Typ Text, gibt eine Buchstaben Liste zurück, macht:
+	Die Buchstaben Liste l ist eine leere Buchstaben Liste.
+	Für jeden Buchstaben b in text, Speichere l verkettet mit b in l.
+	Gib l zurück.
+Und kann so benutzt werden:
+	"die Buchstaben in <text>"
+
+[
+	Gibt die Buchstaben im gegebenen Textes als Text Liste zurück.
+		f("Hallo") -> ["H", "a", "l", "l", "o"]
+]
+Die öffentliche Funktion Buchstaben_Text_TextListe mit dem Parameter text vom Typ Text, gibt eine Text Liste zurück, macht:
+	Die Text Liste l ist eine leere Text Liste.
+	Für jeden Buchstaben b in text, Speichere l verkettet mit b als Text in l.
+	Gib l zurück.
+Und kann so benutzt werden:
+	"die Buchstaben in <text> als Text Liste"
+
+[
+	Gibt den ersten index des gegebenen Buchstaben im Text zurück oder -1 falls es nicht gefunden wurde. 
 ]
 Die öffentliche Funktion Text_Index_Von_Buchstabe mit den Parametern text und elm vom Typ Text und Buchstabe, gibt eine Zahl zurück, macht:
 	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
 	Für jede Zahl i von 1 bis (die Länge von text), Wenn text an der Stelle i gleich elm ist, gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <text>" oder
+	"den Index von <elm> in <text>"
+
+[
+	Gibt den ersten index des gegebenen Text im Text zurück oder -1 falls es nicht gefunden wurde. 
+]
+Die öffentliche Funktion Text_Index_Von_Text mit den Parametern text und elm vom Typ Text und Text, gibt eine Zahl zurück, macht:
+	Die Zahl n ist die Länge von elm.
+	Wenn die Länge von text gleich 0 ist, gib -1 zurück.
+	Wenn n gleich 0 ist, gib 1 zurück.
+	Wenn n gleich 1 ist, gib den Index von (elm an der Stelle 1) in text zurück.
+	Wenn n gleich die Länge von text ist, dann:
+		Wenn elm gleich text ist, gib 1 zurück.
+		Sonst gib -1 zurück. 
+	Wenn n größer als die Länge von text ist, gib -1 zurück.
+
+	Der Buchstabe c1 ist elm an der Stelle 1.
+	Der Buchstabe c2 ist elm an der Stelle 2.
+	Die Zahl i ist 1.
+	Die Zahl t ist die Länge von text minus n plus 1.
+
+	Solange i kleiner als, oder t ist, mache:
+		Wenn text an der Stelle i ungleich c1 ist, dann:
+			Die Zahl o ist der Index von c1 in (text im Bereich von (i plus 1) bis (i plus t)).
+			Wenn o kleiner als 0 ist, gib -1 zurück.
+			Erhöhe i um o.
+
+		Wenn text an der Stelle (i plus 1) gleich c2 ist und text im Bereich von i bis (i plus n minus 1) gleich elm ist, gib i zurück.
+		Erhöhe i um 1.
 	Gib -1 zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <text>" oder
@@ -462,21 +604,76 @@ Und kann so benutzt werden:
 	Spaltet den gegebenen Text anhand des angegebenen Buchstaben in Teiltexte. 
 ]
 Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Text und Buchstabe, gibt eine Text Liste zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib eine leere Text Liste zurück.
 	Die Text Liste endliste ist eine leere Text Liste.
-	Die Zahl endIndex ist der Index von zeichen in text.
-	Solange endIndex ungleich -1 ist und endIndex ungleich die Länge von text ist, mache:
-		Wenn endIndex ungleich 1 ist, dann:
-			Speichere endliste verkettet mit text bis zum (endIndex minus 1). Element in endliste.
-			Speichere text ab dem (endIndex plus 1). Element in text.
-		Sonst:
-			Speichere endliste verkettet mit "" in endliste.
-			Speichere text ab dem 2. Element in text.
-		Speichere der Index von zeichen in text in endIndex.
-	
+
+	Die Zahl n ist die Anzahl der zeichen Buchstaben in text plus 1.
+
+	Die Zahl i ist 1.
+	Solange i kleiner als, oder n ist, mache:
+		Die Zahl endIndex ist den Index von zeichen in text.
+		Wenn endIndex kleiner als 0 ist, verlasse die Schleife.
+        Wenn aber endIndex gleich 1 ist, speichere endliste verkettet mit "" in endliste.
+        Sonst speichere endliste verkettet mit (text bis zum (endIndex minus 1). Element) in endliste.
+		
+        Wenn die Länge von text gleich 1 ist, Speichere "" in text.
+        Sonst speichere text ab dem (endIndex plus 1). Element in text.
+
+		Erhöhe i um 1.
 	Speichere endliste verkettet mit text in endliste.
-	Gib endliste zurück.
+	Gib endliste bis zum i. Element zurück.
 Und kann so benutzt werden:
 	"<text> an <zeichen> gespalten"
+
+[
+	Spaltet den gegebenen Text anhand des angegebenen Textes in Teiltexte. 
+]
+Die öffentliche Funktion Spalte_Text mit den Parametern text und trenntext vom Typ Text und Text, gibt eine Text Liste zurück, macht:
+	Die Zahl l ist die Länge von trenntext.
+	Die Text Liste endliste ist eine leere Text Liste.
+	Wenn l gleich 0 ist, gib die Buchstaben in text als Text Liste zurück.
+	Wenn l gleich 1 ist, gib text an (trenntext an der Stelle 1) gespalten zurück.
+
+	Die Zahl n ist die Anzahl der nicht überlappenden Subtexte trenntext in text plus 1.
+
+	Die Zahl i ist 1.
+	Solange i kleiner als, oder n ist, mache:
+		Die Zahl endIndex ist den Index von trenntext in text.
+		Wenn endIndex kleiner als 0 ist, verlasse die Schleife.
+        Wenn aber endIndex gleich 1 ist, speichere endliste verkettet mit "" in endliste.
+        Sonst speichere endliste verkettet mit (text bis zum (endIndex minus 1). Element) in endliste.
+		
+        Wenn die Länge von text gleich l ist, Speichere "" in text.
+        Sonst speichere text ab dem (endIndex plus l). Element in text.
+
+		Erhöhe i um 1.
+
+	Speichere endliste verkettet mit text in endliste.
+	Gib endliste bis zum i. Element zurück.
+Und kann so benutzt werden:
+	"<text> an <trenntext> gespalten"
+
+[
+	Gibt alle Indizes des gegebenen Subtextes im Text zurück.
+]
+Die öffentliche Funktion Finde_Subtext mit den Parametern text und subtext vom Typ Text und Text, gibt eine Zahlen Liste zurück, macht:
+	Die Zahl lt ist die Länge von text.
+	Die Zahl ls ist die Länge von subtext.
+	Die Zahlen Liste l ist eine leere Zahlen Liste.
+	Wenn ls gleich 0 ist oder lt gleich 0 ist oder ls größer als lt ist, gib l zurück.
+	Wenn lt gleich ls ist, gib eine Liste, die aus 1 besteht zurück.
+
+	Die Zahl start ist 1.
+	Solange start kleiner als lt ist, mache:
+		Die Zahl i ist den Index von subtext in (text ab dem start. Element).
+		Wenn i gleich -1 ist, verlasse die Schleife.
+		
+		Erhöhe i um start minus 1.
+		Speichere l verkettet mit i in l.
+		Speichere i plus ls in start.
+	Gib l zurück.
+Und kann so benutzt werden:
+	"alle Indizes vom Subtext <subtext> in <text>"
 
 [
 	Verkettet alle Elemente der Liste mit dem Trennzeichen und gibt den Text zurück.

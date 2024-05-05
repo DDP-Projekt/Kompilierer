@@ -1,7 +1,6 @@
 #include "ddptypes.h"
 #include "ddpmemory.h"
 #include "debug.h"
-#include "utf8/utf8.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +9,11 @@
 void ddp_string_from_constant(ddpstring *ret, char *str) {
 	DDP_DBGLOG("_ddp_string_from_constant: ret: %p", ret);
 	size_t size = strlen(str) + 1;
+	if (size == 1) {
+		*ret = DDP_EMPTY_STRING;
+		return;
+	}
+
 	char *string = DDP_ALLOCATE(char, size); // the char array of the string (plus null terminator)
 	// copy the passed char array
 	memcpy(string, str, size);
@@ -41,4 +45,11 @@ void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
 // returns wether the length of str is 0
 ddpbool ddp_string_empty(ddpstring *str) {
 	return str->str == NULL || str->cap <= 0 || (str->str[0] == '\0');
+}
+
+ddpint ddp_strlen(ddpstring *str) {
+	if (str == NULL || str->str == NULL) {
+		return 0;
+	}
+	return strlen(str->str);
 }

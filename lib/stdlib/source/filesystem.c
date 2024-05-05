@@ -16,7 +16,7 @@
 #define _CRT_INTERNAL_NONSTDC_NAMES 1
 #include <sys/stat.h>
 #if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef DDPOS_WINDOWS
@@ -38,12 +38,19 @@
 #endif // DDPOS_WINDOWS
 
 ddpbool Existiert_Pfad(ddpstring *Pfad) {
+	if (ddp_string_empty(Pfad)) {
+		return false;
+	}
 	return access(Pfad->str, F_OK) == 0;
 }
 
 ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
+	if (ddp_string_empty(Pfad)) {
+		ddp_error("Der gegebene Pfad ist leer", false);
+		return false;
+	}
 	// recursively create every directory needed to create the final one
 	char *it = Pfad->str;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
@@ -68,6 +75,10 @@ ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 
 ddpbool Ist_Ordner(ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
+
+	if (ddp_string_empty(Pfad)) {
+		return false;
+	}
 
 	// remove possible trailing seperators
 	char *it = Pfad->str + Pfad->cap - 2; // last character in str
@@ -145,6 +156,11 @@ static int remove_directory(const char *path) {
 ddpbool Loesche_Pfad(ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
+	if (ddp_string_empty(Pfad)) {
+		ddp_error("Der gegebene Pfad ist leer", false);
+		return false;
+	}
+
 	if (Ist_Ordner(Pfad)) {
 		return remove_directory(Pfad->str) == 0;
 	}
@@ -157,6 +173,11 @@ ddpbool Loesche_Pfad(ddpstring *Pfad) {
 
 ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 	DDP_MIGHT_ERROR;
+
+	if (ddp_string_empty(Pfad)) {
+		ddp_error("Der gegebene Pfad ist leer", false);
+		return false;
+	}
 
 	struct stat path_stat;
 	if (stat(NeuerName->str, &path_stat) != 0) {
@@ -268,6 +289,13 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 
 // UNIX: https://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
 ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
+	DDP_MIGHT_ERROR;
+
+	if (ddp_string_empty(Pfad)) {
+		ddp_error("Der gegebene Pfad ist leer", false);
+		return -1;
+	}
+
 #ifdef DDPOS_WINDOWS
 	return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
 #else  // DDPOW_LINUX

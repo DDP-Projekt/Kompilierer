@@ -313,11 +313,11 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	}
 
 	ddpstring r;
-	r.str = DDP_ALLOCATE(char, strlen(text->str) - start_offset + 1);
-	strncpy(r.str, text->str + start_offset, strlen(text->str) - start_offset);
+	r.str = DDP_ALLOCATE(char, ddp_strlen(text) - start_offset + 1);
+	strncpy(r.str, text->str + start_offset, ddp_strlen(text) - start_offset);
 
-	r.str[strlen(text->str) - start_offset] = '\0';
-	r.cap = strlen(text->str) - start_offset + 1;
+	r.str[ddp_strlen(text) - start_offset] = '\0';
+	r.cap = ddp_strlen(text) - start_offset + 1;
 
 	// append new element
 	memcpy(&((uint8_t *)ret->arr)[ret->len * sizeof(ddpstring)], &r, sizeof(ddpstring));

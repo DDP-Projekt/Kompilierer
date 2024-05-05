@@ -23,3 +23,12 @@ Schreibe den Buchstaben '\n'.
 Schreibe den Wahrheitswert (istWahr oder istFalsch).
 Schreibe den Buchstaben '\n'.
 Schreibe den Wahrheitswert (istFalsch oder istFalsch).
+Schreibe den Buchstaben '\n'.
+[memory test]
+Schreibe den Wahrheitswert ("Hallo" gleich "Welt" ist und "Welt" gleich "Hallo" ist).
+Schreibe den Buchstaben '\n'.
+Schreibe den Wahrheitswert ("Welt" gleich "Welt" ist und "Welt" gleich "Hallo" ist).
+Schreibe den Buchstaben '\n'.
+Schreibe den Wahrheitswert ("Welt" gleich "Welt" ist oder "Welt" gleich "Hallo" ist).
+Schreibe den Buchstaben '\n'.
+Schreibe den Wahrheitswert ("Hallo" gleich "Welt" ist oder "Welt" gleich "Hallo" ist).

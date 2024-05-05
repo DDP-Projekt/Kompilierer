@@ -39,12 +39,6 @@ else
 	LLVM_CMAKE_GENERATOR="Unix Makefiles"
 endif
 
-# check if ninja is installed and use it
-ifneq (, $(shell which ninja))
-	LLVM_CMAKE_GENERATOR=Ninja
-	LLVM_CMAKE_BUILD_TOOL=ninja
-endif
-
 OUT_DIR = ./build/DDP/
 
 .DEFAULT_GOAL = all
@@ -59,7 +53,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete test-with-optimizations download-pcre2
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete test-with-optimizations download-pcre2 coverage
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -161,14 +155,10 @@ download-llvm:
 llvm: download-llvm
 # generate cmake build files
 	@echo "building llvm"
-ifeq ($(LLVM_CMAKE_GENERATOR),Ninja)
-	@echo "found ninja, using it as cmake generator"
-endif
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; $(LLVM_CMAKE_BUILD_TOOL) ; $(LLVM_CMAKE_BUILD_TOOL) llvm-config
-
+	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config
 
 # will hold the directories to run in the tests
 # if empty, all directories are run
@@ -177,10 +167,13 @@ TEST_DIRS =
 KDDP_ARGS = 
 
 test:
-	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory:
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+coverage:
+	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 # runs all tests and test-memory
 # everything is done manually to ensure the build is finished

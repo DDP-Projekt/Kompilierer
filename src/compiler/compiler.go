@@ -386,6 +386,14 @@ func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp b
 	}
 }
 
+func (c *compiler) freeTemporaries(scp *scope, force bool) {
+	for _, v := range scp.temporaries {
+		if !v.protected || force {
+			c.freeNonPrimitive(v.val, v.typ)
+		}
+	}
+}
+
 // helper to exit a scope
 // frees all local variables
 // returns the enclosing scope
@@ -395,11 +403,7 @@ func (c *compiler) exitScope(scp *scope) *scope {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	for _, v := range scp.temporaries {
-		if !v.protected {
-			c.freeNonPrimitive(v.val, v.typ)
-		}
-	}
+	c.freeTemporaries(scp, false)
 	return scp.enclosing
 }
 
@@ -414,9 +418,7 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	for _, v := range c.cfscp.temporaries {
-		c.freeNonPrimitive(v.val, v.typ)
-	}
+	c.freeTemporaries(c.cfscp, true)
 	return c.cfscp.enclosing
 }
 
@@ -674,7 +676,11 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	// call the ddp-runtime function to create the ddpstring
 	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
-	c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	if e.Value == "" {
+		c.cbb.NewStore(c.ddpstring.DefaultValue(), dest)
+	} else {
+		c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, ptr(i8)))
+	}
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.latestIsTemp = true
 	return ast.VisitRecurse
@@ -799,7 +805,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
 
 		c.cbb = trueBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		trueBlock = c.cbb
@@ -816,7 +826,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
 
 		c.cbb = falseBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb // in case c.evaluate has multiple blocks
@@ -909,6 +923,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 		// the concat functions use the buffer of some of their arguments
 		// if those arguments aren't temporaries, we copy them
+		//
+		// the concat function is also required to free the memory of the claimed
+		// arguments or claim their memory for the result, so we do not have to free them
 		if claimsLhs && !isTempLhs {
 			dest := c.NewAlloca(lhsTyp.IrType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)
@@ -2053,9 +2070,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 					c.freeNonPrimitive(Var.val, Var.typ)
 				}
 			}
-			for _, Var := range scp.temporaries {
-				c.freeNonPrimitive(Var.val, Var.typ)
-			}
+			c.freeTemporaries(scp, true)
 		}
 		c.exitFuncScope(c.functions[s.Func].funcDecl)
 	}

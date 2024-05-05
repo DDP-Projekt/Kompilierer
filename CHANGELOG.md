@@ -12,6 +12,9 @@ Der Changelog von DDP. Sortiert nach Release.
 ## In Entwicklung
 
 - [Fix] Funktionsparameter können nun nicht mehr Funktions- oder Kombinationsdeklarationen überschreiben
+
+## v0.3.0-alpha
+
 - [Breaking] Folgende Duden Funktionen wurden umbennant:
     - Pfade:
         - Ist_Absolut -> UNIX_Ist_Absolut 
@@ -100,6 +103,19 @@ Der Changelog von DDP. Sortiert nach Release.
         - Hamming_Distanz
         - Levenshtein_Distanz
         - Vergleiche_Text 
+        - Text_Anzahl_Buchstabe 
+        - Text_Anzahl_Text 
+        - Text_Anzahl_Text_Nicht_Überlappend 
+        - Buchstaben_Text_BuchstabenListe 
+        - Buchstaben_Text_TextListe 
+        - Text_Index_Von_Text 
+        - Spalte_Text 
+        - Erster_Buchstabe 
+        - Nter_Buchstabe 
+        - Letzter_Buchstabe 
+        - Finde_Subtext 
+- [Fix] Der zwischen Operator crasht nun nicht mehr bei Kommazahl/Zahl kombinationen
+- [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Added] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
 - [Added] Befehlszeilenargument "-O/--optimierungs-stufe" um die Optimierungsstufe zu setzen
 - [Changed] Befehlszeilenargumente benutzen nun "-" anstatt "_" (z.B. `--nichts-loeschen` anstatt `--nichts_loeschen`). "_" kann allerdings immernoch benutzt werden

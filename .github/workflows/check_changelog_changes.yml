@@ -2,6 +2,7 @@ name: Check changelog changes
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches: [ "master", "dev" ]
 
 jobs:

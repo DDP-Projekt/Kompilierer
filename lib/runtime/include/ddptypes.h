@@ -30,6 +30,8 @@ void ddp_free_string(ddpstring *str);
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str);
 // returns wether the length of str is 0
 ddpbool ddp_string_empty(ddpstring *str);
+// returns the strlen of str->str or 0 if str is NULL
+ddpint ddp_strlen(ddpstring *str);
 
 typedef struct {
 	ddpint *arr; // the element array
@@ -126,7 +128,6 @@ typedef ddpfloatlist *ddpfloatlistref;
 typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
-
 
 #define DDP_INT_FMT "%lld"
 #define DDP_FLOAT_FMT "%.16g"

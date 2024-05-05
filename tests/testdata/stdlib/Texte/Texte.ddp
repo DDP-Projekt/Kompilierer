@@ -164,4 +164,83 @@ Schreibe ("def" mit "abc" verglichen größer als 0 ist) auf eine Zeile. [wahr]
 Schreibe ("abc" mit "abc" verglichen gleich 0 ist) auf eine Zeile. [wahr]
 Schreibe ("Haallo" mit "Haallö" verglichen kleiner als 0 ist) auf eine Zeile. [wahr]
 Schreibe ("Haallö" mit "Haallöchen" verglichen gleich -1 ist) auf eine Zeile. [wahr]
-Schreibe ("Haallöchen" mit "Haallö" verglichen gleich 1 ist). [wahr]
+Schreibe ("Haallöchen" mit "Haallö" verglichen gleich 1 ist) auf eine Zeile. [wahr]
+
+[Text_Index_Von_Text]
+Schreibe (den Index von "yo" in "") auf eine Zeile. [-1]
+Schreibe (den Index von "" in "mayo") auf eine Zeile. [1]
+Schreibe (den Index von "y" in "mayo") auf eine Zeile. [2]
+Schreibe (den Index von "mayo" in "mayo") auf eine Zeile. [1]
+Schreibe (den Index von "lalo" in "mayo") auf eine Zeile. [-1]
+Schreibe (den Index von "mayonara" in "mayo") auf eine Zeile. [-1]
+Schreibe (den Index von "yo" in "yoghurt") auf eine Zeile. [1]
+Schreibe (den Index von "yo" in "mayo") auf eine Zeile. [3]
+Schreibe (den Index von "yo" in "mayonara") auf eine Zeile. [3]
+Schreibe (den Index von "yo" in "mayyyyoyo") auf eine Zeile. [6]
+Schreibe (den Index von "yo" in "yyo") auf eine Zeile. [2]
+
+[Text_Anzahl_Buchstabe]
+Schreibe (die Anzahl der 'a' Buchstaben in "") auf eine Zeile. [0]
+Schreibe (die Anzahl der 'a' Buchstaben in "jaaaaaaaa") auf eine Zeile. [8]
+
+[Text_Anzahl_Text]
+Schreibe (die Anzahl der Subtexte "" in "") auf eine Zeile. [0]
+Schreibe (die Anzahl der Subtexte "a" in "") auf eine Zeile. [0]
+Schreibe (die Anzahl der Subtexte "" in "a") auf eine Zeile. [1]
+Schreibe (die Anzahl der Subtexte "yo" in "yo") auf eine Zeile. [1]
+Schreibe (die Anzahl der Subtexte "yo" in "mayo") auf eine Zeile. [1]
+Schreibe (die Anzahl der Subtexte "yo" in "yoma") auf eine Zeile. [1]
+Schreibe (die Anzahl der Subtexte "yo" in "mayonara") auf eine Zeile. [1]
+Schreibe (die Anzahl der Subtexte "yo" in "yoyoyoyo") auf eine Zeile. [4]
+Schreibe (die Anzahl der Subtexte "yoyo" in "yoyoyoyo") auf eine Zeile. [3]
+
+[Text_Anzahl_Text_Nicht_Überlappend]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "" in "") auf eine Zeile. [0]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "a" in "") auf eine Zeile. [0]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "" in "a") auf eine Zeile. [1]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yo" in "yo") auf eine Zeile. [1]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yo" in "mayo") auf eine Zeile. [1]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yo" in "yoma") auf eine Zeile. [1]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yo" in "mayonara") auf eine Zeile. [1]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yo" in "yoyoyoyo") auf eine Zeile. [4]
+Schreibe (die Anzahl der nicht überlappenden Subtexte "yoyo" in "yoyoyoyo") auf eine Zeile. [2]
+
+[Buchstaben_Text_BuchstabenListe]
+Schreibe (die Buchstaben in "") auf eine Zeile. [""]
+Schreibe (die Buchstaben in "hallo") auf eine Zeile. ['h', 'a', 'l', 'l', 'o']
+
+[Buchstaben_Text_TextListe]
+Schreibe (die Buchstaben in "" als Text Liste) auf eine Zeile. [""]
+Schreibe (die Buchstaben in "hallo" als Text Liste) auf eine Zeile. ["h", "a", "'l'", "l", "o"]
+
+[Spalte]
+Schreibe ("" an 'a' gespalten) auf eine Zeile. [""]
+Schreibe ("Komma,getrennte,Liste" an ',' gespalten) auf eine Zeile. ["Komma", "getrennte", "Liste"]
+Schreibe ("aaaaaa" an 'a' gespalten) auf eine Zeile. ["", "", "", "", "", "", ""]
+Schreibe ("yippyjayayy" an 'y' gespalten) auf eine Zeile. ["", "ipp", "ja", "a", "", ""]
+
+[Spalte_Text]
+Schreibe ("" an "" gespalten) auf eine Zeile. [""]
+Schreibe ("abcd" an "" gespalten) auf eine Zeile. ["a", "b", "c", "d"]
+Schreibe ("" an "abcd" gespalten) auf eine Zeile. [""]
+Schreibe ("Das ist ein Satz." an " " gespalten) auf eine Zeile. ["Das", "ist", "ein", "Satz."]
+Schreibe ("Komma, getrennte, Liste" an ", " gespalten) auf eine Zeile. ["Komma", "getrennte", "Liste"]
+Schreibe ("yolo" an "yolo" gespalten) auf eine Zeile. ["", ""] 
+Schreibe ("aaaaaa" an "aa" gespalten) auf eine Zeile. ["", "", "", ""]
+Schreibe ("hahahaha" an "haha" gespalten) auf eine Zeile. ["", "", ""]
+
+[Finde_Subtext]
+Schreibe (alle Indizes vom Subtext "" in "") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "asd" in "") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "" in "asd") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "Hallo" in "Hallo") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "HalliHallo" in "Hallo") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "lo" in "Hallo") auf eine Zeile.
+Schreibe (alle Indizes vom Subtext "alli" in "halligalli") auf eine Zeile.
+
+[Erster_Buchstabe]
+Schreibe (den ersten Buchstaben von "hallo") auf eine Zeile. [h]
+[Nter_Buchstabe]
+Schreibe (den 2. Buchstaben von "hallo") auf eine Zeile. [a]
+[Letzter_Buchstabe]
+Schreibe (den letzten Buchstaben von "hallo") auf eine Zeile. [o]
