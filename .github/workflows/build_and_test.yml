@@ -41,7 +41,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
-        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm-archives/**') }}
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm_build/**') }}
+        restore-keys: |
+          ${{ runner.os }}-llvm-build-
 
     - name: Download Prebuilt LLVM
       if: runner.os == 'Windows' && steps.cache-llvm.outputs.cache-hit != 'true'
@@ -68,6 +70,8 @@ jobs:
       with:
         path: ${{ github.workspace }}/lib/stdlib/pcre2_build/
         key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**') }}
+        restore-keys: |
+          ${{ runner.os }}-pcre2-
 
     - name: Build
       run: make -j4
