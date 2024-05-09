@@ -71,7 +71,7 @@ jobs:
         path: |
           ${{ github.workspace }}/lib/stdlib/pcre2_build/
           ${{ github.workspace }}/lib/stdlib/libpcre2-8.a
-        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**', **/lib/stdlib/libpcre2-8.a) }}
+        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**', '**/lib/stdlib/libpcre2-8.a') }}
         restore-keys: |
           ${{ runner.os }}-pcre2-
 
