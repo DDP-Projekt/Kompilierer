@@ -2,6 +2,6 @@
 *.lib
 *.a
 *.depend
-/pcre2/*
 /.cache/
 compile_commands.json
+/pcre2_build/*

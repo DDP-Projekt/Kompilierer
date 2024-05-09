@@ -2,19 +2,27 @@ name: Build DDP and run tests
 
 on:
   push:
-    branches: [ "master", "dev" ]
+    branches: [ "master", "dev", "windows-workflow" ]
   pull_request:
     branches: [ "master", "dev" ]
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
     
     env:
-      DDPPATH: /home/runner/work/Kompilierer/Kompilierer/build/DDP/
+      DDPPATH: ${{ github.workspace }}/build/DDP/
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Go
       uses: actions/setup-go@v3
@@ -24,14 +32,40 @@ jobs:
           cache: true
         
     - name: Setup LLVM
+      if: runner.os == 'Linux'
       run: sudo apt install llvm-12
+
+    - name: Unpack LLVM
+      if: runner.os == 'Windows'
+      run: make unpack-llvm
+
+    - name: Cache LLVM
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/llvm_build/
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm-archives/**') }}
 
     - name: Get german locale
       run: sudo locale-gen de_DE.UTF-8
       if: runner.os == 'Linux'
+
+    - name: Set Env
+      if: runner.os == 'Windows'
+      run: |
+        echo "CGO_CPPFLAGS=$('${{ github.workspace }}/llvm_build/bin/llvm-config' --cppflags)" >> $GITHUB_ENV
+        echo "CGO_LDFLAGS=$('${{ github.workspace}}/llvm_build/bin/llvm-config' --ldflags --libs --system-libs all | tr '\r\n' '  ')" >> $GITHUB_ENV
+        echo "CGO_CXXFLAGS=-std=c++14" >> $GITHUB_ENV
         
     - name: Build
-      run: make -j$(nproc)
+      run: make -j4
+
+    - name: Cache pcre2
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/lib/stdlib/pcre2_build/
+        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**') }}
       
     - name: Run tests
       run: make test
@@ -39,12 +73,12 @@ jobs:
     - name: Upload Coverage Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report
+        name: coverage-report-${{ runner.os }}
         path: tests/coverage.md
         retention-days: 30
 
     - name: Build debug
-      run: make -j$(nproc) debug
+      run: make debug -j4
     
     - name: Run memory tests
       run: make test-memory

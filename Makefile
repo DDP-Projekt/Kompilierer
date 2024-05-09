@@ -5,6 +5,7 @@ RUN_DIR = ./lib/runtime/
 KDDP_BIN = ""
 STD_BIN = libddpstdlib.a
 STD_BIN_PCRE2 = libpcre2-8.a
+PCRE2_DIR = $(STD_DIR)pcre2/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -25,12 +26,13 @@ RM = rm -rf
 CP = cp -rf
 MKDIR = mkdir -p
 SED = sed -u
+TAR = tar
 
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
 LLVM_TARGETS="X86;AArch64"
-LLVM_ADDITIONAL_CMAKE_VARIABLES= -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF 
+LLVM_ADDITIONAL_CMAKE_VARIABLES= -DCMAKE_INSTALL_PREFIX=llvm_build/  -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF
 
 ifeq ($(OS),Windows_NT)
 	KDDP_BIN = kddp.exe
@@ -53,7 +55,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory download-llvm llvm help test-complete test-with-optimizations download-pcre2 coverage
+.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
 
 all: $(OUT_DIR) kddp runtime stdlib
 
@@ -75,8 +77,8 @@ stdlib:
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	@if [ -d ./lib/stdlib/pcre2 ]; then \
-		$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT); \
+	@if [ -d $(PCRE2_DIR) ]; then \
+		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
@@ -90,8 +92,8 @@ stdlib-debug:
 	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	@if [ -d ./lib/stdlib/pcre2 ]; then \
-		$(CP) $(STD_DIR)pcre2/ $(STD_DIR_OUT); \
+	@if [ -d $(PCRE2_DIR) ]; then \
+		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
@@ -132,33 +134,24 @@ clean: clean-outdir
 	cd $(RUN_DIR) ; '$(MAKE)' clean
 
 clean-outdir:
-	@echo "deleting output directorie"
+	@echo "deleting output directory"
 	$(RM) $(OUT_DIR)
 
-download-pcre2:
-	@echo "downloading pcre2.tar.gz"
-	curl -L https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz -o pcre2.tar.gz
-	mkdir $(STD_DIR)pcre2
-	tar -xzf pcre2.tar.gz -C $(STD_DIR)pcre2 --strip-components=1
-	rm ./pcre2.tar.gz
-	cd $(STD_DIR)pcre2 ; ./configure
-
-download-llvm:
+checkout-llvm:
 # clone the submodule
 	@echo "cloning the llvm repo"
-	git submodule init
-	git submodule update
+	git submodule update --init llvm-project
 
 # ignore gopls errors
 	cd ./llvm-project ; go mod init ignored || true
 
-llvm: download-llvm
+llvm: checkout-llvm
 # generate cmake build files
 	@echo "building llvm"
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config
+	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config llvm-headers install-llvm-headers
 
 # will hold the directories to run in the tests
 # if empty, all directories are run
@@ -197,10 +190,10 @@ help:
 	@echo "    stdlib-debug: compile only the stdlib in debug mode into $(OUT_DIR)"
 	@echo "    runtime: compile only the runtime into $(OUT_DIR)"
 	@echo "    runtime-debug: compile only the runtime in debug mode into $(OUT_DIR)"
-	@echo "    clean: delete the output directorie $(OUT_DIR)"
+	@echo "    clean: delete the output directory $(OUT_DIR)"
 	@echo "    llvm: clone the llvm-project repo at version 12.0.0 and build it"
 	@echo "    test: run the ddp tests"
-	@echo "          you can specifiy directorie names with the TEST_DIRS variable"
+	@echo "          you can specifiy directory names with the TEST_DIRS variable"
 	@echo "          to only run those tests"
 	@echo '          example: make test TEST_DIRS="slicing assignement if"'
 	@echo "    test-memory: run the ddp tests and test for memory leaks"
