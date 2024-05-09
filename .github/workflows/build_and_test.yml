@@ -46,7 +46,7 @@ jobs:
     - name: Download Prebuilt LLVM
       if: runner.os == 'Windows' && steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        curl -L -o ${{ github.workspace }}/llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-mingw-12.2.0-x86_64-ucrt-posix-seh.tar.gz 
+        curl -L -o '${{ github.workspace }}/llvm_build.tar.gz' https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-mingw-12.2.0-x86_64-ucrt-posix-seh.tar.gz 
         tar -xzf ${{ github.workspace }}/llvm_build.tar.gz -C ${{ github.workspace }}
         rm ${{ github.workspace }}/llvm_build.tar.gz
 
