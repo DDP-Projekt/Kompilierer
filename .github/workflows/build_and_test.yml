@@ -35,16 +35,20 @@ jobs:
       if: runner.os == 'Linux'
       run: sudo apt install llvm-12
 
-    - name: Unpack LLVM
-      if: runner.os == 'Windows'
-      run: make unpack-llvm
-
     - name: Cache LLVM
       if: runner.os == 'Windows'
+      id: cache-llvm
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
         key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm-archives/**') }}
+
+    - name: Download Prebuilt LLVM
+      if: runner.os == 'Windows' && steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        wget https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-mingw-12.2.0-x86_64-ucrt-posix-seh.tar.gz -O ${{ github.workspace }}/llvm_build.tar.gz
+        tar -xzf ${{ github.workspace }}/llvm_build.tar.gz -C ${{ github.workspace }}
+        rm ${{ github.workspace }}/llvm_build.tar.gz
 
     - name: Get german locale
       run: sudo locale-gen de_DE.UTF-8
@@ -57,15 +61,15 @@ jobs:
         echo "CGO_LDFLAGS=$('${{ github.workspace}}/llvm_build/bin/llvm-config' --ldflags --libs --system-libs all | tr '\r\n' '  ')" >> $GITHUB_ENV
         echo "CGO_CXXFLAGS=-std=c++14" >> $GITHUB_ENV
         
-    - name: Build
-      run: make -j4
-
     - name: Cache pcre2
       if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/lib/stdlib/pcre2_build/
         key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**') }}
+
+    - name: Build
+      run: make -j4
       
     - name: Run tests
       run: make test
