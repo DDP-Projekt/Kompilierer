@@ -131,7 +131,7 @@ func (p *parser) alias() ast.Expression {
 					exprStart := p.cur
 					isGrouping := false
 					switch pType {
-					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER, token.SYMBOL:
 						p.advance() // single-token argument
 					case token.NEGATE:
 						p.advance()
