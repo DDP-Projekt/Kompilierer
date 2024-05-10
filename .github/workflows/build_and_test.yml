@@ -24,12 +24,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Go
-      uses: actions/setup-go@v3
+    - name: Setup and Cache Go
+      uses: magnetikonline/action-golang-cache@v5
       with:
-          go-version: "1.22.2"
-          check-latest: true
-          cache: true
+        go-version-file: go.mod
+        cache-key-suffix: kompilierer
         
     - name: Setup LLVM
       if: runner.os == 'Linux'
