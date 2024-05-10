@@ -72,7 +72,6 @@ $ rm ./llvm_build.tar.gz
 $ make -j8
 # run the tests
 $ make test-complete -j8
-
 ```
 
 # LLVM bauen
