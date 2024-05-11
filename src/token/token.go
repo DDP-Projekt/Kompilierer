@@ -18,10 +18,16 @@ type Token struct {
 }
 
 func (t *Token) String() string {
+	if t == nil {
+		return "<nil>"
+	}
 	return t.Literal
 }
 
 func (t *Token) StringVerbose() string {
+	if t == nil {
+		return "<nil>"
+	}
 	return fmt.Sprintf("[L: %d C: %d I: %d Lit: \"%s\"] Type: %s", t.Range.Start.Line, t.Range.Start.Column, t.Indent, t.Literal, t.Type)
 }
 
