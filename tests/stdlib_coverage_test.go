@@ -1,10 +1,12 @@
 package tests
 
 import (
+	"cmp"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
+	"golang.org/x/exp/maps"
 )
 
 type moduleVisitor func(*ast.Module)
@@ -158,6 +161,11 @@ func TestStdlibCoverage(t *testing.T) {
 		functions_per_module[fun.Module()] = info
 	}
 
+	sorted_modules := maps.Values(duden_modules)
+	slices.SortStableFunc(sorted_modules, func(a, b *ast.Module) int {
+		return cmp.Compare(float32(functions_per_module[a].called)/float32(functions_per_module[a].total), float32(functions_per_module[b].called)/float32(functions_per_module[b].total))
+	})
+
 	fmt.Fprintf(file, "Aufgerufene Funktionen: %d<br>\n", len(called_functions))
 	fmt.Fprintf(file, "Nicht aufgerufene Funktionen: %d<br>\n", len(duden_funcs)-len(called_functions))
 	fmt.Fprintf(file, "Coverage: %.2f%%\n\n", float64(len(called_functions))/float64(len(duden_funcs))*100)
@@ -165,8 +173,9 @@ func TestStdlibCoverage(t *testing.T) {
 	fmt.Fprintf(file, "### Index\n\n")
 	fmt.Fprintf(file, "| Module | Funktionen | Aufgerufene Funktionen | Nicht Aufgerufene Funktionen | %% Aufgerufen |\n")
 	fmt.Fprintf(file, "|--------|------------| ---------------------- | ---------------------------- | -- |\n")
-	for modName, mod := range duden_modules {
-		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
+
+	for _, mod := range sorted_modules {
+		modName, err := filepath.Rel(ddppath.Duden, mod.FileName)
 		if err != nil {
 			modName = mod.FileName
 			t.Logf("Error getting relative path for %s: %s", modName, err)
@@ -190,8 +199,8 @@ func TestStdlibCoverage(t *testing.T) {
 		}
 	}
 
-	for modName, mod := range duden_modules {
-		modName, err = filepath.Rel(ddppath.Duden, mod.FileName)
+	for _, mod := range sorted_modules {
+		modName, err := filepath.Rel(ddppath.Duden, mod.FileName)
 		if err != nil {
 			modName = mod.FileName
 			t.Logf("Error getting relative path for %s: %s", modName, err)
@@ -199,6 +208,7 @@ func TestStdlibCoverage(t *testing.T) {
 
 		info := functions_per_module[mod]
 		fmt.Fprintf(file, "### %s\n", getFileLink(t, modName, mod.FileName, -1))
+		fmt.Fprintf(file, "<sup>[« Zurück](#index)</sup>\n")
 		fmt.Fprintf(file, "#### Aufgerufene Funktionen:\n\n")
 
 		if info.called > 0 {
