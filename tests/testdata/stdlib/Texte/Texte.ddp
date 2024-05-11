@@ -244,3 +244,13 @@ Schreibe (den ersten Buchstaben von "hallo") auf eine Zeile. [h]
 Schreibe (den 2. Buchstaben von "hallo") auf eine Zeile. [a]
 [Letzter_Buchstabe]
 Schreibe (den letzten Buchstaben von "hallo") auf eine Zeile. [o]
+
+[Klein-/Großschreiben]
+text ist "HALLo".
+Schreibe (text klein geschrieben) auf eine Zeile.
+Schreibe text klein.
+Schreibe text auf eine Zeile.
+
+Schreibe (text groß geschrieben) auf eine Zeile.
+Schreibe text groß.
+Schreibe text auf eine Zeile.

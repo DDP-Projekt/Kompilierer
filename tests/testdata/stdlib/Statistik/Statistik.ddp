@@ -1,12 +1,17 @@
 Binde "Duden/Statistik" ein.
 Binde "Duden/Ausgabe" ein.
 
+Die Zahlen Liste urlisteZ ist eine Liste, die aus 3, 4, 5, 1, 5, 2, 1, 3, 1, 3 besteht.
 Die Kommazahlen Liste urliste ist eine Liste, die aus 3,0, 4,0, 5,0, 1,0, 5,0, 2,0, 1,0, 3,0, 1,0, 3,0 besteht.
 Die Kommazahlen Liste urliste_sortiert ist eine Liste, die aus 1,0, 1,0, 1,0, 2,0, 3,0, 3,0, 3,0, 4,0, 5,0, 5,0 besteht.
 
-Schreibe "Min: ".
+Schreibe "MinZ: ".
+Schreibe (der kleinste Wert aus urlisteZ) auf eine Zeile.
+Schreibe "MaxZ: ".
+Schreibe (der höchste Wert aus urlisteZ) auf eine Zeile.
+Schreibe "MinK: ".
 Schreibe (der kleinste Wert aus urliste) auf eine Zeile.
-Schreibe "Max: ".
+Schreibe "MaxK: ".
 Schreibe (der höchste Wert aus urliste) auf eine Zeile.
 
 Für jede Zahl i von 1 bis 5, mache:

@@ -29,7 +29,7 @@ void Schreibe_Zahl(ddpint p1) {
 
 void Schreibe_Kommazahl(ddpfloat p1) {
 	if (isinf(p1)) {
-		printf("Unendlich");
+		printf(p1 > 0 ? "Unendlich": "-Unendlich");
 	} else if (isnan(p1)) {
 		printf("Keine Zahl (NaN)");
 	} else {
