@@ -39,7 +39,7 @@ var updateCmd = &cobra.Command{
 			fmt.Printf("Neueste Version:  %s\n\n", latest_version)
 
 			if is_newer, err := is_newer_version(latest_version, DDPVERSION); err != nil {
-				return err
+				return fmt.Errorf("Fehler beim Vergleichen der Versionen:\n\t%w", err)
 			} else if is_newer {
 				fmt.Println("Es ist eine neuere Version verfügbar")
 			} else {
@@ -91,7 +91,7 @@ var updateCmd = &cobra.Command{
 				return strings.HasSuffix(path, kddp_bin_name)
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("Fehler beim entpacken von %s:\n\t%w", kddp_bin_name, err)
 			}
 			defer kddp_exe.Close()
 
@@ -295,11 +295,9 @@ func update_lib(archive *archive_reader.ArchiveReader) (err error) {
 	}
 
 	infof("Generiere ddp_list_types_defs.*")
-	// list_defs_cmd := NewDumpListDefsCommand()
-	// list_defs_cmd.Init([]string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm_ir", "--object"})
-	// if run_err := list_defs_cmd.Run(); run_err != nil {
-	// 	return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
-	// }
+	if run_err := dumpListDefsCommand.RunE(dumpListDefsCommand, []string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm-ir", "--object"}); run_err != nil {
+		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
+	}
 
 	return err
 }
@@ -430,7 +428,7 @@ func downloadAssetTo(assetName, targetPath string, release *github.RepositoryRel
 			return nil
 		}
 	}
-	return errors.New("asset not found")
+	return fmt.Errorf("asset %s not found", assetName)
 }
 
 type progressReader struct {
