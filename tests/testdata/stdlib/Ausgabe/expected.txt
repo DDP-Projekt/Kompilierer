@@ -20,3 +20,11 @@ Hallo, Welt, !!Hallo, Welt, !!
 1,4 2,2 3,141,4 2,2 3,14
 wahr falsch wahrwahr falsch wahr
 Hallo Welt !!Hallo Welt !!
+a b c
+Unendlich
+-Unendlich
+Keine Zahl (NaN)
+2,225073858507201e-308
+-2,225073858507201e-308
+1,797693134443758e+308
+-1,797693134443758e+308

@@ -51,6 +51,13 @@ Schreibe ('p' ein lateinischer Buchstabe ist) auf eine Zeile.
 Schreibe ('z' ein lateinischer Buchstabe ist) auf eine Zeile.
 Schreibe ('Z' ein lateinischer Buchstabe ist) auf eine Zeile.
 
+Schreibe "--- Ist_Lateinischer_Buchstabe_Oder_Zahl Test ---" auf eine Zeile.
+Schreibe ('a' ein lateinischer Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('Z' ein lateinischer Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('ß' ein lateinischer Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('1' ein lateinischer Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('9' ein lateinischer Buchstabe oder eine Zahl ist) auf eine Zeile.
+
 Schreibe "--- IstDeutscherBuchstabe Test ---" auf eine Zeile.
 Schreibe ('A' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('a' ein deutscher Buchstabe ist) auf eine Zeile.
@@ -64,6 +71,15 @@ Schreibe ('Ä' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('Ö' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('Ü' ein deutscher Buchstabe ist) auf eine Zeile.
 Schreibe ('ß' ein deutscher Buchstabe ist) auf eine Zeile.
+
+Schreibe "--- Ist_Deutscher_Buchstabe_Oder_Zahl Test ---" auf eine Zeile.
+Schreibe ('a' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('Z' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('ä' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('Ü' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('ß' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('1' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
+Schreibe ('9' ein deutscher Buchstabe oder eine Zahl ist) auf eine Zeile.
 
 Schreibe "--- Großgeschrieben Test ---" auf eine Zeile.
 Schreibe ('a' als großer Buchstabe) auf eine Zeile.
@@ -107,3 +123,13 @@ Schreibe "--- ASCII_Kleiner Test ---" auf eine Zeile.
 Schreibe (der ASCII-Wert von 'Z' kleiner als 'A') auf eine Zeile.
 Schreibe (der ASCII-Wert von 'Z' kleiner als 'Ö') auf eine Zeile.
 Schreibe (der ASCII-Wert von 'A' kleiner als 'A') auf eine Zeile.
+Schreibe "--- Besondere Zeichen Test ---" auf eine Zeile.
+Schreibe (einen Wagenrücklauf gleich '\r' ist) auf eine Zeile.
+Schreibe (ein Anfühungszeichen gleich '"' ist) auf eine Zeile.
+Schreibe (ein Tabulator gleich '\t' ist) auf eine Zeile.
+Schreibe (ein Leerzeichen gleich ' ' ist) auf eine Zeile.
+Schreibe (einem Apostroph gleich '\'' ist) auf eine Zeile.
+Schreibe (einem Rückstrich gleich '\\' ist) auf eine Zeile.
+Schreibe (eine neue Zeile gleich '\n' ist) auf eine Zeile.
+Schreibe "--- IstKontroll ---" auf eine Zeile.
+Schreibe ('\n' ein Kontrollzeichen ist) auf eine Zeile.

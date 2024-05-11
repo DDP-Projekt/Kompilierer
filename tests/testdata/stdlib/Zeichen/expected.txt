@@ -42,12 +42,26 @@ wahr
 wahr
 wahr
 wahr
+--- Ist_Lateinischer_Buchstabe_Oder_Zahl Test ---
+wahr
+wahr
+falsch
+wahr
+wahr
 --- IstDeutscherBuchstabe Test ---
 wahr
 wahr
 wahr
 wahr
 wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+--- Ist_Deutscher_Buchstabe_Oder_Zahl Test ---
 wahr
 wahr
 wahr
@@ -97,3 +111,13 @@ falsch
 falsch
 wahr
 falsch
+--- Besondere Zeichen Test ---
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+wahr
+--- IstKontroll ---
+wahr

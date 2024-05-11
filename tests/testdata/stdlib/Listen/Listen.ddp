@@ -243,4 +243,5 @@ Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste,
 Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 4,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) multipliziert) auf eine Zeile.
 Schreibe (jede Zahl aus (einer Liste, die aus 1, 2, 3 besteht) mit (einer Liste, die aus 4, 5, 6 besteht) dividiert) auf eine Zeile.
 Schreibe (jede Kommazahl aus (einer Liste, die aus 1,0, 2,0, 3,0 besteht) mit (einer Liste, die aus 0,2, 0,2, 0,2 besteht) dividiert) auf eine Zeile.
-Schreibe (jeden Text aus (einer Liste, die aus "a", "b" besteht) mit (einer Liste, die aus "c", "d" besteht) verkettet).
+Schreibe (jeden Text aus (einer Liste, die aus "a", "b" besteht) mit (einer Liste, die aus "c", "d" besteht) verkettet) auf eine Zeile.
+Schreibe (alle Texte in (einer Liste, die aus "a", "b", "" besteht) aneinandergehängt) auf eine Zeile.
