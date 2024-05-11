@@ -37,15 +37,15 @@ ddpfloat Hyperbeltangens(ddpfloat x) {
 	return tanh((double)x);
 }
 
-ddpfloat Arkushyperbelsinus(ddpfloat x) {
+ddpfloat Areahyperbelsinus(ddpfloat x) {
 	return asinh((double)x);
 }
 
-ddpfloat Arkushyperbelkosinus(ddpfloat x) {
+ddpfloat Areahyperbelkosinus(ddpfloat x) {
 	return acosh((double)x);
 }
 
-ddpfloat Arkushyperbeltangens(ddpfloat x) {
+ddpfloat Areahyperbeltangens(ddpfloat x) {
 	return atanh((double)x);
 }
 
