@@ -195,6 +195,11 @@ Die öffentliche Funktion Trunc mit dem Parameter wert vom Typ Kommazahl, gibt e
 Und kann so benutzt werden:
 	"<wert> trunkiert"
 
+Die öffentliche Funktion Runden mit den Parametern wert und n vom Typ Kommazahl und Zahl, gibt eine Kommazahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<wert> auf <n> Stellen gerundet"
+
 [ Trigonometrische Funktionen ]
 
 [

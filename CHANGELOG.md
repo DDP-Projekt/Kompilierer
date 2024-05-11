@@ -10,6 +10,7 @@ Der Changelog von DDP. Sortiert nach Release.
  - Breaking: Die Änderung macht alte Programme kaputt
 
 ## In Entwicklung
+[Added] Runden in Mathe/Duden hinzugefügt
 
 ## v0.3.0-alpha
 
