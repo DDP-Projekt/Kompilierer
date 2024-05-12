@@ -28,6 +28,9 @@ guh??
 
 
 
+guh??
+guh??
+guh??
 wahr
 falsch
 falsch
@@ -148,3 +151,16 @@ hallo
 hallo
 HALLO
 HALLO
+wahr
+wahr
+wahr
+falsch
+falsch
+   a
+   a
+      a
+    
+a   
+a   
+a      
+    

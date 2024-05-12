@@ -1,5 +1,8 @@
 Binde "Duden/Sortierung" ein.
 Binde "Duden/Ausgabe" ein.
 
+Die Zahlen Liste l ist eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht.
 [ Quicksort tests ]
-Schreibe ((eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht) sortiert). [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
+Schreibe (l sortiert) auf eine Zeile. [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
+Sortiere l.
+Schreibe l.

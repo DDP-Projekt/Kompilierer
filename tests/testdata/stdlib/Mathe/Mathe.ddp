@@ -28,6 +28,33 @@ Schreibe (das Vorzeichen von 0) auf eine Zeile.
 Schreibe (das Vorzeichen von 1) auf eine Zeile.
 Schreibe (das Vorzeichen von -1) auf eine Zeile.
 
+Schreibe (die größere Zahl von 2,0 und 3,0) auf eine Zeile.
+Schreibe (die größere Zahl von 99,0 und 42,0) auf eine Zeile.
+Schreibe (die größere Zahl von 0,0 und 0,0) auf eine Zeile.
+
+Schreibe (die größere Zahl von 5,0, 2,0 und 3,0) auf eine Zeile.
+Schreibe (die größere Zahl von 2,0, 5,0 und 3,0) auf eine Zeile.
+Schreibe (die größere Zahl von 2,0, 3,0 und 5,0) auf eine Zeile.
+Schreibe (die größere Zahl von 0,0, 0,0 und 0,0) auf eine Zeile.
+
+Schreibe (die kleinere Zahl von -2,0 und 5,0) auf eine Zeile.
+Schreibe (die kleinere Zahl von 60,0 und 13,0) auf eine Zeile.
+Schreibe (die kleinere Zahl von 0,0 und 0,0) auf eine Zeile.
+
+Schreibe (die kleinere Zahl von 2,0, 5,0 und 3,0) auf eine Zeile.
+Schreibe (die kleinere Zahl von 5,0, 2,0 und 3,0) auf eine Zeile.
+Schreibe (die kleinere Zahl von 5,0, 3,0 und 2,0) auf eine Zeile.
+Schreibe (die kleinere Zahl von 0,0, 0,0 und 0,0) auf eine Zeile.
+
+Schreibe (7,0 zwischen -30,0 und 10,0) auf eine Zeile.
+Schreibe (45,0 zwischen 75,0 und 95,0) auf eine Zeile.
+Schreibe (18,0 zwischen 2,0 und 13,0) auf eine Zeile.
+Schreibe (50,0 zwischen 0,0 und 0,0) auf eine Zeile.
+
+Schreibe (das Vorzeichen von 0,0) auf eine Zeile.
+Schreibe (das Vorzeichen von 1,0) auf eine Zeile.
+Schreibe (das Vorzeichen von -1,0) auf eine Zeile.
+
 Schreibe (1,7 nach unten gerundet) auf eine Zeile.
 Schreibe (1,3 nach oben gerundet) auf eine Zeile.
 Schreibe (1,5 trunkiert) auf eine Zeile.
@@ -53,6 +80,10 @@ Schreibe (4,0 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (4,6 eine ganze Zahl ist) auf eine Zeile.
 Schreibe (3,0 eine gerade Zahl ist) auf eine Zeile.
 Schreibe (4,2 eine gerade Zahl ist) auf eine Zeile.
+Schreibe (3 eine gerade Zahl ist) auf eine Zeile.
+Schreibe (4 eine gerade Zahl ist) auf eine Zeile.
+Schreibe (4 durch 2 teilbar ist) auf eine Zeile.
+Schreibe (4 durch 3 teilbar ist) auf eine Zeile.
 
 Schreibe (5 Fakultät) auf eine Zeile.
 Schreibe (5!) auf eine Zeile.
@@ -103,3 +134,12 @@ Schreibe ((der Areahyperbelkosinus von 1,0) auf 3 Stellen gerundet) auf eine Zei
 Schreibe ((der Areahyperbeltangens von 0,5) auf 3 Stellen gerundet) auf eine Zeile. [0,549]
 Schreibe ((der Versinus von PI) auf 3 Stellen gerundet) auf eine Zeile. [2]
 Schreibe ((der Koversinus von PI) auf 3 Stellen gerundet) auf eine Zeile. [1]
+
+Schreibe (2,0 zum quadrat) auf eine Zeile. [16]
+Die Kommazahl q ist 2,0.
+Quadriere q.
+Schreibe q auf eine Zeile.
+
+Schreibe (der natürlicher Logarithmus von 1,0) auf eine Zeile. [0]
+Schreibe (der natürlicher Logarithmus von E) auf eine Zeile. [1]
+Schreibe ((die Gaußsche Fehlerfunktion von -2,0) gleich -(die Gaußsche Fehlerfunktion von 2,0) ist) auf eine Zeile. [wahr]
