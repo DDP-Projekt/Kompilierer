@@ -1,8 +1,13 @@
-KDDP_DIR = ./cmd/kddp/
+CMD_DIR = ./cmd/
 STD_DIR = ./lib/stdlib/
 RUN_DIR = ./lib/runtime/
 
+KDDP_BUILD_DIR = $(CMD_DIR)kddp/build/
+DDP_SETUP_BUILD_DIR = $(CMD_DIR)ddp-setup/build/
+
 KDDP_BIN = ""
+DDP_SETUP_BIN = ""
+
 STD_BIN = libddpstdlib.a
 STD_BIN_PCRE2 = libpcre2-8.a
 PCRE2_DIR = $(STD_DIR)pcre2/
@@ -36,8 +41,10 @@ LLVM_ADDITIONAL_CMAKE_VARIABLES= -DCMAKE_INSTALL_PREFIX=llvm_build/  -DLLVM_BUIL
 
 ifeq ($(OS),Windows_NT)
 	KDDP_BIN = kddp.exe
+	DDP_SETUP_BIN = ddp-setup.exe
 else
 	KDDP_BIN = kddp
+	DDP_SETUP_BIN = ddp-setup
 	LLVM_CMAKE_GENERATOR="Unix Makefiles"
 endif
 
@@ -46,6 +53,7 @@ OUT_DIR = ./build/DDP/
 .DEFAULT_GOAL = all
 
 KDDP_DIR_OUT = $(OUT_DIR)bin/
+DDP_SETUP_DIR_OUT = $(OUT_DIR)
 LIB_DIR_OUT = $(OUT_DIR)lib/
 STD_DIR_OUT = $(LIB_DIR_OUT)stdlib/
 RUN_DIR_OUT = $(LIB_DIR_OUT)runtime/
@@ -57,15 +65,20 @@ SHELL = /bin/bash
 
 .PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
 
-all: $(OUT_DIR) kddp runtime stdlib
+all: $(OUT_DIR) kddp runtime stdlib ddp-setup
 
 debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
 
 kddp:
 	@echo "building kddp"
-	cd $(KDDP_DIR) ; '$(MAKE)'
-	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	cd $(CMD_DIR) ; '$(MAKE)' kddp
+	$(CP) $(KDDP_BUILD_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
+
+ddp-setup:
+	@echo "building ddp-setup"
+	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
+	$(CP) $(DDP_SETUP_BUILD_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
 stdlib:
 	@echo "building the ddp-stdlib"
@@ -119,6 +132,7 @@ runtime-debug:
 $(OUT_DIR): LICENSE README.md
 	@echo "creating output directories"
 	$(MKDIR) $(OUT_DIR)
+	$(MKDIR) $(DDP_SETUP_DIR_OUT)
 	$(MKDIR) $(KDDP_DIR_OUT)
 	$(MKDIR) $(OUT_DIR)Duden/
 	$(MKDIR) $(STD_DIR_OUT)include/
@@ -129,7 +143,7 @@ $(OUT_DIR): LICENSE README.md
 	$(CP) README.md $(OUT_DIR)
 
 clean: clean-outdir
-	cd $(KDDP_DIR) ; '$(MAKE)' clean
+	cd $(CMD_DIR) ; '$(MAKE)' clean
 	cd $(STD_DIR) ; '$(MAKE)' clean
 	cd $(RUN_DIR) ; '$(MAKE)' clean
 
