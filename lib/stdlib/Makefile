@@ -52,7 +52,7 @@ endif
 %_debug.o: %.c $(PCRE2_OUT_FILE_NAME)
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) compile_commands.json
+all: $(OUT_FILE_NAME)
 
 debug: $(OUT_FILE_NAME_DEBUG)
 
@@ -72,7 +72,7 @@ compile_commands.json: $(SRCS) $(HEADERS)
 	fi
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
 	@if [ -d $(PCRE2_DIR) ]; then \
 		cd $(PCRE2_DIR) && '$(PCRE2_CMAKE_BUILD_TOOL)' clean; \
 	fi
