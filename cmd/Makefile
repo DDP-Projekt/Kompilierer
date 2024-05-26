@@ -58,5 +58,5 @@ ddp-setup: $(DDP_SETUP_DIR)$(OUT_DIR)
 	cd $(DDP_SETUP_DIR) ; go build -o $(OUT_DIR)$(DDP_SETUP_OUT_FILE_NAME) -ldflags $(SETUP_LDFLAGS)
 
 
-$(OUT_DIR):
-	mkdir -p $(OUT_DIR)
+%/$(OUT_DIR):
+	mkdir -p $@
