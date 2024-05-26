@@ -2,7 +2,6 @@ CMD_DIR = ./cmd/
 STD_DIR = ./lib/stdlib/
 RUN_DIR = ./lib/runtime/
 
-KDDP_BUILD_DIR = $(CMD_DIR)kddp/build/
 DDP_SETUP_BUILD_DIR = $(CMD_DIR)ddp-setup/build/
 
 KDDP_BIN = ""
@@ -72,13 +71,13 @@ debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
 kddp:
 	@echo "building kddp"
 	cd $(CMD_DIR) ; '$(MAKE)' kddp
-	$(CP) $(KDDP_BUILD_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	$(CP) $(CMD_DIR)kddp/build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 ddp-setup:
 	@echo "building ddp-setup"
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
-	$(CP) $(DDP_SETUP_BUILD_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
+	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
 stdlib:
 	@echo "building the ddp-stdlib"
@@ -200,6 +199,7 @@ help:
 	@echo "    all (default target): compile kddp the runtime and the stdlib into $(OUT_DIR)"
 	@echo "    debug: compile kddp the runtime and the stdlib into $(OUT_DIR) in debug mode"
 	@echo "    kddp: compile kddp into $(OUT_DIR)"
+	@echo "    ddp-setup: compile ddp-setup into $(OUT_DIR)"
 	@echo "    stdlib: compile only the stdlib into $(OUT_DIR)"
 	@echo "    stdlib-debug: compile only the stdlib in debug mode into $(OUT_DIR)"
 	@echo "    runtime: compile only the runtime into $(OUT_DIR)"
