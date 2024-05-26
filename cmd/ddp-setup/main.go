@@ -188,7 +188,7 @@ func recompileLibs() {
 	rmArg := ""
 	if runtime.GOOS == "windows" {
 		make_args = append(make_args, fmt.Sprintf("CC=%s", gccCmd), fmt.Sprintf("AR=%s %s", arCmd, "rcs"))
-		rmArg = "RM=" + filepath.Join(cwd, "bin", "ddp-rm.exe")
+		rmArg = fmt.Sprintf("%s %s", filepath.Join(cwd, "bin", "kddp.exe"), "rm")
 	}
 
 	if _, err := runCmd("lib/runtime/", makeCmd, make_args...); err != nil {
