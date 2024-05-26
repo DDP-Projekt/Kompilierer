@@ -29,7 +29,7 @@ LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) source/main.o compile_commands.json
+all: $(OUT_FILE_NAME) source/main.o
 
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
@@ -49,7 +49,7 @@ compile_commands.json: $(SRCS) $(HEADERS)
 	fi
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend
