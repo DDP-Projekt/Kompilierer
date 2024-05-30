@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "error.h"
 #include "utf8/utf8.h"
+#include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -12,6 +13,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+
 
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
