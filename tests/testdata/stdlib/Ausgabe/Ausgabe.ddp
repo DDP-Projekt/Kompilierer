@@ -73,3 +73,19 @@ Schreibe '\n'.
 
 Schreibe die Text Liste (eine Liste, die aus "Hallo", "Welt", "!!" besteht) mit dem Seperator " ".
 Schreibe (eine Liste, die aus "Hallo", "Welt", "!!" besteht) mit dem Seperator " ".
+
+Schreibe '\n'.
+
+Schreibe (eine Liste, die aus 'a', 'b', 'c' besteht) mit dem Seperator " ".
+
+Schreibe '\n'.
+
+[Schreibe floats]
+Binde "Duden/Zahlen" ein.
+Schreibe (Unendlich) auf eine Zeile.
+Schreibe (Minus-Unendlich) auf eine Zeile.
+Schreibe (keine Zahl) auf eine Zeile.
+Schreibe (der kleinste positive Wert einer Kommazahl) auf eine Zeile.
+Schreibe (der kleinste negative Wert einer Kommazahl) auf eine Zeile.
+Schreibe (der maximale Wert einer Kommazahl) auf eine Zeile.
+Schreibe (der minimale Wert einer Kommazahl) auf eine Zeile.

@@ -15,49 +15,57 @@ Und kann so benutzt werden:
 	"der maximale Wert einer Zahl"
 
 [
-	Gibt -1,79769313486231 * 10^308 zurück.
+	Gibt -(2−2^−31) · 2^1023 zurück.
 ]
 Die öffentliche Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
-	Gib -1,7976931348623158 mal 10 hoch 308 zurück.
+	Gib -(2 minus 2 hoch -31) mal 2 hoch 1023 zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Kommazahl"
 
 [
-	Gibt 1,79769313486231 * 10^308 zurück.
+	Gibt (2−2^−31) · 2^1023 zurück.
 ]
 Die öffentliche Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
-	Gib 1,7976931348623158 mal 10 hoch 308 zurück.
+	Gib (2 minus 2 hoch -31) mal 2 hoch 1023 zurück.
 Und kann so benutzt werden:
 	"der maximale Wert einer Kommazahl"
 
 [
-	Gibt 2.2250738585072014 * 10^-308 zurück.
+	Gibt 2^-1022 zurück.
 	Der Wert der am nächsten zu +0 ist.
 ]
-Die Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
-	Gib 2,2250738585072014 mal 10 hoch -308 zurück.
+Die öffentliche Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
+	Gib 2 hoch -1022 zurück.
 Und kann so benutzt werden:
 	"der kleinste positive Wert einer Kommazahl"
 
 [
-	Gibt -2,2250738585072014 * 10^-308 zurück.
+	Gibt -2^-1022 zurück.
 	Der Wert der am nächsten zu -0 ist.
 ]
-Die Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
-	Gib -2,2250738585072014 mal 10 hoch -308 zurück.
+Die öffentliche Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
+	Gib -2 hoch -1022 zurück.
 Und kann so benutzt werden:
 	"der kleinste negative Wert einer Kommazahl"
 
 [
-	Gibt Unendlich (1 durch 0) zurück.
+	Gibt Unendlich (1,0 durch 0,0) zurück.
 ]
 Die öffentliche Funktion Unendlich gibt eine Kommazahl zurück, macht:
-	Gib 1 durch 0 zurück.
+	Gib 1,0 durch 0,0 zurück.
 Und kann so benutzt werden:
 	"Unendlich"
 
 [
-	Gibt NaN (0 durch 0) zurück.
+	Gibt Unendlich (-1,0 durch 0,0) zurück.
+]
+Die öffentliche Funktion Minus_Unendlich gibt eine Kommazahl zurück, macht:
+	Gib -1,0 durch 0,0 zurück.
+Und kann so benutzt werden:
+	"Minus-Unendlich"
+
+[
+	Gibt NaN (0,0 durch 0,0) zurück.
 ]
 Die öffentliche Funktion KeineZahl gibt eine Kommazahl zurück, macht:
 	Gib 0,0 durch 0,0 zurück.

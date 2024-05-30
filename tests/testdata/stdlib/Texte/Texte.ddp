@@ -55,6 +55,17 @@ Schreibe ("   " mit allen ' ' davor entfernt) auf eine Zeile. [TrimAnfangWert, ]
 Schreibe ("   " mit allen ' ' danach entfernt) auf eine Zeile. [TrimEndeWert, ]
 Schreibe ("   " mit allen ' ' davor und danach entfernt) auf eine Zeile. [TrimWert, ]
 
+[Trim]
+Der Text TrimText1 ist "   guh??".
+Der Text TrimText2 ist "guh??    ".
+Der Text TrimText3 ist "   guh??   ".
+Entferne alle ' ' vor TrimText1.
+Entferne alle ' ' nach TrimText2.
+Entferne alle ' ' vor und nach TrimText3.
+Schreibe TrimText1 auf eine Zeile.
+Schreibe TrimText2 auf eine Zeile.
+Schreibe TrimText3 auf eine Zeile.
+
 Schreibe ("Hello World" 'e' enthält) auf eine Zeile. [EnthältBuchstabe, wahr]
 Schreibe ("Hello World" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
 Schreibe ("" '!' enthält) auf eine Zeile. [EnthältBuchstabe, falsch]
@@ -244,3 +255,30 @@ Schreibe (den ersten Buchstaben von "hallo") auf eine Zeile. [h]
 Schreibe (den 2. Buchstaben von "hallo") auf eine Zeile. [a]
 [Letzter_Buchstabe]
 Schreibe (den letzten Buchstaben von "hallo") auf eine Zeile. [o]
+
+[Klein-/Großschreiben]
+text ist "HALLo".
+Schreibe (text klein geschrieben) auf eine Zeile.
+Schreibe text klein.
+Schreibe text auf eine Zeile.
+
+Schreibe (text groß geschrieben) auf eine Zeile.
+Schreibe text groß.
+Schreibe text auf eine Zeile.
+
+[Text_Ist_Zahl]
+Schreibe ("123" eine Zahl ist) auf eine Zeile.
+Schreibe ("+123" eine Zahl ist) auf eine Zeile.
+Schreibe ("-123" eine Zahl ist) auf eine Zeile.
+Schreibe ("" eine Zahl ist) auf eine Zeile.
+Schreibe ("abc" eine Zahl ist) auf eine Zeile.
+
+[Polster]
+Schreibe ("a" mit 4 ' ' links gepolstert) auf eine Zeile.
+Schreibe ("  a" mit 4 ' ' links gepolstert) auf eine Zeile.
+Schreibe ("      a" mit 4 ' ' links gepolstert) auf eine Zeile.
+Schreibe ("" mit 4 ' ' links gepolstert) auf eine Zeile.
+Schreibe ("a" mit 4 ' ' rechts gepolstert) auf eine Zeile.
+Schreibe ("a  " mit 4 ' ' rechts gepolstert) auf eine Zeile.
+Schreibe ("a      " mit 4 ' ' rechts gepolstert) auf eine Zeile.
+Schreibe ("" mit 4 ' ' rechts gepolstert) auf eine Zeile.

@@ -1,0 +1,44 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Zahlen" ein.
+
+Schreibe (der maximale Wert einer Zahl gleich logisch nicht 0 um ein Bit nach rechts verschoben ist) auf eine Zeile.
+Schreibe (der minimale Wert einer Zahl gleich eins um 64 Bit nach links verschoben ist) auf eine Zeile.
+[Schreibe (der maximale Wert einer Kommazahl) auf eine Zeile.
+Schreibe (der minimale Wert einer Kommazahl) auf eine Zeile.]
+Schreibe (der kleinste positive Wert einer Kommazahl größer als 0 ist) auf eine Zeile.
+Schreibe (der kleinste negative Wert einer Kommazahl kleiner als 0 ist) auf eine Zeile.
+[Schreibe (Unendlich) auf eine Zeile.
+Schreibe (Minus-Unendlich) auf eine Zeile.]
+Schreibe (keine Zahl ungleich keine Zahl ist) auf eine Zeile. [!! wahr: Besondere Eigenschaft von nan; f != f nur wenn f = nan ist]
+Schreibe null auf eine Zeile.
+Schreibe eins auf eine Zeile.
+Schreibe zwei auf eine Zeile.
+Schreibe drei auf eine Zeile.
+Schreibe vier auf eine Zeile.
+Schreibe fünf auf eine Zeile.
+Schreibe sechs auf eine Zeile.
+Schreibe sieben auf eine Zeile.
+Schreibe acht auf eine Zeile.
+Schreibe neun auf eine Zeile.
+Schreibe zehn auf eine Zeile.
+Schreibe elf auf eine Zeile.
+Schreibe zwölf auf eine Zeile.
+Schreibe hundert auf eine Zeile.
+Schreibe tausend auf eine Zeile.
+Schreibe zehntausend auf eine Zeile.
+Schreibe einhunderttausend auf eine Zeile.
+Schreibe Million auf eine Zeile.
+Schreibe anderthalb auf eine Zeile.
+Schreibe halb auf eine Zeile.
+Schreibe (zwei Halbe) auf eine Zeile.
+Schreibe (zwei Drittel) auf eine Zeile.
+Schreibe (zwei Viertel) auf eine Zeile.
+Schreibe (zwei Fünftel) auf eine Zeile.
+Schreibe (zwei Sechstel) auf eine Zeile.
+Schreibe (zwei Siebtel) auf eine Zeile.
+Schreibe (zwei Achtel) auf eine Zeile.
+Schreibe (zwei Neuntel) auf eine Zeile.
+Schreibe (zwei Zehntel) auf eine Zeile.
+Schreibe (zwei Elftel) auf eine Zeile.
+Schreibe (zwei Zwölftel) auf eine Zeile.
+Schreibe (zwei Dutzend) auf eine Zeile.

@@ -28,6 +28,9 @@ guh??
 
 
 
+guh??
+guh??
+guh??
 wahr
 falsch
 falsch
@@ -144,3 +147,20 @@ Komma, getrennte, Liste
 h
 a
 o
+hallo
+hallo
+HALLO
+HALLO
+wahr
+wahr
+wahr
+falsch
+falsch
+   a
+   a
+      a
+    
+a   
+a   
+a      
+    

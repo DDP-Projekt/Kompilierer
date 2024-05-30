@@ -294,10 +294,11 @@ func update_lib(archive *archive_reader.ArchiveReader) (err error) {
 		return errors.Join(err, fmt.Errorf("Fehler beim Kopieren der Standardbibliothek:\n\t%w", cp_err))
 	}
 
-	infof("Generiere ddp_list_types_defs.*")
-	if run_err := dumpListDefsCommand.RunE(dumpListDefsCommand, []string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm-ir", "--object"}); run_err != nil {
-		return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
-	}
+	// not needed, as the generated object and llvm ir files are already correct
+	// infof("Generiere ddp_list_types_defs.*")
+	// if run_err := dumpListDefsCommand.RunE(dumpListDefsCommand, []string{"-o", filepath.Join(ddppath.Lib, "ddp_list_types_defs"), "--llvm-ir", "--object"}); run_err != nil {
+	// 	return errors.Join(err, fmt.Errorf("Fehler beim Generieren der Liste der Typdefinitionen:\n\t%w", run_err))
+	// }
 
 	return err
 }
