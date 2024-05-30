@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <time.h>
 
-
 // copied from https://stackoverflow.com/questions/11238918/s-isreg-macro-undefined
 // to handle missing macros on Windows
 #define _CRT_INTERNAL_NONSTDC_NAMES 1
@@ -958,7 +957,7 @@ void Datei_Schreibe_Buchstabe(DateiRef datei, ddpchar c) {
 	char buff[5]; // max utf-8 char length + null terminator
 	int num_bytes = utf8_char_to_string(buff, c);
 	if (num_bytes < 0) {
-		ddp_error("Fehler beim Schreiben des Buchstabens: " DDP_CHAR_FMT " is not valid utf8", false);
+		ddp_error("Fehler beim Schreiben des Buchstabens: " DDP_CHAR_FMT " is not valid utf8", false, c);
 		return;
 	}
 	write_to_buffer(file, buff, num_bytes);
