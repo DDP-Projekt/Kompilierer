@@ -83,7 +83,7 @@ static HANDLE *get_stdin_handle(void) {
 #endif // DDPOS_WINDOWS
 
 ddpchar extern_lies_buchstabe(ddpboolref war_eof) {
-	DBGLOG("extern_lies_buchstabe");
+	DDP_DBGLOG("extern_lies_buchstabe");
 #ifdef DDPOS_WINDOWS // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];

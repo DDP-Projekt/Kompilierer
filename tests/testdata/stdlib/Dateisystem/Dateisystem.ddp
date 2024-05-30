@@ -1,0 +1,58 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Dateisystem" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+[Exisitert_Pfad]
+Schreibe (die Datei "expected.txt" existiert) auf eine Zeile.
+Schreibe (der Ordner "../Dateisystem" existiert) auf eine Zeile.
+Schreibe (die Datei "sdfsdf.txt" existiert) auf eine Zeile.
+Schreibe (der Ordner "../sdfsadfsdf" existiert) auf eine Zeile.
+
+[Ist_Ordner]
+Schreibe ("../Dateisystem" ein Ordner ist) auf eine Zeile.
+Schreibe ("expected.txt" ein Ordner ist) auf eine Zeile.
+
+[Ist_Datei]
+Schreibe ("../Dateisystem" eine Datei ist) auf eine Zeile.
+Schreibe ("expected.txt" eine Datei ist) auf eine Zeile.
+
+Schreibe '\n'.
+[Datei-API]
+
+Die Datei datei ist noch nicht offen.
+
+[Datei_Zuende]
+Schreibe (datei zuende ist) auf eine Zeile.
+[Datei_Nicht_Zuende]
+Schreibe (datei nicht zuende ist) auf eine Zeile.
+[Datei_Schliessen]
+Schließe datei.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler" auf eine Zeile.
+Sonst Schreibe "Kein Fehler" auf eine Zeile.
+
+[Datei_Oeffnen_Lesen]
+Öffne datei mit dem Pfad "test_datei.txt" zum Lesen.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Öffnen" auf eine Zeile.
+
+[Datei_Zuende]
+Schreibe (datei zuende ist) auf eine Zeile.
+[Datei_Nicht_Zuende]
+Schreibe (datei nicht zuende ist) auf eine Zeile.
+
+[Datei_Lies_Zeile]
+Schreibe (die nächste Zeile aus datei) auf eine Zeile.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Lesen" auf eine Zeile.
+[Datei_Lies_Wort]
+Schreibe (das nächste Wort aus datei) auf eine Zeile.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Lesen" auf eine Zeile.
+
+[Datei_Zuende]
+Schreibe (datei zuende ist) auf eine Zeile.
+
+[Datei_Lies_N_Zeichen]
+Schreibe (die nächsten 6 Zeichen aus datei) auf eine Zeile.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Lesen" auf eine Zeile.
+
+[Datei_Schliessen]
+Schließe datei.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Schließen" auf eine Zeile.

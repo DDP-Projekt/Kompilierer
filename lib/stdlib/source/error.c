@@ -2,6 +2,7 @@
 #include "ddpmemory.h"
 #include "ddpos.h"
 #include "ddpwindows.h"
+#include "debug.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +29,7 @@ void ddp_error(const char *prefix, bool use_errno, ...) {
 		strcat(error.str, error_message);
 	}
 
+	DDP_DBGLOG("Setze_Fehler: " DDP_STRING_FMT, error.str);
 	// will free error.str
 	Setze_Fehler(&error);
 }
@@ -58,6 +60,7 @@ void ddp_error_win(const char *prefix, ...) {
 	strcat(error.str, error_message);
 	LocalFree(error_message);
 
+	DDP_DBGLOG("Setze_Fehler: " DDP_STRING_FMT, error.str);
 	// will free error.str
 	Setze_Fehler(&error);
 }

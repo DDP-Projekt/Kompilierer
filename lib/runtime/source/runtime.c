@@ -26,7 +26,7 @@ static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 // converts the command line arguments into a ddpstringlist
 static void handle_args(int argc, char **argv) {
 	cmd_args = (ddpstringlist){DDP_ALLOCATE(ddpstring, argc), (ddpint)argc, (ddpint)argc};
-	DBGLOG("handle_args: %p", &cmd_args);
+	DDP_DBGLOG("handle_args: %p", &cmd_args);
 
 	for (int i = 0; i < argc; i++) {
 		ddp_string_from_constant(&cmd_args.arr[i], argv[i]);
@@ -35,7 +35,7 @@ static void handle_args(int argc, char **argv) {
 
 // initialize runtime stuff
 void ddp_init_runtime(int argc, char **argv) {
-	DBGLOG("init_runtime");
+	DDP_DBGLOG("init_runtime");
 #ifdef DDPOS_WINDOWS
 	// the locales behaviour seems to change from time to time on windows
 	// so this might change later
@@ -64,7 +64,7 @@ void ddp_end_runtime(void) {
 	}
 	ending = true;
 
-	DBGLOG("end_runtime");
+	DDP_DBGLOG("end_runtime");
 
 	// free the cmd_args
 	ddp_free_ddpstringlist(&cmd_args);

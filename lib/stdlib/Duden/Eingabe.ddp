@@ -39,10 +39,10 @@ Und kann so benutzt werden:
 	Lies einen einzelnen Buchstaben aus der Standardeingabe
 	und setzt gegebenenfalls die war_eof Variable.
 ]
-Die Funktion extern_lies_buchstabe mit dem Parameter war_eof vom Typ Wahrheitswert Referenz, gibt einen Buchstaben zurück,
+Die Funktion extern_lies_buchstabe mit dem Parameter _war_eof vom Typ Wahrheitswert Referenz, gibt einen Buchstaben zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"das nächste Zeichen mit <war_eof> aktualisiert"
+	"das nächste Zeichen mit <_war_eof> aktualisiert"
 
 [
 	Besserer Alias für Extern_Lies_Buchstabe

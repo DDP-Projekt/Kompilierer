@@ -10,7 +10,42 @@ Der Changelog von DDP. Sortiert nach Release.
  - Breaking: Die Änderung macht alte Programme kaputt
 
 ## In Entwicklung
-[Added] Runden in Mathe/Duden hinzugefügt
+
+- [Added] in Duden/Dateisystem:
+    - Datei Kombination
+    - Datei_Oeffnen
+    - Datei_Oeffnen_Lesen
+    - Datei_Oeffnen_Schreiben
+    - Datei_Oeffnen_Lesen_Schreiben
+    - Datei_Oeffnen_Rückgabe
+    - Datei_Oeffnen_Lesen_Rückgabe
+    - Datei_Oeffnen_Schreiben_Rückgabe
+    - Datei_Oeffnen_Lesen_Schreiben_Rückgabe
+    - Datei_Schliessen
+    - Datei_Zuende
+    - Datei_Nicht_Zuende
+    - Datei_Lies_N_Zeichen
+    - Datei_Lies_Zeile
+    - Datei_Lies_N_Zeilen
+    - Datei_Lies_Wort
+    - Datei_Lies_N_Worte
+    - Datei_Lies_Zahl
+    - Datei_Lies_N_Zahlen
+    - Datei_Lies_Kommazahl
+    - Datei_Lies_N_Kommazahlen
+    - Datei_Schreibe_Zahl
+    - Datei_Schreibe_Text
+    - Datei_Schreibe_Kommazahl
+    - Datei_Schreibe_Buchstabe
+    - Datei_Schreibe_Wahrheitswert
+    - Datei_Schreibe_Zeile_Zahl
+    - Datei_Schreibe_Zeile_Text
+    - Datei_Schreibe_Zeile_Kommazahl
+    - Datei_Schreibe_Zeile_Buchstabe
+    - Datei_Schreibe_Zeile_Wahrheitswert
+
+- [Added] Runden in Mathe/Duden hinzugefügt
+- [Fix] Funktionsparameter können nun nicht mehr Funktions- oder Kombinationsdeklarationen überschreiben
 
 ## v0.3.0-alpha
 
