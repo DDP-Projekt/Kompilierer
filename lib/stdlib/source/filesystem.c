@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
@@ -522,7 +523,7 @@ static void close_internal_file(ddpint index) {
 	// attempt to close the file and report possible errors (very rare)
 	if (file->fd >= 0) {
 		if (close(file->fd) < 0) {
-			ddp_error("Fehler beim Schließen der Datei '%s': ", true, file->path.str);
+			ddp_error("Fehler beim Schließen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
 		}
 	}
 
@@ -579,11 +580,11 @@ static char *read_buff_end_ptr(InternalFile *file) {
 static int fill_read_buffer(InternalFile *file) {
 	// validate that the file can be read from
 	if (!is_read_mode(file->mode)) {
-		ddp_error("Fehler beim Lesen der Datei '%s': Die Datei wurde nicht zum Lesen geöffnet", false, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Lesen geöffnet", false, file->path.str);
 		return -1;
 	}
 	if (file->eof) {
-		ddp_error("Fehler beim Lesen der Datei '%s': Das Ende der Datei ist erreicht", false, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Das Ende der Datei ist erreicht", false, file->path.str);
 		return -1;
 	}
 
@@ -602,7 +603,7 @@ static int fill_read_buffer(InternalFile *file) {
 	file->read_buffer.str[ret] = '\0';
 
 	if (ret < 0) {
-		ddp_error("Fehler beim Lesen der Datei '%s': ", true, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
 		file->read_buffer_end = 0;
 	} else if (ret == 0) {
 		file->eof = true;
@@ -612,10 +613,10 @@ static int fill_read_buffer(InternalFile *file) {
 }
 
 // validate that the file can be written to
-#define DDP_ENSURE_WRITE_MODE(file)                                                                                                \
-	if (!is_write_mode(file->mode)) {                                                                                              \
-		ddp_error("Fehler beim Schreiben in die Datei '%s': Die Datei wurde nicht zum Schreiben geöffnet", false, file->path.str); \
-		return;                                                                                                                    \
+#define DDP_ENSURE_WRITE_MODE(file)                                                                                                                \
+	if (!is_write_mode(file->mode)) {                                                                                                              \
+		ddp_error("Fehler beim Schreiben in die Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Schreiben geöffnet", false, file->path.str); \
+		return;                                                                                                                                    \
 	}
 
 static int flush_write_buffer(InternalFile *file) {
@@ -625,7 +626,7 @@ static int flush_write_buffer(InternalFile *file) {
 
 	int ret = write(file->fd, file->write_buffer.str, file->write_index);
 	if (ret < 0) {
-		ddp_error("Fehler beim Schreiben der Datei '%s': ", true, file->path.str);
+		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
 		return -1;
 	}
 
@@ -693,7 +694,7 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 #endif // DDPOS_WINDOWS
 	if ((file->fd = open(file->path.str, flags, 0666)) < 0) {
 		close_internal_file(datei->index);
-		ddp_error("Fehler beim Öffnen der Datei '%s': ", true, file->path.str);
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
 		datei->index = -1;
 	}
 	// add validation information
