@@ -141,6 +141,18 @@ func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
 	return paramTypes
 }
 
+// holds all information about a single function parameter
+type ParameterInfo struct {
+	Name    token.Token            // the name token of the parameter
+	Type    ddptypes.ParameterType // the type of the parameter or default value if there was an error during parsing
+	Comment *token.Token           // the comment token, or nil if none was present
+}
+
+// wether the ParameterInfo's type is not the default value (i.e. was not parsed)
+func (param *ParameterInfo) HasValidType() bool {
+	return param.Type != ddptypes.ParameterType{}
+}
+
 // basic Node interfaces
 type (
 	Node interface {
@@ -198,19 +210,17 @@ type (
 	}
 
 	FuncDecl struct {
-		Range         token.Range
-		CommentTok    *token.Token             // optional comment (also contained in ast.Comments)
-		Tok           token.Token              // Die
-		NameTok       token.Token              // token of the name
-		IsPublic      bool                     // wether the function is marked with öffentliche
-		Mod           *Module                  // the module in which the function was declared
-		ParamNames    []token.Token            // x, y und z
-		ParamTypes    []ddptypes.ParameterType // type, and wether the argument is a reference
-		ParamComments []*token.Token           // comments for the parameters, the slice or its elements may be nil
-		Type          ddptypes.Type            // return Type, Zahl Kommazahl nichts ...
-		Body          *BlockStmt               // nil for extern functions
-		ExternFile    token.Token              // string literal with filepath (only pesent if Body is nil)
-		Aliases       []*FuncAlias
+		Range      token.Range
+		CommentTok *token.Token    // optional comment (also contained in ast.Comments)
+		Tok        token.Token     // Die
+		NameTok    token.Token     // token of the name
+		IsPublic   bool            // wether the function is marked with öffentliche
+		Mod        *Module         // the module in which the function was declared
+		Parameters []ParameterInfo // name, type and comments of parameters
+		Type       ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
+		Body       *BlockStmt      // nil for extern functions
+		ExternFile token.Token     // string literal with filepath (only pesent if Body is nil)
+		Aliases    []*FuncAlias
 	}
 
 	StructDecl struct {

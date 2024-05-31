@@ -1,5 +1,5 @@
 /*
-	This file contains general utility functions used in the parser
+This file contains general utility functions used in the parser
 */
 package parser
 
@@ -7,16 +7,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
-
-// check if a slice of tokens contains a literal
-func containsLiteral(tokens []token.Token, literal string) bool {
-	for _, v := range tokens {
-		if v.Literal == literal {
-			return true
-		}
-	}
-	return false
-}
 
 // check if two tokens are equal for alias matching
 func tokenEqual(t1, t2 *token.Token) bool {
@@ -119,4 +109,9 @@ func toPointerSlice[T any](slice []T) []*T {
 		result[i] = &slice[i]
 	}
 	return result
+}
+
+func isDefaultValue[T comparable](v T) bool {
+	var default_value T
+	return v == default_value
 }

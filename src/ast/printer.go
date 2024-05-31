@@ -84,7 +84,7 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 }
 
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
-	msg := fmt.Sprintf("FuncDecl[%s: %v, %v, %v, %s]", decl.Name(), literals(decl.ParamNames), decl.ParamTypes, commentLiterals(decl.ParamComments), decl.Type)
+	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.Type)
 	if IsExternFunc(decl) {
 		msg += " Extern"
 	}

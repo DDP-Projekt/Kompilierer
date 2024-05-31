@@ -53,26 +53,26 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 	// if the function is extern, we have to assume that the parameters are not const
 	if ast.IsExternFunc(decl) {
 		attachement := ConstFuncParamMeta{
-			IsConst: make(map[string]bool, len(decl.ParamNames)),
+			IsConst: make(map[string]bool, len(decl.Parameters)),
 		}
-		for _, name := range decl.ParamNames {
-			attachement.IsConst[name.Literal] = false
+		for _, param := range decl.Parameters {
+			attachement.IsConst[param.Name.Literal] = false
 		}
 		a.CurrentModule.Ast.AddAttachement(decl, attachement)
 		return ast.VisitSkipChildren
 	}
 
-	a.currentParams = make(map[*ast.VarDecl]bool, len(decl.ParamNames))
+	a.currentParams = make(map[*ast.VarDecl]bool, len(decl.Parameters))
 	attachement := ConstFuncParamMeta{
-		IsConst: make(map[string]bool, len(decl.ParamNames)),
+		IsConst: make(map[string]bool, len(decl.Parameters)),
 	}
 	// track all the function parameters
 	// and initially assume they are const
-	for _, name := range decl.ParamNames {
-		param, exists, isVar := decl.Body.Symbols.LookupDecl(name.Literal)
+	for _, funcParam := range decl.Parameters {
+		param, exists, isVar := decl.Body.Symbols.LookupDecl(funcParam.Name.Literal)
 		if exists && isVar {
 			a.currentParams[param.(*ast.VarDecl)] = true
-			attachement.IsConst[name.Literal] = true
+			attachement.IsConst[funcParam.Name.Literal] = true
 		}
 	}
 	a.CurrentModule.Ast.AddAttachement(decl, attachement)
@@ -88,12 +88,12 @@ func (a *ConstFuncParamAnnotator) VisitFuncCall(call *ast.FuncCall) ast.VisitRes
 	}
 
 	currentParams := maps.Keys(a.currentParams)
-	for _, paramName := range call.Func.ParamNames {
-		if isConst[paramName.Literal] {
+	for _, param := range call.Func.Parameters {
+		if isConst[param.Name.Literal] {
 			continue
 		}
 
-		for _, referencedVar := range doesReferenceVarMutable(call.Args[paramName.Literal], currentParams) {
+		for _, referencedVar := range doesReferenceVarMutable(call.Args[param.Name.Literal], currentParams) {
 			a.currentParams[referencedVar] = false
 		}
 	}
