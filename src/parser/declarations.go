@@ -467,7 +467,7 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 
 	// validate that the alias contains as many parameters as the function
 	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) {
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
 			aliasTok.Range,
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(paramNames), count),
 			p.module.FileName,
@@ -515,7 +515,7 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 			aliasTokens[i].AliasInfo = &argTyp
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
 				aliasTok.Range,
 				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
@@ -583,7 +583,7 @@ func (p *parser) validateStructAlias(aliasTok *token.Token, aliasTokens []token.
 			aliasTokens[i].AliasInfo = &argTyp
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
 				aliasTok.Range,
 				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
