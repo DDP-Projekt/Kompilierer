@@ -296,18 +296,18 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 	// scan the raw aliases into tokens
 	funcAliases := make([]*ast.FuncAlias, 0, len(rawAliases))
 	funcAliasTokens := make([][]*token.Token, 0, len(rawAliases))
-	for _, v := range rawAliases {
+	for _, rawAlias := range rawAliases {
 		// scan the raw alias withouth the ""
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
+		if alias, err := scanner.ScanAlias(*rawAlias, errHandleWrapper); err == nil && !didError {
 			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
-				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
+				p.err(ddperror.SEM_MALFORMED_ALIAS, rawAlias.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+			} else if err := p.validateFunctionAlias(rawAlias, alias, params); err == nil { // check that the alias fits the function
+				if ok, existingAlias, pTokens := p.aliasExists(alias); ok {
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, rawAlias.Range, ast.MsgAliasAlreadyExists(existingAlias))
 				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *rawAlias, Func: nil, Args: paramTypesMap})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
@@ -695,7 +695,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 	name := p.previous()
 
-	if _, exists := p.typeNames[name.Literal]; exists {
+	if _, exists := p.scope().LookupType(name.Literal); exists {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
 	}
 
