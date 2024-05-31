@@ -133,8 +133,8 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		}
 
 		hasNonPublicType := false
-		for _, typ := range decl.ParamTypes {
-			if !IsPublicType(typ.Type, t.CurrentTable) {
+		for _, param := range decl.Parameters {
+			if !IsPublicType(param.Type.Type, t.CurrentTable) {
 				hasNonPublicType = true
 			}
 		}
@@ -512,9 +512,9 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 
 		var paramType ddptypes.ParameterType
 
-		for i, name := range decl.ParamNames {
-			if name.Literal == k {
-				paramType = decl.ParamTypes[i]
+		for _, param := range decl.Parameters {
+			if param.Name.Literal == k {
+				paramType = param.Type
 				break
 			}
 		}

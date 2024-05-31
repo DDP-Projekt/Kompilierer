@@ -489,7 +489,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	retType := c.toIrType(decl.Type) // get the llvm type
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.ParamTypes)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -499,9 +499,9 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	}
 
 	// append all the other parameters
-	for i, typ := range decl.ParamTypes {
-		ty := c.toIrParamType(typ)                                           // convert the type of the parameter
-		params = append(params, ir.NewParam(decl.ParamNames[i].Literal, ty)) // add it to the list
+	for _, param := range decl.Parameters {
+		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
+		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 
 	irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function
@@ -529,8 +529,8 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
 		// the caller has to take care of possible deep-copies
 		for i := range params {
-			irType := c.toIrType(decl.ParamTypes[i].Type)
-			if decl.ParamTypes[i].IsReference {
+			irType := c.toIrType(decl.Parameters[i].Type.Type)
+			if decl.Parameters[i].Type.IsReference {
 				// references are implemented similar to name-shadowing
 				// they basically just get another name in the function scope, which
 				// refers to the same variable allocation
@@ -1599,7 +1599,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
-	args := make([]value.Value, 0, len(fun.funcDecl.ParamNames)+1)
+	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
 
 	meta := annotators.ConstFuncParamMeta{}
 	if attachement, ok := e.Func.Module().Ast.GetMetadataByKind(fun.funcDecl, annotators.ConstFuncParamMetaKind); ok {
@@ -1613,20 +1613,20 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		args = append(args, ret)
 	}
 
-	for i, param := range fun.funcDecl.ParamNames {
+	for _, param := range fun.funcDecl.Parameters {
 		var val value.Value
 
 		// differentiate between references and normal parameters
-		if fun.funcDecl.ParamTypes[i].IsReference {
-			if assign, ok := e.Args[param.Literal].(ast.Assigneable); ok {
+		if param.Type.IsReference {
+			if assign, ok := e.Args[param.Name.Literal].(ast.Assigneable); ok {
 				val, _, _ = c.evaluateAssignableOrReference(assign, true)
 			} else {
 				c.err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
 		} else {
-			eval, valTyp, isTemp := c.evaluate(e.Args[param.Literal]) // compile each argument for the function
+			eval, valTyp, isTemp := c.evaluate(e.Args[param.Name.Literal]) // compile each argument for the function
 			if valTyp.IsPrimitive() ||
-				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Literal]) {
+				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Name.Literal]) {
 				val = eval
 			} else { // function parameters need to be copied by the caller
 				dest := c.NewAlloca(valTyp.IrType())
@@ -1653,12 +1653,12 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	// the arguments of external functions must be freed by the caller
 	// normal functions free their parameters in their body
 	if ast.IsExternFunc(fun.funcDecl) {
-		for i := range fun.funcDecl.ParamNames {
-			if !fun.funcDecl.ParamTypes[i].IsReference {
+		for i, param := range fun.funcDecl.Parameters {
+			if !param.Type.IsReference {
 				if irReturnType.IsPrimitive() {
-					c.freeNonPrimitive(args[i], c.toIrType(fun.funcDecl.ParamTypes[i].Type))
+					c.freeNonPrimitive(args[i], c.toIrType(param.Type.Type))
 				} else {
-					c.freeNonPrimitive(args[i+1], c.toIrType(fun.funcDecl.ParamTypes[i].Type))
+					c.freeNonPrimitive(args[i+1], c.toIrType(param.Type.Type))
 				}
 			}
 		}
@@ -1757,7 +1757,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 		case *ast.FuncDecl:
 			retType := c.toIrType(decl.Type) // get the llvm type
 			retTypeIr := retType.IrType()
-			params := make([]*ir.Param, 0, len(decl.ParamTypes)) // list of the ir parameters
+			params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 
 			hasReturnParam := !retType.IsPrimitive()
 			// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -1767,9 +1767,9 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			}
 
 			// append all the other parameters
-			for i, typ := range decl.ParamTypes {
-				ty := c.toIrParamType(typ)                                           // convert the type of the parameter
-				params = append(params, ir.NewParam(decl.ParamNames[i].Literal, ty)) // add it to the list
+			for _, param := range decl.Parameters {
+				ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
+				params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 			}
 
 			irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function

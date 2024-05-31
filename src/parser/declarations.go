@@ -6,6 +6,7 @@ package parser
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -153,22 +154,190 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 }
 
+// helper for parsing function declarations
+// a paramName is allowed if it does not override a struct or function declaration
+// other variables are allowed to be overridden because of name-shadowing
+func (p *parser) paramNameAllowed(name *token.Token) bool {
+	_, exists, isVar := p.scope().LookupDecl(name.Literal)
+	return !exists || (exists && isVar)
+}
+
+// helper for funcDeclaration
+// parses the parameters of a function declaration
+func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool)) (params []ast.ParameterInfo) {
+	if !p.match(token.MIT) {
+		return params
+	}
+
+	// parse if there will be one or multiple parameters
+	singleParameter := true
+	if p.matchN(token.DEN, token.PARAMETERN) {
+		singleParameter = false
+	} else if !p.matchN(token.DEM, token.PARAMETER) {
+		perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
+	}
+
+	// parse the first param name
+	validate(p.consume(token.IDENTIFIER))
+	firstName := p.previous()
+	if !p.paramNameAllowed(firstName) { // check that the parameter name is not already used
+		perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
+	}
+
+	params = append(params, ast.ParameterInfo{
+		Name:    *firstName,
+		Comment: p.getLeadingOrTrailingComment(),
+	})
+
+	if !singleParameter {
+		// helper function to avoid too much repitition
+		addParamName := func(name *token.Token) {
+			if containsName(params, name.Literal) { // check that each parameter name is unique
+				perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+				return
+			}
+			if !p.paramNameAllowed(name) { // check that the parameter name is not already used
+				perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+				return
+			}
+			params = append(params, ast.ParameterInfo{
+				Name:    *name,
+				Comment: p.getLeadingOrTrailingComment(),
+			})
+		}
+
+		if p.match(token.UND) {
+			validate(p.consume(token.IDENTIFIER))
+			addParamName(p.previous())
+		} else {
+			for p.match(token.COMMA) { // the function takes multiple parameters
+				if !p.consume(token.IDENTIFIER) {
+					break
+				}
+				addParamName(p.previous())
+			}
+			if !p.consume(token.UND, token.IDENTIFIER) {
+				perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?")
+			}
+			addParamName(p.previous())
+		}
+	}
+
+	// parse the types of the parameters
+	validate(p.consume(token.VOM, token.TYP))
+	firstType, ref := p.parseReferenceType()
+	validate(firstType != nil)
+	params[0].Type = ddptypes.ParameterType{Type: firstType, IsReference: ref}
+
+	if !singleParameter {
+		i := 1
+		// helper function to avoid too much repitition
+		addType := func() {
+			// validate the parameter type and append it
+			typ, ref := p.parseReferenceType()
+			validate(typ != nil)
+			params[i].Type = ddptypes.ParameterType{Type: typ, IsReference: ref}
+			i++
+		}
+
+		if p.match(token.UND) {
+			addType()
+		} else {
+			for p.match(token.COMMA) { // parse the other parameter types
+				if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
+					break
+				}
+				addType()
+			}
+			p.consume(token.UND)
+			addType()
+		}
+	}
+
+	p.consume(token.COMMA)
+
+	invalidTypeIndex := slices.IndexFunc(params, isDefaultValue[ast.ParameterInfo])
+	// we need as many parmeter names as types
+	if invalidTypeIndex >= 0 {
+		perr(
+			ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH,
+			token.NewRange(&params[0].Name, p.previous()),
+			fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)",
+				len(params),
+				invalidTypeIndex))
+	}
+
+	return params
+}
+
+// helper for funcDeclaration
+func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(bool)) ([]*ast.FuncAlias, [][]*token.Token) {
+	// parse the alias definitions before the body to enable recursion
+	validate(p.consume(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
+	rawAliases := make([]*token.Token, 0)
+	if p.previous().Type == token.STRING {
+		rawAliases = append(rawAliases, p.previous())
+	}
+	// append the raw aliases
+	for (p.match(token.COMMA) || p.match(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
+		if p.consume(token.STRING) {
+			rawAliases = append(rawAliases, p.previous())
+		}
+	}
+
+	// map function parameters to their type (given to the alias if it is valid)
+	paramTypesMap := make(map[string]ddptypes.ParameterType, len(params))
+	for _, param := range params {
+		if param.HasValidType() {
+			paramTypesMap[param.Name.Literal] = param.Type
+		}
+	}
+
+	// scan the raw aliases into tokens
+	funcAliases := make([]*ast.FuncAlias, 0, len(rawAliases))
+	funcAliasTokens := make([][]*token.Token, 0, len(rawAliases))
+	for _, v := range rawAliases {
+		// scan the raw alias withouth the ""
+		didError := false
+		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
+			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
+				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
+				} else {
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
+					funcAliasTokens = append(funcAliasTokens, pTokens)
+				}
+			} else {
+				p.errVal(*err)
+			}
+		}
+	}
+
+	return funcAliases, funcAliasTokens
+}
+
 // parses a function declaration
 // startDepth is the int passed to p.peekN(n) to get to the DIE token of the declaration
 func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
-	valid := true              // checks if the function is valid and may be appended to the parser state as p.errored = !valid
-	validate := func(b bool) { // helper for setting the valid flag (to simplify some big boolean expressions)
+	// used later to check if the functions aliases may be added to the parsers state
+	valid := true
+	// helper for setting the valid flag (to simplify some big boolean expressions)
+	validate := func(b bool) {
 		if !b {
 			valid = false
 		}
 	}
 
+	// local version of p.err that also sets valid = false
 	perr := func(code ddperror.Code, Range token.Range, msg string) {
 		p.err(code, Range, msg)
 		valid = false
 	}
 
-	begin := p.peekN(startDepth)
+	begin := p.peekN(startDepth) // token.DIE
 	comment := p.commentBeforePos(begin.Range.Start)
 	// ignore the comment if it is not next to or directly above the declaration
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
@@ -177,7 +346,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 
-	Funktion := p.previous() // save the token
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
@@ -189,102 +357,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	funcName := p.previous()
 
 	// early error report if the name is already used
-	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed { // insert the name of the current function
+	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, funcName.Range, ddperror.MsgNameAlreadyExists(funcName.Literal))
 	}
 
-	// a paramName is allowed if it does not override a struct or function declaration
-	// other variables are allowed to be overridden because of name-shadowing
-	paramNameAllowed := func(name *token.Token) bool {
-		_, exists, isVar := p.scope().LookupDecl(name.Literal)
-		return !exists || (exists && isVar)
-	}
-
 	// parse the parameter declaration
-	// parameter names and types are declared seperately
-	var (
-		paramNames    []token.Token
-		paramTypes    []ddptypes.ParameterType
-		paramComments []*token.Token
-	)
-	if p.match(token.MIT) { // the function takes at least 1 parameter
-		singleParameter := true
-		if p.matchN(token.DEN, token.PARAMETERN) {
-			singleParameter = false
-		} else if !p.matchN(token.DEM, token.PARAMETER) {
-			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
-		}
-		validate(p.consume(token.IDENTIFIER))
-		firstName := p.previous()
-		if !paramNameAllowed(firstName) { // check that the parameter name is not already used
-			perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
-		}
-		paramNames = append(paramNames, *firstName) // append the first parameter name
-		paramComments = append(paramComments, p.getLeadingOrTrailingComment())
-		if !singleParameter {
-			// helper function to avoid too much repitition
-			addParamName := func(name *token.Token) {
-				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
-					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
-					return
-				}
-				if !paramNameAllowed(name) { // check that the parameter name is not already used
-					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
-					return
-				}
-				paramNames = append(paramNames, *name)                                 // append the parameter name
-				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
-			}
-
-			if p.match(token.UND) {
-				validate(p.consume(token.IDENTIFIER))
-				addParamName(p.previous())
-			} else {
-				for p.match(token.COMMA) { // the function takes multiple parameters
-					if !p.consume(token.IDENTIFIER) {
-						break
-					}
-					addParamName(p.previous())
-				}
-				if !p.consume(token.UND, token.IDENTIFIER) {
-					perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?")
-				}
-				addParamName(p.previous())
-			}
-		}
-		// parse the types of the parameters
-		validate(p.consume(token.VOM, token.TYP))
-		firstType, ref := p.parseReferenceType()
-		validate(firstType != nil)
-		paramTypes = append(paramTypes, ddptypes.ParameterType{Type: firstType, IsReference: ref}) // append the first parameter type
-		if !singleParameter {
-			// helper function to avoid too much repitition
-			addType := func() {
-				// validate the parameter type and append it
-				typ, ref := p.parseReferenceType()
-				validate(typ != nil)
-				paramTypes = append(paramTypes, ddptypes.ParameterType{Type: typ, IsReference: ref})
-			}
-
-			if p.match(token.UND) {
-				addType()
-			} else {
-				for p.match(token.COMMA) { // parse the other parameter types
-					if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
-						break
-					}
-					addType()
-				}
-				p.consume(token.UND)
-				addType()
-			}
-		}
-		p.consume(token.COMMA)
-	}
-	// we need as many parmeter names as types
-	if len(paramNames) != len(paramTypes) {
-		perr(ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH, token.NewRange(&paramNames[0], p.previous()), fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)", len(paramNames), len(paramTypes)))
-	}
+	params := p.parseFunctionParameters(perr, validate)
 
 	// parse the return type declaration
 	validate(p.consume(token.GIBT))
@@ -315,49 +393,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	}
 
-	// parse the alias definitions before the body to enable recursion
-	validate(p.consume(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
-	rawAliases := make([]*token.Token, 0)
-	if p.previous().Type == token.STRING {
-		rawAliases = append(rawAliases, p.previous())
-	}
-	// append the raw aliases
-	for (p.match(token.COMMA) || p.match(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
-		if p.consume(token.STRING) {
-			rawAliases = append(rawAliases, p.previous())
-		}
-	}
-
-	// map function parameters to their type (given to the alias if it is valid)
-	paramTypesMap := make(map[string]ddptypes.ParameterType, len(paramNames))
-	for i, v := range paramNames {
-		if i < len(paramTypes) {
-			paramTypesMap[v.Literal] = paramTypes[i]
-		}
-	}
-
-	// scan the raw aliases into tokens
-	funcAliases := make([]*ast.FuncAlias, 0)
-	funcAliasTokens := make([][]*token.Token, 0)
-	for _, v := range rawAliases {
-		// scan the raw alias withouth the ""
-		didError := false
-		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
-			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if err := p.validateFunctionAlias(v, alias, paramNames, paramTypes); err == nil { // check that the alias fits the function
-				if ok, existingAlias, pTokens := p.aliasExists(alias); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ast.MsgAliasAlreadyExists(existingAlias))
-				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
-					funcAliasTokens = append(funcAliasTokens, pTokens)
-				}
-			} else {
-				p.errVal(*err)
-			}
-		}
-	}
+	// parse function aliases
+	funcAliases, funcAliasTokens := p.parseFunctionAliases(params, validate)
 
 	aliasEnd := p.cur // save the end of the function declaration for later
 
@@ -369,25 +406,23 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.cur = aliasEnd
 		return &ast.BadDecl{
 			Err: p.lastError,
-			Tok: *Funktion,
+			Tok: *begin,
 			Mod: p.module,
 		}
 	}
 
 	decl := &ast.FuncDecl{
-		Range:         token.NewRange(begin, p.previous()),
-		CommentTok:    comment,
-		Tok:           *begin,
-		NameTok:       *funcName,
-		IsPublic:      isPublic,
-		Mod:           p.module,
-		ParamNames:    paramNames,
-		ParamTypes:    paramTypes,
-		ParamComments: paramComments,
-		Type:          Typ,
-		Body:          nil,
-		ExternFile:    *definedIn,
-		Aliases:       funcAliases,
+		Range:      token.NewRange(begin, p.previous()),
+		CommentTok: comment,
+		Tok:        *begin,
+		NameTok:    *funcName,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		Parameters: params,
+		Type:       Typ,
+		Body:       nil,
+		ExternFile: *definedIn,
+		Aliases:    funcAliases,
 	}
 
 	for i := range funcAliases {
@@ -408,20 +443,20 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		// add the parameters to the table
-		for i, l := 0, len(paramNames); i < l; i++ {
-			name := paramNames[i].Literal
-			if !paramNameAllowed(&paramNames[i]) { // check that the parameter name is not already used
+		for i, l := 0, len(params); i < l; i++ {
+			name := params[i].Name.Literal
+			if !p.paramNameAllowed(&params[i].Name) { // check that the parameter name is not already used
 				name = "$" + name
 			}
 
 			bodyTable.InsertDecl(name,
 				&ast.VarDecl{
-					NameTok:    paramNames[i],
+					NameTok:    params[i].Name,
 					IsPublic:   false,
 					Mod:        p.module,
-					Type:       paramTypes[i].Type,
-					Range:      token.NewRange(&paramNames[i], &paramNames[i]),
-					CommentTok: paramComments[i],
+					Type:       params[i].Type.Type,
+					Range:      token.NewRange(&params[i].Name, &params[i].Name),
+					CommentTok: params[i].Comment,
 				},
 			)
 		}
@@ -459,17 +494,17 @@ func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }      
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
-func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []token.Token, paramNames []token.Token, paramTypes []ddptypes.ParameterType) *ddperror.Error {
+func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []token.Token, params []ast.ParameterInfo) *ddperror.Error {
 	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
 		return &err
 	}
 
 	// validate that the alias contains as many parameters as the function
-	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) {
+	if count := countElements(aliasTokens, isAliasExpr); count != len(params) {
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
 			aliasTok.Range,
-			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(paramNames), count),
+			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(params), count),
 			p.module.FileName,
 		)
 		return &err
@@ -486,12 +521,12 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 		return &err
 	}
 
-	nameTypeMap := make(map[string]ddptypes.ParameterType, len(paramNames)) // map that holds the parameter names contained in the alias and their corresponding type
-	nameSet := make(map[string]struct{}, len(paramNames))                   // set that holds the parameter names contained in the alias
-	for i, v := range paramNames {
-		if i < len(paramTypes) {
-			nameTypeMap[v.Literal] = paramTypes[i]
-			nameSet[v.Literal] = struct{}{}
+	nameTypeMap := make(map[string]ddptypes.ParameterType, len(params)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(params))                   // set that holds the parameter names contained in the alias
+	for _, param := range params {
+		if param.HasValidType() {
+			nameTypeMap[param.Name.Literal] = param.Type
+			nameSet[param.Name.Literal] = struct{}{}
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
@@ -607,7 +642,7 @@ func varDeclsToFields(decls []*ast.VarDecl) []ddptypes.StructField {
 }
 
 func (p *parser) structDeclaration() ast.Declaration {
-	begin := p.previous() // Wir
+	begin := p.previous() // token.WIR
 	comment := p.commentBeforePos(begin.Range.Start)
 	// ignore the comment if it is not next to or directly above the declaration
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
@@ -618,6 +653,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	isPublic := p.match(token.OEFFENTLICHE)
 	p.consume(token.KOMBINATION, token.AUS)
 
+	// parse the fields
 	var fields []ast.Declaration
 	indent := begin.Indent + 1
 	for p.peek().Indent >= indent && !p.atEnd() {
@@ -633,6 +669,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		}
 	}
 
+	// deterime the grammatical gender
 	p.consumeAny(token.EINEN, token.EINE, token.EIN)
 	gender := ddptypes.INVALID
 	switch p.previous().Type {
@@ -647,15 +684,20 @@ func (p *parser) structDeclaration() ast.Declaration {
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Err: ddperror.Error{
+				Code:  ddperror.SEM_NAME_UNDEFINED,
 				Range: token.NewRange(p.peekN(-2), p.peek()),
 				File:  p.module.FileName,
-				Msg:   "Es wurde ein Strukturen Name erwartet",
+				Msg:   "Es wurde ein Kombinations Name erwartet",
 			},
 			Tok: *p.peek(),
 			Mod: p.module,
 		}
 	}
 	name := p.previous()
+
+	if _, exists := p.typeNames[name.Literal]; exists {
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
+	}
 
 	p.consume(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
 	var rawAliases []*token.Token
@@ -903,4 +945,13 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	}
 
 	return alias.ExprDecl
+}
+
+func containsName(params []ast.ParameterInfo, name string) bool {
+	for i := range params {
+		if params[i].Name.Literal == name {
+			return true
+		}
+	}
+	return false
 }
