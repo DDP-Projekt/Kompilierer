@@ -15,49 +15,57 @@ Und kann so benutzt werden:
 	"der maximale Wert einer Zahl"
 
 [
-	Gibt -1,79769313486231 * 10^308 zurück.
+	Gibt -(2−2^−31) · 2^1023 zurück.
 ]
 Die öffentliche Funktion MinKommazahl gibt eine Kommazahl zurück, macht:
-	Gib -1,7976931348623158 mal 10 hoch 308 zurück.
+	Gib -(2 minus 2 hoch -31) mal 2 hoch 1023 zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Kommazahl"
 
 [
-	Gibt 1,79769313486231 * 10^308 zurück.
+	Gibt (2−2^−31) · 2^1023 zurück.
 ]
 Die öffentliche Funktion MaxKommazahl gibt eine Kommazahl zurück, macht:
-	Gib 1,7976931348623158 mal 10 hoch 308 zurück.
+	Gib (2 minus 2 hoch -31) mal 2 hoch 1023 zurück.
 Und kann so benutzt werden:
 	"der maximale Wert einer Kommazahl"
 
 [
-	Gibt 2.2250738585072014 * 10^-308 zurück.
+	Gibt 2^-1022 zurück.
 	Der Wert der am nächsten zu +0 ist.
 ]
-Die Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
-	Gib 2,2250738585072014 mal 10 hoch -308 zurück.
+Die öffentliche Funktion EpsilonPos gibt eine Kommazahl zurück, macht:
+	Gib 2 hoch -1022 zurück.
 Und kann so benutzt werden:
 	"der kleinste positive Wert einer Kommazahl"
 
 [
-	Gibt -2,2250738585072014 * 10^-308 zurück.
+	Gibt -2^-1022 zurück.
 	Der Wert der am nächsten zu -0 ist.
 ]
-Die Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
-	Gib -2,2250738585072014 mal 10 hoch -308 zurück.
+Die öffentliche Funktion EpsilonNeg gibt eine Kommazahl zurück, macht:
+	Gib -2 hoch -1022 zurück.
 Und kann so benutzt werden:
 	"der kleinste negative Wert einer Kommazahl"
 
 [
-	Gibt Unendlich (1 durch 0) zurück.
+	Gibt Unendlich (1,0 durch 0,0) zurück.
 ]
 Die öffentliche Funktion Unendlich gibt eine Kommazahl zurück, macht:
-	Gib 1 durch 0 zurück.
+	Gib 1,0 durch 0,0 zurück.
 Und kann so benutzt werden:
 	"Unendlich"
 
 [
-	Gibt NaN (0 durch 0) zurück.
+	Gibt Unendlich (-1,0 durch 0,0) zurück.
+]
+Die öffentliche Funktion Minus_Unendlich gibt eine Kommazahl zurück, macht:
+	Gib -1,0 durch 0,0 zurück.
+Und kann so benutzt werden:
+	"Minus-Unendlich"
+
+[
+	Gibt NaN (0,0 durch 0,0) zurück.
 ]
 Die öffentliche Funktion KeineZahl gibt eine Kommazahl zurück, macht:
 	Gib 0,0 durch 0,0 zurück.
@@ -78,7 +86,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Eins gibt eine Zahl zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"Eins", "eins" oder "ein"
+	"Eins", "eins", "ein", "erste", "ersten"
 
 [
 	Gibt 2 zurück.
@@ -86,7 +94,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Zwei gibt eine Zahl zurück, macht:
 	Gib 2 zurück.
 Und kann so benutzt werden:
-	"Zwei" oder "zwei"
+	"Zwei", "zwei", "zweite", "zweiten"
 
 [
 	Gibt 3 zurück.
@@ -94,7 +102,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Drei gibt eine Zahl zurück, macht:
 	Gib 3 zurück.
 Und kann so benutzt werden:
-	"Drei" oder "drei"
+	"Drei", "drei", "dritte", "dritten"
 
 [
 	Gibt 4 zurück.
@@ -102,7 +110,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Vier gibt eine Zahl zurück, macht:
 	Gib 4 zurück.
 Und kann so benutzt werden:
-	"Vier" oder "vier"
+	"Vier", "vier", "vierte", "vierten"
 
 [
 	Gibt 5 zurück.
@@ -110,7 +118,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Fünf gibt eine Zahl zurück, macht:
 	Gib 5 zurück.
 Und kann so benutzt werden:
-	"Fünf" oder "fünf"
+	"Fünf", "fünf", "fünfte", "fünften"
 
 [
 	Gibt 6 zurück.
@@ -118,7 +126,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Sechs gibt eine Zahl zurück, macht:
 	Gib 6 zurück.
 Und kann so benutzt werden:
-	"Sechs" oder "sechs"
+	"Sechs", "sechs", "sechste", "sechsten"
 
 [
 	Gibt 7 zurück.
@@ -126,7 +134,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Sieben gibt eine Zahl zurück, macht:
 	Gib 7 zurück.
 Und kann so benutzt werden:
-	"Sieben" oder "sieben"
+	"Sieben", "sieben", "siebte", "siebten"
 
 [
 	Gibt 8 zurück.
@@ -134,7 +142,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Acht gibt eine Zahl zurück, macht:
 	Gib 8 zurück.
 Und kann so benutzt werden:
-	"Acht" oder "acht"
+	"Acht", "acht", "achte", "achten"
 
 [
 	Gibt 9 zurück.
@@ -142,7 +150,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Neun gibt eine Zahl zurück, macht:
 	Gib 9 zurück.
 Und kann so benutzt werden:
-	"Neun" oder "neun"
+	"Neun", "neun", "neunte", "neunten"
 
 [
 	Gibt 10 zurück.
@@ -150,7 +158,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Zehn gibt eine Zahl zurück, macht:
 	Gib 10 zurück.
 Und kann so benutzt werden:
-	"Zehn" oder "zehn"
+	"Zehn", "zehn", "zehnte", "zehnten"
 
 [
 	Gibt 11 zurück.
@@ -158,7 +166,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Elf gibt eine Zahl zurück, macht:
 	Gib 11 zurück.
 Und kann so benutzt werden:
-	"Elf" oder "elf"
+	"Elf", "elf", "elfte", "elften"
 
 [
 	Gibt 12 zurück.
@@ -166,7 +174,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Zwölf gibt eine Zahl zurück, macht:
 	Gib 12 zurück.
 Und kann so benutzt werden:
-	"Zwölf" oder "zwölf"
+	"Zwölf", "zwölf", "zwölfte", "zwölften"
 
 [
 	Gibt 100 zurück.
@@ -174,7 +182,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Hundert gibt eine Zahl zurück, macht:
 	Gib 100 zurück.
 Und kann so benutzt werden:
-	"Einhundert", "Hundert" oder "hundert"
+	"Einhundert", "Hundert", "hundert", "hunderte", "hunderten"
 
 [
 	Gibt 1000 zurück.
@@ -182,7 +190,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Tausend gibt eine Zahl zurück, macht:
 	Gib 1000 zurück.
 Und kann so benutzt werden:
-	"Eintausend", "Tausend" oder "tausend"
+	"Eintausend", "Tausend", "tausend", "tausenste", "tausensten"
 
 [
 	Gibt 10000 zurück.

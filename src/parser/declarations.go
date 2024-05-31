@@ -186,11 +186,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			Mod: p.module,
 		}
 	}
-	name := p.previous()
+	funcName := p.previous()
 
 	// early error report if the name is already used
-	if _, existed, _ := p.scope().LookupDecl(name.Literal); existed { // insert the name of the current function
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed { // insert the name of the current function
+		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, funcName.Range, ddperror.MsgNameAlreadyExists(funcName.Literal))
+	}
+
+	// a paramName is allowed if it does not override a struct or function declaration
+	// other variables are allowed to be overridden because of name-shadowing
+	paramNameAllowed := func(name *token.Token) bool {
+		_, exists, isVar := p.scope().LookupDecl(name.Literal)
+		return !exists || (exists && isVar)
 	}
 
 	// parse the parameter declaration
@@ -208,13 +215,22 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 		}
 		validate(p.consume(token.IDENTIFIER))
-		paramNames = append(paramNames, *p.previous()) // append the first parameter name
+		firstName := p.previous()
+		if !paramNameAllowed(firstName) { // check that the parameter name is not already used
+			perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
+		}
+		paramNames = append(paramNames, *firstName) // append the first parameter name
 		paramComments = append(paramComments, p.getLeadingOrTrailingComment())
 		if !singleParameter {
 			// helper function to avoid too much repitition
 			addParamName := func(name *token.Token) {
 				if containsLiteral(paramNames, name.Literal) { // check that each parameter name is unique
 					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+					return
+				}
+				if !paramNameAllowed(name) { // check that the parameter name is not already used
+					perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+					return
 				}
 				paramNames = append(paramNames, *name)                                 // append the parameter name
 				paramComments = append(paramComments, p.getLeadingOrTrailingComment()) // addParamName is always being called with name == p.previous()
@@ -362,7 +378,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Range:         token.NewRange(begin, p.previous()),
 		CommentTok:    comment,
 		Tok:           *begin,
-		NameTok:       *name,
+		NameTok:       *funcName,
 		IsPublic:      isPublic,
 		Mod:           p.module,
 		ParamNames:    paramNames,
@@ -383,7 +399,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
-		p.currentFunction = name.Literal
+		p.currentFunction = funcName.Literal
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
@@ -393,7 +409,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 		// add the parameters to the table
 		for i, l := 0, len(paramNames); i < l; i++ {
-			bodyTable.InsertDecl(paramNames[i].Literal,
+			name := paramNames[i].Literal
+			if !paramNameAllowed(&paramNames[i]) { // check that the parameter name is not already used
+				name = "$" + name
+			}
+
+			bodyTable.InsertDecl(name,
 				&ast.VarDecl{
 					NameTok:    paramNames[i],
 					IsPublic:   false,
@@ -421,7 +442,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	} else { // the function is defined in an extern file
 		// insert the name of the current function
-		if existed := p.scope().InsertDecl(name.Literal, decl); !existed && decl.IsPublic {
+		if existed := p.scope().InsertDecl(funcName.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration
@@ -444,15 +465,18 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 		return &err
 	}
 
-	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) { // validate that the alias contains as many parameters as the function
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
+	// validate that the alias contains as many parameters as the function
+	if count := countElements(aliasTokens, isAliasExpr); count != len(paramNames) {
+		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
 			aliasTok.Range,
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(paramNames), count),
 			p.module.FileName,
 		)
 		return &err
 	}
-	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
+
+	// validate that the alias does not contain illegal tokens
+	if countElements(aliasTokens, isIllegalToken) > 0 {
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
 			aliasTok.Range,
@@ -461,28 +485,42 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 		)
 		return &err
 	}
-	nameSet := make(map[string]ddptypes.ParameterType, len(paramNames)) // set that holds the parameter names contained in the alias and their corresponding type
+
+	nameTypeMap := make(map[string]ddptypes.ParameterType, len(paramNames)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(paramNames))                   // set that holds the parameter names contained in the alias
 	for i, v := range paramNames {
 		if i < len(paramTypes) {
-			nameSet[v.Literal] = paramTypes[i]
+			nameTypeMap[v.Literal] = paramTypes[i]
+			nameSet[v.Literal] = struct{}{}
 		}
 	}
 	// validate that each parameter is contained in the alias exactly once
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if isAliasExpr(v) {
-			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-			if argTyp, ok := nameSet[k]; ok {
-				aliasTokens[i].AliasInfo = &argTyp
-				delete(nameSet, k)
-			} else {
-				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					aliasTok.Range,
-					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
-					p.module.FileName,
-				)
-				return &err
-			}
+		if !isAliasExpr(v) {
+			continue
+		}
+
+		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
+		if _, ok := nameSet[k]; !ok {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				aliasTok.Range,
+				fmt.Sprintf("Die Funktion hat keinen Parameter mit Namen %s", k),
+				p.module.FileName,
+			)
+			return &err
+		}
+
+		if argTyp, ok := nameTypeMap[k]; ok {
+			aliasTokens[i].AliasInfo = &argTyp
+			delete(nameTypeMap, k)
+		} else {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				aliasTok.Range,
+				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
+				p.module.FileName,
+			)
+			return &err
 		}
 	}
 	return nil
@@ -493,20 +531,17 @@ func (p *parser) validateFunctionAlias(aliasTok *token.Token, aliasTokens []toke
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
 func (p *parser) validateStructAlias(aliasTok *token.Token, aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
-	if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-		err := ddperror.New(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten", p.module.FileName)
-		return &err, nil
-	}
-
 	if count := countElements(aliasTokens, isAliasExpr); count > len(fields) { // validate that the alias contains as many parameters as the struct
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-			aliasTok.Range,
+			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
 			p.module.FileName,
 		)
 		return &err, nil
 	}
-	if countElements(aliasTokens, isIllegalToken) > 0 { // validate that the alias does not contain illegal tokens
+
+	// validate that the alias does not contain illegal tokens
+	if countElements(aliasTokens, isIllegalToken) > 0 {
 		err := ddperror.New(
 			ddperror.SEM_MALFORMED_ALIAS,
 			aliasTok.Range,
@@ -515,31 +550,45 @@ func (p *parser) validateStructAlias(aliasTok *token.Token, aliasTokens []token.
 		)
 		return &err, nil
 	}
-	nameSet := make(map[string]ddptypes.ParameterType, len(fields)) // set that holds the parameter names contained in the alias and their corresponding type
-	args := make(map[string]ddptypes.Type, len(fields))             // the arguments of the alias
+
+	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(fields))                   // set that holds the parameter names contained in the alias
+	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
 	for _, v := range fields {
-		nameSet[v.Name()] = ddptypes.ParameterType{
+		nameTypeMap[v.Name()] = ddptypes.ParameterType{
 			Type:        v.Type,
 			IsReference: false, // fields are never references
 		}
 		args[v.Name()] = v.Type
+		nameSet[v.Name()] = struct{}{}
 	}
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if isAliasExpr(v) {
-			k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-			if argTyp, ok := nameSet[k]; ok {
-				aliasTokens[i].AliasInfo = &argTyp
-				delete(nameSet, k)
-			} else {
-				err := ddperror.New(ddperror.SEM_ALIAS_BAD_NUM_ARGS,
-					aliasTok.Range,
-					fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
-					p.module.FileName,
-				)
-				return &err, nil
-			}
+		if !isAliasExpr(v) {
+			continue
+		}
+
+		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
+		if _, ok := nameSet[k]; !ok {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				aliasTok.Range,
+				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
+				p.module.FileName,
+			)
+			return &err, nil
+		}
+
+		if argTyp, ok := nameTypeMap[k]; ok {
+			aliasTokens[i].AliasInfo = &argTyp
+			delete(nameTypeMap, k)
+		} else {
+			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
+				aliasTok.Range,
+				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
+				p.module.FileName,
+			)
+			return &err, nil
 		}
 	}
 	return nil, args

@@ -1,5 +1,7 @@
 [ Wird für die Externen Funktionen benötigt ]
 Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Zahlen" ein.
 
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
@@ -140,3 +142,413 @@ Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad v
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Kopiere die Datei <Pfad> nach <Kopiepfad>"
+
+[
+
+	Allgemeine Datei Eingabe/Ausgabe
+
+]
+
+[
+	Bit-Flags für den Modus der Datei.
+	!!! Dürfen nicht verändert werden !!! -> in Zukunft als Funktionen implementieren.
+
+	!!! Müssen mit den C Flags übereinstimmen !!!
+]
+
+Die öffentliche Zahl MODUS_NUR_LESEN ist 1.
+Die öffentliche Zahl MODUS_NUR_SCHREIBEN ist 2.
+Die öffentliche Zahl MODUS_LESEN_SCHREIBEN ist 4.
+
+Die öffentliche Zahl MODUS_ERSTELLEN ist 8.
+Die öffentliche Zahl MODUS_ANHAENGEN ist 16.
+Die öffentliche Zahl MODUS_TRUNKIEREN ist 32.
+
+[
+	Eine Kombination, die Daten über eine Datei enthält, von der gelesen oder in die geschrieben werden kann.
+	Das Lesen und Schreiben ist gepuffert.
+]
+Wir nennen die öffentliche Kombination aus
+	der Zahl index mit Standardwert -1,
+	der Zahl id mit Standardwert -1,
+eine Datei,
+und erstellen sie so:
+	"noch nicht offen" oder
+	"eine geschlossene Datei"
+
+[
+	Öffnet Datei im Modus mit dem Pfad.
+	Dabei ist Modus eine Sammlung von Bit-Flags, die die Art des Zugriffs auf die Datei bestimmen.
+]
+Die öffentliche Funktion Datei_Oeffnen mit den Parametern datei, Pfad und Modus vom Typ Datei Referenz, Text und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"öffne <datei> mit dem Pfad <Pfad> im Modus <Modus>" oder
+	"oeffne <datei> mit dem Pfad <Pfad> im Modus <Modus>"
+
+[
+	Öffnet Datei mit Pfad zum Lesen, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Lesen" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Lesen"
+
+[
+	Öffnet Datei mit Pfad zum Schreiben, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Schreiben mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Schreiben" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Schreiben"
+
+[
+	Öffnet Datei mit Pfad zum Lesen und Schreiben, und erstellt sie, falls sie nicht existiert:
+		Öffne Datei mit dem Pfad Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Schreiben mit den Parametern datei und Pfad vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Öffne datei mit dem Pfad Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN).
+Und kann so benutzt werden:
+	"Öffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"Oeffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"öffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben" oder
+	"oeffne <datei> mit dem Pfad <Pfad> zum Lesen und Schreiben"
+
+[
+	Öffnet Pfad im gegebenen Modus und gibt die Datei zurück.
+	Dabei ist Modus eine Sammlung von Bit-Flags, die die Art des Zugriffs auf die Datei bestimmen.
+]
+Die öffentliche Funktion Datei_Oeffnen_Rückgabe mit den Parametern Pfad und Modus vom Typ Text und Zahl, gibt eine Datei zurück, macht:
+	Die Datei datei ist noch nicht offen.
+	Öffne datei mit dem Pfad Pfad im Modus Modus.
+	Gib datei zurück.
+Und kann so benutzt werden:
+	"<Pfad> im Modus <Modus> geöffnet" oder
+	"<Pfad> im Modus <Modus> geoeffnet"
+
+[
+	Öffnet Pfad zum Lesen und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_NUR_LESEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Lesen geöffnet" oder
+	"<Pfad> zum Lesen geoeffnet"
+
+[
+	Öffnet Pfad zum Schreiben und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Schreiben_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_NUR_SCHREIBEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Schreiben geöffnet" oder
+	"<Pfad> zum Schreiben geoeffnet"
+
+[
+	Öffnet Pfad zum Lesen und Schreiben und gibt die Datei zurück.
+]
+Die öffentliche Funktion Datei_Oeffnen_Lesen_Schreiben_Rückgabe mit dem Parameter Pfad vom Typ Text, gibt eine Datei zurück, macht:
+	Gib Pfad im Modus (MODUS_LESEN_SCHREIBEN logisch oder MODUS_ERSTELLEN) geöffnet zurück.
+Und kann so benutzt werden:
+	"<Pfad> zum Lesen und Schreiben geöffnet" oder
+	"<Pfad> zum Lesen und Schreiben geoeffnet"
+
+[
+	Schließt die Datei und gibt alle damit assoziierten Ressourcen frei.
+	Muss aufgerufen werden, wenn die Datei nicht mehr gebraucht wird.
+
+	Nach dem Schließen kann die Datei Variable erneut geöffnet werden.
+]
+Die öffentliche Funktion Datei_Schliessen mit dem Parameter datei vom Typ Datei Referenz, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schließe <datei>" oder
+	"Schliesse <datei>" oder
+	"schließe <datei>" oder
+	"schliesse <datei>"
+
+[
+	Ob die Datei zuende gelesen wurde.
+]
+Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"<datei> zuende ist"
+
+[
+	Ob die Datei nicht zuende gelesen wurde.
+]
+Die öffentliche Funktion Datei_Nicht_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib nicht datei zuende ist zurück.
+Und kann so benutzt werden:
+	"<datei> nicht zuende ist"
+
+[
+	Liest die nächsten N Byte aus der Datei und gibt sie als Text zurück.
+]
+Die öffentliche Funktion Datei_Lies_N_Zeichen mit den Parametern datei und N vom Typ Datei Referenz und Zahl, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die nächsten <N> Zeichen aus <datei>"
+
+[
+	Liest die nächste Zeile aus der Datei und gibt sie als Text zurück.
+]
+Die öffentliche Funktion Datei_Lies_Zeile mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die nächste Zeile aus <datei>" oder
+	"die naechste Zeile aus <datei>"
+
+[
+	Liest die nächsten n Zeilen aus der Datei und gibt sie als Text Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Text Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Zeilen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Zeilen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Text Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Text Liste zurück.
+
+	Die Text Liste zeilen ist n Mal "".
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zeilen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Zeile aus datei in zeilen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zeilen bis zum (i minus 1). Element zurück.
+	Gib zeilen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Zeilen aus <datei>" oder
+	"die naechsten <n> Zeilen aus <datei>" oder
+	"den nächsten <n> Zeilen aus <datei>" oder
+	"den naechsten <n> Zeilen aus <datei>"
+
+[
+	Liest das nächste Wort ohne Leerzeichen aus der Datei und gibt es als Text zurück.
+]
+Die öffentliche Funktion Datei_Lies_Wort mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"das nächste Wort aus <datei>" oder
+	"das naechste Wort aus <datei>"
+
+[
+	Liest die nächsten n Worte aus der Datei und gibt sie als Text Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Text Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Worte zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Worte mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Text Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Text Liste zurück.
+
+	Die Text Liste worte ist n Mal "".
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib worte bis zum (i minus 1). Element zurück.
+		Speichere das nächste Wort aus datei in worte an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib worte bis zum (i minus 1). Element zurück.
+	Gib worte zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Worte aus <datei>" oder
+	"die naechsten <n> Worte aus <datei>" oder
+	"den nächsten <n> Worte aus <datei>" oder
+	"den naechsten <n> Worte aus <datei>"
+
+[
+	(das nächste Wort aus datei) als Zahl
+
+	Meldet einen Fehler, wenn das nächste Wort keine Zahl war.
+]
+Die öffentliche Funktion Datei_Lies_Zahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Zahl zurück, macht:
+	Der Text wort ist das nächste Wort aus datei.
+	Wenn nicht wort eine Zahl ist, dann:
+		Melde den Fehler "Keine Zahl gefunden".
+	Gib wort als Zahl zurück.
+Und kann so benutzt werden:
+	"die nächste Zahl aus <datei>" oder
+	"die naechste Zahl aus <datei>"
+
+[
+	Liest die nächsten n Zahlen aus der Datei und gibt sie als Zahlen Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Zahlen Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Zahlen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Zahlen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Zahlen Liste zurück.
+
+	Die Zahlen Liste zahlen ist n Mal 0.
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zahlen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Zahl aus datei in zahlen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zahlen bis zum (i minus 1). Element zurück.
+	Gib zahlen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Zahlen aus <datei>" oder
+	"die naechsten <n> Zahlen aus <datei>" oder
+	"den nächsten <n> Zahlen aus <datei>" oder
+	"den naechsten <n> Zahlen aus <datei>"
+
+[
+	(das nächste Wort aus datei) als Kommazahl
+
+	Meldet einen Fehler, wenn das nächste Wort keine Kommazahl war.
+]
+Die öffentliche Funktion Datei_Lies_Kommazahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Kommazahl zurück, macht:
+	Der Text wort ist das nächste Wort aus datei.
+	[jede Zahl kann auch als Kommazahl formatiert werden]
+	Wenn nicht wort eine Zahl ist, dann:
+		Melde den Fehler "Keine Kommazahl gefunden".
+	Gib wort als Kommazahl zurück.
+Und kann so benutzt werden:
+	"die nächste Kommazahl aus <datei>" oder
+	"die naechste Kommazahl aus <datei>"
+
+[
+	Liest die nächsten n Kommazahlen aus der Datei und gibt sie als Kommazahlen Liste zurück.
+	Wenn n kleiner als 1 ist, wird eine leere Kommazahlen Liste zurückgegeben.
+
+	Wenn während des Lesens ein Fehler auftritt oder die Datei zuende ist werden nur die bisher gelesenen Kommazahlen zurückgegeben
+	und der Fehler bleibt bestehen.
+]
+Die öffentliche Funktion Datei_Lies_N_Kommazahlen mit den Parametern datei und n vom Typ Datei Referenz und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Wenn n kleiner als 1 ist, gib eine leere Kommazahlen Liste zurück.
+
+	Die Kommazahlen Liste zahlen ist n Mal 0,0.
+	Für jede Zahl i von 1 bis n, mache:
+		Wenn datei zuende ist, gib zahlen bis zum (i minus 1). Element zurück.
+		Speichere die nächste Kommazahl aus datei in zahlen an der Stelle i.
+		Wenn es dabei einen Fehler gab, gib zahlen bis zum (i minus 1). Element zurück.
+	Gib zahlen zurück.
+Und kann so benutzt werden:
+	"die nächsten <n> Kommazahlen aus <datei>" oder
+	"die naechsten <n> Kommazahlen aus <datei>" oder
+	"den nächsten <n> Kommazahlen aus <datei>" oder
+	"den naechsten <n> Kommazahlen aus <datei>"
+
+[TODO: Teste das alles]
+
+[
+	Schreibt die gegebene Zahl in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zahl mit den Parametern datei und zahl vom Typ Datei Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe die Zahl <zahl> in <datei>" oder
+	"schreibe die Zahl <zahl> in <datei>" oder
+	"Schreibe <zahl> in <datei>" oder
+	"schreibe <zahl> in <datei>"
+
+[
+	Schreibt den gegebenen Text in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Text mit den Parametern datei und text vom Typ Datei Referenz und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe die Kommazahl <text> in <datei>" oder
+	"schreibe die Kommazahl <text> in <datei>" oder
+	"Schreibe <text> in <datei>" oder
+	"schreibe <text> in <datei>"
+
+[
+	Schreibt die gegebene Kommazahl in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Kommazahl mit den Parametern datei und zahl vom Typ Datei Referenz und Kommazahl, gibt nichts zurück, macht:
+	Schreibe (zahl als Text) in datei.
+Und kann so benutzt werden:
+	"Schreibe die Kommazahl <zahl> in <datei>" oder
+	"schreibe die Kommazahl <zahl> in <datei>" oder
+	"Schreibe <zahl> in <datei>" oder
+	"schreibe <zahl> in <datei>"
+
+[
+	Schreibt den gegebenen Buchstaben in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Buchstabe mit den Parametern datei und buchstabe vom Typ Datei Referenz und Buchstabe, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe den Buchstaben <buchstabe> in <datei>" oder
+	"schreibe den Buchstaben <buchstabe> in <datei>" oder
+	"Schreibe <buchstabe> in <datei>" oder
+	"schreibe <buchstabe> in <datei>"
+
+[
+	Schreibt den gegebenen Wahrheitswert in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Wahrheitswert mit den Parametern datei und wahrheitswert vom Typ Datei Referenz und Wahrheitswert, gibt nichts zurück, macht:
+	Schreibe (wahrheitswert als Text) in datei.
+Und kann so benutzt werden:
+	"Schreibe den Wahrheitswert <wahrheitswert> in <datei>" oder
+	"schreibe den Wahrheitswert <wahrheitswert> in <datei>" oder
+	"Schreibe <wahrheitswert> in <datei>" oder
+	"schreibe <wahrheitswert> in <datei>"
+
+[
+	Schreibt die gegebene Zahl gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Zahl mit den Parametern datei und zahl vom Typ Datei Referenz und Zahl, gibt nichts zurück, macht:
+	Schreibe zahl in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe die Zahl <zahl> auf eine Zeile in <datei>" oder
+	"schreibe die Zahl <zahl> auf eine Zeile in <datei>" oder
+	"Schreibe <zahl> auf eine Zeile in <datei>" oder
+	"schreibe <zahl> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Text gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Text mit den Parametern datei und text vom Typ Datei Referenz und Text, gibt nichts zurück, macht:
+	Schreibe text in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Text <text> auf eine Zeile in <datei>" oder
+	"schreibe den Text <text> auf eine Zeile in <datei>" oder
+	"Schreibe <text> auf eine Zeile in <datei>" oder
+	"schreibe <text> auf eine Zeile in <datei>"
+
+[
+	Schreibt die gegebene Kommazahl gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Kommazahl mit den Parametern datei und zahl vom Typ Datei Referenz und Kommazahl, gibt nichts zurück, macht:
+	Schreibe zahl in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe die Kommazahl <zahl> auf eine Zeile in <datei>" oder
+	"schreibe die Kommazahl <zahl> auf eine Zeile in <datei>" oder
+	"Schreibe <zahl> auf eine Zeile in <datei>" oder
+	"schreibe <zahl> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Buchstaben gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Buchstabe mit den Parametern datei und buchstabe vom Typ Datei Referenz und Buchstabe, gibt nichts zurück, macht:
+	Schreibe buchstabe in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Buchstaben <buchstabe> auf eine Zeile in <datei>" oder
+	"schreibe den Buchstaben <buchstabe> auf eine Zeile in <datei>" oder
+	"Schreibe <buchstabe> auf eine Zeile in <datei>" oder
+	"schreibe <buchstabe> auf eine Zeile in <datei>"
+
+[
+	Schreibt den gegebenen Wahrheitswert gefolgt von einer neuen Zeile in datei.
+]
+Die öffentliche Funktion Datei_Schreibe_Zeile_Wahrheitswert mit den Parametern datei und wahrheitswert vom Typ Datei Referenz und Wahrheitswert, gibt nichts zurück, macht:
+	Schreibe wahrheitswert in datei.
+	Schreibe '\n' in datei.
+Und kann so benutzt werden:
+	"Schreibe den Wahrheitswert <wahrheitswert> auf eine Zeile in <datei>" oder
+	"schreibe den Wahrheitswert <wahrheitswert> auf eine Zeile in <datei>" oder
+	"Schreibe <wahrheitswert> auf eine Zeile in <datei>" oder
+	"schreibe <wahrheitswert> auf eine Zeile in <datei>"

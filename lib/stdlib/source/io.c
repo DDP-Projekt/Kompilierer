@@ -29,7 +29,7 @@ void Schreibe_Zahl(ddpint p1) {
 
 void Schreibe_Kommazahl(ddpfloat p1) {
 	if (isinf(p1)) {
-		printf("Unendlich");
+		printf(p1 > 0 ? "Unendlich": "-Unendlich");
 	} else if (isnan(p1)) {
 		printf("Keine Zahl (NaN)");
 	} else {
@@ -83,7 +83,7 @@ static HANDLE *get_stdin_handle(void) {
 #endif // DDPOS_WINDOWS
 
 ddpchar extern_lies_buchstabe(ddpboolref war_eof) {
-	DBGLOG("extern_lies_buchstabe");
+	DDP_DBGLOG("extern_lies_buchstabe");
 #ifdef DDPOS_WINDOWS // if stdin is a terminal type on windows
 	if (_isatty(_fileno(stdin))) {
 		wchar_t buff[2];

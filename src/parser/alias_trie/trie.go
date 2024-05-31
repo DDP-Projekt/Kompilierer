@@ -28,13 +28,13 @@ type Trie[K, V any] struct {
 // create a new trie
 // should only be used with K = *token.Token and V = ast.Alias
 func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
-	var k K
-	var v V
+	var key_default K
+	var value_default V
 	return &Trie[K, V]{
 		root: &trieNode[K, V]{
 			children: orderedmap.New[K, *trieNode[K, V]](key_eq, key_less, defaultCapacity), // default capacity of four, has to be tested
-			key:      k,
-			value:    v,
+			key:      key_default,
+			value:    value_default,
 			hasValue: false,
 		},
 		key_eq:   key_eq,
@@ -45,7 +45,7 @@ func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 // insert a value into the trie
 // returns the previous value for the key or the default value if there was none
 func (t *Trie[K, V]) Insert(key []K, value V) V {
-	var v V
+	var value_default V
 	node := t.root
 	for _, k := range key {
 		if child, ok := node.children.Get(k); ok {
@@ -54,7 +54,7 @@ func (t *Trie[K, V]) Insert(key []K, value V) V {
 			child := &trieNode[K, V]{
 				children: orderedmap.New[K, *trieNode[K, V]](t.key_eq, t.key_less, defaultCapacity),
 				key:      k,
-				value:    v,
+				value:    value_default,
 				hasValue: false,
 			}
 			node.children.Set(k, child)
@@ -125,13 +125,13 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 // strictly checks if the given keys are in the trie
 // returns either the value for the key or nil
 func (t *Trie[K, V]) Contains(keys []K) (bool, V) {
-	var v V
+	var value_default V
 	node := t.root
 	for _, k := range keys {
 		if child, ok := node.children.Get(k); ok {
 			node = child
 		} else {
-			return false, v
+			return false, value_default
 		}
 	}
 	return true, node.value

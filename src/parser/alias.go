@@ -49,7 +49,7 @@ func (p *parser) alias() ast.Expression {
 				return tok, true
 			case token.NEGATE:
 				p.advance()
-				if !p.match(token.INT, token.FLOAT, token.IDENTIFIER) {
+				if !p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL) {
 					return nil, false
 				}
 				return tok, true
@@ -168,11 +168,11 @@ func (p *parser) alias() ast.Expression {
 					exprStart := p.cur
 					isGrouping := false
 					switch pType {
-					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER:
+					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER, token.SYMBOL:
 						p.advance() // single-token argument
 					case token.NEGATE:
 						p.advance()
-						p.match(token.INT, token.FLOAT, token.IDENTIFIER)
+						p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
 					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 						isGrouping = true
 						p.advance()

@@ -85,7 +85,7 @@ static ddpint clamp(ddpint i, ddpint min, ddpint max) {
 }
 
 void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint index2) {
-	DBGLOG("_ddp_string_slice: %p, ret: %p", str, ret);
+	DDP_DBGLOG("_ddp_string_slice: %p, ret: %p", str, ret);
 	*ret = DDP_EMPTY_STRING;
 
 	if (ddp_string_empty(str)) {
@@ -123,7 +123,7 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 // concatenate two strings
 // guarantees that any memory allocated by str1 is either claimed for the result or freed
 void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str2) {
-	DBGLOG("_ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
+	DDP_DBGLOG("_ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
 
 	if (ddp_string_empty(str1) && ddp_string_empty(str2)) {
 		*ret = DDP_EMPTY_STRING;
@@ -148,7 +148,7 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 // concatenate a char to a string
 // guarantees that any memory allocated by str is either claimed for the result or freed
 void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
-	DBGLOG("_ddp_char_string_verkettet: %p, ret: %p", str, ret);
+	DDP_DBGLOG("_ddp_char_string_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -173,7 +173,7 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 // concatenate a string to a char
 // guarantees that any memory allocated by str is either claimed for the result or freed
 void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
-	DBGLOG("_ddp_string_char_verkettet: %p, ret: %p", str, ret);
+	DDP_DBGLOG("_ddp_string_char_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);
@@ -212,7 +212,7 @@ ddpfloat ddp_string_to_float(ddpstring *str) {
 }
 
 void ddp_int_to_string(ddpstring *ret, ddpint i) {
-	DBGLOG("_ddp_int_to_string: %p", ret);
+	DDP_DBGLOG("_ddp_int_to_string: %p", ret);
 
 	char buffer[21];
 	int len = sprintf(buffer, DDP_INT_FMT, i);
@@ -227,7 +227,7 @@ void ddp_int_to_string(ddpstring *ret, ddpint i) {
 }
 
 void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
-	DBGLOG("_ddp_float_to_string: %p", ret);
+	DDP_DBGLOG("_ddp_float_to_string: %p", ret);
 
 	char buffer[50];
 	int len = sprintf(buffer, DDP_FLOAT_FMT, f);
@@ -242,7 +242,7 @@ void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
 }
 
 void ddp_bool_to_string(ddpstring *ret, ddpbool b) {
-	DBGLOG("_ddp_bool_to_string: %p", ret);
+	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 
 	char *string;
 
@@ -259,7 +259,7 @@ void ddp_bool_to_string(ddpstring *ret, ddpbool b) {
 }
 
 void ddp_char_to_string(ddpstring *ret, ddpchar c) {
-	DBGLOG("_ddp_bool_to_string: %p", ret);
+	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 
 	char temp[5];
 	int num_bytes = utf8_char_to_string(temp, c);

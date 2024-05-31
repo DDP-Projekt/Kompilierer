@@ -11,14 +11,14 @@
 
 #ifdef DDP_DEBUG
 // helper macro to log stuff in debug mode
-#define DBGLOG(...)          \
+#define DDP_DBGLOG(...)      \
 	{                        \
 		printf("\n\t");      \
 		printf(__VA_ARGS__); \
 		printf("\n");        \
 	}
 #else
-#define DBGLOG(...)
+#define DDP_DBGLOG(...)
 #endif // DDP_DEBUG
 
 #endif // DDP_DEBUG_H
