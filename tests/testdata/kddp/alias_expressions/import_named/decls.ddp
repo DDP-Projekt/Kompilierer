@@ -1,2 +1,4 @@
 Der öffentliche Alias "<a> mit <b> multipliziert" mit Namen mult steht für den Ausdruck a mal b.
 Der öffentliche Alias "<a> durch <b> geteilt" mit Namen div steht für den Ausdruck a durch b.
+
+Die öffentlichen Aliase "<a> von <b> subtrahiert" und "<a> von <b> abgezogen" mit Namen sub stehen für den Ausdruck b minus a.

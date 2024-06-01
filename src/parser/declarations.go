@@ -4,6 +4,7 @@ This file contains functions to parse function/struct/... declarations
 package parser
 
 import (
+	"cmp"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -857,21 +858,14 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	}
 
 	var (
-		aliases         = make([]*ast.ExpressionAlias, 0, 8)
+		aliases         = make([]*ast.ExpressionAlias, 1, 4)
 		parameterTokens map[string]*token.Token
 	)
-	if isSingleAlias {
-		p.consume(token.STRING)
-		alias, pTokens := parse_single_alias(nil)
-		aliases = append(aliases, alias)
-		parameterTokens = pTokens
-	} else {
-		p.consume(token.STRING)
-		alias, pTokens := parse_single_alias(nil)
-		aliases = append(aliases, alias)
-		parameterTokens = pTokens
-		expectedParamNames := make(map[string]struct{}, len(pTokens))
-		for k := range pTokens {
+	p.consume(token.STRING)
+	aliases[0], parameterTokens = parse_single_alias(nil)
+	if !isSingleAlias {
+		expectedParamNames := make(map[string]struct{}, len(parameterTokens))
+		for k := range parameterTokens {
 			expectedParamNames[k] = struct{}{}
 		}
 
@@ -880,9 +874,9 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 			alias, _ := parse_single_alias(expectedParamNames)
 			aliases = append(aliases, alias)
 		}
-		p.consume(token.UND)
-		alias, pTokens = parse_single_alias(expectedParamNames)
-		aliases = append(aliases, alias)
+		p.consume(token.UND, token.STRING)
+		last_alias, _ := parse_single_alias(expectedParamNames)
+		aliases = append(aliases, last_alias)
 	}
 
 	name := fmt.Sprintf("$expr_decl_%d", expressionDeclCount)
@@ -901,8 +895,11 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	}
 	p.consume(token.FÜR, token.DEN, token.AUSDRUCK)
 
+	// cmp.Or to prevent nil pointer dereference
+	first_valid_alias := cmp.Or(cmp.Or(aliases...), &ast.ExpressionAlias{Args: nil})
+
 	symbols := p.newScope()
-	for _, argName := range alias.Args {
+	for _, argName := range first_valid_alias.Args {
 		symbols.InsertDecl(argName, &ast.VarDecl{
 			Range:      parameterTokens[argName].Range,
 			CommentTok: nil,
@@ -917,7 +914,7 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 	var expr ast.Expression = nil
 	var tokens []token.Token = nil
 	// simple case, we just parse a expression
-	if len(alias.Args) == 0 {
+	if len(first_valid_alias.Args) == 0 {
 		expr = p.expression()
 		p.consume(token.DOT)
 	} else { // complex case, we need to save the tokens to be reparsed each time
@@ -930,11 +927,11 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, token.DOT))
 	}
 
-	alias.ExprDecl = &ast.ExpressionDecl{
+	exprDecl := &ast.ExpressionDecl{
 		Range:        token.NewRange(begin, p.previous()),
 		CommentTok:   comment,
 		Tok:          *begin,
-		Aliases:      alias,
+		Aliases:      aliases,
 		Expr:         expr,
 		Tokens:       tokens,
 		NameTok:      NameTok,
@@ -944,7 +941,11 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 		Scope:        symbols.WithLimit(p.previous().Range.End),
 	}
 
-	return alias.ExprDecl
+	for _, alias := range aliases {
+		alias.ExprDecl = exprDecl
+	}
+
+	return exprDecl
 }
 
 func containsName(params []ast.ParameterInfo, name string) bool {

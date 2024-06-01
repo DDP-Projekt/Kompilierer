@@ -20,3 +20,13 @@ Der Alias "<a> geschrieben" steht für den Ausdruck Schreibe a auf eine Zeile.
 
 "Hallo" geschrieben.
 22 geschrieben.
+
+Die Aliase "drei", "1-plus-2" und "Drei" stehen für den Ausdruck 3.
+Die Aliase "vier" und "Vier" stehen für den Ausdruck 4.
+Die Aliase "fünf", "Fünf" und "fünftens" mit Namen fünf_alias stehen für den Ausdruck 5.
+
+drei geschrieben.
+(1-plus-2) geschrieben.
+Vier geschrieben.
+vier geschrieben.
+fünf geschrieben.
