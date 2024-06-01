@@ -5,7 +5,6 @@ go 1.22.2
 require (
 	github.com/bafto/Go-LLVM-Bindings v1.0.2
 	github.com/google/go-github/v55 v55.0.0
-	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/llir/irutil v0.0.0-20230226050352-c20f75c375f9
 	github.com/llir/llvm v0.3.5-0.20210831075850-f8d0325a931a
 	github.com/minio/selfupdate v0.6.0

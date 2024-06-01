@@ -3,8 +3,6 @@ package ddppath
 import (
 	"os"
 	"path/filepath"
-
-	"github.com/kardianos/osext"
 )
 
 const LIST_DEFS_NAME = "ddp_list_types_defs"
@@ -33,7 +31,7 @@ func init() {
 	// get the path to the ddp install directory
 	if ddppath := os.Getenv("DDPPATH"); ddppath != "" {
 		InstallDir = ddppath
-	} else if exeFolder, err := osext.ExecutableFolder(); err != nil { // fallback if the environment variable is not set, might fail though
+	} else if exeFolder, err := executableFolder(); err != nil { // fallback if the environment variable is not set, might fail though
 		panic(err)
 	} else {
 		InstallDir, err = filepath.Abs(filepath.Join(exeFolder, "../"))
@@ -48,4 +46,15 @@ func init() {
 	DDP_List_Types_Defs_LL = filepath.Join(Lib, LIST_DEFS_NAME+".ll")
 	DDP_List_Types_Defs_O = filepath.Join(Lib, LIST_DEFS_NAME+".o")
 	Mingw64 = filepath.Join(InstallDir, "mingw64")
+}
+
+// Returns same path as Executable, returns just the folder
+// path. Excludes the executable name and any trailing slash.
+func executableFolder() (string, error) {
+	p, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Dir(filepath.Clean(p)), nil
 }
