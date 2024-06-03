@@ -422,6 +422,14 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
+	case ast.TER_FALLS:
+		if lhs != rhs {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des Wenn Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
+		}
+		if !isOfType(mid, ddptypes.WAHRHEITSWERT) {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Bedingung des Wenn Ausdrucks muss vom Typ %s sein, aber es wurde %s gefunden", ddptypes.WAHRHEITSWERT, mid)
+		}
+		t.latestReturnedType = lhs
 	default:
 		panic(fmt.Errorf("unbekannter ternärer Operator '%s'", expr.Operator))
 	}

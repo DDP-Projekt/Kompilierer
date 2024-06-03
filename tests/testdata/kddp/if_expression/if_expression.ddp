@@ -1,0 +1,36 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Zahl z ist 1, falls wahr, ansonsten 2.
+Schreibe z auf eine Zeile.
+
+Schreibe (1, falls falsch, ansonsten 2) auf eine Zeile.
+
+Die Kommazahl k ist 1,4, falls wahr, ansonsten 4,2.
+Schreibe k auf eine Zeile.
+
+Der Wahrheitswert w ist wahr, wenn falsch.
+Der Wahrheitswert w2 ist wahr, falls falsch, ansonsten falsch.
+Schreibe w2 auf eine Zeile.
+
+Der Wahrheitswert bool ist wahr.
+Der Buchstabe c ist 'A'.
+Der Buchstabe b ist 'Ä'.
+Schreibe (b, falls bool, ansonsten c) auf eine Zeile.
+
+Der Text t ist "BLEEHH", falls "YO" gleich "YO" ist, ansonsten "SILLY".
+Schreibe t auf eine Zeile.
+
+Die Funktion Test gibt eine Zahl zurück, macht:
+    Schreibe "Test" auf eine Zeile.
+    Gib 0 zurück.
+Und kann so benutzt werden:
+    "Test"
+
+Schreibe (Test, falls wahr, ansonsten Test) auf eine Zeile.
+
+Die Funktion Test2 gibt eine Zahl zurück, macht:
+    Gib 1, falls wahr, ansonsten 2 zurück.
+Und kann so benutzt werden:
+    "Test2"
+
+Schreibe Test2 auf eine Zeile.

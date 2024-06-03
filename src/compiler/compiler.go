@@ -1293,6 +1293,41 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
+	// if due to short circuiting
+	if e.Operator == ast.TER_FALLS {
+		mid, _, _ := c.evaluate(e.Mid)
+		trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
+		c.commentNode(c.cbb, e, e.Operator.String())
+		c.cbb.NewCondBr(mid, trueBlock, falseBlock)
+
+		c.cbb = trueBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
+		lhs, typ, _ := c.evaluate(e.Lhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
+		c.commentNode(c.cbb, e, e.Operator.String())
+		c.cbb.NewBr(leaveBlock)
+		trueBlock = c.cbb
+
+		c.cbb = falseBlock
+		// collect temporaries because of possible short-circuiting
+		c.scp = newScope(c.scp)
+		rhs, _, _ := c.evaluate(e.Rhs)
+		// free temporaries
+		c.scp = c.exitScope(c.scp)
+		c.commentNode(c.cbb, e, e.Operator.String())
+		c.cbb.NewBr(leaveBlock)
+		falseBlock = c.cbb
+
+		c.cbb = leaveBlock
+		c.commentNode(c.cbb, e, e.Operator.String())
+		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, trueBlock), ir.NewIncoming(rhs, falseBlock))
+		c.latestReturnType = typ
+		// TODO: set c.latestIsTemp here
+		return ast.VisitRecurse
+	}
+
 	lhs, lhsTyp, _ := c.evaluate(e.Lhs)
 	mid, midTyp, _ := c.evaluate(e.Mid)
 	rhs, rhsTyp, _ := c.evaluate(e.Rhs)
