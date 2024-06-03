@@ -1303,7 +1303,11 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		c.cbb = trueBlock
 		// collect temporaries because of possible short-circuiting
 		c.scp = newScope(c.scp)
-		lhs, typ, _ := c.evaluate(e.Lhs)
+		lhs, lhsTyp, lhsIsTemp := c.evaluate(e.Lhs)
+		// claim the temporary, as the phi instruction will become the actual temporary
+		if lhsIsTemp && !lhsTyp.IsPrimitive() {
+			lhs = c.scp.claimTemporary(lhs)
+		}
 		// free temporaries
 		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
@@ -1313,18 +1317,46 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		c.cbb = falseBlock
 		// collect temporaries because of possible short-circuiting
 		c.scp = newScope(c.scp)
-		rhs, _, _ := c.evaluate(e.Rhs)
+		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
+		// claim the temporary, as the phi instruction will become the actual temporary
+		if rhsIsTemp && !rhsTyp.IsPrimitive() {
+			rhs = c.scp.claimTemporary(rhs)
+		}
 		// free temporaries
 		c.scp = c.exitScope(c.scp)
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.cbb.NewBr(leaveBlock)
 		falseBlock = c.cbb
 
+		// simple case, where both can be treated the same way
+		if lhsIsTemp == rhsIsTemp {
+			c.latestIsTemp = lhsIsTemp
+		} else {
+			c.latestIsTemp = true
+
+			// we need to copy the non-temp value to be sure
+			c.cbb = trueBlock
+			if lhsIsTemp {
+				c.cbb = falseBlock
+			}
+
+			// turn the non-temp into a temporary and claim the temporary,
+			// as the phi instruction will become the actual temporary
+			dest := c.NewAlloca(lhsTyp.IrType())
+			if lhsIsTemp {
+				rhs = c.deepCopyInto(dest, rhs, lhsTyp)
+			} else {
+				lhs = c.deepCopyInto(dest, lhs, lhsTyp)
+			}
+		}
+
 		c.cbb = leaveBlock
 		c.commentNode(c.cbb, e, e.Operator.String())
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, trueBlock), ir.NewIncoming(rhs, falseBlock))
-		c.latestReturnType = typ
-		// TODO: set c.latestIsTemp here
+		if c.latestIsTemp {
+			c.scp.addTemporary(c.latestReturn, lhsTyp)
+		}
+		c.latestReturnType = lhsTyp
 		return ast.VisitRecurse
 	}
 

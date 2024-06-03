@@ -28,6 +28,10 @@ Und kann so benutzt werden:
 
 Schreibe (Test, falls wahr, ansonsten Test) auf eine Zeile.
 
+Der Text t2 ist "test".
+Schreibe (t2, falls wahr, ansonsten t2) auf eine Zeile.
+Schreibe ("hi", falls wahr, ansonsten t2) auf eine Zeile.
+
 Die Funktion Test2 gibt eine Zahl zurück, macht:
     Gib 1, falls wahr, ansonsten 2 zurück.
 Und kann so benutzt werden:
