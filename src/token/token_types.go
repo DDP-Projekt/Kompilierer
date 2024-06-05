@@ -138,11 +138,12 @@ const (
 	ZUM
 	ELEMENT
 
-	DOT    // .
-	COMMA  // ,
-	COLON  // :
-	LPAREN // (
-	RPAREN // )
+	DOT            // .
+	COMMA          // ,
+	COLON          // :
+	LPAREN         // (
+	RPAREN         // )
+	ALIAS_NEGATION // !
 )
 
 var tokenStrings = [...]string{
@@ -283,11 +284,12 @@ var tokenStrings = [...]string{
 	ZUM:           "zum",
 	ELEMENT:       "Element",
 
-	DOT:    ".",
-	COMMA:  ",",
-	COLON:  ":",
-	LPAREN: "(",
-	RPAREN: ")",
+	DOT:            ".",
+	COMMA:          ",",
+	COLON:          ":",
+	LPAREN:         "(",
+	RPAREN:         ")",
+	ALIAS_NEGATION: "!",
 }
 
 func (t TokenType) String() string {

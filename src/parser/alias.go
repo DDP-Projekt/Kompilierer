@@ -68,6 +68,11 @@ func (p *parser) alias() ast.Expression {
 				}
 				return tok, true
 			}
+		} else if tok.Type == token.ALIAS_NEGATION {
+			if t := p.advance(); isNegationKeyword(t) {
+				return tok, true
+			}
+			return nil, false
 		}
 		return p.advance(), true
 	})
@@ -220,13 +225,24 @@ func (p *parser) alias() ast.Expression {
 
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
-			return &ast.FuncCall{
+			fnCall := &ast.FuncCall{
 				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  fnalias.Func.Name(),
 				Func:  fnalias.Func,
 				Args:  args,
 			}
+
+			if fnalias.Negated {
+				return &ast.UnaryExpr{
+					Range:    fnCall.Range,
+					Tok:      p.tokens[start],
+					Operator: ast.UN_NOT,
+					Rhs:      fnCall,
+				}
+			}
+
+			return fnCall
 		}
 
 		stralias := alias.(*ast.StructAlias)
@@ -258,4 +274,29 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(mostFitting, args)
+}
+
+// returns true if the token is a negation keyword (e.g. nicht, kein, ect.)
+func isNegationKeyword(tok *token.Token) bool {
+	switch tok.Type {
+	case token.NICHT:
+		return true
+	}
+	return false
+}
+
+// returns all tokens of a alias except the negation marker. returns nil if there was no negation
+func filterNegationMarkers(tokens []token.Token) (result []token.Token) {
+	didEncounterNegation := false
+	for _, tok := range tokens {
+		if tok.Type != token.ALIAS_NEGATION {
+			result = append(result, tok)
+		} else {
+			didEncounterNegation = true
+		}
+	}
+	if didEncounterNegation {
+		return result
+	}
+	return nil
 }

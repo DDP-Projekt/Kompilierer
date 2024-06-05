@@ -306,7 +306,16 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
 				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
+					filtered := filterNegationMarkers(alias) // remove negation markers
+
+					if filtered != nil { // is there no negation?
+						if ok, _, _, pTokensFiltered := p.aliasExists(filtered); !ok {
+							funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: filtered, Original: *v, Func: nil, Args: paramTypesMap, Negated: false})
+							funcAliasTokens = append(funcAliasTokens, pTokensFiltered)
+						}
+					}
+
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: filtered != nil})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {

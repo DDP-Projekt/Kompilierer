@@ -286,19 +286,30 @@ func (s *Scanner) identifierType() token.TokenType {
 
 // helper to scan the <argname> in aliases
 func (s *Scanner) aliasParameter() token.Token {
+	if s.peek() == '!' {
+		s.advance()
+		if s.advance() != '>' {
+			s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalide Negierungsmarkierung")
+		}
+		return s.newToken(token.ALIAS_NEGATION)
+	}
+
 	if !isAlpha(s.peek()) {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 	}
+
 	for !s.atEnd() && s.peek() != '>' {
 		if !isAlphaNumeric(s.advance()) {
 			s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 		}
 	}
+
 	if s.atEnd() {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Offener Parameter")
 	} else {
 		s.advance() // consume the closing >
 	}
+
 	if s.cur-s.start <= 2 && !s.atEnd() {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten")
 	}
