@@ -424,10 +424,10 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.TER_FALLS:
 		if lhs != rhs {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des Wenn Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des 'falls' Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
 		}
 		if !isOfType(mid, ddptypes.WAHRHEITSWERT) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Bedingung des Wenn Ausdrucks muss vom Typ %s sein, aber es wurde %s gefunden", ddptypes.WAHRHEITSWERT, mid)
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Bedingung des 'falls' Ausdrucks muss vom Typ %s sein, aber es wurde %s gefunden", ddptypes.WAHRHEITSWERT, mid)
 		}
 		t.latestReturnedType = lhs
 	default:
