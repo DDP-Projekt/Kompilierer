@@ -23,8 +23,7 @@ func (p *parser) assignRhs() ast.Expression {
 	if p.match(token.TRUE, token.FALSE) {
 		tok := p.previous() // wahr or falsch token
 		// parse possible wahr/falsch wenn syntax
-		if p.match(token.COMMA) {
-			p.consume(token.WENN)
+		if p.matchN(token.COMMA, token.WENN) {
 			// if it is false, we add a unary bool-negate into the ast
 			if tok.Type == token.FALSE {
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated

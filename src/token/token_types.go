@@ -48,6 +48,8 @@ const (
 	LOGARITHMUS
 	ZUR
 	BASIS
+	FALLS     // <a>, falls <b>, ansonsten <c>
+	ANSONSTEN // <a>, falls <b>, ansonsten <c>
 
 	DER
 	DIE
@@ -283,6 +285,8 @@ var tokenStrings = [...]string{
 	AB:            "ab",
 	ZUM:           "zum",
 	ELEMENT:       "Element",
+	FALLS:         "falls",
+	ANSONSTEN:     "ansonsten",
 
 	DOT:            ".",
 	COMMA:          ",",
@@ -429,6 +433,8 @@ var KeywordMap = map[string]TokenType{
 	"ab":             AB,
 	"zum":            ZUM,
 	"Element":        ELEMENT,
+	"falls":          FALLS,
+	"ansonsten":      ANSONSTEN,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
