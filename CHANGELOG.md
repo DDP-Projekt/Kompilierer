@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Falls Operator. Funktioniert so wie der Ternary Conditional Operator (?:) in anderen Sprachen. 
 - [Added] in Duden/Dateisystem:
     - Datei Kombination
     - Datei_Oeffnen
