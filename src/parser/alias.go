@@ -291,3 +291,12 @@ func filterNegationMarkers(tokens []token.Token) (result []token.Token) {
 	}
 	return nil
 }
+
+func getNegationMarker(aliasTokens []token.Token) *token.Token {
+	for _, v := range aliasTokens {
+		if v.Type == token.ALIAS_NEGATION {
+			return &v
+		}
+	}
+	return nil
+}

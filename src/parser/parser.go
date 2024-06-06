@@ -84,13 +84,15 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
 		},
-		predefinedModules: modules,
-		aliases:           at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:         make(map[string]ddptypes.Type, 8),
-		panicMode:         false,
-		errored:           false,
-		resolver:          &resolver.Resolver{},
-		typechecker:       &typechecker.Typechecker{},
+		predefinedModules:     modules,
+		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
+		typeNames:             make(map[string]ddptypes.Type, 8),
+		currentFunction:       "",
+		isCurrentFunctionBool: false,
+		panicMode:             false,
+		errored:               false,
+		resolver:              &resolver.Resolver{},
+		typechecker:           &typechecker.Typechecker{},
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable

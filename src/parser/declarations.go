@@ -299,7 +299,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
-			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+			if len(alias) < 2 { // empty strings are not allowed (we need at least 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
@@ -314,8 +314,12 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 						}
 					}
 
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: filtered != nil})
-					funcAliasTokens = append(funcAliasTokens, pTokens)
+					if marker := getNegationMarker(alias); marker != nil && !p.isCurrentFunctionBool {
+						p.err(ddperror.SEM_ALIAS_BAD_ARGS, marker.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
+					} else {
+						funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: filtered != nil})
+						funcAliasTokens = append(funcAliasTokens, pTokens)
+					}
 				}
 			} else {
 				p.errVal(*err)
@@ -377,9 +381,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if Typ == nil {
 		valid = false
 	}
-	if Typ == ddptypes.WAHRHEITSWERT {
-		p.isCurrentFunctionBool = true
-	}
+	p.isCurrentFunctionBool = Typ == ddptypes.WAHRHEITSWERT
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
 	bodyStart := -1
