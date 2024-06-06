@@ -69,7 +69,7 @@ func (p *parser) alias() ast.Expression {
 				return tok, true
 			}
 		} else if tok.Type == token.ALIAS_NEGATION {
-			if t := p.advance(); isNegationKeyword(t) {
+			if t := p.advance(); strings.Trim(tok.Literal, "<!>") == t.Literal {
 				return tok, true
 			}
 			return nil, false
@@ -274,15 +274,6 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(mostFitting, args)
-}
-
-// returns true if the token is a negation keyword (e.g. nicht, kein, ect.)
-func isNegationKeyword(tok *token.Token) bool {
-	switch tok.Type {
-	case token.NICHT:
-		return true
-	}
-	return false
 }
 
 // returns all tokens of a alias except the negation marker. returns nil if there was no negation

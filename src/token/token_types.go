@@ -5,6 +5,7 @@ const (
 	EOF
 	IDENTIFIER
 	ALIAS_PARAMETER // <x> only found in function aliases
+	ALIAS_NEGATION  // <!x> only found in function aliases
 	COMMENT         // [...]
 	SYMBOL          // any symbol not matched otherwise (?, !, ~, ...)
 
@@ -140,12 +141,11 @@ const (
 	ZUM
 	ELEMENT
 
-	DOT            // .
-	COMMA          // ,
-	COLON          // :
-	LPAREN         // (
-	RPAREN         // )
-	ALIAS_NEGATION // !
+	DOT    // .
+	COMMA  // ,
+	COLON  // :
+	LPAREN // (
+	RPAREN // )
 )
 
 var tokenStrings = [...]string{
@@ -153,6 +153,7 @@ var tokenStrings = [...]string{
 	EOF:             "EOF",
 	IDENTIFIER:      "ein Name",
 	ALIAS_PARAMETER: "ein Alias Parameter",
+	ALIAS_NEGATION:  "eine Alias Negation",
 	COMMENT:         "ein Kommentar",
 	SYMBOL:          "ein Symbol",
 
@@ -288,12 +289,11 @@ var tokenStrings = [...]string{
 	FALLS:         "falls",
 	ANSONSTEN:     "ansonsten",
 
-	DOT:            ".",
-	COMMA:          ",",
-	COLON:          ":",
-	LPAREN:         "(",
-	RPAREN:         ")",
-	ALIAS_NEGATION: "!",
+	DOT:    ".",
+	COMMA:  ",",
+	COLON:  ":",
+	LPAREN: "(",
+	RPAREN: ")",
 }
 
 func (t TokenType) String() string {
