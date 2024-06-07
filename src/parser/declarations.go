@@ -842,7 +842,8 @@ func (p *parser) expressionDecl(startDepth int) ast.Declaration {
 
 				// if the alias is in a non-global scope, overwrite the alias
 				if !ast.IsGlobalScope(p.scope()) {
-					p.overwrite_alias(p.scope(), alias, toPointerSlice(aliasTokens))
+					// overwrite the alias in the current scope (and slice away the EOF)
+					p.overwrite_alias(p.scope(), alias, toPointerSlice(aliasTokens[:len(aliasTokens)-1]))
 				} else { // if the alias is in the global scope, just proceed normally like with functions or structs
 					if ok, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
 						p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ast.MsgAliasAlreadyExists(existingAlias))

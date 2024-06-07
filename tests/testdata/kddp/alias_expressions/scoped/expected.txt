@@ -1,3 +1,6 @@
+foo: Hallo
 Hallo
-alias
+foo: Hallo
 Hallo
+Hallo
+bar: Hallo

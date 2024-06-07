@@ -348,6 +348,7 @@ func (p *parser) exitScope() {
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
 }
 
+// replaces an already present alias (which is equal to pTokens) with the passes alias
 func (p *parser) overwrite_alias(scope *ast.SymbolTable, alias ast.Alias, pTokens []*token.Token) {
 	// error if the alias already exists in the given scope
 outer:
@@ -357,7 +358,7 @@ outer:
 		}
 		// compare element wise
 		for i, t := range pair.pTokens {
-			if !tokenEqual(t, pTokens[i]) {
+			if !genericAliasTokenEqual(t, pTokens[i]) {
 				continue outer
 			}
 			p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, alias.GetOriginal().Range, ast.MsgAliasAlreadyExists(alias))

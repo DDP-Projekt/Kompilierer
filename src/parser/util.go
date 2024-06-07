@@ -28,6 +28,14 @@ func tokenEqual(t1, t2 *token.Token) bool {
 	return true
 }
 
+// check if two tokens are equal for alias overwriting (e.g. the ALIAS_PARAMETER type is not checked)
+func genericAliasTokenEqual(t1, t2 *token.Token) bool {
+	if t1.Type == token.ALIAS_PARAMETER && t2.Type == token.ALIAS_PARAMETER {
+		return true
+	}
+	return tokenEqual(t1, t2)
+}
+
 // converts b to 1 or 0
 func boolToInt(b bool) int {
 	if b {

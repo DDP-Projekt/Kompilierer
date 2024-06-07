@@ -85,15 +85,29 @@ func (p *parser) alias() ast.Expression {
 	}
 
 	// sort the matched aliases by length and genericness
-	// Stable so equal aliases stay in the order they were defined
-	slices.SortStableFunc(matchedAliases, func(a, b ast.Alias) int {
+	// in descending order (descending meaning if a < b -> 1, a > b -> -1, a == b -> 0)
+	slices.SortFunc(matchedAliases, func(a, b ast.Alias) int {
 		aTokens, bTokens := a.GetTokens(), b.GetTokens()
 
 		// compare the length first
 		if len(aTokens) < len(bTokens) { // less
-			return -1
-		} else if len(aTokens) > len(bTokens) { // greater
 			return 1
+		} else if len(aTokens) > len(bTokens) { // greater
+			return -1
+		}
+
+		// next, check for declaration order
+
+		aMod, bMod := a.Decl().Module(), b.Decl().Module()
+		if aMod == p.module && bMod != p.module {
+			return -1
+		} else if aMod != p.module && bMod == p.module {
+			return 1
+		} else if aMod == p.module && bMod == p.module {
+			if a.Decl().GetRange().Start.IsBefore(b.Decl().GetRange().Start) {
+				return 1
+			}
+			return -1
 		}
 
 		// next check for generic aliases
@@ -109,16 +123,14 @@ func (p *parser) alias() ast.Expression {
 
 		aHasVoid, bHasVoid := containsVoidArgs(a.GetArgs()), containsVoidArgs(b.GetArgs())
 		if aHasVoid && !bHasVoid { // a is generic, so it is 'smaller'
-			return -1
-		} else if !aHasVoid && bHasVoid { // b is generic, so it is 'smaller'
 			return 1
+		} else if !aHasVoid && bHasVoid { // b is generic, so it is 'smaller'
+			return -1
 		}
 
-		// a and b are equal, so keep them stable
+		// a and b are equal
 		return 0
 	})
-	// descending order
-	slices.Reverse(matchedAliases)
 
 	// a argument that was already parsed
 	type cachedArg struct {

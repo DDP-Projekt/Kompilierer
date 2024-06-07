@@ -1,0 +1,7 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion foo mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+	Schreibe "foo: ".
+	Schreibe t auf eine Zeile.
+Und kann so benutzt werden:
+	"Alias <t>"

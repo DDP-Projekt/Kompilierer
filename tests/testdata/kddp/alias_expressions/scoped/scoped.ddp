@@ -1,7 +1,27 @@
 Binde "Duden/Ausgabe" ein.
 
-Schreibe "Hallo" auf eine Zeile.
+Die Funktion foo mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+	Schreibe "foo: ".
+	Schreibe t auf eine Zeile.
+Und kann so benutzt werden:
+	"Alias <t>"
+
+Alias "Hallo".
 :
-    Der Alias "Schreibe <a> auf eine Zeile" steht für den Ausdruck Schreibe "alias" auf eine Zeile.
-    Schreibe "Hallo" auf eine Zeile.
-Schreibe "Hallo" auf eine Zeile.
+    Der Alias "Alias <a>" steht für den Ausdruck Schreibe a auf eine Zeile.
+    Alias "Hallo".
+Alias "Hallo".
+Der Alias "Alias <a>" steht für den Ausdruck Schreibe a auf eine Zeile.
+Alias "Hallo".
+
+Der Alias "Alias2 <b>" steht für den Ausdruck Schreibe b auf eine Zeile.
+
+Alias2 "Hallo".
+
+Die Funktion bar mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+	Schreibe "bar: ".
+	Schreibe t auf eine Zeile.
+Und kann so benutzt werden:
+	"Alias2 <t>"
+
+Alias2 "Hallo".
