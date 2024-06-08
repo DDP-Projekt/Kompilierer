@@ -1,0 +1,18 @@
+Binde "def1" ein.
+Binde test aus "def2" ein.
+Binde "Duden/Ausgabe" ein.
+
+foo.
+Schreibe z auf eine Zeile.
+
+Die Funktion Not_Mangled gibt nichts zurück, ist extern sichtbar, macht:
+	Schreibe "Not_Mangled" auf eine Zeile.
+Und kann so benutzt werden:
+	"Not_Mangled"
+
+Die Funktion Callback gibt nichts zurück,
+ist in "test.c" definiert
+und kann so benutzt werden:
+	"Callback"
+
+Callback.

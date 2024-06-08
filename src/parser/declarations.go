@@ -373,9 +373,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
+
+	isExternVisible := false
+	externVisibleRange := token.Range{} // for the possible error message below
+	if p.matchN(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
+		isExternVisible = true
+		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
+	}
+
 	bodyStart := -1
 	definedIn := &token.Token{Type: token.ILLEGAL}
-	if p.matchN(token.MACHT, token.COLON) {
+	if p.match(token.MACHT) {
+		validate(p.consume(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
 		indent := p.previous().Indent + 1             // indentation level of the function body
 		for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
@@ -388,6 +397,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		case ".c", ".lib", ".a", ".o":
 		default:
 			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+		}
+		if isExternVisible {
+			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}
 
@@ -415,6 +427,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Tok:        *begin,
 		NameTok:    *funcName,
 		IsPublic:   isPublic,
+		IsExternVisible: isExternVisible,
 		Mod:        p.module,
 		Parameters: params,
 		Type:       Typ,

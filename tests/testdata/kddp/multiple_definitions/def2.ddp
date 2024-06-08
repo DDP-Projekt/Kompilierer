@@ -1,0 +1,9 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion foo gibt nichts zurück, macht:
+	Schreibe "foo2" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo"
+Die öffentliche Zahl test ist 0.
+
+Die öffentliche Zahl z ist 2.

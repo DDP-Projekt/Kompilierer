@@ -42,6 +42,7 @@ const (
 	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
 	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop
 	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
+	SEM_UNNECESSARY_EXTERN_VISIBLE                        // a function was specified as both extern visible and extern defined
 )
 
 // type error codes
