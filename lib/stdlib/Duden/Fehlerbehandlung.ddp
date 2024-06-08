@@ -31,7 +31,7 @@ Die Zahl SchreibeFehlerFlag ist 1 um 1 Bit nach Links verschoben.
 [
 	Meldet ob es einen Fehler gab
 ]
-Die öffentliche Funktion Gab_Fehler gibt einen Wahrheitswert zurück, macht:
+Die öffentliche Funktion Gab_Fehler gibt einen Wahrheitswert zurück, ist extern sichtbar, macht:
 	Gib Fehlermeldung_Valide zurück.
 Und kann so benutzt werden:
 	"es einen Fehler gab" oder
@@ -41,7 +41,7 @@ Und kann so benutzt werden:
 	Löscht den letzten Fehler
 	Gab_Fehler gibt danach falsch zurück
 ]
-Die öffentliche Funktion Loesche_Fehler gibt nichts zurück, macht:
+Die öffentliche Funktion Loesche_Fehler gibt nichts zurück, ist extern sichtbar, macht:
 	Speichere falsch in Fehlermeldung_Valide.
 Und kann so benutzt werden:
 	"Lösche den letzten Fehler" oder
@@ -51,7 +51,7 @@ Und kann so benutzt werden:
 	Wenn es einen Fehler gab, wird dieser zurückgegeben und gelöscht
 	Ansonsten wird "" zurückgegeben
 ]
-Die öffentliche Funktion Letzter_Fehler gibt einen Text zurück, macht:
+Die öffentliche Funktion Letzter_Fehler gibt einen Text zurück, ist extern sichtbar, macht:
 	Wenn Fehlermeldung_Valide, dann:
 		Lösche den letzten Fehler.
 		Gib Fehlermeldung zurück.
@@ -103,7 +103,7 @@ Und kann so benutzt werden:
 
 	Standardmäßig wird nur der letzte Fehler gesetzt
 ]
-Die öffentliche Funktion Setze_Fehler mit dem Parameter Fehler vom Typ Text, gibt nichts zurück, macht:
+Die öffentliche Funktion Setze_Fehler mit dem Parameter Fehler vom Typ Text, gibt nichts zurück, ist extern sichtbar, macht:
 	Speichere Fehler in Fehlermeldung.
 	Speichere wahr in Fehlermeldung_Valide.
 
