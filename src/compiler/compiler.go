@@ -191,7 +191,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 		c.scp = c.exitScope(c.scp) // exit the main scope
 		// call all the module_dispose functions
 		for mod := range c.importedModules {
-			_, dispose_name := c.getModuleInitDisposeName(mod)
+			_, dispose_name := getModuleInitDisposeName(mod)
 			dispose_fun := c.functions[dispose_name]
 			c.cbb.NewCall(dispose_fun.irFunc)
 		}
@@ -331,7 +331,7 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // used in setup()
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
-	init_name, dispose_name := c.getModuleInitDisposeName(c.ddpModule)
+	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
 	c.moduleInitFunc = c.mod.NewFunc(init_name, c.void.IrType())
 	c.moduleInitFunc.Visibility = enum.VisibilityDefault
 	c.moduleInitCbb = c.moduleInitFunc.NewBlock("")
@@ -440,9 +440,11 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if c.scp.enclosing == nil { // global scope
 		// globals are first assigned in ddp_main or module_init
 		// so we assign them a default value here
-		globalDef := c.mod.NewGlobalDef(d.Name(), Typ.DefaultValue())
+		//
+		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
+		globalDef := c.mod.NewGlobalDef(c.mangledName(d), Typ.DefaultValue())
 		// make private variables static like in C
-		if !d.IsPublic {
+		if !d.IsPublic && !d.IsExternVisible {
 			globalDef.Linkage = enum.LinkageInternal
 		}
 		globalDef.Visibility = enum.VisibilityDefault
@@ -504,10 +506,10 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
-	if !decl.IsPublic {
+	if !decl.IsPublic && !decl.IsExternVisible {
 		irFunc.Linkage = enum.LinkageInternal
 		irFunc.Visibility = enum.VisibilityDefault
 	}
@@ -1738,7 +1740,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 		switch decl := decl.(type) {
 		case *ast.VarDecl: // declare the variable as external
 			Typ := c.toIrType(decl.Type)
-			globalDecl := c.mod.NewGlobal(decl.Name(), Typ.IrType())
+			globalDecl := c.mod.NewGlobal(c.mangledName(decl), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
@@ -1760,8 +1762,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 			}
 
-			irFunc := c.mod.NewFunc(decl.Name(), retTypeIr, params...) // create the ir function
-			irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+			irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
+			irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 			// declare it as extern function
 			irFunc.Linkage = enum.LinkageExternal
 			irFunc.Visibility = enum.VisibilityDefault
@@ -1780,7 +1782,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 	// and also initialize the modules that this module imports
 	ast.IterateModuleImports(s.Module, func(module *ast.Module) {
 		if _, alreadyImported := c.importedModules[module]; !alreadyImported {
-			init_name, dispose_name := c.getModuleInitDisposeName(module)
+			init_name, dispose_name := getModuleInitDisposeName(module)
 			module_init := c.mod.NewFunc(init_name, c.void.IrType())
 			module_init.Linkage = enum.LinkageExternal
 			module_init.Visibility = enum.VisibilityDefault

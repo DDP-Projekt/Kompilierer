@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Syntax um Variablen und Funktionen als "extern sichtbar" zu markieren, und somit name-mangling für diese auszuschalten
+- [Fix] Linker Fehler bei mehreren öffentlichen Symbolen mit demselben Namen
 - [Added] Falls Operator. Funktioniert so wie der Ternary Conditional Operator (?:) in anderen Sprachen. 
 - [Added] in Duden/Dateisystem:
     - Datei Kombination

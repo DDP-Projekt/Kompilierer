@@ -150,23 +150,14 @@ func (p *parser) declaration() ast.Statement {
 			n = -2
 		}
 
-		switch t := p.peek().Type; t {
+		p.advance()
+		switch t := p.previous().Type; t {
 		case token.ALIAS:
-			p.advance()
 			return p.aliasDecl()
 		case token.FUNKTION:
-			p.advance()
 			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
 		default:
-			if p.isTypeName(p.peek()) {
-				p.advance()
-				return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
-			}
-		}
-
-		p.decrease() // decrease, so expressionStatement() can recognize it as expression
-		if n == -2 {
-			p.decrease()
+			return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
 		}
 	}
 
