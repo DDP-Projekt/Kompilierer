@@ -154,7 +154,9 @@ func (c *compiler) mangledName(decl ast.Declaration) string {
 			return decl.Name()
 		}
 	case *ast.VarDecl:
-		// do nothing
+		if decl.IsExternVisible {
+			return decl.Name()
+		}
 	default:
 		return decl.Name()
 	}

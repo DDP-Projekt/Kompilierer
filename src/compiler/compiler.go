@@ -444,7 +444,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
 		globalDef := c.mod.NewGlobalDef(c.mangledName(d), Typ.DefaultValue())
 		// make private variables static like in C
-		if !d.IsPublic {
+		if !d.IsPublic && !d.IsExternVisible {
 			globalDef.Linkage = enum.LinkageInternal
 		}
 		globalDef.Visibility = enum.VisibilityDefault

@@ -141,6 +141,7 @@ const (
 	ELEMENT
 	EXTERN
 	SICHTBAR
+	SICHTBARE
 
 	DOT    // .
 	COMMA  // ,
@@ -290,6 +291,7 @@ var tokenStrings = [...]string{
 	ANSONSTEN:     "ansonsten",
 	EXTERN:        "extern",
 	SICHTBAR:      "sichtbar",
+	SICHTBARE:     "sichtbare",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -439,6 +441,7 @@ var KeywordMap = map[string]TokenType{
 	"ansonsten":      ANSONSTEN,
 	"extern":         EXTERN,
 	"sichtbar":       SICHTBAR,
+	"sichtbare":      SICHTBARE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

@@ -10,9 +10,12 @@ Die Funktion Not_Mangled gibt nichts zurück, ist extern sichtbar, macht:
 Und kann so benutzt werden:
 	"Not_Mangled"
 
-Die Funktion Callback gibt nichts zurück,
+Die Funktion Callback gibt eine Zahl zurück,
 ist in "test.c" definiert
 und kann so benutzt werden:
 	"Callback"
 
-Callback.
+Die extern sichtbare Zahl Not_Mangled_Var ist 77.
+Die öffentliche, extern sichtbare Zahl Not_Mangled_Var2 ist 1.
+
+Schreibe Callback auf eine Zeile.

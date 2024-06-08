@@ -62,6 +62,17 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
+
+	isExternVisible := false
+	if isPublic && p.previous().Type == token.COMMA || p.previous().Type == token.EXTERN {
+		if p.previous().Type == token.COMMA {
+			p.consume(token.EXTERN)
+		}
+		p.consume(token.SICHTBARE)
+		isExternVisible = true
+		p.advance()
+	}
+
 	p.decrease()
 	type_start := p.previous()
 	typ := p.parseType()
@@ -142,13 +153,14 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	return &ast.VarDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Type:       typ,
-		NameTok:    *name,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		InitVal:    expr,
+		Range:           token.NewRange(begin, p.previous()),
+		CommentTok:      comment,
+		Type:            typ,
+		NameTok:         *name,
+		IsPublic:        isPublic,
+		IsExternVisible: isExternVisible,
+		Mod:             p.module,
+		InitVal:         expr,
 	}
 }
 
@@ -422,18 +434,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	decl := &ast.FuncDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Tok:        *begin,
-		NameTok:    *funcName,
-		IsPublic:   isPublic,
+		Range:           token.NewRange(begin, p.previous()),
+		CommentTok:      comment,
+		Tok:             *begin,
+		NameTok:         *funcName,
+		IsPublic:        isPublic,
 		IsExternVisible: isExternVisible,
-		Mod:        p.module,
-		Parameters: params,
-		Type:       Typ,
-		Body:       nil,
-		ExternFile: *definedIn,
-		Aliases:    funcAliases,
+		Mod:             p.module,
+		Parameters:      params,
+		Type:            Typ,
+		Body:            nil,
+		ExternFile:      *definedIn,
+		Aliases:         funcAliases,
 	}
 
 	for i := range funcAliases {
