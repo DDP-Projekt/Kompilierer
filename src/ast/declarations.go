@@ -53,49 +53,76 @@ type (
 		Type    *ddptypes.StructType // the type resulting from this decl
 		Aliases []*StructAlias       // the constructors of the struct
 	}
+
+	// Der Alias ... steht für den Ausdruck ...
+	// nothing to do with the Expression type
+	ExpressionDecl struct {
+		Range        token.Range
+		CommentTok   *token.Token       // optional comment (also contained in ast.Comments)
+		Tok          token.Token        // Der
+		Aliases      []*ExpressionAlias // the aliases
+		Expr         Expression         // the expression or nil if it needs reparsing
+		Tokens       []token.Token      // if Expr is nil, these tokens need to be reparsed (excluding the final ., which is still included)
+		NameTok      *token.Token       // non-nil if an explicit name was given
+		AssignedName string             // the internal or given name of the ExpressionDecl
+		IsPublic     bool               // wether the expression decl is marked with öffentliche
+		Mod          *Module            // the module in which the expression was declared
+		Scope        *SymbolTable       // the symbol table of the expression (contains the arguments with void types and the limit)
+	}
 )
 
-func (decl *BadDecl) String() string    { return "BadDecl" }
-func (decl *VarDecl) String() string    { return "VarDecl" }
-func (decl *FuncDecl) String() string   { return "FuncDecl" }
-func (decl *StructDecl) String() string { return "StructDecl" }
+func (decl *BadDecl) String() string        { return "BadDecl" }
+func (decl *VarDecl) String() string        { return "VarDecl" }
+func (decl *FuncDecl) String() string       { return "FuncDecl" }
+func (decl *StructDecl) String() string     { return "StructDecl" }
+func (decl *ExpressionDecl) String() string { return "ExpressionDecl" }
 
-func (decl *BadDecl) Token() token.Token    { return decl.Tok }
-func (decl *VarDecl) Token() token.Token    { return decl.NameTok }
-func (decl *FuncDecl) Token() token.Token   { return decl.Tok }
-func (decl *StructDecl) Token() token.Token { return decl.Tok }
+func (decl *BadDecl) Token() token.Token        { return decl.Tok }
+func (decl *VarDecl) Token() token.Token        { return decl.NameTok }
+func (decl *FuncDecl) Token() token.Token       { return decl.Tok }
+func (decl *StructDecl) Token() token.Token     { return decl.Tok }
+func (decl *ExpressionDecl) Token() token.Token { return decl.Tok }
 
-func (decl *BadDecl) GetRange() token.Range    { return decl.Err.Range }
-func (decl *VarDecl) GetRange() token.Range    { return decl.Range }
-func (decl *FuncDecl) GetRange() token.Range   { return decl.Range }
-func (decl *StructDecl) GetRange() token.Range { return decl.Range }
+func (decl *BadDecl) GetRange() token.Range        { return decl.Err.Range }
+func (decl *VarDecl) GetRange() token.Range        { return decl.Range }
+func (decl *FuncDecl) GetRange() token.Range       { return decl.Range }
+func (decl *StructDecl) GetRange() token.Range     { return decl.Range }
+func (decl *ExpressionDecl) GetRange() token.Range { return decl.Range }
 
 func (decl *BadDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitBadDecl(decl) }
 func (decl *VarDecl) Accept(visitor FullVisitor) VisitResult    { return visitor.VisitVarDecl(decl) }
 func (decl *FuncDecl) Accept(visitor FullVisitor) VisitResult   { return visitor.VisitFuncDecl(decl) }
 func (decl *StructDecl) Accept(visitor FullVisitor) VisitResult { return visitor.VisitStructDecl(decl) }
+func (decl *ExpressionDecl) Accept(visitor FullVisitor) VisitResult {
+	return visitor.VisitExpressionDecl(decl)
+}
 
-func (decl *BadDecl) declarationNode()    {}
-func (decl *VarDecl) declarationNode()    {}
-func (decl *FuncDecl) declarationNode()   {}
-func (decl *StructDecl) declarationNode() {}
+func (decl *BadDecl) declarationNode()        {}
+func (decl *VarDecl) declarationNode()        {}
+func (decl *FuncDecl) declarationNode()       {}
+func (decl *StructDecl) declarationNode()     {}
+func (decl *ExpressionDecl) declarationNode() {}
 
-func (decl *BadDecl) Name() string    { return "" }
-func (decl *VarDecl) Name() string    { return decl.NameTok.Literal }
-func (decl *FuncDecl) Name() string   { return decl.NameTok.Literal }
-func (decl *StructDecl) Name() string { return decl.NameTok.Literal }
+func (decl *BadDecl) Name() string        { return "" }
+func (decl *VarDecl) Name() string        { return decl.NameTok.Literal }
+func (decl *FuncDecl) Name() string       { return decl.NameTok.Literal }
+func (decl *StructDecl) Name() string     { return decl.NameTok.Literal }
+func (decl *ExpressionDecl) Name() string { return decl.AssignedName }
 
-func (decl *BadDecl) Public() bool    { return false }
-func (decl *VarDecl) Public() bool    { return decl.IsPublic }
-func (decl *FuncDecl) Public() bool   { return decl.IsPublic }
-func (decl *StructDecl) Public() bool { return decl.IsPublic }
+func (decl *BadDecl) Public() bool        { return false }
+func (decl *VarDecl) Public() bool        { return decl.IsPublic }
+func (decl *FuncDecl) Public() bool       { return decl.IsPublic }
+func (decl *StructDecl) Public() bool     { return decl.IsPublic }
+func (decl *ExpressionDecl) Public() bool { return decl.IsPublic }
 
-func (decl *BadDecl) Comment() *token.Token    { return nil }
-func (decl *VarDecl) Comment() *token.Token    { return decl.CommentTok }
-func (decl *FuncDecl) Comment() *token.Token   { return decl.CommentTok }
-func (decl *StructDecl) Comment() *token.Token { return decl.CommentTok }
+func (decl *BadDecl) Comment() *token.Token        { return nil }
+func (decl *VarDecl) Comment() *token.Token        { return decl.CommentTok }
+func (decl *FuncDecl) Comment() *token.Token       { return decl.CommentTok }
+func (decl *StructDecl) Comment() *token.Token     { return decl.CommentTok }
+func (decl *ExpressionDecl) Comment() *token.Token { return decl.CommentTok }
 
-func (decl *BadDecl) Module() *Module    { return decl.Mod }
-func (decl *VarDecl) Module() *Module    { return decl.Mod }
-func (decl *FuncDecl) Module() *Module   { return decl.Mod }
-func (decl *StructDecl) Module() *Module { return decl.Mod }
+func (decl *BadDecl) Module() *Module        { return decl.Mod }
+func (decl *VarDecl) Module() *Module        { return decl.Mod }
+func (decl *FuncDecl) Module() *Module       { return decl.Mod }
+func (decl *StructDecl) Module() *Module     { return decl.Mod }
+func (decl *ExpressionDecl) Module() *Module { return decl.Mod }
