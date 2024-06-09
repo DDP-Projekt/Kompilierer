@@ -48,6 +48,8 @@ const (
 	LOGARITHMUS
 	ZUR
 	BASIS
+	FALLS     // <a>, falls <b>, ansonsten <c>
+	ANSONSTEN // <a>, falls <b>, ansonsten <c>
 
 	DER
 	DIE
@@ -139,6 +141,9 @@ const (
 	AB
 	ZUM
 	ELEMENT
+	EXTERN
+	SICHTBAR
+	SICHTBARE
 	AUSDRUCK
 	NAMEN
 
@@ -288,6 +293,11 @@ var tokenStrings = [...]string{
 	AB:            "ab",
 	ZUM:           "zum",
 	ELEMENT:       "Element",
+	FALLS:         "falls",
+	ANSONSTEN:     "ansonsten",
+	EXTERN:        "extern",
+	SICHTBAR:      "sichtbar",
+	SICHTBARE:     "sichtbare",
 	AUSDRUCK:      "Ausdruck",
 	NAMEN:         "Namen",
 
@@ -437,6 +447,11 @@ var KeywordMap = map[string]TokenType{
 	"ab":             AB,
 	"zum":            ZUM,
 	"Element":        ELEMENT,
+	"falls":          FALLS,
+	"ansonsten":      ANSONSTEN,
+	"extern":         EXTERN,
+	"sichtbar":       SICHTBAR,
+	"sichtbare":      SICHTBARE,
 	"Ausdruck":       AUSDRUCK,
 	"Namen":          NAMEN,
 }

@@ -32,7 +32,30 @@ func (p *parser) expressionOrErr() (ast.Expression, *ddperror.Error) {
 
 // entry for expression parsing
 func (p *parser) expression() ast.Expression {
-	return p.boolOR()
+	return p.ifExpression()
+}
+
+// <a> wenn <b>, sonst <c>
+func (p *parser) ifExpression() ast.Expression {
+	expr := p.boolOR()
+	for p.matchN(token.COMMA, token.FALLS) {
+		tok := p.previous()
+		cond := p.ifExpression()
+		p.consume(token.COMMA, token.ANSONSTEN)
+		other := p.ifExpression()
+		expr = &ast.TernaryExpr{
+			Range: token.Range{
+				Start: expr.GetRange().Start,
+				End:   other.GetRange().End,
+			},
+			Tok:      *tok,
+			Lhs:      expr,
+			Mid:      cond,
+			Rhs:      other,
+			Operator: ast.TER_FALLS,
+		}
+	}
+	return expr
 }
 
 func (p *parser) boolOR() ast.Expression {

@@ -29,8 +29,7 @@ func (p *parser) matchN(types ...token.TokenType) bool {
 		}
 	}
 
-	for i := range types {
-		_ = i
+	for range types {
 		p.advance()
 	}
 
