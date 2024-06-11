@@ -1,0 +1,8 @@
+Test1: wahr
+Test1: falsch
+Test1: wahr
+Test2: falsch
+Test2: wahr
+Test3: falsch
+Test3: wahr
+Test4: falsch

@@ -1,0 +1,37 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion Test1 gibt einen Wahrheitswert zurück, macht:
+    Schreibe "Test1: ".
+    Gib wahr zurück.
+Und kann so benutzt werden:
+    "T1 <!nö>"
+
+Die Funktion Test2 gibt einen Wahrheitswert zurück, macht:
+    Schreibe "Test2: ".
+    Gib wahr zurück.
+Und kann so benutzt werden:
+    "T <!nicht> 2"
+
+Die Funktion Test3 gibt einen Wahrheitswert zurück, macht:
+    Schreibe "Test3: ".
+    Gib wahr zurück.
+Und kann so benutzt werden:
+    "<!nö> T3"
+    
+Die Funktion Test4 gibt einen Wahrheitswert zurück, macht:
+    Schreibe "Test4: ".
+    Gib wahr zurück.
+Und kann so benutzt werden:
+    "<!nicht> T4"
+
+Schreibe T1 auf eine Zeile.
+Schreibe (T1 nö) auf eine Zeile.
+Schreibe (nicht T1 nö) auf eine Zeile.
+
+Schreibe (T nicht 2) auf eine Zeile.
+Schreibe (T 2) auf eine Zeile.
+
+Schreibe (nicht T3) auf eine Zeile.
+Schreibe (nicht nö T3) auf eine Zeile.
+
+Schreibe (nicht T4) auf eine Zeile.
