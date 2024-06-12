@@ -137,12 +137,12 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		cf:               nil,
 		scp:              newScope(nil), // global scope
 		cfscp:            nil,
-		functions:        make(map[string]*funcWrapper),
-		structTypes:      make(map[string]*ddpIrStructType),
+		functions:        make(map[string]*funcWrapper, 64),
+		structTypes:      make(map[string]*ddpIrStructType, 4),
 		latestReturn:     nil,
 		latestReturnType: nil,
 		latestIsTemp:     false,
-		importedModules:  make(map[*ast.Module]struct{}),
+		importedModules:  make(map[*ast.Module]struct{}, 4),
 		curLeaveBlock:    nil,
 		curContinueBlock: nil,
 		curLoopScope:     nil,
@@ -442,7 +442,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		// so we assign them a default value here
 		//
 		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
-		globalDef := c.mod.NewGlobalDef(c.mangledName(d), Typ.DefaultValue())
+		globalDef := c.mod.NewGlobalDef(mangledName(d), Typ.DefaultValue())
 		// make private variables static like in C
 		if !d.IsPublic && !d.IsExternVisible {
 			globalDef.Linkage = enum.LinkageInternal
@@ -506,15 +506,15 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(mangledName(decl), retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                           // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
 	if !decl.IsPublic && !decl.IsExternVisible {
 		irFunc.Linkage = enum.LinkageInternal
 		irFunc.Visibility = enum.VisibilityDefault
 	}
 
-	c.insertFunction(decl.Name(), decl, irFunc)
+	c.insertFunction(irFunc.Name(), decl, irFunc)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(decl) {
@@ -1667,7 +1667,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
-	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
+	fun := c.functions[mangledName(e.Func)] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
 
 	meta := annotators.ConstFuncParamMeta{}
@@ -1819,7 +1819,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 		switch decl := decl.(type) {
 		case *ast.VarDecl: // declare the variable as external
 			Typ := c.toIrType(decl.Type)
-			globalDecl := c.mod.NewGlobal(c.mangledName(decl), Typ.IrType())
+			globalDecl := c.mod.NewGlobal(mangledName(decl), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
@@ -1841,13 +1841,13 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 			}
 
-			irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
-			irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+			irFunc := c.mod.NewFunc(mangledName(decl), retTypeIr, params...) // create the ir function
+			irFunc.CallingConv = enum.CallingConvC                           // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 			// declare it as extern function
 			irFunc.Linkage = enum.LinkageExternal
 			irFunc.Visibility = enum.VisibilityDefault
 
-			c.insertFunction(decl.Name(), decl, irFunc)
+			c.insertFunction(irFunc.Name(), decl, irFunc)
 		case *ast.StructDecl:
 			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
 		case *ast.ExpressionDecl:
@@ -2222,7 +2222,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			}
 			c.freeTemporaries(scp, true)
 		}
-		c.exitFuncScope(c.functions[s.Func].funcDecl)
+		c.exitFuncScope(c.functions[mangledName(s.Func)].funcDecl)
 	}
 
 	if s.Value == nil {

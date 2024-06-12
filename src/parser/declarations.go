@@ -459,12 +459,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
-		p.currentFunction = funcName.Literal
+		p.currentFunction = decl
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
 		// insert the name of the current function
-		if existed := globalScope.InsertDecl(p.currentFunction, decl); !existed && decl.IsPublic {
+		if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		// add the parameters to the table
@@ -508,7 +508,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration
 	}
 
-	p.currentFunction = ""
+	p.currentFunction = nil
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
 	return decl

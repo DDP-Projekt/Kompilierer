@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/value"
 )
 
@@ -36,7 +38,7 @@ func (s *scope) lookupVar(name string) varwrapper {
 		if s.enclosing != nil {
 			return s.enclosing.lookupVar(name)
 		}
-		return varwrapper{val: nil, typ: nil} // variable doesn't exist (should not happen, resolver should take care of that)
+		panic(fmt.Errorf("variable '%s' not found in c.scp", name))
 	} else {
 		return v
 	}

@@ -756,7 +756,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && fun.(*ast.FuncDecl).Type != returnType {
+	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func.Name()); exists && fun.(*ast.FuncDecl).Type != returnType {
 		if stmt.Value == nil {
 			t.err(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Range,
 				fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",

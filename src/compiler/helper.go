@@ -141,7 +141,7 @@ var (
 )
 
 // NOTE: think about making this demanglable
-func (c *compiler) mangledName(decl ast.Declaration) string {
+func mangledName(decl ast.Declaration) string {
 	// if mangledName, ok := mangledNamesCache.Load(decl); ok {
 	// 	return mangledName.(string)
 	// }

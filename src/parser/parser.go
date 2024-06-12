@@ -34,7 +34,7 @@ type parser struct {
 	module                 *ast.Module
 	predefinedModules      map[string]*ast.Module            // modules that were passed as environment, might not all be used
 	aliases                *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	currentFunction        string                            // function which is currently being parsed
+	currentFunction        *ast.FuncDecl                     // function which is currently being parsed
 	isCurrentFunctionBool  bool                              // wether the current function returns a boolean
 	panicMode              bool                              // flag to not report following errors
 	errored                bool                              // wether the parser found an error
