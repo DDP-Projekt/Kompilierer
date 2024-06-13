@@ -454,7 +454,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		varLocation = c.NewAlloca(Typ.IrType())
 	}
 
-	Var := c.scp.addVar(d.Name(), varLocation, Typ, false)
+	Var := c.scp.addVar(d, varLocation, Typ, false)
 
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
@@ -532,17 +532,19 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		// the caller has to take care of possible deep-copies
 		for i := range params {
 			irType := c.toIrType(decl.Parameters[i].Type.Type)
+			paramDeclRaw, _, _ := decl.Body.Symbols.LookupDecl(params[i].Name())
+			paramDecl := paramDeclRaw.(*ast.VarDecl)
 			if decl.Parameters[i].Type.IsReference {
 				// references are implemented similar to name-shadowing
 				// they basically just get another name in the function scope, which
 				// refers to the same variable allocation
-				c.scp.addVar(params[i].Name(), params[i], irType, true)
+				c.scp.addVar(paramDecl, params[i], irType, true)
 			} else if !irType.IsPrimitive() { // strings and lists need special handling
 				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
 			} else { // primitive types don't need any special handling
-				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+				v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
 				c.cbb.NewStore(params[i], v)
 			}
 		}
@@ -597,7 +599,7 @@ func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
-	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
+	Var := c.scp.lookupVar(e.Declaration) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	// if the "variable" is from an expressionCall, it might not need to be loaded
@@ -1637,7 +1639,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Declaration.Name())
+		Var := c.scp.lookupVar(assign.Declaration)
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -1767,14 +1769,16 @@ func (c *compiler) VisitExpressionCall(expr *ast.ExpressionCall) ast.VisitResult
 	for argName, arg := range expr.Args {
 		val, typ, isTemporary := c.evaluate(arg)
 
+		declRaw, _, _ := expr.FilledSymbols.LookupDecl(argName)
+		decl := declRaw.(*ast.VarDecl)
 		if isTemporary { // non-variable arguments have to be freed
 			// val might be an intermediate value, so it has to be treated specially in Ident
 			if !typ.IsPrimitive() {
 				val = c.scp.claimTemporary(val)
 			}
-			c.scp.addExprCallArg(argName, val, typ)
+			c.scp.addExprCallArg(decl, val, typ)
 		} else { // variables are captured by reference and may not be freed
-			c.scp.addProtected(argName, val, typ, false)
+			c.scp.addProtected(decl, val, typ, false)
 		}
 	}
 
@@ -1822,7 +1826,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			globalDecl := c.mod.NewGlobal(mangledName(decl), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
-			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
+			c.scp.addProtected(decl, globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
 			retType := c.toIrType(decl.Type) // get the llvm type
 			retTypeIr := retType.IrType()
@@ -2065,7 +2069,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// compile the incrementBlock
 	c.cbb = incrementBlock
-	Var := c.scp.lookupVar(s.Initializer.Name())
+	Var := c.scp.lookupVar(s.Initializer)
 	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 
 	// add the incrementer to the counter variable
@@ -2075,7 +2079,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)
 	}
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
+	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer).val)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -2139,13 +2143,13 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	index := c.NewAlloca(ddpint)
 	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addProtected(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
+	c.scp.addProtected(s.Initializer, c.NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
 
-	loopVar := c.scp.lookupVar(s.Initializer.Name())
+	loopVar := c.scp.lookupVar(s.Initializer)
 
 	continueBlock := c.cf.NewBlock("")
 	c.cbb = continueBlock

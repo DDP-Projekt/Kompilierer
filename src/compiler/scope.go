@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/llir/llvm/ir/value"
 )
 
@@ -33,30 +34,30 @@ func newScope(enclosing *scope) *scope {
 // returns the named variable
 // if not present the enclosing scopes are checked
 // until the global scope
-func (s *scope) lookupVar(name string) varwrapper {
-	if v, ok := s.variables[name]; !ok {
+func (s *scope) lookupVar(decl *ast.VarDecl) varwrapper {
+	if v, ok := s.variables[mangledName(decl)]; !ok {
 		if s.enclosing != nil {
-			return s.enclosing.lookupVar(name)
+			return s.enclosing.lookupVar(decl)
 		}
-		panic(fmt.Errorf("variable '%s' not found in c.scp", name))
+		panic(fmt.Errorf("variable '%s' not found in c.scp", mangledName(decl)))
 	} else {
 		return v
 	}
 }
 
 // add a variable to the scope
-func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: false}
+func (scope *scope) addVar(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+	scope.variables[mangledName(decl)] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: false}
 	return val
 }
 
-func (scope *scope) addProtected(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: true}
+func (scope *scope) addProtected(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+	scope.variables[mangledName(decl)] = varwrapper{val: val, typ: ty, fromExprCall: false, isRef: isRef, protected: true}
 	return val
 }
 
-func (scope *scope) addExprCallArg(name string, val value.Value, ty ddpIrType) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, fromExprCall: true, isRef: false, protected: false}
+func (scope *scope) addExprCallArg(decl *ast.VarDecl, val value.Value, ty ddpIrType) value.Value {
+	scope.variables[mangledName(decl)] = varwrapper{val: val, typ: ty, fromExprCall: true, isRef: false, protected: false}
 	return val
 }
 
