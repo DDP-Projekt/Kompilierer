@@ -17,6 +17,9 @@ type StructType struct {
 	// fields of the struct
 	// in order of declaration
 	Fields []StructField
+	// nasty hack to get name mangling for structs working
+	// TODO: refactor
+	ModName string
 }
 
 func (t *StructType) Gender() GrammaticalGender {

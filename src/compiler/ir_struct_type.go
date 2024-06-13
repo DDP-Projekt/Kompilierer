@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -58,14 +59,14 @@ func (t *ddpIrStructType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
-func (c *compiler) defineStructType(name string, fields []ddptypes.StructField, declarationOnly bool) *ddpIrStructType {
+func (c *compiler) defineStructType(decl *ast.StructDecl, fields []ddptypes.StructField, declarationOnly bool) *ddpIrStructType {
 	structType := &ddpIrStructType{}
-	structType.name = name
+	structType.name = mangledName(decl)
 	structType.fieldIrTypes = mapSlice(fields, func(field ddptypes.StructField) ddpIrType {
 		return c.toIrType(field.Type)
 	})
 	structType.fieldDDPTypes = fields
-	structType.typ = c.mod.NewTypeDef(name, types.NewStruct(
+	structType.typ = c.mod.NewTypeDef(structType.name, types.NewStruct(
 		mapSlice(structType.fieldIrTypes, func(t ddpIrType) types.Type { return t.IrType() })...,
 	)).(*types.StructType)
 	structType.ptr = ptr(structType.typ)

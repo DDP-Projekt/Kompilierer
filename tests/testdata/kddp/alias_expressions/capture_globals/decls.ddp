@@ -1,3 +1,16 @@
 Der öffentliche Text _foo ist "foo".
 
 Der öffentliche Alias "foo" steht für den Ausdruck _foo.
+
+Der Text _bar ist "decl_bar".
+
+Der öffentliche Alias "bar" steht für den Ausdruck _bar.
+
+Wir nennen die Kombination aus
+	der Zahl _baz mit Standardwert 77,
+ein Baz, und erstellen sie so:
+	"ein Baz"
+
+Das Baz _b ist ein Baz.
+
+Der öffentliche Alias "baz" steht für den Ausdruck _baz von _b.

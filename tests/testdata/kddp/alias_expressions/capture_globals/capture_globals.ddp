@@ -4,3 +4,15 @@ Binde "decls" ein.
 Schreibe foo auf eine Zeile.
 Speichere "bar" in _foo.
 Schreibe foo auf eine Zeile.
+Der Text _bar ist "neues bar".
+Schreibe bar auf eine Zeile.
+
+
+Wir nennen die Kombination aus
+	dem Text _baz mit Standardwert "nicht baz",
+ein Baz, und erstellen sie so:
+	"ein Baz"
+
+Das Baz _b ist ein Baz.
+
+Schreibe baz auf eine Zeile.

@@ -3,9 +3,9 @@ package compiler
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
@@ -49,8 +49,34 @@ func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
 	return c.cf.Blocks[0].NewAlloca(elemType)
 }
 
+func findModule(name string, mod *ast.Module) *ast.Module {
+	if mod.FileName == name {
+		return mod
+	}
+	for _, imprt := range mod.Imports {
+		if mod := findModule(name, imprt.Module); mod != nil {
+			return mod
+		}
+	}
+	return nil
+}
+
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
+	findStructType := func(typ *ddptypes.StructType) *ddpIrStructType {
+		modName := typ.ModName
+		if mod := findModule(modName, c.ddpModule); mod != nil {
+			decl, _, _ := mod.Ast.Symbols.LookupDecl(typ.String())
+			return c.structTypes[mangledName(decl.(*ast.StructDecl))]
+		} else {
+			modules := make([]string, 0, 8)
+			ast.IterateModuleImports(c.ddpModule, func(mod *ast.Module) {
+				modules = append(modules, mod.FileName)
+			})
+			panic(fmt.Errorf("Module '%s' not found, available modules:\n\t%v", modName, modules))
+		}
+	}
+
 	if listType, isList := ddpType.(ddptypes.ListType); isList {
 		switch listType.Underlying {
 		case ddptypes.ZAHL:
@@ -64,7 +90,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.TEXT:
 			return c.ddpstringlist
 		default:
-			return c.structTypes[listType.Underlying.String()].listType
+			return findStructType(listType.Underlying.(*ddptypes.StructType)).listType
 		}
 	} else {
 		switch ddpType {
@@ -81,7 +107,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VoidType{}:
 			return c.void
 		default: // struct types
-			return c.structTypes[ddpType.String()]
+			return findStructType(ddpType.(*ddptypes.StructType))
 		}
 	}
 }
@@ -137,33 +163,35 @@ func getModuleInitDisposeName(mod *ast.Module) (string, string) {
 
 var (
 	hasher            = sha256.New()
-	mangledNamesCache = sync.Map{}
+	mangledNamesCache = make(map[ast.Declaration]string, 32)
 )
 
 // NOTE: think about making this demanglable
 func mangledName(decl ast.Declaration) string {
-	// if mangledName, ok := mangledNamesCache.Load(decl); ok {
-	// 	return mangledName.(string)
-	// }
+	if mangledName, ok := mangledNamesCache[decl]; ok {
+		return mangledName
+	}
 
 	hasher.Reset()
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		// extern functions may not be name-mangled
 		if ast.IsExternFunc(decl) || decl.IsExternVisible {
-			return decl.Name()
+			mangledName := decl.Name()
+			mangledNamesCache[decl] = mangledName
+			return mangledName
 		}
 	case *ast.VarDecl:
 		if decl.IsExternVisible {
-			return decl.Name()
+			mangledName := decl.Name()
+			mangledNamesCache[decl] = mangledName
+			return mangledName
 		}
-	default:
-		return decl.Name()
 	}
 
 	hasher.Write([]byte(getHashableModuleName(decl.Module())))
 	mangledName := decl.Name() + "_mod_" + hex.EncodeToString(hasher.Sum(nil))
-	// mangledNamesCache.Store(decl, mangledName)
+	mangledNamesCache[decl] = mangledName
 	return mangledName
 }
 

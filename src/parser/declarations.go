@@ -759,10 +759,13 @@ func (p *parser) structDeclaration() ast.Declaration {
 		}
 	}
 
+	absoluteModName, _ := getFinalModuleName(p.module.FileName)
+
 	structType := &ddptypes.StructType{
 		Name:       name.Literal,
 		GramGender: gender,
 		Fields:     varDeclsToFields(fieldsForValidation),
+		ModName:    absoluteModName,
 	}
 
 	decl := &ast.StructDecl{

@@ -583,7 +583,8 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
-	c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, false)
+	structType := c.defineStructType(decl, decl.Type.Fields, false)
+	c.structTypes[structType.Name()] = structType
 	return ast.VisitRecurse
 }
 
@@ -1853,7 +1854,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			c.insertFunction(irFunc.Name(), decl, irFunc)
 		case *ast.StructDecl:
-			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
+			structType := c.defineStructType(decl, decl.Type.Fields, true)
+			c.structTypes[structType.Name()] = structType
 		case *ast.ExpressionDecl:
 			// nothing to do here
 		case *ast.BadDecl:

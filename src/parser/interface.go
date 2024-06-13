@@ -78,7 +78,7 @@ func Parse(options Options) (*ast.Module, error) {
 
 	module := newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler).parse()
 	if options.FileName != "" {
-		path, err := filepath.Abs(options.FileName)
+		path, err := getFinalModuleName(module.FileName)
 		if err != nil {
 			return nil, err
 		}
@@ -93,6 +93,14 @@ func Parse(options Options) (*ast.Module, error) {
 	}
 
 	return module, nil
+}
+
+func getFinalModuleName(name string) (string, error) {
+	path, err := filepath.Abs(name)
+	if err != nil {
+		return name, err
+	}
+	return path, nil
 }
 
 // wraps a panic with more information and re-panics

@@ -1,2 +1,4 @@
 foo
 bar
+decl_bar
+77
