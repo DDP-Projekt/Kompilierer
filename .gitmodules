@@ -2,7 +2,9 @@
 	path = llvm-project
 	url = https://github.com/llvm/llvm-project.git
 	ignore = untracked
+	shallow = true
 [submodule "lib/stdlib/pcre2"]
 	path = lib/stdlib/pcre2
 	url = https://github.com/PCRE2Project/pcre2.git
 	ignore = untracked
+	shallow = true

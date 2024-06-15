@@ -74,9 +74,9 @@ compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
 		'$(MAKE)' $(OUT_FILE_NAME) --always-make --dry-run \
 		| grep -w '$(CC) -c' \
-		| go run ../create_compile_commands.go > compile_commands.json; \
+		| go run ../create_compile_commands.go > compile_commands.json || true; \
 	else \
-		'$(MAKE)' clean && bear -- '$(MAKE)' all; \
+		'$(MAKE)' clean && bear -- '$(MAKE)' all || true; \
 	fi
 
 clean:
