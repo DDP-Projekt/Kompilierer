@@ -172,7 +172,11 @@ func (p *parser) equality() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consume(token.IST)
+		if p.previous().Type != token.IST {
+			p.consume(token.IST)
+		} else {
+			p.match(token.IST)
+		}
 	}
 	return expr
 }
@@ -224,7 +228,11 @@ func (p *parser) comparison() ast.Expression {
 				Rhs:      rhs,
 			}
 		}
-		p.consume(token.IST)
+		if p.previous().Type != token.IST {
+			p.consume(token.IST)
+		} else {
+			p.match(token.IST)
+		}
 	}
 	return expr
 }
