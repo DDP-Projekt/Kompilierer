@@ -25,6 +25,7 @@ const (
 	BETRAG       // Betrag (von)
 	UND          // und
 	ODER         // oder
+	ENTWEDER     // entweder
 	NICHT        // nicht
 	GLEICH       // gleich
 	UNGLEICH     // ungleich
@@ -175,6 +176,7 @@ var tokenStrings = [...]string{
 	BETRAG:       "Betrag",
 	UND:          "und",
 	ODER:         "oder",
+	ENTWEDER:     "entweder",
 	NICHT:        "nicht",
 	GLEICH:       "gleich",
 	UNGLEICH:     "ungleich",
@@ -319,6 +321,7 @@ var KeywordMap = map[string]TokenType{
 	"Betrag":         BETRAG,
 	"und":            UND,
 	"oder":           ODER,
+	"entweder":       ENTWEDER,
 	"nicht":          NICHT,
 	"gleich":         GLEICH,
 	"ungleich":       UNGLEICH,

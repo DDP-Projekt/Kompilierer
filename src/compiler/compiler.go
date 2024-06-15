@@ -868,6 +868,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	rhs, rhsTyp, isTempRhs := c.evaluate(e.Rhs)
 	// big switches on the different type combinations
 	switch e.Operator {
+	case ast.BIN_XOR:
+		c.latestReturn = c.cbb.NewXor(lhs, rhs)
+		c.latestReturnType = c.ddpbooltyp
 	case ast.BIN_CONCAT:
 		var (
 			result    value.Value
