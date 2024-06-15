@@ -55,6 +55,11 @@ type (
 	}
 )
 
+func (decl *BadDecl) node()    {}
+func (decl *VarDecl) node()    {}
+func (decl *FuncDecl) node()   {}
+func (decl *StructDecl) node() {}
+
 func (decl *BadDecl) String() string    { return "BadDecl" }
 func (decl *VarDecl) String() string    { return "VarDecl" }
 func (decl *FuncDecl) String() string   { return "FuncDecl" }

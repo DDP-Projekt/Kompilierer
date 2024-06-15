@@ -173,7 +173,6 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 	}
 
 	// visit every statement in the modules AST and compile it
-	// in imports we only visit declarations and ignore other top-level statements
 	for _, stmt := range c.ddpModule.Ast.Statements {
 		if isMainModule {
 			c.visitNode(stmt)
@@ -183,6 +182,8 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 				c.visitNode(stmt)
 			case *ast.DeclStmt:
 				c.visitNode(stmt)
+			default:
+				// in imports we only visit declarations and ignore other top-level statements
 			}
 		}
 	}

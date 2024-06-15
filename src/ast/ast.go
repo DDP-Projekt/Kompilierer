@@ -152,10 +152,17 @@ func (param *ParameterInfo) HasValidType() bool {
 	return param.Type != ddptypes.ParameterType{}
 }
 
+//go-sumtype:decl Node
+//go-sumtype:decl Expression
+//go-sumtype:decl Statement
+//go-sumtype:decl Declaration
+//go-sumtype:decl Assigneable
+
 // basic Node interfaces
 type (
 	Node interface {
 		fmt.Stringer
+		node() // dummy function for the interface
 		Token() token.Token
 		GetRange() token.Range
 		Accept(FullVisitor) VisitResult
