@@ -842,6 +842,12 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
 		c.latestReturnType = c.ddpbooltyp
 		return ast.VisitRecurse
+	case ast.BIN_XOR:
+		lhs, _, _ := c.evaluate(e.Lhs)
+		rhs, _, _ := c.evaluate(e.Rhs)
+		c.latestReturn = c.cbb.NewXor(lhs, rhs)
+		c.latestReturnType = c.ddpbooltyp
+		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
 		rhs, rhsTyp, _ := c.evaluate(e.Rhs)
 		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {

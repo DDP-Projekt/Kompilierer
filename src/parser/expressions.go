@@ -72,7 +72,7 @@ func (p *parser) boolXOR() ast.Expression {
 			},
 			Tok:      *tok,
 			Lhs:      lhs,
-			Operator: ast.BIN_UNEQUAL,
+			Operator: ast.BIN_XOR,
 			Rhs:      rhs,
 		}
 	}
