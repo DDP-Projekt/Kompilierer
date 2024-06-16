@@ -46,6 +46,7 @@ const (
 	BIN_INVALID      BinaryOperator = iota
 	BIN_AND                         // und
 	BIN_OR                          // oder
+	BIN_XOR                         // entweder ... oder ..
 	BIN_CONCAT                      // verkettet
 	BIN_PLUS                        // plus
 	BIN_MINUS                       // minus
@@ -77,6 +78,8 @@ func (op BinaryOperator) String() string {
 		return "und"
 	case BIN_OR:
 		return "oder"
+	case BIN_XOR:
+		return "entweder oder"
 	case BIN_CONCAT:
 		return "verkettet"
 	case BIN_PLUS:

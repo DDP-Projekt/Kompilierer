@@ -130,6 +130,9 @@ static int remove_directory(const char *path) {
 
 				snprintf(buf, len, "" DDP_STRING_FMT "/" DDP_STRING_FMT "", path, p->d_name);
 				if (!stat(buf, &statbuf)) {
+					// technically, this is a TOCTOU vulnerability (see https://cwe.mitre.org/data/definitions/367.html)
+					// but as the unlinkat function is not present in mingw, this is not easily resolvable (or might even be impossible)
+					// to make it short: this might be vulnerable in edge-cases, but I don't care
 					if (S_ISDIR(statbuf.st_mode)) {
 						r2 = remove_directory(buf);
 					} else {

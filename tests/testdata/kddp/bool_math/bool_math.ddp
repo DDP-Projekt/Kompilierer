@@ -18,6 +18,22 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (falsch oder falsch).
 Schreibe den Buchstaben '\n'.
 
+Schreibe den Wahrheitswert (entweder wahr, oder wahr).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (entweder wahr, oder falsch).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (entweder falsch, oder wahr).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (entweder falsch, oder falsch).
+Schreibe den Buchstaben '\n'.
+
+Schreibe den Wahrheitswert (entweder wahr oder falsch, oder wahr).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (entweder wahr, oder falsch oder wahr).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (entweder wahr oder falsch, oder falsch oder wahr).
+Schreibe den Buchstaben '\n'.
+
 Schreibe den Wahrheitswert (nicht wahr).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (nicht falsch).

@@ -86,7 +86,10 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.Type)
 	if IsExternFunc(decl) {
-		msg += " Extern"
+		msg += " [Extern]"
+	}
+	if decl.IsExternVisible {
+		msg += " [Extern Visible]"
 	}
 	if decl.CommentTok != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")

@@ -302,6 +302,8 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 			for _, field := range decl.Type.Fields {
 				checkSingleType(field.Type)
 			}
+		case *ast.BadDecl:
+			// error already reported while parsing the imported module
 		}
 	}
 
