@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Aliasnegationen
 - [Added] `entweder ..., oder` Operator
 - [Changed] "ist" nach Vergleichen ist jetzt Optional, falls davor bereits ein "ist" steht
 - [Added] Syntax um Variablen und Funktionen als "extern sichtbar" zu markieren, und somit name-mangling für diese auszuschalten

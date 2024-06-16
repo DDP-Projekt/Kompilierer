@@ -10,7 +10,7 @@ und erstellen sie so:
 Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"<muster> ein Regex ist"
+	"<muster> <!k>ein Regex ist"
 
 Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert

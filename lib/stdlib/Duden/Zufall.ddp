@@ -22,4 +22,4 @@ und kann so benutzt werden:
 Die öffentliche Funktion Zufalls_Wahrheitswert mit dem Parameter p vom Typ Kommazahl, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"ein Ereignis mit Wahrscheinlichkeit <p> Prozent eingetroffen"
+	"ein Ereignis mit Wahrscheinlichkeit <p> Prozent <!nicht> eingetroffen"

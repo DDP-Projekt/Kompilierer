@@ -220,13 +220,24 @@ func (p *parser) alias() ast.Expression {
 
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
-			return &ast.FuncCall{
+			fnCall := &ast.FuncCall{
 				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  fnalias.Func.Name(),
 				Func:  fnalias.Func,
 				Args:  args,
 			}
+
+			if fnalias.Negated {
+				return &ast.UnaryExpr{
+					Range:    fnCall.Range,
+					Tok:      p.tokens[start],
+					Operator: ast.UN_NOT,
+					Rhs:      fnCall,
+				}
+			}
+
+			return fnCall
 		}
 
 		stralias := alias.(*ast.StructAlias)

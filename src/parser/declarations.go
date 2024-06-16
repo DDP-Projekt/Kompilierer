@@ -310,20 +310,50 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		// scan the raw alias withouth the ""
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
-			if len(alias) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+
+		scanAndValidate := func(t token.Token, negated bool) {
+			alias, err := scanner.ScanAlias(t, errHandleWrapper)
+			if err != nil && didError {
+				return
+			}
+
+			if len(alias) < 2 { // empty strings are not allowed (we need at least 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
 				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap})
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: t, Func: nil, Args: paramTypesMap, Negated: negated})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
 				p.errVal(*err)
 			}
 		}
+
+		negMarkerStart := strings.Index(v.Literal, "<!")
+		if negMarkerStart != -1 {
+			if !p.isCurrentFunctionBool {
+				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
+				continue
+			}
+
+			if strings.Contains(v.Literal[negMarkerStart+1:], "<!") {
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Der Alias enthält mehr als eine Aliasnegationsmarkierung")
+			}
+
+			original := v.Literal
+			negMarkerEnd := (negMarkerStart + 2) + strings.IndexRune(v.Literal[negMarkerStart+2:], '>') + 1
+
+			negatedV := *v
+			negatedV.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
+
+			scanAndValidate(negatedV, true)
+
+			v.Literal = original[:negMarkerStart] + original[negMarkerEnd:]
+		}
+
+		scanAndValidate(*v, false)
 	}
 
 	return funcAliases, funcAliasTokens
@@ -380,9 +410,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if Typ == nil {
 		valid = false
 	}
-	if Typ == ddptypes.WAHRHEITSWERT {
-		p.isCurrentFunctionBool = true
-	}
+	p.isCurrentFunctionBool = Typ == ddptypes.WAHRHEITSWERT
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
 
@@ -512,14 +540,14 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	return decl
 }
 
-func isAliasExpr(t token.Token) bool    { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
+func isAliasParam(t token.Token) bool   { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
 func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }         // helper to check for illegal tokens
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
 func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.ParameterInfo) *ddperror.Error {
 	// validate that the alias contains as many parameters as the function
-	if count := countElements(aliasTokens, isAliasExpr); count != len(params) {
+	if count := countElements(aliasTokens, isAliasParam); count != len(params) {
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(params), count),
@@ -550,7 +578,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 	// validate that each parameter is contained in the alias exactly once
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if !isAliasExpr(v) {
+		if !isAliasParam(v) {
 			continue
 		}
 
@@ -585,7 +613,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 // returns wether the alias is valid and its arguments
 func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
 	// validate that the alias contains as many parameters as the struct
-	if count := countElements(aliasTokens, isAliasExpr); count > len(fields) {
+	if count := countElements(aliasTokens, isAliasParam); count > len(fields) {
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
@@ -619,7 +647,7 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
 	for i, v := range aliasTokens {
-		if !isAliasExpr(v) {
+		if !isAliasParam(v) {
 			continue
 		}
 
