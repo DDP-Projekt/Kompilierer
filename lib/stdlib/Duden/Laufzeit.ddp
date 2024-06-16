@@ -49,7 +49,7 @@ und kann so benutzt werden:
 Die öffentliche Funktion Ist_Befehlszeile gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die Benutzereingabe eine Befehlszeile ist"
+	"die Benutzereingabe <!k>eine Befehlszeile ist"
 
 [
 	Leere Funktion, die nichts macht und nichts zurückgibt.

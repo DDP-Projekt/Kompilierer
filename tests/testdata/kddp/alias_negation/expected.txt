@@ -6,3 +6,5 @@ Test2: wahr
 Test3: falsch
 Test3: wahr
 Test4: falsch
+Test5: wahr
+Test5: falsch

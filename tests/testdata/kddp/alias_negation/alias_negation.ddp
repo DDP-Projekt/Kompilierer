@@ -24,6 +24,12 @@ Die Funktion Test4 gibt einen Wahrheitswert zurück, macht:
 Und kann so benutzt werden:
     "<!nicht> T4"
 
+Die Funktion Test5 gibt einen Wahrheitswert zurück, macht:
+    Schreibe "Test5: ".
+    Gib wahr zurück.
+Und kann so benutzt werden:
+    "<!k>ein T5"
+
 Schreibe T1 auf eine Zeile.
 Schreibe (T1 nö) auf eine Zeile.
 Schreibe (nicht T1 nö) auf eine Zeile.
@@ -35,3 +41,6 @@ Schreibe (nicht T3) auf eine Zeile.
 Schreibe (nicht nö T3) auf eine Zeile.
 
 Schreibe (nicht T4) auf eine Zeile.
+
+Schreibe (ein T5) auf eine Zeile.
+Schreibe (kein T5) auf eine Zeile.
