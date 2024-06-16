@@ -299,8 +299,8 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 
-		scanAndValidate := func(negated bool) {
-			alias, err := scanner.ScanAlias(*v, errHandleWrapper)
+		scanAndValidate := func(t token.Token, negated bool) {
+			alias, err := scanner.ScanAlias(t, errHandleWrapper)
 			if err != nil && didError {
 				return
 			}
@@ -311,7 +311,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
 				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: negated})
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: t, Func: nil, Args: paramTypesMap, Negated: negated})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
@@ -332,14 +332,16 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 
 			original := v.Literal
 			negMarkerEnd := (negMarkerStart + 2) + strings.IndexRune(v.Literal[negMarkerStart+2:], '>') + 1
-			v.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
 
-			scanAndValidate(true)
+			negatedV := *v
+			negatedV.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
+
+			scanAndValidate(negatedV, true)
 
 			v.Literal = original[:negMarkerStart] + original[negMarkerEnd:]
 		}
 
-		scanAndValidate(false)
+		scanAndValidate(*v, false)
 	}
 
 	return funcAliases, funcAliasTokens
