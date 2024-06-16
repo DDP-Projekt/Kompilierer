@@ -14,7 +14,7 @@ else
 	ifneq ("$(wildcard ../../llvm_build/bin/llvm-config)","")
 		LLVM_CONFIG := "../../llvm_build/bin/llvm-config"
 	else
-		LLVM_CONFIG := "llvm-config-12"
+		LLVM_CONFIG := "llvm-config-14"
 	endif
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif

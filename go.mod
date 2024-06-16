@@ -14,6 +14,8 @@ require (
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 )
 
+replace github.com/bafto/Go-LLVM-Bindings => ../../Go-LLVM-Bindings/
+
 require (
 	aead.dev/minisign v0.3.0 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect

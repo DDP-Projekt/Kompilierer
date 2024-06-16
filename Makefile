@@ -192,7 +192,7 @@ help:
 	@echo "    runtime: compile only the runtime into $(OUT_DIR)"
 	@echo "    runtime-debug: compile only the runtime in debug mode into $(OUT_DIR)"
 	@echo "    clean: delete the output directory $(OUT_DIR)"
-	@echo "    llvm: clone the llvm-project repo at version 12.0.0 and build it"
+	@echo "    llvm: clone the llvm-project repo at version 14.0.0 and build it"
 	@echo "    test: run the ddp tests"
 	@echo "          you can specifiy directory names with the TEST_DIRS variable"
 	@echo "          to only run those tests"

@@ -12,7 +12,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
-	"github.com/bafto/Go-LLVM-Bindings/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 type OutputType int
