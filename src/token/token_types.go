@@ -5,7 +5,6 @@ const (
 	EOF
 	IDENTIFIER
 	ALIAS_PARAMETER // <x> only found in function aliases
-	ALIAS_NEGATION  // <!x> only found in function aliases
 	COMMENT         // [...]
 	SYMBOL          // any symbol not matched otherwise (?, !, ~, ...)
 
@@ -153,7 +152,6 @@ var tokenStrings = [...]string{
 	EOF:             "EOF",
 	IDENTIFIER:      "ein Name",
 	ALIAS_PARAMETER: "ein Alias Parameter",
-	ALIAS_NEGATION:  "eine Alias Negation",
 	COMMENT:         "ein Kommentar",
 	SYMBOL:          "ein Symbol",
 

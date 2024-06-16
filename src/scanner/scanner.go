@@ -286,12 +286,6 @@ func (s *Scanner) identifierType() token.TokenType {
 
 // helper to scan the <argname> in aliases
 func (s *Scanner) aliasParameter() token.Token {
-	tokType := token.ALIAS_PARAMETER
-	if s.peek() == '!' {
-		s.advance()
-		tokType = token.ALIAS_NEGATION
-	}
-
 	if !isAlpha(s.peek()) {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 	}
@@ -316,7 +310,7 @@ func (s *Scanner) aliasParameter() token.Token {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Es wurde ein Name als Alias-Parameter erwartet")
 	}
 
-	return s.newToken(tokType)
+	return s.newToken(token.ALIAS_PARAMETER)
 }
 
 func (s *Scanner) skipWhitespace() {

@@ -68,11 +68,6 @@ func (p *parser) alias() ast.Expression {
 				}
 				return tok, true
 			}
-		} else if tok.Type == token.ALIAS_NEGATION {
-			if t := p.advance(); strings.Trim(tok.Literal, "<!>") == t.Literal {
-				return tok, true
-			}
-			return nil, false
 		}
 		return p.advance(), true
 	})
@@ -274,29 +269,4 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(mostFitting, args)
-}
-
-// returns all tokens of a alias except the negation marker. returns nil if there was no negation
-func filterNegationMarkers(tokens []token.Token) (result []token.Token) {
-	didEncounterNegation := false
-	for _, tok := range tokens {
-		if tok.Type != token.ALIAS_NEGATION {
-			result = append(result, tok)
-		} else {
-			didEncounterNegation = true
-		}
-	}
-	if didEncounterNegation {
-		return result
-	}
-	return nil
-}
-
-func getNegationMarker(aliasTokens []token.Token) *token.Token {
-	for _, v := range aliasTokens {
-		if v.Type == token.ALIAS_NEGATION {
-			return &v
-		}
-	}
-	return nil
 }

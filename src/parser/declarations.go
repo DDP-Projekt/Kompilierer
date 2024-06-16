@@ -298,33 +298,48 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		// scan the raw alias withouth the ""
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if alias, err := scanner.ScanAlias(*v, errHandleWrapper); err == nil && !didError {
+
+		scanAndValidate := func(negated bool) {
+			alias, err := scanner.ScanAlias(*v, errHandleWrapper)
+			if err != nil && didError {
+				return
+			}
+
 			if len(alias) < 2 { // empty strings are not allowed (we need at least 1 token + EOF)
 				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
 				} else {
-					filtered := filterNegationMarkers(alias) // remove negation markers
-
-					if filtered != nil { // is there no negation?
-						if ok, _, _, pTokensFiltered := p.aliasExists(filtered); !ok {
-							funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: filtered, Original: *v, Func: nil, Args: paramTypesMap, Negated: false})
-							funcAliasTokens = append(funcAliasTokens, pTokensFiltered)
-						}
-					}
-
-					if marker := getNegationMarker(alias); marker != nil && !p.isCurrentFunctionBool {
-						p.err(ddperror.SEM_ALIAS_BAD_ARGS, marker.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
-					} else {
-						funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: filtered != nil})
-						funcAliasTokens = append(funcAliasTokens, pTokens)
-					}
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: *v, Func: nil, Args: paramTypesMap, Negated: negated})
+					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
 				p.errVal(*err)
 			}
 		}
+
+		negMarkerStart := strings.Index(v.Literal, "<!")
+		if negMarkerStart != -1 {
+			if !p.isCurrentFunctionBool {
+				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
+				continue
+			}
+
+			if strings.Contains(v.Literal[negMarkerStart+1:], "<!") {
+				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Der Alias enthält mehr als eine Aliasnegationsmarkierung")
+			}
+
+			original := v.Literal
+			negMarkerEnd := (negMarkerStart + 2) + strings.IndexRune(v.Literal[negMarkerStart+2:], '>') + 1
+			v.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
+
+			scanAndValidate(true)
+
+			v.Literal = original[:negMarkerStart] + original[negMarkerEnd:]
+		}
+
+		scanAndValidate(false)
 	}
 
 	return funcAliases, funcAliasTokens
@@ -498,9 +513,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	return decl
 }
 
-func isAliasNegation(t token.Token) bool { return t.Type == token.ALIAS_NEGATION }  // helper to check for alias negations
-func isAliasParam(t token.Token) bool    { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
-func isIllegalToken(t token.Token) bool  { return t.Type == token.ILLEGAL }         // helper to check for illegal tokens
+func isAliasParam(t token.Token) bool   { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters
+func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }         // helper to check for illegal tokens
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
@@ -521,16 +535,6 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 			ddperror.SEM_MALFORMED_ALIAS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			"Der Alias enthält ungültige Symbole",
-			p.module.FileName,
-		)
-		return &err
-	}
-
-	if countElements(aliasTokens, isAliasNegation) > 1 {
-		err := ddperror.New(
-			ddperror.SEM_MALFORMED_ALIAS,
-			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-			"Der Alias enthält mehr als eine Aliasnegationsmarkierung",
 			p.module.FileName,
 		)
 		return &err
