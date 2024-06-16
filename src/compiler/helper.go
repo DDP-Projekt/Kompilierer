@@ -1,8 +1,11 @@
 package compiler
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
@@ -111,9 +114,8 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	return nil // unreachable
 }
 
-// creates the name of the module_init function
-func (c *compiler) getModuleInitDisposeName(mod *ast.Module) (string, string) {
-	name := "ddp_" + strings.TrimSuffix(
+func getHashableModuleName(mod *ast.Module) string {
+	return "ddp_" + strings.TrimSuffix(
 		strings.ReplaceAll(
 			strings.ReplaceAll(
 				filepath.ToSlash(mod.FileName),
@@ -125,7 +127,44 @@ func (c *compiler) getModuleInitDisposeName(mod *ast.Module) (string, string) {
 		),
 		".ddp",
 	)
+}
+
+// creates the name of the module_init function
+func getModuleInitDisposeName(mod *ast.Module) (string, string) {
+	name := getHashableModuleName(mod)
 	return name + "_init", name + "_dispose"
+}
+
+var (
+	hasher            = sha256.New()
+	mangledNamesCache = sync.Map{}
+)
+
+// NOTE: think about making this demanglable
+func (c *compiler) mangledName(decl ast.Declaration) string {
+	// if mangledName, ok := mangledNamesCache.Load(decl); ok {
+	// 	return mangledName.(string)
+	// }
+
+	hasher.Reset()
+	switch decl := decl.(type) {
+	case *ast.FuncDecl:
+		// extern functions may not be name-mangled
+		if ast.IsExternFunc(decl) || decl.IsExternVisible {
+			return decl.Name()
+		}
+	case *ast.VarDecl:
+		if decl.IsExternVisible {
+			return decl.Name()
+		}
+	default:
+		return decl.Name()
+	}
+
+	hasher.Write([]byte(getHashableModuleName(decl.Module())))
+	mangledName := decl.Name() + "_mod_" + hex.EncodeToString(hasher.Sum(nil))
+	// mangledNamesCache.Store(decl, mangledName)
+	return mangledName
 }
 
 // compares two values of same type for equality

@@ -93,6 +93,19 @@ type (
 	}
 )
 
+func (stmt *BadStmt) node()           {}
+func (stmt *DeclStmt) node()          {}
+func (stmt *ExprStmt) node()          {}
+func (stmt *ImportStmt) node()        {}
+func (stmt *AssignStmt) node()        {}
+func (stmt *BlockStmt) node()         {}
+func (stmt *IfStmt) node()            {}
+func (stmt *WhileStmt) node()         {}
+func (stmt *ForStmt) node()           {}
+func (stmt *ForRangeStmt) node()      {}
+func (stmt *BreakContinueStmt) node() {}
+func (stmt *ReturnStmt) node()        {}
+
 func (stmt *BadStmt) String() string           { return "BadStmt" }
 func (stmt *DeclStmt) String() string          { return "DeclStmt" }
 func (stmt *ExprStmt) String() string          { return "ExprStmt" }

@@ -37,7 +37,7 @@ func (p *parser) expression() ast.Expression {
 
 // <a> wenn <b>, sonst <c>
 func (p *parser) ifExpression() ast.Expression {
-	expr := p.boolOR()
+	expr := p.boolXOR()
 	for p.matchN(token.COMMA, token.FALLS) {
 		tok := p.previous()
 		cond := p.ifExpression()
@@ -56,6 +56,27 @@ func (p *parser) ifExpression() ast.Expression {
 		}
 	}
 	return expr
+}
+
+// entweder <a> oder <b> ist
+func (p *parser) boolXOR() ast.Expression {
+	for p.match(token.ENTWEDER) {
+		tok := p.previous()
+		lhs := p.boolOR()
+		p.consume(token.COMMA, token.ODER)
+		rhs := p.boolOR()
+		return &ast.BinaryExpr{
+			Range: token.Range{
+				Start: tok.Range.Start,
+				End:   rhs.GetRange().End,
+			},
+			Tok:      *tok,
+			Lhs:      lhs,
+			Operator: ast.BIN_XOR,
+			Rhs:      rhs,
+		}
+	}
+	return p.boolOR()
 }
 
 func (p *parser) boolOR() ast.Expression {
@@ -172,7 +193,11 @@ func (p *parser) equality() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consume(token.IST)
+		if p.previous().Type != token.IST {
+			p.consume(token.IST)
+		} else {
+			p.match(token.IST)
+		}
 	}
 	return expr
 }
@@ -224,7 +249,11 @@ func (p *parser) comparison() ast.Expression {
 				Rhs:      rhs,
 			}
 		}
-		p.consume(token.IST)
+		if p.previous().Type != token.IST {
+			p.consume(token.IST)
+		} else {
+			p.match(token.IST)
+		}
 	}
 	return expr
 }

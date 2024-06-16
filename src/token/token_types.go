@@ -25,6 +25,7 @@ const (
 	BETRAG       // Betrag (von)
 	UND          // und
 	ODER         // oder
+	ENTWEDER     // entweder
 	NICHT        // nicht
 	GLEICH       // gleich
 	UNGLEICH     // ungleich
@@ -139,6 +140,9 @@ const (
 	AB
 	ZUM
 	ELEMENT
+	EXTERN
+	SICHTBAR
+	SICHTBARE
 
 	DOT    // .
 	COMMA  // ,
@@ -172,6 +176,7 @@ var tokenStrings = [...]string{
 	BETRAG:       "Betrag",
 	UND:          "und",
 	ODER:         "oder",
+	ENTWEDER:     "entweder",
 	NICHT:        "nicht",
 	GLEICH:       "gleich",
 	UNGLEICH:     "ungleich",
@@ -286,6 +291,9 @@ var tokenStrings = [...]string{
 	ELEMENT:       "Element",
 	FALLS:         "falls",
 	ANSONSTEN:     "ansonsten",
+	EXTERN:        "extern",
+	SICHTBAR:      "sichtbar",
+	SICHTBARE:     "sichtbare",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -313,6 +321,7 @@ var KeywordMap = map[string]TokenType{
 	"Betrag":         BETRAG,
 	"und":            UND,
 	"oder":           ODER,
+	"entweder":       ENTWEDER,
 	"nicht":          NICHT,
 	"gleich":         GLEICH,
 	"ungleich":       UNGLEICH,
@@ -433,6 +442,9 @@ var KeywordMap = map[string]TokenType{
 	"Element":        ELEMENT,
 	"falls":          FALLS,
 	"ansonsten":      ANSONSTEN,
+	"extern":         EXTERN,
+	"sichtbar":       SICHTBAR,
+	"sichtbare":      SICHTBARE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

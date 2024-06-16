@@ -11,19 +11,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-// wether the next token indicates a typename
-func (p *parser) isTypeName(t *token.Token) bool {
-	switch t.Type {
-	case token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE, token.TEXT,
-		token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN:
-		return true
-	case token.IDENTIFIER:
-		_, exists := p.typeNames[t.Literal]
-		return exists
-	}
-	return false
-}
-
 // converts a TokenType to a Type
 func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 	switch t {

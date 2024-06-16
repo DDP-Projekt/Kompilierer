@@ -365,7 +365,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_MOD:
 		validate(ddptypes.ZAHL)
 		t.latestReturnedType = ddptypes.ZAHL
-	case ast.BIN_AND, ast.BIN_OR:
+	case ast.BIN_AND, ast.BIN_OR, ast.BIN_XOR:
 		validate(ddptypes.WAHRHEITSWERT)
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_LEFT_SHIFT, ast.BIN_RIGHT_SHIFT:

@@ -62,6 +62,17 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
+
+	isExternVisible := false
+	if isPublic && p.previous().Type == token.COMMA || p.previous().Type == token.EXTERN {
+		if p.previous().Type == token.COMMA {
+			p.consume(token.EXTERN)
+		}
+		p.consume(token.SICHTBARE)
+		isExternVisible = true
+		p.advance()
+	}
+
 	p.decrease()
 	type_start := p.previous()
 	typ := p.parseType()
@@ -142,13 +153,14 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	return &ast.VarDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Type:       typ,
-		NameTok:    *name,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		InitVal:    expr,
+		Range:           token.NewRange(begin, p.previous()),
+		CommentTok:      comment,
+		Type:            typ,
+		NameTok:         *name,
+		IsPublic:        isPublic,
+		IsExternVisible: isExternVisible,
+		Mod:             p.module,
+		InitVal:         expr,
 	}
 }
 
@@ -399,9 +411,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	p.isCurrentFunctionBool = Typ == ddptypes.WAHRHEITSWERT
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
+
+	isExternVisible := false
+	externVisibleRange := token.Range{} // for the possible error message below
+	if p.matchN(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
+		isExternVisible = true
+		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
+	}
+
 	bodyStart := -1
 	definedIn := &token.Token{Type: token.ILLEGAL}
-	if p.matchN(token.MACHT, token.COLON) {
+	if p.match(token.MACHT) {
+		validate(p.consume(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
 		indent := p.previous().Indent + 1             // indentation level of the function body
 		for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
@@ -414,6 +435,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		case ".c", ".lib", ".a", ".o":
 		default:
 			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+		}
+		if isExternVisible {
+			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}
 
@@ -436,17 +460,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	decl := &ast.FuncDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Tok:        *begin,
-		NameTok:    *funcName,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		Parameters: params,
-		Type:       Typ,
-		Body:       nil,
-		ExternFile: *definedIn,
-		Aliases:    funcAliases,
+		Range:           token.NewRange(begin, p.previous()),
+		CommentTok:      comment,
+		Tok:             *begin,
+		NameTok:         *funcName,
+		IsPublic:        isPublic,
+		IsExternVisible: isExternVisible,
+		Mod:             p.module,
+		Parameters:      params,
+		Type:            Typ,
+		Body:            nil,
+		ExternFile:      *definedIn,
+		Aliases:         funcAliases,
 	}
 
 	for i := range funcAliases {

@@ -160,6 +160,7 @@ TEST_DIRS =
 KDDP_ARGS = 
 
 test:
+	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
 	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory:
