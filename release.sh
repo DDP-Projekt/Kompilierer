@@ -39,13 +39,13 @@ fi
 make -j$(nproc)
 
 ship_mingw=true
-if [ "$is_windows" = true ] && [ $# -eq 1 ]; then
+if [ "$is_windows" = false ] || [ $# -eq 1 ]; then
 	ship_mingw=false
 fi
 
 release_folder_path="DDP-"
 release_folder_path+=$(eval ./build/DDP/bin/kddp version | head -n 1 | tr " " "-")
-if [ "$ship_mingw" != true ]; then
+if [ "$is_windows" = true ] && [ "$ship_mingw" != true ]; then
 	release_folder_path+="-no-mingw"
 fi
 
@@ -64,4 +64,8 @@ if [ "$ship_mingw" = true ]; then
 	cp -f "$2" "$release_folder_path/mingw64.zip"
 fi
 
-zip -r "$release_folder_path.zip" "$release_folder_path"
+if [ "$is_windows" = true ]; then
+	zip -r "$release_folder_path.zip" "$release_folder_path"
+else
+	tar -czf "$release_folder_path.tar.gz" "$release_folder_path"
+fi
