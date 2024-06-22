@@ -1,10 +1,13 @@
 #include "ddpmemory.h"
 #include "ddptypes.h"
 #include "winapi-path.h"
+#include <stdbool.h>
 #include <string.h>
+#include "error.h"
 
 // TODO: Use PathCchCanonicalize
 void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
+	DDP_MIGHT_ERROR;
 	if (ddp_strlen(path) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
 		return;
@@ -12,7 +15,7 @@ void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 
 	char cleaned[DDP_MAX_WIN_PATH];
 	if (!PathCanonicalize(cleaned, path->str)) {
-		// TODO: Error Handling
+		ddp_error("Pfad konnte nicht gesäubert werden", false);
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}
@@ -26,6 +29,7 @@ void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 
 // TODO: Use PathCchCombine
 void Windows_Pfad_Verbinden(ddpstring *ret, ddpstring *a, ddpstring *b) {
+	DDP_MIGHT_ERROR;
 	if (ddp_strlen(a) + 1 + ddp_strlen(b) + 1 >= DDP_MAX_WIN_PATH) {
 		*ret = DDP_EMPTY_STRING;
 		return;
@@ -33,7 +37,7 @@ void Windows_Pfad_Verbinden(ddpstring *ret, ddpstring *a, ddpstring *b) {
 
 	char joined[DDP_MAX_WIN_PATH];
 	if (!PathCombine(joined, a->str, b->str)) {
-		// TODO: Error Handling
+		ddp_error("Pfad konnte nicht verbunden werden", false);
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}
