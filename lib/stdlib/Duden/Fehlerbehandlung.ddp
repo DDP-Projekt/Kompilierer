@@ -34,8 +34,8 @@ Die Zahl SchreibeFehlerFlag ist 1 um 1 Bit nach Links verschoben.
 Die öffentliche Funktion Gab_Fehler gibt einen Wahrheitswert zurück, ist extern sichtbar, macht:
 	Gib Fehlermeldung_Valide zurück.
 Und kann so benutzt werden:
-	"es einen Fehler gab" oder
-	"es dabei einen Fehler gab"
+	"es <!k>einen Fehler gab" oder
+	"es dabei <!k>einen Fehler gab"
 
 [
 	Löscht den letzten Fehler

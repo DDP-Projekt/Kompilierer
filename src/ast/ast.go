@@ -90,6 +90,7 @@ type (
 		Original token.Token                       // the original string
 		Func     *FuncDecl                         // the function it refers to (if it is used outside a FuncDecl)
 		Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
+		Negated  bool                              // if the alias has been negated
 	}
 
 	// wrapper for a struct alias
