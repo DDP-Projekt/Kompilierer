@@ -14,16 +14,8 @@ INC = -I./include/ -I../runtime/include/ -I$(PCRE2_DIR)
 AR = ar rcs
 RM = rm -f
 MKDIR = mkdir -p
-TAR = tar
 
-CMAKE = cmake
-
-PCRE2_VERSION=10.43
-PCRE2_SRC_DIR=./pcre2/
-PCRE2_BUILD_TYPE=Release
-PCRE2_CMAKE_GENERATOR="MinGW Makefiles"
 PCRE2_CMAKE_BUILD_TOOL=$(MAKE)
-PCRE2_CMAKE_VARIABLES= -DCMAKE_COLOR_MAKEFILE=OFF
 
 # these wildcards work only to depth 1
 # so include/utf8/utf8.c is matched but include/utf8/test_dir/test.c would NOT be matched
@@ -49,7 +41,7 @@ else
 $(PCRE2_OUT_FILE_NAME): | checkout-pcre2
 	@echo "building pcre2"
 	$(MKDIR) $(PCRE2_DIR)
-	$(CMAKE) -S$(PCRE2_SRC_DIR) -B$(PCRE2_DIR) -DCMAKE_BUILD_TYPE=$(PCRE2_BUILD_TYPE) -G$(PCRE2_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) $(PCRE2_CMAKE_VARIABLES)
+	cmake -S./pcre2/ -B$(PCRE2_DIR) -DCMAKE_BUILD_TYPE=Release -G"MinGW Makefiles" -DCMAKE_C_COMPILER=$(CC) -DCMAKE_COLOR_MAKEFILE=OFF
 	cd $(PCRE2_DIR) && $(PCRE2_CMAKE_BUILD_TOOL) pcre2-8-static
 	cp $(PCRE2_DIR)$(PCRE2_OUT_FILE_NAME) .
 endif
@@ -60,7 +52,7 @@ endif
 %_debug.o: %.c $(PCRE2_OUT_FILE_NAME)
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) compile_commands.json
+all: $(OUT_FILE_NAME)
 
 debug: $(OUT_FILE_NAME_DEBUG)
 
@@ -80,7 +72,7 @@ compile_commands.json: $(SRCS) $(HEADERS)
 	fi
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend compile_commands.json
+	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(PCRE2_OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
 	@if [ -d $(PCRE2_DIR) ]; then \
 		cd $(PCRE2_DIR) && '$(PCRE2_CMAKE_BUILD_TOOL)' clean; \
 	fi
