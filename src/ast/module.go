@@ -16,6 +16,8 @@ type Module struct {
 	FileNameToken *token.Token
 	// all the imported modules
 	Imports []*ImportStmt
+	// First token in the file if present, or nil otherwise
+	Comment *token.Token
 	// a set which contains all files needed
 	// to link the final executable
 	// contains .c, .lib, .a and .o files

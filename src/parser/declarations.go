@@ -60,6 +60,10 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
 		comment = nil
 	}
+	// prefer to attach the comment to a declaration, rather than to the module
+	if comment == p.module.Comment {
+		p.module.Comment = nil
+	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
 
@@ -383,6 +387,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
 		comment = nil
 	}
+	// prefer to attach the comment to a declaration, rather than to the module
+	if comment == p.module.Comment {
+		p.module.Comment = nil
+	}
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 
@@ -694,6 +702,10 @@ func (p *parser) structDeclaration() ast.Declaration {
 	// ignore the comment if it is not next to or directly above the declaration
 	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
 		comment = nil
+	}
+	// prefer to attach the comment to a declaration, rather than to the module
+	if comment == p.module.Comment {
+		p.module.Comment = nil
 	}
 
 	p.consume(token.NENNEN, token.DIE)

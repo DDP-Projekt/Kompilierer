@@ -54,6 +54,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
+	is_first_tok_comment := tokens[0].Type == token.COMMENT
+
 	comments := make([]token.Token, 0)
 	// filter the comments out
 	i := 0
@@ -67,6 +69,11 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 	tokens = tokens[:i]
 
+	var module_comment *token.Token
+	if is_first_tok_comment {
+		module_comment = &comments[0]
+	}
+
 	parser := &parser{
 		tokens:       tokens,
 		comments:     comments,
@@ -75,6 +82,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		module: &ast.Module{
 			FileName:             name,
 			Imports:              make([]*ast.ImportStmt, 0),
+			Comment:              module_comment,
 			ExternalDependencies: make(map[string]struct{}, 5),
 			Ast: &ast.Ast{
 				Statements: make([]ast.Statement, 0),
