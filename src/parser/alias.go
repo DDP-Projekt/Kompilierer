@@ -196,11 +196,11 @@ func (p *parser) alias() ast.Expression {
 					didMatch := true
 					if typ != paramType.Type {
 						didMatch = false
-					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);             // string-indexings may not be passed as char-reference
-					paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && // if the parameter is a char-reference
+					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
+					paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
 						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
-						if lhs == ddptypes.TEXT { // check if the lhs is a string
+						if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
 							didMatch = false
 						}
 					}

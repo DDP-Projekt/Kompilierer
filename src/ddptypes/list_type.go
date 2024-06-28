@@ -30,20 +30,19 @@ func (listType ListType) String() string {
 	return listType.Underlying.String() + " Liste" // no 100% correct yet
 }
 
+// gets the underlying type of a List
+func GetListUnderlying(typ Type) Type {
+	if listTyp, isList := GetUnderlying(typ).(ListType); isList {
+		return listTyp.Underlying
+	}
+	return typ
+}
+
 // gets the underlying type for nested lists
 // if typ is not a list type typ is returned
-func GetNestedUnderlying(typ Type) Type {
-	if listTyp, isList := typ.(ListType); isList {
-		typ = listTyp.Underlying
-	} else {
-		return typ
+func GetNestedListUnderlying(typ Type) Type {
+	for IsList(typ) {
+		typ = GetListUnderlying(typ)
 	}
-
-	for {
-		underlying, isList := typ.(ListType)
-		if !isList {
-			return typ
-		}
-		typ = underlying
-	}
+	return typ
 }

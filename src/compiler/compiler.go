@@ -1946,7 +1946,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
-		if s.Initializer.Type == ddptypes.ZAHL {
+		if ddptypes.Equal(s.Initializer.Type, ddptypes.ZAHL) {
 			return c.cbb.NewICmp(ipred, x, yi)
 		} else {
 			return c.cbb.NewFCmp(fpred, x, yf)
@@ -1960,7 +1960,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		if s.Initializer.Type == ddptypes.ZAHL {
+		if ddptypes.Equal(s.Initializer.Type, ddptypes.ZAHL) {
 			incrementer = newInt(1)
 		} else {
 			incrementer = constant.NewFloat(ddpfloat, 1.0)
@@ -1993,7 +1993,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if s.Initializer.Type == ddptypes.ZAHL {
+	if ddptypes.Equal(s.Initializer.Type, ddptypes.ZAHL) {
 		add = c.cbb.NewAdd(indexVar, incrementer)
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)

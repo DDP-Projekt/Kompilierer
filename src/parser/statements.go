@@ -186,7 +186,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
-		if typ == ddptypes.WAHRHEITSWERT {
+		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			operator = ast.UN_NOT
 		}
 		return &ast.AssignStmt{
@@ -258,7 +258,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
-		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.WAHRHEITSWERT {
+		if typ := p.typechecker.Evaluate(ident); !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -479,7 +479,7 @@ func (p *parser) forStatement() ast.Statement {
 		p.consume(token.BIS)
 		to := p.expression()                            // end of the counter
 		var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
-		if Typ == ddptypes.KOMMAZAHL {
+		if ddptypes.Equal(Typ, ddptypes.KOMMAZAHL) {
 			step = &ast.FloatLit{Value: 1.0}
 		}
 		if p.match(token.MIT) {

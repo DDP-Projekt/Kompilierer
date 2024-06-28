@@ -130,7 +130,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 	var expr ast.Expression
 
-	if typ != ddptypes.WAHRHEITSWERT && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
+	if !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.match(token.COUNT_MAL) {
 			value := p.expression()
@@ -418,7 +418,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	if Typ == nil {
 		valid = false
 	}
-	p.isCurrentFunctionBool = Typ == ddptypes.WAHRHEITSWERT
+	p.isCurrentFunctionBool = ddptypes.Equal(Typ, ddptypes.WAHRHEITSWERT)
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
 

@@ -279,7 +279,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	checkTypeDependency := func(decl ast.Declaration) {
 		// check that typ is defined in the current module
 		checkSingleType := func(typ ddptypes.Type) {
-			typ = ddptypes.GetNestedUnderlying(typ) // for list types
+			typ = ddptypes.GetNestedListUnderlying(typ) // for list types
 
 			if ddptypes.IsPrimitiveOrVoid(typ) {
 				return
