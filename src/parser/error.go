@@ -37,10 +37,10 @@ func parser_panic_wrapper(p *parser) {
 		if p.module != nil {
 			mod_path = p.module.FileName
 		}
-		err, _ := err.(error)
+		wraps, _ := err.(error)
 		panic(&ParserError{
-			Err:        err,
-			Msg:        "unknown parser panic",
+			Err:        wraps,
+			Msg:        getParserErrorMsg(err),
 			ModulePath: mod_path,
 			StackTrace: stack_trace,
 		})
@@ -58,6 +58,24 @@ func (err *ParserError) Error() string {
 	return fmt.Sprintf("ParserError(Mod: %s): %s\nWraps: %v\nStackTrace:\n%s", err.ModulePath, err.Msg, err.Err, string(err.StackTrace))
 }
 
+func (err *ParserError) String() string {
+	return err.Error()
+}
+
 func (err *ParserError) Unwrap() error {
 	return err.Err
+}
+
+// turns an error recovered by calling recover() into a message for a ParserError
+func getParserErrorMsg(err any) string {
+	switch err := err.(type) {
+	case string:
+		return err
+	case error:
+		return err.Error()
+	case fmt.Stringer:
+		return err.String()
+	default:
+		return "unknown parser panic"
+	}
 }

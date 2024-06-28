@@ -337,7 +337,7 @@ func panic_wrapper() {
 		stack_trace := debug.Stack()
 		panic(&CompilerError{
 			Err:        err,
-			Msg:        "unknown compiler panic",
+			Msg:        getCompilerErrorMsg(err),
 			ModulePath: "not found",
 			StackTrace: stack_trace,
 		})
