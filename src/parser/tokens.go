@@ -10,7 +10,7 @@ import (
 
 // if the current tokenType is contained in types, advance
 // returns wether we advanced or not
-func (p *parser) match(types ...token.TokenType) bool {
+func (p *parser) matchAny(types ...token.TokenType) bool {
 	for _, t := range types {
 		if p.check(t) {
 			p.advance()
@@ -22,7 +22,7 @@ func (p *parser) match(types ...token.TokenType) bool {
 
 // if the given sequence of tokens is matched, advance
 // returns wether we advance or not
-func (p *parser) matchN(types ...token.TokenType) bool {
+func (p *parser) matchSeq(types ...token.TokenType) bool {
 	for i, t := range types {
 		if p.peekN(i).Type != t {
 			return false

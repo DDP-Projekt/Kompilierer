@@ -51,7 +51,7 @@ func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
 
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
-	if listType, isList := ddpType.(ddptypes.ListType); isList {
+	if listType, isList := ddptypes.CastList(ddpType); isList {
 		switch listType.Underlying {
 		case ddptypes.ZAHL:
 			return c.ddpintlist
@@ -67,7 +67,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.structTypes[listType.Underlying.String()].listType
 		}
 	} else {
-		switch ddpType {
+		switch ddpType := ddptypes.GetUnderlying(ddpType); ddpType {
 		case ddptypes.ZAHL:
 			return c.ddpinttyp
 		case ddptypes.KOMMAZAHL:

@@ -586,6 +586,11 @@ func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
+	// TODO
+	return ast.VisitRecurse
+}
+
 // should have been filtered by the resolver/typechecker, so err
 func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 	c.err("Es wurde ein invalider Ausdruck gefunden")
@@ -1488,7 +1493,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 	} else {
-		switch e.TargetType {
+		switch ddptypes.GetUnderlying(e.TargetType) {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp:

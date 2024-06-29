@@ -124,6 +124,7 @@ const (
 	COUNT_MAL
 	ALIAS
 	STEHT
+	OEFFENTLICH
 	OEFFENTLICHE
 	OEFFENTLICHEN
 	WIR
@@ -143,6 +144,7 @@ const (
 	EXTERN
 	SICHTBAR
 	SICHTBARE
+	AUCH
 
 	DOT    // .
 	COMMA  // ,
@@ -273,6 +275,7 @@ var tokenStrings = [...]string{
 	COUNT_MAL:     "Mal",
 	ALIAS:         "Alias",
 	STEHT:         "Steht",
+	OEFFENTLICH:   "öffentlich",
 	OEFFENTLICHE:  "öffentliche",
 	OEFFENTLICHEN: "öffentlichen",
 	WIR:           "Wir",
@@ -294,6 +297,7 @@ var tokenStrings = [...]string{
 	EXTERN:        "extern",
 	SICHTBAR:      "sichtbar",
 	SICHTBARE:     "sichtbare",
+	AUCH:          "auch",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -422,6 +426,8 @@ var KeywordMap = map[string]TokenType{
 	"Mal":            COUNT_MAL,
 	"Alias":          ALIAS,
 	"steht":          STEHT,
+	"öffentlich":     OEFFENTLICH,
+	"oeffentlich":    OEFFENTLICH,
 	"öffentliche":    OEFFENTLICHE,
 	"oeffentliche":   OEFFENTLICHE,
 	"öffentlichen":   OEFFENTLICHEN,
@@ -445,6 +451,7 @@ var KeywordMap = map[string]TokenType{
 	"extern":         EXTERN,
 	"sichtbar":       SICHTBAR,
 	"sichtbare":      SICHTBARE,
+	"auch":           AUCH,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

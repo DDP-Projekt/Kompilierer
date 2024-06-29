@@ -15,12 +15,16 @@ func (a *TypeAlias) Gender() GrammaticalGender {
 	return a.GramGender
 }
 
+func (*TypeAlias) ddpType() {}
+
 // a typedef defines a new type that is equal to another
 type TypeDef struct {
 	Name       string
 	Underlying Type
 	GramGender GrammaticalGender
 }
+
+func (*TypeDef) ddpType() {}
 
 func (d *TypeDef) String() string {
 	return d.Name

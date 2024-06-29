@@ -101,9 +101,9 @@ type (
 	// because the type operator might be multiple
 	// tokens long
 	CastExpr struct {
-		Range token.Range
-		TargetType  ddptypes.Type
-		Lhs   Expression
+		Range      token.Range
+		TargetType ddptypes.Type
+		Lhs        Expression
 	}
 
 	// expressions that operate on types (Standardwert, Größe)

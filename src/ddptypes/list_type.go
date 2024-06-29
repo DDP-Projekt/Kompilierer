@@ -4,6 +4,8 @@ type ListType struct {
 	Underlying Type
 }
 
+func (ListType) ddpType() {}
+
 func (ListType) Gender() GrammaticalGender {
 	return FEMININ
 }

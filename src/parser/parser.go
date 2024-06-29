@@ -150,13 +150,16 @@ func (p *parser) checkedDeclaration() ast.Statement {
 
 // entry point for the recursive descent parsing
 func (p *parser) declaration() ast.Statement {
-	if p.match(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
+	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
 		if p.previous().Type == token.WIR {
-			return &ast.DeclStmt{Decl: p.structDeclaration()}
+			if p.matchSeq(token.NENNEN, token.DIE) {
+				return &ast.DeclStmt{Decl: p.structDeclaration()}
+			}
+			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
 		}
 
 		n := -1
-		if p.match(token.OEFFENTLICHE) {
+		if p.matchAny(token.OEFFENTLICHE) {
 			n = -2
 		}
 
@@ -259,6 +262,8 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			aliases = append(aliases, toInterfaceSlice[*ast.FuncAlias, ast.Alias](decl.Aliases)...)
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
+			p.typeNames[decl.Name()] = decl.Type
+		case *ast.TypeAliasDecl:
 			p.typeNames[decl.Name()] = decl.Type
 		default: // for VarDecls or BadDecls we don't need to add any aliases
 			needAddAliases = false

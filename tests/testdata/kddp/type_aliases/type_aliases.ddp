@@ -1,0 +1,16 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen eine Zahl auch eine Hausnummer.
+
+Die Hausnummer h ist 22.
+
+Schreibe h auf eine Zeile.
+Schreibe (h plus 2) auf eine Zeile.
+
+Die Zahl z ist h.
+Schreibe z auf eine Zeile.
+
+Schreibe (h als Zahl) auf eine Zeile.
+Schreibe (z als Hausnummer) auf eine Zeile.
+
+Schreibe (h als Text) auf eine Zeile.

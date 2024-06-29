@@ -4,14 +4,17 @@ package ddptypes
 type GrammaticalGender int
 
 const (
-	INVALID  GrammaticalGender = -1
-	MASKULIN                   = iota
+	INVALID_GENDER GrammaticalGender = -1
+	MASKULIN                         = iota
 	FEMININ
 	NEUTRUM
 )
 
+//go-sumtype:decl Type
+
 // holds information about a DDP-Type
 type Type interface {
+	ddpType() // dummy method to make it a sealed type
 	// the grammatical Gender of the Type
 	Gender() GrammaticalGender
 	// string representation of the type (its name)

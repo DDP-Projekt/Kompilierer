@@ -7,6 +7,10 @@ type ParameterType struct {
 	IsReference bool
 }
 
+func ParamTypesEqual(p1, p2 ParameterType) bool {
+	return p1.IsReference == p2.IsReference && Equal(p1.Type, p2.Type)
+}
+
 func (paramType ParameterType) String() string {
 	if !paramType.IsReference {
 		return paramType.Type.String()

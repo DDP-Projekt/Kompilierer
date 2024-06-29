@@ -19,6 +19,8 @@ type StructType struct {
 	Fields []StructField
 }
 
+func (*StructType) ddpType() {}
+
 func (t *StructType) Gender() GrammaticalGender {
 	return t.GramGender
 }

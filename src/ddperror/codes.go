@@ -37,7 +37,7 @@ const (
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
-	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
+	SEM_NON_GLOBAL_TYPE_DECL                              // a non-global type was declared
 	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
 	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
 	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop

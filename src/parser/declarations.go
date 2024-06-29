@@ -16,14 +16,27 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+func (p *parser) parseDeclComment(beginRange token.Range) *token.Token {
+	comment := p.commentBeforePos(beginRange.Start)
+	// ignore the comment if it is not next to or directly above the declaration
+	if comment != nil && comment.Range.End.Line < beginRange.Start.Line-1 {
+		comment = nil
+	}
+	// prefer to attach the comment to a declaration, rather than to the module
+	if comment == p.module.Comment {
+		p.module.Comment = nil
+	}
+	return comment
+}
+
 // helper for boolean assignments
 func (p *parser) assignRhs() ast.Expression {
 	var expr ast.Expression // the final expression
 
-	if p.match(token.TRUE, token.FALSE) {
+	if p.matchAny(token.TRUE, token.FALSE) {
 		tok := p.previous() // wahr or falsch token
 		// parse possible wahr/falsch wenn syntax
-		if p.matchN(token.COMMA, token.WENN) {
+		if p.matchSeq(token.COMMA, token.WENN) {
 			// if it is false, we add a unary bool-negate into the ast
 			if tok.Type == token.FALSE {
 				rhs := p.expression() // the actual boolean expression after falsch wenn, which is negated
@@ -55,15 +68,7 @@ func (p *parser) assignRhs() ast.Expression {
 // isField indicates that this declaration should be parsed as a struct field
 func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	begin := p.peekN(startDepth) // Der/Die/Das
-	comment := p.commentBeforePos(begin.Range.Start)
-	// ignore the comment if it is not next to or directly above the declaration
-	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
-		comment = nil
-	}
-	// prefer to attach the comment to a declaration, rather than to the module
-	if comment == p.module.Comment {
-		p.module.Comment = nil
-	}
+	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
 
@@ -132,7 +137,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 
 	if !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
-		if p.match(token.COUNT_MAL) {
+		if p.matchAny(token.COUNT_MAL) {
 			value := p.expression()
 			expr_tok := expr.Token()
 			expr = &ast.ListLit{
@@ -179,15 +184,15 @@ func (p *parser) paramNameAllowed(name *token.Token) bool {
 // helper for funcDeclaration
 // parses the parameters of a function declaration
 func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool)) (params []ast.ParameterInfo) {
-	if !p.match(token.MIT) {
+	if !p.matchAny(token.MIT) {
 		return params
 	}
 
 	// parse if there will be one or multiple parameters
 	singleParameter := true
-	if p.matchN(token.DEN, token.PARAMETERN) {
+	if p.matchSeq(token.DEN, token.PARAMETERN) {
 		singleParameter = false
-	} else if !p.matchN(token.DEM, token.PARAMETER) {
+	} else if !p.matchSeq(token.DEM, token.PARAMETER) {
 		perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
 	}
 
@@ -220,11 +225,11 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 			})
 		}
 
-		if p.match(token.UND) {
+		if p.matchAny(token.UND) {
 			validate(p.consume(token.IDENTIFIER))
 			addParamName(p.previous())
 		} else {
-			for p.match(token.COMMA) { // the function takes multiple parameters
+			for p.matchAny(token.COMMA) { // the function takes multiple parameters
 				if !p.consume(token.IDENTIFIER) {
 					break
 				}
@@ -254,10 +259,10 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 			i++
 		}
 
-		if p.match(token.UND) {
+		if p.matchAny(token.UND) {
 			addType()
 		} else {
-			for p.match(token.COMMA) { // parse the other parameter types
+			for p.matchAny(token.COMMA) { // parse the other parameter types
 				if p.check(token.GIBT) { // , gibt indicates the end of the parameter list
 					break
 				}
@@ -293,7 +298,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		rawAliases = append(rawAliases, p.previous())
 	}
 	// append the raw aliases
-	for (p.match(token.COMMA) || p.match(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
+	for (p.matchAny(token.COMMA) || p.matchAny(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
 		if p.consume(token.STRING) {
 			rawAliases = append(rawAliases, p.previous())
 		}
@@ -382,15 +387,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	begin := p.peekN(startDepth) // token.DIE
-	comment := p.commentBeforePos(begin.Range.Start)
-	// ignore the comment if it is not next to or directly above the declaration
-	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
-		comment = nil
-	}
-	// prefer to attach the comment to a declaration, rather than to the module
-	if comment == p.module.Comment {
-		p.module.Comment = nil
-	}
+	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 
@@ -424,14 +421,14 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	isExternVisible := false
 	externVisibleRange := token.Range{} // for the possible error message below
-	if p.matchN(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
+	if p.matchSeq(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
 		isExternVisible = true
 		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
 	}
 
 	bodyStart := -1
 	definedIn := &token.Token{Type: token.ILLEGAL}
-	if p.match(token.MACHT) {
+	if p.matchAny(token.MACHT) {
 		validate(p.consume(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
 		indent := p.previous().Indent + 1             // indentation level of the function body
@@ -696,20 +693,25 @@ func varDeclsToFields(decls []*ast.VarDecl) []ddptypes.StructField {
 	return result
 }
 
-func (p *parser) structDeclaration() ast.Declaration {
-	begin := p.previous() // token.WIR
-	comment := p.commentBeforePos(begin.Range.Start)
-	// ignore the comment if it is not next to or directly above the declaration
-	if comment != nil && comment.Range.End.Line < begin.Range.Start.Line-1 {
-		comment = nil
+func (p *parser) parseGender() ddptypes.GrammaticalGender {
+	p.consumeAny(token.EINEN, token.EINE, token.EIN)
+	switch p.previous().Type {
+	case token.EINEN:
+		return ddptypes.MASKULIN
+	case token.EINE:
+		return ddptypes.FEMININ
+	case token.EIN:
+		return ddptypes.NEUTRUM
+	default:
+		return ddptypes.INVALID_GENDER
 	}
-	// prefer to attach the comment to a declaration, rather than to the module
-	if comment == p.module.Comment {
-		p.module.Comment = nil
-	}
+}
 
-	p.consume(token.NENNEN, token.DIE)
-	isPublic := p.match(token.OEFFENTLICHE)
+func (p *parser) structDeclaration() ast.Declaration {
+	begin := p.peekN(-3) // token.WIR
+	comment := p.parseDeclComment(begin.Range)
+
+	isPublic := p.matchAny(token.OEFFENTLICHE)
 	p.consume(token.KOMBINATION, token.AUS)
 
 	// parse the fields
@@ -718,7 +720,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	for p.peek().Indent >= indent && !p.atEnd() {
 		p.consumeAny(token.DER, token.DEM)
 		n := -1
-		if p.match(token.OEFFENTLICHEN) {
+		if p.matchAny(token.OEFFENTLICHEN) {
 			n = -2
 		}
 		p.advance()
@@ -729,16 +731,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 
 	// deterime the grammatical gender
-	p.consumeAny(token.EINEN, token.EINE, token.EIN)
-	gender := ddptypes.INVALID
-	switch p.previous().Type {
-	case token.EINEN:
-		gender = ddptypes.MASKULIN
-	case token.EINE:
-		gender = ddptypes.FEMININ
-	case token.EIN:
-		gender = ddptypes.NEUTRUM
-	}
+	gender := p.parseGender()
 
 	if !p.consume(token.IDENTIFIER) {
 		return &ast.BadDecl{
@@ -763,7 +756,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	if p.previous().Type == token.STRING {
 		rawAliases = append(rawAliases, p.previous())
 	}
-	for p.match(token.COMMA) || p.match(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
+	for p.matchAny(token.COMMA) || p.matchAny(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
 		if p.consume(token.STRING) {
 			rawAliases = append(rawAliases, p.previous())
 		}
@@ -814,6 +807,45 @@ func (p *parser) structDeclaration() ast.Declaration {
 	for i := range structAliases {
 		structAliases[i].Struct = decl
 		p.aliases.Insert(structAliasTokens[i], structAliases[i])
+	}
+
+	if _, exists := p.typeNames[decl.Name()]; !exists {
+		p.typeNames[decl.Name()] = decl.Type
+	}
+
+	return decl
+}
+
+func (p *parser) typeAliasDecl() ast.Declaration {
+	begin := p.previous() // Wir
+	comment := p.parseDeclComment(begin.Range)
+
+	p.consume(token.NENNEN)
+	p.consumeAny(token.EIN, token.EINE, token.EINEN)
+	underlying := p.parseType()
+
+	p.consume(token.AUCH)
+	isPublic := p.matchAny(token.OEFFENTLICH)
+
+	gender := p.parseGender()
+	p.consume(token.IDENTIFIER)
+	typeName := p.previous()
+
+	p.consume(token.DOT)
+
+	decl := &ast.TypeAliasDecl{
+		Range:      token.NewRange(begin, p.previous()),
+		Tok:        *begin,
+		CommentTok: comment,
+		NameTok:    *typeName,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		Underlying: underlying,
+		Type: &ddptypes.TypeAlias{
+			Name:       typeName.Literal,
+			Underlying: underlying,
+			GramGender: gender,
+		},
 	}
 
 	if _, exists := p.typeNames[decl.Name()]; !exists {

@@ -20,7 +20,7 @@ func tokenEqual(t1, t2 *token.Token) bool {
 
 	switch t1.Type {
 	case token.ALIAS_PARAMETER:
-		return *t1.AliasInfo == *t2.AliasInfo
+		return ddptypes.ParamTypesEqual(*t1.AliasInfo, *t2.AliasInfo)
 	case token.IDENTIFIER, token.SYMBOL, token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal == t2.Literal
 	}

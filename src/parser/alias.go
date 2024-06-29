@@ -48,7 +48,7 @@ func (p *parser) alias() ast.Expression {
 				return tok, true
 			case token.NEGATE:
 				p.advance()
-				if !p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL) {
+				if !p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL) {
 					return nil, false
 				}
 				return tok, true
@@ -135,7 +135,7 @@ func (p *parser) alias() ast.Expression {
 						p.advance() // single-token argument
 					case token.NEGATE:
 						p.advance()
-						p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
+						p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
 					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 						isGrouping = true
 						p.advance()
@@ -194,7 +194,7 @@ func (p *parser) alias() ast.Expression {
 					typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 
 					didMatch := true
-					if typ != paramType.Type {
+					if !ddptypes.Equal(typ, paramType.Type) {
 						didMatch = false
 					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
 					paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference

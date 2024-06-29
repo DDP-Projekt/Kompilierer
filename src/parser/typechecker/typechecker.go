@@ -159,6 +159,10 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse

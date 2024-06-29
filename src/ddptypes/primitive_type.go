@@ -11,6 +11,8 @@ const (
 	TEXT                               // string
 )
 
+func (PrimitiveType) ddpType() {}
+
 func (p PrimitiveType) Gender() GrammaticalGender {
 	switch p {
 	case ZAHL, KOMMAZAHL:

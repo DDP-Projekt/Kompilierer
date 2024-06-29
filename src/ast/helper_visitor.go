@@ -181,6 +181,13 @@ func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	return h.visitChildren(result, sortedByRange(decl.Fields)...)
 }
 
+func (h *helperVisitor) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
+	if vis, ok := h.actualVisitor.(TypeAliasDeclVisitor); ok {
+		return vis.VisitTypeAliasDecl(decl)
+	}
+	return VisitRecurse
+}
+
 // if a BadExpr exists the AST is faulty
 func (h *helperVisitor) VisitBadExpr(expr *BadExpr) VisitResult {
 	if vis, ok := h.actualVisitor.(BadExprVisitor); ok {
