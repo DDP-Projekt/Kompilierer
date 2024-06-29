@@ -1479,7 +1479,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
-	if ddptypes.IsList(e.Type) {
+	if ddptypes.IsList(e.TargetType) {
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
@@ -1488,7 +1488,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 	} else {
-		switch e.Type {
+		switch e.TargetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1560,10 +1560,10 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
 			c.latestIsTemp = true
 		default:
-			c.err("Invalide Typumwandlung zu %s", e.Type)
+			c.err("Invalide Typumwandlung zu %s", e.TargetType)
 		}
 	}
-	c.latestReturnType = c.toIrType(e.Type)
+	c.latestReturnType = c.toIrType(e.TargetType)
 	return ast.VisitRecurse
 }
 

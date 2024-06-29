@@ -187,7 +187,7 @@ func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 }
 
 func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
+	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.TargetType), expr.Lhs)
 	return VisitRecurse
 }
 

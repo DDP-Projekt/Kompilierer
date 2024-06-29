@@ -634,7 +634,7 @@ func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
 				Start: lhs.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
-			Type: Type,
+			TargetType: Type,
 			Lhs:  lhs,
 		}
 	}

@@ -84,3 +84,13 @@ func CastStruct(t Type) (*StructType, bool) {
 	structType, ok := GetUnderlying(t).(*StructType)
 	return structType, ok
 }
+
+func IsTypedef(t Type) bool {
+	_, ok := GetUnderlying(t).(*TypeDef)
+	return ok
+}
+
+func CastTypedef(t Type) (*TypeDef, bool) {
+	typeDef, ok := GetUnderlying(t).(*TypeDef)
+	return typeDef, ok
+}

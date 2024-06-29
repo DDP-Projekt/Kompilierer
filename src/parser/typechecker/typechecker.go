@@ -432,24 +432,17 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.Type)
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	if ddptypes.IsList(expr.Type) {
-		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.Type))
-		switch underlying {
-		case ddptypes.BUCHSTABE:
-			if !isOneOf(lhs, ddptypes.BUCHSTABE, ddptypes.TEXT) {
-				castErr()
-			}
-		case ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.WAHRHEITSWERT, ddptypes.TEXT:
-			if !isOneOf(lhs, underlying) {
-				castErr()
-			}
-		default:
-			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+	// non-list types can be converted to their list-type with a single element
+	if ddptypes.IsList(expr.TargetType) {
+		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.TargetType))
+		if !isOneOf(lhs, underlying) {
+			castErr()
 		}
-	} else if primitiveType, isPrimitive := ddptypes.CastPrimitive(expr.Type); isPrimitive {
+	} else if primitiveType, isPrimitive := ddptypes.CastPrimitive(expr.TargetType); isPrimitive {
+		// special rules for primitive conversions
 		switch primitiveType {
 		case ddptypes.ZAHL:
 			if !ddptypes.IsPrimitive(lhs) {
@@ -472,14 +465,22 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 				castErr()
 			}
 		default:
-			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+			castErr()
 		}
-	} else if structType, isStruct := ddptypes.CastStruct(expr.Type); isStruct {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, structType)
+	} else if typeDef, isTypedef := ddptypes.CastTypedef(expr.TargetType); isTypedef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(lhs, typeDef.TrueUnderlying()) {
+			castErr()
+		}
+	} else if typeDef, isTypedef := ddptypes.CastTypedef(lhs); isTypedef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(expr.TargetType, typeDef.TrueUnderlying()) {
+			castErr()
+		}
 	} else {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+		castErr()
 	}
-	t.latestReturnedType = expr.Type
+	t.latestReturnedType = expr.TargetType
 	return ast.VisitRecurse
 }
 

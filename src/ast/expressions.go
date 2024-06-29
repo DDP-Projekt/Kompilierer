@@ -102,7 +102,7 @@ type (
 	// tokens long
 	CastExpr struct {
 		Range token.Range
-		Type  ddptypes.Type
+		TargetType  ddptypes.Type
 		Lhs   Expression
 	}
 
