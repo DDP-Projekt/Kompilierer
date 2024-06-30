@@ -1778,6 +1778,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			irFunc.Visibility = enum.VisibilityDefault
 
 			c.insertFunction(decl.Name(), decl, irFunc)
+		case *ast.TypeAliasDecl:
 		case *ast.StructDecl:
 			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
 		case *ast.BadDecl:

@@ -170,7 +170,7 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
-	if !ok || !isVar {
+	if !ok || !isVar || decl == nil {
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
 		t.latestReturnedType = decl.(*ast.VarDecl).Type

@@ -824,8 +824,8 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlying := p.parseType()
 
-	p.consume(token.AUCH)
 	isPublic := p.matchAny(token.OEFFENTLICH)
+	p.consume(token.AUCH)
 
 	gender := p.parseGender()
 	p.consume(token.IDENTIFIER)

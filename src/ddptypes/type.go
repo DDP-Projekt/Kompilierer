@@ -14,7 +14,8 @@ const (
 
 // holds information about a DDP-Type
 type Type interface {
-	ddpType() // dummy method to make it a sealed type
+	// dummy method to make it a sealed type
+	ddpType()
 	// the grammatical Gender of the Type
 	Gender() GrammaticalGender
 	// string representation of the type (its name)
