@@ -20,22 +20,36 @@ import (
 
 // holds state when parsing a .ddp file into an AST
 type parser struct {
-	tokens       []token.Token    // the tokens to parse (without comments)
-	comments     []token.Token    // all the comments from the original tokens slice
-	cur          int              // index of the current token
-	errorHandler ddperror.Handler // a function to which errors are passed
-	lastError    ddperror.Error   // latest reported error
+	// the tokens to parse (without comments)
+	tokens []token.Token
+	// all the comments from the original tokens slice
+	comments []token.Token
+	// index of the current token
+	cur int
+	// a function to which errors are passed
+	errorHandler ddperror.Handler
+	// latest reported error
+	lastError ddperror.Error
 
-	module                *ast.Module
-	predefinedModules     map[string]*ast.Module            // modules that were passed as environment, might not all be used
-	aliases               *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames             map[string]ddptypes.Type          // map of struct names to struct types
-	currentFunction       string                            // function which is currently being parsed
-	isCurrentFunctionBool bool                              // wether the current function returns a boolean
-	panicMode             bool                              // flag to not report following errors
-	errored               bool                              // wether the parser found an error
-	resolver              *resolver.Resolver                // used to resolve every node directly after it has been parsed
-	typechecker           *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	module *ast.Module
+	// modules that were passed as environment, might not all be used
+	predefinedModules map[string]*ast.Module
+	// all found aliases (+ inbuild aliases)
+	aliases *at.Trie[*token.Token, ast.Alias]
+	// map of struct names to struct types
+	typeNames map[string]ddptypes.Type
+	// function which is currently being parsed
+	currentFunction string
+	// wether the current function returns a boolean
+	isCurrentFunctionBool bool
+	// flag to not report following errors
+	panicMode bool
+	// wether the parser found an error
+	errored bool
+	// used to resolve every node directly after it has been parsed
+	resolver *resolver.Resolver
+	// used to typecheck every node directly after it has been parsed
+	typechecker *typechecker.Typechecker
 }
 
 // returns a new parser, ready to parse the provided tokens
