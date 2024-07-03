@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"reflect"
+	"cmp"
 	"testing"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -20,62 +20,71 @@ func testHandler(t *testing.T) ddperror.Handler {
 	}
 }
 
-func createParser(t *testing.T, tokens []token.Token) *parser {
-	return &parser{
-		tokens:       tokens,
-		comments:     []token.Token{},
-		errorHandler: testHandler(t),
-		module: &ast.Module{
-			FileName: t.Name(),
-		},
-		typeNames: make(map[string]ddptypes.Type),
+func NotNilMap[K comparable, V any](m map[K]V) map[K]V {
+	if m != nil {
+		return m
 	}
+	return make(map[K]V)
 }
 
-func createParser2(test *testing.T, overrider parser) *parser {
-	errHndl := testHandler(test)
+func NotNilSlice[T any](s []T) []T {
+	if s != nil {
+		return s
+	}
+	return make([]T, 0)
+}
+
+// returns a parser filled with good default values
+// overridden by the ones passed in
+func createParser(test *testing.T, overrider parser) *parser {
+	// prevent nil-pointer exceptions
+	overrider.module = cmp.Or(overrider.module, &ast.Module{})
+	overrider.module.Ast = cmp.Or(overrider.module.Ast, &ast.Ast{})
+	overrider.module.Ast.Symbols = cmp.Or(overrider.module.Ast.Symbols, &ast.SymbolTable{})
+
 	symbols := &ast.SymbolTable{
-		Declarations: make(map[string]ast.Declaration),
+		Enclosing:    overrider.module.Ast.Symbols.Enclosing,
+		Declarations: NotNilMap(overrider.module.Ast.Symbols.Declarations),
 	}
 	module := &ast.Module{
-		FileName: test.Name(),
+		FileName:             cmp.Or(overrider.module.FileName, test.Name()),
+		FileNameToken:        overrider.module.FileNameToken,
+		Imports:              NotNilSlice(overrider.module.Imports),
+		Comment:              overrider.module.Comment,
+		ExternalDependencies: NotNilMap(overrider.module.ExternalDependencies),
 		Ast: &ast.Ast{
-			Statements: make([]ast.Statement, 0),
-			Symbols:    symbols,
+			Statements: NotNilSlice(overrider.module.Ast.Statements),
+			Comments:   NotNilSlice(overrider.module.Ast.Comments),
+			Symbols:    cmp.Or(overrider.module.Ast.Symbols, symbols),
+			Faulty:     overrider.module.Ast.Faulty,
 		},
-		PublicDecls: make(map[string]ast.Declaration),
+		PublicDecls: NotNilMap(overrider.module.PublicDecls),
+	}
+
+	errorHandler := overrider.errorHandler
+	if errorHandler == nil {
+		errorHandler = testHandler(test)
 	}
 
 	parser := parser{
-		tokens:       []token.Token{{Type: token.EOF}},
-		comments:     []token.Token{},
-		cur:          0,
-		errorHandler: errHndl,
-		lastError:    ddperror.Error{},
-		module:       module,
-		aliases:      at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:    make(map[string]ddptypes.Type),
+		tokens:                NotNilSlice(overrider.tokens),
+		comments:              NotNilSlice(overrider.comments),
+		cur:                   overrider.cur,
+		errorHandler:          errorHandler,
+		lastError:             overrider.lastError,
+		module:                cmp.Or(overrider.module, module),
+		predefinedModules:     NotNilMap(overrider.predefinedModules),
+		aliases:               cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
+		typeNames:             NotNilMap(overrider.typeNames),
+		currentFunction:       overrider.currentFunction,
+		isCurrentFunctionBool: overrider.isCurrentFunctionBool,
+		panicMode:             overrider.panicMode,
+		errored:               overrider.errored,
+		resolver:              overrider.resolver,
+		typechecker:           overrider.typechecker,
 	}
-	parser.resolver, _ = resolver.New(module, errHndl, module.FileName, &parser.panicMode)
-	parser.typechecker, _ = typechecker.New(module, errHndl, module.FileName, &parser.panicMode)
-
-	overrider_value := reflect.ValueOf(&overrider)
-	overrider_type := overrider_value.Type()
-
-	parser_value := reflect.ValueOf(&parser)
-
-	fields := reflect.VisibleFields(overrider_type)
-	for _, field := range fields {
-		value := overrider_value.FieldByName(field.Name)
-		if value.IsZero() {
-			continue
-		}
-		switch value.Kind() {
-		case reflect.Struct:
-		default:
-			parser_value.Elem().FieldByName(field.Name).Set(value)
-		}
-	}
+	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
+	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
 
 	return &parser
 }
@@ -112,11 +121,13 @@ func createTokens(args ...any) (result []token.Token) {
 func TestTypeAliasDecl(t *testing.T) {
 	assert := assert.New(t)
 	given := createParser(t,
-		createTokens(
-			token.WIR, token.NENNEN, token.EINE, token.ZAHL, token.AUCH, token.EINE,
-			token.IDENTIFIER, "Nummer",
-			token.DOT,
-		),
+		parser{
+			tokens: createTokens(
+				token.WIR, token.NENNEN, token.EINE, token.ZAHL, token.AUCH, token.EINE,
+				token.IDENTIFIER, "Nummer",
+				token.DOT,
+			),
+		},
 	)
 	given.cur = 1 // skip WIR
 

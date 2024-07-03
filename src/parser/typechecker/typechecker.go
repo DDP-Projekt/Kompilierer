@@ -23,12 +23,12 @@ type Typechecker struct {
 	panicMode          *bool            // panic mode synchronized with the parser and resolver
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Typechecker, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	if panicMode == nil {
-		return nil, fmt.Errorf("panicMode must not be nil")
+		panic(fmt.Errorf("panicMode must not be nil"))
 	}
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
@@ -36,7 +36,7 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
 		panicMode:          panicMode,
-	}, nil
+	}
 }
 
 // typecheck a single node

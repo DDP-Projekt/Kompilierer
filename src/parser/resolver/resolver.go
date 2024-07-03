@@ -32,19 +32,19 @@ type Resolver struct {
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Resolver, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	if panicMode == nil {
-		return nil, fmt.Errorf("panicMode must not be nil")
+		panic(fmt.Errorf("panicMode must not be nil"))
 	}
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: Mod.Ast.Symbols,
 		Module:       Mod,
 		panicMode:    panicMode,
-	}, nil
+	}
 }
 
 // resolve a single node
