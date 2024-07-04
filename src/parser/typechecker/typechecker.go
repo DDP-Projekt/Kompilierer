@@ -475,12 +475,12 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		default:
 			castErr()
 		}
-	} else if typeDef, isTypedef := ddptypes.CastTypedef(expr.TargetType); isTypedef {
+	} else if typeDef, isTypedef := ddptypes.CastTypeDef(expr.TargetType); isTypedef {
 		// typedefs can only be converted to/from their underlying type
 		if !ddptypes.Equal(lhs, typeDef.TrueUnderlying()) {
 			castErr()
 		}
-	} else if typeDef, isTypedef := ddptypes.CastTypedef(lhs); isTypedef {
+	} else if typeDef, isTypedef := ddptypes.CastTypeDef(lhs); isTypedef {
 		// typedefs can only be converted to/from their underlying type
 		if !ddptypes.Equal(expr.TargetType, typeDef.TrueUnderlying()) {
 			castErr()
@@ -813,16 +813,11 @@ func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
 	typ = ddptypes.GetNestedListUnderlying(typ)
 
 	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
-	if structTyp, isStruct := ddptypes.CastStruct(typ); isStruct {
+	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
 		// get the corresponding decl from the current scope
 		// because it contains imported types as well
-		decl, _, _ := table.LookupDecl(structTyp.Name)
-		if structDecl, isStruct := decl.(*ast.StructDecl); isStruct {
-			// if the decl is from the current module check if it is public
-			// if it is from another module, it has to be public
-			return structDecl.IsPublic
-		}
-		return false // the corresponding name was not a struct decl
+		decl, _, _ := table.LookupDecl(typ.String())
+		return decl.Public()
 	}
 
 	return true // non-struct types are predeclared and always "public"

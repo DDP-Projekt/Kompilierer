@@ -89,12 +89,22 @@ func CastStruct(t Type) (*StructType, bool) {
 	return structType, ok
 }
 
-func IsTypedef(t Type) bool {
+func IsTypeAlias(t Type) bool {
+	_, ok := GetUnderlying(t).(*TypeAlias)
+	return ok
+}
+
+func CastTypeAlias(t Type) (*TypeAlias, bool) {
+	typeDef, ok := GetUnderlying(t).(*TypeAlias)
+	return typeDef, ok
+}
+
+func IsTypeDef(t Type) bool {
 	_, ok := GetUnderlying(t).(*TypeDef)
 	return ok
 }
 
-func CastTypedef(t Type) (*TypeDef, bool) {
+func CastTypeDef(t Type) (*TypeDef, bool) {
 	typeDef, ok := GetUnderlying(t).(*TypeDef)
 	return typeDef, ok
 }

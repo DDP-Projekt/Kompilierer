@@ -142,3 +142,31 @@ func TestTypeAliasDecl(t *testing.T) {
 	assert.Equal(decl.Underlying, ddptypes.ZAHL)
 	assert.Equal(decl.Type, &ddptypes.TypeAlias{Name: "Nummer", Underlying: ddptypes.ZAHL, GramGender: ddptypes.FEMININ})
 }
+
+func TestTypeAliasDeclError(t *testing.T) {
+	assert := assert.New(t)
+	panicMode := false
+	structType := &ddptypes.StructType{
+		Name: "Struktur",
+	}
+	given := typechecker.New(&ast.Module{
+		Ast: &ast.Ast{
+			Symbols: &ast.SymbolTable{
+				Declarations: map[string]ast.Declaration{
+					"Struktur": &ast.StructDecl{
+						IsPublic: false,
+						Type:     structType,
+					},
+				},
+			},
+		},
+	}, func(err ddperror.Error) {
+		assert.Equal(ddperror.SEM_BAD_PUBLIC_MODIFIER, err.Code)
+	}, t.Name(), &panicMode)
+
+	given.TypecheckNode(&ast.TypeAliasDecl{
+		IsPublic:   true,
+		Underlying: structType,
+	})
+	assert.True(panicMode)
+}
