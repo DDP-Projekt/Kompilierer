@@ -1779,6 +1779,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			c.insertFunction(decl.Name(), decl, irFunc)
 		case *ast.TypeAliasDecl:
+			// do nothing
 		case *ast.StructDecl:
 			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
 		case *ast.BadDecl:

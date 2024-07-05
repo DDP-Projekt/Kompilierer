@@ -290,7 +290,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	var errRange token.Range
+	// var errRange token.Range
 	checkTypeDependency := func(decl ast.Declaration) {
 		// check that typ is defined in the current module
 		checkSingleType := func(typ ddptypes.Type) {
@@ -300,9 +300,9 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 				return
 			}
 
-			if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
-				r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
-			}
+			// if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
+			// 	r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
+			// }
 		}
 
 		switch decl := decl.(type) {

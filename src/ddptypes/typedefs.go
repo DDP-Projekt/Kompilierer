@@ -35,10 +35,14 @@ func (d *TypeDef) Gender() GrammaticalGender {
 }
 
 // returns the underlying type for nested TypeAliases and TypeDefs
-func (d *TypeDef) TrueUnderlying() Type {
-	t := GetUnderlying(d.Underlying)
+func TrueUnderlying(t Type) Type {
 	if typedef, ok := t.(*TypeDef); ok {
-		return typedef.TrueUnderlying()
+		t = typedef.Underlying
+	}
+
+	t = GetUnderlying(t)
+	if typedef, ok := t.(*TypeDef); ok {
+		return TrueUnderlying(typedef.Underlying)
 	}
 	return t
 }

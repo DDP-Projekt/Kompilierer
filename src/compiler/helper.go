@@ -142,9 +142,9 @@ var (
 
 // NOTE: think about making this demanglable
 func (c *compiler) mangledName(decl ast.Declaration) string {
-	// if mangledName, ok := mangledNamesCache.Load(decl); ok {
-	// 	return mangledName.(string)
-	// }
+	if mangledName, ok := mangledNamesCache.Load(decl); ok {
+		return mangledName.(string)
+	}
 
 	hasher.Reset()
 	switch decl := decl.(type) {
@@ -163,7 +163,7 @@ func (c *compiler) mangledName(decl ast.Declaration) string {
 
 	hasher.Write([]byte(getHashableModuleName(decl.Module())))
 	mangledName := decl.Name() + "_mod_" + hex.EncodeToString(hasher.Sum(nil))
-	// mangledNamesCache.Store(decl, mangledName)
+	mangledNamesCache.Store(decl, mangledName)
 	return mangledName
 }
 

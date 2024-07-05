@@ -477,12 +477,12 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		}
 	} else if typeDef, isTypedef := ddptypes.CastTypeDef(expr.TargetType); isTypedef {
 		// typedefs can only be converted to/from their underlying type
-		if !ddptypes.Equal(lhs, typeDef.TrueUnderlying()) {
+		if !ddptypes.Equal(lhs, ddptypes.TrueUnderlying(typeDef)) {
 			castErr()
 		}
 	} else if typeDef, isTypedef := ddptypes.CastTypeDef(lhs); isTypedef {
 		// typedefs can only be converted to/from their underlying type
-		if !ddptypes.Equal(expr.TargetType, typeDef.TrueUnderlying()) {
+		if !ddptypes.Equal(expr.TargetType, ddptypes.TrueUnderlying(typeDef)) {
 			castErr()
 		}
 	} else {
