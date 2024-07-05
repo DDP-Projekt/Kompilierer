@@ -75,7 +75,6 @@ func createParser(test *testing.T, overrider parser) *parser {
 		module:                cmp.Or(overrider.module, module),
 		predefinedModules:     NotNilMap(overrider.predefinedModules),
 		aliases:               cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
-		typeNames:             NotNilMap(overrider.typeNames),
 		currentFunction:       overrider.currentFunction,
 		isCurrentFunctionBool: overrider.isCurrentFunctionBool,
 		panicMode:             overrider.panicMode,

@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+
 // stores symbols for one scope of an ast
 type SymbolTable struct {
 	Enclosing    *SymbolTable           // enclosing scope (nil in the global scope)
@@ -40,4 +42,23 @@ func (scope *SymbolTable) InsertDecl(name string, decl Declaration) bool {
 	}
 	scope.Declarations[name] = decl
 	return false
+}
+
+// returns the given type if present, else nil
+//
+//	Type, ok := table.LookupType(name)
+func (scope *SymbolTable) LookupType(name string) (ddptypes.Type, bool) {
+	if decl, ok := scope.Declarations[name]; !ok {
+		if scope.Enclosing != nil {
+			return scope.Enclosing.LookupType(name)
+		}
+		return nil, false
+	} else {
+		if structDecl, ok := decl.(*StructDecl); ok {
+			return structDecl.Type, true
+		} else if typeAliasDecl, ok := decl.(*TypeAliasDecl); ok {
+			return typeAliasDecl.Type, ok
+		}
+		return nil, false
+	}
 }

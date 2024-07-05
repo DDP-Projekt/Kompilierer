@@ -62,7 +62,7 @@ func (p *parser) parseType() ddptypes.Type {
 		p.consume(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
-		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			if p.matchAny(token.LISTE) {
 				return ddptypes.ListType{Underlying: Type}
 			}
@@ -95,7 +95,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 	case token.BUCHSTABEN:
 		result = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.IDENTIFIER:
-		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			result = ddptypes.ListType{Underlying: Type}
 		} else {
 			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
@@ -161,7 +161,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		p.consume(token.REFERENZ)
 		return ddptypes.BUCHSTABE, true
 	case token.IDENTIFIER:
-		if Type, exists := p.typeNames[p.previous().Literal]; exists {
+		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			if p.matchAny(token.LISTE) {
 				return ddptypes.ListType{Underlying: Type}, false
 			} else if p.matchAny(token.LISTEN) {

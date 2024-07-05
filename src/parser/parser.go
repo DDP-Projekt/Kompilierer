@@ -11,7 +11,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/resolver"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
@@ -36,8 +35,6 @@ type parser struct {
 	predefinedModules map[string]*ast.Module
 	// all found aliases (+ inbuild aliases)
 	aliases *at.Trie[*token.Token, ast.Alias]
-	// map of struct names to struct types
-	typeNames map[string]ddptypes.Type
 	// function which is currently being parsed
 	currentFunction string
 	// wether the current function returns a boolean
@@ -108,7 +105,6 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		},
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:             make(map[string]ddptypes.Type, 8),
 		currentFunction:       "",
 		isCurrentFunctionBool: false,
 		panicMode:             false,
@@ -271,9 +267,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			aliases = append(aliases, toInterfaceSlice[*ast.FuncAlias, ast.Alias](decl.Aliases)...)
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
-			p.typeNames[decl.Name()] = decl.Type
 		case *ast.TypeAliasDecl:
-			p.typeNames[decl.Name()] = decl.Type
 		default: // for VarDecls or BadDecls we don't need to add any aliases
 			needAddAliases = false
 		}

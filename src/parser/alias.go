@@ -166,7 +166,6 @@ func (p *parser) alias() ast.Expression {
 							FileName: p.module.FileName,
 						},
 						aliases:     p.aliases,
-						typeNames:   p.typeNames,
 						resolver:    p.resolver,
 						typechecker: p.typechecker,
 					}

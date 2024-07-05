@@ -747,7 +747,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	}
 	name := p.previous()
 
-	if _, exists := p.typeNames[name.Literal]; exists {
+	if _, exists := p.scope().LookupType(name.Literal); exists {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
 	}
 
@@ -809,10 +809,6 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.aliases.Insert(structAliasTokens[i], structAliases[i])
 	}
 
-	if _, exists := p.typeNames[decl.Name()]; !exists {
-		p.typeNames[decl.Name()] = decl.Type
-	}
-
 	return decl
 }
 
@@ -846,10 +842,6 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 			Underlying: underlying,
 			GramGender: gender,
 		},
-	}
-
-	if _, exists := p.typeNames[decl.Name()]; !exists {
-		p.typeNames[decl.Name()] = decl.Type
 	}
 
 	return decl
