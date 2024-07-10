@@ -203,6 +203,13 @@ func (h *helperVisitor) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (h *helperVisitor) VisitTypeDefDecl(decl *TypeDefDecl) VisitResult {
+	if vis, ok := h.actualVisitor.(TypeDefDeclVisitor); ok {
+		return vis.VisitTypeDefDecl(decl)
+	}
+	return VisitRecurse
+}
+
 // if a BadExpr exists the AST is faulty
 func (h *helperVisitor) VisitBadExpr(expr *BadExpr) VisitResult {
 	if vis, ok := h.actualVisitor.(BadExprVisitor); ok {

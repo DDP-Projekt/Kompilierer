@@ -1,0 +1,18 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir definieren eine Hausnummer als eine Zahl.
+
+Die Hausnummer h ist 22 als Hausnummer.
+
+Die Funktion Schreibe_Hausnummer_Zeile mit dem Parameter h vom Typ Hausnummer, gibt nichts zurück, macht:
+	Schreibe (h als Zahl) auf eine Zeile.
+Und kann so benutzt werden:
+	"Schreibe <h> auf eine Zeile"
+
+Schreibe h auf eine Zeile.
+Schreibe (h als Zahl plus 2) auf eine Zeile.
+
+Die Zahl z ist h als Zahl.
+Schreibe z auf eine Zeile.
+
+Schreibe (h als Zahl als Text) auf eine Zeile.

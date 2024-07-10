@@ -586,7 +586,10 @@ func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
-	// TODO
+	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
@@ -1565,7 +1568,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
 			c.latestIsTemp = true
 		default:
-			c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
+			// this is now valid because of typedefs/typealiases
+			// c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
 		}
 	}
 	c.latestReturnType = c.toIrType(targetType)
@@ -1793,6 +1797,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			c.insertFunction(decl.Name(), decl, irFunc)
 		case *ast.TypeAliasDecl:
+			declareIfStruct(decl.Type)
+		case *ast.TypeDefDecl:
 			declareIfStruct(decl.Type)
 		case *ast.StructDecl:
 			c.defineOrDeclareStructType(decl.Type)

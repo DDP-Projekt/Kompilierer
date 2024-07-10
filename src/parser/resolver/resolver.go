@@ -146,7 +146,22 @@ func (r *Resolver) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 	}
 
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type aliases may only be declared once in the same module
+	}
+	// insert the type decl into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
+	return ast.VisitRecurse
+}
+
+func (r *Resolver) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	if !ast.IsGlobalScope(r.CurrentTable) {
+		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+	}
+
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type defs may only be declared once in the same module
 	}
 	// insert the type decl into the public module decls
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
@@ -318,6 +333,8 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 				checkSingleType(field.Type)
 			}
 		case *ast.TypeAliasDecl:
+			checkSingleType(decl.Underlying)
+		case *ast.TypeDefDecl:
 			checkSingleType(decl.Underlying)
 		case *ast.BadDecl:
 			// error already reported while parsing the imported module

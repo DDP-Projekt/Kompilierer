@@ -847,6 +847,40 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	return decl
 }
 
+func (p *parser) typeDefDecl() ast.Declaration {
+	begin := p.peekN(-2) // Wir
+	comment := p.parseDeclComment(begin.Range)
+
+	gender := p.parseGender()
+	p.consume(token.IDENTIFIER)
+	typeName := p.previous()
+
+	isPublic := p.matchAny(token.OEFFENTLICH)
+	p.consume(token.ALS)
+
+	p.consumeAny(token.EIN, token.EINE, token.EINEN)
+	underlying := p.parseType()
+
+	p.consume(token.DOT)
+
+	decl := &ast.TypeDefDecl{
+		Range:      token.NewRange(begin, p.previous()),
+		Tok:        *begin,
+		CommentTok: comment,
+		NameTok:    *typeName,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		Underlying: underlying,
+		Type: &ddptypes.TypeDef{
+			Name:       typeName.Literal,
+			Underlying: underlying,
+			GramGender: gender,
+		},
+	}
+
+	return decl
+}
+
 // TODO: add support for struct aliases
 func (p *parser) aliasDecl() ast.Statement {
 	begin := p.peekN(-2)

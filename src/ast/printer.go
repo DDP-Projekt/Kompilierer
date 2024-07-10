@@ -118,6 +118,11 @@ func (pr *printer) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitTypeDefDecl(decl *TypeDefDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeDefDecl[%s: Public(%v)] = %s", decl.Name(), decl.IsPublic, decl.Underlying))
+	return VisitRecurse
+}
+
 func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", &expr.Tok))
 	return VisitRecurse

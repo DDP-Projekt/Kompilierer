@@ -159,6 +159,8 @@ func (p *parser) declaration() ast.Statement {
 		if p.previous().Type == token.WIR {
 			if p.matchSeq(token.NENNEN, token.DIE) {
 				return &ast.DeclStmt{Decl: p.structDeclaration()}
+			} else if p.matchAny(token.DEFINIEREN) {
+				return &ast.DeclStmt{Decl: p.typeDefDecl()}
 			}
 			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
 		}

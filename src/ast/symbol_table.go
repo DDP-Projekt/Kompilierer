@@ -1,6 +1,8 @@
 package ast
 
-import "github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+import (
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+)
 
 // stores symbols for one scope of an ast
 type SymbolTable struct {
@@ -54,11 +56,15 @@ func (scope *SymbolTable) LookupType(name string) (ddptypes.Type, bool) {
 		}
 		return nil, false
 	} else {
-		if structDecl, ok := decl.(*StructDecl); ok {
-			return structDecl.Type, true
-		} else if typeAliasDecl, ok := decl.(*TypeAliasDecl); ok {
-			return typeAliasDecl.Type, ok
+		switch decl := decl.(type) {
+		case *StructDecl:
+			return decl.Type, true
+		case *TypeAliasDecl:
+			return decl.Type, true
+		case *TypeDefDecl:
+			return decl.Type, true
+		default:
+			return nil, false
 		}
-		return nil, false
 	}
 }

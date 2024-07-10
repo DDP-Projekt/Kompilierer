@@ -129,6 +129,7 @@ const (
 	OEFFENTLICHEN
 	WIR
 	NENNEN
+	DEFINIEREN
 	KOMBINATION
 	STANDARDWERT
 	ERSTELLEN
@@ -280,6 +281,7 @@ var tokenStrings = [...]string{
 	OEFFENTLICHEN: "öffentlichen",
 	WIR:           "Wir",
 	NENNEN:        "nennen",
+	DEFINIEREN:    "definieren",
 	KOMBINATION:   "Kombination",
 	STANDARDWERT:  "Standardwert",
 	ERSTELLEN:     "erstellen",
@@ -434,6 +436,7 @@ var KeywordMap = map[string]TokenType{
 	"oeffentlichen":  OEFFENTLICHEN,
 	"Wir":            WIR,
 	"nennen":         NENNEN,
+	"definieren":     DEFINIEREN,
 	"Kombination":    KOMBINATION,
 	"Standardwert":   STANDARDWERT,
 	"erstellen":      ERSTELLEN,

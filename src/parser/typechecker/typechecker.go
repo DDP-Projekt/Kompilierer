@@ -167,6 +167,14 @@ func (t *Typechecker) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResul
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	if decl.IsPublic && !IsPublicType(decl.Underlying, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der unterliegende Typ eines öffentlichen Typ-Aliases muss ebenfalls öffentlich sein")
+	}
+
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
@@ -443,8 +451,11 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	// non-list types can be converted to their list-type with a single element
-	if ddptypes.IsList(expr.TargetType) {
+	if lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs); isLhsTypeDef {
+		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) {
+			castErr()
+		}
+	} else if ddptypes.IsList(expr.TargetType) { // non-list types can be converted to their list-type with a single element
 		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.TargetType))
 		if !isOneOf(lhs, underlying) {
 			castErr()
