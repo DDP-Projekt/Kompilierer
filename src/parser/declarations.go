@@ -255,8 +255,11 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 			// validate the parameter type and append it
 			typ, ref := p.parseReferenceType()
 			validate(typ != nil)
-			params[i].Type = ddptypes.ParameterType{Type: typ, IsReference: ref}
-			i++
+			if i < len(params) {
+				params[i].Type = ddptypes.ParameterType{Type: typ, IsReference: ref}
+				i++
+
+			}
 		}
 
 		if p.matchAny(token.UND) {

@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Changed] Die Typen, die von Funktionen, Variablen und anderen Typen benutzt werden müssen jetzt nicht mehr extra eingebunden werden
+- [Added] Typ-Aliase und Typ-Definitionen
 - [Added] Aliasnegationen
 - [Added] `entweder ..., oder` Operator
 - [Changed] "ist" nach Vergleichen ist jetzt Optional, falls davor bereits ein "ist" steht
