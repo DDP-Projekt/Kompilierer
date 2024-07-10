@@ -33,9 +33,10 @@ func (listType ListType) String() string {
 }
 
 // gets the underlying type of a List
+// if typ is not a list it is returned unchanged
 func GetListUnderlying(typ Type) Type {
-	if listTyp, isList := GetUnderlying(typ).(ListType); isList {
-		return listTyp.Underlying
+	if listType, isList := CastList(typ); isList {
+		return listType.Underlying
 	}
 	return typ
 }
@@ -44,7 +45,15 @@ func GetListUnderlying(typ Type) Type {
 // if typ is not a list type typ is returned
 func GetNestedListUnderlying(typ Type) Type {
 	for IsList(typ) {
-		typ = GetListUnderlying(typ)
+		typ = GetNestedListUnderlying(GetUnderlying(typ).(ListType).Underlying)
+	}
+	return typ
+}
+
+func getTrueListUnderlying(typ Type) Type {
+	typ = TrueUnderlying(typ)
+	if IsList(typ) {
+		typ = ListType{Underlying: getTrueListUnderlying(typ.(ListType).Underlying)}
 	}
 	return typ
 }

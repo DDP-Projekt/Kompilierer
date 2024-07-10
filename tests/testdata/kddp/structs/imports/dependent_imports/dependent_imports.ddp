@@ -1,4 +1,6 @@
 Binde "Duden/Ausgabe" ein.
 Binde Vektor3 und vek aus "decls" ein.
+Binde "decls2" ein.
 
-Schreibe (x von vek von vek von vek).
+Schreibe (x von vek von vek von vek) auf eine Zeile.
+Schreibe (z von eine neue Struktur) auf eine Zeile.

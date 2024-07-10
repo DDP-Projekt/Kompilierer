@@ -58,14 +58,30 @@ func (t *ddpIrStructType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
-func (c *compiler) defineStructType(name string, fields []ddptypes.StructField, declarationOnly bool) *ddpIrStructType {
+// recursively defines (or declares, if not from this module) a struct type and all it's field types
+func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStructType {
+	// if the struct type is already defined, don't define/declare it again
+	if structType, exists := c.structTypes[typ]; exists {
+		return structType
+	}
+
+	name := c.mangledNameType(typ)
+	// if the type comes from outside the current module
+	// we only declare it's functions as they are defined in it's own module
+	declarationOnly := c.typeMap[typ] != c.ddpModule
+
 	structType := &ddpIrStructType{}
 	structType.name = name
-	structType.fieldIrTypes = mapSlice(fields, func(field ddptypes.StructField) ddpIrType {
+	// recursively declare all types this type depends on
+	structType.fieldIrTypes = mapSlice(typ.Fields, func(field ddptypes.StructField) ddpIrType {
+		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.TrueUnderlying(field.Type)); isStruct {
+			return c.defineOrDeclareStructType(fieldStructType)
+		}
+
 		return c.toIrType(field.Type)
 	})
-	structType.fieldDDPTypes = fields
-	structType.typ = c.mod.NewTypeDef(name, types.NewStruct(
+	structType.fieldDDPTypes = typ.Fields
+	structType.typ = c.mod.NewTypeDef(structType.name, types.NewStruct(
 		mapSlice(structType.fieldIrTypes, func(t ddpIrType) types.Type { return t.IrType() })...,
 	)).(*types.StructType)
 	structType.ptr = ptr(structType.typ)
@@ -75,6 +91,8 @@ func (c *compiler) defineStructType(name string, fields []ddptypes.StructField, 
 	structType.equalsIrFun = c.createStructEquals(structType, declarationOnly)
 
 	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
+
+	c.structTypes[typ] = structType
 	return structType
 }
 

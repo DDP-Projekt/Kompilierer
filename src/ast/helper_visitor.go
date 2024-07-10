@@ -13,6 +13,7 @@ type helperVisitor struct {
 }
 
 // visits the AST of the given module
+// does nothing if module == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -26,6 +27,10 @@ type helperVisitor struct {
 // if the given Visitor implements the ModuleSetter interface,
 // the SetModule method is called before visiting the module
 func VisitModule(module *Module, visitor Visitor) {
+	if module == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
@@ -49,6 +54,7 @@ func visitSingleModule(module *Module, v *helperVisitor) {
 }
 
 // visits the given module and all the modules it imports recursively
+// does nothing if module == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -64,6 +70,10 @@ func visitSingleModule(module *Module, v *helperVisitor) {
 // if the given Visitor implements the ModuleSetter interface,
 // the SetModule method is called before visiting each module
 func VisitModuleRec(module *Module, visitor Visitor) {
+	if module == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
@@ -98,6 +108,7 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 }
 
 // visits the given node and all its children recursively
+// does nothing if node == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -108,6 +119,10 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 // if the given Visitor implements the ScopeSetter interface,
 // the SetScope method is called when the scope changes
 func VisitNode(visitor Visitor, node Node, currentScope *SymbolTable) {
+	if node == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
