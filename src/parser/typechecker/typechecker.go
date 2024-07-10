@@ -451,8 +451,22 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	if lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs); isLhsTypeDef {
-		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) {
+	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
+	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs)
+
+	if isTargetTypeDef && isLhsTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.Equal(targetTypeDef.Underlying, lhs) {
+			castErr()
+		}
+	} else if isTargetTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(lhs, targetTypeDef.Underlying) {
+			castErr()
+		}
+	} else if isLhsTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(expr.TargetType, lhsTypeDef.Underlying) {
 			castErr()
 		}
 	} else if ddptypes.IsList(expr.TargetType) { // non-list types can be converted to their list-type with a single element
@@ -484,16 +498,6 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 				castErr()
 			}
 		default:
-			castErr()
-		}
-	} else if typeDef, isTypedef := ddptypes.CastTypeDef(expr.TargetType); isTypedef {
-		// typedefs can only be converted to/from their underlying type
-		if !ddptypes.Equal(lhs, ddptypes.TrueUnderlying(typeDef)) {
-			castErr()
-		}
-	} else if typeDef, isTypedef := ddptypes.CastTypeDef(lhs); isTypedef {
-		// typedefs can only be converted to/from their underlying type
-		if !ddptypes.Equal(expr.TargetType, ddptypes.TrueUnderlying(typeDef)) {
 			castErr()
 		}
 	} else {

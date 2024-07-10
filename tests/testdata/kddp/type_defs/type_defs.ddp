@@ -16,3 +16,9 @@ Die Zahl z ist h als Zahl.
 Schreibe z auf eine Zeile.
 
 Schreibe (h als Zahl als Text) auf eine Zeile.
+
+Wir definieren einen Zeiger als eine Zahl.
+Wir definieren eine Datenbank als einen Zeiger.
+
+[typedefs can only be converted from/to their underlying type]
+Schreibe (0 als Zeiger als Datenbank als Zeiger als Zahl) auf eine Zeile.
