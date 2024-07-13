@@ -353,6 +353,7 @@ func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
 	p.errVal(ddperror.New(code, Range, msg, p.module.FileName))
 }
 
+// checks wether the alias already exists AND has a value attached to it
 // returns (aliasExists, isFuncAlias, alias, pTokens)
 func (p *parser) aliasExists(alias []token.Token) (bool, bool, ast.Alias, []*token.Token) {
 	pTokens := toPointerSlice(alias[:len(alias)-1])

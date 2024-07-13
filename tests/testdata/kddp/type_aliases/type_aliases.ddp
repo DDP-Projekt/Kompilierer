@@ -1,7 +1,9 @@
 Binde "Duden/Ausgabe" ein.
 
+[alias the type]
 Wir nennen eine Zahl auch eine Hausnummer.
 
+[an alias can be assigned it's underlying type]
 Die Hausnummer h ist 22.
 
 Schreibe h auf eine Zeile.
@@ -14,3 +16,23 @@ Schreibe (h als Zahl) auf eine Zeile.
 Schreibe (z als Hausnummer) auf eine Zeile.
 
 Schreibe (h als Text) auf eine Zeile.
+
+Die Funktion foo mit dem Parameter h vom Typ Hausnummer, gibt eine Hausnummer zurück, macht:
+	Gib h plus 2 zurück.
+Und kann so benutzt werden:
+	"foo <h>"
+
+Schreibe (foo h) auf eine Zeile.
+
+Erhöhe h um 1.
+
+Schreibe h auf eine Zeile.
+
+[
+	[ Should error, because the alias already exists for Schreibe_Zahl ]
+	Die Funktion Schreibe_Hausnummer mit dem Parameter hnummer vom Typ Hausnummer, gibt nichts zurück, macht:
+		Schreibe (hnummer als Zahl) auf eine Zeile.
+		Schreibe "hi" auf eine Zeile.
+	Und kann so benutzt werden:
+	"Schreibe <hnummer>"
+]

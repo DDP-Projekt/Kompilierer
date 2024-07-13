@@ -57,7 +57,7 @@ func tokenLess(t1, t2 *token.Token) bool {
 			return boolToInt(isList1) < boolToInt(isList2)
 		}
 
-		return t1.AliasInfo.Type.String() < t2.AliasInfo.Type.String()
+		return ddptypes.GetUnderlying(t1.AliasInfo.Type).String() < ddptypes.GetUnderlying(t2.AliasInfo.Type).String()
 	case token.IDENTIFIER, token.SYMBOL, token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal < t2.Literal
 	}

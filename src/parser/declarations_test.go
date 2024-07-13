@@ -169,3 +169,64 @@ func TestTypeAliasDeclError(t *testing.T) {
 	})
 	assert.True(panicMode)
 }
+
+func TestTypeAliasAliasInsert(t *testing.T) {
+	assert := assert.New(t)
+	eof := token.Token{Type: token.EOF}
+	expectedType := &ddptypes.TypeAlias{Name: "Hausnummer", GramGender: ddptypes.FEMININ, Underlying: ddptypes.ZAHL}
+
+	assert.True(ddptypes.ParamTypesEqual(ddptypes.ParameterType{
+		Type: expectedType,
+	}, ddptypes.ParameterType{
+		Type: ddptypes.ZAHL,
+	}))
+
+	expectedAlias := &ast.FuncAlias{
+		Original: token.Token{Literal: "Schreibe <p1>"},
+		Func:     &ast.FuncDecl{},
+	}
+
+	aliasTrie := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+	aliasTrie.Insert([]*token.Token{
+		{Type: token.IDENTIFIER, Literal: "Schreibe"},
+		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: &ddptypes.ParameterType{
+			Type: ddptypes.ZAHL,
+		}},
+	}, expectedAlias)
+
+	exists, actualAlias := aliasTrie.Contains([]*token.Token{
+		{Type: token.IDENTIFIER, Literal: "Schreibe"},
+		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: &ddptypes.ParameterType{
+			Type: ddptypes.ZAHL,
+		}},
+	})
+	assert.True(exists)
+	assert.Equal(expectedAlias, actualAlias)
+	exists, actualAlias = aliasTrie.Contains([]*token.Token{
+		{Type: token.IDENTIFIER, Literal: "Schreibe"},
+		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: &ddptypes.ParameterType{
+			Type: expectedType,
+		}},
+	})
+	assert.True(exists)
+	assert.NotNil(actualAlias)
+	assert.Equal(expectedAlias, actualAlias)
+
+	given := createParser(t, parser{
+		aliases: aliasTrie,
+	})
+
+	testTokens := []token.Token{
+		{Type: token.IDENTIFIER, Literal: "Schreibe"},
+		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: &ddptypes.ParameterType{
+			Type: expectedType,
+		}},
+		eof,
+	}
+
+	exists, isFunc, actualFuncAlias, pTokens := given.aliasExists(testTokens)
+	assert.True(exists)
+	assert.True(isFunc)
+	assert.Equal(expectedAlias, actualFuncAlias)
+	assert.Equal([]*token.Token{&testTokens[0], &testTokens[1]}, pTokens)
+}

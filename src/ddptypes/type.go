@@ -97,7 +97,7 @@ func CastStruct(t Type) (*StructType, bool) {
 }
 
 func IsTypeAlias(t Type) bool {
-	_, ok := GetUnderlying(t).(*TypeAlias)
+	_, ok := t.(*TypeAlias)
 	return ok
 }
 
