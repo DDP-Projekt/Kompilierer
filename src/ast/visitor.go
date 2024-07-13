@@ -28,6 +28,8 @@ type FullVisitor interface {
 	VarDeclVisitor
 	FuncDeclVisitor
 	StructDeclVisitor
+	TypeAliasDeclVisitor
+	TypeDefDeclVisitor
 
 	/*
 		Expressions
@@ -86,6 +88,14 @@ type (
 	StructDeclVisitor interface {
 		Visitor
 		VisitStructDecl(*StructDecl) VisitResult
+	}
+	TypeAliasDeclVisitor interface {
+		Visitor
+		VisitTypeAliasDecl(*TypeAliasDecl) VisitResult
+	}
+	TypeDefDeclVisitor interface {
+		Visitor
+		VisitTypeDefDecl(*TypeDefDecl) VisitResult
 	}
 
 	BadExprVisitor interface {

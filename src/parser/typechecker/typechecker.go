@@ -23,12 +23,12 @@ type Typechecker struct {
 	panicMode          *bool            // panic mode synchronized with the parser and resolver
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Typechecker, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	if panicMode == nil {
-		return nil, fmt.Errorf("panicMode must not be nil")
+		panic(fmt.Errorf("panicMode must not be nil"))
 	}
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
@@ -36,7 +36,7 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
 		panicMode:          panicMode,
-	}, nil
+	}
 }
 
 // typecheck a single node
@@ -105,7 +105,7 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
-	if initialType != decl.Type {
+	if !ddptypes.Equal(initialType, decl.Type) {
 		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
@@ -159,6 +159,22 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
+	if decl.IsPublic && !IsPublicType(decl.Underlying, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der unterliegende Typ eines öffentlichen Typ-Aliases muss ebenfalls öffentlich sein")
+	}
+
+	return ast.VisitRecurse
+}
+
+func (t *Typechecker) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	if decl.IsPublic && !IsPublicType(decl.Underlying, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der unterliegende Typ eines öffentlichen Typ-Aliases muss ebenfalls öffentlich sein")
+	}
+
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	t.latestReturnedType = ddptypes.VoidType{}
 	return ast.VisitRecurse
@@ -166,7 +182,7 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
-	if !ok || !isVar {
+	if !ok || !isVar || decl == nil {
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
 		t.latestReturnedType = decl.(*ast.VarDecl).Type
@@ -175,17 +191,17 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
-	if typ := t.Evaluate(expr.Index); typ != ddptypes.ZAHL {
+	if typ := t.Evaluate(expr.Index); !ddptypes.Equal(typ, ddptypes.ZAHL) {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
 	}
 
 	lhs := t.Evaluate(expr.Lhs)
-	if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
+	if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 	}
 
 	if ddptypes.IsList(lhs) {
-		t.latestReturnedType = lhs.(ddptypes.ListType).Underlying
+		t.latestReturnedType = ddptypes.GetListUnderlying(lhs)
 	} else {
 		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
@@ -194,11 +210,11 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 
 func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	rhs := t.Evaluate(expr.Rhs)
-	if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
+	if !ddptypes.IsStruct(rhs) {
 		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, expr.Rhs, "Der VON Operator erwartet eine Struktur als rechten Operanden, nicht %s", rhs)
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
-		t.latestReturnedType = t.checkFieldAccess(expr.Field, structType)
+		t.latestReturnedType = t.checkFieldAccess(expr.Field, rhs)
 	}
 	return ast.VisitRecurse
 }
@@ -232,17 +248,17 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
-			if ty := t.Evaluate(v); elementType != ty {
+			if ty := t.Evaluate(v); !ddptypes.Equal(elementType, ty) {
 				msg := fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, msg)
 			}
 		}
 		expr.Type = ddptypes.ListType{Underlying: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
-		if count := t.Evaluate(expr.Count); count != ddptypes.ZAHL {
+		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
-		if val := t.Evaluate(expr.Value); val != expr.Type.Underlying {
+		if val := t.Evaluate(expr.Value); !ddptypes.Equal(val, expr.Type.Underlying) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Falscher Typ (%s) in Listen Literal vom Typ %s", val, expr.Type.Underlying)
 		}
 	}
@@ -259,19 +275,19 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
 	case ast.UN_NOT:
-		if !isOfType(rhs, ddptypes.WAHRHEITSWERT) {
+		if !isOneOf(rhs, ddptypes.WAHRHEITSWERT) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.WAHRHEITSWERT)
 		}
 
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.UN_LOGIC_NOT:
-		if !isOfType(rhs, ddptypes.ZAHL) {
+		if !isOneOf(rhs, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
 		}
 
 		t.latestReturnedType = ddptypes.ZAHL
 	case ast.UN_LEN:
-		if !ddptypes.IsList(rhs) && rhs != ddptypes.TEXT {
+		if !ddptypes.IsList(rhs) && !ddptypes.Equal(rhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
 		}
 
@@ -288,73 +304,66 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 
 	// helper to validate if types match
 	validate := func(valid ...ddptypes.Type) {
-		if !isOfType(lhs, valid...) {
+		if !isOneOf(lhs, valid...) {
 			t.errExpected(expr.Operator, expr.Lhs, lhs, valid...)
 		}
-		if !isOfType(rhs, valid...) {
+		if !isOneOf(rhs, valid...) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, valid...)
 		}
 	}
 
 	switch expr.Operator {
 	case ast.BIN_CONCAT:
-		if (!ddptypes.IsList(lhs) && !ddptypes.IsList(rhs)) && (lhs == ddptypes.TEXT || rhs == ddptypes.TEXT) { // string, char edge case
+		if (!ddptypes.IsList(lhs) && !ddptypes.IsList(rhs)) && (ddptypes.Equal(lhs, ddptypes.TEXT) || ddptypes.Equal(rhs, ddptypes.TEXT)) { // string, char edge case
 			validate(ddptypes.TEXT, ddptypes.BUCHSTABE)
 			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
-			getOldUnderlyingType := func(t ddptypes.Type) ddptypes.Type {
-				if listType, isList := t.(ddptypes.ListType); isList {
-					return listType.Underlying
-				}
-				return t
-			}
-
-			if getOldUnderlyingType(lhs) != getOldUnderlyingType(rhs) {
+			if !ddptypes.Equal(ddptypes.GetListUnderlying(lhs), ddptypes.GetListUnderlying(rhs)) {
 				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
 			}
-			t.latestReturnedType = ddptypes.ListType{Underlying: getOldUnderlyingType(lhs)}
+			t.latestReturnedType = ddptypes.ListType{Underlying: ddptypes.GetListUnderlying(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 
-		if lhs == ddptypes.ZAHL && rhs == ddptypes.ZAHL {
+		if ddptypes.Equal(lhs, ddptypes.ZAHL) && ddptypes.Equal(rhs, ddptypes.ZAHL) {
 			t.latestReturnedType = ddptypes.ZAHL
 		} else {
 			t.latestReturnedType = ddptypes.KOMMAZAHL
 		}
 	case ast.BIN_INDEX:
-		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
+		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
-		if rhs != ddptypes.ZAHL {
+		if !ddptypes.Equal(rhs, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", rhs)
 		}
 
-		if ddptypes.IsList(lhs) {
-			t.latestReturnedType = lhs.(ddptypes.ListType).Underlying
-		} else if lhs == ddptypes.TEXT {
+		if listType, isList := ddptypes.CastList(lhs); isList {
+			t.latestReturnedType = listType.Underlying
+		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
-		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
+		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der '%s' Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
-		if !isOfType(rhs, ddptypes.ZAHL) {
+		if !isOneOf(rhs, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
 		}
 
 		if ddptypes.IsList(lhs) {
 			t.latestReturnedType = lhs
-		} else if lhs == ddptypes.TEXT {
+		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.TEXT
 		}
 	case ast.BIN_FIELD_ACCESS:
 		if ident, isIdent := expr.Lhs.(*ast.Ident); isIdent {
-			if structType, isStruct := rhs.(*ddptypes.StructType); !isStruct {
+			if !ddptypes.IsStruct(rhs) {
 				// error was already reported by the resolver
 				t.latestReturnedType = ddptypes.VoidType{}
 			} else {
-				t.latestReturnedType = t.checkFieldAccess(ident, structType)
+				t.latestReturnedType = t.checkFieldAccess(ident, rhs)
 			}
 		} else {
 			t.latestReturnedType = ddptypes.VoidType{}
@@ -372,7 +381,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		validate(ddptypes.ZAHL)
 		t.latestReturnedType = ddptypes.ZAHL
 	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
-		if lhs != rhs {
+		if !ddptypes.Equal(lhs, rhs) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
@@ -395,38 +404,38 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 
 	switch expr.Operator {
 	case ast.TER_SLICE:
-		if !ddptypes.IsList(lhs) && lhs != ddptypes.TEXT {
+		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
 
-		if !isOfType(mid, ddptypes.ZAHL) {
+		if !isOneOf(mid, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL)
 		}
-		if !isOfType(rhs, ddptypes.ZAHL) {
+		if !isOneOf(rhs, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
 		}
 
 		if ddptypes.IsList(lhs) {
 			t.latestReturnedType = lhs
-		} else if lhs == ddptypes.TEXT {
+		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.TEXT
 		}
 	case ast.TER_BETWEEN:
-		if !isOfType(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+		if !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 			t.errExpected(expr.Operator, expr.Lhs, lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
-		if !isOfType(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+		if !isOneOf(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
-		if !isOfType(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.TER_FALLS:
-		if lhs != rhs {
+		if !ddptypes.Equal(lhs, rhs) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des 'falls' Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
 		}
-		if !isOfType(mid, ddptypes.WAHRHEITSWERT) {
+		if !isOneOf(mid, ddptypes.WAHRHEITSWERT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Bedingung des 'falls' Ausdrucks muss vom Typ %s sein, aber es wurde %s gefunden", ddptypes.WAHRHEITSWERT, mid)
 		}
 		t.latestReturnedType = lhs
@@ -439,52 +448,62 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.Type)
+		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
-	if exprType, ok := expr.Type.(ddptypes.ListType); ok {
-		switch exprType.Underlying {
-		case ddptypes.BUCHSTABE:
-			if !isOfType(lhs, ddptypes.BUCHSTABE, ddptypes.TEXT) {
-				castErr()
-			}
-		case ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.WAHRHEITSWERT, ddptypes.TEXT:
-			if !isOfType(lhs, exprType.Underlying) {
-				castErr()
-			}
-		default:
-			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+
+	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
+	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs)
+
+	if isTargetTypeDef && isLhsTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.Equal(targetTypeDef.Underlying, lhs) {
+			castErr()
 		}
-	} else if exprType, ok := expr.Type.(ddptypes.PrimitiveType); ok {
-		switch exprType {
+	} else if isTargetTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(lhs, targetTypeDef.Underlying) {
+			castErr()
+		}
+	} else if isLhsTypeDef {
+		// typedefs can only be converted to/from their underlying type
+		if !ddptypes.Equal(expr.TargetType, lhsTypeDef.Underlying) {
+			castErr()
+		}
+	} else if ddptypes.IsList(expr.TargetType) { // non-list types can be converted to their list-type with a single element
+		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.TargetType))
+		if !isOneOf(lhs, underlying) {
+			castErr()
+		}
+	} else if primitiveType, isPrimitive := ddptypes.CastPrimitive(expr.TargetType); isPrimitive {
+		// special rules for primitive conversions
+		switch primitiveType {
 		case ddptypes.ZAHL:
 			if !ddptypes.IsPrimitive(lhs) {
 				castErr()
 			}
 		case ddptypes.KOMMAZAHL:
-			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
 				castErr()
 			}
 		case ddptypes.WAHRHEITSWERT:
-			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT) {
 				castErr()
 			}
 		case ddptypes.BUCHSTABE:
-			if !ddptypes.IsPrimitive(lhs) || !isOfType(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE) {
 				castErr()
 			}
 		case ddptypes.TEXT:
-			if ddptypes.IsList(lhs) || isOfType(lhs, ddptypes.VoidType{}) {
+			if ddptypes.IsList(lhs) || isOneOf(lhs, ddptypes.VoidType{}) {
 				castErr()
 			}
 		default:
-			t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+			castErr()
 		}
-	} else if exprType, ok := expr.Type.(*ddptypes.StructType); ok {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, exprType)
 	} else {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Invalide Typumwandlung von %s zu %s", lhs, expr.Type)
+		castErr()
 	}
-	t.latestReturnedType = expr.Type
+	t.latestReturnedType = expr.TargetType
 	return ast.VisitRecurse
 }
 
@@ -523,13 +542,13 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 
 		if ass, ok := expr.(ast.Assigneable); paramType.IsReference && !ok {
 			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
-		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && ok {
+		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && ok {
 			lhs := t.Evaluate(ass.Lhs)
-			if lhs == ddptypes.TEXT {
+			if ddptypes.Equal(lhs, ddptypes.TEXT) {
 				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
 			}
 		}
-		if argType != paramType.Type {
+		if !ddptypes.Equal(argType, paramType.Type) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
@@ -556,7 +575,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 			}
 		}
 
-		if argType != paramType {
+		if !ddptypes.Equal(argType, paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
 				"Die Struktur %s erwartet einen Wert vom Typ %s für das Feld %s, aber hat %s bekommen",
 				expr.Struct.Name(),
@@ -596,7 +615,7 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 
 	switch assign := stmt.Var.(type) {
 	case *ast.Ident:
-		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && decl.(*ast.VarDecl).Type != rhs {
+		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && !ddptypes.Equal(decl.(*ast.VarDecl).Type, rhs) {
 			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 				rhs,
@@ -613,7 +632,7 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 		lhs = t.Evaluate(assign)
 	}
 
-	if lhs != rhs {
+	if !ddptypes.Equal(lhs, rhs) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,
@@ -634,7 +653,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
-	if conditionType != ddptypes.WAHRHEITSWERT {
+	if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
 		t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 			"Die Bedingung einer Wenn-Anweisung muss ein Wahrheitswert sein, war aber vom Typ %s",
 			conditionType,
@@ -651,7 +670,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
-		if conditionType != ddptypes.WAHRHEITSWERT {
+		if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
 			t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 				"Die Bedingung einer %s muss ein Wahrheitswert sein, war aber vom Typ %s",
 				stmt.While.Type,
@@ -659,7 +678,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 			)
 		}
 	case token.WIEDERHOLE:
-		if conditionType != ddptypes.ZAHL {
+		if !ddptypes.Equal(conditionType, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, stmt.Condition,
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
@@ -676,7 +695,7 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	if !ddptypes.IsNumeric(iter_type) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
 	}
-	if toType := t.Evaluate(stmt.To); toType != iter_type {
+	if toType := t.Evaluate(stmt.To); !ddptypes.Equal(toType, iter_type) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
 			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
 			iter_type,
@@ -684,7 +703,7 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); stepType != iter_type {
+		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.Equal(stepType, iter_type) {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
 				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
 				iter_type,
@@ -700,16 +719,16 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
 
-	if !ddptypes.IsList(inType) && inType != ddptypes.TEXT {
+	if !ddptypes.IsList(inType) && !ddptypes.Equal(inType, ddptypes.TEXT) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
 	}
 
-	if inTypeList, isList := inType.(ddptypes.ListType); isList && elementType != inTypeList.Underlying {
+	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.Underlying) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
 				elementType, inTypeList),
 		)
-	} else if inType == ddptypes.TEXT && elementType != ddptypes.BUCHSTABE {
+	} else if ddptypes.Equal(inType, ddptypes.TEXT) && !ddptypes.Equal(elementType, ddptypes.BUCHSTABE) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
 				elementType),
@@ -728,7 +747,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && fun.(*ast.FuncDecl).Type != returnType {
+	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).Type, returnType) {
 		if stmt.Value == nil {
 			t.err(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Range,
 				fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
@@ -747,17 +766,23 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 }
 
 // checks if t is contained in types
-func isOfType(t ddptypes.Type, types ...ddptypes.Type) bool {
+func isOneOf(t ddptypes.Type, types ...ddptypes.Type) bool {
 	for _, v := range types {
-		if t == v {
+		if ddptypes.Equal(t, v) {
 			return true
 		}
 	}
 	return false
 }
 
-// helper for
-func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.StructType) ddptypes.Type {
+// helper for field access
+// panics if originalType is not a struct type
+func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Type) ddptypes.Type {
+	structType, ok := ddptypes.GetUnderlying(originalType).(*ddptypes.StructType)
+	if !ok {
+		panic(fmt.Sprintf("non struct type (%s) passed to checkFieldAccess", originalType))
+	}
+
 	var fieldType ddptypes.Type = ddptypes.VoidType{}
 
 	for _, field := range structType.Fields {
@@ -767,13 +792,13 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 		}
 	}
 
-	if fieldType == ddptypes.Type(ddptypes.VoidType{}) {
+	if ddptypes.Equal(fieldType, ddptypes.VoidType{}) {
 		article := "Ein"
 		switch structType.Gender() {
 		case ddptypes.FEMININ:
 			article = "Eine"
 		}
-		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, Lhs, "%s %s hat kein Feld mit Name %s", article, structType.Name, Lhs.Literal.Literal)
+		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, Lhs, "%s %s hat kein Feld mit Name %s", article, originalType.String(), Lhs.Literal.Literal)
 		return ddptypes.VoidType{}
 	}
 
@@ -784,7 +809,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 			for _, field := range structDecl.Fields {
 				if field.Name() == Lhs.Literal.Literal {
 					if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
-						t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, structType.Name)
+						t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, originalType.String())
 					}
 					break
 				}
@@ -800,19 +825,14 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, structType *ddptypes.Stru
 // and with the SymbolTable that was in use when the type was declared
 func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
 	// a list-type is public if its underlying type is public
-	typ = ddptypes.GetNestedUnderlying(typ)
+	typ = ddptypes.GetNestedListUnderlying(typ)
 
 	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
-	if structTyp, isStruct := typ.(*ddptypes.StructType); isStruct {
+	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
 		// get the corresponding decl from the current scope
 		// because it contains imported types as well
-		decl, _, _ := table.LookupDecl(structTyp.Name)
-		if structDecl, isStruct := decl.(*ast.StructDecl); isStruct {
-			// if the decl is from the current module check if it is public
-			// if it is from another module, it has to be public
-			return structDecl.IsPublic
-		}
-		return false // the corresponding name was not a struct decl
+		decl, _, _ := table.LookupDecl(typ.String())
+		return decl.Public()
 	}
 
 	return true // non-struct types are predeclared and always "public"

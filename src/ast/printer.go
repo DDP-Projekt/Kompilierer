@@ -113,6 +113,16 @@ func (pr *printer) VisitStructDecl(decl *StructDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeAliasDecl[%s: Public(%v)] = %s", decl.Name(), decl.IsPublic, decl.Underlying))
+	return VisitRecurse
+}
+
+func (pr *printer) VisitTypeDefDecl(decl *TypeDefDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeDefDecl[%s: Public(%v)] = %s", decl.Name(), decl.IsPublic, decl.Underlying))
+	return VisitRecurse
+}
+
 func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("BadExpr[%s]", &expr.Tok))
 	return VisitRecurse
@@ -187,7 +197,7 @@ func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 }
 
 func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
+	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.TargetType), expr.Lhs)
 	return VisitRecurse
 }
 

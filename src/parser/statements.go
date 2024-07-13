@@ -15,7 +15,7 @@ import (
 // parse a single statement
 func (p *parser) statement() ast.Statement {
 	// check for assignement
-	if p.match(token.IDENTIFIER) {
+	if p.matchAny(token.IDENTIFIER) {
 		if p.peek().Type == token.IST || p.peek().Type == token.AN {
 			return p.assignLiteral() // x ist ... assignements may only have literals, so we use this helper function
 		} else {
@@ -72,19 +72,19 @@ func (p *parser) statement() ast.Statement {
 func (p *parser) importStatement() ast.Statement {
 	binde := p.previous()
 	var stmt *ast.ImportStmt
-	if p.match(token.STRING) {
+	if p.matchAny(token.STRING) {
 		stmt = &ast.ImportStmt{
 			FileName:        *p.previous(),
 			ImportedSymbols: nil,
 		}
-	} else if p.match(token.IDENTIFIER) {
+	} else if p.matchAny(token.IDENTIFIER) {
 		importedSymbols := []token.Token{*p.previous()}
 		if p.peek().Type != token.AUS {
-			if p.match(token.UND) {
+			if p.matchAny(token.UND) {
 				p.consume(token.IDENTIFIER)
 				importedSymbols = append(importedSymbols, *p.previous())
 			} else {
-				for p.match(token.COMMA) {
+				for p.matchAny(token.COMMA) {
 					if p.consume(token.IDENTIFIER) {
 						importedSymbols = append(importedSymbols, *p.previous())
 					}
@@ -120,7 +120,7 @@ func (p *parser) importStatement() ast.Statement {
 
 // either consumes the neccesery . or adds a postfix do-while or repeat
 func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
-	if p.match(token.DOT) || p.panicMode {
+	if p.matchAny(token.DOT) || p.panicMode {
 		return stmt
 	}
 	// p.checkStatement(stmt)
@@ -139,7 +139,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 		return stmt
 	}
 
-	if !p.match(token.COUNT_MAL) {
+	if !p.matchAny(token.COUNT_MAL) {
 		count_tok := count.Token()
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
 			fmt.Sprintf("%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
@@ -186,7 +186,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consume(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
-		if typ == ddptypes.WAHRHEITSWERT {
+		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			operator = ast.UN_NOT
 		}
 		return &ast.AssignStmt{
@@ -258,7 +258,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
 	default:
-		if typ := p.typechecker.Evaluate(ident); typ != ddptypes.WAHRHEITSWERT {
+		if typ := p.typechecker.Evaluate(ident); !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -296,7 +296,7 @@ func (p *parser) ifStatement() ast.Statement {
 	p.consume(token.COMMA)      // must be boolean, so an ist is required for grammar
 	var Then ast.Statement
 	thenScope := p.newScope()
-	if p.match(token.DANN) { // with dann: the body is a block statement
+	if p.matchAny(token.DANN) { // with dann: the body is a block statement
 		p.consume(token.COLON)
 		Then = p.blockStatement(thenScope)
 	} else { // otherwise it is a single statement
@@ -316,10 +316,10 @@ func (p *parser) ifStatement() ast.Statement {
 	}
 	var Else ast.Statement = nil
 	// parse a possible sonst statement
-	if p.match(token.SONST) {
+	if p.matchAny(token.SONST) {
 		if p.previous().Indent == If.Indent {
 			elseScope := p.newScope()
-			if p.match(token.COLON) {
+			if p.matchAny(token.COLON) {
 				Else = p.blockStatement(elseScope) // with colon it is a block statement
 			} else { // without it we just parse a single statement
 				_else := p.previous()
@@ -336,7 +336,7 @@ func (p *parser) ifStatement() ast.Statement {
 		} else {
 			p.decrease()
 		}
-	} else if p.match(token.WENN) { // if-else blocks are parsed as nested ifs where the else of the first if is an if-statement
+	} else if p.matchAny(token.WENN) { // if-else blocks are parsed as nested ifs where the else of the first if is an if-statement
 		if p.previous().Indent == If.Indent && p.peek().Type == token.ABER {
 			p.consume(token.ABER)
 			Else = p.ifStatement() // parse the wenn aber
@@ -369,7 +369,7 @@ func (p *parser) whileStatement() ast.Statement {
 	var Body ast.Statement
 	bodyTable := p.newScope()
 	p.resolver.LoopDepth++
-	if p.match(token.MACHE) {
+	if p.matchAny(token.MACHE) {
 		p.consume(token.COLON)
 		Body = p.blockStatement(bodyTable)
 	} else {
@@ -462,7 +462,7 @@ func (p *parser) forStatement() ast.Statement {
 	p.consume(token.IDENTIFIER)
 	Ident := p.previous()
 	iteratorComment := p.getLeadingOrTrailingComment()
-	if p.match(token.VON) {
+	if p.matchAny(token.VON) {
 		from := p.expression() // start of the counter
 		initializer := &ast.VarDecl{
 			Range: token.Range{
@@ -479,10 +479,10 @@ func (p *parser) forStatement() ast.Statement {
 		p.consume(token.BIS)
 		to := p.expression()                            // end of the counter
 		var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
-		if Typ == ddptypes.KOMMAZAHL {
+		if ddptypes.Equal(Typ, ddptypes.KOMMAZAHL) {
 			step = &ast.FloatLit{Value: 1.0}
 		}
-		if p.match(token.MIT) {
+		if p.matchAny(token.MIT) {
 			p.consume(token.SCHRITTGRÖßE)
 			step = p.expression() // custom specified step-size
 		}
@@ -491,7 +491,7 @@ func (p *parser) forStatement() ast.Statement {
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
 		p.resolver.LoopDepth++
-		if p.match(token.MACHE) { // body is a block statement
+		if p.matchAny(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
@@ -522,7 +522,7 @@ func (p *parser) forStatement() ast.Statement {
 			StepSize:    step,
 			Body:        Body,
 		}
-	} else if p.match(token.IN) {
+	} else if p.matchAny(token.IN) {
 		In := p.expression()
 		initializer := &ast.VarDecl{
 			Range: token.Range{
@@ -540,7 +540,7 @@ func (p *parser) forStatement() ast.Statement {
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
 		p.resolver.LoopDepth++
-		if p.match(token.MACHE) { // body is a block statement
+		if p.matchAny(token.MACHE) { // body is a block statement
 			p.consume(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
@@ -603,7 +603,7 @@ func (p *parser) returnStatement() ast.Statement {
 func (p *parser) voidReturnOrBreak() ast.Statement {
 	Leave := p.previous()
 	p.consume(token.DIE)
-	if p.match(token.SCHLEIFE) {
+	if p.matchAny(token.SCHLEIFE) {
 		p.consume(token.DOT)
 		return &ast.BreakContinueStmt{
 			Range: token.NewRange(Leave, p.previous()),

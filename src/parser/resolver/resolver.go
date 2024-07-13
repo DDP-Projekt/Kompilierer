@@ -32,19 +32,19 @@ type Resolver struct {
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) (*Resolver, error) {
+func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
 	if panicMode == nil {
-		return nil, fmt.Errorf("panicMode must not be nil")
+		panic(fmt.Errorf("panicMode must not be nil"))
 	}
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: Mod.Ast.Symbols,
 		Module:       Mod,
 		panicMode:    panicMode,
-	}, nil
+	}
 }
 
 // resolve a single node
@@ -119,7 +119,7 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_STRUCT_DECL, decl.NameTok.Range, "Es können nur globale Strukturen deklariert werden")
+		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
 	}
 
 	for _, field := range decl.Fields {
@@ -134,6 +134,36 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
 	}
 	// insert the struct into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
+	return ast.VisitRecurse
+}
+
+func (r *Resolver) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
+	if !ast.IsGlobalScope(r.CurrentTable) {
+		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+	}
+
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type aliases may only be declared once in the same module
+	}
+	// insert the type decl into the public module decls
+	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
+	return ast.VisitRecurse
+}
+
+func (r *Resolver) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	if !ast.IsGlobalScope(r.CurrentTable) {
+		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+	}
+
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type defs may only be declared once in the same module
+	}
+	// insert the type decl into the public module decls
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
@@ -275,19 +305,19 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	var errRange token.Range
+	// var errRange token.Range
 	checkTypeDependency := func(decl ast.Declaration) {
 		// check that typ is defined in the current module
 		checkSingleType := func(typ ddptypes.Type) {
-			typ = ddptypes.GetNestedUnderlying(typ) // for list types
+			typ = ddptypes.GetNestedListUnderlying(typ) // for list types
 
 			if ddptypes.IsPrimitiveOrVoid(typ) {
 				return
 			}
 
-			if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
-				r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
-			}
+			// if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
+			// 	r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
+			// }
 		}
 
 		switch decl := decl.(type) {
@@ -302,6 +332,10 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 			for _, field := range decl.Type.Fields {
 				checkSingleType(field.Type)
 			}
+		case *ast.TypeAliasDecl:
+			checkSingleType(decl.Underlying)
+		case *ast.TypeDefDecl:
+			checkSingleType(decl.Underlying)
 		case *ast.BadDecl:
 			// error already reported while parsing the imported module
 		}

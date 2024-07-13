@@ -103,10 +103,10 @@ func panic_wrapper() {
 		}
 
 		stack_trace := debug.Stack()
-		err, _ := err.(error)
+		wraps, _ := err.(error)
 		panic(&ParserError{
-			Err:        err,
-			Msg:        "unknown parser panic",
+			Err:        wraps,
+			Msg:        getParserErrorMsg(err),
 			ModulePath: "not found",
 			StackTrace: stack_trace,
 		})

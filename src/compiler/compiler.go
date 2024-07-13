@@ -24,7 +24,6 @@ import (
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
 // returns:
-//   - a map of .ll paths to their corresponding module
 //   - a set of all external dependendcies
 //   - an error
 func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
@@ -91,17 +90,18 @@ type compiler struct {
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
 
-	cbb              *ir.Block                   // current basic block in the ir
-	cf               *ir.Func                    // current function
-	scp              *scope                      // current scope in the ast (not in the ir)
-	cfscp            *scope                      // out-most scope of the current function
-	functions        map[string]*funcWrapper     // all the global functions
-	structTypes      map[string]*ddpIrStructType // struct names mapped to their IR type
-	latestReturn     value.Value                 // return of the latest evaluated expression (in the ir)
-	latestReturnType ddpIrType                   // the type of latestReturn
-	latestIsTemp     bool                        // ewther the latestReturn is a temporary or not
-	importedModules  map[*ast.Module]struct{}    // all the modules that have already been imported
-	currentNode      ast.Node                    // used for error reporting
+	cbb              *ir.Block                                 // current basic block in the ir
+	cf               *ir.Func                                  // current function
+	scp              *scope                                    // current scope in the ast (not in the ir)
+	cfscp            *scope                                    // out-most scope of the current function
+	functions        map[string]*funcWrapper                   // all the global functions
+	typeMap          map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
+	structTypes      map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
+	latestReturn     value.Value                               // return of the latest evaluated expression (in the ir)
+	latestReturnType ddpIrType                                 // the type of latestReturn
+	latestIsTemp     bool                                      // ewther the latestReturn is a temporary or not
+	importedModules  map[*ast.Module]struct{}                  // all the modules that have already been imported
+	currentNode      ast.Node                                  // used for error reporting
 
 	moduleInitFunc             *ir.Func  // the module_init func of this module
 	moduleInitCbb              *ir.Block // cbb but for module_init
@@ -138,7 +138,8 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		scp:              newScope(nil), // global scope
 		cfscp:            nil,
 		functions:        make(map[string]*funcWrapper),
-		structTypes:      make(map[string]*ddpIrStructType),
+		typeMap:          createTypeMap(module),
+		structTypes:      make(map[*ddptypes.StructType]*ddpIrStructType),
 		latestReturn:     nil,
 		latestReturnType: nil,
 		latestIsTemp:     false,
@@ -178,9 +179,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 			c.visitNode(stmt)
 		} else {
 			switch stmt.(type) {
-			case *ast.ImportStmt:
-				c.visitNode(stmt)
-			case *ast.DeclStmt:
+			case *ast.DeclStmt, *ast.ImportStmt:
 				c.visitNode(stmt)
 			default:
 				// in imports we only visit declarations and ignore other top-level statements
@@ -443,7 +442,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		// so we assign them a default value here
 		//
 		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
-		globalDef := c.mod.NewGlobalDef(c.mangledName(d), Typ.DefaultValue())
+		globalDef := c.mod.NewGlobalDef(c.mangledNameDecl(d), Typ.DefaultValue())
 		// make private variables static like in C
 		if !d.IsPublic && !d.IsExternVisible {
 			globalDef.Linkage = enum.LinkageInternal
@@ -507,8 +506,8 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 
-	irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                                 // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
 	if !decl.IsPublic && !decl.IsExternVisible {
 		irFunc.Linkage = enum.LinkageInternal
@@ -582,7 +581,15 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
-	c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, false)
+	c.defineOrDeclareStructType(decl.Type)
+	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
@@ -1479,7 +1486,8 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
-	if ddptypes.IsList(e.Type) {
+	targetType := ddptypes.TrueUnderlying(e.TargetType)
+	if ddptypes.IsList(targetType) {
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
@@ -1488,7 +1496,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 	} else {
-		switch e.Type {
+		switch targetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp:
@@ -1560,10 +1568,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
 			c.latestIsTemp = true
 		default:
-			c.err("Invalide Typumwandlung zu %s", e.Type)
+			// this is now valid because of typedefs/typealiases
+			// c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
 		}
 	}
-	c.latestReturnType = c.toIrType(e.Type)
+	c.latestReturnType = c.toIrType(targetType)
 	return ast.VisitRecurse
 }
 
@@ -1740,15 +1749,29 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 		c.err("importStmt.Module == nil")
 	}
 
+	// if t is a struct types it is declared in this compilation unit
+	declareIfStruct := func(t ddptypes.Type) {
+		underlying := ddptypes.TrueUnderlying(t)
+		if structType, isStruct := ddptypes.CastStruct(underlying); isStruct {
+			c.defineOrDeclareStructType(structType)
+		}
+	}
+
 	ast.IterateImportedDecls(s, func(name string, decl ast.Declaration, _ token.Token) bool {
 		switch decl := decl.(type) {
 		case *ast.VarDecl: // declare the variable as external
+			declareIfStruct(decl.Type)
 			Typ := c.toIrType(decl.Type)
-			globalDecl := c.mod.NewGlobal(c.mangledName(decl), Typ.IrType())
+			globalDecl := c.mod.NewGlobal(c.mangledNameDecl(decl), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
+			// declare all types this function depends on
+			declareIfStruct(decl.Type)
+			for _, param := range decl.Parameters {
+				declareIfStruct(param.Type.Type)
+			}
 			retType := c.toIrType(decl.Type) // get the llvm type
 			retTypeIr := retType.IrType()
 			params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
@@ -1766,15 +1789,19 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 			}
 
-			irFunc := c.mod.NewFunc(c.mangledName(decl), retTypeIr, params...) // create the ir function
-			irFunc.CallingConv = enum.CallingConvC                             // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+			irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
+			irFunc.CallingConv = enum.CallingConvC                                 // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 			// declare it as extern function
 			irFunc.Linkage = enum.LinkageExternal
 			irFunc.Visibility = enum.VisibilityDefault
 
 			c.insertFunction(decl.Name(), decl, irFunc)
+		case *ast.TypeAliasDecl:
+			declareIfStruct(decl.Type)
+		case *ast.TypeDefDecl:
+			declareIfStruct(decl.Type)
 		case *ast.StructDecl:
-			c.structTypes[decl.Name()] = c.defineStructType(decl.Name(), decl.Type.Fields, true)
+			c.defineOrDeclareStructType(decl.Type)
 		case *ast.BadDecl:
 			c.err("BadDecl in import")
 		default:
@@ -1946,7 +1973,7 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
-		if s.Initializer.Type == ddptypes.ZAHL {
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
 			return c.cbb.NewICmp(ipred, x, yi)
 		} else {
 			return c.cbb.NewFCmp(fpred, x, yf)
@@ -1960,7 +1987,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	var incrementer value.Value // Schrittgröße
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		if s.Initializer.Type == ddptypes.ZAHL {
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
 			incrementer = newInt(1)
 		} else {
 			incrementer = constant.NewFloat(ddpfloat, 1.0)
@@ -1993,7 +2020,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if s.Initializer.Type == ddptypes.ZAHL {
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
 		add = c.cbb.NewAdd(indexVar, incrementer)
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)

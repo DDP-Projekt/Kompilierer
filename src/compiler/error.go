@@ -42,7 +42,7 @@ func compiler_panic_wrapper(c *compiler) {
 		}
 		panic(&CompilerError{
 			Err:        err,
-			Msg:        "unknown compiler panic",
+			Msg:        getCompilerErrorMsg(err),
 			ModulePath: mod_path,
 			Node:       c.currentNode,
 			StackTrace: stack_trace,
@@ -66,10 +66,28 @@ func (err *CompilerError) Error() string {
 	return fmt.Sprintf("CompilerError(Mod: %s, Node: %v, Range: %s): %s\nWraps: %v\nStackTrace:\n%s", err.ModulePath, err.Node, rng, err.Msg, err.Err, string(err.StackTrace))
 }
 
+func (err *CompilerError) String() string {
+	return err.Error()
+}
+
 func (err *CompilerError) Unwrap() error {
 	wrapped, ok := err.Err.(error)
 	if ok {
 		return wrapped
 	}
 	return nil
+}
+
+// turns an error recovered by calling recover() into a message for a CompilerError
+func getCompilerErrorMsg(err any) string {
+	switch err := err.(type) {
+	case string:
+		return err
+	case error:
+		return err.Error()
+	case fmt.Stringer:
+		return err.String()
+	default:
+		return "unknown parser panic"
+	}
 }

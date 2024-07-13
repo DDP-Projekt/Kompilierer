@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Changed] Die Typen, die von Funktionen, Variablen und anderen Typen benutzt werden müssen jetzt nicht mehr extra eingebunden werden
+- [Added] Typ-Aliase und Typ-Definitionen
+
 ## v0.4.0-alpha
 
 - [Added] Aliasnegationen
