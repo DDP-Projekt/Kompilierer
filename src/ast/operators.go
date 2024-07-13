@@ -9,6 +9,25 @@ type Operator interface {
 	Operator() // dummy function for the interface
 }
 
+var operator_map = map[string]Operator{}
+
+func init() {
+	for op := UN_INVALID + 1; op < un_end; op++ {
+		operator_map[op.String()] = op
+	}
+	for op := BIN_INVALID + 1; op < bin_end; op++ {
+		operator_map[op.String()] = op
+	}
+	for op := TER_INVALID + 1; op < ter_end; op++ {
+		operator_map[op.String()] = op
+	}
+}
+
+func GetOperator(s string) (Operator, bool) {
+	op, ok := operator_map[s]
+	return op, ok
+}
+
 type UnaryOperator int
 
 func (UnaryOperator) Operator() {}
@@ -20,6 +39,7 @@ const (
 	UN_NEGATE                  // -
 	UN_NOT                     // nicht
 	UN_LOGIC_NOT               // logisch nicht
+	un_end
 )
 
 func (op UnaryOperator) String() string {
@@ -70,6 +90,7 @@ const (
 	BIN_FIELD_ACCESS                // von
 	BIN_SLICE_TO                    // bis zum
 	BIN_SLICE_FROM                  // ab dem
+	bin_end
 )
 
 func (op BinaryOperator) String() string {
@@ -139,12 +160,13 @@ const (
 	TER_SLICE                   // von bis
 	TER_BETWEEN                 // zwischen
 	TER_FALLS                   // <a>, falls <b>, ansonsten <c>
+	ter_end
 )
 
 func (op TernaryOperator) String() string {
 	switch op {
 	case TER_SLICE:
-		return "von_bis"
+		return "von bis"
 	case TER_BETWEEN:
 		return "zwischen"
 	case TER_FALLS:

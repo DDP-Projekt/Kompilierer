@@ -73,28 +73,31 @@ type (
 	}
 
 	UnaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Operator UnaryOperator
-		Rhs      Expression
+		Range        token.Range
+		Tok          token.Token
+		Operator     UnaryOperator
+		Rhs          Expression
+		OverloadedBy *FuncDecl
 	}
 
 	BinaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Lhs      Expression
-		Operator BinaryOperator
-		Rhs      Expression
+		Range        token.Range
+		Tok          token.Token
+		Lhs          Expression
+		Operator     BinaryOperator
+		Rhs          Expression
+		OverloadedBy *FuncDecl
 	}
 
 	// currently only used for von bis
 	TernaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Lhs      Expression
-		Mid      Expression
-		Rhs      Expression
-		Operator TernaryOperator
+		Range        token.Range
+		Tok          token.Token
+		Lhs          Expression
+		Mid          Expression
+		Rhs          Expression
+		Operator     TernaryOperator
+		OverloadedBy *FuncDecl
 	}
 
 	// als Expressions cannot be unary

@@ -371,6 +371,44 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 	return funcAliases, funcAliasTokens
 }
 
+func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType ddptypes.Type, validate func(bool)) ast.Operator {
+	validate(p.consume(token.DEN, token.STRING, token.OPERATOR, token.DOT))
+	operator_token := p.peekN(-3)
+	operator_name := ast.TrimStringLit(operator_token)
+
+	operator, is_operator := ast.GetOperator(operator_name)
+	if !is_operator {
+		p.err(ddperror.SYN_INVALID_OPERATOR, operator_token.Range, fmt.Sprintf("'%s' steht nicht für einen Operator", operator_name))
+	}
+
+	switch op := operator.(type) {
+	case ast.UnaryOperator:
+		if len(params) != 1 {
+			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet nur einen Parameter, aber hat %d bekommen", op, len(params)))
+		}
+	case ast.BinaryOperator:
+		if len(params) != 2 {
+			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet zwei Parameter, aber hat %d bekommen", op, len(params)))
+		}
+	case ast.TernaryOperator:
+		if len(params) != 3 {
+			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet drei Parameter, aber hat %d bekommen", op, len(params)))
+		}
+	}
+
+	if ddptypes.IsVoid(returnType) {
+		p.err(ddperror.TYP_BAD_OPERATOR_RETURN_TYPE, operator_token.Range, "Ein Operator muss einen Wert zurückgeben")
+	}
+
+	for _, param := range params {
+		if param.Type.IsReference {
+			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, param.Name.Range, "Ein Operator kann keine Referenzen als Parameter haben")
+		}
+	}
+
+	return operator
+}
+
 // parses a function declaration
 // startDepth is the int passed to p.peekN(n) to get to the DIE token of the declaration
 func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
@@ -451,8 +489,16 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		}
 	}
 
-	// parse function aliases
-	funcAliases, funcAliasTokens := p.parseFunctionAliases(params, validate)
+	var (
+		funcAliases     []*ast.FuncAlias
+		funcAliasTokens [][]*token.Token
+		operator        ast.Operator
+	)
+	if p.matchSeq(token.UND, token.ÜBERLÄDT) {
+		operator = p.parseOperatorOverloading(params, Typ, validate)
+	} else {
+		funcAliases, funcAliasTokens = p.parseFunctionAliases(params, validate)
+	}
 
 	aliasEnd := p.cur // save the end of the function declaration for later
 
@@ -481,7 +527,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Type:            Typ,
 		Body:            nil,
 		ExternFile:      *definedIn,
+		Operator:        operator,
 		Aliases:         funcAliases,
+	}
+
+	if operator != nil {
+		p.insertOperatorOverload(decl)
 	}
 
 	for i := range funcAliases {

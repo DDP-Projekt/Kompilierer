@@ -12,6 +12,10 @@ func IsExternFunc(fun *FuncDecl) bool {
 	return fun.Body == nil
 }
 
+func IsOperatorOverload(fun *FuncDecl) bool {
+	return fun.Operator != nil
+}
+
 // trims the "" from the literal
 func TrimStringLit(lit *token.Token) string {
 	if lit == nil {

@@ -1,0 +1,10 @@
+Binde "Duden/Ausgabe" ein.
+
+[
+	Die Zahl z ist die Länge von 2.
+]
+Die Funktion foo mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Gib z zurück.
+Und überlädt den "Länge" Operator.
+
+Schreibe (die Länge von 2) auf eine Zeile.

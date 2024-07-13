@@ -26,6 +26,8 @@ type Module struct {
 	Ast *Ast
 	// map of references to all public functions, variables and structs
 	PublicDecls map[string]Declaration
+	// map of all overloads for all operators
+	Operators map[Operator][]*FuncDecl
 }
 
 // returns the string-literal content by which this module was first imported

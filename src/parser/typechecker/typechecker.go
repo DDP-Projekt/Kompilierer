@@ -269,6 +269,13 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
+
+	if overload := t.findOverload(expr.Operator, rhs); overload != nil {
+		expr.OverloadedBy = overload
+		t.latestReturnedType = overload.Type
+		return ast.VisitRecurse
+	}
+
 	switch expr.Operator {
 	case ast.UN_ABS, ast.UN_NEGATE:
 		if !ddptypes.IsNumeric(rhs) {
@@ -301,6 +308,12 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	rhs := t.Evaluate(expr.Rhs)
+
+	if overload := t.findOverload(expr.Operator, lhs, rhs); overload != nil {
+		expr.OverloadedBy = overload
+		t.latestReturnedType = overload.Type
+		return ast.VisitRecurse
+	}
 
 	// helper to validate if types match
 	validate := func(valid ...ddptypes.Type) {
@@ -401,6 +414,12 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	mid := t.Evaluate(expr.Mid)
 	rhs := t.Evaluate(expr.Rhs)
+
+	if overload := t.findOverload(expr.Operator, lhs, mid, rhs); overload != nil {
+		expr.OverloadedBy = overload
+		t.latestReturnedType = overload.Type
+		return ast.VisitRecurse
+	}
 
 	switch expr.Operator {
 	case ast.TER_SLICE:
@@ -836,4 +855,20 @@ func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
 	}
 
 	return true // non-struct types are predeclared and always "public"
+}
+
+func (t *Typechecker) findOverload(operator ast.Operator, operands ...ddptypes.Type) *ast.FuncDecl {
+	overloads := t.Module.Operators[operator]
+	if len(overloads) > 0 {
+	overload_loop:
+		for _, overload := range overloads {
+			for i, operand := range operands {
+				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand) {
+					continue overload_loop
+				}
+				return overload
+			}
+		}
+	}
+	return nil
 }

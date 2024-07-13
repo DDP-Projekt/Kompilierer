@@ -146,6 +146,8 @@ const (
 	SICHTBAR
 	SICHTBARE
 	AUCH
+	ÜBERLÄDT
+	OPERATOR
 
 	DOT    // .
 	COMMA  // ,
@@ -300,6 +302,8 @@ var tokenStrings = [...]string{
 	SICHTBAR:      "sichtbar",
 	SICHTBARE:     "sichtbare",
 	AUCH:          "auch",
+	ÜBERLÄDT:      "überlädt",
+	OPERATOR:      "Operator",
 
 	DOT:    ".",
 	COMMA:  ",",
@@ -455,6 +459,11 @@ var KeywordMap = map[string]TokenType{
 	"sichtbar":       SICHTBAR,
 	"sichtbare":      SICHTBARE,
 	"auch":           AUCH,
+	"überlädt":       ÜBERLÄDT,
+	"ueberlädt":      ÜBERLÄDT,
+	"überlaedt":      ÜBERLÄDT,
+	"ueberlaedt":     ÜBERLÄDT,
+	"Operator":       OPERATOR,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

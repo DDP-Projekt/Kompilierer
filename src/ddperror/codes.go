@@ -19,6 +19,7 @@ const (
 	SYN_MALFORMED_ALIAS                           // an alias is malformed syntatically (invalid tokens etc.)
 	SYN_INVALID_UTF8                              // text was not valid utf8
 	SYN_GENDER_MISMATCH                           // the expected and actual grammatical gender used mismatched
+	SYN_INVALID_OPERATOR                          // the given string is not a valid operator
 )
 
 // semantic error codes
@@ -43,22 +44,25 @@ const (
 	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop
 	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
 	SEM_UNNECESSARY_EXTERN_VISIBLE                        // a function was specified as both extern visible and extern defined
+	SEM_BAD_OPERATOR_PARAMS                               // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
+	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
 )
 
 // type error codes
 const (
-	TYP_TYPE_MISMATCH        Code = iota + 3000 // simple type mismatch in an operator
-	TYP_BAD_ASSIGNEMENT                         // invalid variable assignement
-	TYP_BAD_INDEXING                            // type error in index expression
-	TYP_BAD_LIST_LITERAL                        // wrong type in list literal
-	TYP_BAD_CAST                                // invalid type conversion
-	TYP_EXPECTED_REFERENCE                      // a variable (reference parameter) was expected
-	TYP_INVALID_REFERENCE                       // a char in a string was tried to be passed as refernce
-	TYP_BAD_CONDITION                           // condition value was not of type boolean
-	TYP_BAD_FOR                                 // one of the expressions in a for loop was not of type int
-	TYP_WRONG_RETURN_TYPE                       // the return type did not match the function signature
-	TYP_BAD_FIELD_ACCESS                        // a non-struct type was accessed or similar
-	TYP_PRIVATE_FIELD_ACCESS                    // a non-public field was accessed from another module
+	TYP_TYPE_MISMATCH            Code = iota + 3000 // simple type mismatch in an operator
+	TYP_BAD_ASSIGNEMENT                             // invalid variable assignement
+	TYP_BAD_INDEXING                                // type error in index expression
+	TYP_BAD_LIST_LITERAL                            // wrong type in list literal
+	TYP_BAD_CAST                                    // invalid type conversion
+	TYP_EXPECTED_REFERENCE                          // a variable (reference parameter) was expected
+	TYP_INVALID_REFERENCE                           // a char in a string was tried to be passed as refernce
+	TYP_BAD_CONDITION                               // condition value was not of type boolean
+	TYP_BAD_FOR                                     // one of the expressions in a for loop was not of type int
+	TYP_WRONG_RETURN_TYPE                           // the return type did not match the function signature
+	TYP_BAD_FIELD_ACCESS                            // a non-struct type was accessed or similar
+	TYP_PRIVATE_FIELD_ACCESS                        // a non-public field was accessed from another module
+	TYP_BAD_OPERATOR_RETURN_TYPE                    // the return type of a operator overload is void
 )
 
 func (code Code) IsMiscError() bool {

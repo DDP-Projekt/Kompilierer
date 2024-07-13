@@ -37,6 +37,7 @@ type (
 		Type            ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
 		Body            *BlockStmt      // nil for extern functions
 		ExternFile      token.Token     // string literal with filepath (only pesent if Body is nil)
+		Operator        Operator        // the operator this function overloads, or nil if it does not overload an operator
 		Aliases         []*FuncAlias
 	}
 

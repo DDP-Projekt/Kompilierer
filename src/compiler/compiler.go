@@ -745,7 +745,20 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	const all_ones int64 = ^0 // int with all bits set to 1
 
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
+
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
@@ -805,6 +818,20 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	c.commentNode(c.cbb, e, e.Operator.String())
+
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	// for BIN_FIELD_ACCESS we don't want to evaluate Lhs, as it is just the field name
 	switch e.Operator {
@@ -1306,6 +1333,20 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
+				e.OverloadedBy.Parameters[2].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	// if due to short circuiting
 	if e.Operator == ast.TER_FALLS {
 		mid, _, _ := c.evaluate(e.Mid)
