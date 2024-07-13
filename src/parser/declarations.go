@@ -531,10 +531,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		Aliases:         funcAliases,
 	}
 
-	if operator != nil {
-		p.insertOperatorOverload(decl)
-	}
-
 	for i := range funcAliases {
 		funcAliases[i].Func = decl
 		p.aliases.Insert(funcAliasTokens[i], funcAliases[i])
@@ -591,6 +587,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration
+	}
+
+	// operator overloads are not recursive, so insert this
+	// after the body has been parsed
+	if operator != nil {
+		p.insertOperatorOverload(decl)
 	}
 
 	p.currentFunction = ""

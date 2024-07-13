@@ -866,8 +866,8 @@ func (t *Typechecker) findOverload(operator ast.Operator, operands ...ddptypes.T
 				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand) {
 					continue overload_loop
 				}
-				return overload
 			}
+			return overload
 		}
 	}
 	return nil

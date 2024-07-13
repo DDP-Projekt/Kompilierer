@@ -1,10 +1,73 @@
 Binde "Duden/Ausgabe" ein.
 
-[
-	Die Zahl z ist die Länge von 2.
-]
-Die Funktion foo mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
+Wir nennen die Kombination aus
+	dem Text t mit Standardwert "Struktur text",
+eine Struktur, und erstellen sie so:
+	"eine neue Struktur",
+	"einer neuen Struktur"
+
+Wir definieren eine Typdefinition als eine Struktur.
+Wir definieren eine Zeichenkette als einen Text.
+
+[unary]
+
+Die Funktion unary mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Gib z zurück.
 Und überlädt den "Länge" Operator.
 
+Die Funktion unary2 mit dem Parameter t vom Typ Text, gibt eine Zahl zurück, macht:
+	Gib die Länge von t plus 1 zurück.
+Und überlädt den "Betrag" Operator.
+
+Die Funktion unary3 mit dem Parameter z vom Typ Struktur, gibt eine Zahl zurück, macht:
+	Gib die Länge von t von z zurück.
+Und überlädt den "-" Operator.
+
+Die Funktion unary4 mit dem Parameter z vom Typ Typdefinition, gibt eine Zahl zurück, macht:
+	Gib die Länge von t von (z als Struktur) zurück.
+Und überlädt den "nicht" Operator.
+
+Die Funktion unary5 mit dem Parameter z vom Typ Buchstabe, gibt einen Text zurück, macht:
+	Gib "Buchstabe: " verkettet mit z zurück.
+Und überlädt den "logisch nicht" Operator.
+
+Die Funktion unary6 mit dem Parameter p1 vom Typ Zeichenkette, gibt einen Text zurück,
+ist in "extern.c" definiert
+und überlädt den "Länge" Operator.
+
 Schreibe (die Länge von 2) auf eine Zeile.
+Schreibe (der Betrag von "Hallo") auf eine Zeile.
+Schreibe (-eine neue Struktur) auf eine Zeile.
+Schreibe (nicht eine neue Struktur als Typdefinition) auf eine Zeile.
+Schreibe (logisch nicht 'B') auf eine Zeile.
+Schreibe (die Länge von ("Test" als Zeichenkette)) auf eine Zeile.
+Schreibe '\n'.
+
+[binary]
+
+Die Funktion binary mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
+	Gib a plus b zurück.
+Und überlädt den "verkettet" Operator.
+
+Die Funktion binary2 mit den Parametern a und b vom Typ Text und Zahl, gibt einen Text zurück, macht:
+	Gib a verkettet mit b als Text zurück.
+Und überlädt den "entweder oder" Operator.
+
+Die Funktion binary3 mit den Parametern a und b vom Typ Text und Struktur, gibt einen Text zurück, macht:
+	Gib a verkettet mit t von b zurück.
+Und überlädt den "plus" Operator.
+
+Die Funktion binary4 mit den Parametern a und b vom Typ Text und Typdefinition, gibt einen Text zurück, macht:
+	Gib a verkettet mit t von (b als Struktur) zurück.
+Und überlädt den "durch" Operator.
+
+Die Funktion binary5 mit den Parametern a und b vom Typ Zeichenkette und Zahl, gibt einen Buchstaben zurück,
+ist in "extern.c" definiert
+und überlädt den "an der Stelle" Operator.
+
+Schreibe (2 verkettet mit 3) auf eine Zeile.
+Schreibe (entweder "Hallo: ", oder 2) auf eine Zeile.
+Schreibe ("Hallo " plus eine neue Struktur) auf eine Zeile.
+Schreibe ("Hallo " durch ( eine neue Struktur als Typdefinition )) auf eine Zeile.
+Schreibe ("Hallo" als Zeichenkette an der Stelle 2) auf eine Zeile.
+Schreibe '\n'.
