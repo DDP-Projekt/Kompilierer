@@ -30,7 +30,7 @@ endif
 
 OUT_DIR := build/
 
-DDPVERSION := v0.3.0-alpha
+DDPVERSION := v0.4.0-alpha
 LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
 GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
