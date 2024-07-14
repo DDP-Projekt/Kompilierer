@@ -21,6 +21,9 @@ func init() {
 	for op := TER_INVALID + 1; op < ter_end; op++ {
 		operator_map[op.String()] = op
 	}
+	for op := CAST_INVALID + 1; op < cast_end; op++ {
+		operator_map[op.String()] = op
+	}
 }
 
 func GetOperator(s string) (Operator, bool) {
@@ -194,4 +197,22 @@ func (op TypeOperator) String() string {
 		return "Standardwert"
 	}
 	panic(fmt.Errorf("unbekannter Typ-Operator %d", op))
+}
+
+type CastOperator int // dummy type to support operator overloading on cast expressions
+
+func (CastOperator) Operator() {}
+
+const (
+	CAST_INVALID CastOperator = iota
+	CAST_OP                   // als
+	cast_end
+)
+
+func (op CastOperator) String() string {
+	switch op {
+	case CAST_OP:
+		return "als"
+	}
+	panic(fmt.Errorf("unbekannter Cast-Operator %d", op))
 }

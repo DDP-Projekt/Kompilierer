@@ -103,10 +103,12 @@ type (
 	// als Expressions cannot be unary
 	// because the type operator might be multiple
 	// tokens long
+	// NOTE: maybe add this to TypeOperators
 	CastExpr struct {
-		Range      token.Range
-		TargetType ddptypes.Type
-		Lhs        Expression
+		Range        token.Range
+		TargetType   ddptypes.Type
+		Lhs          Expression
+		OverloadedBy *FuncDecl
 	}
 
 	// expressions that operate on types (Standardwert, Größe)

@@ -71,3 +71,25 @@ Schreibe ("Hallo " plus eine neue Struktur) auf eine Zeile.
 Schreibe ("Hallo " durch ( eine neue Struktur als Typdefinition )) auf eine Zeile.
 Schreibe ("Hallo" als Zeichenkette an der Stelle 2) auf eine Zeile.
 Schreibe '\n'.
+
+Die Funktion cast mit dem Parameter a vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Gib a plus 1 zurück.
+Und überlädt den "als" Operator.
+
+Die Funktion cast2 mit dem Parameter a vom Typ Text, gibt einen Text zurück, macht:
+	Gib a verkettet mit " gecasted" zurück.
+Und überlädt den "als" Operator.
+
+Die Funktion cast3 mit dem Parameter a vom Typ Struktur, gibt einen Text zurück, macht:
+	Gib t von a zurück.
+Und überlädt den "als" Operator.
+
+Die Funktion cast4 mit dem Parameter a vom Typ Typdefinition, gibt einen Text zurück, macht:
+	Gib t von (a als Struktur) zurück.
+Und überlädt den "als" Operator.
+
+Schreibe (22 als Zahl) auf eine Zeile.
+Schreibe ("Hallo" als Text) auf eine Zeile.
+Schreibe (eine neue Struktur als Text) auf eine Zeile.
+Schreibe ((eine neue Struktur als Typdefinition) als Text) auf eine Zeile.
+Schreibe '\n'.

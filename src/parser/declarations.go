@@ -394,6 +394,10 @@ func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType
 		if len(params) != 3 {
 			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet drei Parameter, aber hat %d bekommen", op, len(params)))
 		}
+	case ast.CastOperator:
+		if len(params) != 1 {
+			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet nur einen Parameter, aber hat %d bekommen", op, len(params)))
+		}
 	}
 
 	if ddptypes.IsVoid(returnType) {
@@ -524,7 +528,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		IsExternVisible: isExternVisible,
 		Mod:             p.module,
 		Parameters:      params,
-		Type:            Typ,
+		ReturnType:      Typ,
 		Body:            nil,
 		ExternFile:      *definedIn,
 		Operator:        operator,

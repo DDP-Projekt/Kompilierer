@@ -34,7 +34,7 @@ type (
 		IsExternVisible bool            // wether the function is marked as extern visible
 		Mod             *Module         // the module in which the function was declared
 		Parameters      []ParameterInfo // name, type and comments of parameters
-		Type            ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
+		ReturnType      ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
 		Body            *BlockStmt      // nil for extern functions
 		ExternFile      token.Token     // string literal with filepath (only pesent if Body is nil)
 		Operator        Operator        // the operator this function overloads, or nil if it does not overload an operator

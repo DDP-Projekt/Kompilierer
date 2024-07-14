@@ -489,7 +489,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
-	retType := c.toIrType(decl.Type) // get the llvm type
+	retType := c.toIrType(decl.ReturnType) // get the llvm type
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 
@@ -1526,6 +1526,18 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Token(),
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+			},
+		})
+	}
+
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
 	if ddptypes.IsList(targetType) {
@@ -1686,7 +1698,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	irReturnType := c.toIrType(fun.funcDecl.Type)
+	irReturnType := c.toIrType(fun.funcDecl.ReturnType)
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
 		ret = c.NewAlloca(irReturnType.IrType())
@@ -1809,11 +1821,11 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
 			// declare all types this function depends on
-			declareIfStruct(decl.Type)
+			declareIfStruct(decl.ReturnType)
 			for _, param := range decl.Parameters {
 				declareIfStruct(param.Type.Type)
 			}
-			retType := c.toIrType(decl.Type) // get the llvm type
+			retType := c.toIrType(decl.ReturnType) // get the llvm type
 			retTypeIr := retType.IrType()
 			params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 

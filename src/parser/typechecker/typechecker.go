@@ -128,7 +128,7 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// TODO: error on the type-name ranges
 	if decl.IsPublic {
-		if !IsPublicType(decl.Type, t.CurrentTable) {
+		if !IsPublicType(decl.ReturnType, t.CurrentTable) {
 			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
 		}
 
@@ -272,7 +272,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 
 	if overload := t.findOverload(expr.Operator, rhs); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Type
+		t.latestReturnedType = overload.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -311,7 +311,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 
 	if overload := t.findOverload(expr.Operator, lhs, rhs); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Type
+		t.latestReturnedType = overload.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -417,7 +417,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 
 	if overload := t.findOverload(expr.Operator, lhs, mid, rhs); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Type
+		t.latestReturnedType = overload.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -468,6 +468,17 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
+	}
+
+	overloads := t.Module.Operators[ast.CAST_OP]
+	if len(overloads) > 0 {
+		for _, overload := range overloads {
+			if ddptypes.Equal(overload.Parameters[0].Type.Type, lhs) && ddptypes.Equal(overload.ReturnType, expr.TargetType) {
+				expr.OverloadedBy = overload
+				t.latestReturnedType = expr.TargetType
+				return ast.VisitRecurse
+			}
+		}
 	}
 
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
@@ -578,7 +589,7 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 		}
 	}
 
-	t.latestReturnedType = decl.Type
+	t.latestReturnedType = decl.ReturnType
 	return ast.VisitRecurse
 }
 
@@ -766,17 +777,17 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).Type, returnType) {
+	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, returnType) {
 		if stmt.Value == nil {
 			t.err(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Range,
 				fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-					fun.(*ast.FuncDecl).Type,
+					fun.(*ast.FuncDecl).ReturnType,
 					returnType),
 			)
 		} else {
 			t.errExpr(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Value,
 				"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-				fun.(*ast.FuncDecl).Type,
+				fun.(*ast.FuncDecl).ReturnType,
 				returnType,
 			)
 		}
