@@ -21,7 +21,7 @@ Und überlädt den "Betrag" Operator.
 
 Die Funktion unary3 mit dem Parameter z vom Typ Struktur, gibt eine Zahl zurück, macht:
 	Gib die Länge von t von z zurück.
-Und überlädt den "-" Operator.
+Und überlädt den "unäres minus" Operator.
 
 Die Funktion unary4 mit dem Parameter z vom Typ Typdefinition, gibt eine Zahl zurück, macht:
 	Gib die Länge von t von (z als Struktur) zurück.
@@ -47,11 +47,11 @@ Schreibe '\n'.
 
 Die Funktion binary mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Gib a plus b zurück.
-Und überlädt den "verkettet" Operator.
+Und überlädt den "verkettet mit" Operator.
 
 Die Funktion binary2 mit den Parametern a und b vom Typ Text und Zahl, gibt einen Text zurück, macht:
 	Gib a verkettet mit b als Text zurück.
-Und überlädt den "entweder oder" Operator.
+Und überlädt den "entweder ... oder" Operator.
 
 Die Funktion binary3 mit den Parametern a und b vom Typ Text und Struktur, gibt einen Text zurück, macht:
 	Gib a verkettet mit t von b zurück.
