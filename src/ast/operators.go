@@ -55,7 +55,7 @@ func (op UnaryOperator) String() string {
 	case UN_LEN:
 		return "Länge"
 	case UN_NEGATE:
-		return "unär minus"
+		return "unäres minus"
 	case UN_NOT:
 		return "nicht"
 	case UN_LOGIC_NOT:
