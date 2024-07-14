@@ -9,8 +9,10 @@ type Operator interface {
 	Operator() // dummy function for the interface
 }
 
+// map of op.String() -> op
 var operator_map = map[string]Operator{}
 
+// add all operators that can be overloaded to the operator_map
 func init() {
 	for op := UN_INVALID + 1; op < un_end; op++ {
 		operator_map[op.String()] = op
@@ -26,6 +28,7 @@ func init() {
 	}
 }
 
+// returns the corresponding Operator for it's string representation
 func GetOperator(s string) (Operator, bool) {
 	op, ok := operator_map[s]
 	return op, ok
@@ -42,7 +45,7 @@ const (
 	UN_NEGATE                  // -
 	UN_NOT                     // nicht
 	UN_LOGIC_NOT               // logisch nicht
-	un_end
+	un_end                     // unexported constant to enable looping over all values
 )
 
 func (op UnaryOperator) String() string {
@@ -93,7 +96,7 @@ const (
 	BIN_FIELD_ACCESS                // von
 	BIN_SLICE_TO                    // bis zum
 	BIN_SLICE_FROM                  // ab dem
-	bin_end
+	bin_end                         // unexported constant to enable looping over all values
 )
 
 func (op BinaryOperator) String() string {
@@ -163,7 +166,7 @@ const (
 	TER_SLICE                   // von bis
 	TER_BETWEEN                 // zwischen
 	TER_FALLS                   // <a>, falls <b>, ansonsten <c>
-	ter_end
+	ter_end                     // unexported constant to enable looping over all values
 )
 
 func (op TernaryOperator) String() string {
@@ -199,14 +202,15 @@ func (op TypeOperator) String() string {
 	panic(fmt.Errorf("unbekannter Typ-Operator %d", op))
 }
 
-type CastOperator int // dummy type to support operator overloading on cast expressions
+// dummy type to support operator overloading on cast expressions
+type CastOperator int
 
 func (CastOperator) Operator() {}
 
 const (
 	CAST_INVALID CastOperator = iota
 	CAST_OP                   // als
-	cast_end
+	cast_end                  // unexported constant to enable looping over all values
 )
 
 func (op CastOperator) String() string {

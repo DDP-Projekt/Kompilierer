@@ -371,6 +371,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 	return funcAliases, funcAliasTokens
 }
 
+// helper for funcDeclaration
 func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType ddptypes.Type, validate func(bool)) ast.Operator {
 	validate(p.consume(token.DEN, token.STRING, token.OPERATOR, token.DOT))
 	operator_token := p.peekN(-3)
