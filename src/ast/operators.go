@@ -55,7 +55,7 @@ func (op UnaryOperator) String() string {
 	case UN_LEN:
 		return "Länge"
 	case UN_NEGATE:
-		return "-"
+		return "unär minus"
 	case UN_NOT:
 		return "nicht"
 	case UN_LOGIC_NOT:
@@ -106,9 +106,9 @@ func (op BinaryOperator) String() string {
 	case BIN_OR:
 		return "oder"
 	case BIN_XOR:
-		return "entweder oder"
+		return "entweder ... oder"
 	case BIN_CONCAT:
-		return "verkettet"
+		return "verkettet mit"
 	case BIN_PLUS:
 		return "plus"
 	case BIN_MINUS:
@@ -132,21 +132,21 @@ func (op BinaryOperator) String() string {
 	case BIN_MOD:
 		return "modulo"
 	case BIN_LEFT_SHIFT:
-		return "links"
+		return "links verschiebung"
 	case BIN_RIGHT_SHIFT:
-		return "rechts"
+		return "rechts verschiebung"
 	case BIN_EQUAL:
 		return "gleich"
 	case BIN_UNEQUAL:
 		return "ungleich"
 	case BIN_LESS:
-		return "kleiner"
+		return "kleiner als"
 	case BIN_GREATER:
-		return "größer"
+		return "größer als"
 	case BIN_LESS_EQ:
-		return "kleiner oder"
+		return "kleiner als, oder"
 	case BIN_GREATER_EQ:
-		return "größer oder"
+		return "größer als, oder"
 	case BIN_FIELD_ACCESS:
 		return "von"
 	case BIN_SLICE_TO:
