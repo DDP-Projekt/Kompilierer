@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Bug im Parser, der rekursiv allen Arbeitsspeicher verbraucht
 - [Added] Operatoren-Überladung
 - [Changed] Die Typen, die von Funktionen, Variablen und anderen Typen benutzt werden müssen jetzt nicht mehr extra eingebunden werden
 - [Added] Typ-Aliase und Typ-Definitionen

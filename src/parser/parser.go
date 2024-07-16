@@ -171,14 +171,15 @@ func (p *parser) declaration() ast.Statement {
 			n = -2
 		}
 
-		p.advance()
-		switch t := p.previous().Type; t {
+		switch t := p.peek().Type; t {
 		case token.ALIAS:
+			p.advance()
 			return p.aliasDecl()
 		case token.FUNKTION:
+			p.advance()
 			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
 		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
+			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
 		}
 	}
 

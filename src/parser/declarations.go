@@ -73,16 +73,14 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
 
 	isExternVisible := false
-	if isPublic && p.previous().Type == token.COMMA || p.previous().Type == token.EXTERN {
+	if isPublic && p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
 		if p.previous().Type == token.COMMA {
 			p.consume(token.EXTERN)
 		}
 		p.consume(token.SICHTBARE)
 		isExternVisible = true
-		p.advance()
 	}
 
-	p.decrease()
 	type_start := p.peek()
 	typ := p.parseType()
 	type_end := p.previous()
@@ -794,8 +792,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		if p.matchAny(token.OEFFENTLICHEN) {
 			n = -2
 		}
-		p.advance()
-		fields = append(fields, p.varDeclaration(n-1, true))
+		fields = append(fields, p.varDeclaration(n, true))
 		if !p.consume(token.COMMA) {
 			p.advance()
 		}
@@ -960,7 +957,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 
 // TODO: add support for struct aliases
 func (p *parser) aliasDecl() ast.Statement {
-	begin := p.peekN(-2)
+	begin := p.peekN(-1)
 	if begin.Type != token.DER {
 		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", token.DER))
 	}
