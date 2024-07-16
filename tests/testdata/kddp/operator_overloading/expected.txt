@@ -1,0 +1,18 @@
+2
+6
+13
+13
+Buchstabe: B
+Qest
+
+5
+Hallo: 2
+Hallo Struktur text
+Hallo Struktur text
+l
+
+23
+Hallo gecasted
+Struktur text
+Struktur text
+

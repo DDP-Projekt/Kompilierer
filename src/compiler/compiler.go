@@ -489,7 +489,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
-	retType := c.toIrType(decl.Type) // get the llvm type
+	retType := c.toIrType(decl.ReturnType) // get the llvm type
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 
@@ -745,7 +745,20 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	const all_ones int64 = ^0 // int with all bits set to 1
 
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
+
 	// big switches for the different type combinations
 	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
@@ -805,6 +818,20 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	c.commentNode(c.cbb, e, e.Operator.String())
+
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
 	// for BIN_FIELD_ACCESS we don't want to evaluate Lhs, as it is just the field name
 	switch e.Operator {
@@ -1306,6 +1333,20 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Tok,
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
+				e.OverloadedBy.Parameters[2].Name.Literal: e.Rhs,
+			},
+		})
+	}
+
 	// if due to short circuiting
 	if e.Operator == ast.TER_FALLS {
 		mid, _, _ := c.evaluate(e.Mid)
@@ -1485,6 +1526,18 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
+	if e.OverloadedBy != nil {
+		return c.VisitFuncCall(&ast.FuncCall{
+			Range: e.GetRange(),
+			Tok:   e.Token(),
+			Name:  e.OverloadedBy.Name(),
+			Func:  e.OverloadedBy,
+			Args: map[string]ast.Expression{
+				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
+			},
+		})
+	}
+
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
 	if ddptypes.IsList(targetType) {
@@ -1645,7 +1698,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	irReturnType := c.toIrType(fun.funcDecl.Type)
+	irReturnType := c.toIrType(fun.funcDecl.ReturnType)
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
 		ret = c.NewAlloca(irReturnType.IrType())
@@ -1768,11 +1821,11 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
 			// declare all types this function depends on
-			declareIfStruct(decl.Type)
+			declareIfStruct(decl.ReturnType)
 			for _, param := range decl.Parameters {
 				declareIfStruct(param.Type.Type)
 			}
-			retType := c.toIrType(decl.Type) // get the llvm type
+			retType := c.toIrType(decl.ReturnType) // get the llvm type
 			retTypeIr := retType.IrType()
 			params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
 

@@ -102,6 +102,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 				Faulty:     false,
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
+			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
 		},
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
@@ -267,6 +268,9 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		switch decl := decl.(type) {
 		case *ast.FuncDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.FuncAlias, ast.Alias](decl.Aliases)...)
+			if ast.IsOperatorOverload(decl) {
+				p.insertOperatorOverload(decl)
+			}
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
 		case *ast.TypeAliasDecl:
@@ -380,5 +384,22 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 		} else {
 			p.aliases.Insert(pTokens, alias)
 		}
+	}
+}
+
+func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
+	overloads := p.module.Operators[decl.Operator]
+
+	valid := true
+	for _, overload := range overloads {
+		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
+			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
+			valid = false
+		}
+	}
+
+	if valid {
+		overloads = append(overloads, decl)
+		p.module.Operators[decl.Operator] = overloads
 	}
 }

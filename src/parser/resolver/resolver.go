@@ -322,7 +322,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 		switch decl := decl.(type) {
 		case *ast.FuncDecl:
-			checkSingleType(decl.Type) // return type
+			checkSingleType(decl.ReturnType) // return type
 			for _, param := range decl.Parameters {
 				checkSingleType(param.Type.Type)
 			}

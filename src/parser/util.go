@@ -4,6 +4,9 @@ This file contains general utility functions used in the parser
 package parser
 
 import (
+	"slices"
+
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
@@ -114,4 +117,10 @@ func toPointerSlice[T any](slice []T) []*T {
 func isDefaultValue[T comparable](v T) bool {
 	var default_value T
 	return v == default_value
+}
+
+func operatorParameterTypesEqual(pi1, pi2 []ast.ParameterInfo) bool {
+	return slices.EqualFunc(pi1, pi2, func(pi1, pi2 ast.ParameterInfo) bool {
+		return ddptypes.Equal(pi1.Type.Type, pi2.Type.Type)
+	})
 }
