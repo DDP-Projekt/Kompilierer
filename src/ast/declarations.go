@@ -19,6 +19,7 @@ type (
 		CommentTok      *token.Token  // optional comment (also contained in ast.Comments)
 		Type            ddptypes.Type // type of the variable
 		NameTok         token.Token   // identifier name
+		TypeRange       token.Range   // range of the type (mainly used by the LSP)
 		IsPublic        bool          // wether the function is marked with öffentliche
 		IsExternVisible bool          // wether the variable is marked as extern visible
 		Mod             *Module       // the module in which the variable was declared
@@ -35,6 +36,7 @@ type (
 		Mod             *Module         // the module in which the function was declared
 		Parameters      []ParameterInfo // name, type and comments of parameters
 		ReturnType      ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
+		ReturnTypeRange token.Range     // range of the return type (mainly used by the LSP)
 		Body            *BlockStmt      // nil for extern functions
 		ExternFile      token.Token     // string literal with filepath (only pesent if Body is nil)
 		Operator        Operator        // the operator this function overloads, or nil if it does not overload an operator
@@ -56,25 +58,27 @@ type (
 	}
 
 	TypeAliasDecl struct {
-		Range      token.Range
-		CommentTok *token.Token // optional comment
-		Tok        token.Token  // Wir
-		NameTok    token.Token  // token of the name
-		IsPublic   bool
-		Mod        *Module
-		Underlying ddptypes.Type       // the underlying type
-		Type       *ddptypes.TypeAlias // the resulting  TypeAlias type
+		Range           token.Range
+		CommentTok      *token.Token // optional comment
+		Tok             token.Token  // Wir
+		NameTok         token.Token  // token of the name
+		IsPublic        bool
+		Mod             *Module
+		Underlying      ddptypes.Type       // the underlying type
+		UnderlyingRange token.Range         // range of the underlying type (mainly used by the LSP)
+		Type            *ddptypes.TypeAlias // the resulting  TypeAlias type
 	}
 
 	TypeDefDecl struct {
-		Range      token.Range
-		CommentTok *token.Token // optional comment
-		Tok        token.Token  // Wir
-		NameTok    token.Token  // token of the name
-		IsPublic   bool
-		Mod        *Module
-		Underlying ddptypes.Type     // the underlying type
-		Type       *ddptypes.TypeDef // the resulting  TypeDef type
+		Range           token.Range
+		CommentTok      *token.Token // optional comment
+		Tok             token.Token  // Wir
+		NameTok         token.Token  // token of the name
+		IsPublic        bool
+		Mod             *Module
+		Underlying      ddptypes.Type     // the underlying type
+		UnderlyingRange token.Range       // range of the underlying type (mainly used by the LSP)
+		Type            *ddptypes.TypeDef // the resulting  TypeDef type
 	}
 )
 

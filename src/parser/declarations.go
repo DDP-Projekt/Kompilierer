@@ -83,8 +83,9 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	p.decrease()
-	type_start := p.previous()
+	type_start := p.peek()
 	typ := p.parseType()
+	type_end := p.previous()
 	if typ == nil {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
 	} else {
@@ -166,6 +167,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		CommentTok:      comment,
 		Type:            typ,
 		NameTok:         *name,
+		TypeRange:       token.NewRange(type_start, type_end),
 		IsPublic:        isPublic,
 		IsExternVisible: isExternVisible,
 		Mod:             p.module,
@@ -244,21 +246,26 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 
 	// parse the types of the parameters
 	validate(p.consume(token.VOM, token.TYP))
+	firstTypeStart := p.previous()
 	firstType, ref := p.parseReferenceType()
+	firstTypeEnd := p.previous()
 	validate(firstType != nil)
 	params[0].Type = ddptypes.ParameterType{Type: firstType, IsReference: ref}
+	params[0].TypeRange = token.NewRange(firstTypeStart, firstTypeEnd)
 
 	if !singleParameter {
 		i := 1
 		// helper function to avoid too much repitition
 		addType := func() {
 			// validate the parameter type and append it
+			typeStart := p.peek()
 			typ, ref := p.parseReferenceType()
+			typeEnd := p.previous()
 			validate(typ != nil)
 			if i < len(params) {
 				params[i].Type = ddptypes.ParameterType{Type: typ, IsReference: ref}
+				params[i].TypeRange = token.NewRange(typeStart, typeEnd)
 				i++
-
 			}
 		}
 
@@ -457,11 +464,13 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	// parse the return type declaration
 	validate(p.consume(token.GIBT))
-	Typ := p.parseReturnType()
-	if Typ == nil {
+	returnTypeStart := p.previous()
+	returnType := p.parseReturnType()
+	returnTypeEnd := p.previous()
+	if returnType == nil {
 		valid = false
 	}
-	p.isCurrentFunctionBool = ddptypes.Equal(Typ, ddptypes.WAHRHEITSWERT)
+	p.isCurrentFunctionBool = ddptypes.Equal(returnType, ddptypes.WAHRHEITSWERT)
 
 	validate(p.consume(token.ZURÜCK, token.COMMA))
 
@@ -500,7 +509,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		operator        ast.Operator
 	)
 	if p.matchSeq(token.UND, token.ÜBERLÄDT) {
-		operator = p.parseOperatorOverloading(params, Typ, validate)
+		operator = p.parseOperatorOverloading(params, returnType, validate)
 	} else {
 		funcAliases, funcAliasTokens = p.parseFunctionAliases(params, validate)
 	}
@@ -529,7 +538,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		IsExternVisible: isExternVisible,
 		Mod:             p.module,
 		Parameters:      params,
-		ReturnType:      Typ,
+		ReturnType:      returnType,
+		ReturnTypeRange: token.NewRange(returnTypeStart, returnTypeEnd),
 		Body:            nil,
 		ExternFile:      *definedIn,
 		Operator:        operator,
@@ -575,7 +585,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		decl.Body = body
 
 		// check that the function has a return statement if it needs one
-		if !ddptypes.IsVoid(Typ) { // only if the function does not return void
+		if !ddptypes.IsVoid(returnType) { // only if the function does not return void
 			if len(body.Statements) < 1 { // at least the return statement is needed
 				perr(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN)
 			} else {
@@ -879,7 +889,9 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 
 	p.consume(token.NENNEN)
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
+	underlyingStart := p.peek()
 	underlying := p.parseType()
+	underlyingEnd := p.previous()
 
 	isPublic := p.matchAny(token.OEFFENTLICH)
 	p.consume(token.AUCH)
@@ -891,13 +903,14 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	p.consume(token.DOT)
 
 	decl := &ast.TypeAliasDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		Tok:        *begin,
-		CommentTok: comment,
-		NameTok:    *typeName,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		Underlying: underlying,
+		Range:           token.NewRange(begin, p.previous()),
+		Tok:             *begin,
+		CommentTok:      comment,
+		NameTok:         *typeName,
+		IsPublic:        isPublic,
+		Mod:             p.module,
+		Underlying:      underlying,
+		UnderlyingRange: token.NewRange(underlyingStart, underlyingEnd),
 		Type: &ddptypes.TypeAlias{
 			Name:       typeName.Literal,
 			Underlying: underlying,
@@ -920,18 +933,21 @@ func (p *parser) typeDefDecl() ast.Declaration {
 	p.consume(token.ALS)
 
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
+	underlyingStart := p.peek()
 	underlying := p.parseType()
+	underlyingEnd := p.previous()
 
 	p.consume(token.DOT)
 
 	decl := &ast.TypeDefDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		Tok:        *begin,
-		CommentTok: comment,
-		NameTok:    *typeName,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		Underlying: underlying,
+		Range:           token.NewRange(begin, p.previous()),
+		Tok:             *begin,
+		CommentTok:      comment,
+		NameTok:         *typeName,
+		IsPublic:        isPublic,
+		Mod:             p.module,
+		Underlying:      underlying,
+		UnderlyingRange: token.NewRange(underlyingStart, underlyingEnd),
 		Type: &ddptypes.TypeDef{
 			Name:       typeName.Literal,
 			Underlying: underlying,

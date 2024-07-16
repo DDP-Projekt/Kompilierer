@@ -143,9 +143,10 @@ func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
 
 // holds all information about a single function parameter
 type ParameterInfo struct {
-	Name    token.Token            // the name token of the parameter
-	Type    ddptypes.ParameterType // the type of the parameter or default value if there was an error during parsing
-	Comment *token.Token           // the comment token, or nil if none was present
+	Name      token.Token            // the name token of the parameter
+	Type      ddptypes.ParameterType // the type of the parameter or default value if there was an error during parsing
+	TypeRange token.Range            // range of the type (mainly for the LSP)
+	Comment   *token.Token           // the comment token, or nil if none was present
 }
 
 // wether the ParameterInfo's type is not the default value (i.e. was not parsed)
