@@ -75,7 +75,16 @@ size_t utf8_num_bytes(char *s) {
 	if (s == NULL) {
 		return 0;
 	}
-	size_t len = strlen(s), num_bytes = 0;
+
+	// strlen but for maximally 4 characters
+	// yields a massive performance gain for big strings (as the O(n) complexity is dropped)
+	uint8_t len = 0;
+	char *it = s;
+	while (*(it++) != '\0' && len < 4) {
+		len++;
+	}
+
+	size_t num_bytes = 0;
 
 	// is valid single byte (ie 0xxx xxxx)
 	if (len >= 1 && utf8_is_single_byte(s)) {

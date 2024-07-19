@@ -32,6 +32,8 @@ var (
 
 	ptr = types.NewPointer
 
+	i8ptr = ptr(i8)
+
 	zero  = newInt(0) // 0: i64
 	zerof = constant.NewFloat(ddpfloat, 0)
 )

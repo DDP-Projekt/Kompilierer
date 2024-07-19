@@ -54,7 +54,7 @@ func (*ddpIrStringType) IsPrimitive() bool {
 
 func (t *ddpIrStringType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
-		constant.NewNull(ptr(i8)),
+		constant.NewNull(i8ptr),
 		zero,
 	)
 }
@@ -74,15 +74,15 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 func (c *compiler) defineStringType() *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
-		ptr(i8), // char* str
-		ddpint,  // ddpint cap;
+		i8ptr,  // char* str
+		ddpint, // ddpint cap;
 	))
 	ddpstring.ptr = ptr(ddpstring.typ)
 
 	// declare all the external functions to work with strings
 
 	// allocates a buffer for ret and copies str into it
-	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ptr(i8)))
+	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", i8ptr))
 
 	// frees the given string
 	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr))

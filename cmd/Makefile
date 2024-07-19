@@ -24,7 +24,7 @@ else
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
 
-.PHONY = all clean
+.PHONY = all clean kddp ddp-setup
 
 .DEFAULT_GOAL := all
 
