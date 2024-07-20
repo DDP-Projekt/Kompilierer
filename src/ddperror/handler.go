@@ -111,13 +111,20 @@ func MakePanicHandler() Handler {
 // helper to create the common error header of all handlers
 // prints the error type, code and place
 func makeErrorHeader(err Error, file string) string {
+	kind := "Fehler"
+	prefix := err.Code.ErrorPrefix()
+	if err.Level == LEVEL_WARN {
+		kind = "Warnung"
+		prefix = err.Code.WarningPrefix()
+	}
 	if path, e := filepath.Rel(file, err.File); e != nil {
 		file = err.File
 	} else {
 		file = path
 	}
-	return fmt.Sprintf("%s Fehler (%04d) in %s (Z: %d, S: %d)",
-		err.Code.ErrorPrefix(),
+	return fmt.Sprintf("%s %s (%04d) in %s (Z: %d, S: %d)",
+		prefix,
+		kind,
 		err.Code,
 		file,
 		err.Range.Start.Line,

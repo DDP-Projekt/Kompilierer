@@ -63,6 +63,9 @@ func (p *parser) statement() ast.Statement {
 	case token.COLON:
 		p.consume(token.COLON)
 		return p.blockStatement(nil)
+	case token.ELIPSIS:
+		p.consume(token.ELIPSIS)
+		return p.todoStmt()
 	}
 
 	// no other statement was found, so interpret it as expression statement, whose result will be discarded
@@ -657,6 +660,13 @@ func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 		Colon:      *colon,
 		Statements: statements,
 		Symbols:    symbols,
+	}
+}
+
+func (p *parser) todoStmt() ast.Statement {
+	p.warn(ddperror.SEM_TODO_STMT_FOUND, p.previous().Range, "Für diesen Teil des Programms fehlt eine Implementierung und es wird ein Laufzeitfehler ausgelöst")
+	return &ast.TodoStmt{
+		Tok: *p.previous(),
 	}
 }
 

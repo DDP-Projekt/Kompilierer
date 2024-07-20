@@ -91,6 +91,10 @@ type (
 		Func   string
 		Value  Expression // nil for void return
 	}
+
+	TodoStmt struct {
+		Tok token.Token // ...
+	}
 )
 
 func (stmt *BadStmt) node()           {}
@@ -105,6 +109,7 @@ func (stmt *ForStmt) node()           {}
 func (stmt *ForRangeStmt) node()      {}
 func (stmt *BreakContinueStmt) node() {}
 func (stmt *ReturnStmt) node()        {}
+func (stmt *TodoStmt) node()          {}
 
 func (stmt *BadStmt) String() string           { return "BadStmt" }
 func (stmt *DeclStmt) String() string          { return "DeclStmt" }
@@ -118,6 +123,7 @@ func (stmt *ForStmt) String() string           { return "ForStmt" }
 func (stmt *ForRangeStmt) String() string      { return "ForRangeStmt" }
 func (stmt *BreakContinueStmt) String() string { return "BreakContinueStmt" }
 func (stmt *ReturnStmt) String() string        { return "ReturnStmt" }
+func (stmt *TodoStmt) String() string          { return "TodoStmt" }
 
 func (stmt *BadStmt) Token() token.Token           { return stmt.Tok }
 func (stmt *DeclStmt) Token() token.Token          { return stmt.Decl.Token() }
@@ -131,6 +137,7 @@ func (stmt *ForStmt) Token() token.Token           { return stmt.For }
 func (stmt *ForRangeStmt) Token() token.Token      { return stmt.For }
 func (stmt *BreakContinueStmt) Token() token.Token { return stmt.Tok }
 func (stmt *ReturnStmt) Token() token.Token        { return stmt.Return }
+func (stmt *TodoStmt) Token() token.Token          { return stmt.Tok }
 
 func (stmt *BadStmt) GetRange() token.Range           { return stmt.Err.Range }
 func (stmt *DeclStmt) GetRange() token.Range          { return stmt.Decl.GetRange() }
@@ -144,6 +151,7 @@ func (stmt *ForStmt) GetRange() token.Range           { return stmt.Range }
 func (stmt *ForRangeStmt) GetRange() token.Range      { return stmt.Range }
 func (stmt *BreakContinueStmt) GetRange() token.Range { return stmt.Range }
 func (stmt *ReturnStmt) GetRange() token.Range        { return stmt.Range }
+func (stmt *TodoStmt) GetRange() token.Range          { return stmt.Tok.Range }
 
 func (stmt *BadStmt) Accept(v FullVisitor) VisitResult      { return v.VisitBadStmt(stmt) }
 func (stmt *DeclStmt) Accept(v FullVisitor) VisitResult     { return v.VisitDeclStmt(stmt) }
@@ -159,6 +167,7 @@ func (stmt *BreakContinueStmt) Accept(v FullVisitor) VisitResult {
 	return v.VisitBreakContinueStmt(stmt)
 }
 func (stmt *ReturnStmt) Accept(v FullVisitor) VisitResult { return v.VisitReturnStmt(stmt) }
+func (stmt *TodoStmt) Accept(v FullVisitor) VisitResult   { return v.VisitTodoStmt(stmt) }
 
 func (stmt *BadStmt) statementNode()           {}
 func (stmt *DeclStmt) statementNode()          {}
@@ -172,3 +181,4 @@ func (stmt *ForStmt) statementNode()           {}
 func (stmt *ForRangeStmt) statementNode()      {}
 func (stmt *BreakContinueStmt) statementNode() {}
 func (stmt *ReturnStmt) statementNode()        {}
+func (stmt *TodoStmt) statementNode()          {}

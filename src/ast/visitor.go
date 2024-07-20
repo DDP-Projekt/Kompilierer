@@ -70,6 +70,7 @@ type FullVisitor interface {
 	ForRangeStmtVisitor
 	BreakContineStmtVisitor
 	ReturnStmtVisitor
+	TodoStmtVisitor
 }
 
 type (
@@ -218,5 +219,9 @@ type (
 	ReturnStmtVisitor interface {
 		Visitor
 		VisitReturnStmt(*ReturnStmt) VisitResult
+	}
+	TodoStmtVisitor interface {
+		Visitor
+		VisitTodoStmt(*TodoStmt) VisitResult
 	}
 )

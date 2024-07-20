@@ -473,6 +473,13 @@ func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	return h.visitChildren(result, stmt.Value)
 }
 
+func (h *helperVisitor) VisitTodoStmt(stmt *TodoStmt) VisitResult {
+	if vis, ok := h.actualVisitor.(TodoStmtVisitor); ok {
+		return vis.VisitTodoStmt(stmt)
+	}
+	return VisitRecurse
+}
+
 // helper for visitFuncCall and visitStructLiteral
 // sorts the arguments by their order in the source code by using their ranges
 func (h *helperVisitor) sortArgs(Args map[string]Expression) []Node {

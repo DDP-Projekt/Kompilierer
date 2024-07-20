@@ -46,6 +46,7 @@ const (
 	SEM_UNNECESSARY_EXTERN_VISIBLE                        // a function was specified as both extern visible and extern defined
 	SEM_BAD_OPERATOR_PARAMS                               // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
 	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
+	SEM_TODO_STMT_FOUND                                   // ... wurde gefunden
 )
 
 // type error codes
@@ -95,4 +96,20 @@ func (code Code) ErrorPrefix() string {
 		return "Typ"
 	}
 	return "Invalider"
+}
+
+// returns the Prefix before "Warnung" of the given code
+// Prefixes are:
+// Syntax, Semantischer, Typ or nothing for MISC
+func (code Code) WarningPrefix() string {
+	if code.IsMiscError() {
+		return "Sonstige"
+	} else if code.IsSyntaxError() {
+		return "Syntax"
+	} else if code.IsSemanticError() {
+		return "Semantik"
+	} else if code.IsTypeError() {
+		return "Typ"
+	}
+	return "Invalide"
 }

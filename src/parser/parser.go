@@ -117,7 +117,9 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	// wrap the errorHandler to set the parsers Errored variable
 	// if it is called
 	parser.errorHandler = func(err ddperror.Error) {
-		parser.errored = true
+		if err.Level == ddperror.LEVEL_ERROR {
+			parser.errored = true
+		}
 		errorHandler(err)
 	}
 
@@ -355,7 +357,12 @@ func (p *parser) errVal(err ddperror.Error) {
 
 // helper to report errors and enter panic mode
 func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
-	p.errVal(ddperror.New(code, Range, msg, p.module.FileName))
+	p.errVal(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, p.module.FileName))
+}
+
+// helper to report errors and enter panic mode
+func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
+	p.errorHandler(ddperror.New(code, ddperror.LEVEL_WARN, Range, msg, p.module.FileName))
 }
 
 // checks wether the alias already exists AND has a value attached to it
