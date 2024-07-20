@@ -70,7 +70,7 @@ func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
 	r.Module.Ast.Faulty = true
 	if !*r.panicMode {
 		*r.panicMode = true
-		r.ErrorHandler(ddperror.New(code, Range, msg, r.Module.FileName))
+		r.ErrorHandler(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, r.Module.FileName))
 	}
 }
 
@@ -449,5 +449,9 @@ func (r *Resolver) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 	r.visit(stmt.Value)
+	return ast.VisitRecurse
+}
+
+func (*Resolver) VisitTodoStmt(*ast.TodoStmt) ast.VisitResult {
 	return ast.VisitRecurse
 }

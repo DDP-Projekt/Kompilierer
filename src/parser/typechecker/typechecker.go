@@ -70,7 +70,7 @@ func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string) {
 	t.Module.Ast.Faulty = true
 	if !*t.panicMode {
 		*t.panicMode = true
-		t.ErrorHandler(ddperror.New(code, Range, msg, t.Module.FileName))
+		t.ErrorHandler(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, t.Module.FileName))
 	}
 }
 
@@ -792,6 +792,10 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 			)
 		}
 	}
+	return ast.VisitRecurse
+}
+
+func (*Typechecker) VisitTodoStmt(*ast.TodoStmt) ast.VisitResult {
 	return ast.VisitRecurse
 }
 

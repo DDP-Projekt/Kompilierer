@@ -53,7 +53,7 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	// add the external dependencies
 	for path := range mod.ExternalDependencies {
 		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(mod.FileName), path)); err != nil {
-			errHndl(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
+			errHndl(ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, token.Range{},
 				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), mod.FileName))
 		} else {
 			path = abspath
@@ -108,6 +108,7 @@ type compiler struct {
 	moduleDisposeFunc          *ir.Func
 	out_of_bounds_error_string *ir.Global
 	slice_error_string         *ir.Global
+	todo_error_string          *ir.Global
 
 	curLeaveBlock    *ir.Block // leave block of the current loop
 	curContinueBlock *ir.Block // block where a continue should jump to
@@ -229,7 +230,7 @@ func (c *compiler) addExternalDependencies() {
 	// add the external dependencies
 	for path := range c.ddpModule.ExternalDependencies {
 		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(c.ddpModule.FileName), path)); err != nil {
-			c.errorHandler(ddperror.New(ddperror.MISC_INCLUDE_ERROR, token.Range{},
+			c.errorHandler(ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, token.Range{},
 				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), c.ddpModule.FileName))
 		} else {
 			path = abspath
@@ -309,6 +310,10 @@ func (c *compiler) setupErrorStrings() {
 	c.slice_error_string.Linkage = enum.LinkageInternal
 	c.slice_error_string.Visibility = enum.VisibilityDefault
 	c.slice_error_string.Immutable = true
+	c.todo_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Dieser Teil des Programms wurde noch nicht implementiert\n"))
+	c.todo_error_string.Linkage = enum.LinkageInternal
+	c.todo_error_string.Visibility = enum.VisibilityDefault
+	c.todo_error_string.Immutable = true
 }
 
 // used in setup()
@@ -2244,6 +2249,11 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	}
 	exitScopeReturn()
 	c.commentNode(c.cbb, s, "")
+	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
+	c.runtime_error(newInt(1), c.todo_error_string)
 	return ast.VisitRecurse
 }
 

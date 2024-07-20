@@ -318,6 +318,11 @@ func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitTodoStmt(stmt *TodoStmt) VisitResult {
+	pr.parenthesizeNode("TodoStmt")
+	return VisitRecurse
+}
+
 func literals(tokens []token.Token) []string {
 	result := make([]string, 0, len(tokens))
 	for _, v := range tokens {

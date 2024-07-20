@@ -149,11 +149,12 @@ const (
 	ÜBERLÄDT
 	OPERATOR
 
-	DOT    // .
-	COMMA  // ,
-	COLON  // :
-	LPAREN // (
-	RPAREN // )
+	DOT     // .
+	COMMA   // ,
+	COLON   // :
+	LPAREN  // (
+	RPAREN  // )
+	ELIPSIS // ...
 )
 
 var tokenStrings = [...]string{
@@ -305,11 +306,12 @@ var tokenStrings = [...]string{
 	ÜBERLÄDT:      "überlädt",
 	OPERATOR:      "Operator",
 
-	DOT:    ".",
-	COMMA:  ",",
-	COLON:  ":",
-	LPAREN: "(",
-	RPAREN: ")",
+	DOT:     ".",
+	COMMA:   ",",
+	COLON:   ":",
+	LPAREN:  "(",
+	RPAREN:  ")",
+	ELIPSIS: "...",
 }
 
 func (t TokenType) String() string {
