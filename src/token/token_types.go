@@ -148,6 +148,8 @@ const (
 	AUCH
 	ÜBERLÄDT
 	OPERATOR
+	VARIABLE
+	VARIABLEN
 
 	DOT     // .
 	COMMA   // ,
@@ -305,6 +307,8 @@ var tokenStrings = [...]string{
 	AUCH:          "auch",
 	ÜBERLÄDT:      "überlädt",
 	OPERATOR:      "Operator",
+	VARIABLE:      "Variable",
+	VARIABLEN:     "Variablen",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -466,6 +470,8 @@ var KeywordMap = map[string]TokenType{
 	"überlaedt":      ÜBERLÄDT,
 	"ueberlaedt":     ÜBERLÄDT,
 	"Operator":       OPERATOR,
+	"Variable":       VARIABLE,
+	"Variablen":      VARIABLEN,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

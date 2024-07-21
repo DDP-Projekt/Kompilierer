@@ -115,3 +115,8 @@ func CastTypeDef(t Type) (*TypeDef, bool) {
 	typeDef, ok := GetUnderlying(t).(*TypeDef)
 	return typeDef, ok
 }
+
+func IsAny(t Type) bool {
+	_, ok := GetUnderlying(t).(Variable)
+	return ok
+}

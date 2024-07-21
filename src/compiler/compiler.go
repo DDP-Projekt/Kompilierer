@@ -1654,6 +1654,11 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitTypeCheck(e *ast.TypeCheck) ast.VisitResult {
+	c.err("not implemented")
+	return ast.VisitRecurse
+}
+
 func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 	e.Expr.Accept(c) // visit like a normal expression, grouping is just precedence stuff which has already been parsed
 	return ast.VisitRecurse

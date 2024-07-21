@@ -1,0 +1,28 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl z mit Standardwert 1,
+eine Struktur, und erstellen sie so:
+	"eine neue Struktur"
+
+Die Variable x ist 2.
+Speichere 2,0 in x.
+Speichere 'B' in x.
+Speichere wahr in x.
+Speichere eine neue Struktur in x.
+Speichere "Hallo Welt" in x.
+
+Schreibe (x als Text) auf eine Zeile.
+
+Wenn x ein Text ist, Schreibe "Text" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+Sonst Schreibe "Text" auf eine Zeile.
+
+Die Funktion foo mit dem Parameter v vom Typ Variable, gibt eine Variable zurück, macht:
+	Wenn v ein Text ist, gib 2 zurück.
+	Gib "Text" zurück.
+Und kann so benutzt werden:
+	"foo <v>"
+
+Schreibe (foo ("hi" als Variable) als Zahl) auf eine Zeile.
+Schreibe (foo (2 als Variable) als Text) auf eine Zeile.

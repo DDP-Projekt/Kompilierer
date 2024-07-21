@@ -190,6 +190,7 @@ const (
 	TYPE_INVALID TypeOperator = iota
 	TYPE_SIZE                 // Größe
 	TYPE_DEFAULT              // Standardwert
+	TYPE_OF                   // ein, eine
 )
 
 func (op TypeOperator) String() string {
@@ -198,6 +199,8 @@ func (op TypeOperator) String() string {
 		return "Größe"
 	case TYPE_DEFAULT:
 		return "Standardwert"
+	case TYPE_OF:
+		return "ein ... ist"
 	}
 	panic(fmt.Errorf("unbekannter Typ-Operator %d", op))
 }

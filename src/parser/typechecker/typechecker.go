@@ -105,7 +105,7 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
-	if !ddptypes.Equal(initialType, decl.Type) {
+	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
 		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
@@ -113,9 +113,8 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 		)
 	}
 
-	// TODO: error on the type-name range
 	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
-		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der Typ einer öffentlichen Variable muss ebenfalls öffentlich sein")
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.TypeRange, "Der Typ einer öffentlichen Variable muss ebenfalls öffentlich sein")
 	}
 	return ast.VisitRecurse
 }
@@ -126,20 +125,15 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		decl.Body.Accept(t)
 	}*/
 
-	// TODO: error on the type-name ranges
 	if decl.IsPublic {
 		if !IsPublicType(decl.ReturnType, t.CurrentTable) {
-			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
+			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.ReturnTypeRange, "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
 		}
 
-		hasNonPublicType := false
 		for _, param := range decl.Parameters {
 			if !IsPublicType(param.Type.Type, t.CurrentTable) {
-				hasNonPublicType = true
+				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, param.TypeRange, "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
 			}
-		}
-		if hasNonPublicType {
-			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
 		}
 	}
 	return ast.VisitRecurse
@@ -484,7 +478,11 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
 	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs)
 
-	if isTargetTypeDef && isLhsTypeDef {
+	if ddptypes.IsAny(lhs) || (ddptypes.IsAny(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
+		// casts from/to any are always valid but might error at runtime
+		t.latestReturnedType = expr.TargetType
+		return ast.VisitRecurse
+	} else if isTargetTypeDef && isLhsTypeDef {
 		// typedefs can only be converted to/from their underlying type
 		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.Equal(targetTypeDef.Underlying, lhs) {
 			castErr()
@@ -546,6 +544,23 @@ func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	default:
 		panic(fmt.Errorf("unbekannter Typ-Operator '%s'", expr.Operator))
 	}
+	return ast.VisitRecurse
+}
+
+func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
+	lhs := t.Evaluate(expr.Lhs)
+	if !ddptypes.Equal(lhs, ddptypes.VARIABLE) {
+		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs,
+			"Der '%s' Operator erwartet einen Ausdruck vom Typ '%s' aber hat '%s' bekommen",
+			expr.Tok.Literal,
+			ddptypes.VARIABLE,
+			lhs,
+		)
+	}
+	if ddptypes.Equal(expr.CheckType, ddptypes.VARIABLE) {
+		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Dieser Ausdruck ist immer 'wahr'")
+	}
+	t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	return ast.VisitRecurse
 }
 
@@ -641,32 +656,13 @@ func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	rhs := t.Evaluate(stmt.Rhs)
-	var lhs ddptypes.Type
+	target := t.Evaluate(stmt.Var)
 
-	switch assign := stmt.Var.(type) {
-	case *ast.Ident:
-		if decl, exists, isVar := t.CurrentTable.LookupDecl(assign.Literal.Literal); exists && isVar && !ddptypes.Equal(decl.(*ast.VarDecl).Type, rhs) {
-			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
-				"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-				rhs,
-				decl.(*ast.VarDecl).Type,
-			)
-		} else if exists && isVar {
-			lhs = decl.(*ast.VarDecl).Type
-		} else {
-			lhs = ddptypes.VoidType{}
-		}
-	case *ast.Indexing:
-		lhs = t.Evaluate(assign)
-	case *ast.FieldAccess:
-		lhs = t.Evaluate(assign)
-	}
-
-	if !ddptypes.Equal(lhs, rhs) {
+	if !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{})) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,
-			lhs,
+			target,
 		)
 	}
 	return ast.VisitRecurse
@@ -777,20 +773,18 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, returnType) {
-		if stmt.Value == nil {
-			t.err(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Range,
-				fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-					fun.(*ast.FuncDecl).ReturnType,
-					returnType),
-			)
-		} else {
-			t.errExpr(ddperror.TYP_WRONG_RETURN_TYPE, stmt.Value,
-				"Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-				fun.(*ast.FuncDecl).ReturnType,
-				returnType,
-			)
+	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, returnType) &&
+		(!ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, ddptypes.VARIABLE) || ddptypes.Equal(returnType, ddptypes.VoidType{})) {
+		errRange := stmt.Range
+		if stmt.Value != nil {
+			errRange = stmt.Value.GetRange()
 		}
+
+		t.err(ddperror.TYP_WRONG_RETURN_TYPE, errRange,
+			fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
+				fun.(*ast.FuncDecl).ReturnType,
+				returnType),
+		)
 	}
 	return ast.VisitRecurse
 }

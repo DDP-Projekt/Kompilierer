@@ -176,23 +176,46 @@ func (p *parser) bitwiseAND() ast.Expression {
 
 func (p *parser) equality() ast.Expression {
 	expr := p.comparison()
-	for p.matchAny(token.GLEICH, token.UNGLEICH) {
+	for p.matchAny(token.GLEICH, token.UNGLEICH, token.EIN, token.EINE) {
 		tok := p.previous()
-		rhs := p.comparison()
-		operator := ast.BIN_EQUAL
-		if tok.Type == token.UNGLEICH {
-			operator = ast.BIN_UNEQUAL
+
+		bin_operator := ast.BIN_EQUAL
+		switch tok.Type {
+		case token.UNGLEICH:
+			bin_operator = ast.BIN_UNEQUAL
+			fallthrough
+		case token.GLEICH:
+			rhs := p.comparison()
+			expr = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: bin_operator,
+				Rhs:      rhs,
+			}
+		case token.EIN, token.EINE:
+			checkType := p.parseType()
+			expr = &ast.TypeCheck{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   p.previous().Range.End,
+				},
+				Tok:       *tok,
+				CheckType: checkType,
+				Lhs:       expr,
+			}
+
+			// gender check
+			if tok.Type == token.EIN && checkType.Gender() == ddptypes.FEMININ {
+				p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'ein'?")
+			} else if tok.Type == token.EINE && checkType.Gender() != ddptypes.FEMININ {
+				p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'eine'?")
+			}
 		}
-		expr = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: operator,
-			Rhs:      rhs,
-		}
+
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
 		} else {

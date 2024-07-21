@@ -50,6 +50,7 @@ type FullVisitor interface {
 	TernaryExprVisitor
 	CastExprVisitor
 	TypeOpExprVisitor
+	TypeCheckVisitor
 	GroupingVisitor
 	FuncCallVisitor
 	StructLiteralVisitor
@@ -158,6 +159,10 @@ type (
 	TypeOpExprVisitor interface {
 		Visitor
 		VisitTypeOpExpr(*TypeOpExpr) VisitResult
+	}
+	TypeCheckVisitor interface {
+		Visitor
+		VisitTypeCheck(*TypeCheck) VisitResult
 	}
 	GroupingVisitor interface {
 		Visitor

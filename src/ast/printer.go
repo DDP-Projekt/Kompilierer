@@ -206,6 +206,11 @@ func (pr *printer) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitTypeCheck(expr *TypeCheck) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeChec[%s]: %s", expr.CheckType, expr.Lhs))
+	return VisitRecurse
+}
+
 func (pr *printer) VisitGrouping(expr *Grouping) VisitResult {
 	pr.parenthesizeNode("Grouping", expr.Expr)
 	return VisitRecurse

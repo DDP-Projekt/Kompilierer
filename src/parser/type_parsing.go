@@ -26,6 +26,8 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 		return ddptypes.BUCHSTABE
 	case token.TEXT:
 		return ddptypes.TEXT
+	case token.VARIABLE:
+		return ddptypes.VARIABLE
 	}
 	p.panic("invalid TokenType (%d)", t)
 	return ddptypes.VoidType{} // unreachable
@@ -36,13 +38,13 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // returns nil and errors if no typename was found
 func (p *parser) parseType() ddptypes.Type {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil
 	}
 
 	switch p.previous().Type {
-	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
+	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
 		return p.tokenTypeToType(p.previous().Type)
 	case token.WAHRHEITSWERT, token.TEXT:
 		if !p.matchAny(token.LISTE) {
@@ -61,6 +63,9 @@ func (p *parser) parseType() ddptypes.Type {
 		}
 		p.consume(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+	case token.VARIABLEN:
+		p.consume(token.LISTE)
+		return ddptypes.ListType{Underlying: ddptypes.VARIABLE}
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			if p.matchAny(token.LISTE) {
@@ -79,7 +84,7 @@ func (p *parser) parseType() ddptypes.Type {
 // returns VoidList and errors if no typename was found
 // returns a ddptypes.ListType
 func (p *parser) parseListType() ddptypes.ListType {
-	if !p.matchAny(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
+	if !p.matchAny(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
 		return ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
 	}
@@ -94,6 +99,8 @@ func (p *parser) parseListType() ddptypes.ListType {
 		result = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
 		result = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+	case token.VARIABLEN:
+		result = ddptypes.ListType{Underlying: ddptypes.VARIABLE}
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			result = ddptypes.ListType{Underlying: Type}
@@ -111,13 +118,13 @@ func (p *parser) parseListType() ddptypes.ListType {
 // returns nil and errors if no typename was found
 func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil, false // void indicates error
 	}
 
 	switch p.previous().Type {
-	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE:
+	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
 		return p.tokenTypeToType(p.previous().Type), false
 	case token.WAHRHEITSWERT, token.TEXT:
 		if p.matchAny(token.LISTE) {
@@ -160,6 +167,15 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		}
 		p.consume(token.REFERENZ)
 		return ddptypes.BUCHSTABE, true
+	case token.VARIABLEN:
+		if p.matchAny(token.LISTE) {
+			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, false
+		} else if p.matchAny(token.LISTEN) {
+			p.consume(token.REFERENZ)
+			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, true
+		}
+		p.consume(token.REFERENZ)
+		return ddptypes.VARIABLE, true
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			if p.matchAny(token.LISTE) {

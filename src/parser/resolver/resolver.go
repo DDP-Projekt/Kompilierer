@@ -264,6 +264,11 @@ func (r *Resolver) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (r *Resolver) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
+	r.visit(expr.Lhs)
+	return ast.VisitRecurse
+}
+
 func (r *Resolver) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 	r.visit(expr.Expr)
 	return ast.VisitRecurse
