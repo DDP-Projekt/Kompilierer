@@ -88,7 +88,7 @@ type (
 	ReturnStmt struct {
 		Range  token.Range
 		Return token.Token // Gib
-		Func   string
+		Func   *FuncDecl
 		Value  Expression // nil for void return
 	}
 

@@ -38,7 +38,7 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // returns nil and errors if no typename was found
 func (p *parser) parseType() ddptypes.Type {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil
 	}

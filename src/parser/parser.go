@@ -36,7 +36,7 @@ type parser struct {
 	// all found aliases (+ inbuild aliases)
 	aliases *at.Trie[*token.Token, ast.Alias]
 	// function which is currently being parsed
-	currentFunction string
+	currentFunction *ast.FuncDecl
 	// wether the current function returns a boolean
 	isCurrentFunctionBool bool
 	// flag to not report following errors
@@ -106,7 +106,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		},
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		currentFunction:       "",
+		currentFunction:       nil,
 		isCurrentFunctionBool: false,
 		panicMode:             false,
 		errored:               false,

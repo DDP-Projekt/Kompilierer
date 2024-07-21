@@ -15,6 +15,7 @@ package compiler
 import (
 	"fmt"
 
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -30,15 +31,17 @@ type ddpIrListType struct {
 	typ                         types.Type         // the typedef
 	ptr                         *types.PointerType // ptr(typ)
 	elementType                 ddpIrType          // the ir-type of the list elements
-	fromConstantsIrFun          *ir.Func           // the fromConstans ir func
-	freeIrFun                   *ir.Func           // the free ir func
-	deepCopyIrFun               *ir.Func           // the deepCopy ir func
-	equalsIrFun                 *ir.Func           // the equals ir func
-	sliceIrFun                  *ir.Func           // the clice ir func
-	list_list_concat_IrFunc     *ir.Func           // the list_list_verkettet ir func
-	list_scalar_concat_IrFunc   *ir.Func           // the list_scalar_verkettet ir func
-	scalar_scalar_concat_IrFunc *ir.Func           // the scalar_scalar_verkettet ir func
-	scalar_list_concat_IrFunc   *ir.Func           // the scalar_list_verkettet ir func
+	vtable                      *ir.Global
+	llType                      llvm.Type
+	fromConstantsIrFun          *ir.Func // the fromConstans ir func
+	freeIrFun                   *ir.Func // the free ir func
+	deepCopyIrFun               *ir.Func // the deepCopy ir func
+	equalsIrFun                 *ir.Func // the equals ir func
+	sliceIrFun                  *ir.Func // the clice ir func
+	list_list_concat_IrFunc     *ir.Func // the list_list_verkettet ir func
+	list_scalar_concat_IrFunc   *ir.Func // the list_scalar_verkettet ir func
+	scalar_scalar_concat_IrFunc *ir.Func // the scalar_scalar_verkettet ir func
+	scalar_list_concat_IrFunc   *ir.Func // the scalar_list_verkettet ir func
 }
 
 var _ ddpIrType = (*ddpIrListType)(nil)
@@ -65,6 +68,14 @@ func (t *ddpIrListType) DefaultValue() constant.Constant {
 		zero,
 		zero,
 	)
+}
+
+func (t *ddpIrListType) VTable() constant.Constant {
+	return t.vtable
+}
+
+func (t *ddpIrListType) LLVMType() llvm.Type {
+	return t.llType
 }
 
 func (t *ddpIrListType) FreeFunc() *ir.Func {
@@ -101,6 +112,12 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	))
 	list.ptr = ptr(list.typ)
 
+	list.llType = llvm.StructType([]llvm.Type{
+		llvm.PointerType(elementType.LLVMType(), 0),
+		c.ddpinttyp.LLVMType(),
+		c.ddpinttyp.LLVMType(),
+	}, false)
+
 	list.fromConstantsIrFun = c.createListFromConstants(list, declarationOnly)
 	list.freeIrFun = c.createListFree(list, declarationOnly)
 	list.deepCopyIrFun = c.createListDeepCopy(list, declarationOnly)
@@ -111,6 +128,27 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 		list.list_scalar_concat_IrFunc,
 		list.scalar_scalar_concat_IrFunc,
 		list.scalar_list_concat_IrFunc = c.createListConcats(list, declarationOnly)
+
+	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
+		ptr(types.NewFunc(c.void.IrType(), list.ptr)),
+		ptr(types.NewFunc(c.void.IrType(), list.ptr, list.ptr)),
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), list.ptr, list.ptr)),
+	))
+
+	var vtable *ir.Global
+	if declarationOnly {
+		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
+		vtable.Linkage = enum.LinkageExternal
+		vtable.Visibility = enum.VisibilityDefault
+	} else {
+		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			list.freeIrFun,
+			list.deepCopyIrFun,
+			list.equalsIrFun,
+		))
+	}
+
+	list.vtable = vtable
 
 	return list
 }
@@ -269,7 +307,7 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 	origArr, origLen, origCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, len_field_index), c.loadStructField(list, cap_field_index)
 
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(ret, i64), c.cbb.NewPtrToInt(list, i64))
-	c.createIfElese(ptrs_equal, func() {
+	c.createIfElse(ptrs_equal, func() {
 		c.cbb.NewRet(nil)
 	},
 		nil,
@@ -339,7 +377,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 
 	// if (list1 == list2) return true;
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(list1, i64), c.cbb.NewPtrToInt(list2, i64))
-	c.createIfElese(ptrs_equal, func() {
+	c.createIfElse(ptrs_equal, func() {
 		c.cbb.NewRet(constant.True)
 	},
 		nil,
@@ -348,7 +386,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 	// if (list1->len != list2->len) return false;
 	list1_len := c.loadStructField(list1, len_field_index)
 	len_unequal := c.cbb.NewICmp(enum.IPredNE, list1_len, c.loadStructField(list2, len_field_index))
-	c.createIfElese(len_unequal, func() {
+	c.createIfElse(len_unequal, func() {
 		c.cbb.NewRet(constant.False)
 	},
 		nil,
@@ -374,7 +412,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 				list1_at_count, list2_at_count := c.indexArray(list1_arr, index), c.indexArray(list2_arr, index)
 				elements_unequal := c.cbb.NewXor(c.cbb.NewCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), newInt(1))
 
-				c.createIfElese(elements_unequal, func() {
+				c.createIfElse(elements_unequal, func() {
 					c.cbb.NewRet(constant.False)
 				},
 					nil,
@@ -437,7 +475,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	// if (list->len <= 0) return;
 	list_empty := c.cbb.NewICmp(enum.IPredSLE, listLen, zero)
-	c.createIfElese(list_empty, func() {
+	c.createIfElse(list_empty, func() {
 		c.cbb.NewRet(nil)
 	},
 		nil,
@@ -463,9 +501,9 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	// validate that the indices are valid
 	i2_less_i1 := c.cbb.NewICmp(enum.IPredSLT, index2, index1)
-	c.createIfElese(i2_less_i1,
+	c.createIfElse(i2_less_i1,
 		func() {
-			c.runtime_error(newInt(1), c.slice_error_string, index1, index2)
+			c.runtime_error(1, c.slice_error_string, index1, index2)
 		},
 		nil,
 	)

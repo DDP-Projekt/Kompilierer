@@ -592,7 +592,7 @@ func (p *parser) returnStatement() ast.Statement {
 
 	p.consume(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
-	if p.currentFunction == "" {
+	if p.currentFunction == nil {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
 	}
 	return &ast.ReturnStmt{
@@ -616,7 +616,7 @@ func (p *parser) voidReturnOrBreak() ast.Statement {
 
 	p.consume(token.FUNKTION, token.DOT)
 	rnge := token.NewRange(Leave, p.previous())
-	if p.currentFunction == "" {
+	if p.currentFunction == nil {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
 	}
 	return &ast.ReturnStmt{

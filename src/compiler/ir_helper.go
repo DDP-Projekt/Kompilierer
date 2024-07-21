@@ -79,7 +79,7 @@ func (c *compiler) loadStructField(structPtr value.Value, index int64) value.Val
 // genTrueBody generates the then-body
 // genFalseBody may be nil if no else is required
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *compiler) createIfElese(cond value.Value, genTrueBody, genFalseBody func()) {
+func (c *compiler) createIfElse(cond value.Value, genTrueBody, genFalseBody func()) {
 	trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), (*ir.Block)(nil), c.cf.NewBlock("")
 	if genFalseBody == nil {
 		falseBlock = leaveBlock // no else, so we jump directly to leave

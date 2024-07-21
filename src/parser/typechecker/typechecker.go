@@ -773,8 +773,8 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
-	if fun, exists, _ := t.CurrentTable.LookupDecl(stmt.Func); exists && !ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, returnType) &&
-		(!ddptypes.Equal(fun.(*ast.FuncDecl).ReturnType, ddptypes.VARIABLE) || ddptypes.Equal(returnType, ddptypes.VoidType{})) {
+	if !ddptypes.Equal(stmt.Func.ReturnType, returnType) &&
+		(!ddptypes.Equal(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.Equal(returnType, ddptypes.VoidType{})) {
 		errRange := stmt.Range
 		if stmt.Value != nil {
 			errRange = stmt.Value.GetRange()
@@ -782,7 +782,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 
 		t.err(ddperror.TYP_WRONG_RETURN_TYPE, errRange,
 			fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-				fun.(*ast.FuncDecl).ReturnType,
+				stmt.Func.ReturnType,
 				returnType),
 		)
 	}

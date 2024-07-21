@@ -2,6 +2,7 @@ Binde "Duden/Ausgabe" ein.
 
 Wir nennen die Kombination aus
 	der Zahl z mit Standardwert 1,
+	dem Text t mit Standardwert "test text",
 eine Struktur, und erstellen sie so:
 	"eine neue Struktur"
 
@@ -47,3 +48,7 @@ Speichere 0 in x.
 Wenn x eine Nummer ist, Schreibe "Nummer" auf eine Zeile.
 Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
 
+Die Variablen Liste l ist eine Liste, die aus 22 als Variable, "Hallo" als Variable, wahr als Variable besteht.
+Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
+Schreibe ((l an der Stelle 2) als Text) auf eine Zeile.
+Schreibe ((l an der Stelle 3) als Wahrheitswert) auf eine Zeile.

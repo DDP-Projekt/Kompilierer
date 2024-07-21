@@ -11,6 +11,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -89,6 +90,7 @@ type compiler struct {
 	errorHandler      ddperror.Handler // errors are passed to this function
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
+	llTarget          llvmTarget       // information about the target machine
 
 	cbb              *ir.Block                                 // current basic block in the ir
 	cf               *ir.Func                                  // current function
@@ -109,16 +111,18 @@ type compiler struct {
 	out_of_bounds_error_string *ir.Global
 	slice_error_string         *ir.Global
 	todo_error_string          *ir.Global
+	bad_cast_error_string      *ir.Global
 
 	curLeaveBlock    *ir.Block // leave block of the current loop
 	curContinueBlock *ir.Block // block where a continue should jump to
 	curLoopScope     *scope    // scope of the current loop for break/continue to free to
 
 	// all the type definitions of inbuilt types used by the compiler
-	void                                                              *ddpIrVoidType
-	ddpinttyp, ddpfloattyp, ddpbooltyp, ddpchartyp                    *ddpIrPrimitiveType
-	ddpstring                                                         *ddpIrStringType
-	ddpintlist, ddpfloatlist, ddpboollist, ddpcharlist, ddpstringlist *ddpIrListType
+	void                                                                          *ddpIrVoidType
+	ddpinttyp, ddpfloattyp, ddpbooltyp, ddpchartyp                                *ddpIrPrimitiveType
+	ddpstring                                                                     *ddpIrStringType
+	ddpany                                                                        *ddpIrAnyType
+	ddpintlist, ddpfloatlist, ddpboollist, ddpcharlist, ddpstringlist, ddpanylist *ddpIrListType
 }
 
 // create a new Compiler to compile the passed AST
@@ -157,6 +161,12 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 // if isMainModule is false, no ddp_main function will be generated
 func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
 	defer compiler_panic_wrapper(c)
+
+	llTarget, err := newllvmTarget()
+	if err != nil {
+		return nil, err
+	}
+	c.llTarget = *llTarget
 
 	c.mod.SourceFilename = c.ddpModule.FileName // set the module filename (optional metadata)
 	c.addExternalDependencies()
@@ -202,7 +212,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 
 	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
 
-	_, err := c.mod.WriteTo(w)
+	_, err = c.mod.WriteTo(w)
 	return c.result, err
 }
 
@@ -216,10 +226,12 @@ func (c *compiler) dumpListDefinitions(w io.Writer) error {
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
+	// and the void type before everything else
 	c.void = &ddpIrVoidType{}
 	c.initRuntimeFunctions()
-	c.setupPrimitiveTypes()
-	c.ddpstring = c.defineStringType()
+	c.setupPrimitiveTypes(false)
+	c.ddpstring = c.defineStringType(false)
+	c.ddpany = c.defineAnyType()
 	c.setupListTypes(false) // we want definitions
 
 	_, err := c.mod.WriteTo(w)
@@ -291,8 +303,9 @@ func (c *compiler) setup() {
 	// before the list types
 	c.void = &ddpIrVoidType{}
 	c.initRuntimeFunctions()
-	c.setupPrimitiveTypes()
-	c.ddpstring = c.defineStringType()
+	c.setupPrimitiveTypes(true)
+	c.ddpstring = c.defineStringType(true)
+	c.ddpany = c.defineAnyType()
 	c.setupListTypes(true)
 
 	c.setupModuleInitDispose()
@@ -302,26 +315,26 @@ func (c *compiler) setup() {
 
 // used in setup()
 func (c *compiler) setupErrorStrings() {
-	c.out_of_bounds_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n"))
-	c.out_of_bounds_error_string.Linkage = enum.LinkageInternal
-	c.out_of_bounds_error_string.Visibility = enum.VisibilityDefault
-	c.out_of_bounds_error_string.Immutable = true
-	c.slice_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n"))
-	c.slice_error_string.Linkage = enum.LinkageInternal
-	c.slice_error_string.Visibility = enum.VisibilityDefault
-	c.slice_error_string.Immutable = true
-	c.todo_error_string = c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Dieser Teil des Programms wurde noch nicht implementiert\n"))
-	c.todo_error_string.Linkage = enum.LinkageInternal
-	c.todo_error_string.Visibility = enum.VisibilityDefault
-	c.todo_error_string.Immutable = true
+	createErrorString := func(msg string) *ir.Global {
+		error_string := c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Dieser Teil des Programms wurde noch nicht implementiert\n"))
+		error_string.Linkage = enum.LinkageInternal
+		error_string.Visibility = enum.VisibilityDefault
+		error_string.Immutable = true
+		return error_string
+	}
+
+	c.out_of_bounds_error_string = createErrorString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n")
+	c.slice_error_string = createErrorString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n")
+	c.todo_error_string = createErrorString("Dieser Teil des Programms wurde noch nicht implementiert\n")
+	c.bad_cast_error_string = createErrorString("Falsche Typumwandlung")
 }
 
 // used in setup()
-func (c *compiler) setupPrimitiveTypes() {
-	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, "ddpint")
-	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, "ddpfloat")
-	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, "ddpbool")
-	c.ddpchartyp = c.definePrimitiveType(ddpchar, newIntT(ddpchar, 0), "ddpchar")
+func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
+	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, llvm.Int64Type(), "ddpint", declarationOnly)
+	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, llvm.DoubleType(), "ddpfloat", declarationOnly)
+	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, llvm.Int1Type(), "ddpbool", declarationOnly)
+	c.ddpchartyp = c.definePrimitiveType(ddpchar, newIntT(ddpchar, 0), llvm.Int32Type(), "ddpchar", declarationOnly)
 }
 
 // used in setup()
@@ -331,6 +344,7 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 	c.ddpboollist = c.createListType("ddpboollist", c.ddpbooltyp, declarationOnly)
 	c.ddpcharlist = c.createListType("ddpcharlist", c.ddpchartyp, declarationOnly)
 	c.ddpstringlist = c.createListType("ddpstringlist", c.ddpstring, declarationOnly)
+	c.ddpanylist = c.createListType("ddpanylist", c.ddpany, declarationOnly)
 }
 
 // used in setup()
@@ -463,7 +477,13 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
-		initVal, _, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
+		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
+
+		// implicit cast to any if required
+		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
+			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp)
+		}
+
 		c.claimOrCopy(Var, initVal, Typ, isTemp)
 	}
 
@@ -1106,7 +1126,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				index := c.cbb.NewSub(rhs, newInt(1)) // ddp indices start at 1, so subtract 1
 				// index bounds check
 				cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
-				c.createIfElese(cond, func() {
+				c.createIfElse(cond, func() {
 					listArr := c.loadStructField(lhs, arr_field_index)
 					elementPtr := c.indexArray(listArr, index)
 					// if the list is a temporary, we need to copy the element
@@ -1543,9 +1563,38 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		})
 	}
 
-	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
+	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
+
+	// helper function to cast non-primitive from any to their concrete type
+	nonPrimitiveAnyCast := func(nonPrimTyp ddpIrType) {
+		dest := c.NewAlloca(nonPrimTyp.IrType())
+		c.createIfElse(c.compareAnyType(lhs, nonPrimTyp), func() {
+			// temporary values can be claimed
+			if isTempLhs {
+				val_ptr := c.loadStructField(lhs, 2)
+				val := c.cbb.NewLoad(nonPrimTyp.IrType(), c.cbb.NewBitCast(val_ptr, nonPrimTyp.PtrType()))
+				c.cbb.NewStore(val, dest)
+				c.ddp_reallocate(val_ptr, newInt(int64(c.getTypeSize(nonPrimTyp))), zero)
+				c.cbb.NewStore(constant.NewNull(i8ptr), c.indexStruct(lhs, 2))
+				c.freeNonPrimitive(c.scp.claimTemporary(lhs), c.ddpany)
+			} else {
+				// non-temporaries are simply deep copied
+				c.deepCopyInto(dest, c.cbb.NewBitCast(c.loadStructField(lhs, 2), nonPrimTyp.PtrType()), nonPrimTyp)
+			}
+			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, nonPrimTyp)
+			c.latestIsTemp = true
+		}, func() {
+			c.runtime_error(1, c.bad_cast_error_string)
+		})
+	}
+
 	if ddptypes.IsList(targetType) {
+		if lhsTyp == c.ddpany {
+			nonPrimitiveAnyCast(c.toIrType(targetType))
+			return ast.VisitRecurse
+		}
+
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
@@ -1554,6 +1603,16 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
 	} else {
+		// helper function to cast primitive from any to their concrete type
+		primitiveAnyCast := func(primTyp ddpIrType) {
+			c.createIfElse(c.compareAnyType(lhs, primTyp), func() {
+				c.latestReturn = c.cbb.NewLoad(primTyp.IrType(), c.cbb.NewBitCast(c.loadStructField(lhs, 2), primTyp.PtrType()))
+				c.latestReturnType, c.latestIsTemp = primTyp, true
+			}, func() {
+				c.runtime_error(1, c.bad_cast_error_string)
+			})
+		}
+
 		switch targetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
@@ -1568,6 +1627,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewSExt(lhs, ddpint)
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
+			case c.ddpany:
+				primitiveAnyCast(c.ddpinttyp)
 			default:
 				c.err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
 			}
@@ -1579,6 +1640,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = lhs
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
+			case c.ddpany:
+				primitiveAnyCast(c.ddpfloattyp)
 			default:
 				c.err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}
@@ -1588,6 +1651,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 			case c.ddpbooltyp:
 				c.latestReturn = lhs
+			case c.ddpany:
+				primitiveAnyCast(c.ddpbooltyp)
 			default:
 				c.err("invalid Parameter Type for WAHRHEITSWERT: %s", lhsTyp.Name())
 			}
@@ -1597,10 +1662,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewTrunc(lhs, ddpchar)
 			case c.ddpchartyp:
 				c.latestReturn = lhs
+			case c.ddpany:
+				primitiveAnyCast(c.ddpchartyp)
 			default:
 				c.err("invalid Parameter Type for BUCHSTABE: %s", lhsTyp.Name())
 			}
 		case ddptypes.TEXT:
+			if lhsTyp == c.ddpany {
+				nonPrimitiveAnyCast(c.ddpstring)
+				return ast.VisitRecurse
+			}
+
 			if lhsTyp == c.ddpstring {
 				c.latestReturn = lhs
 				c.latestReturnType = c.ddpstring
@@ -1625,7 +1697,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.cbb.NewCall(to_string_func, dest, lhs)
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
 			c.latestIsTemp = true
+		case ddptypes.VARIABLE:
+			if lhsTyp == c.ddpany {
+				break
+			}
+
+			c.latestReturn, c.latestReturnType, c.latestIsTemp = c.castNonAnyToAny(lhs, lhsTyp, isTempLhs)
 		default:
+			if lhsTyp == c.ddpany {
+				nonPrimitiveAnyCast(c.ddpstring)
+				return ast.VisitRecurse
+			}
 			// this is now valid because of typedefs/typealiases
 			// c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
 		}
@@ -1655,7 +1737,9 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitTypeCheck(e *ast.TypeCheck) ast.VisitResult {
-	c.err("not implemented")
+	lhs, _, _ := c.evaluate(e.Lhs)
+	c.latestReturn = c.compareAnyType(lhs, c.toIrType(e.CheckType))
+	c.latestReturnType = c.ddpbooltyp
 	return ast.VisitRecurse
 }
 
@@ -1905,7 +1989,13 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		index, _, _ := c.evaluate(lhsStringIndexing.Index)
 		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
-		c.freeNonPrimitive(lhs, lhsTyp)            // free the old value in the variable/list
+		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
+
+		// implicit cast to any if required
+		if lhsTyp == c.ddpany && rhsTyp != c.ddpany {
+			rhs, rhsTyp, isTempRhs = c.castNonAnyToAny(rhs, rhsTyp, isTempRhs)
+		}
+
 		c.claimOrCopy(lhs, rhs, rhsTyp, isTempRhs) // copy/claim the new value
 	}
 	return ast.VisitRecurse
@@ -2235,7 +2325,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			}
 			c.freeTemporaries(scp, true)
 		}
-		c.exitFuncScope(c.functions[s.Func].funcDecl)
+		c.exitFuncScope(s.Func)
 	}
 
 	if s.Value == nil {
@@ -2246,8 +2336,22 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	}
 	val, valTyp, isTemp := c.evaluate(s.Value)
 	if valTyp.IsPrimitive() {
-		c.cbb.NewRet(val)
+		// implicit cast to any if required
+		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
+			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp)
+			c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
+			c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
+			c.cbb.NewRet(nil)
+		} else {
+			// normal return
+			c.cbb.NewRet(val)
+		}
 	} else {
+		// implicit cast to any if required
+		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
+			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp)
+		}
+
 		c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
 		c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
 		c.cbb.NewRet(nil)
@@ -2258,7 +2362,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 }
 
 func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
-	c.runtime_error(newInt(1), c.todo_error_string)
+	c.runtime_error(1, c.todo_error_string)
 	return ast.VisitRecurse
 }
 
@@ -2267,4 +2371,35 @@ func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
 func (c *compiler) exitNestedScopes(targetScope *scope) {
 	for scp := c.scp; scp != targetScope.enclosing; scp = c.exitScope(scp) {
 	}
+}
+
+// creates a new any from the given non-any
+func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool) (value.Value, ddpIrType, bool) {
+	if typ == c.ddpany {
+		c.err("c.ddpany passed to castNonAnyToAny")
+	}
+
+	type_size := newInt(int64(c.getTypeSize(typ)))
+	var result value.Value = c.NewAlloca(c.ddpany.IrType())
+
+	result_size_ptr := c.indexStruct(result, 0)
+	result_vtable_ptr_ptr := c.indexStruct(result, 1)
+	result_value_ptr_ptr := c.indexStruct(result, 2)
+
+	c.cbb.NewStore(type_size, result_size_ptr)
+	c.cbb.NewStore(c.cbb.NewBitCast(typ.VTable(), i8ptr), result_vtable_ptr_ptr)
+
+	value_ptr := c.ddp_reallocate(constant.NewNull(i8ptr), zero, type_size)
+	c.cbb.NewStore(value_ptr, result_value_ptr_ptr)
+
+	// copy the value
+	c.claimOrCopy(c.cbb.NewBitCast(value_ptr, typ.PtrType()), val, typ, isTemp)
+	result, _ = c.scp.addTemporary(result, c.ddpany)
+
+	return result, c.ddpany, true
+}
+
+// checks if val (c.ddpany) holds a targetType
+func (c *compiler) compareAnyType(val value.Value, targetType ddpIrType) value.Value {
+	return c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(c.loadStructField(val, 1), ddpint), c.cbb.NewPtrToInt(targetType.VTable(), ddpint))
 }

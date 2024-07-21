@@ -553,12 +553,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
-		p.currentFunction = funcName.Literal
+		p.currentFunction = decl
 
 		bodyTable := p.newScope() // temporary symbolTable for the function parameters
 		globalScope := bodyTable.Enclosing
 		// insert the name of the current function
-		if existed := globalScope.InsertDecl(p.currentFunction, decl); !existed && decl.IsPublic {
+		if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 		// add the parameters to the table
@@ -610,7 +610,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		p.insertOperatorOverload(decl)
 	}
 
-	p.currentFunction = ""
+	p.currentFunction = nil
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
 	return decl
@@ -937,6 +937,11 @@ func (p *parser) typeDefDecl() ast.Declaration {
 	underlyingStart := p.peek()
 	underlying := p.parseType()
 	underlyingEnd := p.previous()
+	underlyingRange := token.NewRange(underlyingStart, underlyingEnd)
+
+	if ddptypes.Equal(underlying, ddptypes.VARIABLE) {
+		p.err(ddperror.SEM_BAD_TYPEDEF, underlyingRange, fmt.Sprintf("Es kann kein neuer Typ als '%s' definiert werden", ddptypes.VARIABLE))
+	}
 
 	p.consume(token.DOT)
 
@@ -948,7 +953,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 		IsPublic:        isPublic,
 		Mod:             p.module,
 		Underlying:      underlying,
-		UnderlyingRange: token.NewRange(underlyingStart, underlyingEnd),
+		UnderlyingRange: underlyingRange,
 		Type: &ddptypes.TypeDef{
 			Name:       typeName.Literal,
 			Underlying: underlying,
