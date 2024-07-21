@@ -80,8 +80,14 @@ func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
 }
 
 func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Constant, llType llvm.Type, name string, declarationOnly bool) *ddpIrPrimitiveType {
+	typ_ptr := ptr(typ)
+
 	// the single field is a dummy pointer to make the struct non-zero sized
-	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(i8))
+	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
+		ptr(types.NewFunc(types.Void, typ_ptr)),
+		ptr(types.NewFunc(types.Void, typ_ptr, typ_ptr)),
+		ptr(types.NewFunc(ddpbool, typ_ptr, typ_ptr)),
+	))
 
 	var vtable *ir.Global
 	if declarationOnly {
@@ -89,12 +95,16 @@ func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Con
 		vtable.Linkage = enum.LinkageExternal
 		vtable.Visibility = enum.VisibilityDefault
 	} else {
-		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType), newIntT(i8, 0)))
+		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			constant.NewNull(vtable_type.(*types.StructType).Fields[0].(*types.PointerType)),
+			constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
+			constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
+		))
 	}
 
 	primitive := &ddpIrPrimitiveType{
 		typ:          typ,
-		ptr:          ptr(typ),
+		ptr:          typ_ptr,
 		defaultValue: defaultValue,
 		vtable:       vtable,
 		name:         name,

@@ -16,6 +16,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 
 	"github.com/llir/irutil"
@@ -104,6 +105,7 @@ type compiler struct {
 	latestIsTemp     bool                                      // ewther the latestReturn is a temporary or not
 	importedModules  map[*ast.Module]struct{}                  // all the modules that have already been imported
 	currentNode      ast.Node                                  // used for error reporting
+	typeDefVTables   map[string]constant.Constant
 
 	moduleInitFunc             *ir.Func  // the module_init func of this module
 	moduleInitCbb              *ir.Block // cbb but for module_init
@@ -149,6 +151,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		latestReturnType: nil,
 		latestIsTemp:     false,
 		importedModules:  make(map[*ast.Module]struct{}),
+		typeDefVTables:   make(map[string]constant.Constant),
 		curLeaveBlock:    nil,
 		curContinueBlock: nil,
 		curLoopScope:     nil,
@@ -481,7 +484,12 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
-			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp)
+			vtable := initTyp.VTable()
+			if typeDef, isTypeDef := ddptypes.CastTypeDef(d.InitType); isTypeDef {
+				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+			}
+
+			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
 		}
 
 		c.claimOrCopy(Var, initVal, Typ, isTemp)
@@ -615,6 +623,7 @@ func (c *compiler) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	c.addTypdefVTable(decl, false)
 	return ast.VisitRecurse
 }
 
@@ -1566,10 +1575,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 
+	vtable := c.toIrType(targetType).VTable()
+	if typeDef, isTypeDef := ddptypes.CastTypeDef(e.TargetType); isTypeDef {
+		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+	}
+
 	// helper function to cast non-primitive from any to their concrete type
-	nonPrimitiveAnyCast := func(nonPrimTyp ddpIrType) {
+	nonPrimitiveAnyCast := func() {
+		nonPrimTyp := c.toIrType(targetType)
+
 		dest := c.NewAlloca(nonPrimTyp.IrType())
-		c.createIfElse(c.compareAnyType(lhs, nonPrimTyp), func() {
+		c.createIfElse(c.compareAnyType(lhs, vtable), func() {
 			// temporary values can be claimed
 			if isTempLhs {
 				val_ptr := c.loadStructField(lhs, 2)
@@ -1591,7 +1607,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 
 	if ddptypes.IsList(targetType) {
 		if lhsTyp == c.ddpany {
-			nonPrimitiveAnyCast(c.toIrType(targetType))
+			nonPrimitiveAnyCast()
 			return ast.VisitRecurse
 		}
 
@@ -1605,7 +1621,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	} else {
 		// helper function to cast primitive from any to their concrete type
 		primitiveAnyCast := func(primTyp ddpIrType) {
-			c.createIfElse(c.compareAnyType(lhs, primTyp), func() {
+			c.createIfElse(c.compareAnyType(lhs, vtable), func() {
 				c.latestReturn = c.cbb.NewLoad(primTyp.IrType(), c.cbb.NewBitCast(c.loadStructField(lhs, 2), primTyp.PtrType()))
 				c.latestReturnType, c.latestIsTemp = primTyp, true
 			}, func() {
@@ -1669,7 +1685,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 		case ddptypes.TEXT:
 			if lhsTyp == c.ddpany {
-				nonPrimitiveAnyCast(c.ddpstring)
+				nonPrimitiveAnyCast()
 				return ast.VisitRecurse
 			}
 
@@ -1702,10 +1718,10 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				break
 			}
 
-			c.latestReturn, c.latestReturnType, c.latestIsTemp = c.castNonAnyToAny(lhs, lhsTyp, isTempLhs)
+			c.latestReturn, c.latestReturnType, c.latestIsTemp = c.castNonAnyToAny(lhs, lhsTyp, isTempLhs, lhsTyp.VTable())
 		default:
 			if lhsTyp == c.ddpany {
-				nonPrimitiveAnyCast(c.ddpstring)
+				nonPrimitiveAnyCast()
 				return ast.VisitRecurse
 			}
 			// this is now valid because of typedefs/typealiases
@@ -1738,7 +1754,13 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 
 func (c *compiler) VisitTypeCheck(e *ast.TypeCheck) ast.VisitResult {
 	lhs, _, _ := c.evaluate(e.Lhs)
-	c.latestReturn = c.compareAnyType(lhs, c.toIrType(e.CheckType))
+
+	vtable := c.toIrType(e.CheckType).VTable()
+	if typeDef, isTypeDef := ddptypes.CastTypeDef(e.CheckType); isTypeDef {
+		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+	}
+
+	c.latestReturn = c.compareAnyType(lhs, vtable)
 	c.latestReturnType = c.ddpbooltyp
 	return ast.VisitRecurse
 }
@@ -1947,6 +1969,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			declareIfStruct(decl.Type)
 		case *ast.TypeDefDecl:
 			declareIfStruct(decl.Type)
+			c.addTypdefVTable(decl, true)
 		case *ast.StructDecl:
 			c.defineOrDeclareStructType(decl.Type)
 		case *ast.BadDecl:
@@ -1993,7 +2016,11 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 
 		// implicit cast to any if required
 		if lhsTyp == c.ddpany && rhsTyp != c.ddpany {
-			rhs, rhsTyp, isTempRhs = c.castNonAnyToAny(rhs, rhsTyp, isTempRhs)
+			vtable := rhsTyp.VTable()
+			if typeDef, isTypeDef := ddptypes.CastTypeDef(s.RhsType); isTypeDef {
+				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+			}
+			rhs, rhsTyp, isTempRhs = c.castNonAnyToAny(rhs, rhsTyp, isTempRhs, vtable)
 		}
 
 		c.claimOrCopy(lhs, rhs, rhsTyp, isTempRhs) // copy/claim the new value
@@ -2335,10 +2362,15 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 	val, valTyp, isTemp := c.evaluate(s.Value)
+	vtable := valTyp.VTable()
+	if typeDef, isTypeDef := ddptypes.CastTypeDef(s.Func.ReturnType); isTypeDef {
+		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+	}
 	if valTyp.IsPrimitive() {
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
-			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp)
+
+			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
 			c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
 			c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
 			c.cbb.NewRet(nil)
@@ -2349,7 +2381,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	} else {
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
-			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp)
+			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
 		}
 
 		c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
@@ -2374,7 +2406,7 @@ func (c *compiler) exitNestedScopes(targetScope *scope) {
 }
 
 // creates a new any from the given non-any
-func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool) (value.Value, ddpIrType, bool) {
+func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool, vtable value.Value) (value.Value, ddpIrType, bool) {
 	if typ == c.ddpany {
 		c.err("c.ddpany passed to castNonAnyToAny")
 	}
@@ -2387,7 +2419,7 @@ func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool) 
 	result_value_ptr_ptr := c.indexStruct(result, 2)
 
 	c.cbb.NewStore(type_size, result_size_ptr)
-	c.cbb.NewStore(c.cbb.NewBitCast(typ.VTable(), i8ptr), result_vtable_ptr_ptr)
+	c.cbb.NewStore(c.cbb.NewBitCast(vtable, i8ptr), result_vtable_ptr_ptr)
 
 	value_ptr := c.ddp_reallocate(constant.NewNull(i8ptr), zero, type_size)
 	c.cbb.NewStore(value_ptr, result_value_ptr_ptr)
@@ -2400,6 +2432,44 @@ func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool) 
 }
 
 // checks if val (c.ddpany) holds a targetType
-func (c *compiler) compareAnyType(val value.Value, targetType ddpIrType) value.Value {
-	return c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(c.loadStructField(val, 1), ddpint), c.cbb.NewPtrToInt(targetType.VTable(), ddpint))
+func (c *compiler) compareAnyType(val value.Value, vtable value.Value) value.Value {
+	return c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(c.loadStructField(val, 1), ddpint), c.cbb.NewPtrToInt(vtable, ddpint))
+}
+
+func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
+	name := c.mangledNameDecl(d)
+	if _, ok := c.typeDefVTables[name]; ok {
+		return
+	}
+
+	ir_type := c.toIrType(d.Type)
+
+	// the single field is a dummy pointer to make the struct non-zero sized
+	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
+		ptr(types.NewFunc(types.Void, ir_type.PtrType())),
+		ptr(types.NewFunc(types.Void, ir_type.PtrType(), ir_type.PtrType())),
+		ptr(types.NewFunc(ddpbool, ir_type.PtrType(), ir_type.PtrType())),
+	))
+
+	var vtable *ir.Global
+	if declarationOnly {
+		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
+		vtable.Linkage = enum.LinkageExternal
+		vtable.Visibility = enum.VisibilityDefault
+	} else {
+		if ir_type.IsPrimitive() {
+			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+				constant.NewNull(vtable_type.(*types.StructType).Fields[0].(*types.PointerType)),
+				constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
+				constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
+			))
+		} else {
+			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+				ir_type.FreeFunc(),
+				ir_type.DeepCopyFunc(),
+				ir_type.EqualsFunc(),
+			))
+		}
+	}
+	c.typeDefVTables[name] = vtable
 }

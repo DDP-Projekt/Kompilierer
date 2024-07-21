@@ -54,24 +54,13 @@ ddpint ddp_strlen(ddpstring *str) {
 	return strlen(str->str);
 }
 
-typedef struct {
-	uint8_t dummy;
-} primitive_vtable;
-
-extern primitive_vtable ddpint_vtable;
-extern primitive_vtable ddpfloat_vtable;
-extern primitive_vtable ddpbool_vtable;
-extern primitive_vtable ddpchar_vtable;
+extern vtable ddpint_vtable;
+extern vtable ddpfloat_vtable;
+extern vtable ddpbool_vtable;
+extern vtable ddpchar_vtable;
 
 static bool is_primitive_vtable(vtable *table) {
-	DDP_DBGLOG("ddpint_vtable: %p", &ddpint_vtable);
-	DDP_DBGLOG("ddpfloat_vtable: %p", &ddpfloat_vtable);
-	DDP_DBGLOG("ddpbool_vtable: %p", &ddpbool_vtable);
-	DDP_DBGLOG("ddpchar_vtable: %p", &ddpchar_vtable);
-	if (table == (void *)&ddpint_vtable || table == (void *)&ddpfloat_vtable || table == (void *)&ddpbool_vtable || table == (void *)&ddpchar_vtable) {
-		return true;
-	}
-	return false;
+	return table->free_func == NULL;
 }
 
 // frees the given any

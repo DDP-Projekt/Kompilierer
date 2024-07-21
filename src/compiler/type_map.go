@@ -5,25 +5,31 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
-type structDeclVisitor func(decl *ast.StructDecl)
+type typeDeclVisitor func(ddptypes.Type, *ast.Module)
 
 var (
-	_ ast.Visitor           = structDeclVisitor(nil)
-	_ ast.StructDeclVisitor = structDeclVisitor(nil)
+	_ ast.Visitor            = typeDeclVisitor(nil)
+	_ ast.StructDeclVisitor  = typeDeclVisitor(nil)
+	_ ast.TypeDefDeclVisitor = typeDeclVisitor(nil)
 )
 
-func (structDeclVisitor) Visitor() {}
+func (typeDeclVisitor) Visitor() {}
 
-func (f structDeclVisitor) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
-	f(decl)
+func (f typeDeclVisitor) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
+	f(decl.Type, decl.Module())
+	return ast.VisitSkipChildren
+}
+
+func (f typeDeclVisitor) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
+	f(decl.Type, decl.Module())
 	return ast.VisitSkipChildren
 }
 
 // returns a map of all struct types mapped to their origin module
 func createTypeMap(module *ast.Module) map[ddptypes.Type]*ast.Module {
 	result := make(map[ddptypes.Type]*ast.Module, 8)
-	ast.VisitModuleRec(module, structDeclVisitor(func(decl *ast.StructDecl) {
-		result[decl.Type] = decl.Module()
+	ast.VisitModuleRec(module, typeDeclVisitor(func(t ddptypes.Type, m *ast.Module) {
+		result[t] = m
 	}))
 	return result
 }

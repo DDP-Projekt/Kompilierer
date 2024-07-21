@@ -187,7 +187,7 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 // returns the mangled name of a struct type
 // mangled names are cached and unique per module
 // NOTE: think about making this demanglable
-func (c *compiler) mangledNameType(t *ddptypes.StructType) string {
+func (c *compiler) mangledNameType(t ddptypes.Type) string {
 	if mangledName, ok := mangledNamesCacheType.Load(t); ok {
 		return mangledName.(string)
 	}
@@ -197,7 +197,7 @@ func (c *compiler) mangledNameType(t *ddptypes.StructType) string {
 		panic(fmt.Errorf("type %s not in typeMap", t))
 	}
 
-	mangledName := mangledNameBase(t.Name, module)
+	mangledName := mangledNameBase(t.String(), module)
 	mangledNamesCacheType.Store(t, mangledName)
 	return mangledName
 }

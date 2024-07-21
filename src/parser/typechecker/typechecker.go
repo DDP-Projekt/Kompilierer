@@ -105,6 +105,7 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
+	decl.InitType = initialType
 	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
 		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
@@ -656,6 +657,7 @@ func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	rhs := t.Evaluate(stmt.Rhs)
+	stmt.RhsType = rhs
 	target := t.Evaluate(stmt.Var)
 
 	if !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{})) {

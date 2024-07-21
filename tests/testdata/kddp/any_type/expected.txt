@@ -3,16 +3,24 @@ Text
 Text
 Text
 Keine Zahl
+
 2
 Text
+
 Struktur
 Nummer
 Zahl
+
+Struktur2
+wahr
+Struktur
+
 22
 Hallo
 wahr
 wahr
 falsch
+
 falsch
 wahr
 wahr
