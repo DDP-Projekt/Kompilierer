@@ -18,6 +18,11 @@ Wenn x ein Text ist, Schreibe "Text" auf eine Zeile.
 Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
 Sonst Schreibe "Text" auf eine Zeile.
 
+Wenn x kein Text ist, Schreibe "Kein Text" auf eine Zeile.
+Sonst Schreibe "Text" auf eine Zeile.
+Wenn x keine Zahl ist, Schreibe "Keine Zahl" auf eine Zeile.
+Sonst Schreibe "Zahl" auf eine Zeile.
+
 Die Funktion foo mit dem Parameter v vom Typ Variable, gibt eine Variable zurück, macht:
 	Wenn v ein Text ist, gib 2 zurück.
 	Gib "Text" zurück.
@@ -26,3 +31,19 @@ Und kann so benutzt werden:
 
 Schreibe (foo ("hi" als Variable) als Zahl) auf eine Zeile.
 Schreibe (foo (2 als Variable) als Text) auf eine Zeile.
+
+Speichere eine neue Struktur in x.
+Wenn x eine Struktur ist, Schreibe "Struktur" auf eine Zeile.
+
+Wir definieren eine Nummer als eine Zahl.
+
+Speichere 0 als Nummer in x.
+
+Wenn x eine Nummer ist, Schreibe "Nummer" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+
+Speichere 0 in x.
+
+Wenn x eine Nummer ist, Schreibe "Nummer" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+
