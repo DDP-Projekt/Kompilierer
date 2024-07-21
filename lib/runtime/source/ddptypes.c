@@ -118,7 +118,7 @@ ddpbool ddp_any_equal(ddpany *any1, ddpany *any2) {
 	}
 
 	if (is_primitive_vtable(any1->vtable_ptr)) {
-		return memcmp(any1->value_ptr, any2->value_ptr, any1->value_size);
+		return memcmp(any1->value_ptr, any2->value_ptr, any1->value_size) == 0;
 	}
 
 	return any1->vtable_ptr->equal_func(any1->value_ptr, any2->value_ptr);

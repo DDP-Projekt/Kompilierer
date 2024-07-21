@@ -52,3 +52,33 @@ Die Variablen Liste l ist eine Liste, die aus 22 als Variable, "Hallo" als Varia
 Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
 Schreibe ((l an der Stelle 2) als Text) auf eine Zeile.
 Schreibe ((l an der Stelle 3) als Wahrheitswert) auf eine Zeile.
+
+Schreibe (l gleich l ist) auf eine Zeile.
+Die Variablen Liste l2 ist l.
+Speichere "test" in l an der Stelle 1.
+Schreibe (l gleich l2 ist) auf eine Zeile.
+
+Speichere 2 in x.
+Die Variable y ist "test".
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere "test" in x.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere 2 in x.
+Speichere 2 in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere eine neue Struktur in x.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere eine neue Struktur in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere 2 in x.
+Speichere x in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere "test" in x.
+Speichere x in y.
+Schreibe (x gleich y ist) auf eine Zeile.

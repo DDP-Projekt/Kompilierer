@@ -11,3 +11,12 @@ Zahl
 22
 Hallo
 wahr
+wahr
+falsch
+falsch
+wahr
+wahr
+falsch
+wahr
+wahr
+wahr
