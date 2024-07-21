@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] "Variable" als Typ, der zur Laufzeit jeder beliebige andere Typ sein kann
 - [Added] ... als Platzhalter
 - [Fix] Bug im Parser, der rekursiv allen Arbeitsspeicher verbraucht
 - [Added] Operatoren-Überladung
