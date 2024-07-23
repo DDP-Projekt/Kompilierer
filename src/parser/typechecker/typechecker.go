@@ -775,6 +775,10 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 	if stmt.Value != nil {
 		returnType = t.Evaluate(stmt.Value)
 	}
+	if stmt.Func == nil {
+		return ast.VisitRecurse
+	}
+
 	if !ddptypes.Equal(stmt.Func.ReturnType, returnType) &&
 		(!ddptypes.Equal(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.Equal(returnType, ddptypes.VoidType{})) {
 		errRange := stmt.Range

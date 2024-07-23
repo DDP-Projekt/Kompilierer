@@ -60,7 +60,7 @@ extern vtable ddpbool_vtable;
 extern vtable ddpchar_vtable;
 
 static bool is_primitive_vtable(vtable *table) {
-	return table->free_func == NULL;
+	return table != NULL && table->free_func == NULL;
 }
 
 // frees the given any
@@ -89,7 +89,7 @@ void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 	ret->value_ptr = ddp_reallocate(NULL, 0, ret->value_size);
 	if (is_primitive_vtable(ret->vtable_ptr)) {
 		memcpy(ret->value_ptr, any->value_ptr, ret->value_size);
-	} else {
+	} else if (ret->vtable_ptr != NULL) {
 		// deep copy the underlying value
 		ret->vtable_ptr->deep_copy_func(ret->value_ptr, any->value_ptr);
 	}
@@ -104,6 +104,11 @@ ddpbool ddp_any_equal(ddpany *any1, ddpany *any2) {
 
 	if (any1->vtable_ptr != any2->vtable_ptr) {
 		return false;
+	}
+
+	// standardwert
+	if (any1->vtable_ptr == NULL) {
+		return true;
 	}
 
 	if (is_primitive_vtable(any1->vtable_ptr)) {

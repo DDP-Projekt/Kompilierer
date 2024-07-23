@@ -28,3 +28,13 @@ falsch
 wahr
 wahr
 wahr
+
+falsch
+falsch
+falsch
+falsch
+falsch
+falsch
+falsch
+falsch
+gleich var

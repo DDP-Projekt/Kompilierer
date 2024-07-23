@@ -1738,17 +1738,24 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 		c.latestReturn = c.sizeof(c.toIrType(e.Rhs).IrType())
 		c.latestReturnType = c.ddpinttyp
 	case ast.TYPE_DEFAULT:
-		switch t := e.Rhs.(type) {
+		switch t := ddptypes.TrueUnderlying(e.Rhs).(type) {
 		case *ddptypes.StructType:
 			result, resultType := c.evaluateStructLiteral(t, nil)
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
 		default:
 			irType := c.toIrType(e.Rhs)
-			c.latestReturn, c.latestReturnType = c.scp.addTemporary(irType.DefaultValue(), irType)
+			var defaultValue value.Value = irType.DefaultValue()
+			if !irType.IsPrimitive() {
+				dest := c.NewAlloca(irType.IrType())
+				c.cbb.NewStore(defaultValue, dest)
+				defaultValue = dest
+			}
+			c.latestReturn, c.latestReturnType = c.scp.addTemporary(defaultValue, irType)
 		}
 	default:
 		c.err("invalid TypeOpExpr Operator: %d", e.Operator)
 	}
+	c.latestIsTemp = true
 	return ast.VisitRecurse
 }
 

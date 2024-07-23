@@ -121,3 +121,20 @@ Schreibe (x gleich y ist) auf eine Zeile.
 Speichere "test" in x.
 Speichere x in y.
 Schreibe (x gleich y ist) auf eine Zeile.
+
+
+Schreibe '\n'.
+
+
+
+Die Variable v ist der Standardwert von einer Variable.
+Schreibe (v eine Zahl ist) auf eine Zeile.
+Schreibe (v eine Kommazahl ist) auf eine Zeile.
+Schreibe (v ein Wahrheitswert ist) auf eine Zeile.
+Schreibe (v ein Buchstabe ist) auf eine Zeile.
+Schreibe (v ein Text ist) auf eine Zeile.
+Schreibe (v eine Struktur ist) auf eine Zeile.
+Schreibe (v eine Nummer ist) auf eine Zeile.
+Schreibe (v eine Struktur2 ist) auf eine Zeile.
+
+Wenn v gleich dem Standardwert von einer Variable ist, Schreibe "gleich var" auf eine Zeile.
