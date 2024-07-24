@@ -57,3 +57,11 @@ func getTrueListUnderlying(typ Type) Type {
 	}
 	return typ
 }
+
+func ListTrueUnderlying(typ Type) Type {
+	typ = TrueUnderlying(typ)
+	if IsList(typ) {
+		typ = ListTrueUnderlying(typ.(ListType).Underlying)
+	}
+	return typ
+}

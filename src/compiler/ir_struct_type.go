@@ -85,8 +85,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 	structType.name = name
 	// recursively declare all types this type depends on
 	structType.fieldIrTypes = mapSlice(typ.Fields, func(field ddptypes.StructField) ddpIrType {
-		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.TrueUnderlying(field.Type)); isStruct {
-			return c.defineOrDeclareStructType(fieldStructType)
+		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.ListTrueUnderlying(field.Type)); isStruct {
+			c.defineOrDeclareStructType(fieldStructType)
 		}
 
 		return c.toIrType(field.Type)

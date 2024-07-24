@@ -319,7 +319,7 @@ func (c *compiler) setup() {
 // used in setup()
 func (c *compiler) setupErrorStrings() {
 	createErrorString := func(msg string) *ir.Global {
-		error_string := c.mod.NewGlobalDef("", constant.NewCharArrayFromString("Dieser Teil des Programms wurde noch nicht implementiert\n"))
+		error_string := c.mod.NewGlobalDef("", constant.NewCharArrayFromString(msg))
 		error_string.Linkage = enum.LinkageInternal
 		error_string.Visibility = enum.VisibilityDefault
 		error_string.Immutable = true
