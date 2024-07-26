@@ -326,10 +326,10 @@ func (c *compiler) setupErrorStrings() {
 		return error_string
 	}
 
-	c.out_of_bounds_error_string = createErrorString("Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n")
+	c.out_of_bounds_error_string = createErrorString("Zeile %lld, Spalte %lld: Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n")
 	c.slice_error_string = createErrorString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n")
-	c.todo_error_string = createErrorString("Dieser Teil des Programms wurde noch nicht implementiert\n")
-	c.bad_cast_error_string = createErrorString("Falsche Typumwandlung")
+	c.todo_error_string = createErrorString("Zeile %lld, Spalte %lld: Dieser Teil des Programms wurde noch nicht implementiert\n")
+	c.bad_cast_error_string = createErrorString("Zeile %lld, Spalte %lld: Falsche Typumwandlung")
 }
 
 // used in setup()
@@ -1159,7 +1159,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 						}
 					}
 				}, func() { // runtime error
-					c.out_of_bounds_error(rhs, listLen)
+					line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+					c.out_of_bounds_error(newInt(line), newInt(column), rhs, listLen)
 				})
 				c.latestReturnType = listType.elementType
 			} else {
@@ -1601,7 +1602,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, nonPrimTyp)
 			c.latestIsTemp = true
 		}, func() {
-			c.runtime_error(1, c.bad_cast_error_string)
+			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+			c.runtime_error(1, c.bad_cast_error_string, newInt(line), newInt(column))
 		})
 	}
 
@@ -1625,7 +1627,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewLoad(primTyp.IrType(), c.cbb.NewBitCast(c.loadStructField(lhs, 2), primTyp.PtrType()))
 				c.latestReturnType, c.latestIsTemp = primTyp, true
 			}, func() {
-				c.runtime_error(1, c.bad_cast_error_string)
+				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+				c.runtime_error(1, c.bad_cast_error_string, newInt(line), newInt(column))
 			})
 		}
 
@@ -1790,8 +1793,17 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 			index, _, _ := c.evaluate(assign.Index)
 			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
-			listArr := c.loadStructField(lhs, arr_field_index)
-			elementPtr := c.indexArray(listArr, index)
+			listLen := c.loadStructField(lhs, len_field_index)
+			var elementPtr value.Value
+
+			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
+			c.createIfElse(cond, func() {
+				listArr := c.loadStructField(lhs, arr_field_index)
+				elementPtr = c.indexArray(listArr, index)
+			}, func() { // runtime error
+				line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
+				c.out_of_bounds_error(newInt(line), newInt(column), c.cbb.NewAdd(index, newInt(1)), listLen)
+			})
 			return elementPtr, listTyp.elementType, nil
 		} else if !as_ref && lhsTyp == c.ddpstring {
 			return lhs, lhsTyp, assign
@@ -2401,7 +2413,8 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 }
 
 func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
-	c.runtime_error(1, c.todo_error_string)
+	line, column := int64(stmt.Token().Range.Start.Line), int64(stmt.Token().Range.Start.Column)
+	c.runtime_error(1, c.todo_error_string, newInt(line), newInt(column))
 	return ast.VisitRecurse
 }
 

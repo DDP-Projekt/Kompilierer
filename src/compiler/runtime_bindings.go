@@ -81,8 +81,8 @@ func (c *compiler) runtime_error(exit_code int, fmt value.Value, args ...value.V
 	c.cbb.NewUnreachable()
 }
 
-func (c *compiler) out_of_bounds_error(index, len value.Value) {
-	c.runtime_error(1, c.out_of_bounds_error_string, index, len)
+func (c *compiler) out_of_bounds_error(line, column, index, len value.Value) {
+	c.runtime_error(1, c.out_of_bounds_error_string, line, column, index, len)
 }
 
 // calls ddp_reallocate from the runtime
