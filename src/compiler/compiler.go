@@ -912,13 +912,15 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.latestReturnType = c.ddpbooltyp
 		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
-		rhs, rhsTyp, _ := c.evaluate(e.Rhs)
+		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
 		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
 			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
 			fieldType := structType.fieldIrTypes[fieldIndex]
 			fieldPtr := c.indexStruct(rhs, fieldIndex)
 			if fieldType.IsPrimitive() {
 				c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+			} else if !rhsIsTemp {
+				c.latestReturn, c.latestIsTemp = fieldPtr, false
 			} else {
 				dest := c.NewAlloca(fieldType.IrType())
 				c.deepCopyInto(dest, fieldPtr, fieldType)
