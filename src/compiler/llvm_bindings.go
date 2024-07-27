@@ -17,28 +17,18 @@ func init() {
 	llvm.InitializeAllAsmPrinters()
 }
 
-// context which contains
-// all variables needed
-// to use llvm
-// needs to be disposed after use
-type llvmContext struct {
+type llvmTarget struct {
 	targetMachine llvm.TargetMachine
 	targetData    llvm.TargetData
-	passManager   llvm.PassManager
-	context       llvm.Context
 }
 
-func newllvmContext() (llctx *llvmContext, err error) {
-	llctx = &llvmContext{}
-
-	llctx.context = llvm.NewContext()
-
+func newllvmTarget() (*llvmTarget, error) {
 	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
 	if err != nil {
 		return nil, fmt.Errorf("could not create llvm target: %w", err)
 	}
 
-	llctx.targetMachine = target.CreateTargetMachine(
+	targetMachine := target.CreateTargetMachine(
 		llvm.DefaultTargetTriple(),
 		"generic",
 		"",
@@ -47,7 +37,39 @@ func newllvmContext() (llctx *llvmContext, err error) {
 		llvm.CodeModel(llvm.CodeModelDefault),
 	)
 
-	llctx.targetData = llctx.targetMachine.CreateTargetData()
+	targetData := targetMachine.CreateTargetData()
+
+	return &llvmTarget{
+		targetMachine: targetMachine,
+		targetData:    targetData,
+	}, nil
+}
+
+func (target *llvmTarget) Dispose() {
+	target.targetMachine.Dispose()
+	target.targetData.Dispose()
+}
+
+// context which contains
+// all variables needed
+// to use llvm
+// needs to be disposed after use
+type llvmContext struct {
+	llvmTarget
+	passManager llvm.PassManager
+	context     llvm.Context
+}
+
+func newllvmContext() (llctx *llvmContext, err error) {
+	llctx = &llvmContext{}
+
+	llctx.context = llvm.NewContext()
+
+	target, err := newllvmTarget()
+	if err != nil {
+		return nil, err
+	}
+	llctx.llvmTarget = *target
 
 	llctx.passManager = llvm.NewPassManager()
 	llctx.passManager.AddInstructionCombiningPass()
@@ -74,8 +96,7 @@ func newllvmContext() (llctx *llvmContext, err error) {
 
 func (llctx *llvmContext) Dispose() {
 	llctx.context.Dispose()
-	llctx.targetMachine.Dispose()
-	llctx.targetData.Dispose()
+	llctx.llvmTarget.Dispose()
 	llctx.passManager.Dispose()
 }
 

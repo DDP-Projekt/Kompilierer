@@ -81,7 +81,6 @@ const (
 	REFERENZ
 	FUNKTION
 	BINDE
-	EIN
 	GIB
 	ZURÜCK
 	NICHTS
@@ -99,8 +98,13 @@ const (
 	VOM
 	TYP
 	GIBT
+	EIN
 	EINE
 	EINEN
+	EINER
+	EINEM
+	KEIN
+	KEINE
 	MACHT
 	KANN
 	SO
@@ -118,8 +122,6 @@ const (
 	LEEREN
 	AUS
 	BESTEHT
-	EINER
-	EINEM
 	VERLASSE
 	COUNT_MAL
 	ALIAS
@@ -148,6 +150,8 @@ const (
 	AUCH
 	ÜBERLÄDT
 	OPERATOR
+	VARIABLE
+	VARIABLEN
 
 	DOT     // .
 	COMMA   // ,
@@ -305,6 +309,10 @@ var tokenStrings = [...]string{
 	AUCH:          "auch",
 	ÜBERLÄDT:      "überlädt",
 	OPERATOR:      "Operator",
+	VARIABLE:      "Variable",
+	VARIABLEN:     "Variablen",
+	KEIN:          "kein",
+	KEINE:         "keine",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -466,6 +474,10 @@ var KeywordMap = map[string]TokenType{
 	"überlaedt":      ÜBERLÄDT,
 	"ueberlaedt":     ÜBERLÄDT,
 	"Operator":       OPERATOR,
+	"Variable":       VARIABLE,
+	"Variablen":      VARIABLEN,
+	"kein":           KEIN,
+	"keine":          KEINE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

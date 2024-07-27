@@ -7,7 +7,7 @@
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
 void ddp_string_from_constant(ddpstring *ret, char *str) {
-	DDP_DBGLOG("_ddp_string_from_constant: ret: %p", ret);
+	DDP_DBGLOG("_ddp_string_from_constant: ret: %p, str: %s", ret, str);
 	size_t size = strlen(str) + 1;
 	if (size == 1) {
 		*ret = DDP_EMPTY_STRING;
@@ -52,4 +52,68 @@ ddpint ddp_strlen(ddpstring *str) {
 		return 0;
 	}
 	return strlen(str->str);
+}
+
+extern vtable ddpint_vtable;
+extern vtable ddpfloat_vtable;
+extern vtable ddpbool_vtable;
+extern vtable ddpchar_vtable;
+
+static bool is_primitive_vtable(vtable *table) {
+	return table != NULL && table->free_func == NULL;
+}
+
+// frees the given any
+void ddp_free_any(ddpany *any) {
+	DDP_DBGLOG("free_any: %p, vtable: %p", any, any->vtable_ptr);
+
+	if (!is_primitive_vtable(any->vtable_ptr) && any->value_ptr != NULL) {
+		// free the underlying value
+		any->vtable_ptr->free_func(any->value_ptr);
+	}
+
+	// free the memory allocated for the value itself
+	if (any->value_ptr != NULL) {
+		ddp_reallocate(any->value_ptr, any->value_size, 0);
+	}
+}
+
+// places a copy of any in ret
+void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
+	DDP_DBGLOG("deep_copy_any: %p", any);
+	// copy metadata
+	ret->value_size = any->value_size;
+	ret->vtable_ptr = any->vtable_ptr;
+
+	// allocate space for the underlying value
+	ret->value_ptr = ddp_reallocate(NULL, 0, ret->value_size);
+	if (is_primitive_vtable(ret->vtable_ptr)) {
+		memcpy(ret->value_ptr, any->value_ptr, ret->value_size);
+	} else if (ret->vtable_ptr != NULL) {
+		// deep copy the underlying value
+		ret->vtable_ptr->deep_copy_func(ret->value_ptr, any->value_ptr);
+	}
+}
+
+// compares two any
+ddpbool ddp_any_equal(ddpany *any1, ddpany *any2) {
+	DDP_DBGLOG("any_equal: %p, %p", any1, any2);
+	if (any1->value_size != any2->value_size) {
+		return false;
+	}
+
+	if (any1->vtable_ptr != any2->vtable_ptr) {
+		return false;
+	}
+
+	// standardwert
+	if (any1->vtable_ptr == NULL) {
+		return true;
+	}
+
+	if (is_primitive_vtable(any1->vtable_ptr)) {
+		return memcmp(any1->value_ptr, any2->value_ptr, any1->value_size) == 0;
+	}
+
+	return any1->vtable_ptr->equal_func(any1->value_ptr, any2->value_ptr);
 }

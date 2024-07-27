@@ -25,3 +25,5 @@ und erstellen sie so:
 
 Schreibe (die Größe von einem Vektor3) auf eine Zeile.
 Schreibe (der Standardwert von einem Vektor3 gleich der Nullvektor3 ist) auf eine Zeile.
+
+Schreibe (der Standardwert von einem Text gleich "" ist) auf eine Zeile.

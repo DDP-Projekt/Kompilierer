@@ -9,7 +9,7 @@ import (
 type Level uint8
 
 const (
-	LEVEL_INVALID = iota
+	LEVEL_INVALID Level = iota
 	LEVEL_WARN
 	LEVEL_ERROR
 )

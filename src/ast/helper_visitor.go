@@ -337,6 +337,14 @@ func (h *helperVisitor) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	return result
 }
 
+func (h *helperVisitor) VisitTypeCheck(expr *TypeCheck) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(TypeCheckVisitor); ok {
+		result = vis.VisitTypeCheck(expr)
+	}
+	return h.visitChildren(result, expr.Lhs)
+}
+
 func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(GroupingVisitor); ok {

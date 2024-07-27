@@ -2,6 +2,7 @@ package ast
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -35,10 +36,11 @@ type (
 	}
 
 	AssignStmt struct {
-		Range token.Range
-		Tok   token.Token
-		Var   Assigneable // the variable to assign to
-		Rhs   Expression  // literal assign value
+		Range   token.Range
+		Tok     token.Token
+		Var     Assigneable   // the variable to assign to
+		Rhs     Expression    // literal assign value
+		RhsType ddptypes.Type // filled in by the typechecker, to keep information about typedefs
 	}
 
 	BlockStmt struct {
@@ -88,7 +90,7 @@ type (
 	ReturnStmt struct {
 		Range  token.Range
 		Return token.Token // Gib
-		Func   string
+		Func   *FuncDecl
 		Value  Expression // nil for void return
 	}
 

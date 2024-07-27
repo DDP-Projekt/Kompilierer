@@ -75,14 +75,14 @@ func (c *compiler) initRuntimeFunctions() {
 
 // helper functions to use the runtime-bindings
 
-func (c *compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
-	args = append([]value.Value{exit_code, c.cbb.NewBitCast(fmt, i8ptr)}, args...)
+func (c *compiler) runtime_error(exit_code int, fmt value.Value, args ...value.Value) {
+	args = append([]value.Value{newInt(int64(exit_code)), c.cbb.NewBitCast(fmt, i8ptr)}, args...)
 	c.cbb.NewCall(ddp_runtime_error_irfun, args...)
 	c.cbb.NewUnreachable()
 }
 
-func (c *compiler) out_of_bounds_error(index, len value.Value) {
-	c.runtime_error(newInt(1), c.out_of_bounds_error_string, index, len)
+func (c *compiler) out_of_bounds_error(line, column, index, len value.Value) {
+	c.runtime_error(1, c.out_of_bounds_error_string, line, column, index, len)
 }
 
 // calls ddp_reallocate from the runtime

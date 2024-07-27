@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -18,6 +19,8 @@ type ddpIrStructType struct {
 	fieldIrTypes  []ddpIrType
 	fieldDDPTypes []ddptypes.StructField
 	name          string
+	vtable        *ir.Global
+	llType        llvm.Type
 	freeIrFun     *ir.Func // the free ir func
 	deepCopyIrFun *ir.Func // the deepCopy ir func
 	equalsIrFun   *ir.Func // the equals ir func
@@ -44,6 +47,14 @@ func (*ddpIrStructType) IsPrimitive() bool {
 
 func (t *ddpIrStructType) DefaultValue() constant.Constant {
 	return constant.NewZeroInitializer(t.typ)
+}
+
+func (t *ddpIrStructType) VTable() constant.Constant {
+	return t.vtable
+}
+
+func (t *ddpIrStructType) LLVMType() llvm.Type {
+	return t.llType
 }
 
 func (t *ddpIrStructType) FreeFunc() *ir.Func {
@@ -74,8 +85,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 	structType.name = name
 	// recursively declare all types this type depends on
 	structType.fieldIrTypes = mapSlice(typ.Fields, func(field ddptypes.StructField) ddpIrType {
-		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.TrueUnderlying(field.Type)); isStruct {
-			return c.defineOrDeclareStructType(fieldStructType)
+		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.ListTrueUnderlying(field.Type)); isStruct {
+			c.defineOrDeclareStructType(fieldStructType)
 		}
 
 		return c.toIrType(field.Type)
@@ -86,11 +97,36 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 	)).(*types.StructType)
 	structType.ptr = ptr(structType.typ)
 
+	structType.llType = llvm.StructType(mapSlice(structType.fieldIrTypes, func(irType ddpIrType) llvm.Type {
+		return irType.LLVMType()
+	}), false)
+
 	structType.freeIrFun = c.createStructFree(structType, declarationOnly)
 	structType.deepCopyIrFun = c.createStructDeepCopy(structType, declarationOnly)
 	structType.equalsIrFun = c.createStructEquals(structType, declarationOnly)
 
 	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
+
+	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
+		ptr(types.NewFunc(c.void.IrType(), structType.ptr)),
+		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)),
+	))
+
+	var vtable *ir.Global
+	if declarationOnly {
+		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
+		vtable.Linkage = enum.LinkageExternal
+		vtable.Visibility = enum.VisibilityDefault
+	} else {
+		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			structType.freeIrFun,
+			structType.deepCopyIrFun,
+			structType.equalsIrFun,
+		))
+	}
+
+	structType.vtable = vtable
 
 	c.structTypes[typ] = structType
 	return structType
@@ -191,7 +227,7 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 
 	// if (struct1 == struct2) return true;
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(struct1, i64), c.cbb.NewPtrToInt(struct2, i64))
-	c.createIfElese(ptrs_equal, func() {
+	c.createIfElse(ptrs_equal, func() {
 		c.cbb.NewRet(constant.True)
 	},
 		nil,
@@ -207,7 +243,7 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 		}
 		equal := c.compare_values(f1, f2, field)
 		is_not_equal := c.cbb.NewXor(equal, newInt(1))
-		c.createIfElese(is_not_equal, func() {
+		c.createIfElse(is_not_equal, func() {
 			c.cbb.NewRet(constant.False)
 		}, nil)
 	}

@@ -68,6 +68,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpcharlist
 		case ddptypes.TEXT:
 			return c.ddpstringlist
+		case ddptypes.VARIABLE:
+			return c.ddpanylist
 		default:
 			return c.structTypes[underlying.(*ddptypes.StructType)].listType
 		}
@@ -83,6 +85,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpchartyp
 		case ddptypes.TEXT:
 			return c.ddpstring
+		case ddptypes.VARIABLE:
+			return c.ddpany
 		case ddptypes.VoidType{}:
 			return c.void
 		default: // struct types
@@ -114,9 +118,16 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 		return c.ddpcharlist
 	case c.ddpstring:
 		return c.ddpstringlist
+	case c.ddpany:
+		return c.ddpanylist
 	default:
 		return ty.(*ddpIrStructType).listType
 	}
+}
+
+// returns the aligned size of a type
+func (c *compiler) getTypeSize(ty ddpIrType) uint64 {
+	return c.llTarget.targetData.TypeAllocSize(ty.LLVMType())
 }
 
 func getHashableModuleName(mod *ast.Module) string {
@@ -176,7 +187,7 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 // returns the mangled name of a struct type
 // mangled names are cached and unique per module
 // NOTE: think about making this demanglable
-func (c *compiler) mangledNameType(t *ddptypes.StructType) string {
+func (c *compiler) mangledNameType(t ddptypes.Type) string {
 	if mangledName, ok := mangledNamesCacheType.Load(t); ok {
 		return mangledName.(string)
 	}
@@ -186,7 +197,7 @@ func (c *compiler) mangledNameType(t *ddptypes.StructType) string {
 		panic(fmt.Errorf("type %s not in typeMap", t))
 	}
 
-	mangledName := mangledNameBase(t.Name, module)
+	mangledName := mangledNameBase(t.String(), module)
 	mangledNamesCacheType.Store(t, mangledName)
 	return mangledName
 }

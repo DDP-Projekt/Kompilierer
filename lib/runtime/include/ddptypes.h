@@ -33,6 +33,29 @@ ddpbool ddp_string_empty(ddpstring *str);
 // returns the strlen of str->str or 0 if str is NULL
 ddpint ddp_strlen(ddpstring *str);
 
+typedef void (*free_func_ptr)(void *);
+typedef void (*deep_copy_func_ptr)(void *, void *);
+typedef ddpbool (*equal_func_ptr)(void *, void *);
+
+typedef struct {
+	free_func_ptr free_func;
+	deep_copy_func_ptr deep_copy_func;
+	equal_func_ptr equal_func;
+} vtable;
+
+typedef struct {
+	ddpint value_size;
+	vtable *vtable_ptr;
+	void *value_ptr;
+} ddpany;
+
+// frees the given any
+void ddp_free_any(ddpany *any);
+// places a copy of any in ret
+void ddp_deep_copy_any(ddpany *ret, ddpany *any);
+// compares two any
+ddpbool ddp_any_equal(ddpany *any1, ddpany *any2);
+
 typedef struct {
 	ddpint *arr; // the element array
 	ddpint len;	 // the length of the array
@@ -97,6 +120,20 @@ extern void ddp_ddpstringlist_from_constants(ddpstringlist *ret, ddpint count);
 extern void ddp_free_ddpstringlist(ddpstringlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpstringlist(ddpstringlist *ret, ddpstringlist *list);
+
+typedef struct {
+	ddpany *arr; // the element array
+	ddpint len;	 // the length of the array
+	ddpint cap;	 // the capacity of the array
+} ddpanylist;
+
+// allocates a ddpanylist with count elements
+extern void ddp_ddpanylist_from_constants(ddpanylist *ret, ddpint count);
+// free addpanylist
+extern void ddp_free_ddpanylist(ddpanylist *list);
+// deep copies list into ret
+extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
+
 // useful macros to work with ddp types
 
 #define DDP_GROWTH_FACTOR (1.5)

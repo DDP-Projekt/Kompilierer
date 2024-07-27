@@ -176,23 +176,56 @@ func (p *parser) bitwiseAND() ast.Expression {
 
 func (p *parser) equality() ast.Expression {
 	expr := p.comparison()
-	for p.matchAny(token.GLEICH, token.UNGLEICH) {
+	for p.matchAny(token.GLEICH, token.UNGLEICH, token.EIN, token.EINE, token.KEIN, token.KEINE) {
 		tok := p.previous()
-		rhs := p.comparison()
-		operator := ast.BIN_EQUAL
-		if tok.Type == token.UNGLEICH {
-			operator = ast.BIN_UNEQUAL
+
+		bin_operator := ast.BIN_EQUAL
+		switch tok.Type {
+		case token.UNGLEICH:
+			bin_operator = ast.BIN_UNEQUAL
+			fallthrough
+		case token.GLEICH:
+			rhs := p.comparison()
+			expr = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: bin_operator,
+				Rhs:      rhs,
+			}
+		case token.EIN, token.EINE, token.KEIN, token.KEINE:
+			checkType := p.parseType()
+			expr = &ast.TypeCheck{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   p.previous().Range.End,
+				},
+				Tok:       *tok,
+				CheckType: checkType,
+				Lhs:       expr,
+			}
+			if tok.Type == token.KEIN || tok.Type == token.KEINE {
+				expr = &ast.UnaryExpr{
+					Range:    expr.GetRange(),
+					Tok:      expr.Token(),
+					Operator: ast.UN_NOT,
+					Rhs:      expr,
+				}
+			}
+
+			// gender check
+			if checkType != nil {
+				if (tok.Type == token.EIN || tok.Type == token.KEIN) && checkType.Gender() == ddptypes.FEMININ {
+					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'ein'?")
+				} else if (tok.Type == token.EINE || tok.Type == token.KEINE) && checkType.Gender() != ddptypes.FEMININ {
+					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'eine'?")
+				}
+			}
 		}
-		expr = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: operator,
-			Rhs:      rhs,
-		}
+
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
 		} else {

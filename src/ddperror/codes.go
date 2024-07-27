@@ -47,6 +47,7 @@ const (
 	SEM_BAD_OPERATOR_PARAMS                               // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
 	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
 	SEM_TODO_STMT_FOUND                                   // ... wurde gefunden
+	SEM_BAD_TYPEDEF                                       // any was typedefed
 )
 
 // type error codes

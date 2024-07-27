@@ -5,8 +5,10 @@ with the llir representation of ddptypes
 package compiler
 
 import (
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 )
 
@@ -17,21 +19,23 @@ import (
 type ddpIrStringType struct {
 	typ                    types.Type         // the ir struct type
 	ptr                    *types.PointerType // ptr(typ)
-	fromConstantsIrFun     *ir.Func           // the fromConstans ir func
-	freeIrFun              *ir.Func           // the free ir func
-	deepCopyIrFun          *ir.Func           // the deepCopy ir func
-	equalsIrFun            *ir.Func           // the equals ir func
-	lengthIrFun            *ir.Func           // the string_length ir func
-	indexIrFun             *ir.Func           // the string_index ir func
-	replaceCharIrFun       *ir.Func           // the replace_char_in_string ir func
-	sliceIrFun             *ir.Func           // the clice ir func
-	str_str_concat_IrFunc  *ir.Func           // the str_str_verkettet ir func
-	str_char_concat_IrFunc *ir.Func           // the str_char_verkettet ir func
-	char_str_concat_IrFunc *ir.Func           // the char_str_verkettet ir func
-	int_to_string_IrFun    *ir.Func           // the int_to_string ir func
-	float_to_string_IrFun  *ir.Func           // the float_to_string ir func
-	bool_to_string_IrFun   *ir.Func           // the bool_to_string ir func
-	char_to_string_IrFun   *ir.Func           // the char_to_string ir func
+	vtable                 *ir.Global
+	llType                 llvm.Type
+	fromConstantsIrFun     *ir.Func // the fromConstans ir func
+	freeIrFun              *ir.Func // the free ir func
+	deepCopyIrFun          *ir.Func // the deepCopy ir func
+	equalsIrFun            *ir.Func // the equals ir func
+	lengthIrFun            *ir.Func // the string_length ir func
+	indexIrFun             *ir.Func // the string_index ir func
+	replaceCharIrFun       *ir.Func // the replace_char_in_string ir func
+	sliceIrFun             *ir.Func // the clice ir func
+	str_str_concat_IrFunc  *ir.Func // the str_str_verkettet ir func
+	str_char_concat_IrFunc *ir.Func // the str_char_verkettet ir func
+	char_str_concat_IrFunc *ir.Func // the char_str_verkettet ir func
+	int_to_string_IrFun    *ir.Func // the int_to_string ir func
+	float_to_string_IrFun  *ir.Func // the float_to_string ir func
+	bool_to_string_IrFun   *ir.Func // the bool_to_string ir func
+	char_to_string_IrFun   *ir.Func // the char_to_string ir func
 }
 
 var _ ddpIrType = (*ddpIrStringType)(nil)
@@ -59,6 +63,14 @@ func (t *ddpIrStringType) DefaultValue() constant.Constant {
 	)
 }
 
+func (t *ddpIrStringType) VTable() constant.Constant {
+	return t.vtable
+}
+
+func (t *ddpIrStringType) LLVMType() llvm.Type {
+	return t.llType
+}
+
 func (t *ddpIrStringType) FreeFunc() *ir.Func {
 	return t.freeIrFun
 }
@@ -71,13 +83,18 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
-func (c *compiler) defineStringType() *ddpIrStringType {
+func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
 		i8ptr,  // char* str
 		ddpint, // ddpint cap;
 	))
 	ddpstring.ptr = ptr(ddpstring.typ)
+
+	ddpstring.llType = llvm.StructType([]llvm.Type{
+		llvm.PointerType(llvm.Int8Type(), 0),
+		llvm.Int64Type(),
+	}, false)
 
 	// declare all the external functions to work with strings
 
@@ -112,6 +129,27 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("f", ddpfloat))
 	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
 	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
+
+	vtable_type := c.mod.NewTypeDef(ddpstring.Name()+"_vtable_type", types.NewStruct(
+		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr)),
+		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr, ddpstring.ptr)),
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), ddpstring.ptr, ddpstring.ptr)),
+	))
+
+	var vtable *ir.Global
+	if declarationOnly {
+		vtable = c.mod.NewGlobal(ddpstring.Name()+"_vtable", ptr(vtable_type))
+		vtable.Linkage = enum.LinkageExternal
+		vtable.Visibility = enum.VisibilityDefault
+	} else {
+		vtable = c.mod.NewGlobalDef(ddpstring.Name()+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			ddpstring.freeIrFun,
+			ddpstring.deepCopyIrFun,
+			ddpstring.equalsIrFun,
+		))
+	}
+
+	ddpstring.vtable = vtable
 
 	return ddpstring
 }
