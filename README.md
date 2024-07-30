@@ -17,7 +17,7 @@ Wer am Kompilierer mitarbeiten möchte, findet mehr dazu in [CONTRIBUTING](CONTR
 Um DDP zu installieren braucht man bloß den aktuellsten Release für das gewünschte Betriebssystem hier von Github zu Downloaden, 
 das Archiv zu entpacken, und den Installer (ddp-setup.exe) auszuführen.
 
-Eine detaillierte Installationsanleitung gibt es [hier](https://ddp.le0n.dev/Bedienungsanleitung/DE/Einstieg).
+Eine detaillierte Installationsanleitung gibt es [hier](https://ddp.le0n.dev/Bedienungsanleitung/de/Einstieg).
 
 ## Feature Übersicht
 
@@ -103,7 +103,7 @@ Wie man sieht wurde die Funktion foo wie ein normaler deutscher Ausdruck aufgeru
 
 Funktionen sind ein sehr großes Thema in DDP und dieses kleine Beispiel zeigt nur einen Bruchteil ihrer Komplexen Syntax.
 
-Für mehr details empfehle ich dringen diesen [Artikel](https://ddp.le0n.dev/Bedienungsanleitung/DE/Programmierung/Funktionen) aus der Bedienungsanleitung gründlich durchzulesen, oder zumindest die Beispiele zu überfliegen.
+Für mehr details empfehle ich dringen diesen [Artikel](https://ddp.le0n.dev/Bedienungsanleitung/de/Programmierung/Funktionen) aus der Bedienungsanleitung gründlich durchzulesen, oder zumindest die Beispiele zu überfliegen.
 
 ### Module
 
