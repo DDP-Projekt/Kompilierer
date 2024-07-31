@@ -2,7 +2,7 @@
 	Gibt -9223372036854775807 zurück.
 ]
 Die öffentliche Funktion MinZahl gibt eine Zahl zurück, macht:
-	Gib -9223372036854775807 zurück.
+	Gib 1 um 63 Bit nach Links verschoben zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Zahl"
 

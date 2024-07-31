@@ -2,7 +2,7 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/Zahlen" ein.
 
 Schreibe (der maximale Wert einer Zahl gleich logisch nicht 0 um ein Bit nach rechts verschoben ist) auf eine Zeile.
-Schreibe (der minimale Wert einer Zahl gleich eins um 64 Bit nach links verschoben ist) auf eine Zeile.
+Schreibe (der minimale Wert einer Zahl gleich eins um 63 Bit nach links verschoben ist) auf eine Zeile.
 [Schreibe (der maximale Wert einer Kommazahl) auf eine Zeile.
 Schreibe (der minimale Wert einer Kommazahl) auf eine Zeile.]
 Schreibe (der kleinste positive Wert einer Kommazahl größer als 0 ist) auf eine Zeile.
