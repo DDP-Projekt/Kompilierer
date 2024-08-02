@@ -287,6 +287,16 @@ Und kann so benutzt werden:
 	"<datei> <!nicht> zuende ist"
 
 [
+	Liest den gesamten Inhalt von datei als Text
+]
+Die öffentliche Funktion Datei_Lies_Alles mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der gesamte Inhalt von <datei>",
+	"dem gesamten Inhalt von <datei>",
+	"den gesamten Inhalt von <datei>"
+
+[
 	Liest die nächsten N Byte aus der Datei und gibt sie als Text zurück.
 ]
 Die öffentliche Funktion Datei_Lies_N_Zeichen mit den Parametern datei und N vom Typ Datei Referenz und Zahl, gibt einen Text zurück,

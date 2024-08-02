@@ -28,7 +28,7 @@
 #include <io.h>
 
 #define access _access
-#define stat _stat
+// #define stat _stat
 #define mkdir _mkdir
 #define F_OK 0
 #define PATH_SEPERATOR "/\\" // set of possible seperators
@@ -755,6 +755,25 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 		file->read_buffer_start += copy_amount;
 		copied += copy_amount;
 	}
+}
+
+void Datei_Lies_Alles(ddpstring *ret, DateiRef datei) {
+	DDP_MIGHT_ERROR;
+
+	*ret = DDP_EMPTY_STRING;
+	// get the internal file and validate it
+	InternalFile *file = get_internal_file(datei->index, datei->id);
+	if (!file) {
+		return;
+	}
+
+	struct stat file_info;
+	if (fstat(file->fd, &file_info) != 0) {
+		ddp_error("Fehler beim Aufrufen von Datei Informationen: ", true);
+		return;
+	}
+
+	Datei_Lies_N_Zeichen(ret, datei, file_info.st_size);
 }
 
 #define DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file) \
