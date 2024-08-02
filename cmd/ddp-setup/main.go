@@ -35,7 +35,7 @@ func exit(code int) {
 func main() {
 	flag.BoolVar(&always_yes, "force", false, "immer ja zu Aufforderungen antworten")
 	flag.Parse()
-	if !prompt("Willkommen beim DDP-Installer!\nDieses Setup wird einige Dateien entpacken und Sie um Erlaubnis fragen, einige Umgebungsvariablen zu verändern u. Ä.\nWollen Sie fortfahren? y - ja. n - nein.") {
+	if !prompt("Willkommen beim DDP-Installer!\nDieses Setup wird einige Dateien entpacken und Sie um Erlaubnis fragen, einige Umgebungsvariablen zu verändern u. Ä.\nWollen Sie fortfahren") {
 		return
 	}
 
