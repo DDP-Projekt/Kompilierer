@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Der Kompilierer crashet nicht mehr wenn indirekt importierte Symbole in eingebundenen Kombinations Aliasen verwendet werden
 - [Changed] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
     - Buchstabe_Ist_Zahl -> Buchstabe_Ist_Ziffer (Alias ebenfalls angepasst)
     - Text_Ist_Zahl: Alias angepasst

@@ -547,7 +547,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		irFunc.Visibility = enum.VisibilityDefault
 	}
 
-	c.insertFunction(decl.Name(), decl, irFunc)
+	c.insertFunction(irFunc.Name(), decl, irFunc)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(decl) {
@@ -1828,7 +1828,14 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
-	fun := c.functions[e.Func.Name()] // retreive the function (the resolver took care that it is present)
+	// declare the function if it is imported
+	// this is needed so that plain expressions from other modules
+	// (i.e. struct literals) work
+	if e.Func.Module() != c.ddpModule {
+		c.declareImportedFuncDecl(e.Func)
+	}
+
+	fun := c.functions[c.mangledNameDecl(e.Func)] // retreive the function (the resolver took care that it is present)
 	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
 
 	meta := annotators.ConstFuncParamMeta{}
@@ -1935,62 +1942,72 @@ func (c *compiler) VisitExprStmt(s *ast.ExprStmt) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// if t is a struct types it is declared in this compilation unit
+func (c *compiler) declareIfStruct(t ddptypes.Type) {
+	underlying := ddptypes.TrueUnderlying(t)
+	if structType, isStruct := ddptypes.CastStruct(underlying); isStruct {
+		c.defineOrDeclareStructType(structType)
+	}
+}
+
+func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
+	mangledName := c.mangledNameDecl(decl)
+	// already declared
+	if _, ok := c.functions[mangledName]; ok {
+		return
+	}
+
+	// declare all types this function depends on
+	c.declareIfStruct(decl.ReturnType)
+	for _, param := range decl.Parameters {
+		c.declareIfStruct(param.Type.Type)
+	}
+	retType := c.toIrType(decl.ReturnType) // get the llvm type
+	retTypeIr := retType.IrType()
+	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
+
+	hasReturnParam := !retType.IsPrimitive()
+	// non-primitives are returned by passing a pointer to the struct as first parameter
+	if hasReturnParam {
+		params = append(params, ir.NewParam("", retType.PtrType()))
+		retTypeIr = c.void.IrType()
+	}
+
+	// append all the other parameters
+	for _, param := range decl.Parameters {
+		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
+		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
+	}
+
+	irFunc := c.mod.NewFunc(mangledName, retTypeIr, params...) // create the ir function
+	irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	// declare it as extern function
+	irFunc.Linkage = enum.LinkageExternal
+	irFunc.Visibility = enum.VisibilityDefault
+
+	c.insertFunction(irFunc.Name(), decl, irFunc)
+}
+
 func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 	if s.Module == nil {
 		c.err("importStmt.Module == nil")
 	}
 
-	// if t is a struct types it is declared in this compilation unit
-	declareIfStruct := func(t ddptypes.Type) {
-		underlying := ddptypes.TrueUnderlying(t)
-		if structType, isStruct := ddptypes.CastStruct(underlying); isStruct {
-			c.defineOrDeclareStructType(structType)
-		}
-	}
-
 	ast.IterateImportedDecls(s, func(name string, decl ast.Declaration, _ token.Token) bool {
 		switch decl := decl.(type) {
 		case *ast.VarDecl: // declare the variable as external
-			declareIfStruct(decl.Type)
+			c.declareIfStruct(decl.Type)
 			Typ := c.toIrType(decl.Type)
 			globalDecl := c.mod.NewGlobal(c.mangledNameDecl(decl), Typ.IrType())
 			globalDecl.Linkage = enum.LinkageExternal
 			globalDecl.Visibility = enum.VisibilityDefault
 			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
 		case *ast.FuncDecl:
-			// declare all types this function depends on
-			declareIfStruct(decl.ReturnType)
-			for _, param := range decl.Parameters {
-				declareIfStruct(param.Type.Type)
-			}
-			retType := c.toIrType(decl.ReturnType) // get the llvm type
-			retTypeIr := retType.IrType()
-			params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
-
-			hasReturnParam := !retType.IsPrimitive()
-			// non-primitives are returned by passing a pointer to the struct as first parameter
-			if hasReturnParam {
-				params = append(params, ir.NewParam("", retType.PtrType()))
-				retTypeIr = c.void.IrType()
-			}
-
-			// append all the other parameters
-			for _, param := range decl.Parameters {
-				ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
-				params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
-			}
-
-			irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
-			irFunc.CallingConv = enum.CallingConvC                                 // every function is called with the c calling convention to make interaction with inbuilt stuff easier
-			// declare it as extern function
-			irFunc.Linkage = enum.LinkageExternal
-			irFunc.Visibility = enum.VisibilityDefault
-
-			c.insertFunction(decl.Name(), decl, irFunc)
+			c.declareImportedFuncDecl(decl)
 		case *ast.TypeAliasDecl:
-			declareIfStruct(decl.Type)
+			c.declareIfStruct(decl.Type)
 		case *ast.TypeDefDecl:
-			declareIfStruct(decl.Type)
+			c.declareIfStruct(decl.Type)
 			c.addTypdefVTable(decl, true)
 		case *ast.StructDecl:
 			c.defineOrDeclareStructType(decl.Type)

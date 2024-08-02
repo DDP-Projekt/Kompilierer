@@ -1,4 +1,6 @@
+Binde "foo" ein.
+
 Wir nennen die öffentliche Kombination aus
-	der öffentlichen Zahl z mit Standardwert 10,
+	der öffentlichen Zahl z mit Standardwert foo,
 einen Struktur, und erstellen sie so:
 	"eine neue Struktur"
