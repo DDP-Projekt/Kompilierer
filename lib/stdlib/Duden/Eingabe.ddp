@@ -201,7 +201,7 @@ Und kann so benutzt werden:
 	zu einer Zahl umgewandelt werden kann.
 ]
 Die öffentliche Funktion Hat_Zahl gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
+	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer in eine Zahl umgewandelt werden kann zurück.
 Und kann so benutzt werden:
 	"die nächste Eingabe <!k>eine Zahl ist" oder
 	"die naechste Eingabe <!k>eine Zahl ist"

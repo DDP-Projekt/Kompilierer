@@ -267,11 +267,11 @@ Schreibe text groß.
 Schreibe text auf eine Zeile.
 
 [Text_Ist_Zahl]
-Schreibe ("123" eine Zahl ist) auf eine Zeile.
-Schreibe ("+123" eine Zahl ist) auf eine Zeile.
-Schreibe ("-123" eine Zahl ist) auf eine Zeile.
-Schreibe ("" eine Zahl ist) auf eine Zeile.
-Schreibe ("abc" eine Zahl ist) auf eine Zeile.
+Schreibe ("123" in eine Zahl umgewandelt werden kann) auf eine Zeile.
+Schreibe ("+123" in eine Zahl umgewandelt werden kann) auf eine Zeile.
+Schreibe ("-123" in eine Zahl umgewandelt werden kann) auf eine Zeile.
+Schreibe ("" in eine Zahl umgewandelt werden kann) auf eine Zeile.
+Schreibe ("abc" in eine Zahl umgewandelt werden kann) auf eine Zeile.
 
 [Polster]
 Schreibe ("a" mit 4 ' ' links gepolstert) auf eine Zeile.

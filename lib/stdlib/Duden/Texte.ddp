@@ -513,12 +513,12 @@ Die öffentliche Funktion Text_Ist_Zahl mit dem Parameter t vom Typ Text, gibt e
 	Wenn l kleiner als 1 ist, gib falsch zurück.
 
 	Der Buchstabe Vorzeichen ist t an der Stelle 1.
-	Wenn Vorzeichen eine Zahl ist, gib wahr zurück.
+	Wenn Vorzeichen eine Ziffer ist, gib wahr zurück.
 	Wenn Vorzeichen ungleich '+' ist und Vorzeichen ungleich '-' ist, gib falsch zurück.
-	Wenn l kleiner als 2 ist oder nicht (t an der Stelle 2) eine Zahl ist, gib falsch zurück.
+	Wenn l kleiner als 2 ist oder (t an der Stelle 2) keine Ziffer ist, gib falsch zurück.
 	Gib wahr zurück.
 Und kann so benutzt werden:
-	"<t> <!k>eine Zahl ist"
+	"<t> <!nicht> in eine Zahl umgewandelt werden kann"
 
 [
 	Wandelt jeden Buchstaben des gegebenen Textes in die groß geschriebene Variante

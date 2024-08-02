@@ -11,6 +11,10 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Changed] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
+    - Buchstabe_Ist_Zahl -> Buchstabe_Ist_Ziffer (Alias ebenfalls angepasst)
+    - Text_Ist_Zahl: Alias angepasst
+- [Added] Duden/Dateisystem Datei_Lies_Alles
 - [Added] "Variable" als Typ, der zur Laufzeit jeder beliebige andere Typ sein kann
 - [Added] ... als Platzhalter
 - [Fix] Bug im Parser, der rekursiv allen Arbeitsspeicher verbraucht

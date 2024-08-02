@@ -373,7 +373,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Datei_Lies_Zahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Zahl zurück, macht:
 	Der Text wort ist das nächste Wort aus datei.
-	Wenn nicht wort eine Zahl ist, dann:
+	Wenn wort nicht in eine Zahl umgewandelt werden kann, dann:
 		Melde den Fehler "Keine Zahl gefunden".
 	Gib wort als Zahl zurück.
 Und kann so benutzt werden:
@@ -410,7 +410,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Datei_Lies_Kommazahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Kommazahl zurück, macht:
 	Der Text wort ist das nächste Wort aus datei.
 	[jede Zahl kann auch als Kommazahl formatiert werden]
-	Wenn nicht wort eine Zahl ist, dann:
+	Wenn wort nicht in eine Zahl umgewandelt werden kann, dann:
 		Melde den Fehler "Keine Kommazahl gefunden".
 	Gib wort als Kommazahl zurück.
 Und kann so benutzt werden:
