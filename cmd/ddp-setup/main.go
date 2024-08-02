@@ -25,7 +25,7 @@ var (
 )
 
 func exit(code int) {
-	InfoF("Drücken Sie die Eingabetaste, um das Fenster zu schließen...")
+	InfoF("Drücke die Eingabetaste, um das Fenster zu schließen...")
 	if !always_yes {
 		fmt.Scanln()
 	}
@@ -35,7 +35,7 @@ func exit(code int) {
 func main() {
 	flag.BoolVar(&always_yes, "force", false, "immer ja zu Aufforderungen antworten")
 	flag.Parse()
-	if !prompt("Willkommen beim DDP-Installer!\nDieses Setup wird einige Dateien entpacken und Sie um Erlaubnis fragen, einige Umgebungsvariablen zu verändern u. Ä.\nWollen Sie fortfahren") {
+	if !prompt("Willkommen beim DDP-Installer!\nDieses Setup wird einige Dateien entpacken und dich um Erlaubnis fragen, einige Umgebungsvariablen zu verändern u. Ä.\nMöchtest du fortfahren") {
 		return
 	}
 
@@ -106,39 +106,39 @@ func main() {
 		recompileLibs()
 	}
 
-	if vscodeCmd, hasVscode := LookupCommand(vscodeCmd); hasVscode && prompt("Möchten Sie vscode-ddp (die DDP vscode-Erweiterung) installieren") {
+	if vscodeCmd, hasVscode := LookupCommand(vscodeCmd); hasVscode && prompt("Möchtest du vscode-ddp (die DDP vscode-Erweiterung) installieren") {
 		InfoF("Installiere vscode-ddp als vscode-Erweiterung")
 		if _, err := runCmd("", vscodeCmd, "--install-extension", "DDP-Projekt.vscode-ddp", "--force"); err == nil {
 			DoneF("vscode-ddp installiert")
 		}
 	}
 
-	if prompt("Möchten Sie die Umgebungsvariable DDPPATH setzen") {
+	if prompt("Möchtest du die Umgebungsvariable DDPPATH setzen") {
 		if exedir, err := osext.ExecutableFolder(); err != nil {
 			WarnF("Ausführungspfad konnte nicht abgerufen werden")
 		} else {
 			InfoF("Setze die Umgebungsvariable DDPPATH auf %s", exedir)
 			if err := penv.SetEnv("DDPPATH", exedir); err != nil {
-				ErrorF("Fehler beim Setzen von DDPPATH: %s\nErwägen Sie, es selbst hinzuzufügen", err)
+				ErrorF("Fehler beim Setzen von DDPPATH: %s\nErwäge, es selbst hinzuzufügen", err)
 			}
 		}
 	}
 
-	if prompt("Möchten Sie das Verzeichnis DDP/bin zu Ihrem PATH hinzufügen") {
+	if prompt("Möchtest du das Verzeichnis DDP/bin zu Ihrem PATH hinzufügen") {
 		if exedir, err := osext.ExecutableFolder(); err != nil {
 			WarnF("Ausführungspfad konnte nicht abgerufen werden")
 		} else {
 			binPath := filepath.Join(exedir, "bin")
 			InfoF("Füge %s zum PATH hinzu", binPath)
 			if err := penv.AppendEnv("PATH", binPath); err != nil {
-				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nErwägen Sie, DDP/bin selbst zu Ihrem PATH hinzuzufügen", err)
+				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nMöchtest du, DDP/bin selbst zu Ihrem PATH hinzuzufügen", err)
 			}
 		}
 	}
 
 	if !errored {
 		DoneF("DDP ist jetzt installiert")
-		if prompt("Möchten Sie Dateien löschen, die nicht mehr benötigt werden") {
+		if prompt("Möchtest du Dateien löschen, die nicht mehr benötigt werden") {
 			if runtime.GOOS == "windows" {
 				InfoF("Lösche mingw64.zip")
 				if err := os.Remove("mingw64.zip"); err != nil {
@@ -148,7 +148,7 @@ func main() {
 				}
 			}
 		}
-		DoneF("Die DDP-Installation wurde erfolgreich abgeschlossen, Sie können sie jetzt löschen")
+		DoneF("Die DDP-Installation wurde erfolgreich abgeschlossen, du kannst sie jetzt löschen")
 	}
 	exit(0)
 }
@@ -160,7 +160,7 @@ func installLocales() {
 			WarnF("Fehler bei der Installation der deutschen Lokalisierung: %s", err)
 		}
 	} else if runtime.GOOS == "windows" {
-		WarnF("Sie verwenden Windows, stellen Sie sicher, dass Sie die richtigen Sprachpakete installiert haben")
+		WarnF("Du verwendest Windows. Stell sicher, dass du die richtigen Sprachpakete installiert hast")
 	}
 }
 
