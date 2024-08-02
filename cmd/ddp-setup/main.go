@@ -148,7 +148,7 @@ func main() {
 				}
 			}
 		}
-		DoneF("Die DDP-Einrichtung wurde erfolgreich abgeschlossen, Sie können sie jetzt löschen")
+		DoneF("Die DDP-Installation wurde erfolgreich abgeschlossen, Sie können sie jetzt löschen")
 	}
 	exit(0)
 }
@@ -169,7 +169,7 @@ func isSameGccVersion() bool {
 	if err != nil {
 		return false
 	}
-	gccVersion = strings.Trim(gccVersion, "\r\n") // TODO: das hier
+	gccVersion = strings.Trim(gccVersion, "\r\n") // TODO: dies
 	kddpVersionOutput, err := runCmd("", filepath.Join("bin", "kddp"), "version", "--wortreich")
 	if err != nil {
 		return false
