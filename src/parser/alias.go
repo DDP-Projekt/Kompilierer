@@ -79,8 +79,26 @@ func (p *parser) alias() ast.Expression {
 
 	// sort the aliases in descending order
 	// Stable so equal aliases stay in the order they were defined
-	sort.SliceStable(matchedAliases, func(i, j int) bool {
-		return len(matchedAliases[i].GetTokens()) > len(matchedAliases[j].GetTokens())
+	sort.Slice(matchedAliases, func(i, j int) bool {
+		toksi, toksj := matchedAliases[i].GetTokens(), matchedAliases[j].GetTokens()
+		if len(toksi) != len(toksj) {
+			return len(toksi) > len(toksj)
+		}
+
+		// Sort by functions that take references up
+		// TODO: improve this heuristic
+
+		countRefArgs := func(params map[string]ddptypes.ParameterType) (n int) {
+			for _, paramType := range params {
+				if paramType.IsReference {
+					n++
+				}
+			}
+			return n
+		}
+
+		refNi, refNj := countRefArgs(matchedAliases[i].GetArgs()), countRefArgs(matchedAliases[j].GetArgs())
+		return refNi > refNj
 	})
 
 	// a argument that was already parsed

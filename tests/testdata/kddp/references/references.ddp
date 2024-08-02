@@ -25,6 +25,16 @@ Die Funktion buchstaberef mit dem Parameter a vom Typ Buchstaben Referenz, gibt 
 Und kann so benutzt werden:
 	"Kapitalisiere <a>"
 
+Die Funktion foo_ref mit dem Parameter t vom Typ Text Referenz, gibt nichts zurück, macht:
+	Schreibe "foo_ref" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo <t>"
+
+Die Funktion foo mit dem Parameter t vom Typ Text, gibt nichts zurück, macht:
+	Schreibe "foo" auf eine Zeile.
+Und kann so benutzt werden:
+	"foo <t>"
+
 Die Zahl zahl ist 0.
 Inkrementiere zahl.
 
@@ -49,3 +59,6 @@ Schreibe '\n'.
 Schreibe text.
 Schreibe '\n'.
 Schreibe buchstabe.
+Schreibe '\n'.
+foo text.
+foo "".
