@@ -83,7 +83,7 @@ func main() {
 		exit(1)
 	}
 
-	if makeCmd == "make" { // wenn wir das gezippte mingw32-make nicht verwenden
+	if makeCmd == "make" { // if we don't use the zipped mingw32-make
 		_, hasMake := LookupCommand(makeCmd)
 
 		if !hasMake && runtime.GOOS == "windows" {
@@ -169,7 +169,7 @@ func isSameGccVersion() bool {
 	if err != nil {
 		return false
 	}
-	gccVersion = strings.Trim(gccVersion, "\r\n") // TODO: dies
+	gccVersion = strings.Trim(gccVersion, "\r\n") // TODO: this
 	kddpVersionOutput, err := runCmd("", filepath.Join("bin", "kddp"), "version", "--wortreich")
 	if err != nil {
 		return false
