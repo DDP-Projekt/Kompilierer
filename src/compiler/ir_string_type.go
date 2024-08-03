@@ -130,10 +130,12 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
 	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
 
+	// see equivalent in runtime/include/ddptypes.h
 	vtable_type := c.mod.NewTypeDef(ddpstring.Name()+"_vtable_type", types.NewStruct(
-		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr)),
-		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr, ddpstring.ptr)),
-		ptr(types.NewFunc(c.ddpbooltyp.IrType(), ddpstring.ptr, ddpstring.ptr)),
+		ddpint, // ddpint type_size
+		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr)),                      // free_func_ptr free_func
+		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr, ddpstring.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), ddpstring.ptr, ddpstring.ptr)), // equal_func_ptr equal_func
 	))
 
 	var vtable *ir.Global
@@ -143,6 +145,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 		vtable.Visibility = enum.VisibilityDefault
 	} else {
 		vtable = c.mod.NewGlobalDef(ddpstring.Name()+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			newInt(16),
 			ddpstring.freeIrFun,
 			ddpstring.deepCopyIrFun,
 			ddpstring.equalsIrFun,

@@ -107,10 +107,12 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 
 	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
 
+	// see equivalent in runtime/include/ddptypes.h
 	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
-		ptr(types.NewFunc(c.void.IrType(), structType.ptr)),
-		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),
-		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)),
+		ddpint, // ddpint size
+		ptr(types.NewFunc(c.void.IrType(), structType.ptr)),                       // free_func_ptr free_func
+		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)), // equal_func_ptr equal_func
 	))
 
 	var vtable *ir.Global
@@ -120,6 +122,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 		vtable.Visibility = enum.VisibilityDefault
 	} else {
 		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			newInt(int64(c.getTypeSize(structType))),
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,

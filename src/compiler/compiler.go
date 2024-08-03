@@ -750,7 +750,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	// create a empty list of the correct length
 	c.cbb.NewCall(listType.fromConstantsIrFun, list, listLen)
 
-	listArr := c.loadStructField(list, arr_field_index) // load the array
+	listArr := c.loadStructField(list, list_arr_field_index) // load the array
 
 	if e.Values != nil { // we got some values to copy
 		// evaluate every value and copy it into the array
@@ -838,7 +838,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 			c.latestReturn = c.cbb.NewCall(c.ddpstring.lengthIrFun, rhs)
 		default:
 			if _, isList := typ.(*ddpIrListType); isList {
-				c.latestReturn = c.loadStructField(rhs, len_field_index)
+				c.latestReturn = c.loadStructField(rhs, list_len_field_index)
 			} else {
 				c.err("invalid Parameter Type for LÄNGE: %s", typ.Name())
 			}
@@ -1134,12 +1134,12 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.latestReturnType = c.ddpchartyp
 		default:
 			if listType, isList := lhsTyp.(*ddpIrListType); isList {
-				listLen := c.loadStructField(lhs, len_field_index)
+				listLen := c.loadStructField(lhs, list_len_field_index)
 				index := c.cbb.NewSub(rhs, newInt(1)) // ddp indices start at 1, so subtract 1
 				// index bounds check
 				cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
 				c.createIfElse(cond, func() {
-					listArr := c.loadStructField(lhs, arr_field_index)
+					listArr := c.loadStructField(lhs, list_arr_field_index)
 					elementPtr := c.indexArray(listArr, index)
 					// if the list is a temporary, we need to copy the element
 					if isTempLhs {
@@ -1184,7 +1184,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 				if e.Operator == ast.BIN_SLICE_FROM {
-					lst_len := c.loadStructField(lhs, len_field_index)
+					lst_len := c.loadStructField(lhs, list_len_field_index)
 					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, rhs, lst_len)
 				} else {
 					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, newInt(1), rhs)
@@ -1592,15 +1592,16 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.createIfElse(c.compareAnyType(lhs, vtable), func() {
 			// temporary values can be claimed
 			if isTempLhs {
-				val_ptr := c.loadStructField(lhs, 2)
-				val := c.cbb.NewLoad(nonPrimTyp.IrType(), c.cbb.NewBitCast(val_ptr, nonPrimTyp.PtrType()))
+				val_ptr := c.loadAnyValuePtr(lhs, nonPrimTyp.IrType())
+				val := c.cbb.NewLoad(nonPrimTyp.IrType(), val_ptr)
 				c.cbb.NewStore(val, dest)
-				c.ddp_reallocate(val_ptr, newInt(int64(c.getTypeSize(nonPrimTyp))), zero)
-				c.cbb.NewStore(constant.NewNull(i8ptr), c.indexStruct(lhs, 2))
-				c.freeNonPrimitive(c.scp.claimTemporary(lhs), c.ddpany)
+				c.createIfElse(c.isSmallAny(lhs), func() {}, func() {
+					c.ddp_reallocate(val_ptr, newInt(int64(c.getTypeSize(nonPrimTyp))), zero)
+				})
+				c.scp.claimTemporary(lhs) // don't call free func on the now invalid any
 			} else {
 				// non-temporaries are simply deep copied
-				c.deepCopyInto(dest, c.cbb.NewBitCast(c.loadStructField(lhs, 2), nonPrimTyp.PtrType()), nonPrimTyp)
+				c.deepCopyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.IrType()), nonPrimTyp)
 			}
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, nonPrimTyp)
 			c.latestIsTemp = true
@@ -1619,7 +1620,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
 		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
-		elementPtr := c.indexArray(c.loadStructField(list, arr_field_index), zero)
+		elementPtr := c.indexArray(c.loadStructField(list, list_arr_field_index), zero)
 		c.claimOrCopy(elementPtr, lhs, lhsTyp, isTempLhs)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
 		c.latestIsTemp = true
@@ -1627,7 +1628,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		// helper function to cast primitive from any to their concrete type
 		primitiveAnyCast := func(primTyp ddpIrType) {
 			c.createIfElse(c.compareAnyType(lhs, vtable), func() {
-				c.latestReturn = c.cbb.NewLoad(primTyp.IrType(), c.cbb.NewBitCast(c.loadStructField(lhs, 2), primTyp.PtrType()))
+				c.latestReturn = c.loadSmallAnyValue(lhs, primTyp.IrType())
 				c.latestReturnType, c.latestIsTemp = primTyp, true
 			}, func() {
 				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
@@ -1796,12 +1797,12 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 			index, _, _ := c.evaluate(assign.Index)
 			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
-			listLen := c.loadStructField(lhs, len_field_index)
+			listLen := c.loadStructField(lhs, list_len_field_index)
 			var elementPtr value.Value
 
 			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
 			c.createIfElse(cond, func() {
-				listArr := c.loadStructField(lhs, arr_field_index)
+				listArr := c.loadStructField(lhs, list_arr_field_index)
 				elementPtr = c.indexArray(listArr, index)
 			}, func() { // runtime error
 				line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
@@ -2299,7 +2300,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	if inTyp == c.ddpstring {
 		len = c.cbb.NewCall(c.ddpstring.lengthIrFun, in)
 	} else {
-		len = c.loadStructField(in, len_field_index)
+		len = c.loadStructField(in, list_len_field_index)
 	}
 	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, len, zero), leaveBlock, loopStart)
@@ -2326,7 +2327,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		char := c.cbb.NewCall(c.ddpstring.indexIrFun, in, c.cbb.NewLoad(ddpint, index))
 		c.cbb.NewStore(char, loopVar.val)
 	} else {
-		arr := c.loadStructField(in, arr_field_index)
+		arr := c.loadStructField(in, list_arr_field_index)
 		ddpindex := c.cbb.NewSub(c.cbb.NewLoad(ddpint, index), newInt(1))
 		elementPtr := c.indexArray(arr, ddpindex)
 		inListTyp := inTyp.(*ddpIrListType)
@@ -2445,37 +2446,6 @@ func (c *compiler) exitNestedScopes(targetScope *scope) {
 	}
 }
 
-// creates a new any from the given non-any
-func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool, vtable value.Value) (value.Value, ddpIrType, bool) {
-	if typ == c.ddpany {
-		c.err("c.ddpany passed to castNonAnyToAny")
-	}
-
-	type_size := newInt(int64(c.getTypeSize(typ)))
-	var result value.Value = c.NewAlloca(c.ddpany.IrType())
-
-	result_size_ptr := c.indexStruct(result, 0)
-	result_vtable_ptr_ptr := c.indexStruct(result, 1)
-	result_value_ptr_ptr := c.indexStruct(result, 2)
-
-	c.cbb.NewStore(type_size, result_size_ptr)
-	c.cbb.NewStore(c.cbb.NewBitCast(vtable, i8ptr), result_vtable_ptr_ptr)
-
-	value_ptr := c.ddp_reallocate(constant.NewNull(i8ptr), zero, type_size)
-	c.cbb.NewStore(value_ptr, result_value_ptr_ptr)
-
-	// copy the value
-	c.claimOrCopy(c.cbb.NewBitCast(value_ptr, typ.PtrType()), val, typ, isTemp)
-	result, _ = c.scp.addTemporary(result, c.ddpany)
-
-	return result, c.ddpany, true
-}
-
-// checks if val (c.ddpany) holds a targetType
-func (c *compiler) compareAnyType(val value.Value, vtable value.Value) value.Value {
-	return c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(c.loadStructField(val, 1), ddpint), c.cbb.NewPtrToInt(vtable, ddpint))
-}
-
 func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 	name := c.mangledNameDecl(d)
 	if _, ok := c.typeDefVTables[name]; ok {
@@ -2484,11 +2454,12 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 
 	ir_type := c.toIrType(d.Type)
 
-	// the single field is a dummy pointer to make the struct non-zero sized
+	// see equivalent in runtime/include/ddptypes.h
 	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
-		ptr(types.NewFunc(types.Void, ir_type.PtrType())),
-		ptr(types.NewFunc(types.Void, ir_type.PtrType(), ir_type.PtrType())),
-		ptr(types.NewFunc(ddpbool, ir_type.PtrType(), ir_type.PtrType())),
+		ddpint, // ddpint type_size
+		ptr(types.NewFunc(types.Void, ir_type.PtrType())),                    // free_func_ptr free_func
+		ptr(types.NewFunc(types.Void, ir_type.PtrType(), ir_type.PtrType())), // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(ddpbool, ir_type.PtrType(), ir_type.PtrType())),    // equal_func_ptr equal_func
 	))
 
 	var vtable *ir.Global
@@ -2499,12 +2470,14 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 	} else {
 		if ir_type.IsPrimitive() {
 			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-				constant.NewNull(vtable_type.(*types.StructType).Fields[0].(*types.PointerType)),
+				newInt(int64(c.getTypeSize(ir_type))),
 				constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
 				constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
+				constant.NewNull(vtable_type.(*types.StructType).Fields[3].(*types.PointerType)),
 			))
 		} else {
 			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+				newInt(int64(c.getTypeSize(ir_type))),
 				ir_type.FreeFunc(),
 				ir_type.DeepCopyFunc(),
 				ir_type.EqualsFunc(),
