@@ -51,7 +51,7 @@ func main() {
 
 	if !hasGcc && runtime.GOOS == "windows" {
 		InfoF("gcc nicht gefunden, installiere mingw64")
-		InfoF("Entpacke mingw64.zip")
+		InfoF("entpacke mingw64.zip")
 		err := compression.DecompressFolder("mingw64.zip", "mingw64")
 		if err != nil {
 			ErrorF("Fehler beim Entpacken von mingw64: %s", err)
@@ -77,7 +77,7 @@ func main() {
 		makeCmd = filepath.ToSlash(makeCmd)
 
 		DoneF("mingw64 installiert")
-		DoneF("Verwende das neu installierte mingw64 für gcc, ar und make")
+		DoneF("verwende das neu installierte mingw64 für gcc, ar und make")
 	} else if !hasGcc && runtime.GOOS != "windows" {
 		ErrorF("gcc nicht gefunden, Abbruch")
 		exit(1)
@@ -102,12 +102,12 @@ func main() {
 	if isSameGccVersion() {
 		DoneF("gcc-Versionen stimmen überein")
 	} else {
-		InfoF("Kompiliere runtime und stdlib neu")
+		InfoF("kompiliere runtime und stdlib neu")
 		recompileLibs()
 	}
 
 	if vscodeCmd, hasVscode := LookupCommand(vscodeCmd); hasVscode && prompt("Möchtest du vscode-ddp (die DDP vscode-Erweiterung) installieren") {
-		InfoF("Installiere vscode-ddp als vscode-Erweiterung")
+		InfoF("installiere vscode-ddp als vscode-Erweiterung")
 		if _, err := runCmd("", vscodeCmd, "--install-extension", "DDP-Projekt.vscode-ddp", "--force"); err == nil {
 			DoneF("vscode-ddp installiert")
 		}
@@ -140,7 +140,7 @@ func main() {
 		DoneF("DDP ist jetzt installiert")
 		if prompt("Möchtest du Dateien löschen, die nicht mehr benötigt werden") {
 			if runtime.GOOS == "windows" {
-				InfoF("Lösche mingw64.zip")
+				InfoF("lösche mingw64.zip")
 				if err := os.Remove("mingw64.zip"); err != nil {
 					WarnF("Fehler beim Entfernen von mingw64.zip: %s", err)
 				} else {
@@ -154,7 +154,7 @@ func main() {
 }
 
 func installLocales() {
-	InfoF("Installiere deutsche Lokalisierung")
+	InfoF("installiere deutsche Lokalisierung")
 	if runtime.GOOS == "linux" {
 		if _, err := runCmd("", "locale-gen", "de_DE.UTF-8"); err != nil {
 			WarnF("Fehler bei der Installation der deutschen Lokalisierung: %s", err)
@@ -178,7 +178,7 @@ func isSameGccVersion() bool {
 	kddpGccVersion := strings.Trim(strings.Split(gccVersionLine, " ")[2], "\r\n")
 	match := gccVersion == kddpGccVersion
 	if !match {
-		InfoF("Lokale gcc-Version und kddp gcc-Version stimmen nicht überein (%s vs %s)", gccVersion, kddpGccVersion)
+		InfoF("lokale gcc-Version und kddp gcc-Version stimmen nicht überein (%s vs %s)", gccVersion, kddpGccVersion)
 	}
 	return match
 }
@@ -200,11 +200,11 @@ func recompileLibs() {
 	}
 	DoneF("stdlib neu kompiliert")
 
-	InfoF("Entferne vor-kompilierte runtime")
+	InfoF("entferne vor-kompilierte runtime")
 	if err := os.Remove("lib/libddpruntime.a"); err != nil {
 		WarnF("Fehler beim Entfernen der vor-kompilierten runtime: %s", err)
 	}
-	InfoF("Entferne vor-kompilierte lib/main.o lib/ddp_list_types_defs.o lib/ddp_list_types_defs.ll")
+	InfoF("entferne vor-kompilierte lib/main.o lib/ddp_list_types_defs.o lib/ddp_list_types_defs.ll")
 	if err := os.Remove("lib/main.o"); err != nil {
 		WarnF("Fehler beim Entfernen der vor-kompilierten lib/main.o: %s", err)
 	}
@@ -214,29 +214,29 @@ func recompileLibs() {
 	if err := os.Remove("lib/ddp_list_types_defs.ll"); err != nil {
 		WarnF("Fehler beim Entfernen der vor-kompilierten lib/ddp_list_types_defs.ll: %s", err)
 	}
-	InfoF("Entferne vor-kompiliertes stdlib")
+	InfoF("entferne vor-kompiliertes stdlib")
 	if err := os.Remove("lib/libddpstdlib.a"); err != nil {
 		WarnF("Fehler beim Entfernen des vor-kompilierten stdlibs: %s", err)
 	}
 
-	InfoF("Kopiere neu kompilierte runtime")
+	InfoF("kopiere neu kompilierte runtime")
 	if err := cp.Copy("lib/runtime/libddpruntime.a", "lib/libddpruntime.a"); err != nil {
 		ErrorF("Fehler beim Kopieren der neu kompilierten runtime: %s", err)
 	}
-	InfoF("Kopiere neu kompilierte lib/main.o")
+	InfoF("kopiere neu kompilierte lib/main.o")
 	if err := cp.Copy("lib/runtime/source/main.o", "lib/main.o"); err != nil {
 		ErrorF("Fehler beim Kopieren der neu kompilierten runtime: %s", err)
 	}
-	InfoF("Regeneriere lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o")
+	InfoF("regeneriere lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o")
 	if _, err := runCmd("", kddpCmd, "dump-list-defs", "-o", "lib/ddp_list_types_defs", "--llvm_ir", "--object"); err != nil {
 		ErrorF("Fehler bei der Regeneration von lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o: %s", err)
 	}
-	InfoF("Kopiere neu kompiliertes stdlib")
+	InfoF("kopiere neu kompiliertes stdlib")
 	if err := cp.Copy("lib/stdlib/libddpstdlib.a", "lib/libddpstdlib.a"); err != nil {
 		ErrorF("Fehler beim Kopieren des neu kompilierten stdlibs: %s", err)
 	}
 
-	InfoF("Säubere das Verzeichnis runtime")
+	InfoF("säubere das Verzeichnis runtime")
 	clean_args := make([]string, 0, 2)
 	clean_args = append(clean_args, "clean")
 	if rmArg != "" {
@@ -245,7 +245,7 @@ func recompileLibs() {
 	if _, err := runCmd("lib/runtime/", makeCmd, clean_args...); err != nil {
 		WarnF("Fehler beim Säubern des runtime-Verzeichnisses: %s", err)
 	}
-	InfoF("Säubere das Verzeichnis stdlib")
+	InfoF("säubere das Verzeichnis stdlib")
 	if _, err := runCmd("lib/stdlib/", makeCmd, clean_args...); err != nil {
 		WarnF("Fehler beim Säubern des stdlib-Verzeichnisses: %s", err)
 	}
