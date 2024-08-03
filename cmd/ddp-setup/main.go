@@ -227,9 +227,9 @@ func recompileLibs() {
 	if err := cp.Copy("lib/runtime/source/main.o", "lib/main.o"); err != nil {
 		ErrorF("Fehler beim Kopieren der neu kompilierten runtime: %s", err)
 	}
-	InfoF("regeneriere lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o")
+	InfoF("erstelle lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o neu")
 	if _, err := runCmd("", kddpCmd, "dump-list-defs", "-o", "lib/ddp_list_types_defs", "--llvm_ir", "--object"); err != nil {
-		ErrorF("Fehler bei der Regeneration von lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o: %s", err)
+		ErrorF("Fehler bei der Neuerstellung von lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o: %s", err)
 	}
 	InfoF("kopiere neu kompiliertes stdlib")
 	if err := cp.Copy("lib/stdlib/libddpstdlib.a", "lib/libddpstdlib.a"); err != nil {
