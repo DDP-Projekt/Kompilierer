@@ -178,7 +178,7 @@ func isSameGccVersion() bool {
 	kddpGccVersion := strings.Trim(strings.Split(gccVersionLine, " ")[2], "\r\n")
 	match := gccVersion == kddpGccVersion
 	if !match {
-		InfoF("Lokale gcc-Version und kddp-gcc-Version stimmen nicht überein (%s vs %s)", gccVersion, kddpGccVersion)
+		InfoF("Lokale gcc-Version und kddp gcc-Version stimmen nicht überein (%s vs %s)", gccVersion, kddpGccVersion)
 	}
 	return match
 }
