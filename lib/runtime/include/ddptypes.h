@@ -8,6 +8,9 @@
 #define DDP_TYPES_H
 
 #include "common.h"
+#include <assert.h>
+
+static_assert(sizeof(void *) == 8, "sizeof(void*) != 8, unexpected errors could occur");
 
 // typedefs of primitive ddp types
 typedef int64_t ddpint;
@@ -20,6 +23,9 @@ typedef struct {
 	char *str;	// the byte array
 	ddpint cap; // the capacity of the array
 } ddpstring;
+
+// to be sure it matches the vtable declaration in ir_string_type.go
+static_assert(sizeof(ddpstring) == 16, "sizeof(ddpstring) != 16");
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
@@ -38,16 +44,26 @@ typedef void (*deep_copy_func_ptr)(void *, void *);
 typedef ddpbool (*equal_func_ptr)(void *, void *);
 
 typedef struct {
+	ddpint type_size;
 	free_func_ptr free_func;
 	deep_copy_func_ptr deep_copy_func;
 	equal_func_ptr equal_func;
 } vtable;
 
 typedef struct {
-	ddpint value_size;
 	vtable *vtable_ptr;
-	void *value_ptr;
+	union {
+		void *value_ptr;
+		uint8_t value[16];
+	};
 } ddpany;
+
+#define DDP_IS_SMALL_ANY(any) ((any)->vtable_ptr->type_size <= 16)
+// returns a pointer to the any's value, taking big vs small any into account
+#define DDP_ANY_VALUE_PTR(any) \
+	DDP_IS_SMALL_ANY(any) ?    \
+		&((any)->value) :      \
+		(any)->value_ptr
 
 // frees the given any
 void ddp_free_any(ddpany *any);
@@ -159,12 +175,14 @@ typedef ddpfloat *ddpfloatref;
 typedef ddpbool *ddpboolref;
 typedef ddpchar *ddpcharref;
 typedef ddpstring *ddpstringref;
+typedef ddpany *ddpanyref;
 
 typedef ddpintlist *ddpintlistref;
 typedef ddpfloatlist *ddpfloatlistref;
 typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
+typedef ddpanylist *ddpanylistref;
 
 #define DDP_INT_FMT "%lld"
 #define DDP_FLOAT_FMT "%.16g"
