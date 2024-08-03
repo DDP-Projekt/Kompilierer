@@ -124,14 +124,14 @@ func main() {
 		}
 	}
 
-	if prompt("Möchtest du das Verzeichnis DDP/bin zu Ihrem PATH hinzufügen") {
+	if prompt("Möchtest du das Verzeichnis DDP/bin zu PATH hinzufügen") {
 		if exedir, err := osext.ExecutableFolder(); err != nil {
 			WarnF("Ausführungspfad konnte nicht abgerufen werden")
 		} else {
 			binPath := filepath.Join(exedir, "bin")
 			InfoF("Füge %s zum PATH hinzu", binPath)
 			if err := penv.AppendEnv("PATH", binPath); err != nil {
-				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nMöchtest du, DDP/bin selbst zu Ihrem PATH hinzuzufügen", err)
+				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nErwäge, DDP/bin selbst zu PATH hinzuzufügen", err)
 			}
 		}
 	}
