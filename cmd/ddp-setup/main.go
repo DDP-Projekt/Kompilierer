@@ -102,7 +102,7 @@ func main() {
 	if isSameGccVersion() {
 		DoneF("gcc-Versionen stimmen überein")
 	} else {
-		InfoF("Kompiliere Runtime und Standardbibliothek neu")
+		InfoF("Kompiliere runtime und stdlib neu")
 		recompileLibs()
 	}
 
@@ -194,15 +194,15 @@ func recompileLibs() {
 	if _, err := runCmd("lib/runtime/", makeCmd, make_args...); err != nil {
 		return
 	}
-	DoneF("Runtime neu kompiliert")
+	DoneF("runtime neu kompiliert")
 	if _, err := runCmd("lib/stdlib/", makeCmd, make_args...); err != nil {
 		return
 	}
-	DoneF("Standardbibliothek neu kompiliert")
+	DoneF("stdlib neu kompiliert")
 
-	InfoF("Entferne vor-kompilierte Runtime")
+	InfoF("Entferne vor-kompilierte runtime")
 	if err := os.Remove("lib/libddpruntime.a"); err != nil {
-		WarnF("Fehler beim Entfernen der vor-kompilierten Runtime: %s", err)
+		WarnF("Fehler beim Entfernen der vor-kompilierten runtime: %s", err)
 	}
 	InfoF("Entferne vor-kompilierte lib/main.o lib/ddp_list_types_defs.o lib/ddp_list_types_defs.ll")
 	if err := os.Remove("lib/main.o"); err != nil {
@@ -214,40 +214,40 @@ func recompileLibs() {
 	if err := os.Remove("lib/ddp_list_types_defs.ll"); err != nil {
 		WarnF("Fehler beim Entfernen der vor-kompilierten lib/ddp_list_types_defs.ll: %s", err)
 	}
-	InfoF("Entferne vor-kompilierte Standardbibliothek")
+	InfoF("Entferne vor-kompiliertes stdlib")
 	if err := os.Remove("lib/libddpstdlib.a"); err != nil {
-		WarnF("Fehler beim Entfernen der vor-kompilierten Standardbibliothek: %s", err)
+		WarnF("Fehler beim Entfernen des vor-kompilierten stdlibs: %s", err)
 	}
 
-	InfoF("Kopiere neu kompilierte Runtime")
+	InfoF("Kopiere neu kompilierte runtime")
 	if err := cp.Copy("lib/runtime/libddpruntime.a", "lib/libddpruntime.a"); err != nil {
-		ErrorF("Fehler beim Kopieren der neu kompilierten Runtime: %s", err)
+		ErrorF("Fehler beim Kopieren der neu kompilierten runtime: %s", err)
 	}
 	InfoF("Kopiere neu kompilierte lib/main.o")
 	if err := cp.Copy("lib/runtime/source/main.o", "lib/main.o"); err != nil {
-		ErrorF("Fehler beim Kopieren der neu kompilierten Runtime: %s", err)
+		ErrorF("Fehler beim Kopieren der neu kompilierten runtime: %s", err)
 	}
 	InfoF("Regeneriere lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o")
 	if _, err := runCmd("", kddpCmd, "dump-list-defs", "-o", "lib/ddp_list_types_defs", "--llvm_ir", "--object"); err != nil {
 		ErrorF("Fehler bei der Regeneration von lib/ddp_list_types_defs.ll und lib/ddp_list_types_defs.o: %s", err)
 	}
-	InfoF("Kopiere neu kompilierte Standardbibliothek")
+	InfoF("Kopiere neu kompiliertes stdlib")
 	if err := cp.Copy("lib/stdlib/libddpstdlib.a", "lib/libddpstdlib.a"); err != nil {
-		ErrorF("Fehler beim Kopieren der neu kompilierten Standardbibliothek: %s", err)
+		ErrorF("Fehler beim Kopieren des neu kompilierten stdlibs: %s", err)
 	}
 
-	InfoF("Säubere das Verzeichnis Runtime")
+	InfoF("Säubere das Verzeichnis runtime")
 	clean_args := make([]string, 0, 2)
 	clean_args = append(clean_args, "clean")
 	if rmArg != "" {
 		clean_args = append(clean_args, rmArg)
 	}
 	if _, err := runCmd("lib/runtime/", makeCmd, clean_args...); err != nil {
-		WarnF("Fehler beim Säubern des Runtime-Verzeichnisses: %s", err)
+		WarnF("Fehler beim Säubern des runtime-Verzeichnisses: %s", err)
 	}
-	InfoF("Säubere das Verzeichnis Standardbibliothek")
+	InfoF("Säubere das Verzeichnis stdlib")
 	if _, err := runCmd("lib/stdlib/", makeCmd, clean_args...); err != nil {
-		WarnF("Fehler beim Säubern des Standardbibliothek-Verzeichnisses: %s", err)
+		WarnF("Fehler beim Säubern des stdlib-Verzeichnisses: %s", err)
 	}
 
 	DoneF("Bibliotheken neu kompiliert")
