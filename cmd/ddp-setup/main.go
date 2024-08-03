@@ -160,7 +160,7 @@ func installLocales() {
 			WarnF("Fehler bei der Installation der deutschen Lokalisierung: %s", err)
 		}
 	} else if runtime.GOOS == "windows" {
-		WarnF("Du verwendest Windows. Stell sicher, dass du die richtigen Sprachpakete installiert hast")
+		WarnF("du verwendest Windows, stell sicher, dass du die richtigen Sprachpakete installiert hast")
 	}
 }
 
