@@ -102,7 +102,7 @@ func main() {
 	if isSameGccVersion() {
 		DoneF("gcc-Versionen stimmen überein")
 	} else {
-		InfoF("Runtime und Standardbibliothek neu kompilieren")
+		InfoF("Kompiliere Runtime und Standardbibliothek neu")
 		recompileLibs()
 	}
 
