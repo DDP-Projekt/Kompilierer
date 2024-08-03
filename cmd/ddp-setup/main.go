@@ -119,7 +119,7 @@ func main() {
 		} else {
 			InfoF("Setze die Umgebungsvariable DDPPATH auf %s", exedir)
 			if err := penv.SetEnv("DDPPATH", exedir); err != nil {
-				ErrorF("Fehler beim Setzen von DDPPATH: %s\nErwäge, es selbst hinzuzufügen", err)
+				ErrorF("Fehler beim Setzen von DDPPATH: %s\nVersuche, es selbst hinzuzufügen", err)
 			}
 		}
 	}
@@ -131,7 +131,7 @@ func main() {
 			binPath := filepath.Join(exedir, "bin")
 			InfoF("Füge %s zum PATH hinzu", binPath)
 			if err := penv.AppendEnv("PATH", binPath); err != nil {
-				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nErwäge, DDP/bin selbst zu PATH hinzuzufügen", err)
+				ErrorF("Fehler beim Hinzufügen zu PATH: %s\nVersuche, DDP/bin selbst zu PATH hinzuzufügen", err)
 			}
 		}
 	}
