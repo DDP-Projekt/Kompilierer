@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] _Ref Versionen für einige Duden/Listen und Duden/Texte Funktionen
+- [Changed] Iterierenden Schleifen über Texte haben nun eine Zeitkomplexität von O(n) (anstatt O(n^2))
+- [Fix] utf8 Texte
 - [Fix] Aliase mit Referenz Parametern werden nun in mehr Fällen bevorzugt
 - [Fix] Der Kompilierer crashet nicht mehr wenn indirekt importierte Symbole in eingebundenen Kombinations Aliasen verwendet werden
 - [Changed] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
