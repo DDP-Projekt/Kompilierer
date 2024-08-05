@@ -42,6 +42,8 @@ func DeepEqual(t1, t2 Type) bool {
 func GetUnderlying(t Type) Type {
 	if alias, ok := t.(*TypeAlias); ok {
 		return GetUnderlying(alias.Underlying)
+	} else if list, ok := t.(ListType); ok {
+		return ListType{Underlying: GetUnderlying(list.Underlying)}
 	}
 	return t
 }

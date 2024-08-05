@@ -266,9 +266,15 @@ func (p *parser) alias() ast.Expression {
 		}
 	}
 
+	var mostFitting *ast.Alias
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		if args, errs := checkAlias(matchedAliases[i], true); args != nil {
+		args, errs := checkAlias(matchedAliases[i], true)
+		if args != nil && mostFitting == nil {
+			mostFitting = &matchedAliases[i]
+		}
+
+		if args != nil && len(errs) == 0 {
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
 			return callOrLiteralFromAlias(matchedAliases[i], args)
@@ -279,11 +285,13 @@ func (p *parser) alias() ast.Expression {
 	// so we take the longest one (most likely to be wanted)
 	// and "call" it so that the typechecker will report
 	// errors for the arguments
-	mostFitting := matchedAliases[0]
-	args, errs := checkAlias(mostFitting, false)
+	if mostFitting == nil {
+		mostFitting = &matchedAliases[0]
+	}
+	args, errs := checkAlias(*mostFitting, false)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return callOrLiteralFromAlias(mostFitting, args)
+	return callOrLiteralFromAlias(*mostFitting, args)
 }

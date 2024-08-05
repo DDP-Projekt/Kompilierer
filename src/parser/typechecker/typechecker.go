@@ -523,7 +523,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 				castErr()
 			}
 		case ddptypes.TEXT:
-			if ddptypes.IsList(lhs) || isOneOf(lhs, ddptypes.VoidType{}) {
+			if !ddptypes.IsPrimitive(lhs) {
 				castErr()
 			}
 		default:
