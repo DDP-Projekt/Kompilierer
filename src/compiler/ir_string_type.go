@@ -83,6 +83,11 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
+const (
+	string_str_field_index = 0
+	string_cap_field_index = 1
+)
+
 func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(

@@ -34,8 +34,9 @@ var (
 
 	i8ptr = ptr(i8)
 
-	zero  = newInt(0) // 0: i64
-	zerof = constant.NewFloat(ddpfloat, 0)
+	zero     = newInt(0) // 0: i64
+	zerof    = constant.NewFloat(ddpfloat, 0)
+	all_ones = newInt(^0) // int with all bits set to 1
 )
 
 func newInt(value int64) *constant.Int {

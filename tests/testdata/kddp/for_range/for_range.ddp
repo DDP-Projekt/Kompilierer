@@ -4,6 +4,9 @@ Für jeden Buchstaben b in "Hallo", mache:
 	Schreibe den Buchstaben b.
 Für jeden Buchstaben b in "Hallo", Schreibe den Buchstaben b.
 Schreibe den Buchstaben '\n'.
+Für jeden Buchstaben b in "프a렌l즈", Schreibe den Buchstaben b.
+Für jeden Buchstaben b in "", Schreibe den Buchstaben b. [should print nothing]
+Schreibe den Buchstaben '\n'.
 Der Text t ist "Hallo2".
 Für jeden Buchstaben b in t, mache:
 	Schreibe den Buchstaben b.
