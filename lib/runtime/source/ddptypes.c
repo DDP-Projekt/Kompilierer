@@ -94,11 +94,14 @@ void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 
 	// allocate space for the underlying value
 	if (!DDP_IS_SMALL_ANY(any)) {
+		DDP_DBGLOG("allocating space for any: %lld", ret->vtable_ptr->type_size);
 		ret->value_ptr = ddp_reallocate(NULL, 0, ret->vtable_ptr->type_size);
+	} else {
+		DDP_DBGLOG("not allocating for small any");
 	}
 
 	if (is_primitive_vtable(ret->vtable_ptr)) {
-		memcpy(&ret->value, &any->value, ret->vtable_ptr->type_size);
+		memcpy(&ret->value, &any->value, DDP_SMALL_ANY_BUFF_SIZE);
 	} else if (ret->vtable_ptr != NULL) {
 		// deep copy the underlying value
 		ret->vtable_ptr->deep_copy_func(DDP_ANY_VALUE_PTR(ret), DDP_ANY_VALUE_PTR(any));

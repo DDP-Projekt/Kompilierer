@@ -50,11 +50,13 @@ typedef struct {
 	equal_func_ptr equal_func;
 } vtable;
 
+#define DDP_SMALL_ANY_BUFF_SIZE 16
+
 typedef struct {
 	vtable *vtable_ptr;
 	union {
 		void *value_ptr;
-		uint8_t value[16];
+		uint8_t value[DDP_SMALL_ANY_BUFF_SIZE];
 	};
 } ddpany;
 
@@ -161,6 +163,13 @@ extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
 #define DDP_EMPTY_STRING \
 	(ddpstring) {        \
 		NULL, 0          \
+	}
+
+#define DDP_EMPTY_ANY \
+	(ddpany) {        \
+		NULL, {       \
+			NULL      \
+		}             \
 	}
 
 #define DDP_EMPTY_LIST(type) \
