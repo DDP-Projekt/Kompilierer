@@ -6,7 +6,9 @@
 #define DDP_UTF8_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+
 
 bool utf8_is_continuation(char c);
 
