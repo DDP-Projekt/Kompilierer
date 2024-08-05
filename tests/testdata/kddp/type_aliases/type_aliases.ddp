@@ -24,6 +24,15 @@ Und kann so benutzt werden:
 
 Schreibe (foo h) auf eine Zeile.
 
+Die Funktion bar mit dem Parameter z vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+	Gib z an der Stelle 1 zurück.
+Und kann so benutzt werden:
+	"bar <z>"
+
+Die Hausnummer Liste nummern ist eine Liste, die aus 1, 2, 3 besteht.
+
+Schreibe (bar nummern) auf eine Zeile.
+
 Erhöhe h um 1.
 
 Schreibe h auf eine Zeile.

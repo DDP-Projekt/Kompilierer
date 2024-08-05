@@ -4,6 +4,7 @@ wahr
 wahr
 wahr
 wahr
+wahr
 -- indexOf tests --
 1
 3
@@ -11,18 +12,21 @@ wahr
 2
 3
 -1
+2
 -- add tests --
 9
 5,5
 falsch
 d
 neu
+wahr
 -- insert tests --
 1, 3, 4, 5, 9
 3,14, 0,1, 0,183, 2,5, 5,5
 wahr, falsch, falsch, wahr, falsch
 a, 0, b, c, d
 hi, world, yo, test, neu
+wahr
 -- insert range tests --
 1, 3, 1, 3, 4, 5, 9, 4, 5, 9
 3,14, 0,1, 3,14, 0,1, 0,183, 2,5, 5,5, 0,183, 2,5, 5,5
@@ -35,6 +39,7 @@ hi, world, hi, world, yo, test, neu, yo, test, neu
 wahr, wahr, falsch, falsch, wahr, falsch, falsch, wahr, falsch
 a, a, 0, b, c, d, b, c, d
 hi, hi, world, yo, test, neu, yo, test, neu
+falsch
 -- remove range tests --
 1, 4, 5, 9
 3,14, 0,183, 2,5, 5,5
@@ -80,6 +85,8 @@ wahr
 wahr
 -- Aneinandergehängt_C test --
 hallo
+übÖrä
+프a렌l즈
 -- Aufsteigende_Zahlen test --
 0
 5, 6, 7, 8
