@@ -114,6 +114,7 @@ type compiler struct {
 	slice_error_string         *ir.Global
 	todo_error_string          *ir.Global
 	bad_cast_error_string      *ir.Global
+	invalid_utf8_error_string  *ir.Global
 
 	curLeaveBlock    *ir.Block // leave block of the current loop
 	curContinueBlock *ir.Block // block where a continue should jump to
@@ -330,6 +331,7 @@ func (c *compiler) setupErrorStrings() {
 	c.slice_error_string = createErrorString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n")
 	c.todo_error_string = createErrorString("Zeile %lld, Spalte %lld: Dieser Teil des Programms wurde noch nicht implementiert\n")
 	c.bad_cast_error_string = createErrorString("Zeile %lld, Spalte %lld: Falsche Typumwandlung")
+	c.invalid_utf8_error_string = createErrorString("Zeile %lld, Spalte %lld: Invalider UTF8 Wert im Text")
 }
 
 // used in setup()
@@ -777,8 +779,6 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 }
 
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
-	const all_ones int64 = ^0 // int with all bits set to 1
-
 	if e.OverloadedBy != nil {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
@@ -830,7 +830,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
 		c.latestReturnType = c.ddpbooltyp
 	case ast.UN_LOGIC_NOT:
-		c.latestReturn = c.cbb.NewXor(rhs, newInt(all_ones))
+		c.latestReturn = c.cbb.NewXor(rhs, all_ones)
 		c.latestReturnType = c.ddpinttyp
 	case ast.UN_LEN:
 		switch typ {
@@ -2291,29 +2291,44 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	c.scp = newScope(c.scp)
 	in, inTyp, isTempIn := c.evaluate(s.In)
+
 	temp := c.NewAlloca(inTyp.IrType())
 	c.claimOrCopy(temp, in, inTyp, isTempIn)
 	in, _ = c.scp.addTemporary(temp, inTyp)
 	c.scp.protectTemporary(in)
 
-	var len value.Value
+	var (
+		iter_ptr      value.Value // pointer used for iteration
+		iter_ptr_type types.Type
+		end_ptr       value.Value // points to the one-after-last element
+		length        value.Value
+	)
 	if inTyp == c.ddpstring {
-		len = c.cbb.NewCall(c.ddpstring.lengthIrFun, in)
+		iter_ptr_type = i8ptr
+		iter_ptr = c.NewAlloca(iter_ptr_type)
+		iter_ptr_val := c.loadStructField(in, string_str_field_index)
+		c.cbb.NewStore(iter_ptr_val, iter_ptr)
+		length = c.loadStructField(in, string_cap_field_index)
+		end_ptr = c.indexArray(iter_ptr_val, c.cbb.NewSub(length, newInt(1)))
 	} else {
-		len = c.loadStructField(in, list_len_field_index)
+		iter_ptr_type = inTyp.(*ddpIrListType).elementType.PtrType()
+		iter_ptr = c.NewAlloca(iter_ptr_type)
+		iter_ptr_val := c.loadStructField(in, list_arr_field_index)
+		c.cbb.NewStore(iter_ptr_val, iter_ptr)
+		length = c.loadStructField(in, list_len_field_index)
+		end_ptr = c.indexArray(iter_ptr_val, length)
 	}
+
 	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, len, zero), leaveBlock, loopStart)
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, length, zero), leaveBlock, loopStart)
 
 	c.cbb = loopStart
-	index := c.NewAlloca(ddpint)
-	c.cbb.NewStore(newInt(1), index)
 	irType := c.toIrType(s.Initializer.Type)
 	c.scp.addProtected(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredSLE, c.cbb.NewLoad(ddpint, index), len), bodyBlock, leaveBlock)
+	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredNE, c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint), c.cbb.NewPtrToInt(end_ptr, ddpint)), bodyBlock, leaveBlock)
 
 	loopVar := c.scp.lookupVar(s.Initializer.Name())
 
@@ -2323,13 +2338,18 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.cbb.NewBr(incrementBlock)
 
 	c.cbb = bodyBlock
+	var num_bytes value.Value
 	if inTyp == c.ddpstring {
-		char := c.cbb.NewCall(c.ddpstring.indexIrFun, in, c.cbb.NewLoad(ddpint, index))
-		c.cbb.NewStore(char, loopVar.val)
+		num_bytes = c.cbb.NewCall(utf8_string_to_char_irfun,
+			c.cbb.NewLoad(iter_ptr_type, iter_ptr),
+			loopVar.val,
+		)
+		c.createIfElse(c.cbb.NewICmp(enum.IPredEQ, num_bytes, all_ones), func() {
+			line, column := int64(s.In.Token().Range.Start.Line), int64(s.In.Token().Range.Start.Column)
+			c.runtime_error(1, c.invalid_utf8_error_string, newInt(line), newInt(column))
+		}, func() {})
 	} else {
-		arr := c.loadStructField(in, list_arr_field_index)
-		ddpindex := c.cbb.NewSub(c.cbb.NewLoad(ddpint, index), newInt(1))
-		elementPtr := c.indexArray(arr, ddpindex)
+		elementPtr := c.cbb.NewLoad(iter_ptr_type, iter_ptr)
 		inListTyp := inTyp.(*ddpIrListType)
 		if inListTyp.elementType.IsPrimitive() {
 			element := c.cbb.NewLoad(inListTyp.elementType.IrType(), elementPtr)
@@ -2348,7 +2368,30 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	}
 
 	c.cbb = incrementBlock
-	c.cbb.NewStore(c.cbb.NewAdd(c.cbb.NewLoad(ddpint, index), newInt(1)), index)
+	if inTyp == c.ddpstring {
+		c.cbb.NewStore(
+			c.cbb.NewIntToPtr(
+				c.cbb.NewAdd(
+					c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint),
+					num_bytes,
+				),
+				i8ptr,
+			),
+			iter_ptr,
+		)
+	} else {
+		inListTyp := inTyp.(*ddpIrListType)
+		c.cbb.NewStore(
+			c.cbb.NewIntToPtr(
+				c.cbb.NewAdd(
+					c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint),
+					newInt(int64(c.getTypeSize(inListTyp.elementType))),
+				),
+				iter_ptr_type,
+			),
+			iter_ptr,
+		)
+	}
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = leaveBlock

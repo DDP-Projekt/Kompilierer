@@ -23,11 +23,12 @@ func (c *compiler) declareExternalRuntimeFunction(name string, returnType types.
 }
 
 var (
-	ddp_reallocate_irfun    *ir.Func
-	ddp_runtime_error_irfun *ir.Func
-	_libc_memcpy_irfun      *ir.Func
-	_libc_memcmp_irfun      *ir.Func
-	_libc_memmove_irfun     *ir.Func
+	ddp_reallocate_irfun      *ir.Func
+	ddp_runtime_error_irfun   *ir.Func
+	utf8_string_to_char_irfun *ir.Func
+	_libc_memcpy_irfun        *ir.Func
+	_libc_memcmp_irfun        *ir.Func
+	_libc_memmove_irfun       *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -47,6 +48,13 @@ func (c *compiler) initRuntimeFunctions() {
 		ir.NewParam("fmt", i8ptr),
 	)
 	ddp_runtime_error_irfun.Sig.Variadic = true
+
+	utf8_string_to_char_irfun = c.declareExternalRuntimeFunction(
+		"utf8_string_to_char",
+		i64,
+		ir.NewParam("str", i8ptr),
+		ir.NewParam("out", ptr(i32)),
+	)
 
 	_libc_memcpy_irfun = c.declareExternalRuntimeFunction(
 		"memcpy",
