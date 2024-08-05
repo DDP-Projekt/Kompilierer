@@ -706,6 +706,14 @@ Und kann so benutzt werden:
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
+Die öffentliche Funktion Ist_Leer_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist"
+
+[
+	Gibt zurück ob die Buchstaben Liste leer ist.
+]
 Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
 Und kann so benutzt werden:
@@ -737,12 +745,19 @@ Und kann so benutzt werden:
 [
 	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
 ]
+Die öffentliche Funktion Aneinandergehaengt_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<liste> aneinandergehängt"
+
+[
+	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
+]
 Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
-	Der Text t ist "".
-	Für jeden Buchstabe b in liste, speichere t verkettet mit b in t.
-	Gib t zurück.
+	Gib liste aneinandergehängt zurück.
 Und kann so benutzt werden:
 	"<liste> aneinandergehängt"
+
 
 [ Text Listen Funktionen ]
 [
@@ -973,3 +988,129 @@ Die öffentliche Funktion Logspace mit den Parametern start, ende und anzahl vom
 	Gib l zurück.
 Und kann so benutzt werden:
 	"eine logarithmische Kommazahlen Liste von <start> bis <ende> mit <anzahl> Elementen"
+
+[ Variablen Listen Funktionen ]
+
+[
+	Löscht alle Variablen aus der gegebenen Variablen Liste.
+]
+Die öffentliche Funktion Leere_Variable mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Variablen Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+[Hilfsfunktion für Hinzufügen_X]
+Die Funktion efficient_list_append_any mit den Parametern list, elem und elem_size vom Typ Variablen Listen Referenz, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_any <list> <elem> <elem_size>"
+
+[
+	Fügt eine Variable am Ende der gegeben Variablen Liste hinzu.
+]
+Die öffentliche Funktion Hinzufügen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	efficient_list_append_any liste elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_any mit den Parametern list, index, elem und elem_size vom Typ Variablen Listen Referenz, Zahl, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_any <list> <index> <elem> <elem_size>"
+
+[
+	Fügt eine Variable vor einem Index in der gegebenen Variablen Liste ein.
+]
+Die öffentliche Funktion Einfügen_Variable mit den Parametern liste, index und elm vom Typ Variablen Listen Referenz, Zahl und Variable, gibt nichts zurück, macht:
+	efficient_list_insert_any liste (index minus 1) elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_any mit den Parametern list, index, range und elem_size vom Typ Variablen Listen Referenz, Zahl, Variablen Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_any <list> <index> <range> <elem_size>"
+
+[
+	Fügt eine Variablen Liste vor einem Index in der gegebenen Variablen Liste ein.
+]
+Die öffentliche Funktion Einfügen_Bereich_Variable mit den Parametern liste, index und range vom Typ Variablen Listen Referenz, Zahl und Variablen Liste, gibt nichts zurück, macht:
+	efficient_list_insert_range_any liste (index minus 1) range (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_any mit den Parametern liste, elem und elem_size vom Typ Variablen Listen Referenz, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_any <liste> <elem> <elem_size>"
+
+[
+	Fügt eine Variable am Anfang der gegeben Variablen Liste hinzu.
+]
+Die öffentliche Funktion Voranstellen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_any liste elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_any mit den Parametern list, start, end und elem_size vom Typ Variablen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_any <list> <start> <end> <elem_size>"
+
+[
+	Entfernt die Variable an dem gegeben Index aus der gegeben Variablen Liste.
+]
+Die öffentliche Funktion Lösche_Element_Variable mit den Parametern liste und index vom Typ Variablen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_any liste index index (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+[
+	Entfernt alle Variablen aus der Liste im Bereich [start, end] (inklusiv)
+]
+Die öffentliche Funktion Lösche_Bereich_Variable mit den Parametern liste, start und end vom Typ Variablen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	efficient_list_delete_range_any liste (start minus 1) (end minus 1) (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+[
+	Füllt die gegebene Variablen Liste mit der gegebenen Variable.
+]
+Die öffentliche Funktion Füllen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	Die Variablen Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+[
+	Gibt den Index der gegebenen Variable aus der Liste zurück oder -1 wenn die Variable nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Variable mit den Parametern liste und elm vom Typ Variablen Liste und Variable, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>"
+
+[
+	Gibt zurück ob die Variable in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Variable mit den Parametern liste und elm vom Typ Variablen Liste und Variable, gibt einen Wahrheitswert zurück, macht:
+	Für jede Variable v in liste, wenn v gleich elm ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Variablen Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Variable mit dem Parameter liste vom Typ Variablen Liste, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist"

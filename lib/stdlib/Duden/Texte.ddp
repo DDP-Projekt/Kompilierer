@@ -1,4 +1,5 @@
 Binde "Duden/Zeichen" ein.
+Binde "Duden/Listen" ein.
 
 [
 	Gibt "" zurück.
@@ -437,10 +438,19 @@ Und kann so benutzt werden:
 	Gibt die Buchstaben im gegebenen Textes als Buchstaben Liste zurück.
 		f("Hallo") -> ['H', 'a', 'l', 'l', 'l']
 ]
-Die öffentliche Funktion Buchstaben_Text_BuchstabenListe mit dem Parameter text vom Typ Text, gibt eine Buchstaben Liste zurück, macht:
+Die öffentliche Funktion Buchstaben_TextRef_BuchstabenListe mit dem Parameter text vom Typ Text Referenz, gibt eine Buchstaben Liste zurück, macht:
 	Die Buchstaben Liste l ist eine leere Buchstaben Liste.
-	Für jeden Buchstaben b in text, Speichere l verkettet mit b in l.
+	Für jeden Buchstaben b in text, Füge b an l an.
 	Gib l zurück.
+Und kann so benutzt werden:
+	"die Buchstaben in <text>"
+
+[
+	Gibt die Buchstaben im gegebenen Textes als Buchstaben Liste zurück.
+		f("Hallo") -> ['H', 'a', 'l', 'l', 'l']
+]
+Die öffentliche Funktion Buchstaben_Text_BuchstabenListe mit dem Parameter text vom Typ Text, gibt eine Buchstaben Liste zurück, macht:
+	Gib die Buchstaben in text zurück.
 Und kann so benutzt werden:
 	"die Buchstaben in <text>"
 
