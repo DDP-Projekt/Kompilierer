@@ -5,7 +5,8 @@
 #ifndef DDP_UTF8_H
 #define DDP_UTF8_H
 
-#include "common.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 bool utf8_is_continuation(char c);
 
@@ -33,14 +34,18 @@ bool utf8_is_quadruple_byte(char *c);
 // s must be null-terminated
 size_t utf8_num_bytes(char *s);
 
+// returns the number of bytes needed to encode this character in utf8
+size_t utf8_num_bytes_char(uint32_t c);
+
 // decodes the unicode character c into s
 // s must be at least 5 chars long and will be null-terminated by the functions
 // returns the number of bytes in c
 // returns -1 if c is not a valid utf8 character
-int utf8_char_to_string(char *s, int32_t c);
+size_t utf8_char_to_string(char *s, int32_t c);
 
-// decode the first codepoint in str
+// decode the first codepoint in str into out
 // str must be null-terminated
-int32_t utf8_string_to_char(char *str);
+// returns the number of bytes encoded into out or -1 if str was invalid utf8
+size_t utf8_string_to_char(char *str, uint32_t *out);
 
 #endif // DDP_UTF8_H

@@ -29,7 +29,7 @@ void Schreibe_Zahl(ddpint p1) {
 
 void Schreibe_Kommazahl(ddpfloat p1) {
 	if (isinf(p1)) {
-		printf(p1 > 0 ? "Unendlich": "-Unendlich");
+		printf(p1 > 0 ? "Unendlich" : "-Unendlich");
 	} else if (isnan(p1)) {
 		printf("Keine Zahl (NaN)");
 	} else {
@@ -97,7 +97,8 @@ ddpchar extern_lies_buchstabe(ddpboolref war_eof) {
 			runtime_error_getlasterror(1, "WideCharToMultiByte (1) failed: %s");
 		}
 		mbStr[size] = '\0';
-		ddpchar ch = utf8_string_to_char(mbStr);
+		ddpchar ch;
+		utf8_string_to_char(mbStr, (uint32_t *)&ch);
 		if (ch == 26) {
 			*war_eof = true; // set eof for ctrl+Z
 		}
@@ -116,7 +117,9 @@ ddpchar extern_lies_buchstabe(ddpboolref war_eof) {
 			temp[j] = getchar();
 		}
 		temp[i] = '\0';
-		return utf8_string_to_char(temp);
+		ddpchar result;
+		utf8_string_to_char(temp, (uint32_t *)&result);
+		return result;
 #ifdef DDPOS_WINDOWS
 	}
 #endif // DDPOS_WINDOWS

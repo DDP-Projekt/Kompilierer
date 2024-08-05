@@ -759,6 +759,7 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 
 void Datei_Lies_Alles(ddpstring *ret, DateiRef datei) {
 	DDP_MIGHT_ERROR;
+	DDP_DBGLOG("Datei_Lies_Alles(%p)", datei);
 
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it

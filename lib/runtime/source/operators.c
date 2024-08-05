@@ -35,7 +35,9 @@ ddpchar ddp_string_index(ddpstring *str, ddpint index) {
 		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(str->str));
 	}
 
-	return utf8_string_to_char(str->str + i);
+	uint32_t result;
+	utf8_string_to_char(str->str + i, &result);
+	return (ddpchar)result;
 }
 
 void ddp_replace_char_in_string(ddpstring *str, ddpchar ch, ddpint index) {
@@ -151,8 +153,8 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 	DDP_DBGLOG("_ddp_char_string_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
-	int num_bytes = utf8_char_to_string(temp, c);
-	if (num_bytes == -1) { // if c is invalid utf8, we return simply a copy of str
+	size_t num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == (size_t)-1) { // if c is invalid utf8, we return simply a copy of str
 		num_bytes = 0;
 	}
 
@@ -176,8 +178,8 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 	DDP_DBGLOG("_ddp_string_char_verkettet: %p, ret: %p", str, ret);
 
 	char temp[5];
-	int num_bytes = utf8_char_to_string(temp, c);
-	if (num_bytes == -1) { // if c is invalid utf8, we return simply a copy of str
+	size_t num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == (size_t)-1) { // if c is invalid utf8, we return simply a copy of str
 		num_bytes = 0;
 	}
 
@@ -262,8 +264,8 @@ void ddp_char_to_string(ddpstring *ret, ddpchar c) {
 	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 
 	char temp[5];
-	int num_bytes = utf8_char_to_string(temp, c);
-	if (num_bytes == -1) { // invalid utf8, string will be empty
+	size_t num_bytes = utf8_char_to_string(temp, c);
+	if (num_bytes == (size_t)-1) { // invalid utf8, string will be empty
 		num_bytes = 0;
 	}
 
