@@ -11,7 +11,7 @@ func (ListType) Gender() GrammaticalGender {
 }
 
 func (listType ListType) String() string {
-	if IsPrimitive(listType.Underlying) {
+	if _, ok := listType.Underlying.(PrimitiveType); ok {
 		switch listType.Underlying.(PrimitiveType) {
 		case ZAHL:
 			return "Zahlen Liste"
