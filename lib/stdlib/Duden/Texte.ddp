@@ -439,8 +439,11 @@ Und kann so benutzt werden:
 		f("Hallo") -> ['H', 'a', 'l', 'l', 'l']
 ]
 Die öffentliche Funktion Buchstaben_TextRef_BuchstabenListe mit dem Parameter text vom Typ Text Referenz, gibt eine Buchstaben Liste zurück, macht:
-	Die Buchstaben Liste l ist eine leere Buchstaben Liste.
-	Für jeden Buchstaben b in text, Füge b an l an.
+	Die Buchstaben Liste l ist die Länge von text Mal 0 als Buchstabe.
+	Die Zahl i ist 1.
+	Für jeden Buchstaben b in text, mache:
+		Speichere b in l an der Stelle i.
+		Erhöhe i um 1.
 	Gib l zurück.
 Und kann so benutzt werden:
 	"die Buchstaben in <text>"
