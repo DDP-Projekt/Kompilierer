@@ -25,7 +25,7 @@ Und kann so benutzt werden:
 	Der Rückgabewert ist wahr wenn der erste Buchstabe des gegebenen Textes ein '/' ist.
 ]
 Die öffentliche Funktion UNIX_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
-	Wenn die Länge von t gleich 0 ist, gib falsch zurück.
+	Wenn t leer ist, gib falsch zurück.
 	Gib wahr, wenn (t an der Stelle 1) gleich '/' ist zurück.
 Und kann so benutzt werden:
 	"<t> <!k>ein absoluter UNIX Pfad ist"
