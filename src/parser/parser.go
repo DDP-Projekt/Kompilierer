@@ -6,6 +6,7 @@ package parser
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -407,7 +408,22 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	}
 
 	if valid {
-		overloads = append(overloads, decl)
+		// keep the slice sorted in descending order, so that references are prioritized
+		i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
+			countRefArgs := func(params []ast.ParameterInfo) int {
+				result := 0
+				for i := range params {
+					if params[i].Type.IsReference {
+						result++
+					}
+				}
+				return result
+			}
+
+			return countRefArgs(t.Parameters) - countRefArgs(a.Parameters)
+		})
+
+		overloads = slices.Insert(overloads, i, decl)
 		p.module.Operators[decl.Operator] = overloads
 	}
 }

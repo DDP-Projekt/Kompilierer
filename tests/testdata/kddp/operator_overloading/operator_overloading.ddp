@@ -93,3 +93,14 @@ Schreibe ("Hallo" als Text) auf eine Zeile.
 Schreibe (eine neue Struktur als Text) auf eine Zeile.
 Schreibe ((eine neue Struktur als Typdefinition) als Text) auf eine Zeile.
 Schreibe '\n'.
+
+Die Funktion cast_ref mit dem Parameter a vom Typ Zahlen Referenz, gibt eine Zahl zurück, macht:
+	Erhöhe a um 1.
+	Gib a zurück.
+Und überlädt den "als" Operator.
+
+Schreibe (22 als Zahl) auf eine Zeile.
+Die Zahl z ist 1.
+Schreibe z auf eine Zeile.
+Schreibe (z als Zahl) auf eine Zeile.
+Schreibe z auf eine Zeile.

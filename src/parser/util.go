@@ -121,6 +121,6 @@ func isDefaultValue[T comparable](v T) bool {
 
 func operatorParameterTypesEqual(pi1, pi2 []ast.ParameterInfo) bool {
 	return slices.EqualFunc(pi1, pi2, func(pi1, pi2 ast.ParameterInfo) bool {
-		return ddptypes.Equal(pi1.Type.Type, pi2.Type.Type)
+		return ddptypes.ParamTypesEqual(pi1.Type, pi2.Type)
 	})
 }
