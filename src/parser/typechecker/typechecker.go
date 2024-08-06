@@ -265,9 +265,9 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, rhs); overload != nil {
+	if overload := t.findOverload(expr.Operator, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.ReturnType
+		t.latestReturnedType = overload.Decl.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -304,9 +304,9 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, lhs, rhs); overload != nil {
+	if overload := t.findOverload(expr.Operator, operand{lhs, expr.Lhs}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.ReturnType
+		t.latestReturnedType = overload.Decl.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -410,9 +410,9 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	mid := t.Evaluate(expr.Mid)
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, lhs, mid, rhs); overload != nil {
+	if overload := t.findOverload(expr.Operator, operand{lhs, expr.Lhs}, operand{mid, expr.Mid}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.ReturnType
+		t.latestReturnedType = overload.Decl.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -467,12 +467,26 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 
 	overloads := t.Module.Operators[ast.CAST_OP]
 	if len(overloads) > 0 {
+		// copy of findOverload adjusted to also check the return type
 		for _, overload := range overloads {
-			if ddptypes.Equal(overload.Parameters[0].Type.Type, lhs) && ddptypes.Equal(overload.ReturnType, expr.TargetType) {
-				expr.OverloadedBy = overload
-				t.latestReturnedType = expr.TargetType
-				return ast.VisitRecurse
+			if !ddptypes.Equal(overload.Parameters[0].Type.Type, lhs) || !ddptypes.Equal(overload.ReturnType, expr.TargetType) {
+				continue
 			}
+			operator_overload := &ast.OperatorOverload{
+				Decl: overload,
+				Args: make(map[string]ast.Expression, 1),
+			}
+			operator_overload.Args[overload.Parameters[0].Name.Literal] = expr.Lhs
+			if overload.Parameters[0].Type.IsReference {
+				if ass, isAssignable := isAssignable(expr.Lhs); isAssignable {
+					operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
+				} else {
+					continue
+				}
+			}
+			expr.OverloadedBy = operator_overload
+			t.latestReturnedType = expr.TargetType
+			return ast.VisitRecurse
 		}
 	}
 
@@ -872,17 +886,37 @@ func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
 	return true // non-struct types are predeclared and always "public"
 }
 
-func (t *Typechecker) findOverload(operator ast.Operator, operands ...ddptypes.Type) *ast.FuncDecl {
+type operand struct {
+	typ  ddptypes.Type
+	expr ast.Expression
+}
+
+func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
 	overloads := t.Module.Operators[operator]
 	if len(overloads) > 0 {
 	overload_loop:
 		for _, overload := range overloads {
+			operator_overload := &ast.OperatorOverload{
+				Decl: overload,
+				Args: make(map[string]ast.Expression, len(overload.Parameters)),
+			}
+
 			for i, operand := range operands {
-				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand) {
+				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand.typ) {
 					continue overload_loop
 				}
+
+				// turn arguments for reference parameters into assigneables
+				operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
+				if overload.Parameters[i].Type.IsReference {
+					if ass, isAssignable := isAssignable(operand.expr); isAssignable {
+						operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
+					} else {
+						continue overload_loop
+					}
+				}
 			}
-			return overload
+			return operator_overload
 		}
 	}
 	return nil

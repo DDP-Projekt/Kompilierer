@@ -410,12 +410,6 @@ func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType
 		p.err(ddperror.TYP_BAD_OPERATOR_RETURN_TYPE, operator_token.Range, "Ein Operator muss einen Wert zurückgeben")
 	}
 
-	for _, param := range params {
-		if param.Type.IsReference {
-			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, param.Name.Range, "Ein Operator kann keine Referenzen als Parameter haben")
-		}
-	}
-
 	return operator
 }
 

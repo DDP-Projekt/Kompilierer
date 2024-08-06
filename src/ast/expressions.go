@@ -6,6 +6,12 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// holds information on the parsed operator-overload for an expression
+type OperatorOverload struct {
+	Decl *FuncDecl             // the function that overloads the operator
+	Args map[string]Expression // the parsed (assigneable) arguments for the operator
+}
+
 type (
 	BadExpr struct {
 		Tok token.Token
@@ -77,7 +83,7 @@ type (
 		Tok          token.Token
 		Operator     UnaryOperator
 		Rhs          Expression
-		OverloadedBy *FuncDecl
+		OverloadedBy *OperatorOverload
 	}
 
 	BinaryExpr struct {
@@ -86,7 +92,7 @@ type (
 		Lhs          Expression
 		Operator     BinaryOperator
 		Rhs          Expression
-		OverloadedBy *FuncDecl
+		OverloadedBy *OperatorOverload
 	}
 
 	// currently only used for von bis
@@ -97,7 +103,7 @@ type (
 		Mid          Expression
 		Rhs          Expression
 		Operator     TernaryOperator
-		OverloadedBy *FuncDecl
+		OverloadedBy *OperatorOverload
 	}
 
 	// als Expressions cannot be unary
@@ -107,7 +113,7 @@ type (
 		Range        token.Range
 		TargetType   ddptypes.Type
 		Lhs          Expression
-		OverloadedBy *FuncDecl
+		OverloadedBy *OperatorOverload
 	}
 
 	// expressions that operate on types (Standardwert, Größe, ein/eine)

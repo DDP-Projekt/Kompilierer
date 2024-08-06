@@ -783,11 +783,9 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
 			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Name(),
-			Func:  e.OverloadedBy,
-			Args: map[string]ast.Expression{
-				e.OverloadedBy.Parameters[0].Name.Literal: e.Rhs,
-			},
+			Name:  e.OverloadedBy.Decl.Name(),
+			Func:  e.OverloadedBy.Decl,
+			Args:  e.OverloadedBy.Args,
 		})
 	}
 
@@ -857,12 +855,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
 			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Name(),
-			Func:  e.OverloadedBy,
-			Args: map[string]ast.Expression{
-				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
-				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
-			},
+			Name:  e.OverloadedBy.Decl.Name(),
+			Func:  e.OverloadedBy.Decl,
+			Args:  e.OverloadedBy.Args,
 		})
 	}
 
@@ -1375,13 +1370,9 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
 			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Name(),
-			Func:  e.OverloadedBy,
-			Args: map[string]ast.Expression{
-				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
-				e.OverloadedBy.Parameters[1].Name.Literal: e.Rhs,
-				e.OverloadedBy.Parameters[2].Name.Literal: e.Rhs,
-			},
+			Name:  e.OverloadedBy.Decl.Name(),
+			Func:  e.OverloadedBy.Decl,
+			Args:  e.OverloadedBy.Args,
 		})
 	}
 
@@ -1568,11 +1559,9 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
 			Tok:   e.Token(),
-			Name:  e.OverloadedBy.Name(),
-			Func:  e.OverloadedBy,
-			Args: map[string]ast.Expression{
-				e.OverloadedBy.Parameters[0].Name.Literal: e.Lhs,
-			},
+			Name:  e.OverloadedBy.Decl.Name(),
+			Func:  e.OverloadedBy.Decl,
+			Args:  e.OverloadedBy.Args,
 		})
 	}
 
