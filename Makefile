@@ -64,22 +64,22 @@ SHELL = /bin/bash
 
 .PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
 
-all: $(OUT_DIR) kddp runtime stdlib ddp-setup
+all: $(OUT_DIR) kddp runtime stdlib ddp-setup ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
-debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
+debug: $(OUT_DIR) kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
 
-kddp:
+kddp: ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
 	cd $(CMD_DIR) ; '$(MAKE)' kddp
 	$(CP) $(CMD_DIR)kddp/build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
-ddp-setup:
+ddp-setup: ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
 	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
-stdlib:
+stdlib: ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
@@ -94,7 +94,7 @@ stdlib:
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug:
+stdlib-debug: ## same as stdlib but will print debugging information
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
@@ -109,7 +109,7 @@ stdlib-debug:
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-runtime:
+runtime: ## compiles the runtime into build/DDP/lib/stdlib
 	@echo "building the ddp-runtime"
 	cd $(RUN_DIR) ; '$(MAKE)'
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
@@ -118,7 +118,7 @@ runtime:
 	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-runtime-debug:
+runtime-debug: ## same as runtime but prints debugging information
 	@echo "building the ddp-runtime in debug mode"
 	cd $(RUN_DIR) ; '$(MAKE)' debug
 	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
@@ -128,7 +128,7 @@ runtime-debug:
 	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-$(OUT_DIR): LICENSE README.md
+$(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
 	@echo "creating output directories"
 	$(MKDIR) $(OUT_DIR)
 	$(MKDIR) $(DDP_SETUP_DIR_OUT)
@@ -141,16 +141,16 @@ $(OUT_DIR): LICENSE README.md
 	$(CP) LICENSE $(OUT_DIR)
 	$(CP) README.md $(OUT_DIR)
 
-clean: clean-outdir
+clean: clean-outdir ## deletes everything produced by this Makefile
 	cd $(CMD_DIR) ; '$(MAKE)' clean
 	cd $(STD_DIR) ; '$(MAKE)' clean
 	cd $(RUN_DIR) ; '$(MAKE)' clean
 
-clean-outdir:
+clean-outdir: ## deletes build/DDP/
 	@echo "deleting output directory"
 	$(RM) $(OUT_DIR)
 
-checkout-llvm:
+checkout-llvm: ## clones the llvm-project submodule
 # clone the submodule
 	@echo "cloning the llvm repo"
 	git submodule update --init llvm-project
@@ -158,7 +158,7 @@ checkout-llvm:
 # ignore gopls errors
 	cd ./llvm-project ; go mod init ignored || true
 
-llvm: checkout-llvm
+llvm: checkout-llvm ## compiles llvm
 # generate cmake build files
 	@echo "building llvm"
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
@@ -172,46 +172,28 @@ TEST_DIRS =
 # will hold additional arguments to pass to kddp
 KDDP_ARGS = 
 
-test:
-	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
+test-normal: ## runs the tests
 	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-test-memory:
+test-memory: ## runs the tests checking for memory leaks
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-coverage:
-	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
-
-# runs all tests and test-memory
-# everything is done manually to ensure the build is finished
-# before the tests even with -j n
-test-complete: 
+test-normal-memory: ## runs test-normal and test-memory in the correct order
 	'$(MAKE)' all 
-	'$(MAKE)' test 
+	'$(MAKE)' test-normal 
 	'$(MAKE)' debug 
 	'$(MAKE)' test-memory
 
-# runs all the tests with optimizations enabled
-test-with-optimizations:
-	'$(MAKE)' KDDP_ARGS="-O 2" test-complete
+test-sumtypes: ## validates that sumtypes in the source tree are correctly used
+	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
 
-help:
-	@echo "Targets:"
-	@echo "    all (default target): compile kddp the runtime and the stdlib into $(OUT_DIR)"
-	@echo "    debug: compile kddp the runtime and the stdlib into $(OUT_DIR) in debug mode"
-	@echo "    kddp: compile kddp into $(OUT_DIR)"
-	@echo "    ddp-setup: compile ddp-setup into $(OUT_DIR)"
-	@echo "    stdlib: compile only the stdlib into $(OUT_DIR)"
-	@echo "    stdlib-debug: compile only the stdlib in debug mode into $(OUT_DIR)"
-	@echo "    runtime: compile only the runtime into $(OUT_DIR)"
-	@echo "    runtime-debug: compile only the runtime in debug mode into $(OUT_DIR)"
-	@echo "    clean: delete the output directory $(OUT_DIR)"
-	@echo "    llvm: clone the llvm-project repo at version 12.0.0 and build it"
-	@echo "    test: run the ddp tests"
-	@echo "          you can specifiy directory names with the TEST_DIRS variable"
-	@echo "          to only run those tests"
-	@echo '          example: make test TEST_DIRS="slicing assignement if"'
-	@echo "    test-memory: run the ddp tests and test for memory leaks"
-	@echo '          the runtime and stdlib have to be compiled in debug mode beforehand'
-	@echo "    test-complete: runs test and test-memory and automatically"
-	@echo '          compiles everything correctly beforehand'
+coverage: ## creates a coverage report for tests/testdata/stdlib
+	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+test: test-sumtypes test-normal-memory coverage ## runs all the tests
+
+test-with-optimizations: ## runs all tests with full optimizations enabled
+	'$(MAKE)' KDDP_ARGS="-O 2" test
+
+help: ## Show this help.
+	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
