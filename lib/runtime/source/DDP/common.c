@@ -1,6 +1,6 @@
-#include "common.h"
-#include "debug.h"
-#include "runtime.h"
+#include "DDP/common.h"
+#include "DDP/debug.h"
+#include "DDP/runtime.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -2,9 +2,9 @@
 	This file implements extern functions from 
 	Duden/Zeit.ddp
 */
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "ddpwindows.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/ddpwindows.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

@@ -1,7 +1,7 @@
 #ifndef DDP_MT19937_64_H
 #define DDP_MT19937_64_H
 
-#include "common.h"
+#include "DDP/common.h"
 
 // generates a random number on [0, 2^64-1]-interval
 uint64_t genrand64_int64(void);

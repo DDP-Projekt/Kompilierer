@@ -20,10 +20,10 @@ PCRE2_CMAKE_BUILD_TOOL=$(MAKE)
 # these wildcards work only to depth 1
 # so include/utf8/utf8.c is matched but include/utf8/test_dir/test.c would NOT be matched
 # if you want to add more subdirectories, simply add a nesting more here (aka: include/*/*/*.h)
-HEADERS = $(wildcard include/*.h include/*/*.h)
-RUNTIME_HEADERS = $(wildcard ../runtime/include/*.h ../runtime/include/*/*.h)
-SRCS = $(wildcard source/*.c source/*/*.c)
-RUNTIME_SRCS = $(wildcard ../runtime/source/*.c ../runtime/source/*/*.c)
+HEADERS = $(wildcard include/DDP/*.h include/DDP/*/*.h)
+RUNTIME_HEADERS = $(wildcard ../runtime/include/DDP/*.h ../runtime/include/DDP/*/*.h)
+SRCS = $(wildcard source/DDP/*.c source/DDP/*/*.c)
+RUNTIME_SRCS = $(wildcard ../runtime/source/DDP/*.c ../runtime/source/DDP/*/*.c)
 OBJS = $(SRCS:.c=.o)
 OBJS_DEBUG = $(OBJS:.o=_debug.o)
 

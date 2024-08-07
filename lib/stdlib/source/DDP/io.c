@@ -5,11 +5,11 @@
 	Duden/Datei_Ausgabe.ddp
 	Duden/Datei_Eingabe.ddp
 */
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "ddpwindows.h"
-#include "debug.h"
-#include "utf8/utf8.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/ddpwindows.h"
+#include "DDP/debug.h"
+#include "DDP/utf8/utf8.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>

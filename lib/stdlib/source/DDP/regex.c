@@ -1,11 +1,12 @@
-#include "ddptypes.h"
+#include "DDP/ddptypes.h"
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 8
-#include "error.h"
-#include <ddpmemory.h>
+#include "DDP/ddpmemory.h"
+#include "DDP/error.h"
 #include <pcre2.h>
 #include <stdio.h>
 #include <string.h>
+
 
 typedef struct Treffer {
 	ddpstring text;

@@ -22,7 +22,7 @@ void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize);
 #define DDP_FREE(type, pointer) ddp_reallocate(pointer, sizeof(type), 0)
 
 // helper macro to expand the capacity of an array
-#define DDP_GROW_ARRAY(type, pointer, oldCount, newCount)          \
+#define DDP_GROW_ARRAY(type, pointer, oldCount, newCount)      \
 	(type *)ddp_reallocate(pointer, sizeof(type) * (oldCount), \
 						   sizeof(type) * (newCount))
 

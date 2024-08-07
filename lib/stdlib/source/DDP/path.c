@@ -1,9 +1,10 @@
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "winapi-path.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/error.h"
+#include "DDP/winapi-path.h"
 #include <stdbool.h>
 #include <string.h>
-#include "error.h"
+
 
 // TODO: Use PathCchCanonicalize
 void Windows_Saeubern(ddpstring *ret, ddpstring *path) {

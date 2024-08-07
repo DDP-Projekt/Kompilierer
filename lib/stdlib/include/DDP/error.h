@@ -1,4 +1,4 @@
-#include "ddptypes.h"
+#include "DDP/ddptypes.h"
 
 /*
     The extern functions below require Duden/Fehlerbehandlung

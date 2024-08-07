@@ -1,6 +1,6 @@
-#include "ddptypes.h"
-#include "ddpmemory.h"
-#include "debug.h"
+#include "DDP/ddptypes.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/debug.h"
 #include <stdlib.h>
 #include <string.h>
 

@@ -1,5 +1,5 @@
-#include "ddpmemory.h"
-#include "debug.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/debug.h"
 #include <stdlib.h>
 
 // used for allocation/reallocation and freeing of memory

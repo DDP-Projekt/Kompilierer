@@ -1,7 +1,7 @@
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "sha-256-512.h"
-#include "stdio.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/sha-256-512.h"
+#include <stdio.h>
 
 void SHA_256(ddpstring *ret, ddpstring *text) {
 	if (ddp_string_empty(text)) {

@@ -2,15 +2,15 @@
 	initialization for the ddp-c-runtime
 	also defines the entry point of the executable
 */
-#include "runtime.h"
+#include "DDP/runtime.h"
 #include <locale.h>
 #include <signal.h>
 
-#include "ddpwindows.h"
+#include "DDP/ddpwindows.h"
 
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "debug.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/debug.h"
 
 // should not be needed in production
 // mainly for debugging

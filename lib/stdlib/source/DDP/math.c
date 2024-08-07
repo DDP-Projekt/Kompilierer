@@ -1,4 +1,4 @@
-#include "ddptypes.h"
+#include "DDP/ddptypes.h"
 #include <math.h>
 
 ddpfloat Sinus(ddpfloat x) {

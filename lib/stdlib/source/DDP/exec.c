@@ -1,14 +1,14 @@
-#include "ddpmemory.h"
-#include "ddpos.h"
-#include "ddptypes.h"
-#include "error.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddpos.h"
+#include "DDP/ddptypes.h"
+#include "DDP/error.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #if DDPOS_WINDOWS
-#include "ddpwindows.h"
+#include "DDP/ddpwindows.h"
 #else // DDPOS_LINUX
 #include <sys/types.h>
 #include <sys/wait.h>

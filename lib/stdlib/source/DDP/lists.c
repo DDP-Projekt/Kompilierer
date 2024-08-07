@@ -1,6 +1,6 @@
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "utf8/utf8.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/utf8/utf8.h"
 #include <string.h>
 
 typedef struct {

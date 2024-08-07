@@ -1,8 +1,8 @@
-#include "error.h"
-#include "ddpmemory.h"
-#include "ddpos.h"
-#include "ddpwindows.h"
-#include "debug.h"
+#include "DDP/error.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddpos.h"
+#include "DDP/ddpwindows.h"
+#include "DDP/debug.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

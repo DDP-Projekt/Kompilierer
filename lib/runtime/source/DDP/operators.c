@@ -1,10 +1,10 @@
 /*
 	defines functions for ddp operators
 */
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "debug.h"
-#include "utf8/utf8.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/debug.h"
+#include "DDP/utf8/utf8.h"
 #include <float.h>
 #include <stdlib.h>
 #include <string.h>

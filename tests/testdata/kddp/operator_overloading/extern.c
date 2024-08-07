@@ -1,4 +1,4 @@
-#include "../../../../lib/runtime/include/ddptypes.h"
+#include "DDP/ddptypes.h"
 
 typedef ddpstring *Zeichenkette;
 

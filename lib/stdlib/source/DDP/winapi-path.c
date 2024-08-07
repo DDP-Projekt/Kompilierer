@@ -1,4 +1,4 @@
-#include "winapi-path.h"
+#include "DDP/winapi-path.h"
 #include <string.h>
 
 /*
@@ -119,7 +119,7 @@ bool PathCanonicalize(char *buffer, const char *path) {
 						}
 
 						if (*dst == '\\') {
-							dst++;		  /* Reset to last '\' */
+							dst++; /* Reset to last '\' */
 						} else {
 							dst = buffer; // Start path again from new root
 						}
@@ -253,7 +253,7 @@ bool PathRemoveFileSpecA(char *lpszPath) {
 
 		while (*lpszPath) {
 			if (*lpszPath == '\\') {
-				lpszFileSpec = lpszPath;   /* Skip dir */
+				lpszFileSpec = lpszPath; /* Skip dir */
 			} else if (*lpszPath == ':') {
 				lpszFileSpec = ++lpszPath; /* Skip drive */
 				if (*lpszPath == '\\') {

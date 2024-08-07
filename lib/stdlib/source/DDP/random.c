@@ -2,8 +2,8 @@
 	This file implements extern functions from 
 	Duden/Zufall.ddp
 */
-#include "ddptypes.h"
-#include "mt19937-64.h"
+#include "DDP/ddptypes.h"
+#include "DDP/mt19937-64.h"
 #include <math.h>
 
 ddpfloat Zufalls_Kommazahl(ddpfloat a, ddpfloat b) {

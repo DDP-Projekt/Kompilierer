@@ -3,9 +3,9 @@
 	Duden/Umbegungsvariablen.ddp
 */
 
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "ddpwindows.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/ddpwindows.h"
 #include <stdlib.h>
 #include <string.h>
 

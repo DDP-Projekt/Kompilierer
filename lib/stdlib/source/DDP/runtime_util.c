@@ -2,10 +2,10 @@
 	This file implements extern functions from 
 	Duden/Laufzeit.ddp
 */
-#include "ddpmemory.h"
-#include "ddptypes.h"
-#include "ddpwindows.h"
-#include "runtime.h"
+#include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
+#include "DDP/ddpwindows.h"
+#include "DDP/runtime.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,12 +57,12 @@ void Arbeitsverzeichnis(ddpstring *ret) {
 		int len = strlen(buffer) + 1;
 		char *string = DDP_ALLOCATE(char, len);
 		memcpy(string, buffer, len);
-		
+
 		ret->str = string;
 		ret->cap = len;
 		return;
 	}
-	
+
 	// TODO: Error Handling
 	*ret = DDP_EMPTY_STRING;
 }
