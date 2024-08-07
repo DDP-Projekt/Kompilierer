@@ -1,7 +1,7 @@
 ---
 name: Feature Vorschlag
 about: Schlage ein neues Feature für DDP vor
-title: "[Feature Vorschlag] <Titel>"
+title: "Der Name des Features"
 labels: 'Typ: Neues Feature'
 assignees: ''
 

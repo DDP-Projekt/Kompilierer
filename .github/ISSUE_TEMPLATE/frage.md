@@ -1,7 +1,7 @@
 ---
 name: Frage
 about: Stelle eine Frage zu DDP
-title: "[Frage] <Titel>"
+title: "Kurzfassung deiner Frage"
 labels: 'Typ: Frage'
 assignees: ''
 
