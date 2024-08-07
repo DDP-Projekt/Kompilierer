@@ -1,7 +1,7 @@
 ---
 name: Fehlerbericht / Bug report
 about: Melde einen Fehler im Kompilierer oder dem Duden
-title: "[Fehlerbericht] <Titel>"
+title: "Der Titel des Fehlerberichts"
 labels: 'Typ: Fehler'
 assignees: ''
 
