@@ -8,18 +8,18 @@ Instructions for setting up a development environment are written below.
 
 ## Prerequisites
 
-The DDP Compiler is written in Go. Therefore you need to have Golang version 1.18 or later installed. You can download it here: https://go.dev/dl/. <br>
+The DDP Compiler is written in Go. Therefore you need to have Golang version 1.22.2 or later installed. You can download it here: https://go.dev/dl/. <br>
 NOTE: Some package managers don't install the correct version of Go. Please check your Go version with `go version`.
 
 To build the DDP Compiler, you need to have a build of LLVM 12.0.0 installed.
-On many linux distros, this is easily done by running `sudo apt install llvm-12`.
+On many linux distros, this is easily done by running `sudo apt install llvm-12` (or `sudo apt install llvm-12-dev`).
 On Windows you need to build LLVM yourself (which you can also do on linux if you wish, but it is not recommended, because it can take several hours).
 
 If you want to build LLVM yourself on linux anyway, skip to the *Building LLVM* section.
 
 To run the makefile on Windows, you also need the following programs installed and added to your PATH:
 
-- [Go](https://go.dev/dl/) (minimum version 1.18)
+- [Go](https://go.dev/dl/) (minimum version 1.22.2)
 - [mingw64](https://winlibs.com/) (version 12.2.0 with the msvcrt runtime is tested and works, other versions might not work)
 - make (can be downloaded via chocolatey, or you can use mingw32-make which comes with mingw64)
 - [git](https://git-scm.com/download/win) (you need git-bash to run the makefiles)
@@ -35,6 +35,7 @@ it was built to compile DDP programs. Keep that in mind when setting DDP on any 
 
 After you installed LLVM, simply run `make` from the root of the repo.
 To run the tests, use `make test`.
+To display a short explanation of all make targets run `make help`.
 To build LLVM from the llvm-project submodule, run `make llvm`.
 If you built llvm from the submodule, make will use this llvm build instead of the global one.
 

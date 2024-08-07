@@ -9,9 +9,10 @@ DDP ist und wird immer Open-Source bleiben und alle Beiträge sind willkommen! J
 Der DDP Kompilierer ist in Go geschrieben. Daher wird eine Go Version von 1.22.2 oder höher benötigt. Diese kann hier gedownloaded werden: https://go.dev/dl/.<br>
 Hinweis: Manche Packet-Manager installieren nicht die korrekte Version von Go. Die Go Version kann mit dem Befehl `go version` überprüft werden.
 
-Um den DDP Kompilierer zu bauen, muss LLVM 12.0 installiert sein. Bei vielen Linux Distributionen geht das ganz einfach mit `sudo apt install llvm-12`.
+Um den DDP Kompilierer zu bauen, muss LLVM 12.0 installiert sein. Bei vielen Linux Distributionen geht das ganz einfach mit `sudo apt install llvm-12` bzw. `sudo apt install llvm-12-dev`.
 Unter Windows muss LLVM lokal selbst gebaut werden (das geht auch bei Linux, wird aber nicht empfohlen, da es einige Stunden dauern kann).
 Allerdings gibt es für die von uns genutzen MinGW Versionen bereits [vorkompilierte LLVM Bibliotheken](https://github.com/DDP-Projekt/Kompilierer/releases/tag/llvm-binaries).
+Bei diesen findet sich auch eine Linux version.
 
 Wer LLVM auf Linux trotzdem selber bauen möchte, kann zum *LLVM bauen* Teil springen.
 
@@ -35,7 +36,8 @@ Wenn man DDP auf einem beliebigen Computer einrichten möchte sollte man daran d
 
 Nachdem LLVM installiert ist, muss einfach der Befehl `make` im Stammverzeichnis des Repositoriums ausgeführt werden.
 
-Um die Tests auszuführen, wird `make test` (oder `make test-complete` um auch die Memory Tests auszuführen) verwendet.
+Um die Tests auszuführen, wird `make test` verwendet.
+`make help` zeigt eine kurze Erklärung aller make Ziele.
 
 Um LLVM aus dem Submodul llvm-project zu erstellen, wird `make llvm` verwendet.
 Falls LLVM aus dem Submodul gebaut wurde, wird make dieses LLVM-Build anstelle des Globalen verwenden.
