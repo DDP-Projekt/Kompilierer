@@ -65,7 +65,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	if options.ExternGCCFlags == "" {
 		extern_gcc_flags = []string{}
 	}
-	extern_gcc_flags = append(extern_gcc_flags, "-I"+filepath.Join(ddppath.Lib, "runtime/include/"))
+	extern_gcc_flags = append(extern_gcc_flags, "-I"+filepath.Join(ddppath.Lib, "runtime/include/"), "-I"+filepath.Join(ddppath.Lib, "stdlib/include"))
 
 	var (
 		link_objects = map[string][]string{}       // library-search-paths to library-filename map
