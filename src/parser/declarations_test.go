@@ -67,9 +67,11 @@ func createParser(test *testing.T, overrider parser) *parser {
 	}
 
 	parser := parser{
-		tokens:                NotNilSlice(overrider.tokens),
-		comments:              NotNilSlice(overrider.comments),
-		cur:                   overrider.cur,
+		tokenWalker: tokenWalker{
+			tokens:   NotNilSlice(overrider.tokens),
+			comments: NotNilSlice(overrider.comments),
+			cur:      overrider.cur,
+		},
 		errorHandler:          errorHandler,
 		lastError:             overrider.lastError,
 		module:                cmp.Or(overrider.module, module),
@@ -82,6 +84,7 @@ func createParser(test *testing.T, overrider parser) *parser {
 		resolver:              overrider.resolver,
 		typechecker:           overrider.typechecker,
 	}
+	setTokenWalkerErrFunc(&parser)
 	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
 	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
 
@@ -121,11 +124,13 @@ func TestTypeAliasDecl(t *testing.T) {
 	assert := assert.New(t)
 	given := createParser(t,
 		parser{
-			tokens: createTokens(
-				token.WIR, token.NENNEN, token.EINE, token.ZAHL, token.AUCH, token.EINE,
-				token.IDENTIFIER, "Nummer",
-				token.DOT,
-			),
+			tokenWalker: tokenWalker{
+				tokens: createTokens(
+					token.WIR, token.NENNEN, token.EINE, token.ZAHL, token.AUCH, token.EINE,
+					token.IDENTIFIER, "Nummer",
+					token.DOT,
+				),
+			},
 		},
 	)
 	given.cur = 1 // skip WIR

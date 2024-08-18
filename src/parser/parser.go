@@ -20,12 +20,7 @@ import (
 
 // holds state when parsing a .ddp file into an AST
 type parser struct {
-	// the tokens to parse (without comments)
-	tokens []token.Token
-	// all the comments from the original tokens slice
-	comments []token.Token
-	// index of the current token
-	cur int
+	tokenWalker
 	// a function to which errors are passed
 	errorHandler ddperror.Handler
 	// latest reported error
@@ -48,6 +43,12 @@ type parser struct {
 	resolver *resolver.Resolver
 	// used to typecheck every node directly after it has been parsed
 	typechecker *typechecker.Typechecker
+}
+
+func setTokenWalkerErrFunc(p *parser) {
+	p.tokenWalker.errFunc = func(c ddperror.Code, r token.Range, s string) {
+		p.err(c, r, s)
+	}
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -87,9 +88,12 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	parser := &parser{
-		tokens:       tokens,
-		comments:     comments,
-		cur:          0,
+		tokenWalker: tokenWalker{
+			tokens:   tokens,
+			comments: comments,
+			cur:      0,
+			errFunc:  nil,
+		},
 		errorHandler: nil,
 		module: &ast.Module{
 			FileName:             name,
@@ -123,6 +127,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		}
 		errorHandler(err)
 	}
+	setTokenWalkerErrFunc(parser)
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	parser.resolver = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode)

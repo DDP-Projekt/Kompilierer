@@ -8,12 +8,25 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// a tokenWalker holds the state needed
+// to work with a series of tokens
+type tokenWalker struct {
+	// the tokens to parse (without comments)
+	tokens []token.Token
+	// all the comments from the original tokens slice
+	comments []token.Token
+	// index of the current token
+	cur int
+	// called to report errors from consume functions
+	errFunc func(ddperror.Code, token.Range, string)
+}
+
 // if the current tokenType is contained in types, advance
 // returns wether we advanced or not
-func (p *parser) matchAny(types ...token.TokenType) bool {
+func (w *tokenWalker) matchAny(types ...token.TokenType) bool {
 	for _, t := range types {
-		if p.check(t) {
-			p.advance()
+		if w.check(t) {
+			w.advance()
 			return true
 		}
 	}
@@ -22,35 +35,35 @@ func (p *parser) matchAny(types ...token.TokenType) bool {
 
 // if the given sequence of tokens is matched, advance
 // returns wether we advance or not
-func (p *parser) matchSeq(types ...token.TokenType) bool {
+func (w *tokenWalker) matchSeq(types ...token.TokenType) bool {
 	for i, t := range types {
-		if p.peekN(i).Type != t {
+		if w.peekN(i).Type != t {
 			return false
 		}
 	}
 
 	for range types {
-		p.advance()
+		w.advance()
 	}
 
 	return true
 }
 
 // if the current token is of type t advance, otherwise error
-func (p *parser) consume1(t token.TokenType) bool {
-	if p.check(t) {
-		p.advance()
+func (w *tokenWalker) consume1(t token.TokenType) bool {
+	if w.check(t) {
+		w.advance()
 		return true
 	}
 
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, t))
+	w.errFunc(ddperror.SYN_UNEXPECTED_TOKEN, w.peek().Range, ddperror.MsgGotExpected(w.peek().Literal, t))
 	return false
 }
 
 // consume a series of tokens
-func (p *parser) consume(t ...token.TokenType) bool {
+func (w *tokenWalker) consume(t ...token.TokenType) bool {
 	for _, v := range t {
-		if !p.consume1(v) {
+		if !w.consume1(v) {
 			return false
 		}
 	}
@@ -58,81 +71,81 @@ func (p *parser) consume(t ...token.TokenType) bool {
 }
 
 // same as consume but tolerates multiple tokenTypes
-func (p *parser) consumeAny(tokenTypes ...token.TokenType) bool {
+func (w *tokenWalker) consumeAny(tokenTypes ...token.TokenType) bool {
 	for _, v := range tokenTypes {
-		if p.check(v) {
-			p.advance()
+		if w.check(v) {
+			w.advance()
 			return true
 		}
 	}
 
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, toInterfaceSlice[token.TokenType, any](tokenTypes)...))
+	w.errFunc(ddperror.SYN_UNEXPECTED_TOKEN, w.peek().Range, ddperror.MsgGotExpected(w.peek().Literal, toInterfaceSlice[token.TokenType, any](tokenTypes)...))
 	return false
 }
 
 // check if the current token is of type t without advancing
-func (p *parser) check(t token.TokenType) bool {
-	if p.atEnd() {
+func (w *tokenWalker) check(t token.TokenType) bool {
+	if w.atEnd() {
 		return false
 	}
-	return p.peek().Type == t
+	return w.peek().Type == t
 }
 
 // check if the current token is EOF
-func (p *parser) atEnd() bool {
-	return p.peek().Type == token.EOF
+func (w *tokenWalker) atEnd() bool {
+	return w.peek().Type == token.EOF
 }
 
 // return the current token and advance p.cur
-func (p *parser) advance() *token.Token {
-	if !p.atEnd() {
-		p.cur++
-		return p.previous()
+func (w *tokenWalker) advance() *token.Token {
+	if !w.atEnd() {
+		w.cur++
+		return w.previous()
 	}
-	return p.peek() // return EOF
+	return w.peek() // return EOF
 }
 
 // returns the current token without advancing
-func (p *parser) peek() *token.Token {
-	return &p.tokens[p.cur]
+func (w *tokenWalker) peek() *token.Token {
+	return &w.tokens[w.cur]
 }
 
 // returns the n'th token starting from current without advancing
 // p.peekN(0) is equal to p.peek()
-func (p *parser) peekN(n int) *token.Token {
-	if p.cur+n >= len(p.tokens) || p.cur+n < 0 {
-		return &p.tokens[len(p.tokens)-1] // EOF
+func (w *tokenWalker) peekN(n int) *token.Token {
+	if w.cur+n >= len(w.tokens) || w.cur+n < 0 {
+		return &w.tokens[len(w.tokens)-1] // EOF
 	}
-	return &p.tokens[p.cur+n]
+	return &w.tokens[w.cur+n]
 }
 
 // returns the token before peek()
-func (p *parser) previous() *token.Token {
-	if p.cur < 1 {
+func (w *tokenWalker) previous() *token.Token {
+	if w.cur < 1 {
 		return &token.Token{Type: token.ILLEGAL}
 	}
-	return &p.tokens[p.cur-1]
+	return &w.tokens[w.cur-1]
 }
 
 // opposite of advance
-func (p *parser) decrease() {
-	if p.cur > 0 {
-		p.cur--
+func (w *tokenWalker) decrease() {
+	if w.cur > 0 {
+		w.cur--
 	}
 }
 
 // retrives the last comment which comes before pos
 // if their are no comments before pos nil is returned
-func (p *parser) commentBeforePos(pos token.Position) (result *token.Token) {
-	if len(p.comments) == 0 {
+func (w *tokenWalker) commentBeforePos(pos token.Position) (result *token.Token) {
+	if len(w.comments) == 0 {
 		return nil
 	}
 
-	for i := range p.comments {
+	for i := range w.comments {
 		// the scanner sets any tokens .Range.End.Column to 1 after the last char within the literal
-		end := token.Position{Line: p.comments[i].Range.End.Line, Column: p.comments[i].Range.End.Column - 1}
+		end := token.Position{Line: w.comments[i].Range.End.Line, Column: w.comments[i].Range.End.Column - 1}
 		if end.IsBefore(pos) {
-			result = &p.comments[i]
+			result = &w.comments[i]
 		} else {
 			return result
 		}
@@ -142,14 +155,14 @@ func (p *parser) commentBeforePos(pos token.Position) (result *token.Token) {
 
 // retrives the first comment which comes after pos
 // if their are no comments after pos nil is returned
-func (p *parser) commentAfterPos(pos token.Position) (result *token.Token) {
-	if len(p.comments) == 0 {
+func (w *tokenWalker) commentAfterPos(pos token.Position) (result *token.Token) {
+	if len(w.comments) == 0 {
 		return nil
 	}
 
-	for i := range p.comments {
-		if p.comments[i].Range.End.IsBehind(pos) {
-			return &p.comments[i]
+	for i := range w.comments {
+		if w.comments[i].Range.End.IsBehind(pos) {
+			return &w.comments[i]
 		}
 	}
 	return result
@@ -158,7 +171,7 @@ func (p *parser) commentAfterPos(pos token.Position) (result *token.Token) {
 // retreives a leading or trailing comment of p.previous()
 // prefers leading comments
 // may return nil
-func (p *parser) getLeadingOrTrailingComment() (result *token.Token) {
+func (p *tokenWalker) getLeadingOrTrailingComment() (result *token.Token) {
 	tok := p.previous()
 	comment := p.commentBeforePos(tok.Range.Start)
 	// the comment must be between the identifier and the last token of the type

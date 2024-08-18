@@ -175,7 +175,9 @@ func (p *parser) alias() ast.Expression {
 					eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
 					tokens = append(tokens, eof)
 					argParser := &parser{
-						tokens: tokens,
+						tokenWalker: tokenWalker{
+							tokens: tokens,
+						},
 						errorHandler: func(err ddperror.Error) {
 							reported_errors = append(reported_errors, err)
 							cached_arg.Errors = append(cached_arg.Errors, err)
@@ -187,6 +189,7 @@ func (p *parser) alias() ast.Expression {
 						resolver:    p.resolver,
 						typechecker: p.typechecker,
 					}
+					setTokenWalkerErrFunc(argParser)
 
 					if paramType.IsReference {
 						argParser.advance() // consume the identifier or LPAREN for assigneable() to work
