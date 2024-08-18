@@ -76,7 +76,7 @@ type (
 	Alias interface {
 		// tokens of the alias
 		GetTokens() []token.Token
-		// the original string
+		// the original string literal
 		GetOriginal() token.Token
 		// *FuncDecl or *StructDecl
 		Decl() Declaration

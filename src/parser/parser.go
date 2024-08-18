@@ -21,10 +21,7 @@ import (
 // holds state when parsing a .ddp file into an AST
 type parser struct {
 	tokenWalker
-	// a function to which errors are passed
-	errorHandler ddperror.Handler
-	// latest reported error
-	lastError ddperror.Error
+	errorReporter
 
 	module *ast.Module
 	// modules that were passed as environment, might not all be used
@@ -35,8 +32,6 @@ type parser struct {
 	currentFunction *ast.FuncDecl
 	// wether the current function returns a boolean
 	isCurrentFunctionBool bool
-	// flag to not report following errors
-	panicMode bool
 	// wether the parser found an error
 	errored bool
 	// used to resolve every node directly after it has been parsed
@@ -46,7 +41,7 @@ type parser struct {
 }
 
 func setTokenWalkerErrFunc(p *parser) {
-	p.tokenWalker.errFunc = func(c ddperror.Code, r token.Range, s string) {
+	p.errFunc = func(c ddperror.Code, r token.Range, s string) {
 		p.err(c, r, s)
 	}
 }
@@ -94,7 +89,13 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			cur:      0,
 			errFunc:  nil,
 		},
-		errorHandler: nil,
+		errorReporter: errorReporter{
+			errorHandler: errorHandler,
+			lastError:    ddperror.Error{},
+			panicMode:    false,
+			errored:      false,
+			fileName:     name,
+		},
 		module: &ast.Module{
 			FileName:             name,
 			Imports:              make([]*ast.ImportStmt, 0),
@@ -113,7 +114,6 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
 		currentFunction:       nil,
 		isCurrentFunctionBool: false,
-		panicMode:             false,
 		errored:               false,
 		resolver:              &resolver.Resolver{},
 		typechecker:           &typechecker.Typechecker{},
@@ -121,12 +121,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 
 	// wrap the errorHandler to set the parsers Errored variable
 	// if it is called
-	parser.errorHandler = func(err ddperror.Error) {
-		if err.Level == ddperror.LEVEL_ERROR {
-			parser.errored = true
-		}
-		errorHandler(err)
-	}
+	parser.initializeReporter()
 	setTokenWalkerErrFunc(parser)
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
@@ -351,24 +346,6 @@ func (p *parser) setScope(symbols *ast.SymbolTable) {
 // exit the current scope of the resolver and typechecker
 func (p *parser) exitScope() {
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
-}
-
-func (p *parser) errVal(err ddperror.Error) {
-	if !p.panicMode {
-		p.panicMode = true
-		p.lastError = err
-		p.errorHandler(p.lastError)
-	}
-}
-
-// helper to report errors and enter panic mode
-func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
-	p.errVal(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, p.module.FileName))
-}
-
-// helper to report errors and enter panic mode
-func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
-	p.errorHandler(ddperror.New(code, ddperror.LEVEL_WARN, Range, msg, p.module.FileName))
 }
 
 // checks wether the alias already exists AND has a value attached to it

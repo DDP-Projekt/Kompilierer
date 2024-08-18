@@ -178,9 +178,11 @@ func (p *parser) alias() ast.Expression {
 						tokenWalker: tokenWalker{
 							tokens: tokens,
 						},
-						errorHandler: func(err ddperror.Error) {
-							reported_errors = append(reported_errors, err)
-							cached_arg.Errors = append(cached_arg.Errors, err)
+						errorReporter: errorReporter{
+							errorHandler: func(err ddperror.Error) {
+								reported_errors = append(reported_errors, err)
+								cached_arg.Errors = append(cached_arg.Errors, err)
+							},
 						},
 						module: &ast.Module{
 							FileName: p.module.FileName,
