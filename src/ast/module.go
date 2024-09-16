@@ -11,9 +11,6 @@ import (
 type Module struct {
 	// the absolute filepath from which the module comes
 	FileName string
-	// the token which specified the relative FileName
-	// if the module was imported and not the main Module
-	FileNameToken *token.Token
 	// all the imported modules
 	Imports []*ImportStmt
 	// First token in the file if present, or nil otherwise
@@ -26,17 +23,6 @@ type Module struct {
 	Ast *Ast
 	// map of references to all public functions, variables and structs
 	PublicDecls map[string]Declaration
-	// map of all overloads for all operators
-	Operators map[Operator][]*FuncDecl
-}
-
-// returns the string-literal content by which this module was first imported
-// or the short FileName if it is the main module
-func (module *Module) GetIncludeFilename() string {
-	if module.FileNameToken == nil {
-		return filepath.Base(module.FileName)
-	}
-	return TrimStringLit(module.FileNameToken)
 }
 
 // Calls fun with module and every module it imports recursively

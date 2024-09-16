@@ -186,3 +186,37 @@ func (p *tokenWalker) getLeadingOrTrailingComment() (result *token.Token) {
 
 	return comment
 }
+
+// if an error was encountered we synchronize to a point where correct parsing is possible again
+func (w *tokenWalker) synchronize() {
+	// w.advance() // maybe this needs to stay?
+	for !w.atEnd() {
+		if w.previous().Type == token.DOT { // a . ends statements, so we can continue parsing
+			return
+		}
+		// these tokens typically begin statements which begin a new node
+		switch w.peek().Type {
+		// DIE/DER does not always indicate a declaration
+		// so we only return if the next token fits
+		case token.DIE:
+			switch w.peekN(1).Type {
+			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN,
+				token.BUCHSTABEN, token.TEXT, token.WAHRHEITSWERT, token.FUNKTION:
+				{
+					return
+				}
+			}
+		case token.DER:
+			switch w.peekN(1).Type {
+			case token.WAHRHEITSWERT, token.TEXT, token.BUCHSTABE, token.ALIAS:
+				{
+					return
+				}
+			}
+		case token.WENN, token.FÜR, token.GIB, token.VERLASSE, token.SOLANGE,
+			token.COLON, token.MACHE, token.DANN, token.WIEDERHOLE, token.BINDE:
+			return
+		}
+		w.advance()
+	}
+}

@@ -6,7 +6,6 @@ package parser
 import (
 	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -26,7 +25,7 @@ type parser struct {
 	module *ast.Module
 	// modules that were passed as environment, might not all be used
 	predefinedModules map[string]*ast.Module
-	// all found aliases (+ inbuild aliases)
+	// all found aliases
 	aliases *at.Trie[*token.Token, ast.Alias]
 	// function which is currently being parsed
 	currentFunction *ast.FuncDecl
@@ -108,7 +107,6 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 				Faulty:     false,
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
-			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
 		},
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
@@ -152,6 +150,7 @@ func (p *parser) checkedDeclaration() ast.Statement {
 		p.checkStatement(stmt)
 	}
 	if p.panicMode { // synchronize the parsing if we are in panic mode
+		p.panicMode = false
 		p.synchronize()
 	}
 	return stmt
@@ -159,7 +158,8 @@ func (p *parser) checkedDeclaration() ast.Statement {
 
 // entry point for the recursive descent parsing
 func (p *parser) declaration() ast.Statement {
-	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
+	// might indicate a function, variable or struct
+	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) {
 		if p.previous().Type == token.WIR {
 			if p.matchSeq(token.NENNEN, token.DIE) {
 				return &ast.DeclStmt{Decl: p.structDeclaration()}
@@ -241,13 +241,12 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()))
 			return // return early on error
 		} else {
-			importStmt.Module.FileNameToken = &importStmt.FileName
 			p.predefinedModules[inclPath] = importStmt.Module
 		}
 	} else { // we already included the module
 		// circular import error
 		if module == nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"))
+			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.FileName, rawPath+".ddp"))
 			return // return early on error
 		}
 
@@ -289,42 +288,6 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		p.addAliases(aliases, tok.Range)
 		return true
 	})
-}
-
-// if an error was encountered we synchronize to a point where correct parsing is possible again
-func (p *parser) synchronize() {
-	p.panicMode = false
-
-	// p.advance() // maybe this needs to stay?
-	for !p.atEnd() {
-		if p.previous().Type == token.DOT { // a . ends statements, so we can continue parsing
-			return
-		}
-		// these tokens typically begin statements which begin a new node
-		switch p.peek().Type {
-		// DIE/DER does not always indicate a declaration
-		// so we only return if the next token fits
-		case token.DIE:
-			switch p.peekN(1).Type {
-			case token.ZAHL, token.KOMMAZAHL, token.ZAHLEN, token.KOMMAZAHLEN,
-				token.BUCHSTABEN, token.TEXT, token.WAHRHEITSWERT, token.FUNKTION:
-				{
-					return
-				}
-			}
-		case token.DER:
-			switch p.peekN(1).Type {
-			case token.WAHRHEITSWERT, token.TEXT, token.BUCHSTABE, token.ALIAS:
-				{
-					return
-				}
-			}
-		case token.WENN, token.FÜR, token.GIB, token.VERLASSE, token.SOLANGE,
-			token.COLON, token.MACHE, token.DANN, token.WIEDERHOLE:
-			return
-		}
-		p.advance()
-	}
 }
 
 // returns the current scope of the parser, resolver and typechecker
@@ -379,7 +342,7 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 }
 
 func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
-	overloads := p.module.Operators[decl.Operator]
+	overloads := p.scope().LookupOperator(decl.Operator)
 
 	valid := true
 	for _, overload := range overloads {
@@ -390,22 +353,6 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	}
 
 	if valid {
-		// keep the slice sorted in descending order, so that references are prioritized
-		i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
-			countRefArgs := func(params []ast.ParameterInfo) int {
-				result := 0
-				for i := range params {
-					if params[i].Type.IsReference {
-						result++
-					}
-				}
-				return result
-			}
-
-			return countRefArgs(t.Parameters) - countRefArgs(a.Parameters)
-		})
-
-		overloads = slices.Insert(overloads, i, decl)
-		p.module.Operators[decl.Operator] = overloads
+		p.scope().AddOverload(decl.Operator, decl)
 	}
 }
