@@ -16,6 +16,38 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// entry point for the recursive descent parsing
+func (p *parser) declaration() ast.Statement {
+	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
+		if p.previous().Type == token.WIR {
+			if p.matchSeq(token.NENNEN, token.DIE) {
+				return &ast.DeclStmt{Decl: p.structDeclaration()}
+			} else if p.matchAny(token.DEFINIEREN) {
+				return &ast.DeclStmt{Decl: p.typeDefDecl()}
+			}
+			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
+		}
+
+		n := -1
+		if p.matchAny(token.OEFFENTLICHE) {
+			n = -2
+		}
+
+		switch t := p.peek().Type; t {
+		case token.ALIAS:
+			p.advance()
+			return p.aliasDecl()
+		case token.FUNKTION:
+			p.advance()
+			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
+		default:
+			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
+		}
+	}
+
+	return p.statement() // no declaration, so it must be a statement
+}
+
 func (p *parser) parseDeclComment(beginRange token.Range) *token.Token {
 	comment := p.commentBeforePos(beginRange.Start)
 	// ignore the comment if it is not next to or directly above the declaration

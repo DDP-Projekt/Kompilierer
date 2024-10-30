@@ -48,6 +48,8 @@ type parser struct {
 	resolver *resolver.Resolver
 	// used to typecheck every node directly after it has been parsed
 	typechecker *typechecker.Typechecker
+	// partial result after preprocessing
+	ppr preprocessResult
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -113,6 +115,10 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		errored:               false,
 		resolver:              &resolver.Resolver{},
 		typechecker:           &typechecker.Typechecker{},
+		ppr: preprocessResult{
+			declarations: make(map[int]ast.Declaration, 8),
+			types:        make(map[string]unknownType, 8),
+		},
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
@@ -135,6 +141,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 func (p *parser) parse() *ast.Module {
 	defer parser_panic_wrapper(p)
 
+	p.preprocess()
+
 	// main parsing loop
 	for !p.atEnd() {
 		if stmt := p.checkedDeclaration(); stmt != nil {
@@ -155,38 +163,6 @@ func (p *parser) checkedDeclaration() ast.Statement {
 		p.synchronize()
 	}
 	return stmt
-}
-
-// entry point for the recursive descent parsing
-func (p *parser) declaration() ast.Statement {
-	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
-		if p.previous().Type == token.WIR {
-			if p.matchSeq(token.NENNEN, token.DIE) {
-				return &ast.DeclStmt{Decl: p.structDeclaration()}
-			} else if p.matchAny(token.DEFINIEREN) {
-				return &ast.DeclStmt{Decl: p.typeDefDecl()}
-			}
-			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
-		}
-
-		n := -1
-		if p.matchAny(token.OEFFENTLICHE) {
-			n = -2
-		}
-
-		switch t := p.peek().Type; t {
-		case token.ALIAS:
-			p.advance()
-			return p.aliasDecl()
-		case token.FUNKTION:
-			p.advance()
-			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
-		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
-		}
-	}
-
-	return p.statement() // no declaration, so it must be a statement
 }
 
 // calls p.declaration and resolves and typechecks it
