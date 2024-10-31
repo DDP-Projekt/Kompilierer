@@ -9,7 +9,12 @@ import (
 
 // check if the function is defined externally
 func IsExternFunc(fun *FuncDecl) bool {
-	return fun.Body == nil
+	return fun.Body == nil && fun.Def == nil
+}
+
+// check if the declaration is only a forward decl
+func IsForwardDecl(fun *FuncDecl) bool {
+	return fun.Def != nil
 }
 
 func IsOperatorOverload(fun *FuncDecl) bool {

@@ -140,6 +140,10 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	for _, field := range decl.Fields {
 		// don't check BadDecls

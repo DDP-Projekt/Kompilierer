@@ -88,17 +88,26 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	if IsExternFunc(decl) {
 		msg += " [Extern]"
 	}
+	if IsForwardDecl(decl) {
+		msg += " [Forward Decl]"
+	}
 	if decl.IsExternVisible {
 		msg += " [Extern Visible]"
 	}
 	if decl.CommentTok != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
-	if IsExternFunc(decl) {
+	if IsExternFunc(decl) || IsForwardDecl(decl) {
 		pr.parenthesizeNode(msg)
 	} else {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
+	return VisitRecurse
+}
+
+func (pr *printer) VisitFuncDef(decl *FuncDef) VisitResult {
+	msg := fmt.Sprintf("FuncDef[%s]", decl.Func.Name())
+	pr.parenthesizeNode(msg, decl.Body)
 	return VisitRecurse
 }
 

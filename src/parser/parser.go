@@ -142,6 +142,8 @@ func (p *parser) parse() *ast.Module {
 		}
 	}
 
+	p.validateForwardDecls()
+
 	p.module.Ast.Faulty = p.errored
 	return p.module
 }
@@ -180,7 +182,7 @@ func (p *parser) declaration() ast.Statement {
 			return p.aliasDecl()
 		case token.FUNKTION:
 			p.advance()
-			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
+			return p.funcDeclaration(n - 1)
 		default:
 			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
 		}
@@ -289,6 +291,18 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		p.addAliases(aliases, tok.Range)
 		return true
 	})
+}
+
+func (p *parser) validateForwardDecls() {
+	ast.VisitModule(p.module, ast.FuncDeclVisitorFunc(func(decl *ast.FuncDecl) ast.VisitResult {
+		if decl.Body == nil && decl.ExternFile.Type == token.ILLEGAL && decl.Def == nil {
+			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
+				decl.NameTok.Range,
+				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert"))
+			p.panicMode = false
+		}
+		return ast.VisitSkipChildren
+	}))
 }
 
 // if an error was encountered we synchronize to a point where correct parsing is possible again

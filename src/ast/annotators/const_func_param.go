@@ -68,8 +68,12 @@ func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitRes
 	}
 	// track all the function parameters
 	// and initially assume they are const
+	body := decl.Body
+	if ast.IsForwardDecl(decl) {
+		body = decl.Def.Body
+	}
 	for _, funcParam := range decl.Parameters {
-		param, exists, isVar := decl.Body.Symbols.LookupDecl(funcParam.Name.Literal)
+		param, exists, isVar := body.Symbols.LookupDecl(funcParam.Name.Literal)
 		if exists && isVar {
 			a.currentParams[param.(*ast.VarDecl)] = true
 			attachement.IsConst[funcParam.Name.Literal] = true

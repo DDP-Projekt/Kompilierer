@@ -188,6 +188,14 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	return h.visitChildren(result, decl.Body)
 }
 
+func (h *helperVisitor) VisitFuncDef(decl *FuncDef) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(FuncDefVisitor); ok {
+		result = vis.VisitFuncDef(decl)
+	}
+	return h.visitChildren(result, decl.Body)
+}
+
 func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
@@ -467,7 +475,7 @@ func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 }
 
 func (h *helperVisitor) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
-	if vis, ok := h.actualVisitor.(BreakContineStmtVisitor); ok {
+	if vis, ok := h.actualVisitor.(BreakContinueStmtVisitor); ok {
 		return vis.VisitBreakContinueStmt(stmt)
 	}
 	return VisitRecurse

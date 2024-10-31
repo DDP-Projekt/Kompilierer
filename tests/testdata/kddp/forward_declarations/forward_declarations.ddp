@@ -1,0 +1,32 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion foo mit dem Parameter a vom Typ Zahl, gibt eine Zahl zurück,
+wird später definiert
+und kann so benutzt werden:
+	"foo <a>"
+
+Die Funktion bar gibt nichts zurück,
+wird später definiert
+und kann so benutzt werden:
+	"bar"
+
+Die Funktion baz mit dem Parameter a vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Wenn a gleich 0 ist, dann:
+		Schreibe "baz fertig" auf eine Zeile.
+		Gib 0 zurück.
+	Gib foo (a minus 1) zurück.
+Und kann so benutzt werden:
+	"baz <a>"
+
+foo 3.
+bar.
+baz 3.
+
+Die Funktion foo macht:
+	Wenn a gleich 0 ist, dann:
+		Schreibe "foo fertig" auf eine Zeile.
+		Gib 0 zurück.
+	Gib baz (a minus 1) zurück.
+	
+Die Funktion bar macht:
+	Schreibe "bar" auf eine Zeile.
