@@ -38,7 +38,6 @@ endif
 ifneq ($(OS),Windows_NT)
 $(PCRE2_OUT_FILE_NAME):
 	@echo "pcre2 is already provided on linux systems"
-	echo "dummy file" > $(PCRE2_OUT_FILE_NAME)
 else
 $(PCRE2_OUT_FILE_NAME): | checkout-pcre2
 	@echo "building pcre2"
