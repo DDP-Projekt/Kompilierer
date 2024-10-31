@@ -117,6 +117,11 @@ func (r *Resolver) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (r *Resolver) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
+	def.Func.Def = def
+	return ast.VisitRecurse
+}
+
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
 		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")

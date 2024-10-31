@@ -48,6 +48,9 @@ const (
 	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
 	SEM_TODO_STMT_FOUND                                   // ... wurde gefunden
 	SEM_BAD_TYPEDEF                                       // any was typedefed
+	SEM_FORWARD_DECL_WITHOUT_DEF                          // a function was declared as forward decl but never defined
+	SEM_WRONG_DECL_MODULE                                 // a definition was provided for a function from a different module
+	SEM_DEFINITION_ALREADY_DEFINED                        // a forward decl was already defined
 )
 
 // type error codes

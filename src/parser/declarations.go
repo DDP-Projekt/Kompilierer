@@ -415,7 +415,7 @@ func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType
 
 // parses a function declaration
 // startDepth is the int passed to p.peekN(n) to get to the DIE token of the declaration
-func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
+func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	// used later to check if the functions aliases may be added to the parsers state
 	valid := true
 	// helper for setting the valid flag (to simplify some big boolean expressions)
@@ -438,13 +438,20 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	// we need a name, so bailout if none is provided
 	if !p.consume(token.IDENTIFIER) {
-		return &ast.BadDecl{
-			Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, ddperror.LEVEL_ERROR, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.module.FileName),
-			Tok: *p.peek(),
-			Mod: p.module,
+		return &ast.DeclStmt{
+			Decl: &ast.BadDecl{
+				Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, ddperror.LEVEL_ERROR, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.module.FileName),
+				Tok: *p.peek(),
+				Mod: p.module,
+			},
 		}
 	}
 	funcName := p.previous()
+
+	// definition of forward decl
+	if p.matchAny(token.MACHT) {
+		return p.funcDefinition(begin, funcName)
+	}
 
 	// early error report if the name is already used
 	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed {
@@ -473,6 +480,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
 	}
 
+	isForwardDecl := false
 	bodyStart := -1
 	definedIn := &token.Token{Type: token.ILLEGAL}
 	if p.matchAny(token.MACHT) {
@@ -482,6 +490,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
 			p.advance()
 		}
+	} else if p.matchAny(token.WIRD) {
+		validate(p.consume(token.SPÄTER, token.DEFINIERT))
+		isForwardDecl = true
 	} else {
 		validate(p.consume(token.IST, token.IN, token.STRING, token.DEFINIERT))
 		definedIn = p.peekN(-2)
@@ -514,10 +525,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 
 	if !valid {
 		p.cur = aliasEnd
-		return &ast.BadDecl{
-			Err: p.lastError,
-			Tok: *begin,
-			Mod: p.module,
+		return &ast.DeclStmt{
+			Decl: &ast.BadDecl{
+				Err: p.lastError,
+				Tok: *begin,
+				Mod: p.module,
+			},
 		}
 	}
 
@@ -533,6 +546,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 		ReturnType:      returnType,
 		ReturnTypeRange: token.NewRange(returnTypeStart, returnTypeEnd),
 		Body:            nil,
+		Def:             nil,
 		ExternFile:      *definedIn,
 		Operator:        operator,
 		Aliases:         funcAliases,
@@ -544,70 +558,117 @@ func (p *parser) funcDeclaration(startDepth int) ast.Declaration {
 	}
 
 	// parse the body after the aliases to enable recursion
-	var body *ast.BlockStmt = nil
 	if bodyStart != -1 {
 		p.cur = bodyStart // go back to the body
-		p.currentFunction = decl
-
-		bodyTable := p.newScope() // temporary symbolTable for the function parameters
-		globalScope := bodyTable.Enclosing
-		// insert the name of the current function
-		if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
-			p.module.PublicDecls[decl.Name()] = decl
-		}
-		// add the parameters to the table
-		for i, l := 0, len(params); i < l; i++ {
-			name := params[i].Name.Literal
-			if !p.paramNameAllowed(&params[i].Name) { // check that the parameter name is not already used
-				name = "$" + name
-			}
-
-			bodyTable.InsertDecl(name,
-				&ast.VarDecl{
-					NameTok:    params[i].Name,
-					IsPublic:   false,
-					Mod:        p.module,
-					Type:       params[i].Type.Type,
-					Range:      token.NewRange(&params[i].Name, &params[i].Name),
-					CommentTok: params[i].Comment,
-				},
-			)
-		}
-		body = p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
-		decl.Body = body
-
-		// check that the function has a return statement if it needs one
-		if !ddptypes.IsVoid(returnType) { // only if the function does not return void
-			if len(body.Statements) < 1 { // at least the return statement is needed
-				perr(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN)
-			} else {
-				// the last statement must be a return statement or a todo statement
-				lastStmt := body.Statements[len(body.Statements)-1]
-				switch lastStmt.(type) {
-				case *ast.ReturnStmt, *ast.TodoStmt:
-				default:
-					perr(ddperror.SEM_MISSING_RETURN, token.NewRange(p.previous(), p.previous()), ddperror.MSG_MISSING_RETURN)
-				}
-			}
-		}
+		decl.Body = p.parseFunctionBody(decl)
 	} else { // the function is defined in an extern file
 		// insert the name of the current function
 		if existed := p.scope().InsertDecl(funcName.Literal, decl); !existed && decl.IsPublic {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
-		p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{} // add the extern declaration
-	}
 
+		if !isForwardDecl {
+			// add the extern declaration
+			p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{}
+		}
+	}
 	// operator overloads are not recursive, so insert this
 	// after the body has been parsed
 	if operator != nil {
 		p.insertOperatorOverload(decl)
 	}
 
-	p.currentFunction = nil
 	p.cur = aliasEnd // go back to the end of the function to continue parsing
 
-	return decl
+	return &ast.DeclStmt{Decl: decl}
+}
+
+func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
+	p.currentFunction = decl
+	bodyTable := p.newScope() // temporary symbolTable for the function parameters
+	globalScope := bodyTable.Enclosing
+	// insert the name of the current function
+	if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
+		p.module.PublicDecls[decl.Name()] = decl
+	}
+	// add the parameters to the table
+	for i := range decl.Parameters {
+		name := decl.Parameters[i].Name.Literal
+		if !p.paramNameAllowed(&decl.Parameters[i].Name) { // check that the parameter name is not already used
+			name = "$" + name
+		}
+
+		bodyTable.InsertDecl(name,
+			&ast.VarDecl{
+				NameTok:    decl.Parameters[i].Name,
+				IsPublic:   false,
+				Mod:        p.module,
+				Type:       decl.Parameters[i].Type.Type,
+				Range:      token.NewRange(&decl.Parameters[i].Name, &decl.Parameters[i].Name),
+				CommentTok: decl.Parameters[i].Comment,
+			},
+		)
+	}
+	body := p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
+
+	// check that the function has a return statement if it needs one
+	if !ddptypes.IsVoid(decl.ReturnType) { // only if the function does not return void
+		if len(body.Statements) < 1 { // at least the return statement is needed
+			p.err(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN)
+		} else {
+			// the last statement must be a return statement or a todo statement
+			lastStmt := body.Statements[len(body.Statements)-1]
+			switch lastStmt.(type) {
+			case *ast.ReturnStmt, *ast.TodoStmt:
+			default:
+				p.err(ddperror.SEM_MISSING_RETURN, token.NewRange(p.previous(), p.previous()), ddperror.MSG_MISSING_RETURN)
+			}
+		}
+	}
+
+	p.currentFunction = nil
+	return body
+}
+
+func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
+	decl := p.getDeclForDefinition(nameTok)
+	if decl == nil {
+		return nil
+	}
+
+	if !ast.IsGlobalScope(p.scope()) {
+		p.err(ddperror.SEM_NON_GLOBAL_FUNCTION, p.previous().Range, "Funktionen müssen global definiert werden")
+		return nil
+	}
+
+	p.consume(token.COLON)
+
+	body := p.parseFunctionBody(decl)
+
+	return &ast.FuncDef{
+		Range: token.NewRange(begin, p.previous()),
+		Tok:   *begin,
+		Func:  decl,
+		Body:  body,
+	}
+}
+
+// gets the function decl for a definition and reports all errors in the process
+// returns nil in case of error
+func (p *parser) getDeclForDefinition(nameTok *token.Token) *ast.FuncDecl {
+	if decl, exists, _ := p.scope().LookupDecl(nameTok.Literal); !exists {
+		p.err(ddperror.SEM_NAME_UNDEFINED, nameTok.Range, fmt.Sprintf("Es wurde noch keine Funktion mit dem Namen '%s' deklariert", nameTok.Literal))
+	} else if funcDecl, ok := decl.(*ast.FuncDecl); !ok {
+		p.err(ddperror.SEM_BAD_NAME_CONTEXT, nameTok.Range, fmt.Sprintf("Der Name '%s' steht für eine Variable oder Struktur und nicht für eine Funktion", nameTok.Literal))
+	} else if funcDecl.Mod != p.module {
+		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, fmt.Sprintf("Es können nur Funktionen aus demselben Modul definiert werden"))
+	} else if funcDecl.Body != nil || funcDecl.ExternFile.Type != token.ILLEGAL || funcDecl.Def != nil {
+		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert"))
+	} else {
+		return funcDecl
+	}
+
+	return nil
 }
 
 func isAliasParam(t token.Token) bool   { return t.Type == token.ALIAS_PARAMETER } // helper to check for parameters

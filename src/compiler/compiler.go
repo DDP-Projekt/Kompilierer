@@ -554,65 +554,82 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(decl) {
 		irFunc.Linkage = enum.LinkageExternal
-	} else {
-		fun, block := c.cf, c.cbb // safe the state before the function body
-		c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
-		c.cfscp = c.scp
-
-		// we want to skip the possible return-parameter
-		if hasReturnParam {
-			params = params[1:]
-		}
-		// passed arguments are immutible (llvm uses ssa registers) so we declare them as local variables
-		// the caller has to take care of possible deep-copies
-		for i := range params {
-			irType := c.toIrType(decl.Parameters[i].Type.Type)
-			if decl.Parameters[i].Type.IsReference {
-				// references are implemented similar to name-shadowing
-				// they basically just get another name in the function scope, which
-				// refers to the same variable allocation
-				c.scp.addVar(params[i].Name(), params[i], irType, true)
-			} else if !irType.IsPrimitive() { // strings and lists need special handling
-				// add the local variable for the parameter
-				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
-				c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
-			} else { // primitive types don't need any special handling
-				v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
-				c.cbb.NewStore(params[i], v)
-			}
-		}
-
-		// modified VisitBlockStmt
-		c.scp = newScope(c.scp) // a block gets its own scope
-		toplevelReturn := false
-		for _, stmt := range decl.Body.Statements {
-			c.visitNode(stmt)
-			// on toplevel return statements, ignore anything that follows
-			if _, ok := stmt.(*ast.ReturnStmt); ok {
-				toplevelReturn = true
-				break
-			}
-		}
-		// free the local variables of the function
-		if toplevelReturn {
-			c.scp = c.scp.enclosing
-		} else {
-			c.scp = c.exitScope(c.scp)
-		}
-
-		if c.cbb.Term == nil {
-			c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
-		}
-
-		// free the parameters of the function
-		if toplevelReturn {
-			c.scp = c.scp.enclosing
-		} else {
-			c.scp = c.exitFuncScope(decl)
-		}
-		c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
+	} else if !ast.IsForwardDecl(decl) {
+		c.defineFuncBody(irFunc, hasReturnParam, params, decl)
 	}
 	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
+	fun := c.functions[c.mangledNameDecl(def.Func)] // retreive the function (the resolver took care that it is present)
+	retType := c.toIrType(def.Func.ReturnType)      // get the llvm type
+
+	c.defineFuncBody(fun.irFunc, !retType.IsPrimitive(), fun.irFunc.Params, def.Func)
+	return ast.VisitRecurse
+}
+
+// helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
+func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params []*ir.Param, decl *ast.FuncDecl) {
+	fun, block := c.cf, c.cbb // safe the state before the function body
+	c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
+	c.cfscp = c.scp
+
+	// we want to skip the possible return-parameter
+	if hasReturnParam {
+		params = params[1:]
+	}
+	// passed arguments are immutable (llvm uses ssa registers) so we declare them as local variables
+	// the caller has to take care of possible deep-copies
+	for i := range params {
+		irType := c.toIrType(decl.Parameters[i].Type.Type)
+		if decl.Parameters[i].Type.IsReference {
+			// references are implemented similar to name-shadowing
+			// they basically just get another name in the function scope, which
+			// refers to the same variable allocation
+			c.scp.addVar(params[i].Name(), params[i], irType, true)
+		} else if !irType.IsPrimitive() { // strings and lists need special handling
+			// add the local variable for the parameter
+			v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+			c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
+		} else { // primitive types don't need any special handling
+			v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+			c.cbb.NewStore(params[i], v)
+		}
+	}
+
+	// modified VisitBlockStmt
+	c.scp = newScope(c.scp) // a block gets its own scope
+	toplevelReturn := false
+	body := decl.Body
+	if ast.IsForwardDecl(decl) {
+		body = decl.Def.Body
+	}
+	for _, stmt := range body.Statements {
+		c.visitNode(stmt)
+		// on toplevel return statements, ignore anything that follows
+		if _, ok := stmt.(*ast.ReturnStmt); ok {
+			toplevelReturn = true
+			break
+		}
+	}
+	// free the local variables of the function
+	if toplevelReturn {
+		c.scp = c.scp.enclosing
+	} else {
+		c.scp = c.exitScope(c.scp)
+	}
+
+	if c.cbb.Term == nil {
+		c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
+	}
+
+	// free the parameters of the function
+	if toplevelReturn {
+		c.scp = c.scp.enclosing
+	} else {
+		c.scp = c.exitFuncScope(decl)
+	}
+	c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {

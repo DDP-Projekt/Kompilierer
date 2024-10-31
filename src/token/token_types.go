@@ -152,6 +152,8 @@ const (
 	OPERATOR
 	VARIABLE
 	VARIABLEN
+	WIRD
+	SPÄTER
 
 	DOT     // .
 	COMMA   // ,
@@ -313,6 +315,8 @@ var tokenStrings = [...]string{
 	VARIABLEN:     "Variablen",
 	KEIN:          "kein",
 	KEINE:         "keine",
+	WIRD:          "wird",
+	SPÄTER:        "später",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -478,6 +482,9 @@ var KeywordMap = map[string]TokenType{
 	"Variablen":      VARIABLEN,
 	"kein":           KEIN,
 	"keine":          KEINE,
+	"wird":           WIRD,
+	"später":         SPÄTER,
+	"spaeter":        SPÄTER,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
