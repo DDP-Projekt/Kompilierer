@@ -298,7 +298,7 @@ func (p *parser) validateForwardDecls() {
 		if decl.Body == nil && decl.ExternFile.Type == token.ILLEGAL && decl.Def == nil {
 			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
 				decl.NameTok.Range,
-				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert"))
+				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert", decl.Name()))
 			p.panicMode = false
 		}
 		return ast.VisitSkipChildren
