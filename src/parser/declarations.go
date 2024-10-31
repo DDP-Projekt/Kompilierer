@@ -661,9 +661,9 @@ func (p *parser) getDeclForDefinition(nameTok *token.Token) *ast.FuncDecl {
 	} else if funcDecl, ok := decl.(*ast.FuncDecl); !ok {
 		p.err(ddperror.SEM_BAD_NAME_CONTEXT, nameTok.Range, fmt.Sprintf("Der Name '%s' steht für eine Variable oder Struktur und nicht für eine Funktion", nameTok.Literal))
 	} else if funcDecl.Mod != p.module {
-		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, fmt.Sprintf("Es können nur Funktionen aus demselben Modul definiert werden"))
+		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, "Es können nur Funktionen aus demselben Modul definiert werden")
 	} else if funcDecl.Body != nil || funcDecl.ExternFile.Type != token.ILLEGAL || funcDecl.Def != nil {
-		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert"))
+		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert", nameTok.Literal))
 	} else {
 		return funcDecl
 	}
