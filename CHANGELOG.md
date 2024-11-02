@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+## v0.5.0-alpha
+
 - [Added] Vorwärts Deklarationen
 - [Added] _Ref Versionen für einige Duden/Listen und Duden/Texte Funktionen
 - [Changed] Iterierenden Schleifen über Texte haben nun eine Zeitkomplexität von O(n) (anstatt O(n^2))
