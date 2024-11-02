@@ -106,19 +106,19 @@ jobs:
           body_path: split_01
           draft: true
 
-      - name: Upload Asset 1
+      - name: Upload Asset Windows without MingW
         uses: shogo82148/actions-upload-release-asset@v1.7.5
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: Windows-Release/DDP-*-no-mingw.zip
 
-      - name: Upload Asset 2
+      - name: Upload Asset Windows
         uses: shogo82148/actions-upload-release-asset@v1.7.5
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: Windows-Release/DDP-*amd64.zip
 
-      - name: Upload Asset 3
+      - name: Upload Asset Linux
         uses: shogo82148/actions-upload-release-asset@v1.7.5
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
