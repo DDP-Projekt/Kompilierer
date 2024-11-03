@@ -95,6 +95,10 @@ func DecompressFolder(from, to string) error {
 				return err
 			}
 
+			if strings.Contains(header.Name, "..") {
+				return fmt.Errorf("archive contains '..' in path Name: %s", header.Name)
+			}
+
 			path := filepath.Join(to, header.Name)
 
 			switch header.Typeflag {
