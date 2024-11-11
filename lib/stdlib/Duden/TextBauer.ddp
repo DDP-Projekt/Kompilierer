@@ -8,12 +8,12 @@ und erstellen sie so:
 	"ein neuer TextBauer"
 
 Die Funktion Erhoehe_Kapazitaet mit den Parametern bauer und neue_kapa vom Typ TextBauer Referenz und Zahl, gibt nichts zurück,
-ist in "TextBauer.ddp.c" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Passe die Kapazität von <bauer> auf <neue_kapa> an"
 
 Die Funktion TextBauer_Buchstabe_Anfuegen_C mit den Parametern bauer und b vom Typ TextBauer Referenz und Buchstabe, gibt nichts zurück,
-ist in "TextBauer.ddp.c" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Füge <b> effizient an <bauer> an"
 
@@ -61,5 +61,5 @@ Und kann so benutzt werden:
 	"füge <text> an <bauer> an"
 
 Die öffentliche Funktion TextBauer_Als_Text mit dem Parameter bauer vom Typ TextBauer Referenz, gibt einen Text zurück,
-ist in "TextBauer.ddp.c" definiert
+ist in "libddpstdlib.a" definiert
 Und überlädt den "als" Operator.

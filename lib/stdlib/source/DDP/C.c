@@ -9,14 +9,14 @@ void C_Memcpy(pointer dest, pointer src, ddpint size) {
 	memcpy((void *)dest, (void *)src, (size_t)size);
 }
 
-typedef pointer C_String;
+typedef pointer CString;
 
-C_String Text_Zu_C_String(ddpstringref t) {
-	return (C_String)t->str;
+CString Text_Zu_CString(ddpstringref t) {
+	return (CString)t->str;
 }
 
 pointer Text_Zu_Zeiger(ddpstringref t) {
-	return (C_String)t;
+	return (CString)t;
 }
 
 void Erstelle_Byte_Puffer(ddpstring *ret, ddpint n) {

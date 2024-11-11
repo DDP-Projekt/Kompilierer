@@ -13,7 +13,7 @@ Und kann so benutzt werden:
 
 [ Kopiert n Bytes vom Buffer src nach dest (entspricht memcpy() aus der C-stdlib) ]
 Die öffentliche Funktion C_Memcpy mit den Parametern dest, src und n vom Typ Zeiger, Zeiger und Zahl, gibt nichts zurück,
-ist in "libddpstdlib.c" definiert
+ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Kopiere <n> Bytes von <src> nach <dest>" oder
 	"kopiere <n> Bytes von <src> nach <dest>"
