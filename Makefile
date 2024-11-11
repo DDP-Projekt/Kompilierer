@@ -68,18 +68,18 @@ all: $(OUT_DIR) kddp runtime stdlib ddp-setup ## compiles kdddp, the runtime, th
 
 debug: $(OUT_DIR) kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
 
-kddp: ## compiles kddp into build/DDP/bin/
+kddp: $(OUT_DIR) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
 	cd $(CMD_DIR) ; '$(MAKE)' kddp
 	$(CP) $(CMD_DIR)kddp/build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
-ddp-setup: ## compiles ddp-setup into build/DDP/bin/
+ddp-setup: $(OUT_DIR) ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
 	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
-stdlib: ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
+stdlib: $(OUT_DIR) ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
@@ -94,7 +94,7 @@ stdlib: ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug: ## same as stdlib but will print debugging information
+stdlib-debug: $(OUT_DIR) ## same as stdlib but will print debugging information
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
@@ -109,7 +109,7 @@ stdlib-debug: ## same as stdlib but will print debugging information
 	fi
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-runtime: ## compiles the runtime into build/DDP/lib/stdlib
+runtime: $(OUT_DIR) ## compiles the runtime into build/DDP/lib/stdlib
 	@echo "building the ddp-runtime"
 	cd $(RUN_DIR) ; '$(MAKE)'
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
@@ -118,7 +118,7 @@ runtime: ## compiles the runtime into build/DDP/lib/stdlib
 	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
 	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-runtime-debug: ## same as runtime but prints debugging information
+runtime-debug: $(OUT_DIR) ## same as runtime but prints debugging information
 	@echo "building the ddp-runtime in debug mode"
 	cd $(RUN_DIR) ; '$(MAKE)' debug
 	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
