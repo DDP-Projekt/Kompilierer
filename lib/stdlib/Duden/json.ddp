@@ -1,9 +1,9 @@
-Binde "hash_tabelle" ein.
+Binde "Duden/HashTabelle" ein.
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Listen" ein.
-Binde "TextBauer" ein.
+Binde "Duden/TextBauer" ein.
 Binde "Duden/Ausgabe" ein.
 
 Wir nennen eine Variable oeffentlich auch einen JsonWert.
@@ -330,7 +330,7 @@ Die oeffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 			Wenn escaped ungleich "" ist, Füge escaped an bauer an.
 			Sonst Füge b an bauer an.
 		Füge '"' an bauer an.
-		Gib den Text von bauer zurück.
+		Gib bauer als Text zurück.
 	Wenn json eine Kommazahl ist, dann:
 	 	Der Text t ist json als Kommazahl als Text.
 		Die Zahlen Liste i ist alle Indizes vom Subtext "," in t.	
@@ -354,7 +354,7 @@ Die oeffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 			Füge (den Json Wert (Wert von e) als Text) an bauer an.
 			Speichere wahr in hatte_eintrag.
 		Füge '}' an bauer an.
-		Gib den Text von bauer zurück.
+		Gib bauer als Text zurück.
 	Wenn json eine JsonListe ist, dann:
 		Der TextBauer bauer ist ein neuer TextBauer.
 		Füge '[' an bauer an.
@@ -365,7 +365,7 @@ Die oeffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 			Füge (den Json Wert element als Text) an bauer an.
 			Speichere wahr in hatte_eintrag.
 		Füge ']' an bauer an.
-		Gib den Text von bauer zurück.
+		Gib bauer als Text zurück.
 
 	Gib "" zurück.
 Und kann so benutzt werden:
@@ -375,4 +375,6 @@ Und kann so benutzt werden:
 Die oeffentliche Funktion JsonObjekt_Zu_Text_Operator mit dem Parameter json vom Typ JsonObjekt Referenz, gibt einen Text zurück, macht:
 	Der JsonWert jsonWert ist json als JsonWert.
 	Gib den Json Wert jsonWert als Text zurück.
-Und überlädt den "als" Operator.
+Und kann so benutzt werden:
+	"dem Json Object <json> als Text",
+	"das Json Object <json> als Text"
