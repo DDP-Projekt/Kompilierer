@@ -3,7 +3,7 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 PCRE2_DIR = ../external/pcre2_build/
 LIBAR_DIR = ../external/libarchive/libarchive/
 
-.PHONY = all clean debug
+.PHONY: all clean debug
 .DEFAULT_GOAL = all
 
 CC = gcc
