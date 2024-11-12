@@ -1,0 +1,59 @@
+Die Funktion Archiv_Aus_Ordner mit den Parametern alg, ordnerPfad und arPfad vom Typ Text, Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke den Ordner <ordnerPfad> zu einem neuen Archiv mit dem <alg> Algorithmus bei <arPfad>"
+
+Die Funktion Archiv_Aus_Datei mit den Parametern alg, dateiPfad und arPfad vom Typ Text, Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke die Datei <dateiPfad> zu einem neuen Archiv mit dem <alg> Algorithmus bei <arPfad>"
+
+Die öffentliche Funktion Archiv_Entpacken_Ordner mit den Parametern arPfad und ordnerPfad vom Typ Text und Text, gibt nichts zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Entpacke das Archiv <arPfad> in den Ordner <ordnerPfad>"
+
+Die öffentliche Funktion Archiv_Entpacken_Datei mit den Parametern dateiPfad, arPfad und pfadZu vom Typ Text, Text und Text, gibt nichts zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Entpacke die Datei <dateiPfad> vom Archiv <arPfad> nach <pfadZu>"
+
+Die öffentliche Funktion Archiv_Ordner_Hinzufuegen mit den Parametern ordnerPfad und arPfad vom Typ Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke den Ordner <ordnerPfad> und füge es zum Archiv <arPfad> hinzu"
+
+Die öffentliche Funktion Archiv_Datei_Hinzufuegen mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke die Datei <dateiPfad> und füge es zum Archiv <arPfad> hinzu"
+
+Die öffentliche Funktion Archiv_Ordner_Entfernen mit den Parametern ordnerPfad und arPfad vom Typ Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Entferne den Ordner <ordnerPfad> vom Archiv <arPfad>"
+
+Die öffentliche Funktion Archiv_Dateien_Entfernen mit den Parametern dateiPfade und arPfad vom Typ Text Liste und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Entferne die Dateien <dateiPfade> vom Archiv <arPfad>"
+
+Die öffentliche Funktion Archiv_Datei_Entfernen mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt nichts zurück, macht:
+	Entferne die Dateien (eine Liste, die aus dateiPfad besteht) vom Archiv arPfad.
+Und kann so benutzt werden:
+	"Entferne die Datei <dateiPfad> vom Archiv <arPfad>"
+
+Die öffentliche Funktion Archiv_Datei_Groesse_Komp mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt eine Zahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Die komprimierte Dateigröße in Bytes von <dateiPfad> im Archiv <arPfad>"
+
+Die öffentliche Funktion Archiv_Datei_Groesse_Unkomp mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt eine Zahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Die unkomprimierte Dateigröße in Bytes von <dateiPfad> im Archiv <arPfad>"
+
+Die öffentliche Funktion Archiv_Anzahl_Dateien mit dem Parameter arPfad vom Typ Text, gibt eine Zahl zurück, 
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Die Anzahl der Dateien im Archiv <arPfad>"
