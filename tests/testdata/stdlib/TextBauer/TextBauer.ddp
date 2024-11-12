@@ -1,0 +1,10 @@
+Binde "Duden/TextBauer" ein.
+Binde "Duden/Ausgabe" ein.
+
+Der TextBauer b ist ein neuer TextBauer.
+
+Füge "hallo Welt" an b an.
+
+Schreibe (b als Text) auf eine Zeile.
+Füge '\n' an b an.
+Schreibe (b als Text) auf eine Zeile.

@@ -15,7 +15,8 @@ Der öffentliche JsonWert JSON_NULL ist der Standardwert von einer Variable.
 Die öffentliche Funktion Neues_JsonObjekt gibt ein JsonObjekt zurück, macht:
 	Gib eine leere HashTabelle zurück.
 Und kann so benutzt werden:
-	"ein neues JsonObjekt"
+	"ein neues JsonObjekt" oder
+	"ein leeres JsonObjekt"
 
 Die öffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt eine Zahl zurück, macht:
 	Die Zahl l ist die Länge von hex.
@@ -305,13 +306,16 @@ Die öffentliche Funktion Parse_Json_Ref mit dem Parameter json vom Typ Text Ref
 	Die Buchstaben Liste json_buchstaben ist die Buchstaben in json.
 	Gib den nächsten Json Wert in json_buchstaben ab i zurück.
 Und kann so benutzt werden:
-	"der Json Wert in <json>",
-	"den Json Wert in <json>"
+	"der JsonWert in <json>",
+	"den JsonWert in <json>",
+	"dem JsonWert in <json>"
 
 Die öffentliche Funktion Parse_Json mit dem Parameter json vom Typ Text, gibt einen JsonWert zurück, macht:
-	Gib den Json Wert in json zurück.
+	Gib den JsonWert in json zurück.
 Und kann so benutzt werden:
-	"der Json Wert in <json>"
+	"der JsonWert in <json>",
+	"den JsonWert in <json>",
+	"dem JsonWert in <json>"
 
 Die Funktion Json_Text_Escape mit dem Parameter b vom Typ Buchstabe, gibt einen Text zurück, macht:
 	Wenn b gleich '"' ist, dann:
@@ -366,7 +370,7 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 			Füge ((Schlüssel von e) als Text) an bauer an.
 			Füge '"' an bauer an.
 			Füge ':' an bauer an.
-			Füge (den Json Wert (Wert von e) als Text) an bauer an.
+			Füge (den JsonWert (Wert von e) als Text) an bauer an.
 			Speichere wahr in hatte_eintrag.
 		Füge '}' an bauer an.
 		Gib bauer als Text zurück.
@@ -377,19 +381,20 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 		Für jeden JsonWert element in json als JsonListe, mache:
 			Wenn hatte_eintrag, dann:
 				Füge ',' an bauer an.
-			Füge (den Json Wert element als Text) an bauer an.
+			Füge (den JsonWert element als Text) an bauer an.
 			Speichere wahr in hatte_eintrag.
 		Füge ']' an bauer an.
 		Gib bauer als Text zurück.
 
 	Gib "" zurück.
 Und kann so benutzt werden:
-	"den Json Wert <json> als Text",
-	"der Json Wert <json> als Text"
+	"den JsonWert <json> als Text",
+	"der JsonWert <json> als Text",
+	"dem JsonWert <json> als Text"
 
 Die öffentliche Funktion JsonObjekt_Zu_Text_Operator mit dem Parameter json vom Typ JsonObjekt Referenz, gibt einen Text zurück, macht:
 	Der JsonWert jsonWert ist json als JsonWert.
-	Gib den Json Wert jsonWert als Text zurück.
+	Gib den JsonWert jsonWert als Text zurück.
 Und kann so benutzt werden:
-	"dem Json Object <json> als Text",
-	"das Json Object <json> als Text"
+	"dem JsonObjekt <json> als Text",
+	"das JsonObjekt <json> als Text"
