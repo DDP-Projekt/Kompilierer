@@ -194,7 +194,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 			c.visitNode(stmt)
 		} else {
 			switch stmt.(type) {
-			case *ast.DeclStmt, *ast.ImportStmt:
+			case *ast.DeclStmt, *ast.ImportStmt, *ast.FuncDef:
 				c.visitNode(stmt)
 			default:
 				// in imports we only visit declarations and ignore other top-level statements
