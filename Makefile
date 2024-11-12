@@ -150,6 +150,9 @@ clean-outdir: ## deletes build/DDP/
 	@echo "deleting output directory"
 	$(RM) $(OUT_DIR)
 
+clean-all: clean
+	cd $(STD_DIR) ; $(MAKE) clean-all
+
 checkout-llvm: ## clones the llvm-project submodule
 # clone the submodule
 	@echo "cloning the llvm repo"
