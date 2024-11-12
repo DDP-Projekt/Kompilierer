@@ -4,7 +4,7 @@
 	ignore = dirty
 	shallow = true
 [submodule "lib/stdlib/pcre2"]
-	path = lib/stdlib/pcre2
+	path = lib/external/pcre2
 	url = https://github.com/PCRE2Project/pcre2.git
 	ignore = dirty
 	shallow = true
