@@ -18,7 +18,6 @@ PCRE2_DIR = $(EXT_DIR)pcre2_build/
 PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
 PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
 LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
-LIBAR_HEADERS = $(wildcard $(LIBAR_DIR)*.h)
 LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
@@ -142,7 +141,7 @@ external: $(OUT_DIR)
 	$(CP) $(EXT_DIR)$(EXT_BIN_LIBAR) $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
 	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
 	@echo copying LIBAR_HEADERS to $(LIBAR_HEADERS_OUT_DIR)
-	$(CP) $(LIBAR_HEADERS) $(LIBAR_HEADERS_OUT_DIR)
+	$(CP) $(LIBAR_DIR)*.h $(LIBAR_HEADERS_OUT_DIR) # evaluate LIBAR_DIR/*.h here, as the directory might not have been checkout at the start of the Makefile
 
 $(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
 	@echo "creating output directories"
