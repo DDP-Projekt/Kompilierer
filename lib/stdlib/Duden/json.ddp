@@ -6,21 +6,21 @@ Binde "Duden/Listen" ein.
 Binde "Duden/TextBauer" ein.
 Binde "Duden/Ausgabe" ein.
 
-Wir nennen eine Variable oeffentlich auch einen JsonWert.
-Wir nennen eine HashTabelle oeffentlich auch ein JsonObjekt.
-Wir nennen eine Variablen Liste oeffentlich auch eine JsonListe.
+Wir nennen eine Variable öffentlich auch einen JsonWert.
+Wir nennen eine HashTabelle öffentlich auch ein JsonObjekt.
+Wir nennen eine JsonWert Liste öffentlich auch eine JsonListe.
 
-Der oeffentliche JsonWert JSON_NULL ist der Standardwert von einer Variable.
+Der öffentliche JsonWert JSON_NULL ist der Standardwert von einer Variable.
 
-Die oeffentliche Funktion Neues_JsonObjekt gibt ein JsonObjekt zurück, macht:
+Die öffentliche Funktion Neues_JsonObjekt gibt ein JsonObjekt zurück, macht:
 	Gib eine leere HashTabelle zurück.
 Und kann so benutzt werden:
 	"ein neues JsonObjekt"
 
-Die oeffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt eine Zahl zurück, macht:
 	Die Zahl l ist die Länge von hex.
 	Die Zahl ergebnis ist 0.
-	Für jede Zahl i von die Länge von hex bis 1 mit Schrittgroesse -1, mache:
+	Für jede Zahl i von die Länge von hex bis 1 mit Schrittgröße -1, mache:
 		Die Zahl bz ist (hex an der Stelle i) als Zahl.
 		Wenn bz zwischen 96 und 103 ist, verringere bz um 87.
 		Wenn aber bz zwischen 47 und 58 ist, verringere bz um 48.
@@ -29,7 +29,7 @@ Die oeffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt e
 			Melde den Fehler "Ungültige Hexadezimalzahl".
 			Gib 0 zurück.
 
-		Erhoehe ergebnis um (bz mal 16 hoch (l minus i)) als Zahl.
+		Erhöhe ergebnis um (bz mal 16 hoch (l minus i)) als Zahl.
 
 	Gib ergebnis zurück.
 Und kann so benutzt werden:
@@ -53,11 +53,11 @@ Die Funktion Zu_Escape_Sequenz mit den Parametern json und lauf_index vom Typ Bu
 	Wenn b gleich 't' ist, dann:
 		Gib '\t' zurück.
 	Wenn b gleich 'u' ist, dann:
-	 	Wenn lauf_index plus 4 groesser als die Länge von json ist, dann:
+	 	Wenn lauf_index plus 4 größer als die Länge von json ist, dann:
 			Melde den Fehler "invalide Escape Sequenz".
 			Gib 'u' zurück.
 		Der Text hex ist (json im Bereich von (lauf_index plus 1) bis (lauf_index plus 4)) aneinandergehängt.
-		Erhoehe lauf_index um 4.
+		Erhöhe lauf_index um 4.
 		Gib die Hexadezimalzahl hex als Buchstabe zurück.
 	Sonst:
 		Melde den Fehler "invalide Escape Sequenz".
@@ -73,7 +73,7 @@ Die Funktion Parse_Json_String mit den Parametern json und lauf_index vom Typ Bu
 
 	Der Text ergebnis ist "".
 
-	Erhoehe lauf_index um 1.
+	Erhöhe lauf_index um 1.
 	Die Zahl letzter_index ist lauf_index.
 	Solange json an der Stelle lauf_index ungleich '"' ist, mache:
 		Wenn lauf_index gleich die Länge von json ist, dann:
@@ -83,7 +83,7 @@ Die Funktion Parse_Json_String mit den Parametern json und lauf_index vom Typ Bu
 		  	Wenn lauf_index ungleich letzter_index ist, dann:
 		 		Füge ((json im Bereich von letzter_index bis (lauf_index minus 1)) aneinandergehängt) an ergebnis an.
 
-			Erhoehe lauf_index um 1.
+			Erhöhe lauf_index um 1.
 			Wenn lauf_index gleich die Länge von json ist, dann:
 				Melde den Fehler "Ein json String muss mit einem Anführungszeichen enden".
 				Gib "" zurück.	
@@ -91,18 +91,18 @@ Die Funktion Parse_Json_String mit den Parametern json und lauf_index vom Typ Bu
 			Speichere lauf_index plus 1 in letzter_index.
 			Wenn es dabei einen Fehler gab, dann:
 				Gib "" zurück.
-		Erhoehe lauf_index um 1.
+		Erhöhe lauf_index um 1.
 	
 	Wenn lauf_index ungleich letzter_index ist, dann:
 		Füge ((json im Bereich von letzter_index bis (lauf_index minus 1)) aneinandergehängt) an ergebnis an.
-	Erhoehe lauf_index um 1. [Anführungszeichen überspringen]
+	Erhöhe lauf_index um 1. [Anführungszeichen überspringen]
 	Gib ergebnis zurück.
 Und kann so benutzt werden:
 	"den nächste Json String in <json> ab <lauf_index>",
 	"der nächste Json String in <json> ab <lauf_index>"
 
 Die Funktion Nächstes_Json_Zeichen mit den Parametern json, lauf_index und l vom Typ Buchstaben Listen Referenz, Zahlen Referenz und Zahl, gibt einen Buchstaben zurück, macht:
-	Wenn lauf_index groesser als l ist, dann:
+	Wenn lauf_index größer als l ist, dann:
 		Gib 0 als Buchstabe zurück.
 	Gib json an der Stelle lauf_index zurück.
 Und kann so benutzt werden:
@@ -117,32 +117,32 @@ Die Funktion Parse_Json_Nummer mit den Parametern json und lauf_index vom Typ Bu
 		Melde den Fehler "Eine json Nummer muss mit einer Zahl beginnen".
 		Gib JSON_NULL zurück.
 
-	Erhoehe lauf_index um 1.
+	Erhöhe lauf_index um 1.
 	Wenn ist_negativ und (das nächste Zeichen in json ab lauf_index mit Länge l) keine Ziffer ist, dann:
 		Melde den Fehler "Eine json Nummer muss eine Zahl nach dem '-' haben".
 		Gib JSON_NULL zurück.
 
-	Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhoehe lauf_index um 1.	
+	Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhöhe lauf_index um 1.	
 
 	Der Wahrheitswert ist_kommazahl ist falsch.
 	Die Zahl punkt_index ist -1.
 	Wenn (das nächste Zeichen in json ab lauf_index mit Länge l) gleich '.' ist, dann:
 		Speichere wahr in ist_kommazahl.
 		Speichere lauf_index in punkt_index.
-		Erhoehe lauf_index um 1.
+		Erhöhe lauf_index um 1.
 		Wenn (das nächste Zeichen in json ab lauf_index mit Länge l) keine Ziffer ist, dann:
 			Melde den Fehler "Ein json Nummer muss eine Zahl nach dem Punkt haben".
 			Gib JSON_NULL zurück.
-		Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhoehe lauf_index um 1.
+		Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhöhe lauf_index um 1.
 
 	Wenn (das nächste Zeichen in json ab lauf_index mit Länge l) gleich 'e' ist oder (das nächste Zeichen in json ab lauf_index mit Länge l) gleich 'E' ist, dann:
-		Erhoehe lauf_index um 1.
+		Erhöhe lauf_index um 1.
 		Wenn (das nächste Zeichen in json ab lauf_index mit Länge l) gleich '+' ist oder (das nächste Zeichen in json ab lauf_index mit Länge l) gleich '-' ist, dann:
-			Erhoehe lauf_index um 1.
+			Erhöhe lauf_index um 1.
 		Wenn (das nächste Zeichen in json ab lauf_index mit Länge l) keine Ziffer ist, dann:
 			Melde den Fehler "Ein json Nummer muss eine Zahl nach dem e haben".
 			Gib JSON_NULL zurück.
-		Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhoehe lauf_index um 1.
+		Solange (das nächste Zeichen in json ab lauf_index mit Länge l) eine Ziffer ist, erhöhe lauf_index um 1.
 
 	Wenn nicht ist_kommazahl, dann:
 		Gib ((json im Bereich von start_index bis (lauf_index minus 1)) aneinandergehängt) als Zahl zurück.
@@ -158,7 +158,7 @@ Die Funktion Überspringe_Leerzeichen mit den Parametern json und start_index vo
 	Die Zahl lauf_index ist start_index.
 	Die Zahl l ist die Länge von json.
 	Solange lauf_index kleiner als, oder l ist und (json an der Stelle lauf_index gleich ' ' ist oder json an der Stelle lauf_index gleich '\n' ist oder json an der Stelle lauf_index gleich '\r' ist oder json an der Stelle lauf_index gleich '\t' ist), mache:
-		Erhoehe lauf_index um 1.
+		Erhöhe lauf_index um 1.
 	Gib lauf_index zurück.
 Und kann so benutzt werden:
 	"den nächsten Index in <json> ab <start_index> nach dem Überspringen von Leerzeichen"
@@ -170,7 +170,7 @@ Die Funktion Parse_Json_Literal mit den Parametern json und start_index vom Typ 
 			Gib JSON_NULL zurück.
 
 		Wenn ((json im Bereich von start_index bis (start_index plus 3)) aneinandergehängt) gleich "true" ist, dann:
-		 	Erhoehe start_index um 4.
+		 	Erhöhe start_index um 4.
 			Gib wahr zurück.
 		Melde den Fehler "Es wurde \"true\" erwartet".
 		Gib JSON_NULL zurück.
@@ -180,7 +180,7 @@ Die Funktion Parse_Json_Literal mit den Parametern json und start_index vom Typ 
 			Gib JSON_NULL zurück.
 		
 		Wenn ((json im Bereich von start_index bis (start_index plus 4)) aneinandergehängt) gleich "false" ist, dann:
-		 	Erhoehe start_index um 5.
+		 	Erhöhe start_index um 5.
 			Gib falsch zurück.
 		Melde den Fehler "Es wurde \"false\" erwartet".
 		Gib JSON_NULL zurück.
@@ -190,14 +190,91 @@ Die Funktion Parse_Json_Literal mit den Parametern json und start_index vom Typ 
 			Gib JSON_NULL zurück.
 		
 		Wenn ((json im Bereich von start_index bis (start_index plus 3)) aneinandergehängt) gleich "null" ist, dann:
-		 	Erhoehe start_index um 4.
+		 	Erhöhe start_index um 4.
 			Gib JSON_NULL zurück.
 		Melde den Fehler "Es wurde \"null\" erwartet".
 	Gib JSON_NULL zurück.
 Und kann so benutzt werden:
 	"das nächste Json Literal in <json> ab <start_index>"
 
-Die Funktion Parse_Json_Wert mit den Parametern json und lauf_index vom Typ Buchstaben Listen Referenz und Zahlen Referenz, gibt einen JsonWert zurück, macht:
+Die Funktion Parse_Json_Wert mit den Parametern json und lauf_index vom Typ Buchstaben Listen Referenz und Zahlen Referenz, gibt einen JsonWert zurück,
+wird später definiert
+und kann so benutzt werden:
+	"den nächsten Json Wert in <json> ab <lauf_index>",
+	"der nächste Json Wert in <json> ab <lauf_index>",
+	"dem nächsten Json Wert in <json> ab <lauf_index>"
+
+Die Funktion Parse_Json_Objekt mit den Parametern json und lauf_index vom Typ Buchstaben Listen Referenz und Zahlen Referenz, gibt einen JsonWert zurück, macht:
+	Erhöhe lauf_index um 1.
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+
+	Wenn json an der Stelle lauf_index gleich '}' ist, dann:
+		Erhöhe lauf_index um 1.
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+		Gib eine leere HashTabelle zurück.
+
+	Das JsonObjekt ergebnis_objekt ist eine leere HashTabelle.
+	Der Wahrheitswert hatte_komma ist wahr.
+	Solange hatte_komma, mache:
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+		Der JsonWert schlüssel ist der nächste Json String in json ab lauf_index.
+		Wenn schlüssel gleich "" als Variable ist, dann:
+			Melde den Fehler "Ein Json Objekt Schlüssel darf nicht leer sein".
+			Gib JSON_NULL zurück.
+		Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+		Wenn json an der Stelle lauf_index ungleich ':' ist, dann:
+			Melde den Fehler "Ein Json Objekt Schlüssel muss mit einem : enden".
+			Gib JSON_NULL zurück.
+		Erhöhe lauf_index um 1.
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+		Der JsonWert wert ist der nächste Json Wert in json ab lauf_index.
+		Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
+		Setze den Wert von (schlüssel als Text) in ergebnis_objekt auf wert.
+		Wenn json an der Stelle lauf_index gleich ',' ist, dann:
+			Erhöhe lauf_index um 1.
+		Sonst:
+			Speichere falsch in hatte_komma.
+	
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+	Wenn json an der Stelle lauf_index ungleich '}' ist, dann:
+		Melde den Fehler ("Ein Json Objekt muss mit einem } enden, nicht " verkettet mit json an der Stelle lauf_index).
+		Gib JSON_NULL zurück.
+	Erhöhe lauf_index um 1.
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+	Gib ergebnis_objekt zurück.
+Und kann so benutzt werden:
+	"das nächste Json Objekt in <json> ab <lauf_index>"
+
+Die Funktion Parse_Json_Liste mit den Parametern json und lauf_index vom Typ Buchstaben Listen Referenz und Zahlen Referenz, gibt einen JsonWert zurück, macht:
+	Erhöhe lauf_index um 1.
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+
+	Wenn json an der Stelle lauf_index gleich ']' ist, dann:
+		Erhöhe lauf_index um 1.
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+		Gib eine leere JsonWert Liste zurück.
+
+	Die JsonWert Liste ergebnis_liste ist eine leere JsonWert Liste.
+	Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
+	Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
+
+	Solange json an der Stelle lauf_index gleich ',' ist, mache:
+		Erhöhe lauf_index um 1.
+		Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
+		Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
+	
+	Wenn json an der Stelle lauf_index ungleich ']' ist, dann:
+		Melde den Fehler "Ein Json Array muss mit einem ] enden".
+		Gib JSON_NULL zurück.
+
+	Erhöhe lauf_index um 1.
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
+	Gib ergebnis_liste zurück.
+Und kann so benutzt werden:
+	"die nächste Json Liste in <json> ab <lauf_index>"
+
+Die Funktion Parse_Json_Wert macht:
 	Wenn json leer ist, dann:
 		Melde den Fehler "Ein Json Wert kann nicht leer sein".
 		Gib JSON_NULL zurück.
@@ -208,67 +285,9 @@ Die Funktion Parse_Json_Wert mit den Parametern json und lauf_index vom Typ Buch
 	Wenn json an der Stelle lauf_index gleich '"' ist, dann:
 		Speichere den nächste Json String in json ab lauf_index in ergebnis.
 	Wenn aber json an der Stelle lauf_index gleich '{' ist, dann:
-		Erhoehe lauf_index um 1.
-		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-		Wenn json an der Stelle lauf_index gleich '}' ist, dann:
-			Erhoehe lauf_index um 1.
-			Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-			Gib eine leere HashTabelle zurück.
-		Sonst:
-			Das JsonObjekt ergebnis_objekt ist eine leere HashTabelle.
-			Der Wahrheitswert hatte_komma ist wahr.
-			Solange hatte_komma, mache:
-				Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-				Der JsonWert schlüssel ist der nächste Json String in json ab lauf_index.
-				Wenn schlüssel gleich "" als Variable ist, dann:
-					Melde den Fehler "Ein Json Objekt Schlüssel darf nicht leer sein".
-					Gib JSON_NULL zurück.
-				Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
-				Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-				Wenn json an der Stelle lauf_index ungleich ':' ist, dann:
-					Melde den Fehler "Ein Json Objekt Schlüssel muss mit einem : enden".
-					Gib JSON_NULL zurück.
-				Erhoehe lauf_index um 1.
-				Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-				Der JsonWert wert ist der nächste Json Wert in json ab lauf_index.
-				Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
-				Setze den Wert von (schlüssel als Text) in ergebnis_objekt auf wert.
-				Wenn json an der Stelle lauf_index gleich ',' ist, dann:
-					Erhoehe lauf_index um 1.
-				Sonst:
-					Speichere falsch in hatte_komma.
-			
-			Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-			Wenn json an der Stelle lauf_index ungleich '}' ist, dann:
-				Melde den Fehler ("Ein Json Objekt muss mit einem } enden, nicht " verkettet mit json an der Stelle lauf_index).
-				Gib JSON_NULL zurück.
-			Erhoehe lauf_index um 1.
-			Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-			Gib ergebnis_objekt zurück.
+		Gib das nächste Json Objekt in json ab lauf_index zurück.
 	Wenn aber json an der Stelle lauf_index gleich '[' ist, dann:
-		Erhoehe lauf_index um 1.
-		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-		Wenn json an der Stelle lauf_index gleich ']' ist, dann:
-			Erhoehe lauf_index um 1.
-			Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-		 	Gib eine leere JsonWert Liste zurück.
-		Sonst:
-			Die JsonWert Liste ergebnis_liste ist eine leere JsonWert Liste.
-			Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
-			Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
-
-			Solange json an der Stelle lauf_index gleich ',' ist, mache:
-				Erhoehe lauf_index um 1.
-				Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
-				Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
-			
-			Wenn json an der Stelle lauf_index ungleich ']' ist, dann:
-				Melde den Fehler "Ein Json Array muss mit einem ] enden".
-				Gib JSON_NULL zurück.
-
-			Erhoehe lauf_index um 1.
-			Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-			Gib ergebnis_liste zurück.
+		Gib die nächste Json Liste in json ab lauf_index zurück.
 	Wenn aber json an der Stelle lauf_index gleich 't' ist oder
 	json an der Stelle lauf_index gleich 'f' ist oder
 	json an der Stelle lauf_index gleich 'n' ist, dann:
@@ -280,12 +299,8 @@ Die Funktion Parse_Json_Wert mit den Parametern json und lauf_index vom Typ Buch
 	
 	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
 	Gib ergebnis zurück.
-Und kann so benutzt werden:
-	"den nächsten Json Wert in <json> ab <lauf_index>",
-	"der nächste Json Wert in <json> ab <lauf_index>",
-	"dem nächsten Json Wert in <json> ab <lauf_index>"
 
-Die oeffentliche Funktion Parse_Json_Ref mit dem Parameter json vom Typ Text Referenz, gibt einen JsonWert zurück, macht:
+Die öffentliche Funktion Parse_Json_Ref mit dem Parameter json vom Typ Text Referenz, gibt einen JsonWert zurück, macht:
 	Die Zahl i ist 1.
 	Die Buchstaben Liste json_buchstaben ist die Buchstaben in json.
 	Gib den nächsten Json Wert in json_buchstaben ab i zurück.
@@ -293,7 +308,7 @@ Und kann so benutzt werden:
 	"der Json Wert in <json>",
 	"den Json Wert in <json>"
 
-Die oeffentliche Funktion Parse_Json mit dem Parameter json vom Typ Text, gibt einen JsonWert zurück, macht:
+Die öffentliche Funktion Parse_Json mit dem Parameter json vom Typ Text, gibt einen JsonWert zurück, macht:
 	Gib den Json Wert in json zurück.
 Und kann so benutzt werden:
 	"der Json Wert in <json>"
@@ -318,7 +333,7 @@ Die Funktion Json_Text_Escape mit dem Parameter b vom Typ Buchstabe, gibt einen 
 Und kann so benutzt werden:
 	"<b> escaped"
 
-Die oeffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert Referenz, gibt einen Text zurück, macht:
+Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert Referenz, gibt einen Text zurück, macht:
 	Wenn json gleich JSON_NULL ist, dann:
 		Gib "null" zurück.
 	Wenn json ein Text ist, dann:
@@ -334,7 +349,7 @@ Die oeffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 	Wenn json eine Kommazahl ist, dann:
 	 	Der Text t ist json als Kommazahl als Text.
 		Die Zahlen Liste i ist alle Indizes vom Subtext "," in t.	
-		Wenn die Länge von i groesser als 0 ist, speichere '.' in t an der Stelle (i an der Stelle 1).
+		Wenn die Länge von i größer als 0 ist, speichere '.' in t an der Stelle (i an der Stelle 1).
 		Gib t zurück.
 	Wenn json eine Zahl ist, dann:
 		Gib json als Zahl als Text zurück.
@@ -372,7 +387,7 @@ Und kann so benutzt werden:
 	"den Json Wert <json> als Text",
 	"der Json Wert <json> als Text"
 
-Die oeffentliche Funktion JsonObjekt_Zu_Text_Operator mit dem Parameter json vom Typ JsonObjekt Referenz, gibt einen Text zurück, macht:
+Die öffentliche Funktion JsonObjekt_Zu_Text_Operator mit dem Parameter json vom Typ JsonObjekt Referenz, gibt einen Text zurück, macht:
 	Der JsonWert jsonWert ist json als JsonWert.
 	Gib den Json Wert jsonWert als Text zurück.
 Und kann so benutzt werden:
