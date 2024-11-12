@@ -1,6 +1,7 @@
 OUT_FILE_NAME = libddpstdlib.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 PCRE2_DIR = ../external/pcre2_build/
+LIBAR_DIR = ../external/libarchive/libarchive/
 
 .PHONY = all clean debug
 .DEFAULT_GOAL = all
@@ -8,7 +9,7 @@ PCRE2_DIR = ../external/pcre2_build/
 CC = gcc
 CCFLAGS = -c -Wall -Werror -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
 DEBUGFLAGS = -DDDP_DEBUG
-INC = -I./include/ -I../runtime/include/ -I$(PCRE2_DIR)
+INC = -I./include/ -I../runtime/include/ -I$(PCRE2_DIR) -I$(LIBAR_DIR)
 
 AR = ar rcs
 RM = rm -f

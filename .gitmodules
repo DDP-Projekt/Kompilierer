@@ -8,3 +8,6 @@
 	url = https://github.com/PCRE2Project/pcre2.git
 	ignore = dirty
 	shallow = true
+[submodule "lib/external/libarchive"]
+	path = lib/external/libarchive
+	url = https://github.com/libarchive/libarchive
