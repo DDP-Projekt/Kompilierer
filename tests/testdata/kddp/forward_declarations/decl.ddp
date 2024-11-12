@@ -1,0 +1,9 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion print mit dem Parameter a vom Typ Text, gibt nichts zurück,
+wird später definiert
+und kann so benutzt werden:
+	"printe <a>"
+
+Die Funktion print macht:
+	Schreibe a auf eine Zeile.
