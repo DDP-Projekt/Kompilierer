@@ -121,7 +121,7 @@ external: $(OUT_DIR)
 	@echo "building all external libraries"
 	cd $(EXT_DIR) ; '$(MAKE)' all
 	@if [ -f $(EXT_DIR)$(EXT_BIN_PCRE2) ]; then \
-		@echo copying $(EXT_DIR)$(EXT_BIN_PCRE2) to $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
+		echo copying $(EXT_DIR)$(EXT_BIN_PCRE2) to $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
 		$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
 	fi
 	@echo copying $(PCRE2_DIR) to $(STD_DIR_OUT)

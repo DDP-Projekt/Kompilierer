@@ -1,6 +1,6 @@
 OUT_FILE_NAME = libddpstdlib.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
-PCRE2_DIR = ../external/pcre2/
+PCRE2_DIR = ../external/pcre2_build/
 
 .PHONY = all clean debug
 .DEFAULT_GOAL = all
