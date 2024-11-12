@@ -80,7 +80,7 @@ ddp-setup: $(OUT_DIR) ## compiles ddp-setup into build/DDP/bin/
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
 	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
-stdlib: $(OUT_DIR) ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
+stdlib: $(OUT_DIR) external ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
 	@echo "building the ddp-stdlib"
 	cd $(STD_DIR) ; '$(MAKE)'
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
@@ -89,7 +89,7 @@ stdlib: $(OUT_DIR) ## compiles the stdlib and the Duden into build/DDP/lib/stdli
 	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
 	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug: $(OUT_DIR) ## same as stdlib but will print debugging information
+stdlib-debug: $(OUT_DIR) external ## same as stdlib but will print debugging information
 	@echo "building the ddp-stdlib in debug mode"
 	cd $(STD_DIR) ; '$(MAKE)' debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
