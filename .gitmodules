@@ -10,4 +10,6 @@
 	shallow = true
 [submodule "lib/external/libarchive"]
 	path = lib/external/libarchive
-	url = https://github.com/libarchive/libarchive
+	url = https://github.com/libarchive/libarchive.git
+	ignore = dirty
+	shallow = true

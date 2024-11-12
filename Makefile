@@ -15,11 +15,11 @@ STD_BIN = libddpstdlib.a
 EXT_BIN_PCRE2 = libpcre2-8.a
 EXT_BIN_LIBAR = libarchive.a
 PCRE2_DIR = $(EXT_DIR)pcre2_build/
-PCRE2_HEADERS = $(PCRE2_DIR)/pcre2.h
-PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)pcre2_build/
+PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
+PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
 LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
 LIBAR_HEADERS = $(wildcard $(LIBAR_DIR)*.h)
-LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)libarchive/libarchive/
+LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -136,7 +136,7 @@ external: $(OUT_DIR)
 	@if [ -f $(PCRE2_HEADERS) ]; then \
 		$(MKDIR) $(PCRE2_HEADERS_OUT_DIR); \
 		echo copying $(PCRE2_HEADERS) to $(STD_DIR_OUT)$(PCRE2_HEADERS_OUT_DIR); \
-		$(CP) $(PCRE2_HEADERS) $(STD_DIR_OUT)$(PCRE2_HEADERS_OUT_DIR); \
+		$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR); \
 	fi
 	@echo copying $(EXT_DIR)$(EXT_BIN_LIBAR) to $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
 	$(CP) $(EXT_DIR)$(EXT_BIN_LIBAR) $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
