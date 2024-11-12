@@ -37,7 +37,7 @@ $(PCRE2_OUT_FILE_NAME): checkout-submodules
 	$(MKDIR) $(PCRE2_DIR)
 	cmake -S./pcre2/ -B$(PCRE2_DIR) -DCMAKE_BUILD_TYPE=Release -G$(CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_COLOR_MAKEFILE=OFF
 	cd $(PCRE2_DIR) && $(CMAKE_BUILD_TOOL) pcre2-8-static
-	cp $(PCRE2_DIR)$(LIBAR_OUT_FILE_NAME) .
+	cp $(PCRE2_DIR)$(PCRE2_OUT_FILE_NAME) .
 endif
 
 $(LIBAR_OUT_FILE_NAME): checkout-submodules
