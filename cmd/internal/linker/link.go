@@ -133,6 +133,11 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	args = append(args, "-lddpruntime", "-lm")
 	args = append(args, options.MainFile)
 	args = append(args, "-lpcre2-8")
+	args = append(args, "-larchive")
+	args = append(args, "-lz")
+	args = append(args, "-llzma")
+	args = append(args, "-lbz2")
+	args = append(args, "-llz4")
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {

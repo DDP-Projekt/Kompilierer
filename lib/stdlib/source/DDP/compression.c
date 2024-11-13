@@ -8,13 +8,96 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 
-void Archiv_Aus_Ordner(ddpstring *ordnerPfad, ddpstring *arPfad) {
+// typ: | 16Bit format | 4 Bit filter | 
+void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
+	printf("Adding file %s to archive at path %s\n", dateiPfad->str, arPfad->str);
 
+    // Create a new archive object for writing
+    struct archive *a = archive_write_new();
+    if (!a) {
+        fprintf(stderr, "Failed to create archive\n");
+        return;
+    }
+
+    // Set the compression filter based on the algorithm provided
+	printf("%d\n", typ & 0xF);
+    if (archive_write_add_filter(a, typ & 0xF) != ARCHIVE_OK) {
+        fprintf(stderr, "Failed to set compression algorithm: %s\n", archive_error_string(a));
+        archive_write_free(a);
+        return;
+    }
+
+	printf("%d\n", (typ & 0xFFFFF0) >> 4);
+    if (archive_write_set_format(a, (typ & 0xFFFFF0) >> 4) != ARCHIVE_OK) {
+        fprintf(stderr, "Failed to set archive format: %s\n", archive_error_string(a));
+        archive_write_free(a);
+        return;
+    }
+
+    // Open the archive file for writing
+    if (archive_write_open_filename(a, arPfad->str) != ARCHIVE_OK) {
+        fprintf(stderr, "Failed to open output file: %s\n", archive_error_string(a));
+        archive_write_free(a);
+        return;
+    }
+
+	struct stat st;
+	stat(dateiPfad->str, &st);
+
+    // Create a new entry for the file
+    struct archive_entry *entry = archive_entry_new();
+    archive_entry_set_pathname(entry, dateiPfad->str);
+    archive_entry_copy_stat(entry, &st);
+	archive_entry_set_perm(entry, 0644);
+
+    // Write the header for the entry
+    if (archive_write_header(a, entry) != ARCHIVE_OK) {
+        fprintf(stderr, "Failed to write header: %s\n", archive_error_string(a));
+        archive_entry_free(entry);
+        archive_write_free(a);
+        return;
+    }
+
+    // Open the input file
+    FILE *file = fopen(dateiPfad->str, "rb");
+    if (!file) {
+        fprintf(stderr, "Failed to open input file: %s\n", dateiPfad->str);
+        archive_write_free(a);
+        return;
+    }
+
+    char buffer[8192];
+    size_t bytes_read;
+    // Write the file data to the archive
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        if (archive_write_data(a, buffer, bytes_read) != bytes_read) {
+            fprintf(stderr, "Failed to write data: %s\n", archive_error_string(a));
+            fclose(file);
+            archive_entry_free(entry);
+            archive_write_free(a);
+            return;
+        }
+    }
+
+    // Clean up
+    fclose(file);
+    archive_entry_free(entry);
+
+    // Close the archive
+    if (archive_write_close(a) != ARCHIVE_OK) {
+        fprintf(stderr, "Failed to close archive: %s\n", archive_error_string(a));
+        archive_write_free(a);
+        return;
+    }
+
+    // Free the archive object
+    archive_write_free(a);
 }
 
-void Archiv_Aus_Datei(ddpstring *dateiPfad, ddpstring *arPfad) {
-
+void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
+	
 }
 
 void Archiv_Entpacken_Ordner(ddpstring *arPfad, ddpstring *ordnerPfad) {

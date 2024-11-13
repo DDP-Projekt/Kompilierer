@@ -1,12 +1,18 @@
-Die Funktion Archiv_Aus_Ordner mit den Parametern alg, ordnerPfad und arPfad vom Typ Text, Text und Text, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"Verpacke den Ordner <ordnerPfad> zu einem neuen Archiv mit dem <alg> Algorithmus bei <arPfad>"
+Die öffentliche Zahl ZIP ist 5242880.
+Die öffentliche Zahl GZIP ist 3145777.
+Die öffentliche Zahl XZ ist 3145782.
+Die öffentliche Zahl BZIP2 ist 3145778.
+Die öffentliche Zahl LZ4 ist 3145789.
 
-Die Funktion Archiv_Aus_Datei mit den Parametern alg, dateiPfad und arPfad vom Typ Text, Text und Text, gibt nichts zurück,
+Die öffentliche Funktion Archiv_Aus_Datei mit den Parametern typ, dateiPfad und arPfad vom Typ Zahl, Text und Text, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"Verpacke die Datei <dateiPfad> zu einem neuen Archiv mit dem <alg> Algorithmus bei <arPfad>"
+	"Verpacke die Datei <dateiPfad> zu einem neuen <typ> Archiv bei <arPfad>"
+
+Die öffentliche Funktion Archiv_Aus_Ordner mit den Parametern typ, ordnerPfad und arPfad vom Typ Zahl, Text und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke den Ordner <ordnerPfad> zu einem neuen <typ> Archiv bei <arPfad>"
 
 Die öffentliche Funktion Archiv_Entpacken_Ordner mit den Parametern arPfad und ordnerPfad vom Typ Text und Text, gibt nichts zurück, 
 ist in "libddpstdlib.a" definiert
