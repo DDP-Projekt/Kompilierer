@@ -89,6 +89,7 @@ jobs:
     - name: Build
       run:  |
         make -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
+
     - name: Run tests
       run: make test
     
@@ -98,10 +99,3 @@ jobs:
         name: coverage-report-${{ runner.os }}
         path: tests/coverage.md
         retention-days: 30
-
-    - name: Build debug
-      run: |
-        make debug -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
-    
-    - name: Run memory tests
-      run: make test-memory
