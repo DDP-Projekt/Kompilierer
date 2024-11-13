@@ -192,6 +192,8 @@ Und kann so benutzt werden:
 	"den gelöschten Wert für <schlüssel> in <tabelle>"
 
 Die öffentliche Funktion Tabellen_Einträge mit dem Parameter tabelle vom Typ HashTabelle Referenz, gibt eine Eintrag Liste zurück, macht:
+	Wenn länge von tabelle gleich 0 ist, gib eine leere Eintrag Liste zurück.
+
 	Die Eintrag Liste einträge ist die Kapazität von tabelle Mal ein leerer Eintrag.
 	Die Zahl j ist 1.
 	Für jede Zahl i von 1 bis die Länge von einträge von tabelle, mache:

@@ -1,0 +1,51 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/json" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/HashTabelle" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Der JsonWert json ist der JsonWert in "\"hallo\"".
+Schreibe (json als Text) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "5" in json.
+Schreibe (json als Zahl) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "5.5" in json.
+Schreibe (json als Kommazahl) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "true" in json.
+Schreibe (json als Wahrheitswert) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "false" in json.
+Schreibe (json als Wahrheitswert) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "null" in json.
+Schreibe (json gleich JSON_NULL ist) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "{}" in json.
+Schreibe (json ein JsonObjekt ist) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "[]" in json.
+Schreibe (json eine JsonListe ist) auf eine Zeile.
+Schreibe (den JsonWert json als Text) auf eine Zeile.
+
+Speichere den JsonWert in "{\"hallo\": \"welt\", \"daten\": 42}" in json.
+Das JsonObjekt o ist json als JsonObjekt.
+Schreibe ((o an der Stelle "hallo") als Text) auf eine Zeile.
+Schreibe ((o an der Stelle "daten") als Zahl) auf eine Zeile.
+Schreibe (das JsonObjekt o als Text) auf eine Zeile.
+
+Speichere den JsonWert in "[42, \"hi\", null]" in json.
+Die JsonListe l ist json als JsonListe.
+Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
+Schreibe ((l an der Stelle 2) als Text) auf eine Zeile.
+Schreibe ((l an der Stelle 3) gleich JSON_NULL ist) auf eine Zeile.
+Schreibe (die JsonListe l als Text) auf eine Zeile.

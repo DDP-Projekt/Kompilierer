@@ -357,6 +357,8 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 		Gib t zurück.
 	Wenn json eine Zahl ist, dann:
 		Gib json als Zahl als Text zurück.
+	Wenn json ein Wahrheitswert ist, dann:
+		Gib "true", falls json als Wahrheitswert, ansonsten "false" zurück.
 	Wenn json ein JsonObjekt ist, dann:
 		Der TextBauer bauer ist ein neuer TextBauer.
 		Füge '{' an bauer an.
@@ -398,3 +400,10 @@ Die öffentliche Funktion JsonObjekt_Zu_Text_Operator mit dem Parameter json vom
 Und kann so benutzt werden:
 	"dem JsonObjekt <json> als Text",
 	"das JsonObjekt <json> als Text"
+
+Die öffentliche Funktion JsonListe_Zu_Text_Operator mit dem Parameter json vom Typ JsonListe Referenz, gibt einen Text zurück, macht:
+	Der JsonWert jsonWert ist json als JsonWert.
+	Gib den JsonWert jsonWert als Text zurück.
+Und kann so benutzt werden:
+	"der JsonListe <json> als Text",
+	"die JsonListe <json> als Text"
