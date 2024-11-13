@@ -40,7 +40,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
-        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm_build/**') }}
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-llvm-build-
 
@@ -64,19 +64,31 @@ jobs:
         echo "CGO_CXXFLAGS=-std=c++14" >> $GITHUB_ENV
         
     - name: Cache pcre2
+      id: cache-pcre2
       if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: |
           ${{ github.workspace }}/lib/external/pcre2_build/
           ${{ github.workspace }}/lib/external/libpcre2-8.a
-        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/external/pcre2_build/**', '**/lib/external/libpcre2-8.a') }}
+        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/external/Makefile/**', '**/.gitmodules') }}
         restore-keys: |
           ${{ runner.os }}-pcre2-
 
+    - name: Cache libarchive
+      id: cache-libarchive
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.workspace }}/lib/external/libarchive_build/
+          ${{ github.workspace }}/lib/external/libarchive.a
+        key: ${{ runner.os }}-libarchive-${{ hashFiles('**/lib/external/Makefile/**', '**/.gitmodules') }}
+        restore-keys: |
+          ${{ runner.os }}-libarchive-
+
     - name: Build
-      run: make -j4
-      
+      run:  |
+        make -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
     - name: Run tests
       run: make test
     
@@ -88,7 +100,8 @@ jobs:
         retention-days: 30
 
     - name: Build debug
-      run: make debug -j4
+      run: |
+        make -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
     
     - name: Run memory tests
       run: make test-memory
