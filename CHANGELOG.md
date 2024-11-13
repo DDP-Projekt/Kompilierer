@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Vorwärts Deklarationen geben nun keinen "undefined reference" Fehler mehr, wenn man sie einbindet
+
 ## v0.5.0-alpha
 
 - [Added] Vorwärts Deklarationen

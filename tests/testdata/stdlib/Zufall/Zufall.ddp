@@ -1,0 +1,7 @@
+Binde "Duden/Zufall" ein.
+Binde "Duden/Ausgabe" ein.
+
+Die Zahl z ist eine zufällige Zahl zwischen -10 und 10.
+Schreibe (z zwischen -10 und 10 ist) auf eine Zeile.
+Die Kommazahl k ist eine zufällige Kommazahl zwischen -0,10 und 0,10.
+Schreibe (k zwischen -0,10 und 0,10 ist) auf eine Zeile.

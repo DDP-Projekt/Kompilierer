@@ -45,6 +45,8 @@
 
 #include "DDP/mt19937-64.h"
 #include "DDP/ddpmemory.h"
+#include "DDP/debug.h"
+#include <stdlib.h>
 #include <time.h>
 
 #define NN 312
@@ -67,14 +69,23 @@ static void init_genrand64(mt19937_64 *context, uint64_t seed) {
 	}
 }
 
+static mt19937_64 *context = NULL;
+
+// atexit handler to free all open files
+static void free_genrand_context(void) {
+	DDP_DBGLOG("free_genrand_context()");
+	if (context != NULL) {
+		DDP_FREE(mt19937_64, context);
+	}
+}
+
 /* generates a random number on [0, 2^64-1]-interval */
 uint64_t genrand64_int64(void) {
-	static mt19937_64 *context = NULL;
-
 	// genrand64_int64 is called by every mt18837 functions, so we initialize the engine here
 	if (context == NULL) {
 		context = DDP_ALLOCATE(mt19937_64, 1);
 		init_genrand64(context, time(NULL));
+		atexit(free_genrand_context);
 	}
 
 	/* This is the altered Cocoa with Love implementation. */

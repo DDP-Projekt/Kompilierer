@@ -1,4 +1,5 @@
 Binde "Duden/Ausgabe" ein.
+Binde "decl" ein.
 
 Die Funktion foo mit dem Parameter a vom Typ Zahl, gibt eine Zahl zurück,
 wird später definiert
@@ -21,6 +22,7 @@ Und kann so benutzt werden:
 foo 3.
 bar.
 baz 3.
+printe "hi".
 
 Die Funktion foo macht:
 	Wenn a gleich 0 ist, dann:

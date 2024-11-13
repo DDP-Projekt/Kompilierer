@@ -5,9 +5,11 @@
 
 Binde "Duden/ANSI-Escape" ein.
 Binde "Duden/Ausgabe" ein.
+Binde "Duden/C" ein.
 Binde "Duden/Dateisystem" ein.
 Binde "Duden/Eingabe" ein.
 Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/HashTabelle" ein.
 Binde "Duden/Kryptographie" ein.
 Binde "Duden/Laufzeit" ein.
 Binde "Duden/Listen" ein.
@@ -16,6 +18,7 @@ Binde "Duden/Pfade" ein.
 Binde "Duden/Regex" ein.
 Binde "Duden/Sortierung" ein.
 Binde "Duden/Statistik" ein.
+Binde "Duden/TextBauer" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Umgebungsvariablen" ein.
 Binde "Duden/UnterProzess" ein.
@@ -23,3 +26,4 @@ Binde "Duden/Zahlen" ein.
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Zeit" ein.
 Binde "Duden/Zufall" ein.
+Binde "Duden/json" ein.

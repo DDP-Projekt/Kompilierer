@@ -1,0 +1,48 @@
+[ 
+	Dieses Module definiert einige nützliche Typen und Funktionen um einfacher mit C-Code zu interagieren .
+	Diese Funktionen sollten nur benutzt werden, wenn man weiß was man tut.
+]
+
+[ Repräsentiert einen C-Zeiger (void*) ]
+Wir definieren einen Zeiger öffentlich als eine Zahl.
+
+Die öffentliche Funktion C_Null gibt einen Zeiger zurück, macht:
+	Gib 0 als Zeiger zurück.
+Und kann so benutzt werden:
+	"NULL"
+
+[ Kopiert n Bytes vom Buffer src nach dest (entspricht memcpy() aus der C-stdlib) ]
+Die öffentliche Funktion C_Memcpy mit den Parametern dest, src und n vom Typ Zeiger, Zeiger und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Kopiere <n> Bytes von <src> nach <dest>" oder
+	"kopiere <n> Bytes von <src> nach <dest>"
+
+[ Repräsentiert einen C-String (char*) ]
+Wir definieren einen CString öffentlich als einen Zeiger.
+
+[ Gibt den unterliegenden CString von t zurück. Der CString ist nur valide solange t auch valide ist. ]
+Die öffentliche Funktion Text_Zu_CString mit dem Parameter t vom Typ Text Referenz, gibt einen CString zurück,
+ist in "libddpstdlib.a" definiert
+Und überlädt den "als" Operator.
+
+Die öffentliche Funktion Text_Zu_Zeiger mit dem Parameter t vom Typ Text Referenz, gibt einen Zeiger zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"<t> interpretiert als Zeiger"
+
+Die öffentliche Funktion Text_Byte_Groesse mit dem Parameter t vom Typ Text Referenz, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"die Byte Größe von <t>"
+
+Die öffentliche Funktion Buchstabe_Byte_Groesse mit dem Parameter b vom Typ Buchstabe, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"die Byte Größe von <b>"
+
+[ Gibt einen null-terminierten Byte Puffer zurück. ]
+Die öffentliche Funktion Erstelle_Byte_Puffer mit dem Parameter n vom Typ Zahl, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"ein neuer Puffer der Länge <n>"
