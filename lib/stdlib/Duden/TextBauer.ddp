@@ -1,4 +1,5 @@
 Binde "Duden/C" ein.
+Binde "Duden/Laufzeit" ein.
 
 Wir nennen die öffentliche Kombination aus
 	dem Text puffer mit Standardwert ein neuer Puffer der Länge 128,
@@ -43,6 +44,8 @@ Und kann so benutzt werden:
 	"füge <text> an <bauer> an"
 
 Die öffentliche Funktion TextBauer_Buchstabe_Anfügen mit den Parametern bauer und b vom Typ TextBauer Referenz und Buchstabe, gibt nichts zurück, macht:
+	Wenn b als Zahl gleich 0 ist, verlasse die Funktion.
+
 	Die Zahl kapa_bauer ist die Byte Größe von (puffer von bauer).	
 	Die Zahl kapa_text ist die Byte Größe von b.	
 	Wenn kapa_bauer minus (länge von bauer) kleiner als kapa_text ist, dann:

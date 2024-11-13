@@ -26,7 +26,7 @@ void Erstelle_Byte_Puffer(ddpstring *ret, ddpint n) {
 }
 
 ddpint Text_Byte_Groesse(ddpstringref t) {
-	return t->cap - 1;
+	return t->cap > 0 ? t->cap - 1 : 0;
 }
 
 ddpint Buchstabe_Byte_Groesse(ddpchar b) {

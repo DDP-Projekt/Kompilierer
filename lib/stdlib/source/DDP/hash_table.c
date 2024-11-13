@@ -8,6 +8,9 @@ ddpint FNV_Hash(ddpstringref str) {
 	uint32_t hash = INITIAL_HASH;
 
 	uint8_t *bytes = (uint8_t *)str->str;
+	if (!bytes) {
+		bytes = (uint8_t *)"";
+	}
 	while (*bytes++) {
 		hash = (hash ^ *bytes) * MAGIC_PRIME;
 	}

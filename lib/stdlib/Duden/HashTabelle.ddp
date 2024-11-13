@@ -15,21 +15,27 @@ und kann so benutzt werden:
 	Representiert einen Eintrag in einer HashTabelle.
 ]
 Wir nennen die öffentliche Kombination aus
-	der Zahl art mit Standardwert 0, [ 0 == Leerer Wert, 1 == Grabstein, x == Wert]
+	der Zahl art mit Standardwert 2, [ 0 == Leerer Wert, 1 == Grabstein, x == Wert]
 	dem öffentlichen Text Schlüssel mit Standardwert "",
 	der öffentlichen Variable Wert mit Standardwert dem Standardwert von einer Variable,
 einen Eintrag,
 und erstellen sie so:
-	"ein leerer Eintrag" oder
-	"einem leerer Eintrag" oder
 	"ein Eintrag für <Schlüssel> mit Wert <Wert>" oder
 	"einem Eintrag für <Schlüssel> mit Wert <Wert>" oder
 	"einen Eintrag für <Schlüssel> mit Wert <Wert>"
 
+Die öffentliche Funktion LeererEintrag gibt einen Eintrag zurück, macht:
+	Der Eintrag e ist der Standardwert von einem Eintrag.
+	Speichere 0 in art von e.
+	Gib e zurück.
+Und kann so benutzt werden:
+	"ein leerer Eintrag" oder
+	"einem leerer Eintrag"
+
 [ Gibt einen Grabstein zurück. ]
 Die Funktion Grabstein gibt einen Eintrag zurück, macht:
 	Der Eintrag e ist der Standardwert von einem Eintrag.
-	Speichere wahr in Wert von e.
+	Speichere 1 in art von e.
 	Gib e zurück.
 Und kann so benutzt werden:
 	"ein Grabstein" oder
@@ -69,6 +75,14 @@ Die öffentliche Funktion Tabelle_Zu_Text mit dem Parameter tabelle vom Typ Hash
 	Der TextBauer b ist ein neuer TextBauer.
 
 	Für jede Zahl i von 1 bis die Länge von einträge von tabelle, mache:
+		[
+		Wenn (einträge von tabelle an der Stelle i) ein leerer Eintrag ist, dann: 
+			Füge "leer, " an b an.
+			Fahre mit der Schleife fort.
+		Wenn (einträge von tabelle an der Stelle i) ein Grabstein ist, dann: 
+			Füge "Grabstein, " an b an.
+			Fahre mit der Schleife fort.
+		]
 		Wenn (einträge von tabelle an der Stelle i) leer oder ein Grabstein ist, dann: 
 			Fahre mit der Schleife fort.
 
@@ -174,7 +188,8 @@ Die öffentliche Funktion Tabellen_Wert_Löschen mit den Parametern tabelle und 
 	Gib wert zurück.
 Und kann so benutzt werden:
 	"Lösche den Wert für <schlüssel> aus <tabelle>" oder
-	"der gelöschte Wert für <schlüssel> in <tabelle>"
+	"der gelöschte Wert für <schlüssel> in <tabelle>" oder
+	"den gelöschten Wert für <schlüssel> in <tabelle>"
 
 Die öffentliche Funktion Tabellen_Einträge mit dem Parameter tabelle vom Typ HashTabelle Referenz, gibt eine Eintrag Liste zurück, macht:
 	Die Eintrag Liste einträge ist die Kapazität von tabelle Mal ein leerer Eintrag.
