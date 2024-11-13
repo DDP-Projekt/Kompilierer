@@ -101,7 +101,7 @@ jobs:
 
     - name: Build debug
       run: |
-        make -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
+        make debug -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=libarchive.a' || '' }}
     
     - name: Run memory tests
       run: make test-memory
