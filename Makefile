@@ -8,9 +8,17 @@ DDP_SETUP_BUILD_DIR = $(CMD_DIR)ddp-setup/build/
 KDDP_BIN = ""
 DDP_SETUP_BIN = ""
 
+KDDP_DIR = $(CMD_DIR)kddp/
+DDP_SETUP_DIR = $(CMD_DIR)ddp-setup/
+
 STD_BIN = libddpstdlib.a
 EXT_BIN_PCRE2 = libpcre2-8.a
-PCRE2_DIR = $(EXT_DIR)pcre2/
+EXT_BIN_LIBAR = libarchive.a
+PCRE2_DIR = $(EXT_DIR)pcre2_build/
+PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
+PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
+LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
+LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -63,7 +71,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
+.PHONY: all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
 
 all: $(OUT_DIR) kddp runtime stdlib external ddp-setup ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
@@ -72,13 +80,13 @@ debug: $(OUT_DIR) kddp runtime-debug stdlib-debug external ## same as all but th
 kddp: $(OUT_DIR) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
 	cd $(CMD_DIR) ; '$(MAKE)' kddp
-	$(CP) $(CMD_DIR)kddp/build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 ddp-setup: $(OUT_DIR) ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
-	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
+	$(CP) $(DDP_SETUP_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
 stdlib: $(OUT_DIR) external ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
 	@echo "building the ddp-stdlib"
@@ -124,10 +132,16 @@ external: $(OUT_DIR)
 		echo copying $(EXT_DIR)$(EXT_BIN_PCRE2) to $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
 		$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
 	fi
-	@echo copying $(PCRE2_DIR) to $(STD_DIR_OUT)
-	@if [ -d $(PCRE2_DIR) ]; then \
-		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
+	@if [ -f $(PCRE2_HEADERS) ]; then \
+		$(MKDIR) $(PCRE2_HEADERS_OUT_DIR); \
+		echo copying $(PCRE2_HEADERS) to $(STD_DIR_OUT)$(PCRE2_HEADERS_OUT_DIR); \
+		$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR); \
 	fi
+	@echo copying $(EXT_DIR)$(EXT_BIN_LIBAR) to $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
+	$(CP) $(EXT_DIR)$(EXT_BIN_LIBAR) $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
+	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
+	@echo copying LIBAR_HEADERS to $(LIBAR_HEADERS_OUT_DIR)
+	$(CP) $(LIBAR_DIR)*.h $(LIBAR_HEADERS_OUT_DIR) # evaluate LIBAR_DIR/*.h here, as the directory might not have been checkout at the start of the Makefile
 
 $(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
 	@echo "creating output directories"
