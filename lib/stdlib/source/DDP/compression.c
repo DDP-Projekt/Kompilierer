@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 // typ: | 16Bit format | 4 Bit filter | 
 void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
@@ -21,22 +22,20 @@ void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
         return;
     }
 
-    // Set the compression filter based on the algorithm provided
-	printf("%d\n", typ & 0xF);
+    // Extract filter bits and set the compression filter
     if (archive_write_add_filter(a, typ & 0xF) != ARCHIVE_OK) {
         fprintf(stderr, "Failed to set compression algorithm: %s\n", archive_error_string(a));
         archive_write_free(a);
         return;
     }
 
-	printf("%d\n", (typ & 0xFFFFF0) >> 4);
+    // Extract format bits and set the file format
     if (archive_write_set_format(a, (typ & 0xFFFFF0) >> 4) != ARCHIVE_OK) {
         fprintf(stderr, "Failed to set archive format: %s\n", archive_error_string(a));
         archive_write_free(a);
         return;
     }
 
-    // Open the archive file for writing
     if (archive_write_open_filename(a, arPfad->str) != ARCHIVE_OK) {
         fprintf(stderr, "Failed to open output file: %s\n", archive_error_string(a));
         archive_write_free(a);
@@ -44,7 +43,11 @@ void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
     }
 
 	struct stat st;
-	stat(dateiPfad->str, &st);
+	if (stat(dateiPfad->str, &st) < 0) {
+        fprintf(stderr, "Failed to stat input file: %s\n", strerror(errno));
+        archive_write_free(a);
+        return;
+    }
 
     // Create a new entry for the file
     struct archive_entry *entry = archive_entry_new();
@@ -70,7 +73,7 @@ void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
 
     char buffer[8192];
     size_t bytes_read;
-    // Write the file data to the archive
+    // Write the file data to the archive entry
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
         if (archive_write_data(a, buffer, bytes_read) != bytes_read) {
             fprintf(stderr, "Failed to write data: %s\n", archive_error_string(a));
