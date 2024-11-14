@@ -248,7 +248,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			// add the module to the list and to the importStmt
 			// or report the error
 			if err != nil {
-				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()))
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", inclPath, err.Error()))
 				return // return early on error
 			}
 
@@ -260,7 +260,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			// we already included the module
 			// circular import error
 			if module == nil {
-				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"))
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), inclPath))
 				return // return early on error
 			}
 
@@ -272,11 +272,17 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		resolveSingleModule(inclPath)
 	} else {
 		filepath.WalkDir(inclPath, func(path string, d fs.DirEntry, err error) error {
-			if (!importStmt.IsRecursive && d.IsDir()) || filepath.Ext(path) != ".ddp" {
+			if path == inclPath {
+				return nil
+			}
+
+			if d.IsDir() && !importStmt.IsRecursive {
 				return filepath.SkipDir
 			}
 
-			resolveSingleModule(path)
+			if !d.IsDir() && filepath.Ext(path) == ".ddp" {
+				resolveSingleModule(path)
+			}
 
 			return nil
 		})
