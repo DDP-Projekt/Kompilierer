@@ -259,7 +259,7 @@ func (pr *printer) VisitExprStmt(stmt *ExprStmt) VisitResult {
 }
 
 func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
-	if stmt.Module == nil {
+	if len(stmt.Modules) == 0 {
 		return VisitRecurse
 	}
 	// TODO: pretty print imports
