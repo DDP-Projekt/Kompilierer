@@ -40,7 +40,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
-        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile') }}
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile', '**/cmd/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-llvm-build-
 
@@ -71,7 +71,7 @@ jobs:
         path: |
           ${{ github.workspace }}/lib/external/pcre2_build/
           ${{ github.workspace }}/lib/external/libpcre2-8.a
-        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/external/Makefile/**', '**/.gitmodules') }}
+        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/external/Makefile', '**/.gitmodules') }}
         restore-keys: |
           ${{ runner.os }}-pcre2-
 
@@ -82,7 +82,7 @@ jobs:
         path: |
           ${{ github.workspace }}/lib/external/libarchive_build/
           ${{ github.workspace }}/lib/external/libarchive.a
-        key: ${{ runner.os }}-libarchive-${{ hashFiles('**/lib/external/Makefile/**', '**/.gitmodules') }}
+        key: ${{ runner.os }}-libarchive-${{ hashFiles('**/lib/external/Makefile', '**/.gitmodules') }}
         restore-keys: |
           ${{ runner.os }}-libarchive-
 
