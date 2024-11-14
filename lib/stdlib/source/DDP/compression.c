@@ -3,6 +3,8 @@
 #include "DDP/error.h"
 #include <archive.h>
 #include <archive_entry.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -100,7 +102,7 @@ int createEntry(struct archive *a, const char *path) {
 }
 
 // walks a directory and creates a new entry for each file
-void compressDir(struct archive *a, char *path) {
+void compressDir(struct archive *a, const char *path) {
 	DIR* dir;
 	struct dirent *ent;
 	struct stat states;
@@ -138,6 +140,29 @@ void compressDir(struct archive *a, char *path) {
 	}
 
     closedir(dir);
+}
+
+struct archive* openArchive(const char *path) {
+	struct archive *a = archive_read_new();
+	if (archive_read_support_filter_all(a) != ARCHIVE_OK) {
+		ddp_error("Failed to determine archive compression algorithm: "DDP_STRING_FMT, false, archive_error_string(a));
+		archive_read_free(a);
+		return NULL;
+	}
+
+	if (archive_read_support_format_all(a) != ARCHIVE_OK) {
+		ddp_error("Failed to determine archive file format: "DDP_STRING_FMT, false, archive_error_string(a));
+		archive_read_free(a);
+		return NULL;
+	}
+
+	if (archive_read_open_filename(a, path, 10240) != ARCHIVE_OK) {
+		ddp_error("Failed to open archive: "DDP_STRING_FMT, false, archive_error_string(a));
+		archive_read_free(a);
+		return NULL;
+	}
+
+	return a;
 }
 
 // typ: | 16Bit format | 4 Bit filter | 
@@ -229,41 +254,58 @@ void Archiv_Dateien_Entfernen(ddpstringlist *dateiPfade, ddpstring *arPfad) {
 
 }
 
-ddpint Archiv_Datei_Groesse_Komp(ddpstring *dateiPfad, ddpstring *arPfad) {
-	return 0;
+ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
+	DDP_MIGHT_ERROR;
+	if (!arPfad || !dateiPfad) {
+		return -1;
+	}
+	
+	struct archive *a;
+	if (!(a = openArchive(arPfad->str))) {
+		return -1;
+	}
+
+	// find entry
+	struct archive_entry *e;
+	while (archive_read_next_header(a, &e) == ARCHIVE_OK) {
+		if (!strcmp(dateiPfad->str, archive_entry_pathname(e))) {
+			break;
+		}
+	}
+
+	la_ssize_t size = archive_entry_size(e);
+
+	if (archive_read_free(a) != ARCHIVE_OK) {
+		ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
+		return -1;
+	}
+
+	return (ddpint)size;
 }
 
-ddpint Archiv_Datei_Groesse_Unkomp(ddpstring *dateiPfad, ddpstring *arPfad) {
-	return 0;
-}
-
-// TODO: returns 0 for some reason
 ddpint Archiv_Anzahl_Dateien(ddpstring *arPfad) {
 	DDP_MIGHT_ERROR;
 	int count = -1;
 
-	struct archive *a = archive_read_new();
-	if (archive_read_support_filter_all(a) != ARCHIVE_OK) {
-		ddp_error("Failed to determine archive compression algorithm: "DDP_STRING_FMT, false, archive_error_string(a));
-		goto err;
+	if (!arPfad) {
+		return -1;
+	}
+	
+	struct archive *a;
+	if (!(a = openArchive(arPfad->str))) {
+		return -1;
 	}
 
-	if (archive_read_support_format_all(a) != ARCHIVE_OK) {
-		ddp_error("Failed to determine archive file format: "DDP_STRING_FMT, false, archive_error_string(a));
-		goto err;
-	}
-
-	if (archive_read_open_filename(a, arPfad->str, 10240) != ARCHIVE_OK) {
-		ddp_error("Failed to open archive: "DDP_STRING_FMT, false, archive_error_string(a));
-		goto err;
-	}
+	// iterate over every file
+	struct archive_entry *e;
+	while (archive_read_next_header(a, &e) == ARCHIVE_OK);
 
 	count = archive_file_count(a);
 
-	err:
 	if (archive_read_free(a) != ARCHIVE_OK) {
 		ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
+		return -1;
 	}
 
-	return count;
+	return (ddpint)count;
 }

@@ -64,15 +64,10 @@ Die öffentliche Funktion Archiv_Datei_Entfernen mit den Parametern dateiPfad un
 Und kann so benutzt werden:
 	"Entferne die Datei <dateiPfad> vom Archiv <arPfad>"
 
-Die öffentliche Funktion Archiv_Datei_Groesse_Komp mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt eine Zahl zurück, 
+Die öffentliche Funktion Archiv_Datei_Groesse mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt eine Zahl zurück, 
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"Die komprimierte Dateigröße in Bytes von <dateiPfad> im Archiv <arPfad>"
-
-Die öffentliche Funktion Archiv_Datei_Groesse_Unkomp mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt eine Zahl zurück, 
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"Die unkomprimierte Dateigröße in Bytes von <dateiPfad> im Archiv <arPfad>"
+	"Die Dateigröße in Bytes von <dateiPfad> im Archiv <arPfad>"
 
 Die öffentliche Funktion Archiv_Anzahl_Dateien mit dem Parameter arPfad vom Typ Text, gibt eine Zahl zurück, 
 ist in "libddpstdlib.a" definiert
