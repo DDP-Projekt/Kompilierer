@@ -1,0 +1,6 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion baf gibt nichts zurück, macht:
+	Schreibe "baf" auf eine Zeile.
+Und kann so benutzt werden:
+	"baf"

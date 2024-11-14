@@ -1,0 +1,7 @@
+Binde alle Module aus "module" ein.
+Binde rekursiv alle Module aus "module_rekursiv" ein.
+
+foo.
+bar.
+baz.
+baf.

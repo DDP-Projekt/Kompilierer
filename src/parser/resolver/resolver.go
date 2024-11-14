@@ -11,7 +11,6 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -315,49 +314,11 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	// var errRange token.Range
-	checkTypeDependency := func(decl ast.Declaration) {
-		// check that typ is defined in the current module
-		checkSingleType := func(typ ddptypes.Type) {
-			typ = ddptypes.GetNestedListUnderlying(typ) // for list types
-
-			if ddptypes.IsPrimitiveOrVoid(typ) {
-				return
-			}
-
-			// if _, exists, _ := r.CurrentTable.LookupDecl(typ.String()); !exists {
-			// 	r.err(ddperror.SEM_UNKNOWN_TYPE, errRange, fmt.Sprintf("Der Typ %s wird von dieser Einbindung benutzt, wurde aber selber noch nicht eingebunden", typ))
-			// }
-		}
-
-		switch decl := decl.(type) {
-		case *ast.FuncDecl:
-			checkSingleType(decl.ReturnType) // return type
-			for _, param := range decl.Parameters {
-				checkSingleType(param.Type.Type)
-			}
-		case *ast.VarDecl:
-			checkSingleType(decl.Type)
-		case *ast.StructDecl:
-			for _, field := range decl.Type.Fields {
-				checkSingleType(field.Type)
-			}
-		case *ast.TypeAliasDecl:
-			checkSingleType(decl.Underlying)
-		case *ast.TypeDefDecl:
-			checkSingleType(decl.Underlying)
-		case *ast.BadDecl:
-			// error already reported while parsing the imported module
-		}
-	}
-
 	resolveDecl := func(decl ast.Declaration) {
 		if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
 			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), decl.Module().GetIncludeFilename()))
 			return
 		}
-
-		checkTypeDependency(decl)
 	}
 
 	// add imported symbols
