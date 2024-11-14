@@ -5,6 +5,7 @@ package parser
 
 import (
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -203,7 +204,7 @@ func (p *parser) checkStatement(stmt ast.Statement) {
 	p.typechecker.TypecheckNode(stmt) // typecheck the node
 }
 
-// fils out importStmt.Module and updates the parser state accordingly
+// fills in importStmt.Modules and updates the parser state accordingly
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -223,37 +224,62 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(p.module.FileName), rawPath+".ddp"))
 	}
 
+	if importStmt.IsDirectoryImport {
+		inclPath = strings.TrimSuffix(inclPath, ".ddp")
+	}
+
 	if err != nil {
 		p.err(ddperror.SYN_MALFORMED_INCLUDE_PATH, importStmt.FileName.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", rawPath+".ddp", err.Error()))
 		return
-	} else if module, ok := p.predefinedModules[inclPath]; !ok { // the module is new
-		p.predefinedModules[inclPath] = nil // already add the name to the map to not import it infinetly
-		// parse the new module
-		importStmt.Module, err = Parse(Options{
-			FileName:     inclPath,
-			Source:       nil,
-			Tokens:       nil,
-			Modules:      p.predefinedModules,
-			ErrorHandler: p.errorHandler,
-		})
+	}
 
-		// add the module to the list and to the importStmt
-		// or report the error
-		if err != nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()))
-			return // return early on error
+	// resolves a single module
+	resolveSingleModule := func(inclPath string) {
+		if module, ok := p.predefinedModules[inclPath]; !ok { // the module is new
+			p.predefinedModules[inclPath] = nil // already add the name to the map to not import it infinetly
+			// parse the new module
+			newMod, err := Parse(Options{
+				FileName:     inclPath,
+				Source:       nil,
+				Tokens:       nil,
+				Modules:      p.predefinedModules,
+				ErrorHandler: p.errorHandler,
+			})
+			// add the module to the list and to the importStmt
+			// or report the error
+			if err != nil {
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()))
+				return // return early on error
+			}
+
+			newMod.FileNameToken = &importStmt.FileName
+			p.predefinedModules[inclPath] = newMod
+			importStmt.Modules = append(importStmt.Modules, newMod)
+			return
 		} else {
-			importStmt.Module.FileNameToken = &importStmt.FileName
-			p.predefinedModules[inclPath] = importStmt.Module
-		}
-	} else { // we already included the module
-		// circular import error
-		if module == nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"))
-			return // return early on error
-		}
+			// we already included the module
+			// circular import error
+			if module == nil {
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"))
+				return // return early on error
+			}
 
-		importStmt.Module = module
+			importStmt.Modules = append(importStmt.Modules, module)
+		}
+	}
+
+	if !importStmt.IsDirectoryImport {
+		resolveSingleModule(inclPath)
+	} else {
+		filepath.WalkDir(inclPath, func(path string, d fs.DirEntry, err error) error {
+			if (!importStmt.IsRecursive && d.IsDir()) || filepath.Ext(path) != ".ddp" {
+				return filepath.SkipDir
+			}
+
+			resolveSingleModule(path)
+
+			return nil
+		})
 	}
 
 	ast.IterateImportedDecls(importStmt, func(_ string, decl ast.Declaration, tok token.Token) bool {

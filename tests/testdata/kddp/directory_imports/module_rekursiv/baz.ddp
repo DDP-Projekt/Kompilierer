@@ -1,0 +1,6 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion baz gibt nichts zurück, macht:
+	Schreibe "baz" auf eine Zeile.
+Und kann so benutzt werden:
+	"baz"

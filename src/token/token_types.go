@@ -154,6 +154,9 @@ const (
 	VARIABLEN
 	WIRD
 	SPÄTER
+	REKURSIV
+	ALLE
+	MODULE
 
 	DOT     // .
 	COMMA   // ,
@@ -317,6 +320,9 @@ var tokenStrings = [...]string{
 	KEINE:         "keine",
 	WIRD:          "wird",
 	SPÄTER:        "später",
+	REKURSIV:      "rekursiv",
+	ALLE:          "alle",
+	MODULE:        "Module",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -485,6 +491,9 @@ var KeywordMap = map[string]TokenType{
 	"wird":           WIRD,
 	"später":         SPÄTER,
 	"spaeter":        SPÄTER,
+	"rekursiv":       REKURSIV,
+	"alle":           ALLE,
+	"Module":         MODULE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
