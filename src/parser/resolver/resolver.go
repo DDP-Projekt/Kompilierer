@@ -311,7 +311,7 @@ func (r *Resolver) VisitExprStmt(stmt *ast.ExprStmt) ast.VisitResult {
 }
 
 func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
-	if stmt.Module == nil {
+	if len(stmt.Modules) == 0 {
 		return ast.VisitRecurse
 	}
 
@@ -353,7 +353,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 	resolveDecl := func(decl ast.Declaration) {
 		if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), stmt.Module.GetIncludeFilename()))
+			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), decl.Module().GetIncludeFilename()))
 			return
 		}
 

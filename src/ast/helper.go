@@ -49,36 +49,39 @@ func IsGlobalScope(table *SymbolTable) bool {
 // true means continue, false means break
 func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declaration, tok token.Token) bool) {
 	if len(imprt.ImportedSymbols) == 0 {
-		if imprt.Module == nil {
+		if len(imprt.Modules) == 0 {
 			return
 		}
 
-		decls := make([]Declaration, 0, len(imprt.Module.PublicDecls))
-		for _, decl := range imprt.Module.PublicDecls {
-			decls = append(decls, decl)
-		}
+		for _, module := range imprt.Modules {
+			decls := make([]Declaration, 0, len(module.PublicDecls))
+			for _, decl := range module.PublicDecls {
+				decls = append(decls, decl)
+			}
 
-		// sort by occurence in the source file
-		sort.Slice(decls, func(i, j int) bool {
-			start := decls[i].GetRange().Start
-			startj := decls[j].GetRange().Start
-			return start.Line < startj.Line || start.Column < startj.Column
-		})
+			// sort by occurence in the source file
+			sort.Slice(decls, func(i, j int) bool {
+				start := decls[i].GetRange().Start
+				startj := decls[j].GetRange().Start
+				return start.Line < startj.Line || start.Column < startj.Column
+			})
 
-		for _, decl := range decls {
-			if !fun(decl.Name(), decl, imprt.FileName) {
-				break
+			for _, decl := range decls {
+				if !fun(decl.Name(), decl, imprt.FileName) {
+					break
+				}
 			}
 		}
-	} else {
-		for _, name := range imprt.ImportedSymbols {
-			var decl Declaration
-			if imprt.Module != nil {
-				decl = imprt.Module.PublicDecls[name.Literal]
-			}
-			if !fun(name.Literal, decl, name) {
-				break
-			}
+		return
+	}
+
+	for _, name := range imprt.ImportedSymbols {
+		var decl Declaration
+		if imprt.SingleModule() != nil {
+			decl = imprt.SingleModule().PublicDecls[name.Literal]
+		}
+		if !fun(name.Literal, decl, name) {
+			break
 		}
 	}
 }

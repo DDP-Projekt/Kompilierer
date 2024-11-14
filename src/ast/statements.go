@@ -24,11 +24,16 @@ type (
 	// will be already resolved by the parser
 	ImportStmt struct {
 		Range token.Range
+		// wether the statement imported a directory
+		IsDirectoryImport bool
+		// wether the statement was a recursive import
+		// only true if IsDirectoryImport is also true
+		IsRecursive bool
 		// the string literal which specified the filename
 		FileName token.Token
-		// the module that was imported because of this
+		// all modules that were imported because of this statement
 		// nil if it does not exist or a similar error occured while importing
-		Module *Module
+		Modules []*Module
 		// slice of identifiers which specify
 		// the individual symbols imported
 		// if nil, all symbols are imported
@@ -184,3 +189,12 @@ func (stmt *ForRangeStmt) statementNode()      {}
 func (stmt *BreakContinueStmt) statementNode() {}
 func (stmt *ReturnStmt) statementNode()        {}
 func (stmt *TodoStmt) statementNode()          {}
+
+// If this statement was not a directory import, returns the one imported module
+func (stmt *ImportStmt) SingleModule() *Module {
+	if stmt.IsDirectoryImport || len(stmt.Modules) == 0 {
+		return nil
+	}
+
+	return stmt.Modules[0]
+}
