@@ -1,0 +1,10 @@
+Binde "Duden/Ausgabe" ein.
+
+Der Text t ist "hallo".
+:
+    Der Text t ist t.
+    Schreibe t auf eine Zeile.
+    Speichere "hi" in t.
+    Schreibe t auf eine Zeile.
+
+Schreibe t auf eine Zeile.

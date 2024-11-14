@@ -480,8 +480,6 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		varLocation = c.NewAlloca(Typ.IrType())
 	}
 
-	Var := c.scp.addVar(d.Name(), varLocation, Typ, false)
-
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
 		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
@@ -496,7 +494,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
 		}
 
-		c.claimOrCopy(Var, initVal, Typ, isTemp)
+		c.claimOrCopy(varLocation, initVal, Typ, isTemp)
 	}
 
 	if c.scp.enclosing == nil { // module_init
@@ -512,7 +510,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		c.moduleInitFunc, c.moduleInitCbb = c.cf, c.cbb
 
 		c.cf, c.cbb = c.moduleDisposeFunc, c.moduleDisposeFunc.Blocks[0]
-		c.freeNonPrimitive(Var, Typ) // free the variable in module_dispose
+		c.freeNonPrimitive(varLocation, Typ) // free the variable in module_dispose
 
 		c.cf, c.cbb = cf, cbb
 	}
@@ -522,6 +520,8 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if c.cf != nil && c.cbb != nil { // ddp_main
 		addInitializer()
 	}
+
+	c.scp.addVar(d.Name(), varLocation, Typ, false)
 	return ast.VisitRecurse
 }
 

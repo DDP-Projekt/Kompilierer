@@ -16,6 +16,7 @@
 // mainly for debugging
 void SignalHandler(int signal) {
 	if (signal == SIGSEGV) {
+		DDP_DBGLOG("caught SIGSEGV");
 		ddp_end_runtime();
 		ddp_runtime_error(1, "Segmentation fault\n");
 	}
@@ -35,6 +36,10 @@ static void handle_args(int argc, char **argv) {
 
 // initialize runtime stuff
 void ddp_init_runtime(int argc, char **argv) {
+#ifdef DDP_DEBUG
+	setvbuf(stdout, NULL, _IONBF, 0); // disable buffering for stdout
+#endif								  // DDP_DEBUG
+
 	DDP_DBGLOG("init_runtime");
 #ifdef DDPOS_WINDOWS
 	// the locales behaviour seems to change from time to time on windows
