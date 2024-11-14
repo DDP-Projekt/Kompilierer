@@ -4,8 +4,13 @@ Die öffentliche Zahl XZ ist 3145782.
 Die öffentliche Zahl BZIP2 ist 3145778.
 Die öffentliche Zahl LZ4 ist 3145789.
 
-Die öffentliche Funktion Archiv_Aus_Datei mit den Parametern typ, dateiPfad und arPfad vom Typ Zahl, Text und Text, gibt nichts zurück,
+Die öffentliche Funktion Archiv_Aus_Dateien mit den Parametern typ, dateiPfade und arPfad vom Typ Zahl, Text Liste und Text, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke die Dateien <dateiPfade> zu einem neuen <typ> Archiv bei <arPfad>"
+
+Die öffentliche Funktion Archiv_Aus_Datei mit den Parametern typ, dateiPfad und arPfad vom Typ Zahl, Text und Text, gibt nichts zurück, macht:
+	Verpacke die Dateien (eine Liste, die aus dateiPfad besteht) zu einem neuen typ Archiv bei arPfad.
 Und kann so benutzt werden:
 	"Verpacke die Datei <dateiPfad> zu einem neuen <typ> Archiv bei <arPfad>"
 
@@ -19,8 +24,13 @@ ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Entpacke das Archiv <arPfad> in den Ordner <ordnerPfad>"
 
-Die öffentliche Funktion Archiv_Entpacken_Datei mit den Parametern dateiPfad, arPfad und pfadZu vom Typ Text, Text und Text, gibt nichts zurück, 
+Die öffentliche Funktion Archiv_Entpacken_Dateien mit den Parametern dateiPfade, arPfad und pfadZu vom Typ Text Liste, Text und Text, gibt nichts zurück, 
 ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Entpacke die Dateien <dateiPfade> vom Archiv <arPfad> nach <pfadZu>"
+
+Die öffentliche Funktion Archiv_Entpacken_Datei mit den Parametern dateiPfad, arPfad und pfadZu vom Typ Text, Text und Text, gibt nichts zurück, macht:
+	Entpacke die Dateien (eine Liste, die aus dateiPfad besteht) vom Archiv arPfad nach pfadZu.
 Und kann so benutzt werden:
 	"Entpacke die Datei <dateiPfad> vom Archiv <arPfad> nach <pfadZu>"
 
@@ -29,8 +39,13 @@ ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"Verpacke den Ordner <ordnerPfad> und füge es zum Archiv <arPfad> hinzu"
 
-Die öffentliche Funktion Archiv_Datei_Hinzufuegen mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt nichts zurück,
+Die öffentliche Funktion Archiv_Dateien_Hinzufuegen mit den Parametern dateiPfade und arPfad vom Typ Text Liste und Text, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"Verpacke die Dateien <dateiPfade> und füge sie zum Archiv <arPfad> hinzu"
+
+Die öffentliche Funktion Archiv_Datei_Hinzufuegen mit den Parametern dateiPfad und arPfad vom Typ Text und Text, gibt nichts zurück, macht:
+	Verpacke die Dateien (eine Liste, die aus dateiPfad besteht) und füge sie zum Archiv arPfad hinzu.
 Und kann so benutzt werden:
 	"Verpacke die Datei <dateiPfad> und füge es zum Archiv <arPfad> hinzu"
 

@@ -51,7 +51,6 @@ struct archive* createArchive(const char *path, int type) {
 // create an entry in the given archive with the content of the file at the given path.
 // returns true (1) if successful and false (0) if not.
 int createEntry(struct archive *a, const char *path) {
-	printf("%s\n", path);
 	struct stat st;
 	if (stat(path, &st) < 0) {
 		ddp_error("Failed to stat input file "DDP_STRING_FMT" :", true, path);
@@ -142,10 +141,15 @@ void compressDir(struct archive *a, char *path) {
 }
 
 // typ: | 16Bit format | 4 Bit filter | 
-void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
+void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad) {
 	DDP_MIGHT_ERROR;
-	if (dateiPfad == NULL || arPfad == NULL) {
+	if (dateiPfade == NULL || arPfad == NULL) {
 		ddp_error("Invalid path", false);
+		return;
+	}
+
+	if (dateiPfade->len == 0) {
+		ddp_error("No paths given", false);
 		return;
 	}
 
@@ -154,9 +158,16 @@ void Archiv_Aus_Datei(ddpint typ, ddpstring *dateiPfad, ddpstring *arPfad) {
 		return;
 	}
 
-	if (!createEntry(a, dateiPfad->str)) {
-		return;
+	for (int i = 0; i < dateiPfade->len; i++) {
+		if (dateiPfade->arr[i].str == NULL) {
+			ddp_error("Invalid path", false);
+		}
+
+		if (!createEntry(a, dateiPfade->arr[i].str)) {
+			return;
+		}
 	}
+	
 
 	// Close the archive
 	if (archive_write_close(a) != ARCHIVE_OK) {
@@ -198,7 +209,7 @@ void Archiv_Entpacken_Ordner(ddpstring *arPfad, ddpstring *ordnerPfad) {
 
 }
 
-void Archiv_Entpacken_Datei(ddpstring *dateiPfad, ddpstring *arPfad, ddpstring *pfadZu) {
+void Archiv_Entpacken_Dateien(ddpstring *dateiPfad, ddpstring *arPfad, ddpstring *pfadZu) {
 
 }
 
@@ -206,7 +217,7 @@ void Archiv_Ordner_Hinzufuegen(ddpstring *ordnerPfad, ddpstring *arPfad) {
 
 }
 
-void Archiv_Datei_Hinzufuegen(ddpstring *dateiPfad, ddpstring *arPfad) {
+void Archiv_Dateien_Hinzufuegen(ddpstring *dateiPfad, ddpstring *arPfad) {
 
 }
 
@@ -226,6 +237,33 @@ ddpint Archiv_Datei_Groesse_Unkomp(ddpstring *dateiPfad, ddpstring *arPfad) {
 	return 0;
 }
 
+// TODO: returns 0 for some reason
 ddpint Archiv_Anzahl_Dateien(ddpstring *arPfad) {
-	return 0;
+	DDP_MIGHT_ERROR;
+	int count = -1;
+
+	struct archive *a = archive_read_new();
+	if (archive_read_support_filter_all(a) != ARCHIVE_OK) {
+		ddp_error("Failed to determine archive compression algorithm: "DDP_STRING_FMT, false, archive_error_string(a));
+		goto err;
+	}
+
+	if (archive_read_support_format_all(a) != ARCHIVE_OK) {
+		ddp_error("Failed to determine archive file format: "DDP_STRING_FMT, false, archive_error_string(a));
+		goto err;
+	}
+
+	if (archive_read_open_filename(a, arPfad->str, 10240) != ARCHIVE_OK) {
+		ddp_error("Failed to open archive: "DDP_STRING_FMT, false, archive_error_string(a));
+		goto err;
+	}
+
+	count = archive_file_count(a);
+
+	err:
+	if (archive_read_free(a) != ARCHIVE_OK) {
+		ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
+	}
+
+	return count;
 }
