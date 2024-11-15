@@ -3,6 +3,7 @@ Die öffentliche Zahl GZIP ist 3145777.
 Die öffentliche Zahl XZ ist 3145782.
 Die öffentliche Zahl BZIP2 ist 3145778.
 Die öffentliche Zahl LZ4 ist 3145789.
+Die öffentliche Zahl SevenZip ist 14680064.
 
 Die öffentliche Funktion Archiv_Aus_Dateien mit den Parametern typ, dateiPfade und arPfad vom Typ Zahl, Text Liste und Text, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert

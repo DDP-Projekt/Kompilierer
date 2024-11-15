@@ -41,6 +41,15 @@ struct archive* createArchive(const char *path, int type) {
 		return NULL;
 	}
 
+	switch (ARCHIVE_FORMAT(type)) {
+		case ARCHIVE_FORMAT_7ZIP:
+			archive_write_set_options(a, "7zip:compression=lzma2");
+			break;
+		case ARCHIVE_FORMAT_ZIP:
+			archive_write_set_options(a, "zip:compression=lzma2");
+			break;
+	}
+
 	if (archive_write_open_filename(a, path) != ARCHIVE_OK) {
 		ddp_error("Failed to open output file: "DDP_STRING_FMT, false, archive_error_string(a));
 		archive_write_free(a);
@@ -62,6 +71,12 @@ int createEntry(struct archive *a, const char *path) {
 
 	// Create a new entry for the file
 	struct archive_entry *entry = archive_entry_new();
+	if (!entry) {
+		ddp_error("Failed to create entry", false);
+		archive_write_free(a);
+		return 0;
+	}
+	
 	archive_entry_set_pathname(entry, path);
 	archive_entry_copy_stat(entry, &st);
 	archive_entry_set_perm(entry, 0644);
