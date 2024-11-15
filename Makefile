@@ -14,6 +14,10 @@ DDP_SETUP_DIR = $(CMD_DIR)ddp-setup/
 STD_BIN = libddpstdlib.a
 EXT_BIN_PCRE2 = libpcre2-8.a
 EXT_BIN_LIBAR = libarchive.a
+EXT_BIN_LIBZ = libz.a
+EXT_BIN_LIBLZMA = liblzma.a
+EXT_BIN_LIBBZ2 = libbz2.a
+EXT_BIN_LIBLZ4 = liblz4.a
 PCRE2_DIR = $(EXT_DIR)pcre2_build/
 PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
 PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
@@ -139,6 +143,19 @@ external: $(OUT_DIR)
 	fi
 	@echo copying $(EXT_DIR)$(EXT_BIN_LIBAR) to $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
 	$(CP) $(EXT_DIR)$(EXT_BIN_LIBAR) $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
+	
+	@echo copying $(EXT_DIR)$(EXT_BIN_LIBZ) to $(LIB_DIR_OUT)$(EXT_BIN_LIBZ)
+	$(CP) $(EXT_DIR)$(EXT_BIN_LIBZ) $(LIB_DIR_OUT)$(EXT_BIN_LIBZ)
+
+	@echo copying $(EXT_DIR)$(EXT_BIN_LIBLZMA) to $(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA)
+	$(CP) $(EXT_DIR)$(EXT_BIN_LIBLZMA) $(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA)
+
+	@echo copying $(EXT_DIR)$(EXT_BIN_LIBBZ2) to $(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2)
+	$(CP) $(EXT_DIR)$(EXT_BIN_LIBBZ2) $(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2)
+
+	@echo copying $(EXT_DIR)$(EXT_BIN_LIBLZ4) to $(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4)
+	$(CP) $(EXT_DIR)$(EXT_BIN_LIBLZ4) $(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4)
+
 	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
 	@echo copying LIBAR_HEADERS to $(LIBAR_HEADERS_OUT_DIR)
 	$(CP) $(LIBAR_DIR)*.h $(LIBAR_HEADERS_OUT_DIR) # evaluate LIBAR_DIR/*.h here, as the directory might not have been checkout at the start of the Makefile

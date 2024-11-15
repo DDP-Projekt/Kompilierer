@@ -194,13 +194,13 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 	}
 
 	struct archive *a = createArchive(arPfad->str, (int)typ);
-	if (!a) {
-		return;
-	}
+	if (!a) return;
 
 	for (int i = 0; i < dateiPfade->len; i++) {
 		if (dateiPfade->arr[i].str == NULL) {
 			ddp_error("Invalid path", false);
+			archive_write_free(a);
+			return;
 		}
 
 		if (!createEntry(a, dateiPfade->arr[i].str)) {
@@ -208,7 +208,6 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 		}
 	}
 	
-
 	// Close the archive
 	if (archive_write_close(a) != ARCHIVE_OK) {
 		ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
@@ -228,9 +227,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 	}
 
 	struct archive *a = createArchive(arPfad->str, (int)typ);
-	if (!a) {
-		return;
-	}
+	if (!a) return;
 
 	compressDir(a, ordnerPfad->str);
 
@@ -249,7 +246,7 @@ void Archiv_Entpacken_Ordner(ddpstring *arPfad, ddpstring *ordnerPfad) {
 
 }
 
-void Archiv_Entpacken_Dateien(ddpstring *dateiPfad, ddpstring *arPfad, ddpstring *pfadZu) {
+void Archiv_Entpacken_Dateien(ddpstringlist *dateiPfade, ddpstring *arPfad, ddpstring *pfadZu) {
 
 }
 
@@ -275,10 +272,8 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 		return -1;
 	}
 	
-	struct archive *a;
-	if (!(a = openArchive(arPfad->str))) {
-		return -1;
-	}
+	struct archive *a = openArchive(arPfad->str);
+	if (!a) return -1;
 
 	// find entry
 	struct archive_entry *e;
@@ -306,10 +301,8 @@ ddpint Archiv_Anzahl_Dateien(ddpstring *arPfad) {
 		return -1;
 	}
 	
-	struct archive *a;
-	if (!(a = openArchive(arPfad->str))) {
-		return -1;
-	}
+	struct archive *a = openArchive(arPfad->str);
+	if (!a) return -1;
 
 	// iterate over every file
 	struct archive_entry *e;
