@@ -15,11 +15,20 @@ PCRE2_DIR = ./pcre2_build/
 ZLIB_DIR = ./zlib_build/
 XZ_DIR = ./xz_build/
 
+LIBZ_NAME = libz.a
+XZ_NAME = liblzma.a
+BZ2_NAME = libbz2.a
+LZ4_NAME = liblz4.a
+
 LIBAR_OUT_FILE_NAME = libarchive.a
 LIBAR_DIR = ./libarchive_build/
-LIBAR_ADDITIONAL_CMAKE_OPTIONS = -DCMAKE_COLOR_MAKEFILE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TEST=OFF -DENABLE_INSTALL=OFF \
+LIBAR_CMAKE_OPTIONS = -DCMAKE_COLOR_MAKEFILE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TEST=OFF -DENABLE_INSTALL=OFF \
 	-DENABLE_LIBXML2=OFF -DENABLE_OPENSSL=OFF -DENABLE_CNG=OFF -DHAVE_LIBXML_XMLREADER_H=0 -DHAVE_LIBXML_XMLWRITER_H=0 \
-	-DZLIB_LIBRARY=./libz.a -DZLIB_INCLUDE_DIR=$(ZLIB_DIR) -DLIBLZMA_LIBRARY=./liblzma.a -DLIBLZMA_INCLUDE_DIR=./xz/lib/ -DPCRE2_LIBRARY=./libpcre2-8.a
+
+LIBAR_DEP_INCLUDES = -DZLIB_LIBRARY=./$(LIBZ_NAME) -DZLIB_INCLUDE_DIR=$(ZLIB_DIR)include \
+	-DLIBLZMA_LIBRARY=./$(XZ_NAME) -DLIBLZMA_INCLUDE_DIR=$(XZ_DIR)include \ #-DLIBLZMA_HAS_AUTO_DECODER=TRUE -DLIBLZMA_HAS_EASY_ENCODER=TRUE -DLIBLZMA_HAS_LZMA_PRESET=TRUE
+	-DLZ4_LIBRARY=./$(LZ4_NAME) -DLZ4_INCLUDE_DIR=./lz4/lib/ \
+	-DBZIP2_LIBRARIES=./$(BZ2_NAME) -DBZIP2_INCLUDE_DIR=./bzip2/
 
 ifeq ($(OS),Windows_NT)
 # windows
@@ -45,32 +54,36 @@ $(PCRE2_OUT_FILE_NAME): | checkout-submodules
 	cp $(PCRE2_DIR)$(PCRE2_OUT_FILE_NAME) .
 endif
 
-libz.a:
+$(LIBZ_NAME):
 	@echo "building zlib"
 	cmake -S./zlib/ -B$(ZLIB_DIR) $(CMAKE_OPTIONS)
 	cd $(ZLIB_DIR) ; make zlibstatic
-	cp ./zlib/*.h $(ZLIB_DIR)
-	cp $(ZLIB_DIR)libzlibstatic.a ./libz.a
+	mkdir -p $(ZLIB_DIR)include
+	cp ./zlib/*.h $(ZLIB_DIR)include/
+	mv $(ZLIB_DIR)zconf.h $(ZLIB_DIR)include/
+	cp $(ZLIB_DIR)libzlibstatic.a $(LIBZ_NAME)
 
-liblzma.a:
+$(XZ_NAME):
 	@echo "building lzma"
-	cmake -S./xz/ -B$(XZ_DIR) $(CMAKE_OPTIONS)
+	cmake -S./xz/ -B$(XZ_DIR) $(CMAKE_OPTIONS) -DBUILD_SHARED_LIBS=OFF
 	cd $(XZ_DIR) ; make liblzma
-	cp $(XZ_DIR)liblzma.a .
+	mkdir -p $(XZ_DIR)include
+	cp -r ./xz/src/liblzma/api/* $(XZ_DIR)include/
+	cp $(XZ_DIR)$(XZ_NAME) .
 
-libbz2.a:
+$(BZ2_NAME):
 	@echo "building bzip2"
 	cd ./bzip2/ ; make bzip2
-	cp ./bzip2/libbz2.a .
+	cp ./bzip2/$(BZ2_NAME) .
 
-liblz4.a:
+$(LZ4_NAME):
 	@echo "building lz4"
 	cd ./lz4/ ; make CC=$(CC) liblz4.a
-	cp ./lz4/lib/liblz4.a .
+	cp ./lz4/lib/$(LZ4_NAME) .
 
-$(LIBAR_OUT_FILE_NAME): | checkout-submodules libz.a liblzma.a libbz2.a liblz4.a
+$(LIBAR_OUT_FILE_NAME): | checkout-submodules $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
 	@echo "building libarchive"
-	cmake -S./libarchive/ -B$(LIBAR_DIR) $(CMAKE_OPTIONS) $(LIBAR_ADDITIONAL_CMAKE_OPTIONS)
+	cmake -S./libarchive/ -B$(LIBAR_DIR) $(CMAKE_OPTIONS) $(LIBAR_CMAKE_OPTIONS) $(LIBAR_DEP_INCLUDES)
 	cd $(LIBAR_DIR) ; make archive_static
 	cp $(LIBAR_DIR)/libarchive/$(LIBAR_OUT_FILE_NAME) .
 
@@ -82,3 +95,6 @@ ifeq ($(OS),Windows_NT)
 	cd $(PCRE2_DIR) ; $(CMAKE_BUILD_TOOL) clean
 endif
 	$(RM) $(LIBAR_OUT_FILE_NAME)
+	$(RM) $(XZ_NAME)
+	$(RM) $(BZ2_NAME)
+	$(RM) $(LZ4_NAME)
