@@ -53,6 +53,8 @@ Die Funktion Zu_Escape_Sequenz mit den Parametern json und lauf_index vom Typ Bu
 		Gib '\r' zurück.
 	Wenn b gleich 't' ist, dann:
 		Gib '\t' zurück.
+	Wenn b gleich '/' ist, dann:
+		Gib '/' zurück.
 	Wenn b gleich 'u' ist, dann:
 	 	Wenn lauf_index plus 4 größer als die Länge von json ist, dann:
 			Melde den Fehler "invalide Escape Sequenz".
@@ -219,9 +221,6 @@ Die Funktion Parse_Json_Objekt mit den Parametern json und lauf_index vom Typ Bu
 	Solange hatte_komma, mache:
 		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
 		Der JsonWert schlüssel ist der nächste Json String in json ab lauf_index.
-		Wenn schlüssel gleich "" als Variable ist, dann:
-			Melde den Fehler "Ein Json Objekt Schlüssel darf nicht leer sein".
-			Gib JSON_NULL zurück.
 		Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
 		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
 		Wenn json an der Stelle lauf_index ungleich ':' ist, dann:
@@ -260,11 +259,13 @@ Die Funktion Parse_Json_Liste mit den Parametern json und lauf_index vom Typ Buc
 	Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
 	Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
 
+	Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
 	Solange json an der Stelle lauf_index gleich ',' ist, mache:
 		Erhöhe lauf_index um 1.
 		Füge (den nächsten Json Wert in json ab lauf_index) an ergebnis_liste an.
 		Wenn es dabei einen Fehler gab, gib JSON_NULL zurück.
 	
+		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
 	Wenn json an der Stelle lauf_index ungleich ']' ist, dann:
 		Melde den Fehler "Ein Json Array muss mit einem ] enden".
 		Gib JSON_NULL zurück.
@@ -302,6 +303,7 @@ Die Funktion Parse_Json_Wert macht:
 	Gib ergebnis zurück.
 
 Die öffentliche Funktion Parse_Json_Ref mit dem Parameter json vom Typ Text Referenz, gibt einen JsonWert zurück, macht:
+	Diese Funktion könnte einen Fehler auslösen.
 	Die Zahl i ist 1.
 	Die Buchstaben Liste json_buchstaben ist die Buchstaben in json.
 	Gib den nächsten Json Wert in json_buchstaben ab i zurück.
@@ -338,6 +340,7 @@ Und kann so benutzt werden:
 	"<b> escaped"
 
 Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert Referenz, gibt einen Text zurück, macht:
+	Diese Funktion könnte einen Fehler auslösen.
 	Wenn json gleich JSON_NULL ist, dann:
 		Gib "null" zurück.
 	Wenn json ein Text ist, dann:

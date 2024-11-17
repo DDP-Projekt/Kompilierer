@@ -45,7 +45,8 @@ Die öffentliche Funktion Loesche_Fehler gibt nichts zurück, ist extern sichtba
 	Speichere falsch in Fehlermeldung_Valide.
 Und kann so benutzt werden:
 	"Lösche den letzten Fehler" oder
-	"lösche den letzten Fehler"
+	"lösche den letzten Fehler" oder
+	"Diese Funktion könnte einen Fehler auslösen"
 
 [
 	Wenn es einen Fehler gab, wird dieser zurückgegeben und gelöscht

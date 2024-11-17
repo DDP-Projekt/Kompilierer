@@ -49,3 +49,8 @@ Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
 Schreibe ((l an der Stelle 2) als Text) auf eine Zeile.
 Schreibe ((l an der Stelle 3) gleich JSON_NULL ist) auf eine Zeile.
 Schreibe (die JsonListe l als Text) auf eine Zeile.
+
+Speichere den JsonWert in "[1\n]" in json.
+Speichere json als JsonListe in l.
+Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
+Schreibe (die JsonListe l als Text) auf eine Zeile.

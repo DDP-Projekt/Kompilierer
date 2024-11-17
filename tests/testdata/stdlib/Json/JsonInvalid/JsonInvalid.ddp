@@ -1,0 +1,9 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/json" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/HashTabelle" ein.
+
+Der JsonWert json ist JSON_NULL.
+Speichere den JsonWert in "[1 true]" in json.
+Wenn es dabei keinen Fehler gab, Schreibe "Es hätte einen Fehler geben sollen" auf eine Zeile.
+Sonst Schreibe "[1 true] Fehler" auf eine Zeile.

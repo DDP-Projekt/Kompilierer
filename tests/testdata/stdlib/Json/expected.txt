@@ -21,3 +21,5 @@ welt
 hi
 wahr
 [42,"hi",null]
+1
+[1]

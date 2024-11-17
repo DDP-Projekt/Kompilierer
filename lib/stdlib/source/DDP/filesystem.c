@@ -359,40 +359,60 @@ out_error:
 ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 	DDP_MIGHT_ERROR;
 
-	FILE *file = fopen(Pfad->str, "r");
-	if (file) {
-		fseek(file, 0, SEEK_END);			  // seek the last byte in the file
-		size_t string_size = ftell(file) + 1; // file_size + '\0'
-		rewind(file);						  // go back to file start
-		ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
-		ref->cap = string_size;
-		size_t read = fread(ref->str, sizeof(char), string_size - 1, file);
-		fclose(file);
-		ref->str[ref->cap - 1] = '\0';
-		if (read != string_size - 1) {
-			ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
-		}
-		return (ddpint)read;
+	if (ddp_string_empty(Pfad)) {
+		return 0;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
-	return -1;
+
+	int fd = open(Pfad->str, O_RDONLY);
+	if (fd < 0) {
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		return 0;
+	}
+
+	struct stat stat;
+	if (fstat(fd, &stat) < 0) {
+		ddp_error("Fehler beim staten der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		return 0;
+	}
+
+	size_t string_size = stat.st_size + 1;
+	ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
+	ref->cap = string_size;
+
+	int r = read(fd, ref->str, string_size - 1);
+	if (r < 0) {
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		return 0;
+	}
+
+	close(fd);
+	ref->str = ddp_reallocate(ref->str, ref->cap, r + 1);
+	ref->cap = r + 1;
+	ref->str[r] = '\0';
+	return (ddpint)r;
 }
 
 ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 	DDP_MIGHT_ERROR;
 
-	FILE *file = fopen(Pfad->str, "w");
-	if (file) {
-		int ret = fprintf(file, text->str);
-		fclose(file);
-		if (ret < 0) {
-			ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
-			return ret;
-		}
-		return (ddpint)ret;
+	if (ddp_string_empty(Pfad)) {
+		return 0;
 	}
-	ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
-	return -1;
+
+	int fd = open(Pfad->str, O_WRONLY | O_TRUNC | O_CREAT);
+	if (fd < 0) {
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		return 0;
+	}
+
+	int w = write(fd, text->str, text->cap - 1);
+	if (w < 0) {
+		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		return 0;
+	}
+
+	close(fd);
+	return (ddpint)w;
 }
 
 /* Generalized buffered File IO */
