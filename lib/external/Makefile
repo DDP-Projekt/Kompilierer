@@ -43,19 +43,14 @@ checkout-submodules:
 	git submodule update --init $(SUBMODULES)
 
 # pcre2 only needs to be compiled on windows
-ifneq ($(OS),Windows_NT)
-$(PCRE2_OUT_FILE_NAME):
-	@echo "pcre2 is already provided on linux systems"
-else
 $(PCRE2_OUT_FILE_NAME): | checkout-submodules
 	@echo "building pcre2"
 	$(MKDIR) $(PCRE2_DIR)
 	cmake -S./pcre2/ -B$(PCRE2_DIR) $(CMAKE_OPTIONS)
 	cd $(PCRE2_DIR) && $(CMAKE_BUILD_TOOL) pcre2-8-static
 	cp $(PCRE2_DIR)$(PCRE2_OUT_FILE_NAME) .
-endif
 
-$(LIBZ_NAME):
+$(LIBZ_NAME): | checkout-submodules
 	@echo "building zlib"
 	cmake -S./zlib/ -B$(ZLIB_DIR) $(CMAKE_OPTIONS)
 	cd $(ZLIB_DIR) ; make zlibstatic
@@ -64,7 +59,7 @@ $(LIBZ_NAME):
 	cp $(ZLIB_DIR)zconf.h $(ZLIB_DIR)include/
 	cp $(ZLIB_DIR)$(LIBZ_BUILD_NAME) $(LIBZ_NAME)
 
-$(XZ_NAME):
+$(XZ_NAME): | checkout-submodules
 	@echo "building lzma"
 	cmake -S./xz/ -B$(XZ_DIR) $(CMAKE_OPTIONS) -DBUILD_SHARED_LIBS=OFF
 	cd $(XZ_DIR) ; make liblzma
@@ -72,17 +67,17 @@ $(XZ_NAME):
 	cp -r ./xz/src/liblzma/api/* $(XZ_DIR)include/
 	cp $(XZ_DIR)$(XZ_NAME) .
 
-$(BZ2_NAME):
+$(BZ2_NAME): | checkout-submodules
 	@echo "building bzip2"
 	cd ./bzip2/ ; make bzip2
 	cp ./bzip2/$(BZ2_NAME) .
 
-$(LZ4_NAME):
+$(LZ4_NAME): | checkout-submodules
 	@echo "building lz4"
 	cd ./lz4/ ; make CC=$(CC) liblz4.a
 	cp ./lz4/lib/$(LZ4_NAME) .
 
-$(LIBAR_OUT_FILE_NAME): | checkout-submodules $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
+$(LIBAR_OUT_FILE_NAME): $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
 	@echo "building libarchive"
 	cmake -S./libarchive/ -B$(LIBAR_DIR) $(CMAKE_OPTIONS) $(LIBAR_CMAKE_OPTIONS) $(LIBAR_DEP_INCLUDES)
 	cd $(LIBAR_DIR) ; make archive_static
@@ -96,6 +91,7 @@ ifeq ($(OS),Windows_NT)
 	cd $(PCRE2_DIR) ; $(CMAKE_BUILD_TOOL) clean
 endif
 	$(RM) $(LIBAR_OUT_FILE_NAME)
+	$(RM) $(LIBZ_NAME)
 	$(RM) $(XZ_NAME)
 	$(RM) $(BZ2_NAME)
 	$(RM) $(LZ4_NAME)
