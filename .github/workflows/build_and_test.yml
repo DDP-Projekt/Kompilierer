@@ -76,7 +76,7 @@ jobs:
 
     - name: Build
       run:  |
-        make -j4 ${{ steps.cache-pcre2.outputs.cache-hit == 'true' && '--old-file=libpcre2-8.a' || '' }} ${{ steps.cache-libarchive.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }}
+        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }}
 
     - name: Run tests
       run: make test
