@@ -15,6 +15,7 @@ PCRE2_DIR = ./pcre2_build/
 ZLIB_DIR = ./zlib_build/
 XZ_DIR = ./xz_build/
 
+LIBZ_BUILD_NAME = libz.a
 LIBZ_NAME = libz.a
 XZ_NAME = liblzma.a
 BZ2_NAME = libbz2.a
@@ -31,7 +32,7 @@ LIBAR_DEP_INCLUDES = -DZLIB_LIBRARY=./$(LIBZ_NAME) -DZLIB_INCLUDE_DIR=$(ZLIB_DIR
 	-DBZIP2_LIBRARIES=./$(BZ2_NAME) -DBZIP2_INCLUDE_DIR=./bzip2/
 
 ifeq ($(OS),Windows_NT)
-# windows
+	LIBZ_BUILD_NAME=libzlibstatic.a
 else
 	CMAKE_GENERATOR="Unix Makefiles"
 endif
@@ -60,8 +61,8 @@ $(LIBZ_NAME):
 	cd $(ZLIB_DIR) ; make zlibstatic
 	mkdir -p $(ZLIB_DIR)include
 	cp ./zlib/*.h $(ZLIB_DIR)include/
-	mv $(ZLIB_DIR)zconf.h $(ZLIB_DIR)include/
-	cp $(ZLIB_DIR)libzlibstatic.a $(LIBZ_NAME)
+	cp $(ZLIB_DIR)zconf.h $(ZLIB_DIR)include/
+	cp $(ZLIB_DIR)$(LIBZ_BUILD_NAME) $(LIBZ_NAME)
 
 $(XZ_NAME):
 	@echo "building lzma"

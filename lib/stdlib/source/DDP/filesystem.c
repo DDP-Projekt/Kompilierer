@@ -399,7 +399,7 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 		return 0;
 	}
 
-	int fd = open(Pfad->str, O_WRONLY | O_TRUNC | O_CREAT);
+	int fd = open(Pfad->str, O_WRONLY | O_TRUNC | O_CREAT, 0200);
 	if (fd < 0) {
 		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return 0;
