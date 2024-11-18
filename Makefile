@@ -45,6 +45,13 @@ MKDIR = mkdir -p
 SED = sed -u
 TAR = tar
 
+define cp_if_exists
+	@if [ -f $(1) ]; then \
+		echo copying $(1) to $(2); \
+		$(CP) $(1) $(2); \
+	fi
+endef
+
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
@@ -132,33 +139,29 @@ runtime-debug: $(OUT_DIR) ## same as runtime but prints debugging information
 external: $(OUT_DIR)
 	@echo "building all external libraries"
 	cd $(EXT_DIR) ; '$(MAKE)' all
-	@if [ -f $(EXT_DIR)$(EXT_BIN_PCRE2) ]; then \
-		echo copying $(EXT_DIR)$(EXT_BIN_PCRE2) to $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
-		$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
-	fi
-	@if [ -f $(PCRE2_HEADERS) ]; then \
-		$(MKDIR) $(PCRE2_HEADERS_OUT_DIR); \
-		echo copying $(PCRE2_HEADERS) to $(STD_DIR_OUT)$(PCRE2_HEADERS_OUT_DIR); \
-		$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR); \
-	fi
-	@echo copying $(EXT_DIR)$(EXT_BIN_LIBAR) to $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
-	$(CP) $(EXT_DIR)$(EXT_BIN_LIBAR) $(LIB_DIR_OUT)$(EXT_BIN_LIBAR)
-	
-	@echo copying $(EXT_DIR)$(EXT_BIN_LIBZ) to $(LIB_DIR_OUT)$(EXT_BIN_LIBZ)
-	$(CP) $(EXT_DIR)$(EXT_BIN_LIBZ) $(LIB_DIR_OUT)$(EXT_BIN_LIBZ)
 
-	@echo copying $(EXT_DIR)$(EXT_BIN_LIBLZMA) to $(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA)
-	$(CP) $(EXT_DIR)$(EXT_BIN_LIBLZMA) $(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA)
+	# copy pcre2
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_PCRE2),$(LIB_DIR_OUT)$(EXT_BIN_PCRE2))
+	$(MKDIR) $(PCRE2_HEADERS_OUT_DIR)
+	@$(call cp_if_exists,$(PCRE2_HEADERS),$(PCRE2_HEADERS_OUT_DIR))
 
-	@echo copying $(EXT_DIR)$(EXT_BIN_LIBBZ2) to $(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2)
-	$(CP) $(EXT_DIR)$(EXT_BIN_LIBBZ2) $(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2)
-
-	@echo copying $(EXT_DIR)$(EXT_BIN_LIBLZ4) to $(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4)
-	$(CP) $(EXT_DIR)$(EXT_BIN_LIBLZ4) $(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4)
-
+	# copy libarchive
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBAR),$(LIB_DIR_OUT)$(EXT_BIN_LIBAR))
 	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
-	@echo copying LIBAR_HEADERS to $(LIBAR_HEADERS_OUT_DIR)
-	$(CP) $(LIBAR_DIR)*.h $(LIBAR_HEADERS_OUT_DIR) # evaluate LIBAR_DIR/*.h here, as the directory might not have been checkout at the start of the Makefile
+	@$(call cp_if_exists,$(LIBAR_DIR)*.h,$(LIBAR_HEADERS_OUT_DIR))
+	
+	# copy libz
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBZ),$(LIB_DIR_OUT)$(EXT_BIN_LIBZ))
+
+	# copy liblzma
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZMA),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA))
+
+	# copy libbz2
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBBZ2),$(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2))
+
+	# copy liblz4
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZ4),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4))
+
 
 $(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
 	@echo "creating output directories"
