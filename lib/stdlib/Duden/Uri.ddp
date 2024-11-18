@@ -1,0 +1,86 @@
+Binde "Duden/Regex" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Wir nennen die öffentliche Kombination aus
+    dem Text RoheUri mit Standardwert "",
+    dem öffentlichen Text Schema mit Standardwert "",
+    dem öffentlichen Text Nutzer mit Standardwert "",
+    dem öffentlichen Text Host mit Standardwert "",
+    dem öffentlichen Text Port mit Standardwert "",
+    dem öffentlichen Text Pfad mit Standardwert "",
+    dem öffentlichen Text Abfrage mit Standardwert "",
+    dem öffentlichen Text Fragment mit Standardwert "",
+eine Uri,
+und erstellen sie so:
+    "eine leere Uri"
+
+Der Text uri_regex ist "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?".
+Der Text authority_regex ist "^((.+)@)?([a-zA-Z0-9-\\._~%!$&'\\(\\)\\*\\+,;=]+)(:(\\d+))?".
+Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt eine Uri zurück, macht:
+    Diese Funktion könnte einen Fehler melden.
+
+    Der Treffer t ist der erste Treffer von uri_regex in uri.
+    Wenn es dabei einen Fehler gab oder (text von t) leer ist, 
+        gib eine leere Uri zurück.
+    
+    Die Uri ergebnis ist eine leere Uri.
+    Speichere text von t in RoheUri von ergebnis.
+    Speichere gruppen von t an der Stelle 2 in Schema von ergebnis.
+
+    [authority]
+    Wenn (gruppen von t an der Stelle 4) nicht leer ist, dann:
+        Der Treffer t ist der erste Treffer von authority_regex in (gruppen von t an der Stelle 4).
+        Wenn es dabei keinen Fehler gab, dann:
+            Speichere gruppen von t an der Stelle 2 in Nutzer von ergebnis.
+            Speichere gruppen von t an der Stelle 3 in Host von ergebnis.
+            Speichere gruppen von t an der Stelle 5 in Port von ergebnis.
+
+    Speichere gruppen von t an der Stelle 5 in Pfad von ergebnis.
+    Speichere gruppen von t an der Stelle 7 in Abfrage von ergebnis.
+    Speichere gruppen von t an der Stelle 9 in Fragment von ergebnis.
+
+    Gib ergebnis zurück.
+Und überlädt den "als" Operator.
+
+Die Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt einen Text zurück, macht:
+    [ TODO: durch TextBauer ersetzen ]
+    Der Text t ist "".
+    
+    Wenn (Schema von uri) nicht leer ist, dann:
+        Füge (Schema von uri) an t an.
+        Füge ':' an t an.
+
+    Wenn (Host von uri) nicht leer ist, dann:
+        Füge "//" an t an.
+        Wenn (Nutzer von uri) nicht leer ist, dann:
+            Füge (Nutzer von uri) an t an.
+            Füge '@' an t an.
+        Füge (Host von uri) an t an.
+        Wenn (Port von uri) nicht leer ist, dann:
+            Füge ':' an t an.
+            Füge (Port von uri) an t an.
+
+    Füge (Pfad von uri) an t an.
+
+    Wenn (Abfrage von uri) nicht leer ist, dann:
+        Füge '?' an t an.
+        Füge (Abfrage von uri) an t an.
+
+    Wenn (Fragment von uri) nicht leer ist, dann:
+        Füge '#' an t an.
+        Füge (Fragment von uri) an t an.
+    
+    Gib t zurück.
+Und überlädt den "als" Operator.
+
+Schreibe ab jetzt alle Fehler.
+Der Text uri ist "http://bafto:test@www.ics.uci.edu:8080/pub/ietf/uri/?a=5&b=6#Related".
+
+Die Uri u ist uri als Uri.
+Schreibe (u als Text) auf eine Zeile.
+
+Der Text uri2 ist "/pub/ietf/uri/?a=5&b=6#Related".
+Die Uri u2 ist uri2 als Uri.
+Schreibe (u2 als Text) auf eine Zeile.

@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 typedef struct Treffer {
 	ddpstring text;
 	ddpstringlist gruppen;
@@ -49,7 +48,18 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 
 	ddp_ddpstringlist_from_constants(&tr->gruppen, capture_count - 1);
 	for (int i = 0; i < capture_count; i++) {
-		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
+		switch (pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length)) {
+		case PCRE2_ERROR_UNSET:
+		case PCRE2_ERROR_NOSUBSTRING:
+			*(i == 0 ? &tr->text : &tr->gruppen.arr[i - 1]) = DDP_EMPTY_STRING;
+			continue;
+		case PCRE2_ERROR_UNAVAILABLE:
+			ddp_error("Keine Gruppe mit Nummer %d vorhanden", false, i);
+			continue;
+		case PCRE2_ERROR_NOMEMORY:
+			ddp_runtime_error(1, "out of memory during regex parsing");
+			continue;
+		}
 
 		ddp_string_from_constant(i == 0 ? &tr->text : &tr->gruppen.arr[i - 1], (char *)substring);
 
