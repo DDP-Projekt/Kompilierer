@@ -109,8 +109,28 @@ func (p *parser) importStatement() ast.Statement {
 				Err: p.lastError,
 			}
 		}
+
+	} else if p.matchAny(token.ALLE, token.REKURSIV) {
+		isRecursive := p.previous().Type == token.REKURSIV
+		if isRecursive {
+			p.consume(token.ALLE)
+		}
+		p.consume(token.MODULE, token.AUS)
+		if p.consume(token.STRING) {
+			stmt = &ast.ImportStmt{
+				FileName:          *p.previous(),
+				ImportedSymbols:   nil,
+				IsDirectoryImport: true,
+				IsRecursive:       isRecursive,
+			}
+		} else {
+			return &ast.BadStmt{
+				Tok: *p.peek(),
+				Err: p.lastError,
+			}
+		}
 	} else {
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "ein Text Literal oder ein Name"))
+		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "ein Text Literal, ein Name, 'alle' oder 'rekursiv'"))
 		return &ast.BadStmt{
 			Tok: *p.peek(),
 			Err: p.lastError,

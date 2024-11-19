@@ -1,0 +1,6 @@
+Binde "Duden/Ausgabe" ein.
+
+Die öffentliche Funktion bar gibt nichts zurück, macht:
+	Schreibe "bar" auf eine Zeile.
+Und kann so benutzt werden:
+	"bar"

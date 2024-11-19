@@ -70,8 +70,10 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
-		if _, err := compileWithImportsRec(imprt.Module, destCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
-			return nil, err
+		for _, imprtMod := range imprt.Modules {
+			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -478,8 +480,6 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		varLocation = c.NewAlloca(Typ.IrType())
 	}
 
-	Var := c.scp.addVar(d.Name(), varLocation, Typ, false)
-
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
 		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
@@ -494,7 +494,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
 		}
 
-		c.claimOrCopy(Var, initVal, Typ, isTemp)
+		c.claimOrCopy(varLocation, initVal, Typ, isTemp)
 	}
 
 	if c.scp.enclosing == nil { // module_init
@@ -510,7 +510,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		c.moduleInitFunc, c.moduleInitCbb = c.cf, c.cbb
 
 		c.cf, c.cbb = c.moduleDisposeFunc, c.moduleDisposeFunc.Blocks[0]
-		c.freeNonPrimitive(Var, Typ) // free the variable in module_dispose
+		c.freeNonPrimitive(varLocation, Typ) // free the variable in module_dispose
 
 		c.cf, c.cbb = cf, cbb
 	}
@@ -520,6 +520,8 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if c.cf != nil && c.cbb != nil { // ddp_main
 		addInitializer()
 	}
+
+	c.scp.addVar(d.Name(), varLocation, Typ, false)
 	return ast.VisitRecurse
 }
 
@@ -1996,7 +1998,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 }
 
 func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
-	if s.Module == nil {
+	if len(s.Modules) == 0 {
 		c.err("importStmt.Module == nil")
 	}
 
@@ -2027,8 +2029,12 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 	})
 	// only call the module init func once per module
 	// and also initialize the modules that this module imports
-	ast.IterateModuleImports(s.Module, func(module *ast.Module) {
-		if _, alreadyImported := c.importedModules[module]; !alreadyImported {
+	for _, mod := range s.Modules {
+		ast.IterateModuleImports(mod, func(module *ast.Module) {
+			if _, alreadyImported := c.importedModules[module]; alreadyImported {
+				return
+			}
+
 			init_name, dispose_name := getModuleInitDisposeName(module)
 			module_init := c.mod.NewFunc(init_name, c.void.IrType())
 			module_init.Linkage = enum.LinkageExternal
@@ -2044,8 +2050,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.insertFunction(dispose_name, nil, module_dispose)
 
 			c.importedModules[module] = struct{}{}
-		}
-	})
+		})
+	}
 	return ast.VisitRecurse
 }
 

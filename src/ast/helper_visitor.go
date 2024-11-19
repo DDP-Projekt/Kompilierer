@@ -99,8 +99,8 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 
 	// visit imports
 	for _, imprt := range imports {
-		if imprt.Module != nil {
-			visitModuleRec(imprt.Module, visitor, visited)
+		for _, mod := range imprt.Modules {
+			visitModuleRec(mod, visitor, visited)
 		}
 	}
 

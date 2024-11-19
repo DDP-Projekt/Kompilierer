@@ -55,8 +55,8 @@ func iterateModuleImportsRec(module *Module, fun func(*Module), visited map[*Mod
 	}
 	visited[module] = struct{}{}
 	for _, imprt := range module.Imports {
-		if imprt.Module != nil {
-			iterateModuleImportsRec(imprt.Module, fun, visited)
+		for _, mod := range imprt.Modules {
+			iterateModuleImportsRec(mod, fun, visited)
 		}
 	}
 	fun(module)
