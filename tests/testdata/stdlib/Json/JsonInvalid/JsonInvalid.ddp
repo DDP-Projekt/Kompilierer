@@ -2,8 +2,23 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/json" ein.
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/HashTabelle" ein.
+Binde "Duden/Listen" ein.
 
 Der JsonWert json ist JSON_NULL.
 Speichere den JsonWert in "[1 true]" in json.
 Wenn es dabei keinen Fehler gab, Schreibe "Es hätte einen Fehler geben sollen" auf eine Zeile.
 Sonst Schreibe "[1 true] Fehler" auf eine Zeile.
+
+[
+TODO: fix recursion
+
+Die Buchstaben Liste b ist 100000 Mal '['.
+Speichere den JsonWert in (b aneinandergehängt) in json.
+Wenn es dabei keinen Fehler gab, Schreibe "Es hätte einen Fehler geben sollen" auf eine Zeile.
+Sonst Schreibe "Rekursiv" auf eine Zeile.
+
+Die Buchstaben Liste b2 ist 100000 Mal '{'.
+Speichere den JsonWert in (b2 aneinandergehängt) in json.
+Wenn es dabei keinen Fehler gab, Schreibe "Es hätte einen Fehler geben sollen" auf eine Zeile.
+Sonst Schreibe "Rekursiv2" auf eine Zeile.
+]
