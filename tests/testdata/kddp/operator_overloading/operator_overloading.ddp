@@ -76,6 +76,10 @@ Die Funktion cast mit dem Parameter a vom Typ Zahl, gibt eine Zahl zurück, mach
 	Gib a plus 1 zurück.
 Und überlädt den "als" Operator.
 
+Die Funktion cast_new_type mit dem Parameter a vom Typ Zahl, gibt einen Text zurück, macht:
+	Gib "Zahl" zurück.
+Und überlädt den "als" Operator.
+
 Die Funktion cast2 mit dem Parameter a vom Typ Text, gibt einen Text zurück, macht:
 	Gib a verkettet mit " gecasted" zurück.
 Und überlädt den "als" Operator.
@@ -89,6 +93,7 @@ Die Funktion cast4 mit dem Parameter a vom Typ Typdefinition, gibt einen Text zu
 Und überlädt den "als" Operator.
 
 Schreibe (22 als Zahl) auf eine Zeile.
+Schreibe (22 als Text) auf eine Zeile.
 Schreibe ("Hallo" als Text) auf eine Zeile.
 Schreibe (eine neue Struktur als Text) auf eine Zeile.
 Schreibe ((eine neue Struktur als Typdefinition) als Text) auf eine Zeile.
