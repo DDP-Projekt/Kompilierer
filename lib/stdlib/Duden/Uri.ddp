@@ -44,7 +44,7 @@ Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt ein
     Gib ergebnis zurück.
 Und überlädt den "als" Operator.
 
-Die Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt einen Text zurück, macht:
+Die öffentliche Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt einen Text zurück, macht:
     [ TODO: durch TextBauer ersetzen ]
     Der Text t ist "".
     
@@ -74,13 +74,3 @@ Die Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt einen Text zur�
     
     Gib t zurück.
 Und überlädt den "als" Operator.
-
-Schreibe ab jetzt alle Fehler.
-Der Text uri ist "http://bafto:test@www.ics.uci.edu:8080/pub/ietf/uri/?a=5&b=6#Related".
-
-Die Uri u ist uri als Uri.
-Schreibe (u als Text) auf eine Zeile.
-
-Der Text uri2 ist "/pub/ietf/uri/?a=5&b=6#Related".
-Die Uri u2 ist uri2 als Uri.
-Schreibe (u2 als Text) auf eine Zeile.

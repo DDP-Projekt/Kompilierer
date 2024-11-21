@@ -1,0 +1,13 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Uri" ein.
+
+Die Uri u ist "https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri.
+
+Schreibe (Schema von u) auf eine Zeile.
+Schreibe (Nutzer von u) auf eine Zeile.
+Schreibe (Host von u) auf eine Zeile.
+Schreibe (Port von u) auf eine Zeile.
+Schreibe (Pfad von u) auf eine Zeile.
+Schreibe (Abfrage von u) auf eine Zeile.
+Schreibe (Fragment von u) auf eine Zeile.
+Schreibe (u als Text) auf eine Zeile.
