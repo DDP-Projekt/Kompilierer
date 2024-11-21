@@ -11,7 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
-- [Added] Funktionen in Duden/Texte: Text_Worte und Spalten_Spaltmenge_Text_Ref
+- [Added] Funktionen in Duden/Texte: Text_Worte und Spalten_Spaltmenge_Text
 - [Added] Duden/TextIterator um effizient über Texte zu iterieren
 - [Fix] Der "als" Operator kann nun für verschiedene Rückgabetypen überladen werden
 - [Fix] Man kann eine Variable, die eine andere überschreibt jetzt mit dieser initialisieren
