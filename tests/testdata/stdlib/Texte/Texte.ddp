@@ -282,3 +282,17 @@ Schreibe ("a" mit 4 ' ' rechts gepolstert) auf eine Zeile.
 Schreibe ("a  " mit 4 ' ' rechts gepolstert) auf eine Zeile.
 Schreibe ("a      " mit 4 ' ' rechts gepolstert) auf eine Zeile.
 Schreibe ("" mit 4 ' ' rechts gepolstert) auf eine Zeile.
+
+Schreibe '\n'.
+
+[Spalten_Spaltmenge_Text]
+Schreibe ("Hallo Welt" anhand der Spaltmenge (' ' als Buchstaben Liste) gespalten) auf eine Zeile.
+Schreibe ("Hallo \r\nWelt" anhand der Spaltmenge " \r\n" gespalten) auf eine Zeile.
+Schreibe ("Hallo \r\nWelt\r" anhand der Spaltmenge " \r\n" gespalten) auf eine Zeile.
+Schreibe ("\rHallo \r\nWelt\r" anhand der Spaltmenge " \r\n" gespalten) auf eine Zeile.
+Schreibe ("\rHallo \r\nWelt" anhand der Spaltmenge " \r\n" gespalten) auf eine Zeile.
+
+Schreibe '\n'.
+
+[Text_Worte]
+Schreibe (alle Worte in " Hallo du schöne Welt!") auf eine Zeile.

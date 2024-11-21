@@ -1,5 +1,6 @@
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Listen" ein.
+Binde "Duden/TextIterator" ein.
 
 [
 	Gibt "" zurück.
@@ -874,3 +875,84 @@ Die öffentliche Funktion Vergleiche_Text mit den Parametern text1 und text2 vom
 	Gib (text1 an der Stelle i) als Zahl minus (text2 an der Stelle i) als Zahl zurück.
 Und kann so benutzt werden:
 	"<text1> mit <text2> verglichen"
+
+[
+	Spaltet text anhand der gegebenen Spaltmenge in Teiltexte.
+	Beispiel: text = "Hallo\n\rWelt\n!", spaltmenge = "\n\r" -> ["Hallo", "Welt", "!"]
+]
+Die öffentliche Funktion Spalten_Spaltmenge_Text_Ref mit den Parametern text und spaltmenge vom Typ Text Referenz und Buchstaben Listen Referenz, gibt eine Text Liste zurück, macht:
+	Wenn die Länge von text gleich 0 ist, gib eine leere Text Liste zurück.
+	Wenn die Länge von spaltmenge gleich 0 ist, gib text als Text Liste zurück.
+
+	Die Text Liste endliste ist eine leere Text Liste.
+	
+	Der TextIterator iter ist ein TextIterator über text.
+	Solange iter nicht zuende ist, mache:
+		Solange spaltmenge (den momentanen Buchstaben von iter) enthält, erhöhe iter um 1.
+		Wenn iter zuende ist, verlasse die Schleife.
+
+		Die Zahl i ist der momentane Index von iter.
+		Solange iter nicht zuende ist und spaltmenge (den momentanen Buchstaben von iter) nicht enthält, mache:
+			Erhöhe iter um 1.
+		Füge (text im Bereich von i bis (iter als Zahl minus 1)) an endliste an.
+		Erhöhe iter um 1.
+
+	Gib endliste zurück.
+Und kann so benutzt werden:
+	"<text> anhand der Spaltmenge <spaltmenge> gespalten"
+
+[
+	Spaltet text anhand der gegebenen Spaltmenge in Teiltexte.
+	Beispiel: text = "Hallo\n\rWelt\n!", spaltmenge = "\n\r" -> ["Hallo", "Welt", "!"]
+]
+Die öffentliche Funktion Spalten_Spaltmenge_Text mit den Parametern text und spaltmenge vom Typ Text und Buchstaben Liste, gibt eine Text Liste zurück, macht:
+	Gib text anhand der Spaltmenge spaltmenge gespalten zurück.
+Und kann so benutzt werden:
+	"<text> anhand der Spaltmenge <spaltmenge> gespalten"
+
+[
+	Spaltet text anhand der gegebenen Spaltmenge in Teiltexte.
+	Beispiel: text = "Hallo\n\rWelt\n!", spaltmenge = "\n\r" -> ["Hallo", "Welt", "!"]
+]
+Die öffentliche Funktion Spalten_Spaltmenge_Text_RefMenge mit den Parametern text und spaltmenge vom Typ Text und Buchstaben Listen Referenz, gibt eine Text Liste zurück, macht:
+	Gib text anhand der Spaltmenge spaltmenge gespalten zurück.
+Und kann so benutzt werden:
+	"<text> anhand der Spaltmenge <spaltmenge> gespalten"
+
+[
+	Spaltet text anhand der gegebenen Spaltmenge in Teiltexte.
+	Beispiel: text = "Hallo\n\rWelt\n!", spaltmenge = "\n\r" -> ["Hallo", "Welt", "!"]
+]
+Die öffentliche Funktion Spalten_SpaltmengeText_Text mit den Parametern text und spaltmenge vom Typ Text und Text, gibt eine Text Liste zurück, macht:
+	Gib text anhand der Spaltmenge (die Buchstaben in spaltmenge) gespalten zurück.
+Und kann so benutzt werden:
+	"<text> anhand der Spaltmenge <spaltmenge> gespalten"
+
+Die Buchstaben Liste leerzeichen ist eine Liste, die aus 
+' ', '\n', '\t', '\r', 13 als Buchstabe, 14 als Buchstabe
+besteht.
+
+[
+	Gibt die von leerzeichen getrennten Worte in text zurück.
+	Leerzeichen: ' ', '\n', '\t', '\r', 13 als Buchstabe, 14 als Buchstabe.
+	Beispiel:
+		"Die Worte in Hallo Welt!" -> ["Die", "Worte", "in", "Hallo", "Welt!"]
+		"Die\r\nWorte in \rHallo Welt!" -> ["Die", "Worte", "in", "Hallo", "Welt!"]
+]
+Die öffentliche Funktion Text_Worte_Ref mit dem Parameter text vom Typ Text Referenz, gibt eine Text Liste zurück, macht:
+	Gib text anhand der Spaltmenge leerzeichen gespalten zurück.
+Und kann so benutzt werden:
+	"die Worte in <text>",
+	"den Worten in <text>",
+	"alle Worte in <text>",
+	"allen Worten in <text>",
+	"<text> in Worte unterteilt"
+
+Die öffentliche Funktion Text_Worte mit dem Parameter text vom Typ Text, gibt eine Text Liste zurück, macht:
+	Gib die Worte in text zurück.
+Und kann so benutzt werden:
+	"die Worte in <text>",
+	"den Worten in <text>",
+	"alle Worte in <text>",
+	"allen Worten in <text>",
+	"<text> in Worte unterteilt"
