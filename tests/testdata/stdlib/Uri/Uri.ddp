@@ -1,5 +1,8 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Uri" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
 
 Die Funktion Schreibe_Uri_Komponente mit dem Parameter uri vom Typ Uri, gibt nichts zurück, macht:
     Schreibe (uri als Text verkettet mit " | ").
@@ -16,6 +19,7 @@ Und kann so benutzt werden:
 Schreibe ("https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri).
 Schreibe ("https://de.wikipedia.org/wiki/Uniform_Resource_Identifier" als Uri).
 Schreibe ("ftp://ftp.is.co.za/rfc/rfc1808.txt" als Uri).
+Schreibe ("file:///C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html" als Uri).
 Schreibe ("file:///etc/fstab" als Uri).
 Schreibe ("geo:48.33,14.122;u=22.5" als Uri).
 Schreibe ("ldap://[2001:db8::7]/c=GB?objectClass?one" als Uri).

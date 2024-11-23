@@ -17,7 +17,7 @@ und erstellen sie so:
     "eine leere Uri"
 
 Der Text uri_regex ist "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?".
-Der Text authority_regex ist "^((.+)@)?([a-zA-Z0-9-\\._~%!$&'\\(\\)\\*\\+,;=]+)(:(\\d+))?".
+Der Text authority_regex ist "^((.+)@)?((\\[[:0-9A-Fa-f.]+\\])|([a-zA-Z0-9\\-\\._~!$&'\\(\\)\\*\\+,;=])*)(:(\\d+))?".
 Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt eine Uri zurück, macht:
     Diese Funktion könnte einen Fehler melden.
 
@@ -32,10 +32,10 @@ Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt ein
     [authority]
     Wenn (gruppen von t an der Stelle 4) nicht leer ist, dann:
         Der Treffer t ist der erste Treffer von authority_regex in (gruppen von t an der Stelle 4).
-        Wenn es dabei keinen Fehler gab, dann:
+        Wenn es dabei keinen Fehler gab und (text von t) nicht leer ist, dann:
             Speichere gruppen von t an der Stelle 2 in Nutzer von ergebnis.
             Speichere gruppen von t an der Stelle 3 in Host von ergebnis.
-            Speichere gruppen von t an der Stelle 5 in Port von ergebnis.
+            Speichere gruppen von t an der Stelle 7 in Port von ergebnis.
 
     Speichere gruppen von t an der Stelle 5 in Pfad von ergebnis.
     Speichere gruppen von t an der Stelle 7 in Abfrage von ergebnis.
@@ -52,8 +52,11 @@ Die öffentliche Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt ei
         Füge (Schema von uri) an t an.
         Füge ':' an t an.
 
+	[URN edge case]
+	Wenn (Host von uri) nicht leer ist oder '/' am Anfang von (Pfad von uri) steht, dann:
+		Füge "//" an t an.
+
     Wenn (Host von uri) nicht leer ist, dann:
-        Füge "//" an t an.
         Wenn (Nutzer von uri) nicht leer ist, dann:
             Füge (Nutzer von uri) an t an.
             Füge '@' an t an.
