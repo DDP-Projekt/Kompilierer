@@ -13,6 +13,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/resolver"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
@@ -448,6 +449,11 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	valid := true
 	for _, overload := range overloads {
 		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
+			// the als Operator is also differentiated by it's return type
+			if decl.Operator == ast.CAST_OP && !ddptypes.Equal(decl.ReturnType, overload.ReturnType) {
+				continue
+			}
+
 			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
 			valid = false
 		}

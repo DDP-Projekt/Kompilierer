@@ -12,6 +12,7 @@ Der Changelog von DDP. Sortiert nach Release.
 ## In Entwicklung
 
 - [Added] Duden/Uri
+- [Fix] Der "als" Operator kann nun für verschiedene Rückgabetypen überladen werden
 - [Fix] Man kann eine Variable, die eine andere überschreibt jetzt mit dieser initialisieren
 - [Added] Man kann jetzt (auch rekursiv) alle Module aus einem Ordner einbinden
 - [Fix] Vorwärts Deklarationen geben nun keinen "undefined reference" Fehler mehr, wenn man sie einbindet
