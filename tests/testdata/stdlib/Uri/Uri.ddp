@@ -1,13 +1,31 @@
 Binde "Duden/Ausgabe" ein.
 Binde "Duden/Uri" ein.
 
-Die Uri u ist "https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri.
+Die Funktion Schreibe_Uri_Komponente mit dem Parameter uri vom Typ Uri, gibt nichts zurück, macht:
+    Schreibe (uri als Text verkettet mit " | ").
+    Schreibe (Schema von uri verkettet mit " | ").
+    Schreibe (Nutzer von uri verkettet mit " | ").
+    Schreibe (Host von uri verkettet mit " | ").
+    Schreibe (Port von uri verkettet mit " | ").
+    Schreibe (Pfad von uri verkettet mit " | ").
+    Schreibe (Abfrage von uri verkettet mit " | ").
+    Schreibe (Fragment von uri) auf eine Zeile.
+Und kann so benutzt werden:
+    "Schreibe <uri>"
 
-Schreibe (Schema von u) auf eine Zeile.
-Schreibe (Nutzer von u) auf eine Zeile.
-Schreibe (Host von u) auf eine Zeile.
-Schreibe (Port von u) auf eine Zeile.
-Schreibe (Pfad von u) auf eine Zeile.
-Schreibe (Abfrage von u) auf eine Zeile.
-Schreibe (Fragment von u) auf eine Zeile.
-Schreibe (u als Text) auf eine Zeile.
+Schreibe ("https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri).
+Schreibe ("https://de.wikipedia.org/wiki/Uniform_Resource_Identifier" als Uri).
+Schreibe ("ftp://ftp.is.co.za/rfc/rfc1808.txt" als Uri).
+Schreibe ("file:///etc/fstab" als Uri).
+Schreibe ("geo:48.33,14.122;u=22.5" als Uri).
+Schreibe ("ldap://[2001:db8::7]/c=GB?objectClass?one" als Uri).
+Schreibe ("gopher://gopher.floodgap.com" als Uri).
+Schreibe ("mailto:John.Doe@example.com" als Uri).
+Schreibe ("sip:911@pbx.mycompany.com" als Uri).
+Schreibe ("news:comp.infosystems.www.servers.unix" als Uri).
+Schreibe ("data:text/plain;charset=iso-8859-7,%be%fa%be" als Uri).
+Schreibe ("tel:+1-816-555-1212" als Uri).
+Schreibe ("telnet://192.0.2.16:80/" als Uri).
+Schreibe ("urn:oasis:names:specification:docbook:dtd:xml:4.1.2" als Uri).
+Schreibe ("git://github.com/rails/rails.git" als Uri).
+Schreibe ("crid://broadcaster.com/movies/BestActionMovieEver" als Uri).
