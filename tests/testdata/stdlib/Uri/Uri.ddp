@@ -25,6 +25,8 @@ Schreibe ("geo:48.33,14.122;u=22.5" als Uri).
 Schreibe ("ldap://[2001:db8::7]/c=GB?objectClass?one" als Uri).
 Schreibe ("gopher://gopher.floodgap.com" als Uri).
 Schreibe ("mailto:John.Doe@example.com" als Uri).
+Schreibe ("mailto:jemand@beispiel.com,jemand_anderes@beispiel.com" als Uri).
+Schreibe ("mailto:jemand@beispiel.com?subject=Betreff&cc=jemand_anderes@beispiel.com&body=Dies%20ist%20eine%20Textnachricht" als Uri).
 Schreibe ("sip:911@pbx.mycompany.com" als Uri).
 Schreibe ("news:comp.infosystems.www.servers.unix" als Uri).
 Schreibe ("data:text/plain;charset=iso-8859-7,%be%fa%be" als Uri).
