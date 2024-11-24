@@ -1,6 +1,7 @@
  |  |  |  |  |  |  | 
 https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor | https | user:password | example.com | 8080 | /index.html | a=hi&b=bye | anchor
 https://de.wikipedia.org/wiki/Uniform_Resource_Identifier | https |  | de.wikipedia.org |  | /wiki/Uniform_Resource_Identifier |  | 
+https://ddp.bafto.dev/Spielplatz/?nolines&readonly | https |  | ddp.bafto.dev |  | /Spielplatz/ | nolines&readonly | 
 ftp://ftp.is.co.za/rfc/rfc1808.txt | ftp |  | ftp.is.co.za |  | /rfc/rfc1808.txt |  | 
 file:///C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html | file |  |  |  | /C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html |  | 
 file:///etc/fstab | file |  |  |  | /etc/fstab |  | 
