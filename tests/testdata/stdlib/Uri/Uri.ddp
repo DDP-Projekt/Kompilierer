@@ -37,3 +37,21 @@ Schreibe ("telnet://192.0.2.16:80/" als Uri).
 Schreibe ("urn:oasis:names:specification:docbook:dtd:xml:4.1.2" als Uri).
 Schreibe ("git://github.com/rails/rails.git" als Uri).
 Schreibe ("crid://broadcaster.com/movies/BestActionMovieEver" als Uri).
+
+Schreibe "\nAbfragen\n" auf eine Zeile.
+
+Schreibe ("a=b&c=d" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+Schreibe ("a=hi&b=bye" einen AbfragenParameter mit Namen "b" enthält) auf eine Zeile.
+Schreibe ("a=b&c=d" einen AbfragenParameter mit Namen "d" enthält) auf eine Zeile.
+Schreibe ("a&c=d" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+Schreibe ("" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+
+Schreibe ((alle AbfragenParameter aus "a=b&c=d") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "a&c=d") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "a=hi&b=bye") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "") als Text) auf eine Zeile.
+
+Schreibe (den Wert des AbfragenParameters "a" aus "a=b&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "a&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "a=hi&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "") auf eine Zeile.

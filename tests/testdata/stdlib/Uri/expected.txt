@@ -19,3 +19,19 @@ telnet://192.0.2.16:80/ | telnet |  | 192.0.2.16 | 80 | / |  |
 urn:oasis:names:specification:docbook:dtd:xml:4.1.2 | urn |  |  |  | oasis:names:specification:docbook:dtd:xml:4.1.2 |  | 
 git://github.com/rails/rails.git | git |  | github.com |  | /rails/rails.git |  | 
 crid://broadcaster.com/movies/BestActionMovieEver | crid |  | broadcaster.com |  | /movies/BestActionMovieEver |  | 
+
+Abfragen
+
+wahr
+wahr
+falsch
+wahr
+falsch
+a=b&c=d
+a&c=d
+a=hi&b=bye
+
+b
+
+hi
+
