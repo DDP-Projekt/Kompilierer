@@ -16,6 +16,7 @@ Die Funktion Schreibe_Uri_Komponente mit dem Parameter uri vom Typ Uri, gibt nic
 Und kann so benutzt werden:
     "Schreibe <uri>"
 
+Schreibe ("" als Uri).
 Schreibe ("https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri).
 Schreibe ("https://de.wikipedia.org/wiki/Uniform_Resource_Identifier" als Uri).
 Schreibe ("ftp://ftp.is.co.za/rfc/rfc1808.txt" als Uri).

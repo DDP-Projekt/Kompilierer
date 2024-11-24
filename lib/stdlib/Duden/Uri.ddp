@@ -1,5 +1,4 @@
 Binde "Duden/Regex" ein.
-Binde "Duden/Ausgabe" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Fehlerbehandlung" ein.
 
@@ -20,6 +19,7 @@ Der Text uri_regex ist "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*)
 Der Text authority_regex ist "^((.+)@)?((\\[[:0-9A-Fa-f.]+\\])|([a-zA-Z0-9\\-\\._~!$&'\\(\\)\\*\\+,;=])*)(:(\\d+))?".
 Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt eine Uri zurück, macht:
     Diese Funktion könnte einen Fehler melden.
+	Wenn uri leer ist, gib eine leere Uri zurück.
 
     Der Treffer t ist der erste Treffer von uri_regex in uri.
     Wenn es dabei einen Fehler gab oder (text von t) leer ist, 
