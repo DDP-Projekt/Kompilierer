@@ -1,0 +1,57 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Uri" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Die Funktion Schreibe_Uri_Komponente mit dem Parameter uri vom Typ Uri, gibt nichts zurück, macht:
+    Schreibe (uri als Text verkettet mit " | ").
+    Schreibe (Schema von uri verkettet mit " | ").
+    Schreibe (Nutzer von uri verkettet mit " | ").
+    Schreibe (Host von uri verkettet mit " | ").
+    Schreibe (Port von uri verkettet mit " | ").
+    Schreibe (Pfad von uri verkettet mit " | ").
+    Schreibe (Abfrage von uri verkettet mit " | ").
+    Schreibe (Fragment von uri) auf eine Zeile.
+Und kann so benutzt werden:
+    "Schreibe <uri>"
+
+Schreibe ("" als Uri).
+Schreibe ("https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri).
+Schreibe ("https://de.wikipedia.org/wiki/Uniform_Resource_Identifier" als Uri).
+Schreibe ("https://ddp.bafto.dev/Spielplatz/?nolines&readonly" als Uri).
+Schreibe ("ftp://ftp.is.co.za/rfc/rfc1808.txt" als Uri).
+Schreibe ("file:///C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html" als Uri).
+Schreibe ("file:///etc/fstab" als Uri).
+Schreibe ("geo:48.33,14.122;u=22.5" als Uri).
+Schreibe ("ldap://[2001:db8::7]/c=GB?objectClass?one" als Uri).
+Schreibe ("gopher://gopher.floodgap.com" als Uri).
+Schreibe ("mailto:John.Doe@example.com" als Uri).
+Schreibe ("mailto:jemand@beispiel.com,jemand_anderes@beispiel.com" als Uri).
+Schreibe ("mailto:jemand@beispiel.com?subject=Betreff&cc=jemand_anderes@beispiel.com&body=Dies%20ist%20eine%20Textnachricht" als Uri).
+Schreibe ("sip:911@pbx.mycompany.com" als Uri).
+Schreibe ("news:comp.infosystems.www.servers.unix" als Uri).
+Schreibe ("data:text/plain;charset=iso-8859-7,%be%fa%be" als Uri).
+Schreibe ("tel:+1-816-555-1212" als Uri).
+Schreibe ("telnet://192.0.2.16:80/" als Uri).
+Schreibe ("urn:oasis:names:specification:docbook:dtd:xml:4.1.2" als Uri).
+Schreibe ("git://github.com/rails/rails.git" als Uri).
+Schreibe ("crid://broadcaster.com/movies/BestActionMovieEver" als Uri).
+
+Schreibe "\nAbfragen\n" auf eine Zeile.
+
+Schreibe ("a=b&c=d" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+Schreibe ("a=hi&b=bye" einen AbfragenParameter mit Namen "b" enthält) auf eine Zeile.
+Schreibe ("a=b&c=d" einen AbfragenParameter mit Namen "d" enthält) auf eine Zeile.
+Schreibe ("a&c=d" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+Schreibe ("" einen AbfragenParameter mit Namen "a" enthält) auf eine Zeile.
+
+Schreibe ((alle AbfragenParameter aus "a=b&c=d") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "a&c=d") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "a=hi&b=bye") als Text) auf eine Zeile.
+Schreibe ((alle AbfragenParameter aus "") als Text) auf eine Zeile.
+
+Schreibe (den Wert des AbfragenParameters "a" aus "a=b&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "a&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "a=hi&c=d") auf eine Zeile.
+Schreibe (den Wert des AbfragenParameters "a" aus "") auf eine Zeile.

@@ -3,10 +3,10 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include "DDP/ddpmemory.h"
 #include "DDP/error.h"
+#include "DDP/utf8/utf8.h"
 #include <pcre2.h>
 #include <stdio.h>
 #include <string.h>
-
 
 typedef struct Treffer {
 	ddpstring text;
@@ -44,16 +44,38 @@ static pcre2_code *compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstri
 }
 
 static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_count) {
-	PCRE2_UCHAR *substring;
-	PCRE2_SIZE substring_length;
+	int num_capture_groups = pcre2_get_ovector_count(match_data);
 
-	ddp_ddpstringlist_from_constants(&tr->gruppen, capture_count - 1);
-	for (int i = 0; i < capture_count; i++) {
-		pcre2_substring_get_bynumber(match_data, i, &substring, &substring_length);
+	ddp_ddpstringlist_from_constants(&tr->gruppen, num_capture_groups - 1);
+	for (int i = 0; i < num_capture_groups; i++) {
+		ddpstring *dest = i == 0 ? &tr->text : &tr->gruppen.arr[i - 1];
 
-		ddp_string_from_constant(i == 0 ? &tr->text : &tr->gruppen.arr[i - 1], (char *)substring);
+		PCRE2_SIZE substr_len;
+		int rc;
+		switch ((rc = pcre2_substring_length_bynumber(match_data, i, &substr_len))) {
+		case 0: // success
+			break;
+		case PCRE2_ERROR_UNSET:
+			*dest = DDP_EMPTY_STRING;
+			continue;
+		case PCRE2_ERROR_NOSUBSTRING:
+		case PCRE2_ERROR_UNAVAILABLE:
+			ddp_error("Keine Gruppe mit Nummer %d vorhanden", false, i);
+			continue;
+		default:
+			ddp_error("Die Länge von Gruppe %d konnte nicht bestimmt werden: %d", false, i, rc);
+			continue;
+		}
 
-		pcre2_substring_free(substring);
+		dest->cap = substr_len + 1;
+		dest->str = DDP_ALLOCATE(char, dest->cap);
+		substr_len = dest->cap;
+
+		switch (pcre2_substring_copy_bynumber(match_data, i, (PCRE2_UCHAR8 *)dest->str, &substr_len)) {
+		case PCRE2_ERROR_NOMEMORY:
+			ddp_runtime_error(1, "out of memory during regex parsing: %lld", substr_len);
+			continue;
+		}
 	}
 }
 
@@ -81,13 +103,13 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 
 	// Perform the match
 	int rc = pcre2_match(
-		re,			// the compiled pattern
-		subject,	// the subject string
-		text->cap,	// the length of the subject
-		0,			// start at offset 0 in the subject
-		0,			// default options
-		match_data, // block for storing the result
-		NULL		// use default match context
+		re,						// the compiled pattern
+		subject,				// the subject string
+		utf8_strlen(text->str), // the length of the subject
+		0,						// start at offset 0 in the subject
+		0,						// default options
+		match_data,				// block for storing the result
+		NULL					// use default match context
 	);
 
 	// Check the result
@@ -135,9 +157,9 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	// Perform the match
 	while (i < n || n == -1) {
 		int rc = pcre2_match(
-			re,		   // the compiled pattern
-			subject,   // the subject string
-			text->cap, // the length of the subject
+			re,						// the compiled pattern
+			subject,				// the subject string
+			utf8_strlen(text->str), // the length of the subject
 			start_offset,
 			0,			// default options
 			match_data, // block for storing the result
@@ -265,9 +287,9 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	// Perform the match
 	while (true) {
 		int rc = pcre2_match(
-			re,		   // the compiled pattern
-			subject,   // the subject string
-			text->cap, // the length of the subject
+			re,						// the compiled pattern
+			subject,				// the subject string
+			utf8_strlen(text->str), // the length of the subject
 			start_offset,
 			0,			// default options
 			match_data, // block for storing the result
