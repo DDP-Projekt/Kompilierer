@@ -1,0 +1,10 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion foo mit dem Parameter t vom Typ Text, gibt einen Text zurück, macht:
+	Gib t zurück.
+Und kann so benutzt werden:
+	"foo <t>"
+
+Schreibe (foo "Hallo" verkettet mit " Welt") auf eine Zeile.
+Schreibe ('a' verkettet mit foo " b") auf eine Zeile.
+Schreibe (foo "Hallo" verkettet mit 'b') auf eine Zeile.
