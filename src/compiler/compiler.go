@@ -1903,6 +1903,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if irReturnType.IsPrimitive() {
 		c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
 	} else {
+		c.cbb.NewStore(irReturnType.DefaultValue(), ret)
 		c.cbb.NewCall(fun.irFunc, args...)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(ret, irReturnType)
 		c.latestIsTemp = true
