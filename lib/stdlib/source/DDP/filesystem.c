@@ -221,6 +221,7 @@ static void formatDateStr(ddpstring *str, struct tm *time) {
 	char buff[30];
 	int size = sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon + 1, time->tm_year + 1900);
 
+	str->refc = NULL;
 	str->cap = size + 1;
 	str->str = DDP_ALLOCATE(char, str->cap);
 	strcpy(str->str, buff);
@@ -232,7 +233,7 @@ void Zugriff_Datum(ddpstring *ret, ddpstring *Pfad) {
 
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		*ret = (ddpstring){0};
+		*ret = DDP_EMPTY_STRING;
 		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
@@ -246,7 +247,7 @@ void AEnderung_Datum(ddpstring *ret, ddpstring *Pfad) {
 
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		*ret = (ddpstring){0};
+		*ret = DDP_EMPTY_STRING;
 		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
@@ -260,7 +261,7 @@ void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
 
 	struct stat st;
 	if (stat(Pfad->str, &st) != 0) {
-		*ret = (ddpstring){0};
+		*ret = DDP_EMPTY_STRING;
 		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
 		return;
 	}
@@ -752,6 +753,7 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	}
 
 	// preallocate the string
+	ret->refc = NULL;
 	ret->str = DDP_ALLOCATE(char, N + 1);
 	ret->cap = N + 1;
 	ret->str[N] = '\0';
@@ -865,6 +867,7 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 		}
 	}
 	// EOF reached
+	ret->refc = NULL;
 	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
 	ret->str[ret->cap] = '\0';
 	ret->cap++;

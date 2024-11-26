@@ -115,6 +115,7 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 		i2 += utf8_indicated_num_bytes(str->str[i2]);
 	}
 
+	ret->refc = NULL;
 	ret->cap = (i2 - i1) + 1;				   // + 1 because null-terminator
 	ret->cap += utf8_num_bytes(str->str + i2); // + 1 because indices are inclusive
 	ret->str = ddp_reallocate(ret->str, 0, ret->cap);
@@ -125,7 +126,7 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 // concatenate two strings
 // guarantees that any memory allocated by str1 is either claimed for the result or freed
 void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str2) {
-	DDP_DBGLOG("_ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
+	DDP_DBGLOG("ddp_string_string_verkettet: %p, %p, ret: %p", str1, str2, ret);
 
 	if (ddp_string_empty(str1) && ddp_string_empty(str2)) {
 		*ret = DDP_EMPTY_STRING;
@@ -140,6 +141,7 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 		return;
 	}
 
+	ret->refc = NULL;
 	ret->cap = str1->cap - 1 + str2->cap;					   // remove 1 null-terminator
 	ret->str = ddp_reallocate(str1->str, str1->cap, ret->cap); // reallocate str1
 	memcpy(&ret->str[str1->cap - 1], str2->str, str2->cap);	   // append str2 and overwrite str1's null-terminator
@@ -164,6 +166,7 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 		return;
 	}
 
+	ret->refc = NULL;
 	ret->cap = str->cap + num_bytes;
 	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
 	memmove(&ret->str[num_bytes], ret->str, str->cap);
@@ -189,6 +192,7 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 		return;
 	}
 
+	ret->refc = NULL;
 	ret->cap = str->cap + num_bytes;
 	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
 	memcpy(&ret->str[str->cap - 1], temp, num_bytes);
@@ -224,6 +228,7 @@ void ddp_int_to_string(ddpstring *ret, ddpint i) {
 	string[len] = '\0';
 
 	// set the string fields
+	ret->refc = NULL;
 	ret->str = string;
 	ret->cap = len + 1;
 }
@@ -239,6 +244,7 @@ void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
 	string[len] = '\0';
 
 	// set the string fields
+	ret->refc = NULL;
 	ret->str = string;
 	ret->cap = len + 1;
 }
@@ -257,6 +263,7 @@ void ddp_bool_to_string(ddpstring *ret, ddpbool b) {
 		string = DDP_ALLOCATE(char, 7);
 		memcpy(string, "falsch", 7);
 	}
+	ret->refc = NULL;
 	ret->str = string;
 }
 
@@ -273,6 +280,7 @@ void ddp_char_to_string(ddpstring *ret, ddpchar c) {
 	memcpy(string, temp, num_bytes);
 	string[num_bytes] = '\0';
 
+	ret->refc = NULL;
 	ret->cap = num_bytes + 1;
 	ret->str = string;
 }

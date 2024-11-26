@@ -58,6 +58,7 @@ void Arbeitsverzeichnis(ddpstring *ret) {
 		char *string = DDP_ALLOCATE(char, len);
 		memcpy(string, buffer, len);
 
+		ret->refc = NULL;
 		ret->str = string;
 		ret->cap = len;
 		return;

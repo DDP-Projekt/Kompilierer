@@ -193,7 +193,8 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 		dstPtr := c.indexStruct(ret, int64(i))
 		if !field.IsPrimitive() {
 			srcPtr := c.indexStruct(structParam, int64(i))
-			c.deepCopyInto(dstPtr, srcPtr, field)
+			// c.deepCopyInto(dstPtr, srcPtr, field)
+			c.copyInto(dstPtr, srcPtr, field)
 		} else {
 			c.cbb.NewStore(c.loadStructField(structParam, int64(i)), dstPtr)
 		}

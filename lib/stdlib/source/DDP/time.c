@@ -15,6 +15,7 @@ ddpint Zeit_Seit_Programmstart(void) {
 }
 
 void Zeit_Lokal(ddpstring *ret) {
+	*ret = DDP_EMPTY_STRING;
 	// get time
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);

@@ -14,6 +14,7 @@ void Hole_Umgebungsvariable(ddpstring *ret, ddpstring *Name) {
 
 	const char *env = getenv(Name->str);
 	if (env) {
+		ret->refc = NULL;
 		ret->cap = strlen(env) + 1;
 		ret->str = DDP_ALLOCATE(char, ret->cap);
 		strcpy(ret->str, env);
