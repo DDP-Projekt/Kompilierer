@@ -141,7 +141,7 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 		return;
 	}
 
-	ret->refc = NULL;
+	ret->refc = str1->refc;
 	ret->cap = str1->cap - 1 + str2->cap;					   // remove 1 null-terminator
 	ret->str = ddp_reallocate(str1->str, str1->cap, ret->cap); // reallocate str1
 	memcpy(&ret->str[str1->cap - 1], str2->str, str2->cap);	   // append str2 and overwrite str1's null-terminator
@@ -166,7 +166,7 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 		return;
 	}
 
-	ret->refc = NULL;
+	ret->refc = str->refc;
 	ret->cap = str->cap + num_bytes;
 	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
 	memmove(&ret->str[num_bytes], ret->str, str->cap);
@@ -192,7 +192,7 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 		return;
 	}
 
-	ret->refc = NULL;
+	ret->refc = str->refc;
 	ret->cap = str->cap + num_bytes;
 	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
 	memcpy(&ret->str[str->cap - 1], temp, num_bytes);
