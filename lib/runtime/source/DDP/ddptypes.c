@@ -1,4 +1,5 @@
 #include "DDP/ddptypes.h"
+#include "DDP/common.h"
 #include "DDP/ddpmemory.h"
 #include "DDP/debug.h"
 #include <stdlib.h>
@@ -7,7 +8,7 @@
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
 void ddp_string_from_constant(ddpstring *ret, char *str) {
-	DDP_DBGLOG("_ddp_string_from_constant: ret: %p, str: %s", ret, str);
+	DDP_DBGLOG("ddp_string_from_constant: ret: %p, str: %s", ret, str);
 	size_t size = strlen(str) + 1;
 	if (size == 1) {
 		*ret = DDP_EMPTY_STRING;
@@ -19,27 +20,77 @@ void ddp_string_from_constant(ddpstring *ret, char *str) {
 	memcpy(string, str, size);
 
 	// set the string fields
+	ret->refc = NULL;
 	ret->str = string;
 	ret->cap = size;
 }
 
 // free a ddpstring
 void ddp_free_string(ddpstring *str) {
-	DDP_DBGLOG("free_string: %p", str);
-	DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
+	DDP_DBGLOG("free_string: %p, refc: %p, str: %p, cap: " DDP_INT_FMT, str, str->refc, str->str, str->cap);
+	if (str->refc == NULL) {
+		DDP_DBGLOG("freeing str only");
+		DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
+		return;
+	}
+
+	if (--(*str->refc) == 0) {
+		DDP_DBGLOG("freeing str and refc: %d", *str->refc);
+		DDP_FREE(ddpint, str->refc);
+		DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
+	} else {
+		DDP_DBGLOG("refc now at " DDP_INT_FMT, *str->refc);
+	}
 }
 
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
-	DDP_DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
+	DDP_DBGLOG("ddp_deep_copy_string: %p, ret: %p", str, ret);
 	if (ret == str) {
 		return;
 	}
 	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap);		  // copy the chars
 	// set the fields of the copy
+	ret->refc = NULL;
 	ret->str = cpy;
 	ret->cap = str->cap;
+}
+
+void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str) {
+	DDP_DBGLOG("ddp_shallow_copy_string: %p, ret: %p", str, ret);
+	if (ret == str) {
+		return;
+	}
+
+	if (str->refc == NULL) {
+		DDP_DBGLOG("allocating refc");
+		str->refc = DDP_ALLOCATE(ddpint, 1);
+		*str->refc = 1;
+	}
+
+	*str->refc += 1;
+	DDP_DBGLOG("refc now at " DDP_INT_FMT, *str->refc);
+
+	// set the fields of the copy
+	ret->refc = str->refc;
+	ret->str = str->str;
+	ret->cap = str->cap;
+}
+
+// copies a string into itself
+void ddp_perform_cow_string(ddpstring *str) {
+	DDP_DBGLOG("ddp_perform_cow_string: %p", str);
+	if (str->refc == NULL || *str->refc == 1) {
+		return;
+	}
+
+	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
+	memcpy(cpy, str->str, str->cap);		  // copy the chars
+	// set the fields of the copy
+	*str->refc -= 1;
+	str->refc = NULL;
+	str->str = cpy;
 }
 
 // returns wether the length of str is 0
@@ -60,6 +111,7 @@ extern vtable ddpbool_vtable;
 extern vtable ddpchar_vtable;
 
 static bool is_primitive_vtable(vtable *table) {
+	DDP_DBGLOG("is_primitive: %lld, %p, %p, %p", table->type_size, table->free_func, table->deep_copy_func, table->equal_func);
 	return table != NULL && table->free_func == NULL;
 }
 
@@ -68,18 +120,22 @@ void ddp_free_any(ddpany *any) {
 	DDP_DBGLOG("free_any: %p, vtable: %p", any, any->vtable_ptr);
 
 	if (any->vtable_ptr == NULL) {
+		DDP_DBGLOG("vtable is NULL");
 		return;
 	}
 
-	if (!is_primitive_vtable(any->vtable_ptr) && any->value_ptr != NULL) {
+	if (!is_primitive_vtable(any->vtable_ptr)) {
+		DDP_DBGLOG("freeing non-primitive any value");
 		// free the underlying value
 		any->vtable_ptr->free_func(DDP_ANY_VALUE_PTR(any));
 	}
 
 	// free the memory allocated for the value itself
-	if (!DDP_IS_SMALL_ANY(any) && any->value_ptr != NULL) {
+	if (!DDP_IS_SMALL_ANY(any)) {
+		DDP_DBGLOG("freeing big any");
 		ddp_reallocate(any->value_ptr, any->vtable_ptr->type_size, 0);
 	}
+	DDP_DBGLOG("freed any");
 }
 
 // places a copy of any in ret

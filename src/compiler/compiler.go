@@ -389,6 +389,15 @@ func (c *compiler) deepCopyInto(dest, src value.Value, typ ddpIrType) value.Valu
 	return dest
 }
 
+func (c *compiler) copyInto(dest, src value.Value, typ ddpIrType) value.Value {
+	if typ == c.ddpstring {
+		c.cbb.NewCall(c.ddpstring.shallowCopyIrFun, dest, src)
+	} else {
+		c.deepCopyInto(dest, src, typ)
+	}
+	return dest
+}
+
 // calls the corresponding free function on val
 // if typ.IsPrimitive() == false
 func (c *compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
@@ -405,7 +414,8 @@ func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp b
 			val = c.cbb.NewLoad(valTyp.IrType(), c.scp.claimTemporary(val))
 			c.cbb.NewStore(val, dest)
 		} else { // non-temporaries need to be copied
-			c.deepCopyInto(dest, val, valTyp)
+			// c.deepCopyInto(dest, val, valTyp)
+			c.copyInto(dest, val, valTyp)
 		}
 	} else { // primitives are trivially copied
 		c.cbb.NewStore(val, dest) // store the value
@@ -697,7 +707,8 @@ func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 		c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
 	} else {
 		dest := c.NewAlloca(fieldType.IrType())
-		c.deepCopyInto(dest, fieldPtr, fieldType)
+		// c.deepCopyInto(dest, fieldPtr, fieldType)
+		c.copyInto(dest, fieldPtr, fieldType)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
 		c.latestIsTemp = true
 	}
@@ -788,7 +799,8 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 			if listType.elementType.IsPrimitive() {
 				c.cbb.NewStore(val, elementPtr)
 			} else {
-				c.deepCopyInto(elementPtr, val, listType.elementType)
+				// c.deepCopyInto(elementPtr, val, listType.elementType)
+				c.copyInto(elementPtr, val, listType.elementType)
 			}
 		})
 	}
@@ -1162,7 +1174,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 						} else {
 							dest := c.NewAlloca(listType.elementType.IrType())
 							c.latestReturn, c.latestReturnType = c.scp.addTemporary(
-								c.deepCopyInto(dest, elementPtr, listType.elementType),
+								// c.deepCopyInto(dest, elementPtr, listType.elementType),
+								c.copyInto(dest, elementPtr, listType.elementType),
 								listType.elementType,
 							)
 							c.latestIsTemp = true // the element is now also a temporary
@@ -1609,7 +1622,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.scp.claimTemporary(lhs) // don't call free func on the now invalid any
 			} else {
 				// non-temporaries are simply deep copied
-				c.deepCopyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.IrType()), nonPrimTyp)
+				// c.deepCopyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.IrType()), nonPrimTyp)
+				c.copyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.IrType()), nonPrimTyp)
 			}
 			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, nonPrimTyp)
 			c.latestIsTemp = true
@@ -2058,10 +2072,13 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
 
+	// TODO: when list types are also cow, this function has to return wether
+	// a list element would be changed
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
 	if lhsStringIndexing != nil {
 		index, _, _ := c.evaluate(lhsStringIndexing.Index)
+		c.cbb.NewCall(c.ddpstring.performCowIrFun, lhs)
 		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
@@ -2367,7 +2384,8 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 			element := c.cbb.NewLoad(inListTyp.elementType.IrType(), elementPtr)
 			c.cbb.NewStore(element, loopVar.val)
 		} else {
-			c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
+			// c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
+			c.copyInto(loopVar.val, elementPtr, inListTyp.elementType)
 		}
 	}
 	breakLeave := c.cf.NewBlock("")

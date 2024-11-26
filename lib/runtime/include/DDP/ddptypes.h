@@ -7,8 +7,10 @@
 #ifndef DDP_TYPES_H
 #define DDP_TYPES_H
 
-#include "common.h"
 #include <assert.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 static_assert(sizeof(void *) == 8, "sizeof(void*) != 8, unexpected errors could occur");
 
@@ -20,12 +22,13 @@ typedef int32_t ddpchar; // needs to be 32 bit to hold every possible unicode ch
 
 // a ddp string is a null-terminated utf8-encoded byte array
 typedef struct {
-	char *str;	// the byte array
-	ddpint cap; // the capacity of the array
+	ddpint *refc; // refcount for cow
+	char *str;	  // the byte array
+	ddpint cap;	  // the capacity of the array
 } ddpstring;
 
 // to be sure it matches the vtable declaration in ir_string_type.go
-static_assert(sizeof(ddpstring) == 16, "sizeof(ddpstring) != 16");
+static_assert(sizeof(ddpstring) == 24, "sizeof(ddpstring) != 24");
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
@@ -34,6 +37,10 @@ void ddp_string_from_constant(ddpstring *ret, char *str);
 void ddp_free_string(ddpstring *str);
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str);
+// shallowly copies a string
+void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str);
+// copies a string into itself
+void ddp_perform_cow_string(ddpstring *str);
 // returns wether the length of str is 0
 ddpbool ddp_string_empty(ddpstring *str);
 // returns the strlen of str->str or 0 if str is NULL
@@ -161,9 +168,7 @@ extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
 	(capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
 
 #define DDP_EMPTY_STRING \
-	(ddpstring) {        \
-		NULL, 0          \
-	}
+	(ddpstring){NULL, NULL, 0}
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \
@@ -173,9 +178,8 @@ extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
 	}
 
 #define DDP_EMPTY_LIST(type) \
-	(type) {                 \
-		NULL, 0, 0           \
-	}
+	(type){                  \
+		NULL, 0, 0}
 
 // useful typedefs to use when interfacing with ddp code
 

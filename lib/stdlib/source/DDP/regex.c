@@ -67,6 +67,7 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 			continue;
 		}
 
+		dest->refc = NULL;
 		dest->cap = substr_len + 1;
 		dest->str = DDP_ALLOCATE(char, dest->cap);
 		substr_len = dest->cap;
@@ -307,7 +308,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 
 		int start = pcre2_get_ovector_pointer(match_data)[0];
 
-		ddpstring r;
+		ddpstring r = DDP_EMPTY_STRING;
 		r.str = DDP_ALLOCATE(char, start - start_offset + 1);
 		strncpy(r.str, text->str + start_offset, start - start_offset);
 
@@ -335,7 +336,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 		ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
 	}
 
-	ddpstring r;
+	ddpstring r = DDP_EMPTY_STRING;
 	r.str = DDP_ALLOCATE(char, ddp_strlen(text) - start_offset + 1);
 	strncpy(r.str, text->str + start_offset, ddp_strlen(text) - start_offset);
 

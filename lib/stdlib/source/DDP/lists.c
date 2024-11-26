@@ -246,6 +246,7 @@ void efficient_list_insert_range_any(ddpanylistref list, ddpint index, ddpanylis
 }
 
 void Aneinandergehaengt_Buchstabe_Ref(ddpstring *ret, ddpcharlistref liste) {
+	*ret = DDP_EMPTY_STRING;
 	size_t num_bytes = 0;
 	ddpchar *end = &liste->arr[liste->len];
 	for (ddpchar *it = liste->arr; it != end; it++) {

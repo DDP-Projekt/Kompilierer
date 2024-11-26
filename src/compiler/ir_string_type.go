@@ -24,6 +24,8 @@ type ddpIrStringType struct {
 	fromConstantsIrFun     *ir.Func // the fromConstans ir func
 	freeIrFun              *ir.Func // the free ir func
 	deepCopyIrFun          *ir.Func // the deepCopy ir func
+	shallowCopyIrFun       *ir.Func // the shallowCopy ir func
+	performCowIrFun        *ir.Func // the performCow ir func
 	equalsIrFun            *ir.Func // the equals ir func
 	lengthIrFun            *ir.Func // the string_length ir func
 	indexIrFun             *ir.Func // the string_index ir func
@@ -59,6 +61,7 @@ func (*ddpIrStringType) IsPrimitive() bool {
 func (t *ddpIrStringType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
 		constant.NewNull(i8ptr),
+		constant.NewNull(i8ptr),
 		zero,
 	)
 }
@@ -84,19 +87,21 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 }
 
 const (
-	string_str_field_index = 0
-	string_cap_field_index = 1
+	string_str_field_index = 1
+	string_cap_field_index = 2
 )
 
 func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
-		i8ptr,  // char* str
+		i8ptr,  // ddpint* refc;
+		i8ptr,  // char* str;
 		ddpint, // ddpint cap;
 	))
 	ddpstring.ptr = ptr(ddpstring.typ)
 
 	ddpstring.llType = llvm.StructType([]llvm.Type{
+		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.Int64Type(),
 	}, false)
@@ -111,6 +116,10 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 
 	// places a copy of str in ret allocating new buffers
 	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr))
+
+	ddpstring.shallowCopyIrFun = c.declareExternalRuntimeFunction("ddp_shallow_copy_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr))
+
+	ddpstring.performCowIrFun = c.declareExternalRuntimeFunction("ddp_perform_cow_string", c.void.IrType(), ir.NewParam("str", ddpstring.ptr))
 
 	// checks wether the two strings are equal
 	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
@@ -150,7 +159,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 		vtable.Visibility = enum.VisibilityDefault
 	} else {
 		vtable = c.mod.NewGlobalDef(ddpstring.Name()+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-			newInt(16),
+			newInt(24),
 			ddpstring.freeIrFun,
 			ddpstring.deepCopyIrFun,
 			ddpstring.equalsIrFun,
