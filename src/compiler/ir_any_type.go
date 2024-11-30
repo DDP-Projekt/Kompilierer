@@ -14,12 +14,14 @@ import (
 // exactly once as it declares all the runtime bindings needed
 // to work with anys
 type ddpIrAnyType struct {
-	typ           types.Type         // the ir struct type
-	ptr           *types.PointerType // ptr(typ)
-	llType        llvm.Type
-	freeIrFun     *ir.Func // the free ir func
-	deepCopyIrFun *ir.Func // the deepCopy ir func
-	equalsIrFun   *ir.Func // the equals ir func
+	typ              types.Type         // the ir struct type
+	ptr              *types.PointerType // ptr(typ)
+	llType           llvm.Type
+	freeIrFun        *ir.Func // the free ir func
+	deepCopyIrFun    *ir.Func // the deepCopy ir func
+	shallowCopyIrFun *ir.Func // the shallowCopy ir func
+	performCowIrFun  *ir.Func // the performCow ir func
+	equalsIrFun      *ir.Func // the equals ir func
 }
 
 var _ ddpIrType = (*ddpIrAnyType)(nil)
@@ -44,6 +46,7 @@ var i8_zero = newIntT(i8, 0)
 
 func (t *ddpIrAnyType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
+		constant.NewNull(ptr(ddpint)),
 		constant.NewNull(i8ptr),
 		constant.NewArray(any_value_type,
 			i8_zero, i8_zero, i8_zero, i8_zero,
@@ -69,6 +72,14 @@ func (t *ddpIrAnyType) DeepCopyFunc() *ir.Func {
 	return t.deepCopyIrFun
 }
 
+func (t *ddpIrAnyType) ShallowCopyFunc() *ir.Func {
+	return t.shallowCopyIrFun
+}
+
+func (t *ddpIrAnyType) PerformCowFunc() *ir.Func {
+	return t.performCowIrFun
+}
+
 func (t *ddpIrAnyType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
@@ -79,12 +90,14 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	ddpany := &ddpIrAnyType{}
 	// see equivalent in runtime/include/ddptypes.h
 	ddpany.typ = c.mod.NewTypeDef("ddpany", types.NewStruct(
+		ptr(ddpint),    // ddpint *refc;
 		i8ptr,          // vtable *vtable_ptr
 		any_value_type, // uint8_t value[16]
 	))
 	ddpany.ptr = ptr(ddpany.typ)
 
 	ddpany.llType = llvm.StructType([]llvm.Type{
+		llvm.PointerType(llvm.Int64Type(), 0),
 		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.ArrayType(llvm.Int8Type(), 16),
 	}, false)
@@ -94,6 +107,10 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 
 	// places a copy of any in ret
 	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", c.void.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
+	// places a shallow copy of any in ret
+	ddpany.shallowCopyIrFun = c.declareExternalRuntimeFunction("ddp_shallow_copy_any", c.void.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
+
+	ddpany.performCowIrFun = c.declareExternalRuntimeFunction("ddp_perform_cow_any", c.void.IrType(), ir.NewParam("any", ddpany.ptr))
 
 	// compares two any
 	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", ddpbool, ir.NewParam("any1", ddpany.ptr), ir.NewParam("any2", ddpany.ptr))
@@ -104,8 +121,9 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 // helper functions for working with big vs small anys
 
 const (
-	any_vtable_ptr_index = 0
-	any_value_index      = 1
+	any_refc_index       = 0
+	any_vtable_ptr_index = 1
+	any_value_index      = 2
 )
 
 // loads the size from the any's vtable
@@ -162,6 +180,7 @@ func (c *compiler) castNonAnyToAny(val value.Value, typ ddpIrType, isTemp bool, 
 	}
 
 	var result value.Value = c.NewAlloca(c.ddpany.IrType())
+	c.cbb.NewStore(c.ddpany.DefaultValue(), result)
 
 	result_vtable_ptr_ptr := c.indexStruct(result, any_vtable_ptr_index)
 

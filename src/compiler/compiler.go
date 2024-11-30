@@ -390,11 +390,7 @@ func (c *compiler) deepCopyInto(dest, src value.Value, typ ddpIrType) value.Valu
 }
 
 func (c *compiler) copyInto(dest, src value.Value, typ ddpIrType) value.Value {
-	if typ == c.ddpstring {
-		c.cbb.NewCall(c.ddpstring.shallowCopyIrFun, dest, src)
-	} else {
-		c.deepCopyInto(dest, src, typ)
-	}
+	c.cbb.NewCall(typ.ShallowCopyFunc(), dest, src)
 	return dest
 }
 
@@ -679,7 +675,7 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 }
 
 func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
-	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
+	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false, false)
 
 	if stringIndexing != nil {
 		lhs, _, _ := c.evaluate(stringIndexing.Lhs)
@@ -701,7 +697,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 }
 
 func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
-	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
+	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false, false)
 
 	if fieldType.IsPrimitive() {
 		c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
@@ -1809,14 +1805,19 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 // helper for VisitAssignStmt and VisitFuncCall
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
-func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
+// the third parameter tells the function wether or not to CoW parents before returning the value ref
+func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool, perform_cow bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Declaration.Name())
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
-		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
+		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref, perform_cow) // get the (possibly nested) assignable
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
+			if perform_cow {
+				c.cbb.NewCall(listTyp.performCowIrFun, lhs)
+			}
+
 			index, _, _ := c.evaluate(assign.Index)
 			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
 			listLen := c.loadStructField(lhs, list_len_field_index)
@@ -1832,12 +1833,16 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 			})
 			return elementPtr, listTyp.elementType, nil
 		} else if !as_ref && lhsTyp == c.ddpstring {
+			if perform_cow {
+				c.cbb.NewCall(c.ddpstring.performCowIrFun, lhs)
+			}
+
 			return lhs, lhsTyp, assign
 		} else {
 			c.err("non-list/string/struct type passed as assignable/reference")
 		}
 	case *ast.FieldAccess:
-		rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
+		rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref, perform_cow)
 		if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
 			fieldIndex := getFieldIndex(assign.Field.Literal.Literal, structTyp)
 			fieldPtr := c.indexStruct(rhs, fieldIndex)
@@ -1879,7 +1884,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		// differentiate between references and normal parameters
 		if param.Type.IsReference {
 			if assign, ok := e.Args[param.Name.Literal].(ast.Assigneable); ok {
-				val, _, _ = c.evaluateAssignableOrReference(assign, true)
+				val, _, _ = c.evaluateAssignableOrReference(assign, true, false)
 			} else {
 				c.err("non-assignable passed as reference to %s", fun.funcDecl.Name())
 			}
@@ -2073,13 +2078,10 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
 
-	// TODO: when list types are also cow, this function has to return wether
-	// a list element would be changed
-	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
+	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false, true)
 
 	if lhsStringIndexing != nil {
 		index, _, _ := c.evaluate(lhsStringIndexing.Index)
-		c.cbb.NewCall(c.ddpstring.performCowIrFun, lhs)
 		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list

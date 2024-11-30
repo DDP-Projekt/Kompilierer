@@ -23,7 +23,9 @@ type ddpIrType interface {
 	VTable() constant.Constant       // returns a pointer to the vtable of this type
 	LLVMType() llvm.Type             // returns the llvm type
 	FreeFunc() *ir.Func              // returns the irFunc used to free this type, nil if IsPrimitive == true
-	DeepCopyFunc() *ir.Func          // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
+	DeepCopyFunc() *ir.Func          // returns the irFunc used to create a deepCopy of this type, nil if IsPrimitive == true
+	ShallowCopyFunc() *ir.Func       // returns the irFunc used to create a shallowCopy of this type, nil if IsPrimitive == true
+	PerformCowFunc() *ir.Func        // only present for strings, lists and anys
 	EqualsFunc() *ir.Func            // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
 }
 
@@ -75,6 +77,14 @@ func (*ddpIrPrimitiveType) DeepCopyFunc() *ir.Func {
 	return nil
 }
 
+func (*ddpIrPrimitiveType) ShallowCopyFunc() *ir.Func {
+	return nil
+}
+
+func (*ddpIrPrimitiveType) PerformCowFunc() *ir.Func {
+	return nil
+}
+
 func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
 	return nil
 }
@@ -85,6 +95,7 @@ func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Con
 	// the single field is a dummy pointer to make the struct non-zero sized
 	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
 		ptr(types.NewFunc(types.Void, typ_ptr)),
+		ptr(types.NewFunc(types.Void, typ_ptr, typ_ptr)),
 		ptr(types.NewFunc(types.Void, typ_ptr, typ_ptr)),
 		ptr(types.NewFunc(ddpbool, typ_ptr, typ_ptr)),
 	))
@@ -99,6 +110,7 @@ func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Con
 			constant.NewNull(vtable_type.(*types.StructType).Fields[0].(*types.PointerType)),
 			constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
 			constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
+			constant.NewNull(vtable_type.(*types.StructType).Fields[3].(*types.PointerType)),
 		))
 	}
 
@@ -151,6 +163,14 @@ func (*ddpIrVoidType) FreeFunc() *ir.Func {
 }
 
 func (*ddpIrVoidType) DeepCopyFunc() *ir.Func {
+	return nil
+}
+
+func (*ddpIrVoidType) ShallowCopyFunc() *ir.Func {
+	return nil
+}
+
+func (*ddpIrVoidType) PerformCowFunc() *ir.Func {
 	return nil
 }
 
