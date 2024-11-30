@@ -48,18 +48,21 @@ ddpint ddp_strlen(ddpstring *str);
 
 typedef void (*free_func_ptr)(void *);
 typedef void (*deep_copy_func_ptr)(void *, void *);
+typedef void (*shallow_copy_func_ptr)(void *, void *);
 typedef ddpbool (*equal_func_ptr)(void *, void *);
 
 typedef struct {
 	ddpint type_size;
 	free_func_ptr free_func;
 	deep_copy_func_ptr deep_copy_func;
+	shallow_copy_func_ptr shallow_copy_func;
 	equal_func_ptr equal_func;
 } vtable;
 
 #define DDP_SMALL_ANY_BUFF_SIZE 16
 
 typedef struct {
+	ddpint *refc; // refcount for copy on write
 	vtable *vtable_ptr;
 	union {
 		void *value_ptr;
@@ -78,13 +81,18 @@ typedef struct {
 void ddp_free_any(ddpany *any);
 // places a copy of any in ret
 void ddp_deep_copy_any(ddpany *ret, ddpany *any);
+// shallow copies an any
+void ddp_shallow_copy_any(ddpany *ret, ddpany *any);
+// copies a any into itself
+void ddp_perform_cow_any(ddpany *any);
 // compares two any
 ddpbool ddp_any_equal(ddpany *any1, ddpany *any2);
 
 typedef struct {
-	ddpint *arr; // the element array
-	ddpint len;	 // the length of the array
-	ddpint cap;	 // the capacity of the array
+	ddpint *refc; // refcount for copy on write
+	ddpint *arr;  // the element array
+	ddpint len;	  // the length of the array
+	ddpint cap;	  // the capacity of the array
 } ddpintlist;
 
 // allocates a ddpintlist with count elements
@@ -93,8 +101,13 @@ extern void ddp_ddpintlist_from_constants(ddpintlist *ret, ddpint count);
 extern void ddp_free_ddpintlist(ddpintlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpintlist(ddpintlist *ret, ddpintlist *list);
+// shallow copies ddpintlist
+extern void ddp_shallow_copy_ddpintlist(ddpintlist *ret, ddpintlist *list);
+// copies a ddpintlist into itself
+extern void ddp_perform_cow_ddpintlist(ddpintlist *list);
 
 typedef struct {
+	ddpint *refc;  // refcount for copy on write
 	ddpfloat *arr; // the element array
 	ddpint len;	   // the length of the array
 	ddpint cap;	   // the capacity of the array
@@ -106,8 +119,13 @@ extern void ddp_ddpfloatlist_from_constants(ddpfloatlist *ret, ddpint count);
 extern void ddp_free_ddpfloatlist(ddpfloatlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpfloatlist(ddpfloatlist *ret, ddpfloatlist *list);
+// shallow copies ddpfloatlist
+extern void ddp_shallow_copy_ddpfloatlist(ddpfloatlist *ret, ddpfloatlist *list);
+// copies a ddpfloatlist into itself
+extern void ddp_perform_cow_ddpfloatlist(ddpfloatlist *list);
 
 typedef struct {
+	ddpint *refc; // refcount for copy on write
 	ddpbool *arr; // the element array
 	ddpint len;	  // the length of the array
 	ddpint cap;	  // the capacity of the array
@@ -119,8 +137,13 @@ extern void ddp_ddpboollist_from_constants(ddpboollist *ret, ddpint count);
 extern void ddp_free_ddpboollist(ddpboollist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpboollist(ddpboollist *ret, ddpboollist *list);
+// shallow copies ddpfloatlist
+extern void ddp_shallow_copy_ddpboollist(ddpboollist *ret, ddpboollist *list);
+// copies a ddpfloatlist into itself
+extern void ddp_perform_cow_ddpboollist(ddpboollist *list);
 
 typedef struct {
+	ddpint *refc; // refcount for copy on write
 	ddpchar *arr; // the element array
 	ddpint len;	  // the length of the array
 	ddpint cap;	  // the capacity of the array
@@ -132,8 +155,13 @@ extern void ddp_ddpcharlist_from_constants(ddpcharlist *ret, ddpint count);
 extern void ddp_free_ddpcharlist(ddpcharlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpcharlist(ddpcharlist *ret, ddpcharlist *list);
+// shallow copies ddpcharlist
+extern void ddp_shallow_copy_ddpcharlist(ddpcharlist *ret, ddpcharlist *list);
+// copies a ddpcharlist into itself
+extern void ddp_perform_cow_ddpcharlist(ddpcharlist *list);
 
 typedef struct {
+	ddpint *refc;	// refcount for copy on write
 	ddpstring *arr; // the element array
 	ddpint len;		// the length of the array
 	ddpint cap;		// the capacity of the array
@@ -145,11 +173,16 @@ extern void ddp_ddpstringlist_from_constants(ddpstringlist *ret, ddpint count);
 extern void ddp_free_ddpstringlist(ddpstringlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpstringlist(ddpstringlist *ret, ddpstringlist *list);
+// shallow copies ddpstringlist
+extern void ddp_shallow_copy_ddpstringlist(ddpstringlist *ret, ddpstringlist *list);
+// copies a ddpstringlist into itself
+extern void ddp_perform_cow_ddpstringlist(ddpstringlist *list);
 
 typedef struct {
-	ddpany *arr; // the element array
-	ddpint len;	 // the length of the array
-	ddpint cap;	 // the capacity of the array
+	ddpint *refc; // refcount for copy on write
+	ddpany *arr;  // the element array
+	ddpint len;	  // the length of the array
+	ddpint cap;	  // the capacity of the array
 } ddpanylist;
 
 // allocates a ddpanylist with count elements
@@ -158,6 +191,10 @@ extern void ddp_ddpanylist_from_constants(ddpanylist *ret, ddpint count);
 extern void ddp_free_ddpanylist(ddpanylist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
+// shallow copies ddpanylist
+extern void ddp_shallow_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
+// copies a ddpanylist into itself
+extern void ddp_perform_cow_ddpanylist(ddpanylist *list);
 
 // useful macros to work with ddp types
 
@@ -172,14 +209,28 @@ extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \
-		NULL, {       \
+		NULL, NULL, { \
 			NULL      \
 		}             \
 	}
 
 #define DDP_EMPTY_LIST(type) \
-	(type){                  \
-		NULL, 0, 0}
+	(type){NULL, NULL, 0, 0}
+
+// vtable definitions for inbuilt types
+
+extern vtable ddpint_vtable;
+extern vtable ddpfloat_vtable;
+extern vtable ddpchar_vtable;
+extern vtable ddpbool_vtable;
+extern vtable ddpstring_vtable;
+
+extern vtable ddpintlist_vtable;
+extern vtable ddpfloatlist_vtable;
+extern vtable ddpcharlist_vtable;
+extern vtable ddpboollist_vtable;
+extern vtable ddpstringlist_vtable;
+extern vtable ddpanylist_vtable;
 
 // useful typedefs to use when interfacing with ddp code
 

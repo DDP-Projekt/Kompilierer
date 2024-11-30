@@ -36,7 +36,7 @@ void ddp_free_string(ddpstring *str) {
 
 	DDP_DBGLOG("decrementing refc");
 	if (--(*str->refc) == 0) {
-		DDP_DBGLOG("freeing str and refc: %d", *str->refc);
+		DDP_DBGLOG("freeing str and refc: " DDP_INT_FMT, *str->refc);
 		DDP_FREE(ddpint, str->refc);
 		DDP_DBGLOG("freed refc, freeing str");
 		DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
@@ -76,9 +76,7 @@ void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str) {
 	DDP_DBGLOG("refc now at " DDP_INT_FMT, *str->refc);
 
 	// set the fields of the copy
-	ret->refc = str->refc;
-	ret->str = str->str;
-	ret->cap = str->cap;
+	*ret = *str;
 }
 
 // copies a string into itself
@@ -108,20 +106,13 @@ ddpint ddp_strlen(ddpstring *str) {
 	return strlen(str->str);
 }
 
-extern vtable ddpint_vtable;
-extern vtable ddpfloat_vtable;
-extern vtable ddpbool_vtable;
-extern vtable ddpchar_vtable;
-
 static bool is_primitive_vtable(vtable *table) {
 	DDP_DBGLOG("is_primitive: %lld, %p, %p, %p", table->type_size, table->free_func, table->deep_copy_func, table->equal_func);
 	return table != NULL && table->free_func == NULL;
 }
 
-// frees the given any
-void ddp_free_any(ddpany *any) {
-	DDP_DBGLOG("free_any: %p, vtable: %p", any, any->vtable_ptr);
-
+static void ddp_actually_free_any(ddpany *any) {
+	DDP_DBGLOG("ddp_actually_free_any");
 	if (any->vtable_ptr == NULL) {
 		DDP_DBGLOG("vtable is NULL");
 		return;
@@ -137,6 +128,24 @@ void ddp_free_any(ddpany *any) {
 	if (!DDP_IS_SMALL_ANY(any)) {
 		DDP_DBGLOG("freeing big any");
 		ddp_reallocate(any->value_ptr, any->vtable_ptr->type_size, 0);
+	}
+	DDP_DBGLOG("freed any");
+}
+
+// frees the given any
+void ddp_free_any(ddpany *any) {
+	DDP_DBGLOG("free_any: %p, vtable: %p", any, any->vtable_ptr);
+
+	if (any->refc == NULL) {
+		DDP_DBGLOG("freeing any");
+		ddp_actually_free_any(any);
+		return;
+	}
+
+	if (--(*any->refc) == 0) {
+		DDP_FREE(ddpint, any->refc);
+		DDP_DBGLOG("actually freeing any");
+		ddp_actually_free_any(any);
 	}
 	DDP_DBGLOG("freed any");
 }
@@ -165,6 +174,51 @@ void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 		// deep copy the underlying value
 		ret->vtable_ptr->deep_copy_func(DDP_ANY_VALUE_PTR(ret), DDP_ANY_VALUE_PTR(any));
 	}
+}
+
+// shallow copies an any
+void ddp_shallow_copy_any(ddpany *ret, ddpany *any) {
+	DDP_DBGLOG("ddp_shallow_copy_any: %p, ret: %p", any, ret);
+	if (ret == any) {
+		return;
+	}
+
+	if (any->refc == NULL) {
+		DDP_DBGLOG("allocating refc");
+		any->refc = DDP_ALLOCATE(ddpint, 1);
+		*any->refc = 1;
+	}
+
+	*any->refc += 1;
+	DDP_DBGLOG("refc now at " DDP_INT_FMT, *any->refc);
+
+	// set the fields of the copy
+	*ret = *any;
+}
+
+// copies a any into itself
+void ddp_perform_cow_any(ddpany *any) {
+	DDP_DBGLOG("ddp_perform_cow_any: %p", any);
+	if (any->refc == NULL || *any->refc == 1 || any->value_ptr == NULL) {
+		return;
+	}
+
+	if (!is_primitive_vtable(any->vtable_ptr) && any->vtable_ptr != NULL) {
+		// shallow copy the underlying value
+		if (DDP_IS_SMALL_ANY(any)) {
+			uint8_t new_value[DDP_SMALL_ANY_BUFF_SIZE];
+			any->vtable_ptr->shallow_copy_func(new_value, any->value);
+			memcpy(any->value, new_value, DDP_SMALL_ANY_BUFF_SIZE);
+		} else {
+			DDP_DBGLOG("allocating space for any: %lld", any->vtable_ptr->type_size);
+			void *new_value_ptr = ddp_reallocate(NULL, 0, any->vtable_ptr->type_size);
+			any->vtable_ptr->shallow_copy_func(new_value_ptr, any->value_ptr);
+			any->value_ptr = new_value_ptr;
+		}
+	}
+
+	*any->refc -= 1;
+	any->refc = NULL;
 }
 
 // compares two any

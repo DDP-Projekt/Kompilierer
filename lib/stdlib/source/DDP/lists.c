@@ -1,9 +1,11 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
+#include "DDP/debug.h"
 #include "DDP/utf8/utf8.h"
 #include <string.h>
 
 typedef struct {
+	ddpint *refc;
 	void *arr;
 	ddpint len;
 	ddpint cap;
@@ -27,27 +29,33 @@ static void efficient_list_append(generic_list_ref list, generic_ref elem, ddpin
 }
 
 void efficient_list_append_int(ddpintlistref list, ddpintref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpintlist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_append_float(ddpfloatlistref list, ddpfloatref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpfloatlist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_append_bool(ddpboollistref list, ddpboolref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpboollist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_append_char(ddpcharlistref list, ddpcharref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpcharlist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_append_string(ddpstringlistref list, ddpstringref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpstringlist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_STRING;
 }
 
 void efficient_list_append_any(ddpanylistref list, ddpanyref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpanylist(list);
 	efficient_list_append((generic_list_ref)list, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_ANY;
 }
@@ -60,27 +68,33 @@ static void efficient_list_prepend(generic_list_ref list, generic_ref elem, ddpi
 }
 
 void efficient_list_prepend_int(ddpintlistref list, ddpintref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpintlist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_prepend_float(ddpfloatlistref list, ddpfloatref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpfloatlist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_prepend_bool(ddpboollistref list, ddpboolref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpboollist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_prepend_char(ddpcharlistref list, ddpcharref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpcharlist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_prepend_string(ddpstringlistref list, ddpstringref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpstringlist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_STRING;
 }
 
 void efficient_list_prepend_any(ddpanylistref list, ddpanyref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpanylist(list);
 	efficient_list_prepend((generic_list_ref)list, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_ANY;
 }
@@ -106,22 +120,28 @@ static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddp
 }
 
 void efficient_list_delete_range_int(ddpintlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpintlist(list);
 	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
 
 void efficient_list_delete_range_float(ddpfloatlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpfloatlist(list);
 	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
 
 void efficient_list_delete_range_bool(ddpboollistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpboollist(list);
 	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
 
 void efficient_list_delete_range_char(ddpcharlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpcharlist(list);
 	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
 
 void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpstringlist(list);
+
 	// duplicate logic, but better safe than sorry
 	if (list->len <= 0) {
 		return;
@@ -141,6 +161,8 @@ void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddp
 }
 
 void efficient_list_delete_range_any(ddpanylistref list, ddpint start, ddpint end, ddpint elem_size) {
+	ddp_perform_cow_ddpanylist(list);
+
 	// duplicate logic, but better safe than sorry
 	if (list->len <= 0) {
 		return;
@@ -172,27 +194,33 @@ void efficient_list_insert(generic_list_ref list, ddpint index, generic_ref elem
 }
 
 void efficient_list_insert_int(ddpintlistref list, ddpint index, ddpintref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpintlist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_insert_float(ddpfloatlistref list, ddpint index, ddpfloatref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpfloatlist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_insert_bool(ddpboollistref list, ddpint index, ddpboolref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpboollist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_insert_char(ddpcharlistref list, ddpint index, ddpcharref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpcharlist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 }
 
 void efficient_list_insert_string(ddpstringlistref list, ddpint index, ddpstringref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpstringlist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_STRING;
 }
 
 void efficient_list_insert_any(ddpanylistref list, ddpint index, ddpanyref elem, ddpint elem_size) {
+	ddp_perform_cow_ddpanylist(list);
 	efficient_list_insert((generic_list_ref)list, index, (generic_ref)elem, elem_size);
 	*elem = DDP_EMPTY_ANY;
 }
@@ -205,6 +233,7 @@ void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_li
 
 	ddpint new_len = list->len + other->len;
 	if (new_len > list->cap) {
+		DDP_DBGLOG("increasing capacity");
 		ddpint old_cap = list->cap;
 		list->cap = DDP_GROW_CAPACITY(new_len);
 		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
@@ -216,22 +245,30 @@ void efficient_list_insert_range(generic_list_ref list, ddpint index, generic_li
 }
 
 void efficient_list_insert_range_int(ddpintlistref list, ddpint index, ddpintlistref other, ddpint elem_size) {
+	DDP_DBGLOG("efficient_list_insert_range_int: %p, %p, %p, %p, %lld, %lld", list, other, list->arr, other->arr, list->cap, other->cap);
+	ddp_perform_cow_ddpintlist(list);
+	DDP_DBGLOG("after cow: %p, %p, %p, %p, %lld, %lld", list, other, list->arr, other->arr, list->cap, other->cap);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
+	DDP_DBGLOG("after insert: %p, %p, %p, %p, %lld, %lld", list, other, list->arr, other->arr, list->cap, other->cap);
 }
 
 void efficient_list_insert_range_float(ddpfloatlistref list, ddpint index, ddpfloatlistref other, ddpint elem_size) {
+	ddp_perform_cow_ddpfloatlist(list);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 }
 
 void efficient_list_insert_range_bool(ddpboollistref list, ddpint index, ddpboollistref other, ddpint elem_size) {
+	ddp_perform_cow_ddpboollist(list);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 }
 
 void efficient_list_insert_range_char(ddpcharlistref list, ddpint index, ddpcharlistref other, ddpint elem_size) {
+	ddp_perform_cow_ddpcharlist(list);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 }
 
 void efficient_list_insert_range_string(ddpstringlistref list, ddpint index, ddpstringlistref other, ddpint elem_size) {
+	ddp_perform_cow_ddpstringlist(list);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 	for (ddpint i = 0; i < other->len; i++) {
 		other->arr[i] = DDP_EMPTY_STRING;
@@ -239,6 +276,7 @@ void efficient_list_insert_range_string(ddpstringlistref list, ddpint index, ddp
 }
 
 void efficient_list_insert_range_any(ddpanylistref list, ddpint index, ddpanylistref other, ddpint elem_size) {
+	ddp_perform_cow_ddpanylist(list);
 	efficient_list_insert_range((generic_list_ref)list, index, (generic_list_ref)other, elem_size);
 	for (ddpint i = 0; i < other->len; i++) {
 		other->arr[i] = DDP_EMPTY_ANY;

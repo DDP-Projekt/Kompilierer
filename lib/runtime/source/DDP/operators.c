@@ -289,6 +289,9 @@ ddpbool ddp_string_equal(ddpstring *str1, ddpstring *str2) {
 	if (str1 == str2) {
 		return true;
 	}
+	if (str1->refc != NULL && str1->refc == str2->refc) {
+		return true;
+	}
 	if (ddp_strlen(str1) != ddp_strlen(str2)) {
 		return false; // if the length is different, it's a quick false return
 	}

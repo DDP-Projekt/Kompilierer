@@ -14,6 +14,7 @@ typedef struct Treffer {
 } Treffer;
 
 typedef struct TrefferList {
+	ddpint *refc;
 	Treffer *arr;
 	ddpint len;
 	ddpint cap;

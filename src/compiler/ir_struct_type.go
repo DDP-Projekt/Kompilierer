@@ -65,6 +65,15 @@ func (t *ddpIrStructType) DeepCopyFunc() *ir.Func {
 	return t.deepCopyIrFun
 }
 
+func (t *ddpIrStructType) ShallowCopyFunc() *ir.Func {
+	// for structs deepCopy == shallowCopy
+	return t.deepCopyIrFun
+}
+
+func (t *ddpIrStructType) PerformCowFunc() *ir.Func {
+	return nil
+}
+
 func (t *ddpIrStructType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
@@ -112,6 +121,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 		ddpint, // ddpint size
 		ptr(types.NewFunc(c.void.IrType(), structType.ptr)),                       // free_func_ptr free_func
 		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),       // shallow_copy_func_ptr shallow_copy_func
 		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)), // equal_func_ptr equal_func
 	))
 
@@ -125,6 +135,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 			newInt(int64(c.getTypeSize(structType))),
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
+			structType.deepCopyIrFun, // for structs deepCopy == shallowCopy
 			structType.equalsIrFun,
 		))
 	}

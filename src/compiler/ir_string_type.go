@@ -60,7 +60,7 @@ func (*ddpIrStringType) IsPrimitive() bool {
 
 func (t *ddpIrStringType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
-		constant.NewNull(i8ptr),
+		constant.NewNull(ptr(ddpint)),
 		constant.NewNull(i8ptr),
 		zero,
 	)
@@ -82,6 +82,14 @@ func (t *ddpIrStringType) DeepCopyFunc() *ir.Func {
 	return t.deepCopyIrFun
 }
 
+func (t *ddpIrStringType) ShallowCopyFunc() *ir.Func {
+	return t.shallowCopyIrFun
+}
+
+func (t *ddpIrStringType) PerformCowFunc() *ir.Func {
+	return t.performCowIrFun
+}
+
 func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
@@ -94,14 +102,14 @@ const (
 func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
-		i8ptr,  // ddpint* refc;
-		i8ptr,  // char* str;
-		ddpint, // ddpint cap;
+		ptr(ddpint), // ddpint* refc;
+		i8ptr,       // char* str;
+		ddpint,      // ddpint cap;
 	))
 	ddpstring.ptr = ptr(ddpstring.typ)
 
 	ddpstring.llType = llvm.StructType([]llvm.Type{
-		llvm.PointerType(llvm.Int8Type(), 0),
+		llvm.PointerType(llvm.Int64Type(), 0),
 		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.Int64Type(),
 	}, false)
@@ -149,6 +157,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 		ddpint, // ddpint type_size
 		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr)),                      // free_func_ptr free_func
 		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr, ddpstring.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.void.IrType(), ddpstring.ptr, ddpstring.ptr)),       // shallow_copy_func_ptr shallow_copy_func
 		ptr(types.NewFunc(c.ddpbooltyp.IrType(), ddpstring.ptr, ddpstring.ptr)), // equal_func_ptr equal_func
 	))
 
@@ -162,6 +171,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 			newInt(24),
 			ddpstring.freeIrFun,
 			ddpstring.deepCopyIrFun,
+			ddpstring.shallowCopyIrFun,
 			ddpstring.equalsIrFun,
 		))
 	}
