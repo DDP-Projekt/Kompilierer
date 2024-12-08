@@ -268,22 +268,18 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		if (dateiPfade->len != 0) {
 			bool found = false;
 			for (int i = 0; i < dateiPfade->len; i++) {
-				printf("dateiPfade[%d]: %s, entry: %s\n", i, dateiPfade->arr[i].str, archive_entry_pathname(entry));
 				if (!ddp_string_empty(&dateiPfade->arr[i]) && !strcmp(archive_entry_pathname(entry), dateiPfade->arr[i].str)) {
-					printf("found\n");
 					found = true;
 					break;
 				}
 			}
 
 			if (!found) {
-				printf("cont\n");
 				continue;
 			}
 		}
 
 		if (!ddp_string_empty(ordnerPfad)) {
-			printf("path: %s\n", ordnerPfad->str);
 			const char *original_path = archive_entry_pathname(entry);
 			char full_path[MAX_PATH];
 			snprintf(full_path, sizeof(full_path), "%s/%s", ordnerPfad->str, original_path);
