@@ -134,7 +134,7 @@ void compressDir(struct archive *a, const char *path) {
 		}
 	}
 
-    closedir(dir);
+	closedir(dir);
 }
 
 struct archive* openArchive(const char *path) {
@@ -241,6 +241,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 }
 
 void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad, ddpstring *ordnerPfad) {
+	DDP_MIGHT_ERROR;
 	if (ddp_string_empty(arPfad)) {
 		ddp_error("Leerer Archivpfad gegeben", false);
 		return;
@@ -308,22 +309,6 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 
 	archive_read_free(a);
   	archive_write_free(disk);
-}
-
-void Archiv_Ordner_Hinzufuegen(ddpstring *ordnerPfad, ddpstring *arPfad) {
-
-}
-
-void Archiv_Dateien_Hinzufuegen(ddpstring *dateiPfad, ddpstring *arPfad) {
-
-}
-
-void Archiv_Ordner_Entfernen(ddpstring *ordnerPfad, ddpstring *arPfad) {
-
-}
-
-void Archiv_Dateien_Entfernen(ddpstringlist *dateiPfade, ddpstring *arPfad) {
-
 }
 
 ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
