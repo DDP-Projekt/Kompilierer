@@ -96,47 +96,6 @@ int createEntry(struct archive *a, const char *path) {
 	return 1;
 }
 
-// walks a directory and creates a new entry for each file
-void compressDir(struct archive *a, const char *path) {
-	DIR* dir;
-	struct dirent *ent;
-	struct stat states;
-
-	dir = opendir(path);
-	if (!dir) {
-		ddp_error("Couldn't open directory "DDP_STRING_FMT": ", true, path);
-		return;
-	}
-
-	while ((ent=readdir(dir)) != NULL) {
-		if (!strcmp(".", ent->d_name) || !strcmp("..", ent->d_name)) {
-			continue;
-		}
-
-		char localname[MAX_PATH];
-		strcpy(localname, path);
-		strcat(localname, "/");
-		strcat(localname, ent->d_name);
-
-		if (stat(localname, &states) < 0) {
-			ddp_error("Failed to stat input file "DDP_STRING_FMT": ", true, ent->d_name);
-			return;
-		}
-		
-		if (S_ISDIR(states.st_mode)) {
-			compressDir(a, localname);
-		}
-		else {
-			if (!createEntry(a, localname)) {
-				closedir(dir);
-				return;
-			}
-		}
-	}
-
-	closedir(dir);
-}
-
 struct archive* openArchive(const char *path) {
 	struct archive *a = archive_read_new();
 	if (archive_read_support_filter_all(a) != ARCHIVE_OK) {
@@ -218,26 +177,73 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 }
 
 void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
-	DDP_MIGHT_ERROR;
-	if (ddp_string_empty(ordnerPfad) || ddp_string_empty(arPfad)) {
-		ddp_error("Leerer Pfad", false);
-		return;
-	}
+    DDP_MIGHT_ERROR;
+    if (ddp_string_empty(ordnerPfad) || ddp_string_empty(arPfad)) {
+        ddp_error("Leerer Pfad", false);
+        return;
+    }
 
-	struct archive *a = createArchive(arPfad->str, (int)typ);
-	if (!a) return;
+    struct archive *a = createArchive(arPfad->str, (int)typ);
+    if (!a) return;
 
-	compressDir(a, ordnerPfad->str);
+    struct archive *disk = archive_read_disk_new();
+    if (!disk) {
+        ddp_error("Failed to create disk reader", false);
+        archive_write_free(a);
+        return;
+    }
 
-	// Close the archive
-	if (archive_write_close(a) != ARCHIVE_OK) {
-		ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
-		archive_write_free(a);
-		return;
-	}
+    archive_read_disk_set_standard_lookup(disk);
 
-	// Free the archive object
-	archive_write_free(a);
+    if (archive_read_disk_open(disk, ordnerPfad->str) != ARCHIVE_OK) {
+        ddp_error("Failed to open input directory: "DDP_STRING_FMT, false, archive_error_string(disk));
+        archive_read_free(disk);
+        archive_write_free(a);
+        return;
+    }
+
+    struct archive_entry *entry;
+    while (archive_read_next_header2(disk, entry = archive_entry_new()) == ARCHIVE_OK) {
+        // Descend into directories as needed
+        if (archive_entry_filetype(entry) == AE_IFDIR) {
+            archive_read_disk_descend(disk);
+        }
+
+        if (archive_write_header(a, entry) != ARCHIVE_OK) {
+            ddp_error("Failed to write header: "DDP_STRING_FMT, false, archive_error_string(a));
+            archive_entry_free(entry);
+            break;
+        }
+
+        const char *path = archive_entry_sourcepath(entry);
+        if (path && archive_entry_filetype(entry) == AE_IFREG) {
+            int fd = open(path, O_RDONLY);
+            if (fd < 0) {
+                ddp_error("Failed to open file: "DDP_STRING_FMT, true, path);
+                archive_entry_free(entry);
+                continue;
+            }
+
+            char buff[READ_BUFFER];
+            ssize_t bytes_read;
+            while ((bytes_read = read(fd, buff, sizeof(buff))) > 0) {
+                if (archive_write_data(a, buff, bytes_read) != bytes_read) {
+                    ddp_error("Failed to write file data: "DDP_STRING_FMT, false, archive_error_string(a));
+                    break;
+                }
+            }
+            close(fd);
+        }
+
+        archive_entry_free(entry);
+        archive_write_finish_entry(a);
+    }
+
+    archive_read_free(disk);
+    if (archive_write_close(a) != ARCHIVE_OK) {
+        ddp_error("Failed to close archive: "DDP_STRING_FMT, false, archive_error_string(a));
+    }
+    archive_write_free(a);
 }
 
 void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad, ddpstring *ordnerPfad) {
