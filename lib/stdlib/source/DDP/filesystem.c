@@ -139,7 +139,7 @@ static int remove_directory(const char *path) {
 						r2 = unlink(buf);
 					}
 				}
-				DDP_FREE(char, buf);
+				DDP_FREE_ARRAY(char, buf, len);
 			}
 			r = r2;
 		}
