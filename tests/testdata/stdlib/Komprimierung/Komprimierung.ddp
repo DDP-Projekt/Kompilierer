@@ -1,0 +1,16 @@
+Binde "Duden/Komprimierung" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Dateisystem" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Verpacke die Datei "expected.txt" zu einem neuen ZIP Archiv bei "expected.zip".
+Erstelle den Ordner "./expected/".
+
+Entpacke die Datei "expected.txt" vom Archiv "expected.zip" in den Ordner "./expected/".
+
+Der Text expected ist "".
+Lies den Text in "./expected/expected.txt" und speichere ihn in expected.
+Schreibe expected.
+

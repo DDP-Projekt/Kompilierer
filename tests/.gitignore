@@ -1,6 +1,7 @@
 *.exe
 *.ll
 *.o
+*.zip
 *.dump.txt
 **/got.txt
 **/diff.txt
