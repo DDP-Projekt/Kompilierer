@@ -26,25 +26,22 @@
 // see ARCHIVE_FILTER(packed) and ARCHIVE_FORMAT(packed).
 // returns the archive object if successful and NULL (0) if not.
 struct archive *createArchive(const char *path, int type) {
-	// Create a new archive object for writing
 	struct archive *a = archive_write_new();
 	if (!a) {
-		ddp_error("Failed to create archive", false);
+		ddp_error("Archiv konnte nicht erstellt werden", false);
 		return NULL;
 	}
 
 	//printf("Filter: %d, Format: 0x%x\n",  ARCHIVE_FILTER(type), ARCHIVE_FORMAT(type));
 
-	// Extract filter bits and set the compression filter
 	if (archive_write_add_filter(a, ARCHIVE_FILTER(type)) != ARCHIVE_OK) {
-		ddp_error("Failed to set compression algorithm: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Komprimierungsalgorithmus konnte nicht bestimmt werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_write_free(a);
 		return NULL;
 	}
 
-	// Extract format bits and set the file format
 	if (archive_write_set_format(a, ARCHIVE_FORMAT(type)) != ARCHIVE_OK) {
-		ddp_error("Failed to set archive format: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archivformat konnte nicht bestimmt werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_write_free(a);
 		return NULL;
 	}
@@ -59,7 +56,7 @@ struct archive *createArchive(const char *path, int type) {
 	}
 
 	if (archive_write_open_filename(a, path) != ARCHIVE_OK) {
-		ddp_error("Failed to open output file: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht zum schreiben geöffnet werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_write_free(a);
 		return NULL;
 	}
@@ -98,19 +95,19 @@ int createEntry(struct archive *a, const char *path) {
 struct archive *openArchive(const char *path) {
 	struct archive *a = archive_read_new();
 	if (archive_read_support_filter_all(a) != ARCHIVE_OK) {
-		ddp_error("Failed to determine archive compression algorithm: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Komprimierungsalgorithmus konnte nicht bestimmt werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_read_free(a);
 		return NULL;
 	}
 
 	if (archive_read_support_format_all(a) != ARCHIVE_OK) {
-		ddp_error("Failed to determine archive file format: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archivformat konnte nicht bestimmt werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_read_free(a);
 		return NULL;
 	}
 
 	if (archive_read_open_filename(a, path, 10240) != ARCHIVE_OK) {
-		ddp_error("Failed to open archive: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht zum lesen geöffnet werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_read_free(a);
 		return NULL;
 	}
@@ -125,14 +122,14 @@ void copyData(struct archive *a, struct archive *disk) {
 	int64_t offset;
 	while ((r = archive_read_data_block(a, &buff, &size, &offset)) != ARCHIVE_EOF) {
 		if (r != ARCHIVE_OK) {
-			ddp_error("archive_read_data_block(): ", false, archive_error_string(disk));
+			ddp_error("Komprimierungsfehler bei archive_read_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
 			archive_read_free(a);
 			archive_write_free(disk);
 			return;
 		}
 
 		if (archive_write_data_block(disk, buff, size, offset) != ARCHIVE_OK) {
-			ddp_error("archive_write_data_block(): ", false, archive_error_string(disk));
+			ddp_error("Komprimierungsfehler bei archive_write_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
 			archive_read_free(a);
 			archive_write_free(disk);
 			return;
@@ -145,7 +142,7 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 	DDP_MIGHT_ERROR;
 
 	if (ddp_string_empty(arPfad)) {
-		ddp_error("Invalid path", false);
+		ddp_error("Fehler: Leerer Archivpfad", false);
 		return;
 	}
 
@@ -156,7 +153,7 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 
 	for (int i = 0; i < dateiPfade->len; i++) {
 		if (dateiPfade->arr[i].str == NULL) {
-			ddp_error("Invalid path", false);
+			ddp_error("Fehler: Leerer Dateipfad", false);
 			archive_write_free(a);
 			return;
 		}
@@ -168,7 +165,7 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 
 	// Close the archive
 	if (archive_write_close(a) != ARCHIVE_OK) {
-		ddp_error("Failed to close archive: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht geschlossen werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		archive_write_free(a);
 		return;
 	}
@@ -180,7 +177,7 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 	DDP_MIGHT_ERROR;
 	if (ddp_string_empty(ordnerPfad) || ddp_string_empty(arPfad)) {
-		ddp_error("Leerer Pfad", false);
+		ddp_error("Fehler: Leerer Pfad", false);
 		return;
 	}
 
@@ -191,7 +188,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 
 	struct archive *disk = archive_read_disk_new();
 	if (!disk) {
-		ddp_error("Failed to create disk reader", false);
+		ddp_error("Komprimierungsfehler bei archive_read_disk_new()", false);
 		archive_write_free(a);
 		return;
 	}
@@ -199,7 +196,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 	archive_read_disk_set_standard_lookup(disk);
 
 	if (archive_read_disk_open(disk, ordnerPfad->str) != ARCHIVE_OK) {
-		ddp_error("Failed to open input directory: " DDP_STRING_FMT, false, archive_error_string(disk));
+		ddp_error("Komprimierungsfehler bei archive_read_disk_open(): " DDP_STRING_FMT, false, archive_error_string(disk));
 		archive_read_free(disk);
 		archive_write_free(a);
 		return;
@@ -213,7 +210,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 		}
 
 		if (archive_write_header(a, entry) != ARCHIVE_OK) {
-			ddp_error("Failed to write header: " DDP_STRING_FMT, false, archive_error_string(a));
+			ddp_error("Komprimierungsfehler bei archive_write_header(): " DDP_STRING_FMT, false, archive_error_string(a));
 			archive_entry_free(entry);
 			break;
 		}
@@ -222,7 +219,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 		if (path && archive_entry_filetype(entry) == AE_IFREG) {
 			int fd = open(path, O_RDONLY);
 			if (fd < 0) {
-				ddp_error("Failed to open file: " DDP_STRING_FMT, true, path);
+				ddp_error("Fehler: Die Datei " DDP_STRING_FMT " konnte nicht geöffnet werden.", true, path);
 				archive_entry_free(entry);
 				continue;
 			}
@@ -231,7 +228,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 			ssize_t bytes_read;
 			while ((bytes_read = read(fd, buff, sizeof(buff))) > 0) {
 				if (archive_write_data(a, buff, bytes_read) != bytes_read) {
-					ddp_error("Failed to write file data: " DDP_STRING_FMT, false, archive_error_string(a));
+					ddp_error("Komprimierungsfehler bei archive_write_data(): " DDP_STRING_FMT, false, archive_error_string(a));
 					break;
 				}
 			}
@@ -244,7 +241,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 
 	archive_read_free(disk);
 	if (archive_write_close(a) != ARCHIVE_OK) {
-		ddp_error("Failed to close archive: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht geschlossen werden: " DDP_STRING_FMT, false, archive_error_string(a));
 	}
 	archive_write_free(a);
 }
@@ -262,13 +259,13 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 
 	struct archive *disk = archive_write_disk_new();
 	archive_write_disk_set_options(disk, flags);
-	archive_read_disk_set_standard_lookup(disk);
+	archive_write_disk_set_standard_lookup(disk);
 
 	int r;
 	struct archive_entry *entry;
 	while ((r = archive_read_next_header(a, &entry)) != ARCHIVE_EOF) {
 		if (r != ARCHIVE_OK) {
-			ddp_error("Failed to read header: " DDP_STRING_FMT, false, archive_error_string(a));
+			ddp_error("Komprimierungsfehler bei archive_read_next_header(): " DDP_STRING_FMT, false, archive_error_string(a));
 			archive_read_free(a);
 			return;
 		}
@@ -296,7 +293,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		}
 
 		if (archive_write_header(disk, entry) != ARCHIVE_OK) {
-			ddp_error("archive_write_header(): ", false, archive_error_string(disk));
+			ddp_error("Komprimierungsfehler bei archive_write_header(): " DDP_STRING_FMT, false, archive_error_string(disk));
 			archive_read_free(a);
 			archive_write_free(disk);
 			return;
@@ -305,7 +302,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		copyData(a, disk);
 
 		if (archive_write_finish_entry(disk) != ARCHIVE_OK) {
-			ddp_error("archive_write_finish_entry(): ", false, archive_error_string(disk));
+			ddp_error("Komprimierungsfehler bei archive_write_finish_entry(): ", false, archive_error_string(disk));
 			archive_read_free(a);
 			archive_write_free(disk);
 			return;
@@ -339,7 +336,7 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 	la_ssize_t size = archive_entry_size(e);
 
 	if (archive_read_free(a) != ARCHIVE_OK) {
-		ddp_error("Failed to close archive: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht geschlossen werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		return -1;
 	}
 
@@ -367,7 +364,7 @@ ddpint Archiv_Anzahl_Dateien(ddpstring *arPfad) {
 	count = archive_file_count(a);
 
 	if (archive_read_free(a) != ARCHIVE_OK) {
-		ddp_error("Failed to close archive: " DDP_STRING_FMT, false, archive_error_string(a));
+		ddp_error("Archiv konnte nicht geschlossen werden: " DDP_STRING_FMT, false, archive_error_string(a));
 		return -1;
 	}
 
