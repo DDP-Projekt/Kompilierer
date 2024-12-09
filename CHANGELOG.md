@@ -11,6 +11,12 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Added] Mehrere Duden Module:
+    - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten
+    - Duden/Json: Parsen/Erstellen von Objekten im Json Format
+    - Duden/HashTabelle: Implementierung einer HashTabelle von Text zu Variable
+    - Duden/C: Hilfsfunktionen um mit C Code zu interagieren
+    - Duden/TextBauer: Implementierung eines Typs um effizient größere Texte zu bauen
 - [Added] Duden/Uri
 - [Added] Funktionen in Duden/Texte: Text_Worte und Spalten_Spaltmenge_Text
 - [Added] Duden/TextIterator um effizient über Texte zu iterieren
