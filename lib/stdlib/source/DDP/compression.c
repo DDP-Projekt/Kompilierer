@@ -115,28 +115,6 @@ struct archive *openArchive(const char *path) {
 	return a;
 }
 
-void copyData(struct archive *a, struct archive *disk) {
-	int r;
-	const void *buff;
-	size_t size;
-	int64_t offset;
-	while ((r = archive_read_data_block(a, &buff, &size, &offset)) != ARCHIVE_EOF) {
-		if (r != ARCHIVE_OK) {
-			ddp_error("Komprimierungsfehler bei archive_read_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
-			archive_read_free(a);
-			archive_write_free(disk);
-			return;
-		}
-
-		if (archive_write_data_block(disk, buff, size, offset) != ARCHIVE_OK) {
-			ddp_error("Komprimierungsfehler bei archive_write_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
-			archive_read_free(a);
-			archive_write_free(disk);
-			return;
-		}
-	}
-}
-
 // typ: | 16Bit format | 4 Bit filter |
 void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad) {
 	DDP_MIGHT_ERROR;
@@ -299,7 +277,24 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 			return;
 		}
 
-		copyData(a, disk);
+		const void *buff;
+		size_t size;
+		int64_t offset;
+		while ((r = archive_read_data_block(a, &buff, &size, &offset)) != ARCHIVE_EOF) {
+			if (r != ARCHIVE_OK) {
+				ddp_error("Komprimierungsfehler bei archive_read_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
+				archive_read_free(a);
+				archive_write_free(disk);
+				return;
+			}
+
+			if (archive_write_data_block(disk, buff, size, offset) != ARCHIVE_OK) {
+				ddp_error("Komprimierungsfehler bei archive_write_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
+				archive_read_free(a);
+				archive_write_free(disk);
+				return;
+			}
+		}
 
 		if (archive_write_finish_entry(disk) != ARCHIVE_OK) {
 			ddp_error("Komprimierungsfehler bei archive_write_finish_entry(): ", false, archive_error_string(disk));
