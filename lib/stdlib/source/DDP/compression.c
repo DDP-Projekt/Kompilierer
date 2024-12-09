@@ -245,6 +245,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		if (r != ARCHIVE_OK) {
 			ddp_error("Komprimierungsfehler bei archive_read_next_header(): " DDP_STRING_FMT, false, archive_error_string(a));
 			archive_read_free(a);
+			archive_write_free(disk);
 			return;
 		}
 
