@@ -2,6 +2,7 @@
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Zahlen" ein.
+Binde "Duden/Listen" ein.
 
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
@@ -310,7 +311,8 @@ und kann so benutzt werden:
 Die öffentliche Funktion Datei_Lies_Zeile mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die nächste Zeile aus <datei>" oder
+	"die nächste Zeile aus <datei>",
+	"der nächsten Zeile aus <datei>",
 	"die naechste Zeile aus <datei>"
 
 [
@@ -334,6 +336,19 @@ Und kann so benutzt werden:
 	"die naechsten <n> Zeilen aus <datei>" oder
 	"den nächsten <n> Zeilen aus <datei>" oder
 	"den naechsten <n> Zeilen aus <datei>"
+
+[
+	Liest alle Zeilen aus der Datei und gibt sie als Text Liste zurück.
+]
+Die öffentliche Funktion Datei_Lies_Zeilen mit dem Parameter datei vom Typ Datei Referenz, gibt eine Text Liste zurück, macht:
+	Die Text Liste zeilen ist eine leere Text Liste.
+	Solange datei nicht zuende ist, mache:
+		Füge (die nächste Zeile aus datei) an zeilen an.
+		Wenn es dabei einen Fehler gab, gib zeilen zurück.
+	Gib zeilen zurück.
+Und kann so benutzt werden:
+	"die Zeilen aus <datei>" oder
+	"den Zeilen aus <datei>"
 
 [
 	Liest das nächste Wort ohne Leerzeichen aus der Datei und gibt es als Text zurück.
