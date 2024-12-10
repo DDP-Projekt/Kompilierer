@@ -3,8 +3,40 @@
 	url = https://github.com/llvm/llvm-project.git
 	ignore = dirty
 	shallow = true
+
 [submodule "lib/stdlib/pcre2"]
 	path = lib/external/pcre2
 	url = https://github.com/PCRE2Project/pcre2.git
 	ignore = dirty
 	shallow = true
+
+[submodule "lib/external/libarchive"]
+	path = lib/external/libarchive
+	url = https://github.com/libarchive/libarchive.git
+	ignore = dirty
+	shallow = true
+
+[submodule "lib/external/xz"]
+	path = lib/external/xz
+	url = https://github.com/tukaani-project/xz
+	shallow = true
+	ignore = dirty
+
+[submodule "lib/external/zlib"]
+	path = lib/external/zlib
+	url = https://github.com/madler/zlib
+	shallow = true
+	ignore = dirty
+
+[submodule "lib/external/bzip2"]
+	path = lib/external/bzip2
+	url = git://sourceware.org/git/bzip2.git
+	shallow = true
+	ignore = dirty
+
+[submodule "lib/external/lz4"]
+	path = lib/external/lz4
+	url = https://github.com/lz4/lz4.git
+	shallow = true
+	ignore = dirty
+

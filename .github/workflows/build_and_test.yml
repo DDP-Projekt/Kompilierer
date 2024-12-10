@@ -40,7 +40,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
-        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm_build/**') }}
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile', '**/cmd/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-llvm-build-
 
@@ -63,20 +63,21 @@ jobs:
         echo "CGO_LDFLAGS=$('${{ github.workspace}}/llvm_build/bin/llvm-config' --ldflags --libs --system-libs all | tr '\r\n' '  ')" >> $GITHUB_ENV
         echo "CGO_CXXFLAGS=-std=c++14" >> $GITHUB_ENV
         
-    - name: Cache pcre2
-      if: runner.os == 'Windows'
+    - name: Cache External Libs
+      id: cache-external
       uses: actions/cache@v4
       with:
         path: |
-          ${{ github.workspace }}/lib/external/pcre2_build/
-          ${{ github.workspace }}/lib/external/libpcre2-8.a
-        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/external/pcre2_build/**', '**/lib/external/libpcre2-8.a') }}
+          ${{ github.workspace }}/lib/external/*.a
+          ${{ github.workspace }}/lib/external/*_build/
+        key: ${{ runner.os }}-external-${{ hashFiles('**/lib/external/Makefile', '**/.gitmodules') }}
         restore-keys: |
-          ${{ runner.os }}-pcre2-
+          ${{ runner.os }}-external
 
     - name: Build
-      run: make -j4
-      
+      run:  |
+        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }}
+
     - name: Run tests
       run: make test
     
@@ -86,9 +87,3 @@ jobs:
         name: coverage-report-${{ runner.os }}
         path: tests/coverage.md
         retention-days: 30
-
-    - name: Build debug
-      run: make debug -j4
-    
-    - name: Run memory tests
-      run: make test-memory

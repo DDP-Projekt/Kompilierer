@@ -1,7 +1,7 @@
 OUT_FILE_NAME = libddpruntime.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 
-.PHONY = all clean debug
+.PHONY: all clean debug
 .DEFAULT_GOAL = all
 
 CC = gcc

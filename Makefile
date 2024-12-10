@@ -8,9 +8,21 @@ DDP_SETUP_BUILD_DIR = $(CMD_DIR)ddp-setup/build/
 KDDP_BIN = ""
 DDP_SETUP_BIN = ""
 
+KDDP_DIR = $(CMD_DIR)kddp/
+DDP_SETUP_DIR = $(CMD_DIR)ddp-setup/
+
 STD_BIN = libddpstdlib.a
 EXT_BIN_PCRE2 = libpcre2-8.a
-PCRE2_DIR = $(EXT_DIR)pcre2/
+EXT_BIN_LIBAR = libarchive.a
+EXT_BIN_LIBZ = libz.a
+EXT_BIN_LIBLZMA = liblzma.a
+EXT_BIN_LIBBZ2 = libbz2.a
+EXT_BIN_LIBLZ4 = liblz4.a
+PCRE2_DIR = $(EXT_DIR)pcre2_build/
+PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
+PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
+LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
+LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -32,6 +44,13 @@ CP = cp -rf
 MKDIR = mkdir -p
 SED = sed -u
 TAR = tar
+
+define cp_if_exists
+	@if [ -f $(1) ]; then \
+		echo copying $(1) to $(2); \
+		$(CP) $(1) $(2); \
+	fi
+endef
 
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
@@ -63,7 +82,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
+.PHONY: all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
 
 all: $(OUT_DIR) kddp runtime stdlib external ddp-setup ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
@@ -72,13 +91,13 @@ debug: $(OUT_DIR) kddp runtime-debug stdlib-debug external ## same as all but th
 kddp: $(OUT_DIR) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
 	cd $(CMD_DIR) ; '$(MAKE)' kddp
-	$(CP) $(CMD_DIR)kddp/build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 ddp-setup: $(OUT_DIR) ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"
 	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
-	$(CP) $(CMD_DIR)ddp-setup/build/$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
+	$(CP) $(DDP_SETUP_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
 stdlib: $(OUT_DIR) external ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
 	@echo "building the ddp-stdlib"
@@ -120,14 +139,29 @@ runtime-debug: $(OUT_DIR) ## same as runtime but prints debugging information
 external: $(OUT_DIR)
 	@echo "building all external libraries"
 	cd $(EXT_DIR) ; '$(MAKE)' all
-	@if [ -f $(EXT_DIR)$(EXT_BIN_PCRE2) ]; then \
-		echo copying $(EXT_DIR)$(EXT_BIN_PCRE2) to $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
-		$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(LIB_DIR_OUT)$(EXT_BIN_PCRE2); \
-	fi
-	@echo copying $(PCRE2_DIR) to $(STD_DIR_OUT)
-	@if [ -d $(PCRE2_DIR) ]; then \
-		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
-	fi
+
+	# copy pcre2
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_PCRE2),$(LIB_DIR_OUT)$(EXT_BIN_PCRE2))
+	$(MKDIR) $(PCRE2_HEADERS_OUT_DIR)
+	@$(call cp_if_exists,$(PCRE2_HEADERS),$(PCRE2_HEADERS_OUT_DIR))
+
+	# copy libarchive
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBAR),$(LIB_DIR_OUT)$(EXT_BIN_LIBAR))
+	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
+	@$(call cp_if_exists,$(LIBAR_DIR)*.h,$(LIBAR_HEADERS_OUT_DIR))
+	
+	# copy libz
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBZ),$(LIB_DIR_OUT)$(EXT_BIN_LIBZ))
+
+	# copy liblzma
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZMA),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA))
+
+	# copy libbz2
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBBZ2),$(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2))
+
+	# copy liblz4
+	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZ4),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4))
+
 
 $(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
 	@echo "creating output directories"
@@ -176,23 +210,21 @@ TEST_DIRS =
 # will hold additional arguments to pass to kddp
 KDDP_ARGS = 
 
-test-normal: ## runs the tests
+test-normal: all ## runs the tests
 	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-test-memory: ## runs the tests checking for memory leaks
+test-memory: debug ## runs the tests checking for memory leaks
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-normal-memory: ## runs test-normal and test-memory in the correct order
-	'$(MAKE)' all 
 	'$(MAKE)' test-normal 
-	'$(MAKE)' debug 
 	'$(MAKE)' test-memory
 	'$(MAKE)' all
 
 test-sumtypes: ## validates that sumtypes in the source tree are correctly used
 	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
 
-coverage: ## creates a coverage report for tests/testdata/stdlib
+coverage: all ## creates a coverage report for tests/testdata/stdlib
 	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test: test-sumtypes test-normal-memory coverage ## runs all the tests

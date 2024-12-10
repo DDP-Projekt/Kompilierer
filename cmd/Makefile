@@ -24,11 +24,9 @@ else
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
 
-.PHONY = all clean kddp ddp-setup
+.PHONY: all clean kddp ddp-setup
 
 .DEFAULT_GOAL := all
-
-OUT_DIR := build/
 
 DDPVERSION := v0.5.0-alpha
 LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
@@ -46,17 +44,13 @@ all: kddp ddp-setup
 RM = rm -rf
 
 clean:
-	$(RM) $(KDDP_DIR)$(OUT_DIR)
-	$(RM) $(DDP_SETUP_DIR)$(OUT_DIR)
+	$(RM) $(KDDP_DIR)$(KDDP_OUT_FILE_NAME)
+	$(RM) $(DDP_SETUP_DIR)$(DDP_SETUP_OUT_FILE_NAME)
 
-kddp: $(KDDP_DIR)$(OUT_DIR)
-	cd $(KDDP_DIR) ; go build -o $(OUT_DIR)$(KDDP_OUT_FILE_NAME) -tags byollvm -ldflags $(KDDP_LDFLAGS)
+kddp:
+	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -tags byollvm -ldflags $(KDDP_LDFLAGS)
 
 SETUP_LDFLAGS := "-s -w"
 
-ddp-setup: $(DDP_SETUP_DIR)$(OUT_DIR)
-	cd $(DDP_SETUP_DIR) ; go build -o $(OUT_DIR)$(DDP_SETUP_OUT_FILE_NAME) -ldflags $(SETUP_LDFLAGS)
-
-
-%/$(OUT_DIR):
-	mkdir -p $@
+ddp-setup:
+	cd $(DDP_SETUP_DIR) ; go build -o $(DDP_SETUP_OUT_FILE_NAME) -ldflags $(SETUP_LDFLAGS)

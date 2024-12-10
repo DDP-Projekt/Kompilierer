@@ -1,0 +1,16 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/TextIterator" ein.
+
+Der Text t ist "HaÜl프a렌l즈o Welt!".
+
+Der TextIterator it ist ein TextIterator über t.
+Solange it nicht zuende ist, mache:
+    Schreibe (den momentanen Buchstaben von it).
+    Schreibe (den momentanen Index von it).
+    Erhoehe it um 1.
+Schreibe '\n'.
+
+Der TextIterator it2 ist ein TextIterator über t.
+Erhoehe it2 um 11.
+Schreibe (den bisherigen Text von it2) auf eine Zeile.
+Schreibe (den Rest von it2) auf eine Zeile.

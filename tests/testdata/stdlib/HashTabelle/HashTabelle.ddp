@@ -1,0 +1,78 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/HashTabelle" ein.
+Binde "Duden/Zufall" ein.
+Binde "Duden/Laufzeit" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Zahlen" ein.
+
+[Simple test case]
+Schreibe "simple" auf eine Zeile.
+
+Die HashTabelle t ist eine neue HashTabelle.
+Setze den Wert von "" in t auf ("leer" als Variable).
+Schreibe ("" in t enthalten ist) auf eine Zeile.
+Schreibe ((t an der Stelle "") als Text) auf eine Zeile.
+Schreibe ((den gelöschten Wert für "" in t) als Text) auf eine Zeile.
+
+[ "Fuzz" testing (not really :( ) ]
+Schreibe "fuzz" auf eine Zeile.
+
+Die HashTabelle tabelle ist eine leere HashTabelle.
+Die Zahl N ist 100.
+
+Die Variablen Liste test_werte ist N Mal der Standardwert von einer Variable.
+Die Text Liste test_werte_schlüssel ist N Mal "".
+
+Für jede Zahl i von 1 bis N, mache:
+	Die Zahl z ist eine zufällige Zahl zwischen 0 und 6.
+	Die Variable v ist der Standardwert von einer Variable.
+	Der Text t ist "".
+	Wenn z gleich 1 ist, dann:
+		Speichere wahr in v.
+		Speichere "wahr" in t.
+	Wenn z gleich 2 ist, dann:
+		Speichere eine zufällige Zahl zwischen (der minimale Wert einer Zahl) und (der maximale Wert einer Zahl) in v.
+		Speichere v als Zahl als Text in t.
+	Wenn z gleich 3 ist, dann:
+		Speichere eine zufällige Kommazahl zwischen (der minimale Wert einer Kommazahl) und (der maximale Wert einer Kommazahl) in v.
+		Speichere v als Kommazahl als Text in t.
+	Wenn z gleich 4 ist, dann:
+		Speichere eine zufällige Zahl zwischen 48 und 90 als Buchstabe in v.
+		Speichere v als Buchstabe als Text in t.
+	Wenn z gleich 5 ist, dann:
+		Speichere eine zufällige Zahl zwischen (der minimale Wert einer Zahl) und (der maximale Wert einer Zahl) als Text in v.
+		Speichere v als Text in t.
+
+	Speichere v in test_werte an der Stelle i.
+	Speichere z als Text verkettet mit '=' verkettet mit t in test_werte_schlüssel an der Stelle i.
+
+Für jede Zahl i von 1 bis die Länge von test_werte, mache:
+	Setze den Wert von (test_werte_schlüssel an der Stelle i) in tabelle auf (test_werte an der Stelle i).
+
+Für jede Zahl i von 1 bis die Länge von test_werte, mache:
+	Die Variable wert ist tabelle an der Stelle (test_werte_schlüssel an der Stelle i).
+
+	Wenn wert ungleich (test_werte an der Stelle i) ist, dann:
+		Löse einen Laufzeitfehler mit der Nachricht "wert ungleich" und dem Code 1 aus.
+
+
+Für jede Zahl i von 1 bis die Länge von test_werte mit Schrittgroesse 2, mache:
+	Lösche den Wert für (test_werte_schlüssel an der Stelle i) aus tabelle.
+
+Für jede Zahl i von 1 bis die Länge von test_werte, mache:
+	Wenn (test_werte_schlüssel an der Stelle i) in tabelle enthalten ist, dann:
+		Wenn tabelle an der Stelle (test_werte_schlüssel an der Stelle i) ungleich (test_werte an der Stelle i) ist, dann:
+			Löse einen Laufzeitfehler mit der Nachricht "wert ungleich 2" und dem Code 1 aus.
+
+
+
+Für jede Zahl i von 1 bis die Länge von test_werte, mache:
+	Setze den Wert von (test_werte_schlüssel an der Stelle i) in tabelle auf (test_werte an der Stelle i).
+
+
+Für jede Zahl i von 1 bis die Länge von test_werte, mache:
+	Die Variable wert ist tabelle an der Stelle (test_werte_schlüssel an der Stelle i).
+	Wenn wert ungleich (test_werte an der Stelle i) ist, dann:
+		Löse einen Laufzeitfehler mit der Nachricht "wert ungleich 3" und dem Code 1 aus.
+
+Schreibe "Erfolg" auf eine Zeile.

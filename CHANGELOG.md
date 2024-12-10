@@ -11,7 +11,16 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
-- [Added] Duden/Uri
+- [Fix] Fehler mit Referenz Parametern in überladenen Operatoren werden nun korrekt gemeldet
+- [Added] Mehrere Duden Module:
+    - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten
+    - Duden/Json: Parsen/Erstellen von Objekten im Json Format
+    - Duden/HashTabelle: Implementierung einer HashTabelle von Text zu Variable
+    - Duden/C: Hilfsfunktionen um mit C Code zu interagieren
+    - Duden/TextBauer: Implementierung eines Typs um effizient größere Texte zu bauen
+    - Duden/Uri: Um Uri Komponente zu parsen
+    - Duden/TextIterator: Um effizient über Texte zu iterieren
+- [Added] Funktionen in Duden/Texte: Text_Worte und Spalten_Spaltmenge_Text
 - [Fix] Der "als" Operator kann nun für verschiedene Rückgabetypen überladen werden
 - [Fix] Man kann eine Variable, die eine andere überschreibt jetzt mit dieser initialisieren
 - [Added] Man kann jetzt (auch rekursiv) alle Module aus einem Ordner einbinden
