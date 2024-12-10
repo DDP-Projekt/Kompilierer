@@ -54,3 +54,12 @@ Speichere den JsonWert in "[1\n]" in json.
 Speichere json als JsonListe in l.
 Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
 Schreibe (die JsonListe l als Text) auf eine Zeile.
+
+Speichere den JsonWert in "{\"hallo\": \"welt\", \"daten\": { \"antwort\": 42, \"mehr_daten\": { \"test\": 32 } }}" in json.
+Speichere json als JsonObjekt in o.
+Schreibe ((o an der Stelle "hallo") als Text) auf eine Zeile.
+Speichere (o an der Stelle "daten") als JsonObjekt in o.
+Schreibe ((o an der Stelle "antwort") als Zahl) auf eine Zeile.
+Speichere (o an der Stelle "mehr_daten") als JsonObjekt in o.
+Schreibe ((o an der Stelle "test") als Zahl) auf eine Zeile.
+Schreibe (der JsonWert json als Text) auf eine Zeile.

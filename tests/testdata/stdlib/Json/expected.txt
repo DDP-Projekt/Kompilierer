@@ -23,3 +23,7 @@ wahr
 [42,"hi",null]
 1
 [1]
+welt
+42
+32
+{"daten":{"mehr_daten":{"test":32},"antwort":42},"hallo":"welt"}
