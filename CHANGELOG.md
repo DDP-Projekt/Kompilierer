@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Fehler mit Referenz Parametern in überladenen Operatoren werden nun korrekt gemeldet
 - [Added] Mehrere Duden Module:
     - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten
     - Duden/Json: Parsen/Erstellen von Objekten im Json Format

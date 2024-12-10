@@ -10,66 +10,43 @@ func isAssignable(expr ast.Expression) (ast.Assigneable, bool) {
 	if ass, ok := expr.(ast.Assigneable); ok {
 		return ass, true
 	}
-	var checker assignableCaster
-	ast.VisitNode(&checker, expr, nil)
-	return checker.ass, checker.ass != nil
+
+	switch ass := expr.(type) {
+	case *ast.Grouping:
+		return isAssignable(ass.Expr)
+	case *ast.BinaryExpr:
+		return isBinaryExprAssignable(ass)
+	default:
+		return nil, false
+	}
+	return nil, false
 }
 
-type assignableCaster struct {
-	ass ast.Assigneable
-}
-
-var (
-	_ ast.Visitor            = (*assignableCaster)(nil)
-	_ ast.IdentVisitor       = (*assignableCaster)(nil)
-	_ ast.IndexingVisitor    = (*assignableCaster)(nil)
-	_ ast.FieldAccessVisitor = (*assignableCaster)(nil)
-	_ ast.BinaryExprVisitor  = (*assignableCaster)(nil)
-)
-
-func (*assignableCaster) Visitor() {}
-
-func (a *assignableCaster) VisitIdent(i *ast.Ident) ast.VisitResult {
-	a.ass = i
-	return ast.VisitRecurse
-}
-
-func (a *assignableCaster) VisitIndexing(i *ast.Indexing) ast.VisitResult {
-	a.ass = i
-	return ast.VisitSkipChildren
-}
-
-func (a *assignableCaster) VisitFieldAccess(f *ast.FieldAccess) ast.VisitResult {
-	a.ass = f
-	return ast.VisitSkipChildren
-}
-
-func (a *assignableCaster) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
+func isBinaryExprAssignable(expr *ast.BinaryExpr) (ast.Assigneable, bool) {
 	switch expr.Operator {
 	case ast.BIN_FIELD_ACCESS:
 		ident, isIdent := expr.Lhs.(*ast.Ident)
 		if !isIdent {
-			a.ass = nil
 			break
 		}
 
-		ast.VisitNode(a, expr.Rhs, nil)
-		if a.ass != nil {
-			a.ass = &ast.FieldAccess{
+		ass, ok := isAssignable(expr.Rhs)
+		if ok {
+			return &ast.FieldAccess{
 				Field: ident,
-				Rhs:   a.ass,
-			}
+				Rhs:   ass,
+			}, true
 		}
 	case ast.BIN_INDEX:
-		ast.VisitNode(a, expr.Lhs, nil)
-		if a.ass != nil {
-			a.ass = &ast.Indexing{
-				Lhs:   a.ass,
+		ass, ok := isAssignable(expr.Lhs)
+		if ok {
+			return &ast.Indexing{
+				Lhs:   ass,
 				Index: expr.Rhs,
-			}
+			}, true
 		}
 	default:
-		a.ass = nil
+		return nil, false
 	}
-	return ast.VisitSkipChildren
+	return nil, false
 }
