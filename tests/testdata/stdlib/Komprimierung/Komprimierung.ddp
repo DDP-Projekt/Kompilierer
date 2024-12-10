@@ -5,14 +5,34 @@ Binde "Duden/Fehlerbehandlung" ein.
 
 Schreibe ab jetzt alle Fehler.
 
-Verpacke die Datei "expected.txt" zu einem neuen ZIP Archiv bei "expected.zip".
-Erstelle den Ordner "./expected".
+Erstelle den Ordner "./output".
+Erstelle den Ordner "./zips".
 
-Entpacke die Datei "expected.txt" vom Archiv "expected.zip" in den Ordner "./expected/".
+Verpacke die Datei "text.txt" zu einem neuen ZIP Archiv bei "zips/ar.zip".
+Verpacke die Datei "text.txt" zu einem neuen SevenZip Archiv bei "zips/ar.7z".
+Verpacke die Datei "text.txt" zu einem neuen XZ Archiv bei "zips/ar.tar.xz".
+Verpacke die Datei "text.txt" zu einem neuen BZIP2 Archiv bei "zips/ar.tar.bz2".
+Verpacke die Dateien (eine Liste, die aus "text.txt", "text2.txt" besteht) zu einem neuen GZIP Archiv bei "zips/ar.tar.gz".
+Verpacke die Datei "text.txt" zu einem neuen LZ4 Archiv bei "zips/ar.tar.lz4".
 
-Der Text expected ist "".
-Lies den Text in "./expected/expected.txt" und speichere ihn in expected.
+Entpacke die Datei "text.txt" vom Archiv "zips/ar.zip" in den Ordner "./output/zip".
+Entpacke das Archiv "zips/ar.7z" in den Ordner "./output/7z".
+Entpacke das Archiv "zips/ar.tar.xz" in den Ordner "./output/xz".
+Entpacke das Archiv "zips/ar.tar.bz2" in den Ordner "./output/bz2".
+Entpacke das Archiv "zips/ar.tar.gz" in den Ordner "./output/gz".
+Entpacke das Archiv "zips/ar.tar.lz4" in den Ordner "./output/lz4".
 
-Lösche den Ordner "./expected/".
+Der Text text ist "".
+Lies den Text in "./output/zip/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/7z/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/xz/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/bz2/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/gz/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/gz/text2.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
+Lies den Text in "./output/lz4/text.txt" und speichere ihn in text. Schreibe text auf eine Zeile.
 
-Schreibe expected.
+Schreibe (die Anzahl der Dateien im Archiv "zips/ar.tar.gz") auf eine Zeile.
+Schreibe (die Dateigröße in Bytes von "text2.txt" im Archiv "zips/ar.tar.gz") auf eine Zeile.
+
+Lösche den Ordner "./output/".
+Lösche den Ordner "./zips/".

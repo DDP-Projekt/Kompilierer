@@ -232,6 +232,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 	}
 
 	struct archive *a = openArchive(arPfad->str);
+	if (!a) return;
 
 	int flags = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS;
 
@@ -323,10 +324,16 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 
 	// find entry
 	struct archive_entry *e;
-	while (archive_read_next_header(a, &e) == ARCHIVE_OK) {
+	int r;
+	while ((r = archive_read_next_header(a, &e)) == ARCHIVE_OK) {
 		if (!strcmp(dateiPfad->str, archive_entry_pathname(e))) {
 			break;
 		}
+	}
+
+	if (r == ARCHIVE_EOF) {
+		ddp_error("Die Datei '"DDP_STRING_FMT"' konnte nicht im Archiv '"DDP_STRING_FMT"' nicht gefunden werden.", false, dateiPfad->str, arPfad->str);
+		return -1;
 	}
 
 	la_ssize_t size = archive_entry_size(e);
