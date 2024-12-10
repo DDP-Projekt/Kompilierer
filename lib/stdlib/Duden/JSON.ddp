@@ -4,7 +4,7 @@ Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/TextBauer" ein.
-Binde "Duden/Ausgabe" ein.
+Binde Hex_Zu_Zahl aus "Duden/Zahlen" ein.
 
 Wir nennen eine Variable öffentlich auch einen JsonWert.
 Wir nennen eine HashTabelle öffentlich auch ein JsonObjekt.
@@ -18,23 +18,6 @@ Und kann so benutzt werden:
 	"ein neues JsonObjekt" oder
 	"ein leeres JsonObjekt"
 
-Die öffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt eine Zahl zurück, macht:
-	Die Zahl l ist die Länge von hex.
-	Die Zahl ergebnis ist 0.
-	Für jede Zahl i von die Länge von hex bis 1 mit Schrittgröße -1, mache:
-		Die Zahl bz ist (hex an der Stelle i) als Zahl.
-		Wenn bz zwischen 96 und 103 ist, verringere bz um 87.
-		Wenn aber bz zwischen 47 und 58 ist, verringere bz um 48.
-		Wenn aber bz zwischen 64 und 71 ist, verringere bz um 55.
-		Sonst:
-			Melde den Fehler "Ungültige Hexadezimalzahl".
-			Gib 0 zurück.
-
-		Erhöhe ergebnis um (bz mal 16 hoch (l minus i)) als Zahl.
-
-	Gib ergebnis zurück.
-Und kann so benutzt werden:
-	"die Hexadezimalzahl <hex>"
 
 Die Funktion Zu_Escape_Sequenz mit den Parametern json und lauf_index vom Typ Buchstaben Listen Referenz und Zahlen Referenz, gibt einen Buchstaben zurück, macht:
 	Der Buchstabe b ist json an der Stelle lauf_index.

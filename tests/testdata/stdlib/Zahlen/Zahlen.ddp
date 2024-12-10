@@ -42,3 +42,6 @@ Schreibe (zwei Zehntel) auf eine Zeile.
 Schreibe (zwei Elftel) auf eine Zeile.
 Schreibe (zwei Zwölftel) auf eine Zeile.
 Schreibe (zwei Dutzend) auf eine Zeile.
+Schreibe (die Hexadezimalzahl "00") auf eine Zeile.
+Schreibe (die Hexadezimalzahl "ff") auf eine Zeile.
+Schreibe (die Hexadezimalzahl "FF") auf eine Zeile.
