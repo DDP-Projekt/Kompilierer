@@ -11,7 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
-- [Added] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten
+- [Neu] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten
 - [Fix] Verschachtelte Struktur Literale verhalten sich jetzt mit Einbungen korrekt
 - [Fix] Variablen in Kombinations Literalen werden nun korrekt umgewandelt
 - [Fix] `Gib wahr/falsch, wenn ..., zurück` benötigt nun das Komma
