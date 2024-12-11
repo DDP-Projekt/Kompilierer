@@ -76,14 +76,17 @@ jobs:
 
     - name: Build
       run:  |
-        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }}
+        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} | tee build.log
 
     - name: Run tests
-      run: make test
+      run: make test | tee test.log
     
     - name: Upload Coverage Artifact
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ runner.os }}
-        path: tests/coverage.md
+        path: |
+          tests/coverage.md
+          build.log
+          test.log
         retention-days: 30
