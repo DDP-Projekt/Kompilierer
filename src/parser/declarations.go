@@ -30,7 +30,7 @@ func (p *parser) parseDeclComment(beginRange token.Range) *token.Token {
 }
 
 // helper for boolean assignments
-func (p *parser) assignRhs() ast.Expression {
+func (p *parser) assignRhs(withComma bool) ast.Expression {
 	var expr ast.Expression // the final expression
 
 	if p.matchAny(token.TRUE, token.FALSE) {
@@ -51,6 +51,9 @@ func (p *parser) assignRhs() ast.Expression {
 				}
 			} else {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
+			}
+			if withComma {
+				p.consume(token.COMMA)
 			}
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
@@ -149,7 +152,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 			}
 		}
 	} else {
-		expr = p.assignRhs()
+		expr = p.assignRhs(false)
 	}
 
 	if !isField {
