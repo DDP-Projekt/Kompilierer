@@ -1912,7 +1912,8 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 }
 
 func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args map[string]ast.Expression) (value.Value, ddpIrType) {
-	structDecl := c.ddpModule.Ast.Symbols.Declarations[structType.Name].(*ast.StructDecl)
+	// search in the types module for the decl, as it might not be present in this module due to transitive dependencies
+	structDecl := c.typeMap[structType].Ast.Symbols.Declarations[structType.Name].(*ast.StructDecl)
 	resultType := c.toIrType(structType)
 	result := c.NewAlloca(resultType.IrType())
 	for i, field := range structType.Fields {

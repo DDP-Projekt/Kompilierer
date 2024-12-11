@@ -1,0 +1,25 @@
+Binde "Duden/Befehlszeile" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Der Befehl kddp ist ein Befehl mit Namen "kddp".
+
+Füge kddp (eine Flagge mit Namen "ausgabe" und Kurzschreibweise 'o' ) hinzu.
+Füge kddp (eine Flagge mit Namen "lang") hinzu.
+Füge kddp (eine Flagge mit Kurzschreibweise 'k') hinzu.
+Füge kddp (eine Flagge mit Kurzschreibweise 'n') hinzu.
+Füge kddp (eine Flagge mit Namen "datei", Kurzschreibweise 'd' und Standardwert ("test" als Variable)) hinzu.
+
+Die Befehlszeile b ist 
+    (eine Liste, die aus "kddp", "hallo", "--ausgabe", "welt", "--lang", "-k", "test1", "-d", "test.ddp", "test2" besteht) mit kddp geparset.
+
+Schreibe (den Flaggenwert für "ausgabe" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'o' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für "lang" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'k' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'n' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'd' von b als Text) auf eine Zeile.
+Schreibe (den Flaggenwert für "datei" von b als Text) auf eine Zeile.
+Schreibe (argumente von b) auf eine Zeile.
