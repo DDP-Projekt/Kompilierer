@@ -1916,6 +1916,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 	resultType := c.toIrType(structType)
 	result := c.NewAlloca(resultType.IrType())
 	for i, field := range structType.Fields {
+		initType := structDecl.Fields[i].(*ast.VarDecl).InitType
 		argExpr := structDecl.Fields[i].(*ast.VarDecl).InitVal
 		if fieldArg, hasArg := args[field.Name]; hasArg {
 			// the arg was passed so use that instead
@@ -1923,6 +1924,17 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 		}
 
 		argVal, argType, isTempArg := c.evaluate(argExpr)
+
+		// implicit cast to any if required
+		if ddptypes.DeepEqual(field.Type, ddptypes.VARIABLE) && argType != c.ddpany {
+			vtable := argType.VTable()
+			if typeDef, isTypeDef := ddptypes.CastTypeDef(initType); isTypeDef {
+				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+			}
+
+			argVal, argType, isTempArg = c.castNonAnyToAny(argVal, argType, isTempArg, vtable)
+		}
+
 		c.claimOrCopy(c.indexStruct(result, int64(i)), argVal, argType, isTempArg)
 	}
 	return result, resultType
