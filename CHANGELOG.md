@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] `Gib wahr/falsch, wenn ..., zurück` benötigt nun das Komma
 - [Fix] Fehler mit Referenz Parametern in überladenen Operatoren werden nun korrekt gemeldet
 - [Neu] Mehrere Duden Module:
     - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten

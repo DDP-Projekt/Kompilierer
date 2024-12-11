@@ -276,7 +276,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 func (p *parser) assignLiteral() ast.Statement {
 	ident := p.assigneable() // name of the variable was already consumed
 	p.consume(token.IST)
-	expr := p.assignRhs() // parse the expression
+	expr := p.assignRhs(false) // parse the expression
 	// validate that the expression is a literal
 	switch expr := expr.(type) {
 	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
@@ -605,7 +605,7 @@ func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	var expr ast.Expression
 	if p.isCurrentFunctionBool {
-		expr = p.assignRhs()
+		expr = p.assignRhs(true)
 	} else {
 		expr = p.expression()
 	}

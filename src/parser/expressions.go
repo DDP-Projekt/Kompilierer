@@ -379,7 +379,7 @@ func (p *parser) unary() ast.Expression {
 		return p.power(expr)
 	}
 	// match the correct unary operator
-	if p.matchAny(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM) {
+	if p.matchAny(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM, token.DEN) {
 		start := p.previous()
 
 		switch start.Type {
@@ -391,6 +391,11 @@ func (p *parser) unary() ast.Expression {
 		case token.DER:
 			if !p.matchAny(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT) { // Betrag: nominativ, Größe/Länge: dativ
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
+				return p.negate()
+			}
+		case token.DEN:
+			if !p.matchAny(token.BETRAG, token.STANDARDWERT) { // dativ
+				p.decrease() // DEN does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.DEM:
