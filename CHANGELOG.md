@@ -110,7 +110,7 @@ Der Changelog von DDP. Sortiert nach Release.
         - sinh -> Hyperbelsinus
         - cosh -> Hyperbelkosinus
         - tanh -> Hyperbeltangens 
-- [Neu] Folgende Duden Funktionen wurden hinzugefügt (siehe die [Bedienungsanleitung](https://ddp.le0n.dev/Bedienungsanleitung/de/Programmierung/Standardbibliothek/) für eine Beschreibung):
+- [Neu] Folgende Duden Funktionen wurden hinzugefügt (siehe die [Bedienungsanleitung](https://doku.ddp.im/de/Programmierung/Standardbibliothek/) für eine Beschreibung):
     - Pfade: 
         - UNIX_Vollständiger_Pfad  
         - Windows_Ist_Absolut 
