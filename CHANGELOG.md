@@ -3,11 +3,11 @@
 Der Changelog von DDP. Sortiert nach Release.
 
 **Legende**:
- - Neu:      Etwas wurde hinzugefügt
- - Anders:   Etwas wurde geändert
- - Entfernt: Etwas wurde entfernt
- - Fix:      Ein Bug wurde repariert.
- - Breaking: Die Änderung macht alte Programme kaputt
+ - [Neu]:      Etwas wurde hinzugefügt
+ - [Anders]:   Etwas wurde geändert
+ - [Entfernt]: Etwas wurde entfernt
+ - [Fix]:      Ein Bug wurde repariert.
+ - [Breaking]: Die Änderung macht alte Programme kaputt
 
 ## In Entwicklung
 
@@ -34,7 +34,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Fix] utf8 Texte
 - [Fix] Aliase mit Referenz Parametern werden nun in mehr Fällen bevorzugt
 - [Fix] Der Kompilierer crashet nicht mehr wenn indirekt importierte Symbole in eingebundenen Kombinations Aliasen verwendet werden
-- [Anders] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
+- [Breaking] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
     - Buchstabe_Ist_Zahl -> Buchstabe_Ist_Ziffer (Alias ebenfalls angepasst)
     - Text_Ist_Zahl: Alias angepasst
 - [Neu] Duden/Dateisystem Datei_Lies_Alles
