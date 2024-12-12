@@ -194,7 +194,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Neu] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
 - [Neu] Befehlszeilenargument "-O/--optimierungs-stufe" um die Optimierungsstufe zu setzen
-- [Anders] Befehlszeilenargumente benutzen nun "-" anstatt "_" (z.B. `--nichts-loeschen` anstatt `--nichts_loeschen`). "_" kann allerdings immernoch benutzt werden
+- [Anders] Befehlszeilenargumente benutzen nun "-" anstatt "\_" (z.B. `--nichts-loeschen` anstatt `--nichts_loeschen`). "\_" kann allerdings immernoch benutzt werden
 - [Neu] der Standardwert Operator gibt den Standardwert eines Typen zurück
 - [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
 - [Fix] Bug beim Vergleichen von Kombinationen
