@@ -20,6 +20,7 @@ pointer Text_Zu_Zeiger(ddpstringref t) {
 }
 
 void Erstelle_Byte_Puffer(ddpstring *ret, ddpint n) {
+	ret->refc = NULL;
 	ret->str = DDP_ALLOCATE(char, n + 1);
 	ret->cap = n + 1;
 	ret->str[n] = '\0';

@@ -34,9 +34,11 @@ void ddp_free_string(ddpstring *str) {
 		return;
 	}
 
+	DDP_DBGLOG("decrementing refc");
 	if (--(*str->refc) == 0) {
 		DDP_DBGLOG("freeing str and refc: %d", *str->refc);
 		DDP_FREE(ddpint, str->refc);
+		DDP_DBGLOG("freed refc, freeing str");
 		DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
 	} else {
 		DDP_DBGLOG("refc now at " DDP_INT_FMT, *str->refc);
@@ -66,6 +68,7 @@ void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str) {
 	if (str->refc == NULL) {
 		DDP_DBGLOG("allocating refc");
 		str->refc = DDP_ALLOCATE(ddpint, 1);
+		DDP_DBGLOG("allocated refc: %p", str->refc);
 		*str->refc = 1;
 	}
 
