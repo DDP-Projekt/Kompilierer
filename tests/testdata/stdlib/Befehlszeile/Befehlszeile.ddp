@@ -23,3 +23,9 @@ Schreibe (den Flaggenwert für 'n' von b als Wahrheitswert) auf eine Zeile.
 Schreibe (den Flaggenwert für 'd' von b als Text) auf eine Zeile.
 Schreibe (den Flaggenwert für "datei" von b als Text) auf eine Zeile.
 Schreibe (argumente von b) auf eine Zeile.
+Schreibe (b 'k' enthält) auf eine Zeile.
+Schreibe (b "ausgabe" enthält) auf eine Zeile.
+Schreibe (b 'o' enthält) auf eine Zeile.
+Schreibe (b 'b' enthält) auf eine Zeile.
+Schreibe (b 'n' enthält) auf eine Zeile.
+Schreibe (b "super-lang" enthält) auf eine Zeile.

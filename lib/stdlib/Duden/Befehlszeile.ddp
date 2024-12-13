@@ -29,11 +29,11 @@ Und überlädt den "als" Operator.
 Wir nennen die öffentliche Kombination aus
     [ der Name des Befehls ]
     dem Text name mit Standardwert "",
-    [ Eine Liste aus Befehlen ]
+    [ Ein Set aus Befehlen ]
     der HashTabelle unterBefehle mit Standardwert eine leere HashTabelle,
     [
-        Mapped die Text werte von Flaggen auf die Flaggen
-        Und kurz/lang Schreibweisen auf den Schlüssel der Flagge.
+        Mapped die Text Werte von Flaggen auf die Flaggen selbst
+        und kurz/lang Schreibweisen auf den Schlüssel der Flagge.
 
         Bsp.:
             "o" -> "o/ausgabe"
@@ -49,7 +49,7 @@ einen Befehl, und erstellen sie so:
     "ein Befehl mit Namen <name>"
 
 [
-    Überprüft ob der Standardwert ein valider Standardwert ist.
+    Überprüft ob der Standardwert ein valider Typ für einen Standardwert ist.
 ]
 Die Funktion Valider_Standardwert mit dem Parameter standardwert vom Typ Variablen Referenz, gibt einen Wahrheitswert zurück, macht:
     Gib wahr, wenn 
@@ -62,8 +62,8 @@ Und kann so benutzt werden:
     "<standardwert> kein valider Standardwert ist"
 
 [
-    Fügt einem Befehl einen Parameter hinzu.
-    Wenn der Parameter bereits existiert wird er überschrieben.
+    Fügt einem Befehl eine Flagge hinzu.
+    Wenn die Flagge bereits existiert wird sie überschrieben.
 ]
 Die öffentliche Funktion Flagge_Hinzufügen mit den Parametern befehl und flagge vom Typ Befehl Referenz und Flagge, gibt nichts zurück, macht:
     Diese Funktion könnte einen Fehler auslösen.    
@@ -88,7 +88,7 @@ Und kann so benutzt werden:
 
 [
     Fügt einem Befehl einen Unterbefehl hinzu.
-    Wenn der Unterbefehl bereits existiert wird er überschrieben.
+    Wenn ein Unterbefehl mit demselben Namen bereits existiert wird er überschrieben.
 ]
 Die öffentliche Funktion Unterbefehl_Hinzufügen mit den Parametern befehl und unterBefehl vom Typ Befehl Referenz und Befehl, gibt nichts zurück, macht:
     Setze den Wert von (name von unterBefehl) in (unterBefehle von befehl) auf (unterBefehl als Variable).
@@ -96,14 +96,34 @@ Und kann so benutzt werden:
     "Füge <befehl> <unterBefehl> hinzu",
     "Füge <befehl> den Unterbefehl <unterBefehl> hinzu"
 
+[
+	Ein Index für die flaggenWerte einer Befehlszeile, der außerdem angibt, ob der Wert vom Nutzer gesetzt wurde.
+]
+Wir nennen die Kombination aus
+	der Zahl index mit Standardwert -1,
+	dem Wahrheitswert vomNutzerGesetzt mit Standardwert falsch,
+einen FlaggenIndex,
+und erstellen sie so:
+	"der FlaggenIndex <index>"
+
+Die Funktion Flaggen_Index_Vom_Nutzer mit dem Parameter index vom Typ Zahl, gibt einen FlaggenIndex zurück, macht:
+	Der FlaggenIndex f ist der FlaggenIndex index.
+	Speichere wahr in vomNutzerGesetzt von f.
+	Gib f zurück.
+Und kann so benutzt werden:
+	"ein FlaggenIndex <index>, der vom Nutzer gesetzt wurde"
+
+[
+	Eine geparste Befehlszeile, die alle Unterbefehle, Flaggen-Werte und Argumente enthält.
+]
 Wir nennen die öffentliche Kombination aus
-    [ Kurzschreibweise (Text) -> Zahl ]
+    [ Kurzschreibweise (Text) -> FlaggenIndex ]
     der HashTabelle kurzschreibweisen mit Standardwert eine leere HashTabelle,
-    [ Parametername (Text) -> Zahl ]
+    [ Parametername (Text) -> FlaggenIndex ]
     der HashTabelle langschreibweisen mit Standardwert eine leere HashTabelle,
     [ Werte der Flaggen ]
     der Variablen Liste flaggenWerte mit Standardwert  eine leere Variablen Liste,
-    [ Positions argumente ]
+    [ Positions Argumente ]
     der öffentlichen Text Liste argumente mit Standardwert eine leere Text Liste,
     [ Liste der Unterbefehle in der Befehlszeile ]
     der öffentlichen Text Liste unterBefehle mit Standardwert eine leere Text Liste,
@@ -111,43 +131,57 @@ eine Befehlszeile, und erstellen sie so:
     "eine leere Befehlszeile"
 
 [
-    Gibt den Wert des Parameters zurück.
+    Gibt den Wert der Flagge zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Lang mit den Parametern befehlszeile und lang vom Typ Befehlszeile Referenz und Text, gibt eine Variable zurück, macht:
     Diese Funktion könnte einen Fehler auslösen.
 
-    Die Variable index ist langschreibweisen von befehlszeile an der Stelle lang.
-    Wenn index eine Zahl ist, gib flaggenWerte von befehlszeile an der Stelle index als Zahl zurück.
-    Gib den Standardwert von einer Variable zurück.
+    Die Variable flaggenIndex ist langschreibweisen von befehlszeile an der Stelle lang.
+    Wenn flaggenIndex kein FlaggenIndex ist, gib den Standardwert von einer Variable zurück.
+	Gib flaggenWerte von befehlszeile an der Stelle index von flaggenIndex als FlaggenIndex zurück.
 Und kann so benutzt werden:
     "der Flaggenwert für <lang> von <befehlszeile>",
     "dem Flaggenwert für <lang> von <befehlszeile>",
     "den Flaggenwert für <lang> von <befehlszeile>"
 
 [
-    Gibt den Wert des Parameters zurück.
+    Gibt den Wert der Flagge zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Kurz mit den Parametern befehlszeile und kurz vom Typ Befehlszeile Referenz und Buchstabe, gibt eine Variable zurück, macht:
     Diese Funktion könnte einen Fehler auslösen.
 
-    Die Variable index ist kurzschreibweisen von befehlszeile an der Stelle kurz als Text.
-    Wenn index eine Zahl ist, gib flaggenWerte von befehlszeile an der Stelle index als Zahl zurück.
-    Gib den Standardwert von einer Variable zurück.
+    Die Variable flaggenIndex ist kurzschreibweisen von befehlszeile an der Stelle kurz als Text.
+    Wenn flaggenIndex kein FlaggenIndex ist, gib den Standardwert von einer Variable zurück.
+	Gib flaggenWerte von befehlszeile an der Stelle index von flaggenIndex als FlaggenIndex zurück.
 Und kann so benutzt werden:
     "der Flaggenwert für <kurz> von <befehlszeile>",
     "dem Flaggenwert für <kurz> von <befehlszeile>",
     "den Flaggenwert für <kurz> von <befehlszeile>"
 
+[
+	Gibt wahr zurück, wenn die Flagge einen Wert vom Nutzer zugewiesen bekommen hat.
+	Kurz- und Langschreibweisen teilen sich denselben Wert.
+]
 Die öffentliche Funktion Hatte_Kurz mit den Parametern befehlszeile und kurz vom Typ Befehlszeile Referenz und Buchstabe, gibt einen Wahrheitswert zurück, macht:
-    Gib wahr, wenn (kurzschreibweisen von befehlszeile) (kurz als Text) enthält, zurück.
+    Die Variable flaggenIndex ist kurzschreibweisen von befehlszeile an der Stelle kurz als Text.
+    Wenn flaggenIndex kein FlaggenIndex ist, gib falsch zurück.
+    Gib vomNutzerGesetzt von flaggenIndex als FlaggenIndex zurück.
 Und kann so benutzt werden:
     "die Flagge <kurz> in <befehlszeile> <!nicht> vorhanden war",
+    "<kurz> in <befehlszeile> <!nicht> vom Nutzer gesetzt wurde",
     "<befehlszeile> <kurz> <!nicht> enthält"
 
+[
+	Gibt wahr zurück, wenn die Flagge einen Wert vom Nutzer zugewiesen bekommen hat.
+	Kurz- und Langschreibweisen teilen sich denselben Wert.
+]
 Die öffentliche Funktion Hatte_Lang mit den Parametern befehlszeile und lang vom Typ Befehlszeile Referenz und Text, gibt einen Wahrheitswert zurück, macht:
-    Gib wahr, wenn (langschreibweisen von befehlszeile) lang enthält, zurück.
+    Die Variable flaggenIndex ist langschreibweisen von befehlszeile an der Stelle lang als Text.
+    Wenn flaggenIndex kein FlaggenIndex ist, gib falsch zurück.
+    Gib vomNutzerGesetzt von flaggenIndex als FlaggenIndex zurück.
 Und kann so benutzt werden:
     "<lang> in <befehlszeile> <!nicht> vorhanden war",
+    "<lang> in <befehlszeile> <!nicht> vom Nutzer gesetzt wurde",
     "<befehlszeile> <lang> <!nicht> enthält"
 
 Die Funktion Parse_Unterbefehle mit den Parametern argumente und befehl vom Typ Text Listen Referenz und Befehl Referenz, gibt eine Text Liste zurück, macht:
@@ -264,12 +298,15 @@ Die Funktion Flaggen_Wert_Setzen mit den Parametern befehl, ergebnis, lang, kurz
     Wenn aber kurz ungleich ' ' ist, dann:
         Speichere (flaggen von befehl an der Stelle (flaggen von befehl an der Stelle kurz als Text) als Text) als Flagge in f.
 
-    Die Variable index ist die Länge von flaggenWerte von ergebnis.
+    Die Variable index ist ein FlaggenIndex (die Länge von flaggenWerte von ergebnis), der vom Nutzer gesetzt wurde.
     Setze den Wert von (lang von f) in (langschreibweisen von ergebnis) auf index.
     Setze den Wert von ((kurz von f) als Text) in (kurzschreibweisen von ergebnis) auf index.
 Und kann so benutzt werden:
     "Setze den Wert von <lang> und <kurz> in <ergebnis> mit <befehl> auf <wert>"
 
+[
+	Parset Befehlszeilenargumente nach den Regeln eines Befehls in eine Befehlszeile.
+]
 Die öffentliche Funktion Parse_Befehlszeile mit den Parametern argumente und befehl vom Typ Text Liste und Befehl Referenz, gibt eine Befehlszeile zurück, macht:
     Wenn argumente leer ist, gib eine leere Befehlszeile zurück.    
 
@@ -286,7 +323,7 @@ Die öffentliche Funktion Parse_Befehlszeile mit den Parametern argumente und be
         Wenn Wert von e eine Flagge ist, dann:
             Die Flagge f ist (Wert von e) als Flagge.
             Füge (standardwert von f) an (flaggenWerte von ergebnis) an.
-            Die Variable index ist die Länge von flaggenWerte von ergebnis.
+			Die Variable index ist der FlaggenIndex (die Länge von flaggenWerte von ergebnis).
             Setze den Wert von (lang von f) in (langschreibweisen von ergebnis) auf index.
             Setze den Wert von ((kurz von f) als Text) in (kurzschreibweisen von ergebnis) auf index.
 
@@ -307,32 +344,34 @@ Die öffentliche Funktion Parse_Befehlszeile mit den Parametern argumente und be
 
         Erhöhe i um 1.
 
+	[ Schlüssel von Flaggen löschen, die entweder nur eine Lang- oder Kurzschreibweise haben ]
     Lösche den Wert für " " aus (kurzschreibweisen von ergebnis).
-    Lösche den Wert für "" aus (kurzschreibweisen von ergebnis).
+    Lösche den Wert für "" aus (langschreibweisen von ergebnis).
     Gib ergebnis zurück.
 Und kann so benutzt werden:
     "<argumente> mit <befehl> geparset"
 
 
-[ Globaler Befehl ]
-Der Befehl hauptBefehl ist ein Befehl mit Namen (die Befehlszeilenargumente an der Stelle 1).
-Die Befehlszeile hauptBefehlszeile ist eine leere Befehlszeile.
+[ Der globale Befehl, der für das Programm selbst bestimmt ist ]
+Der öffentliche Befehl HauptBefehl ist ein Befehl mit Namen (die Befehlszeilenargumente an der Stelle 1).
+[ Die resultierende Befehlszeile nach dem Parsen des HauptBefehls ]
+Die öffentliche Befehlszeile HauptBefehlszeile ist eine leere Befehlszeile.
 
 [
-    Füge flagge dem Hauptbefehl hinzu.
+    Füge Flagge dem Hauptbefehl hinzu.
 ]
 Die öffentliche Funktion Flagge_Hinzufügen_Haupt mit dem Parameter flagge vom Typ Flagge, gibt nichts zurück, macht:
-    Füge hauptBefehl flagge hinzu.
+    Füge HauptBefehl flagge hinzu.
 Und kann so benutzt werden:
     "Es existiert <flagge>",
     "Füge der Befehlszeile <flagge> hinzu"
 
 [
     Fügt dem Hauptbefehl einen Unterbefehl hinzu.
-    Wenn der Unterbefehl bereits existiert wird er überschrieben.
+    Wenn ein Unterbefehl mit demselben Namen bereits existiert wird er überschrieben.
 ]
 Die öffentliche Funktion Unterbefehl_Hinzufügen_Haupt mit dem Parameter unterBefehl vom Typ Befehl, gibt nichts zurück, macht:
-    Füge hauptBefehl unterBefehl hinzu.
+    Füge HauptBefehl unterBefehl hinzu.
 Und kann so benutzt werden:
     "Füge der Befehlszeile <unterBefehl> hinzu",
     "Füge der Befehlszeile den Unterbefehl <unterBefehl> hinzu"
@@ -341,7 +380,7 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt eine Variable zurück, macht:
-    Gib den Flaggenwert für lang von hauptBefehlszeile zurück.
+    Gib den Flaggenwert für lang von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Flaggenwert für <lang>",
     "dem Flaggenwert für <lang>",
@@ -351,25 +390,46 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt eine Variable zurück, macht:
-    Gib den Flaggenwert für kurz von hauptBefehlszeile zurück.
+    Gib den Flaggenwert für kurz von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Flaggenwert für <kurz>",
     "dem Flaggenwert für <kurz>",
     "den Flaggenwert für <kurz>"
 
+[
+	Gibt wahr zurück, wenn der Flagge ein Wert zugewiesen wurde.
+]
 Die öffentliche Funktion Hatte_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-    Gib wahr, wenn hauptBefehlszeile kurz enthält, zurück.
+    Gib wahr, wenn HauptBefehlszeile kurz enthält, zurück.
 Und kann so benutzt werden:
     "die Flagge <kurz> in <!nicht> vorhanden war",
+    "<kurz> <!nicht> vom Nutzer gesetzt wurde",
     "die Befehlszeile <kurz> <!nicht> enthält"
 
+[
+	Gibt wahr zurück, wenn der Flagge ein Wert zugewiesen wurde.
+]
 Die öffentliche Funktion Hatte_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt einen Wahrheitswert zurück, macht:
-    Gib wahr, wenn hauptBefehlszeile lang enthält, zurück.
+    Gib wahr, wenn HauptBefehlszeile lang enthält, zurück.
 Und kann so benutzt werden:
     "die Flagge <lang> <!nicht> vorhanden war",
+    "<lang> <!nicht> vom Nutzer gesetzt wurde",
     "die Befehlszeile <lang> <!nicht> enthält"
 
+[
+	Parset die HauptBefehlszeile mit den Befehlszeilenargumenten des Programms.
+	Equivalent zu `(die Befehlszeilenargumente) mit HauptBefehl geparset`.
+]
 Die öffentliche Funktion Parse_Befehlszeile_Haupt gibt nichts zurück, macht:
-    Speichere (die Befehlszeilenargumente) mit hauptBefehl geparset in hauptBefehlszeile.
+    Speichere (die Befehlszeilenargumente) mit HauptBefehl geparset in HauptBefehlszeile.
 Und kann so benutzt werden:
     "Parse die Befehlszeile"
+
+[
+	Gibt die Unterbefehle der HauptBefehlszeile zurück.
+	Equivalent zu `unterBefehle von HauptBefehlszeile`.
+]
+Die öffentliche Funktion Unterbefehle_Haupt gibt eine Text Liste zurück, macht:
+	Gib unterBefehle von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+	"die Unterbefehle der Befehlszeile"

@@ -6,3 +6,9 @@ falsch
 test.ddp
 test.ddp
 hallo, welt, test1, test2
+wahr
+wahr
+wahr
+falsch
+falsch
+falsch
