@@ -132,11 +132,11 @@ external-compile:
 	@echo "building all external libraries"
 	'$(MAKE)' -C $(EXT_DIR)
 
-external-headers: $(LIBAR_HEADERS_OUT_DIR) $(PCRE2_HEADERS_OUT_DIR)
+external-headers: external-compile $(LIBAR_HEADERS_OUT_DIR) $(PCRE2_HEADERS_OUT_DIR)
 	$(CP) $(LIBAR_HEADERS) $(LIBAR_HEADERS_OUT_DIR)
 	$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR)
 
-external: external-compile external-headers
+external: external-headers
 	$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(EXT_DIR)$(EXT_BIN_LIBAR) $(EXT_DIR)$(EXT_BIN_LIBZ) $(EXT_DIR)$(EXT_BIN_LIBLZMA) $(EXT_DIR)$(EXT_BIN_LIBBZ2) $(EXT_DIR)$(EXT_BIN_LIBLZ4) $(LIB_DIR_OUT)
 
 $(OUT_DIR)LICENSE: LICENSE $(OUT_DIR)
