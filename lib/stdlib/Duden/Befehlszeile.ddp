@@ -184,7 +184,7 @@ Und kann so benutzt werden:
     "<lang> in <befehlszeile> <!nicht> vom Nutzer gesetzt wurde",
     "<befehlszeile> <lang> <!nicht> enthält"
 
-Die Funktion Parse_Unterbefehle mit den Parametern argumente und befehl vom Typ Text Listen Referenz und Befehl Referenz, gibt eine Text Liste zurück, macht:
+Die Funktion Parse_Unterbefehle mit den Parametern argumente und befehl vom Typ Text Listen Referenz und Befehl, gibt eine Text Liste zurück, macht:
     Die Text Liste befehlskette ist eine leere Text Liste.
     Für jeden Text arg in argumente ab dem 2. Element, mache:
         Wenn "-" am Anfang von arg steht, verlasse die Schleife.
@@ -230,7 +230,7 @@ Die Funktion Parse_Flaggen_Wert mit den Parametern wert und standardwert vom Typ
 Und kann so benutzt werden:
     "den Wert <wert> als Flaggen Wert mit Standardwert <standardwert>"
 
-Die Funktion Parse_Lange_Flagge mit den Parametern befehl, argumente, i und flaggenName vom Typ Befehl Referenz, Text Listen Referenz, Zahlen Referenz und Text Referenz, gibt eine Variable zurück, macht:
+Die Funktion Parse_Lange_Flagge mit den Parametern flaggen, argumente, i und flaggenName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Text Referenz, gibt eine Variable zurück, macht:
     Der Text lang ist argumente an der Stelle i ab dem 3. Element.
     Der Text wert ist "".
     Der Wahrheitswert hat_istgleich ist wahr, wenn lang '=' enthält.
@@ -241,14 +241,14 @@ Die Funktion Parse_Lange_Flagge mit den Parametern befehl, argumente, i und flag
     Sonst:
         Speichere lang in flaggenName.
 
-    Die Variable schlüssel ist flaggen von befehl an der Stelle flaggenName.
+    Die Variable schlüssel ist flaggen an der Stelle flaggenName.
     [ langer name nicht vorhanden ]
     Wenn schlüssel kein Text ist, dann:
         [ TODO: bessere Fehlerbehandlung ]
         Melde den Fehler ("Flagge \"" verkettet mit flaggenName verkettet mit "\" nicht vorhanden").
         Gib den Standardwert von einer Variable zurück.
 
-    Die Flagge flagge ist (flaggen von befehl an der Stelle schlüssel als Text) als Flagge.
+    Die Flagge flagge ist (flaggen an der Stelle schlüssel als Text) als Flagge.
 
     Wenn standardwert von flagge kein Wahrheitswert ist und nicht hat_istgleich, dann:
         Erhöhe i um 1.
@@ -259,23 +259,23 @@ Die Funktion Parse_Lange_Flagge mit den Parametern befehl, argumente, i und flag
 
     Gib den Wert wert als Flaggen Wert mit Standardwert (standardwert von flagge) zurück.
 Und kann so benutzt werden:
-    "der Wert der nächsten langen Flagge von <befehl> mit <argumente> ab <i> mit Namen <flaggenName>"
+    "der Wert der nächsten langen Flagge von <flaggen> mit <argumente> ab <i> mit Namen <flaggenName>"
 
-Die Funktion Parse_Kurze_Flagge mit den Parametern befehl, argumente, i und flaggenName vom Typ Befehl Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
+Die Funktion Parse_Kurze_Flagge mit den Parametern flaggen, argumente, i und flaggenName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
     Wenn die Länge von argumente an der Stelle i ungleich 2 ist, dann:
         Melde den Fehler ("Kurze Flaggen müssen genau 1 Buchstaben lang sein").
         Gib den Standardwert von einer Variable zurück.
 
     Speichere argumente an der Stelle i an der Stelle 2 in flaggenName.
 
-    Die Variable schlüssel ist flaggen von befehl an der Stelle (flaggenName als Text).
+    Die Variable schlüssel ist flaggen an der Stelle (flaggenName als Text).
     [ kurzer name nicht vorhanden ]
     Wenn schlüssel kein Text ist, dann:
         [ TODO: bessere Fehlerbehandlung ]
         Melde den Fehler ("Flagge \"" verkettet mit flaggenName verkettet mit "\" nicht vorhanden").
         Gib den Standardwert von einer Variable zurück.
 
-    Die Flagge flagge ist (flaggen von befehl an der Stelle schlüssel als Text) als Flagge.
+    Die Flagge flagge ist (flaggen an der Stelle schlüssel als Text) als Flagge.
 
     Der Text wert ist "".
     Wenn standardwert von flagge kein Wahrheitswert ist, dann:
@@ -287,22 +287,27 @@ Die Funktion Parse_Kurze_Flagge mit den Parametern befehl, argumente, i und flag
 
     Gib den Wert wert als Flaggen Wert mit Standardwert (standardwert von flagge) zurück.
 Und kann so benutzt werden:
-    "der Wert der nächsten kurzen Flagge von <befehl> mit <argumente> ab <i> mit Namen <flaggenName>"
+    "der Wert der nächsten kurzen Flagge von <flaggen> mit <argumente> ab <i> mit Namen <flaggenName>"
 
-Die Funktion Flaggen_Wert_Setzen mit den Parametern befehl, ergebnis, lang, kurz und wert vom Typ Befehl Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
-    Füge wert an (flaggenWerte von ergebnis) an.
-
+Die Funktion Flaggen_Wert_Setzen mit den Parametern flaggen, ergebnis, lang, kurz und wert vom Typ HashTabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
     Die Flagge f ist eine Flagge mit Kurzschreibweise ' '.
-    Wenn lang nicht leer ist, dann:
-        Speichere (flaggen von befehl an der Stelle (flaggen von befehl an der Stelle lang) als Text) als Flagge in f.
-    Wenn aber kurz ungleich ' ' ist, dann:
-        Speichere (flaggen von befehl an der Stelle (flaggen von befehl an der Stelle kurz als Text) als Text) als Flagge in f.
+	Der FlaggenIndex flaggenIndex ist der FlaggenIndex -1.
 
-    Die Variable index ist ein FlaggenIndex (die Länge von flaggenWerte von ergebnis), der vom Nutzer gesetzt wurde.
+    Wenn lang nicht leer ist, dann:
+        Speichere (flaggen an der Stelle (flaggen an der Stelle lang) als Text) als Flagge in f.
+		Speichere (langschreibweisen von ergebnis an der Stelle lang) als FlaggenIndex in flaggenIndex.
+    Wenn aber kurz ungleich ' ' ist, dann:
+        Speichere (flaggen an der Stelle (flaggen an der Stelle kurz als Text) als Text) als Flagge in f.
+		Speichere (kurzschreibweisen von ergebnis an der Stelle kurz als Text) als FlaggenIndex in flaggenIndex.
+
+	Speichere wert in flaggenWerte von ergebnis an der Stelle index von flaggenIndex.
+
+	Speichere wahr in vomNutzerGesetzt von flaggenIndex.
+	Die Variable index ist flaggenIndex als Variable.
     Setze den Wert von (lang von f) in (langschreibweisen von ergebnis) auf index.
     Setze den Wert von ((kurz von f) als Text) in (kurzschreibweisen von ergebnis) auf index.
 Und kann so benutzt werden:
-    "Setze den Wert von <lang> und <kurz> in <ergebnis> mit <befehl> auf <wert>"
+    "Setze den Wert von <lang> und <kurz> in <ergebnis> mit <flaggen> auf <wert>"
 
 [
 	Parset Befehlszeilenargumente nach den Regeln eines Befehls in eine Befehlszeile.
@@ -319,7 +324,17 @@ Die öffentliche Funktion Parse_Befehlszeile mit den Parametern argumente und be
     Speichere die Unterbefehlskette von befehl mit argumente in unterBefehle von ergebnis.
     Die Zahl i ist 2 plus die Länge von unterBefehle von ergebnis.
 
-    Für jeden Eintrag e in alle Einträge von (flaggen von befehl), mache:
+	Der Befehl finalerBefehl ist befehl.
+	Der Befehl momentanerUnterbefehl ist befehl.
+	Für jeden Text unterBefehl in unterBefehle von ergebnis, mache:
+		Speichere (unterBefehle von momentanerUnterbefehl an der Stelle unterBefehl) als Befehl in momentanerUnterbefehl. 
+		Für jeden Eintrag e in alle Einträge von (flaggen von momentanerUnterbefehl), mache:
+		 	Die Variable wert ist Wert von e.
+			Wenn wert eine Flagge ist, dann:
+				Füge finalerBefehl (wert als Flagge) hinzu.
+
+	[ Standardwerte für Flaggen einfügen ]
+    Für jeden Eintrag e in alle Einträge von (flaggen von finalerBefehl), mache:
         Wenn Wert von e eine Flagge ist, dann:
             Die Flagge f ist (Wert von e) als Flagge.
             Füge (standardwert von f) an (flaggenWerte von ergebnis) an.
@@ -331,14 +346,14 @@ Die öffentliche Funktion Parse_Befehlszeile mit den Parametern argumente und be
         Der Text arg ist argumente an der Stelle i.
         Wenn "--" am Anfang von arg steht, dann: [ long flag ]
             Der Text flaggenName ist "".
-            Die Variable wert ist der Wert der nächsten langen Flagge von befehl mit argumente ab i mit Namen flaggenName.
+            Die Variable wert ist der Wert der nächsten langen Flagge von (flaggen von finalerBefehl) mit argumente ab i mit Namen flaggenName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
-                Setze den Wert von flaggenName und ' ' in ergebnis mit befehl auf wert.
+                Setze den Wert von flaggenName und ' ' in ergebnis mit (flaggen von finalerBefehl) auf wert.
         Wenn aber "-" am Anfang von arg steht, dann: [ short flag ]
             Der Buchstabe flaggenName ist ' '.
-            Die Variable wert ist der Wert der nächsten kurzen Flagge von befehl mit argumente ab i mit Namen flaggenName.
+            Die Variable wert ist der Wert der nächsten kurzen Flagge von (flaggen von finalerBefehl) mit argumente ab i mit Namen flaggenName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
-                Setze den Wert von "" und flaggenName in ergebnis mit befehl auf wert.
+                Setze den Wert von "" und flaggenName in ergebnis mit (flaggen von finalerBefehl) auf wert.
         Sonst: [ positional arg ]
             Füge arg an (argumente von ergebnis) an.
 

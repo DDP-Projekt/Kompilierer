@@ -7,17 +7,18 @@ Schreibe ab jetzt alle Fehler.
 Der Befehl kddp ist ein Befehl mit Namen "kddp".
 
 Füge kddp (eine Flagge mit Namen "ausgabe" und Kurzschreibweise 'o' ) hinzu.
-Füge kddp (eine Flagge mit Namen "lang") hinzu.
+Füge kddp (eine Flagge mit Namen "lang-von-kddp") hinzu.
 Füge kddp (eine Flagge mit Kurzschreibweise 'k') hinzu.
 Füge kddp (eine Flagge mit Kurzschreibweise 'n') hinzu.
 Füge kddp (eine Flagge mit Namen "datei", Kurzschreibweise 'd' und Standardwert ("test" als Variable)) hinzu.
 
 Die Befehlszeile b ist 
-    (eine Liste, die aus "kddp", "hallo", "--ausgabe", "welt", "--lang", "-k", "test1", "-d", "test.ddp", "test2" besteht) mit kddp geparset.
+    (eine Liste, die aus "kddp", "hallo", "--ausgabe", "welt", "--lang-von-kddp",
+	 "-k", "test1", "-d", "test.ddp", "test2" besteht) mit kddp geparset.
 
 Schreibe (den Flaggenwert für "ausgabe" von b als Wahrheitswert) auf eine Zeile.
 Schreibe (den Flaggenwert für 'o' von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Flaggenwert für "lang" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für "lang-von-kddp" von b als Wahrheitswert) auf eine Zeile.
 Schreibe (den Flaggenwert für 'k' von b als Wahrheitswert) auf eine Zeile.
 Schreibe (den Flaggenwert für 'n' von b als Wahrheitswert) auf eine Zeile.
 Schreibe (den Flaggenwert für 'd' von b als Text) auf eine Zeile.
@@ -29,3 +30,35 @@ Schreibe (b 'o' enthält) auf eine Zeile.
 Schreibe (b 'b' enthält) auf eine Zeile.
 Schreibe (b 'n' enthält) auf eine Zeile.
 Schreibe (b "super-lang" enthält) auf eine Zeile.
+
+Schreibe '\n'.
+[ Unterbefehle ]
+
+Der Befehl kompiliere ist ein Befehl mit Namen "kompiliere".
+
+Füge kompiliere (eine Flagge mit Namen "ausgabe" und Kurzschreibweise 'o' ) hinzu.
+Füge kompiliere (eine Flagge mit Namen "hilfe" und Kurzschreibweise 'h' ) hinzu.
+Füge kompiliere (eine Flagge mit Namen "lang-von-kompiliere" ) hinzu.
+Füge kompiliere (eine Flagge mit Kurzschreibweise 'c' ) hinzu.
+
+Füge kddp den Unterbefehl kompiliere hinzu.
+
+Die Befehlszeile c ist 
+	(eine Liste, die aus "kddp", "kompiliere", "--ausgabe", "welt", "--hilfe", "--lang-von-kompiliere",
+	 "-c", "test1", "-n", "test2", "--lang-von-kddp" besteht) mit kddp geparset.
+
+Schreibe (unterBefehle von c) auf eine Zeile.
+Schreibe (argumente von c) auf eine Zeile.
+Schreibe (den Flaggenwert für "ausgabe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'o' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für "hilfe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'h' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für "lang-von-kompiliere" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'c' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Flaggenwert für 'n' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (c 'k' enthält) auf eine Zeile.
+Schreibe (c "ausgabe" enthält) auf eine Zeile.
+Schreibe (c 'o' enthält) auf eine Zeile.
+Schreibe (c 'b' enthält) auf eine Zeile.
+Schreibe (c 'n' enthält) auf eine Zeile.
+Schreibe (c "super-lang" enthält) auf eine Zeile.
