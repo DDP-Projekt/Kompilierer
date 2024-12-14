@@ -143,7 +143,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Zahl_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Zahlen Liste leer ist.
@@ -151,7 +152,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -222,34 +224,6 @@ Die öffentliche Funktion Produkt_Zahlen_Liste mit dem Parameter liste vom Typ Z
 	Gib prod zurück.
 Und kann so benutzt werden:
 	"das Produkt aller Zahlen in <liste>"
-
-[
-	Gibt die kleinste Zahl in der gegebenen Zahlen Liste zurück.
-	l := {e1, e2, e3, ..., en}
-	f(l) = min(e1, e2, e3, ..., en)
-	f({}) = 0
-]
-Die öffentliche Funktion Minimum_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
-	Wenn liste leer ist, gib 0 zurück.
-	Die Zahl min ist der maximale Wert einer Zahl.
-	Für jede Zahl z in liste, wenn z kleiner als min ist, speichere z in min.
-	Gib min zurück.
-Und kann so benutzt werden:
-	"die kleinste Zahl in <liste>"
-
-[
-	Gibt die größte Zahl in der gegebenen Zahlen Liste zurück.
-	l := {e1, e2, e3, ..., en}
-	f(l) = max(e1, e2, e3, ..., en)
-	f({}) = 0
-]
-Die öffentliche Funktion Maximum_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
-	Wenn liste leer ist, gib 0 zurück.
-	Die Zahl max ist der minimale Wert einer Zahl.
-	Für jede Zahl z in liste, wenn z größer als max ist, speichere z in max.
-	Gib max zurück.
-Und kann so benutzt werden:
-	"die größte Zahl in <liste>"
 
 [
 	Berechnet die Summe jedes Elements aus l1 mit l2.
@@ -434,7 +408,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Kommazahl_Ref mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Kommazahlen Liste leer ist.
@@ -442,7 +417,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -515,34 +491,6 @@ Die öffentliche Funktion Produkt_Kommazahlen_Liste mit dem Parameter liste vom 
 	Gib prod zurück.
 Und kann so benutzt werden:
 	"das Produkt aller Kommazahlen in <liste>"
-
-[
-	Gibt die kleinste Kommazahl in der gegebenen Kommazahlen Liste zurück.
-	l := {e1, e2, e3, ..., en}
-	f(l) = min(e1, e2, e3, ..., en)
-	f({}) = 0,0
-]
-Die öffentliche Funktion Minimum_Kommazahlen_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
-	Wenn liste leer ist, gib 0,0 zurück.
-	Die Kommazahl min ist der maximale Wert einer Kommazahl.
-	Für jede Kommazahl z in liste, wenn z kleiner als min ist, speichere z in min.
-	Gib min zurück.
-Und kann so benutzt werden:
-	"die kleinste Kommazahl in <liste>"
-
-[
-	Gibt die größte Kommazahl in der gegebenen Kommazahlen Liste zurück.
-	l := {e1, e2, e3, ..., en}
-	f(l) = max(e1, e2, e3, ..., en)
-	f({}) = 0,0
-]
-Die öffentliche Funktion Maximum_Kommazahl_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
-	Wenn liste leer ist, gib 0,0 zurück.
-	Die Kommazahl max ist der minimale Wert einer Kommazahl.
-	Für jede Kommazahl z in liste, wenn z größer als max ist, speichere z in max.
-	Gib max zurück.
-Und kann so benutzt werden:
-	"die größte Kommazahl in <liste>"
 
 [
 	Berechnet die Summe jedes Elements aus l1 mit l2.
@@ -730,7 +678,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Wahrheitswert_Ref mit dem Parameter liste vom Typ Wahrheitswert Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Wahrheitswert Liste leer ist.
@@ -738,7 +687,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -926,7 +876,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
@@ -934,7 +885,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -1140,7 +1092,8 @@ Und kann so benutzt werden:
 Die	öffentliche Funktion Ist_Leer_Text_Ref mit dem Parameter liste vom Typ Text Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Text Liste leer ist.
@@ -1148,7 +1101,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -1436,7 +1390,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Variable_Ref mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Variablen Liste leer ist.
@@ -1444,7 +1399,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Ist_Leer_Variable mit dem Parameter liste vom Typ Variablen Liste, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.

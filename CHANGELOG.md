@@ -14,7 +14,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Neu] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten
 - [Fix] Verschachtelte Struktur Literale verhalten sich jetzt mit Einbungen korrekt
 - [Fix] Variablen in Kombinations Literalen werden nun korrekt umgewandelt
-- [Fix] `Gib wahr/falsch, wenn ..., zurück` benötigt nun das Komma
+- [Fix, Breaking] `Gib wahr/falsch, wenn ..., zurück` benötigt nun das Komma
 - [Fix] Fehler mit Referenz Parametern in überladenen Operatoren werden nun korrekt gemeldet
 - [Neu] Mehrere Duden Module:
     - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten

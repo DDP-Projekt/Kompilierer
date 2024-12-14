@@ -9,23 +9,24 @@ Binde "Duden/Laufzeit" ein.
 Binde "Duden/Zahlen" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Dateisystem" ein.
+Binde "Duden/Statistik" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Befehlszeile" ein.
 Binde "Duden/Fehlerbehandlung" ein.
 
 Schreibe ab jetzt alle Fehler.
 
-Füge der Befehlszeile (eine Flagge mit Namen "hex" und Kurzschreibweise 'h') hinzu.
-Füge der Befehlszeile (eine Flagge mit Namen "ausgabe", Kurzschreibweise 'o' und Standardwert ("" als Variable)) hinzu.
+Füge der Befehlszeile (eine Option mit dem Namen "hex" und der Kurzschreibweise 'h') hinzu.
+Füge der Befehlszeile (eine Option mit dem Namen "ausgabe", der Kurzschreibweise 'o' und dem Standardwert ("" als Variable)) hinzu.
 
 Die Text Liste operationen ist eine Liste, die aus "summe", "produkt", "minimum", "maximum" besteht.
 
 Für jeden Text operation in operationen, mache:
-	Füge der Befehlszeile (einen Befehl mit Namen operation) hinzu.
+	Füge der Befehlszeile (einen Befehl mit dem Namen operation) hinzu.
 
-Parse die Befehlszeile.
+Analysiere die Befehlszeile.
 
-Wenn (die Unterbefehle der Befehlszeile) leer ist, dann:
+Wenn (die Unterbefehle der Befehlszeile) leer sind, dann:
 	Schreibe den Fehler "Keine Operation angegeben\n Operationen: summe, produkt, minimum und maximum\n".
 	Beende das Programm mit Code 1.
 
@@ -37,7 +38,7 @@ Die Zahlen Liste argumente ist  eine leere Zahlen Liste.
 
 Für jeden Text argument in (die Argumente der Befehlszeile), mache:
 	Die Zahl arg ist 0.
-	Wenn die Flagge "hex" vorhanden war, dann:
+	Wenn die Option "hex" vorhanden war, dann:
 		Speichere die Hexadezimalzahl argument in arg.
 		Wenn es dabei einen Fehler gab, fahre mit der Schleife fort.
 	Wenn aber argument in eine Zahl umgewandelt werden kann, speichere argument als Zahl in arg.
@@ -58,4 +59,4 @@ Der Text ausgabe ist ergebnis in Hexadezimal, falls "hex" vom Nutzer gesetzt wur
 Wenn "ausgabe" nicht vom Nutzer gesetzt wurde, dann:
 	Schreibe ausgabe auf eine Zeile.
 Sonst:
-	Schreibe den Text ausgabe in die Datei (der Flaggenwert für "ausgabe" als Text).
+	Schreibe den Text ausgabe in die Datei (der Optionnwert für "ausgabe" als Text).
