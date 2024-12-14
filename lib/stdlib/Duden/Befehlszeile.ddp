@@ -448,3 +448,12 @@ Die öffentliche Funktion Unterbefehle_Haupt gibt eine Text Liste zurück, macht
 	Gib unterBefehle von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
 	"die Unterbefehle der Befehlszeile"
+
+[
+	Gibt die Positionsargumente der HauptBefehlszeile zurück.
+	Equivalent zu `argumente von HauptBefehlszeile`.
+]
+Die öffentliche Funktion Argumente_Haupt gibt eine Text Liste zurück, macht:
+	Gib argumente von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+	"die Argumente der Befehlszeile"
