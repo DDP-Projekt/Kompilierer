@@ -43,17 +43,17 @@ Und kann so benutzt werden:
 	"einem Grabstein"
 
 Die Funktion Ist_Leerer_Eintrag mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn art von e gleich 0 ist zurück.
+	Gib wahr, wenn art von e gleich 0 ist, zurück.
 Und kann so benutzt werden:
 	"<e> ein leerer Eintrag ist"
 
 Die Funktion Ist_Grabstein mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn art von e gleich 1 ist zurück.
+	Gib wahr, wenn art von e gleich 1 ist, zurück.
 Und kann so benutzt werden:
 	"<e> ein Grabstein ist"
 
 Die Funktion Ist_Leer_Oder_Grabstein mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn art von e gleich 0 ist oder art von e gleich 1 ist zurück.
+	Gib wahr, wenn art von e gleich 0 ist oder art von e gleich 1 ist, zurück.
 Und kann so benutzt werden:
 	"<e> <!nicht> leer oder ein Grabstein ist"
 
@@ -140,7 +140,7 @@ Und kann so benutzt werden:
 	"Passe die Kapazität von <tabelle> auf <neue_kapazität> an"
 
 Die Funktion Ist_Neuer_Schlüssel_Index mit den Parametern index und tabelle vom Typ Zahl und HashTabelle Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn (einträge von tabelle an der Stelle index) ein leerer Eintrag ist zurück.
+	Gib wahr, wenn (einträge von tabelle an der Stelle index) ein leerer Eintrag ist, zurück.
 Und kann so benutzt werden:
 	"<index> für einen neuen Schlüssel in <tabelle> steht"
 
@@ -173,9 +173,10 @@ Und überlädt den "an der Stelle" Operator.
 
 Die öffentliche Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text, gibt einen Wahrheitswert zurück, macht:
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
-	Gib falsch, wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist zurück.
+	Gib falsch, wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, zurück.
 Und kann so benutzt werden:
-	"<schlüssel> <!nicht> in <tabelle> enthalten ist"
+	"<schlüssel> <!nicht> in <tabelle> enthalten ist",
+	"<tabelle> <schlüssel> <!nicht> enthält"
 
 Die öffentliche Funktion Tabellen_Wert_Löschen mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text, gibt eine Variable zurück, macht:
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.

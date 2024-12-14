@@ -422,7 +422,7 @@ Und kann so benutzt werden:
 	Auch: Ob divident modulo divisor = 0 ist. 
 ]
 Die öffentliche Funktion Ist_Teilbar mit den Parametern dividend und divisor vom Typ Zahl und Zahl, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn dividend modulo divisor gleich 0 ist zurück.
+	Gib wahr, wenn dividend modulo divisor gleich 0 ist, zurück.
 Und kann so benutzt werden:
 	"<dividend> <!nicht> durch <divisor> teilbar ist"
 

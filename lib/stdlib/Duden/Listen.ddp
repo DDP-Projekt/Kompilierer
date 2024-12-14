@@ -131,7 +131,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Zahl in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 
@@ -139,17 +139,19 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Zahl_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -397,22 +399,24 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Kommazahl in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 
 Die öffentliche Funktion Ist_Leer_Kommazahl_Ref mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Kommazahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -662,7 +666,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob der Wahrheitswert in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 
@@ -670,17 +674,19 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Wahrheitswert Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Wahrheitswert_Ref mit dem Parameter liste vom Typ Wahrheitswert Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Wahrheitswert Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -858,7 +864,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob der Buchstabe in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 
@@ -866,17 +872,19 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -1073,24 +1081,26 @@ Und kann so benutzt werden:
 	Gibt zurück ob der Text in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 [
 	Gibt zurück ob die Text Liste leer ist.
 ]
 Die	öffentliche Funktion Ist_Leer_Text_Ref mit dem Parameter liste vom Typ Text Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Text Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
@@ -1368,7 +1378,7 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Variable in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Variable mit den Parametern liste und elm vom Typ Variablen Liste und Variable, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste elm enthält zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
 	"<liste> <elm> <!nicht> enthält"
 
@@ -1376,17 +1386,19 @@ Und kann so benutzt werden:
 	Gibt zurück ob die Variablen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Variable_Ref mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Variablen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Variable mit dem Parameter liste vom Typ Variablen Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn liste leer ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> <!nicht> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt liste bis zum n. Element zurück.
