@@ -1,0 +1,61 @@
+[
+	Dieses Programm ist ein simpler Rechner, der die Summe, das Produkt, das Minimum oder das Maximum von Zahlen berechnet.
+	Es kann auch Hexadezimalzahlen verarbeiten.
+
+	Aufruf: cli_rechner [operation] [argumente | --hex | --ausgabe [Datei]]
+]
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
+Binde "Duden/Zahlen" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Dateisystem" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Befehlszeile" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Füge der Befehlszeile (eine Flagge mit Namen "hex" und Kurzschreibweise 'h') hinzu.
+Füge der Befehlszeile (eine Flagge mit Namen "ausgabe", Kurzschreibweise 'o' und Standardwert ("" als Variable)) hinzu.
+
+Die Text Liste operationen ist eine Liste, die aus "summe", "produkt", "minimum", "maximum" besteht.
+
+Für jeden Text operation in operationen, mache:
+	Füge der Befehlszeile (einen Befehl mit Namen operation) hinzu.
+
+Parse die Befehlszeile.
+
+Wenn (die Unterbefehle der Befehlszeile) leer ist, dann:
+	Schreibe den Fehler "Keine Operation angegeben\n Operationen: summe, produkt, minimum und maximum\n".
+	Beende das Programm mit Code 1.
+
+Wenn operationen (die Unterbefehle der Befehlszeile an der Stelle 1) nicht enthält, dann:
+	Schreibe den Fehler "Keine valide Operation\n Operationen: summe, produkt, minimum und maximum\n".
+	Beende das Programm mit Code 1.
+
+Die Zahlen Liste argumente ist  eine leere Zahlen Liste.
+
+Für jeden Text argument in (die Argumente der Befehlszeile), mache:
+	Die Zahl arg ist 0.
+	Wenn die Flagge "hex" vorhanden war, dann:
+		Speichere die Hexadezimalzahl argument in arg.
+		Wenn es dabei einen Fehler gab, fahre mit der Schleife fort.
+	Wenn aber argument in eine Zahl umgewandelt werden kann, speichere argument als Zahl in arg.
+	Sonst:
+		Schreibe den Fehler ("Ungültiges Argument: " verkettet mit argument verkettet mit '\n').
+		Fahre mit der Schleife fort.
+
+	Füge arg an argumente an.
+
+Die Zahl ergebnis ist 0.
+Der Text operation ist (die Unterbefehle der Befehlszeile an der Stelle 1).
+Wenn operation gleich "summe" ist, speichere die Summe aller Zahlen in argumente in ergebnis.
+Wenn aber operation gleich "produkt" ist, speichere das Produkt aller Zahlen in argumente in ergebnis.
+Wenn aber operation gleich "minimum" ist, speichere die kleinste Zahl in argumente in ergebnis.
+Wenn aber operation gleich "maximum" ist, speichere die größte Zahl in argumente in ergebnis.
+
+Der Text ausgabe ist ergebnis in Hexadezimal, falls "hex" vom Nutzer gesetzt wurde, ansonsten ergebnis als Text.
+Wenn "ausgabe" nicht vom Nutzer gesetzt wurde, dann:
+	Schreibe ausgabe auf eine Zeile.
+Sonst:
+	Schreibe den Text ausgabe in die Datei (der Flaggenwert für "ausgabe" als Text).

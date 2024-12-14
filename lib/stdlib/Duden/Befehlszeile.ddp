@@ -46,7 +46,9 @@ Wir nennen die öffentliche Kombination aus
     ]
     der HashTabelle flaggen mit Standardwert eine leere HashTabelle,
 einen Befehl, und erstellen sie so:
-    "ein Befehl mit Namen <name>"
+    "ein Befehl mit Namen <name>",
+    "einen Befehl mit Namen <name>",
+    "einem Befehl mit Namen <name>"
 
 [
     Überprüft ob der Standardwert ein valider Typ für einen Standardwert ist.

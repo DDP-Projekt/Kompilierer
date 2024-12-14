@@ -347,3 +347,23 @@ Die öffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt e
 	Gib ergebnis zurück.
 Und kann so benutzt werden:
 	"die Hexadezimalzahl <hex>"
+
+Die Buchstaben Liste hexZiffern ist eine Liste, die aus
+	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+besteht.
+
+Die öffentliche Funktion Zahl_Zu_Hex mit dem Parameter zahl vom Typ Zahl, gibt einen Text zurück, macht:
+	Wenn zahl gleich 0 ist, dann:
+		Gib "0" zurück.
+
+	Wenn zahl kleiner als 0 ist, dann:
+		Gib '-' verkettet mit (-zahl in Hexadezimal) zurück.
+
+	Der Text ergebnis ist "".
+	Solange zahl ungleich 0 ist, mache:
+		Speichere hexZiffern an der Stelle (zahl modulo 16) verkettet mit ergebnis in ergebnis.
+		Speichere (zahl durch 16) als Zahl in zahl.
+
+	Gib ergebnis zurück.
+Und kann so benutzt werden:
+	"<zahl> in Hexadezimal"

@@ -1,3 +1,5 @@
+Binde "Duden/Zahlen" ein.
+
 [ Zahlen Listen Funktionen]
 [
 	Löscht alle Zahlen aus der gegebenen Zahlen Liste.
@@ -220,6 +222,34 @@ Die öffentliche Funktion Produkt_Zahlen_Liste mit dem Parameter liste vom Typ Z
 	Gib prod zurück.
 Und kann so benutzt werden:
 	"das Produkt aller Zahlen in <liste>"
+
+[
+	Gibt die kleinste Zahl in der gegebenen Zahlen Liste zurück.
+	l := {e1, e2, e3, ..., en}
+	f(l) = min(e1, e2, e3, ..., en)
+	f({}) = 0
+]
+Die öffentliche Funktion Minimum_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+	Wenn liste leer ist, gib 0 zurück.
+	Die Zahl min ist der maximale Wert einer Zahl.
+	Für jede Zahl z in liste, wenn z kleiner als min ist, speichere z in min.
+	Gib min zurück.
+Und kann so benutzt werden:
+	"die kleinste Zahl in <liste>"
+
+[
+	Gibt die größte Zahl in der gegebenen Zahlen Liste zurück.
+	l := {e1, e2, e3, ..., en}
+	f(l) = max(e1, e2, e3, ..., en)
+	f({}) = 0
+]
+Die öffentliche Funktion Maximum_Zahlen_Liste mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahl zurück, macht:
+	Wenn liste leer ist, gib 0 zurück.
+	Die Zahl max ist der minimale Wert einer Zahl.
+	Für jede Zahl z in liste, wenn z größer als max ist, speichere z in max.
+	Gib max zurück.
+Und kann so benutzt werden:
+	"die größte Zahl in <liste>"
 
 [
 	Berechnet die Summe jedes Elements aus l1 mit l2.
@@ -485,6 +515,34 @@ Die öffentliche Funktion Produkt_Kommazahlen_Liste mit dem Parameter liste vom 
 	Gib prod zurück.
 Und kann so benutzt werden:
 	"das Produkt aller Kommazahlen in <liste>"
+
+[
+	Gibt die kleinste Kommazahl in der gegebenen Kommazahlen Liste zurück.
+	l := {e1, e2, e3, ..., en}
+	f(l) = min(e1, e2, e3, ..., en)
+	f({}) = 0,0
+]
+Die öffentliche Funktion Minimum_Kommazahlen_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Wenn liste leer ist, gib 0,0 zurück.
+	Die Kommazahl min ist der maximale Wert einer Kommazahl.
+	Für jede Kommazahl z in liste, wenn z kleiner als min ist, speichere z in min.
+	Gib min zurück.
+Und kann so benutzt werden:
+	"die kleinste Kommazahl in <liste>"
+
+[
+	Gibt die größte Kommazahl in der gegebenen Kommazahlen Liste zurück.
+	l := {e1, e2, e3, ..., en}
+	f(l) = max(e1, e2, e3, ..., en)
+	f({}) = 0,0
+]
+Die öffentliche Funktion Maximum_Kommazahl_Liste mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahl zurück, macht:
+	Wenn liste leer ist, gib 0,0 zurück.
+	Die Kommazahl max ist der minimale Wert einer Kommazahl.
+	Für jede Kommazahl z in liste, wenn z größer als max ist, speichere z in max.
+	Gib max zurück.
+Und kann so benutzt werden:
+	"die größte Kommazahl in <liste>"
 
 [
 	Berechnet die Summe jedes Elements aus l1 mit l2.
