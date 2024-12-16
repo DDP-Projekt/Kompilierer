@@ -46,7 +46,6 @@ var i8_zero = newIntT(i8, 0)
 
 func (t *ddpIrAnyType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
-		constant.NewNull(ptr(ddpint)),
 		constant.NewNull(i8ptr),
 		constant.NewArray(any_value_type,
 			i8_zero, i8_zero, i8_zero, i8_zero,
@@ -73,11 +72,12 @@ func (t *ddpIrAnyType) DeepCopyFunc() *ir.Func {
 }
 
 func (t *ddpIrAnyType) ShallowCopyFunc() *ir.Func {
-	return t.shallowCopyIrFun
+	// for any deepCopy == shallowCopy
+	return t.deepCopyIrFun
 }
 
 func (t *ddpIrAnyType) PerformCowFunc() *ir.Func {
-	return t.performCowIrFun
+	return nil
 }
 
 func (t *ddpIrAnyType) EqualsFunc() *ir.Func {
@@ -90,14 +90,12 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	ddpany := &ddpIrAnyType{}
 	// see equivalent in runtime/include/ddptypes.h
 	ddpany.typ = c.mod.NewTypeDef("ddpany", types.NewStruct(
-		ptr(ddpint),    // ddpint *refc;
 		i8ptr,          // vtable *vtable_ptr
 		any_value_type, // uint8_t value[16]
 	))
 	ddpany.ptr = ptr(ddpany.typ)
 
 	ddpany.llType = llvm.StructType([]llvm.Type{
-		llvm.PointerType(llvm.Int64Type(), 0),
 		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.ArrayType(llvm.Int8Type(), 16),
 	}, false)
@@ -107,10 +105,6 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 
 	// places a copy of any in ret
 	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", c.void.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
-	// places a shallow copy of any in ret
-	ddpany.shallowCopyIrFun = c.declareExternalRuntimeFunction("ddp_shallow_copy_any", c.void.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
-
-	ddpany.performCowIrFun = c.declareExternalRuntimeFunction("ddp_perform_cow_any", c.void.IrType(), ir.NewParam("any", ddpany.ptr))
 
 	// compares two any
 	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", ddpbool, ir.NewParam("any1", ddpany.ptr), ir.NewParam("any2", ddpany.ptr))
@@ -121,9 +115,8 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 // helper functions for working with big vs small anys
 
 const (
-	any_refc_index       = 0
-	any_vtable_ptr_index = 1
-	any_value_index      = 2
+	any_vtable_ptr_index = 0
+	any_value_index      = 1
 )
 
 // loads the size from the any's vtable

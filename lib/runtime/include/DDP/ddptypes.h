@@ -62,7 +62,6 @@ typedef struct {
 #define DDP_SMALL_ANY_BUFF_SIZE 16
 
 typedef struct {
-	ddpint *refc; // refcount for copy on write
 	vtable *vtable_ptr;
 	union {
 		void *value_ptr;
@@ -81,10 +80,6 @@ typedef struct {
 void ddp_free_any(ddpany *any);
 // places a copy of any in ret
 void ddp_deep_copy_any(ddpany *ret, ddpany *any);
-// shallow copies an any
-void ddp_shallow_copy_any(ddpany *ret, ddpany *any);
-// copies a any into itself
-void ddp_perform_cow_any(ddpany *any);
 // compares two any
 ddpbool ddp_any_equal(ddpany *any1, ddpany *any2);
 
@@ -209,7 +204,7 @@ extern void ddp_perform_cow_ddpanylist(ddpanylist *list);
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \
-		NULL, NULL, { \
+		NULL, {       \
 			NULL      \
 		}             \
 	}

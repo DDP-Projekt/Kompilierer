@@ -353,6 +353,9 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 		nil,
 	)
 
+	// *ret = DDP_EMPTY_LIST
+	c.cbb.NewStore(listType.DefaultValue(), ret)
+
 	// allocate(sizeof(t) * list->cap)
 	arr := c.allocateArr(getPointeeTypeT(getPointeeType(arrFieldPtr)), origCap)
 
@@ -423,6 +426,9 @@ func (c *compiler) createListShallowCopy(listType *ddpIrListType, declarationOnl
 	},
 		nil,
 	)
+
+	// *ret = DDP_EMPTY_LIST
+	c.cbb.NewStore(listType.DefaultValue(), ret)
 
 	/*
 		if (list->refc == null) {
@@ -514,7 +520,7 @@ func (c *compiler) createListPerformCow(listType *ddpIrListType, declarationOnly
 	if listType.elementType.IsPrimitive() {
 		// memcpy(arr, list->arr, list->len)
 		c.memcpyArr(arr_copy, arr, len)
-	} else { // non-primitive types need to be seperately deep-copied
+	} else { // non-primitive types need to be seperately copied
 		/*
 			for (int i = 0; i < list->len; i++) {
 				ddp_shallow_copy(&ret->arr[i], &list->arr[i])
@@ -535,6 +541,7 @@ func (c *compiler) createListPerformCow(listType *ddpIrListType, declarationOnly
 
 	// list->arr = arr_copy;
 	c.cbb.NewStore(arr_copy, c.indexStruct(list, list_arr_field_index))
+	// list->cap = list->len
 	c.cbb.NewStore(len, c.indexStruct(list, list_cap_field_index))
 
 	c.cbb.NewRet(nil)

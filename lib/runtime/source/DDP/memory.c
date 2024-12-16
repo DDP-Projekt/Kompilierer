@@ -9,7 +9,9 @@
 void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize) {
 #ifdef DDP_DEBUG
 	static unsigned long long allocatedBytes = 0;
-	DDP_DBGLOG("freeing %p", pointer);
+	if (newSize == 0) {
+		DDP_DBGLOG("freeing %p", pointer);
+	}
 #endif // DDP_DEBUG
 
 	// newSize == 0 means free
