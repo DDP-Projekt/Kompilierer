@@ -3,14 +3,18 @@
 Der Changelog von DDP. Sortiert nach Release.
 
 **Legende**:
- - Neu:      Etwas wurde hinzugefügt
- - Anders:   Etwas wurde geändert
- - Entfernt: Etwas wurde entfernt
- - Fix:      Ein Bug wurde repariert.
- - Breaking: Die Änderung macht alte Programme kaputt
+ - [Neu]:      Etwas wurde hinzugefügt
+ - [Anders]:   Etwas wurde geändert
+ - [Entfernt]: Etwas wurde entfernt
+ - [Fix]:      Ein Bug wurde repariert.
+ - [Breaking]: Die Änderung macht alte Programme kaputt
 
 ## In Entwicklung
 
+- [Neu] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten
+- [Fix] Verschachtelte Struktur Literale verhalten sich jetzt mit Einbindungen korrekt
+- [Fix] Variablen in Kombinations Literalen werden nun korrekt umgewandelt
+- [Fix, Breaking] `Gib wahr/falsch, wenn ..., zurück` benötigt nun das Komma
 - [Fix] Fehler mit Referenz Parametern in überladenen Operatoren werden nun korrekt gemeldet
 - [Neu] Mehrere Duden Module:
     - Duden/Komprimierung: Funktionen um mit Archiven (zip, gzip, xz, bzip2, lz4, 7z) zu arbeiten
@@ -34,7 +38,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Fix] utf8 Texte
 - [Fix] Aliase mit Referenz Parametern werden nun in mehr Fällen bevorzugt
 - [Fix] Der Kompilierer crashet nicht mehr wenn indirekt importierte Symbole in eingebundenen Kombinations Aliasen verwendet werden
-- [Anders] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
+- [Breaking] Duden/Zeichen und Duden/Texte um Konflikte mit dem neuen Variablen Typ zu vermeiden:
     - Buchstabe_Ist_Zahl -> Buchstabe_Ist_Ziffer (Alias ebenfalls angepasst)
     - Text_Ist_Zahl: Alias angepasst
 - [Neu] Duden/Dateisystem Datei_Lies_Alles
@@ -110,7 +114,7 @@ Der Changelog von DDP. Sortiert nach Release.
         - sinh -> Hyperbelsinus
         - cosh -> Hyperbelkosinus
         - tanh -> Hyperbeltangens 
-- [Neu] Folgende Duden Funktionen wurden hinzugefügt (siehe die [Bedienungsanleitung](https://ddp.le0n.dev/Bedienungsanleitung/de/Programmierung/Standardbibliothek/) für eine Beschreibung):
+- [Neu] Folgende Duden Funktionen wurden hinzugefügt (siehe die [Bedienungsanleitung](https://doku.ddp.im/de/Programmierung/Standardbibliothek/) für eine Beschreibung):
     - Pfade: 
         - UNIX_Vollständiger_Pfad  
         - Windows_Ist_Absolut 
@@ -194,7 +198,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Fix] Die Reihenfolge der 2 letzten Argumente beim zwischen Operator ist jetzt egal
 - [Neu] Optionale Optimierungsstufe 2 optimiert das Kopieren von komplexeren Datentypen
 - [Neu] Befehlszeilenargument "-O/--optimierungs-stufe" um die Optimierungsstufe zu setzen
-- [Anders] Befehlszeilenargumente benutzen nun "-" anstatt "_" (z.B. `--nichts-loeschen` anstatt `--nichts_loeschen`). "_" kann allerdings immernoch benutzt werden
+- [Anders] Befehlszeilenargumente benutzen nun "-" anstatt "\_" (z.B. `--nichts-loeschen` anstatt `--nichts_loeschen`). "\_" kann allerdings immernoch benutzt werden
 - [Neu] der Standardwert Operator gibt den Standardwert eines Typen zurück
 - [Breaking] Der Größe Operator nimmt nun einen Typ als Operanden
 - [Fix] Bug beim Vergleichen von Kombinationen

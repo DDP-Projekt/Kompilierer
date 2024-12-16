@@ -11,7 +11,10 @@ Die öffentliche Funktion Höchste_ListeZ mit dem Parameter liste vom Typ Zahlen
 	Für jede Zahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
-	"der höchste Wert aus <liste>"
+	"der höchste Wert aus <liste>",
+	"dem höchsten Wert aus <liste>",
+	"die größte Zahl in <liste>",
+	"der größten Zahl in <liste>"
 
 [
 	Gibt den höchsten Wert der Kommazahlen Liste zurück.
@@ -21,7 +24,10 @@ Die öffentliche Funktion Höchste_ListeK mit dem Parameter liste vom Typ Kommaz
 	Für jede Kommazahl z in liste, speichere die größere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
-	"der höchste Wert aus <liste>"
+	"der höchste Wert aus <liste>",
+	"dem höchsten Wert aus <liste>",
+	"die größte Kommazahl in <liste>",
+	"der größten Kommazahl in <liste>"
 
 [
 	Gibt den kleinsten Wert der Zahlen Liste zurück.
@@ -31,7 +37,10 @@ Die öffentliche Funktion Kleinste_ListeZ mit dem Parameter liste vom Typ Zahlen
 	Für jede Zahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
-	"der kleinste Wert aus <liste>"
+	"der kleinste Wert aus <liste>",
+	"dem kleinsten Wert aus <liste>",
+	"die kleinste Zahl in <liste>",
+	"der kleinsten Zahl in <liste>"
 
 [
 	Gibt den kleinsten Wert der Kommazahlen Liste zurück.
@@ -41,7 +50,10 @@ Die öffentliche Funktion Kleinste_ListeK mit dem Parameter liste vom Typ Kommaz
 	Für jede Kommazahl z in liste, speichere die kleinere Zahl von z und maxNum in maxNum.
 	Gib maxNum zurück.
 Und kann so benutzt werden:
-	"der kleinste Wert aus <liste>"
+	"der kleinste Wert aus <liste>",
+	"dem kleinsten Wert aus <liste>",
+	"die kleinste Kommazahl in <liste>",
+	"der kleinsten Kommazahl in <liste>"
 
 [
 	Gibt die Summe der relativen Häufigkeiten aller Zahlen größer als, oder x. 

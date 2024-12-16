@@ -1,0 +1,463 @@
+Binde "Duden/HashTabelle" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Listen" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Laufzeit" ein.
+
+[
+    Eine Befehlszeilen option mit langem Namen, kurzem Namen und Standardwert.
+    standardwert ist standardmäßig falsch.
+]
+Wir nennen die öffentliche Kombination aus
+    dem öffentlichen Text lang mit Standardwert "", [ Der lange Name der Option ]
+    dem öffentlichen Buchstabe kurz mit Standardwert ' ', [ Der kurze Name der Option ]
+    der öffentlichen Variable standardwert mit Standardwert falsch, [ Der Standardwert der Option ]
+eine Option,
+und erstellen sie so:
+    "eine Option mit dem Namen <lang>, der Kurzschreibweise <kurz> und dem Standardwert <standardwert>" oder
+    "eine Option mit dem Namen <lang> und dem Standardwert <standardwert>" oder
+    "eine Option mit der Kurzschreibweise <kurz> und dem Standardwert <standardwert>" oder
+    "eine Option mit dem Namen <lang> und der Kurzschreibweise <kurz>" oder
+    "eine Option mit dem Namen <lang>" oder
+    "eine Option mit der Kurzschreibweise <kurz>"
+
+[ <kurz>/<lang> ]
+Die Funktion Option_Als_Text mit dem Parameter f vom Typ Option, gibt einen Text zurück, macht:
+    Gib kurz von f verkettet mit "/" verkettet mit lang von f zurück.
+Und überlädt den "als" Operator.
+
+Wir nennen die öffentliche Kombination aus
+    [ der Name des Befehls ]
+    dem Text name mit Standardwert "",
+    [ Ein Set aus Befehlen ]
+    der HashTabelle unterBefehle mit Standardwert eine leere HashTabelle,
+    [
+        Mapped die Text Werte von Optionn auf die Optionn selbst
+        und kurz/lang Schreibweisen auf den Schlüssel der Option.
+
+        Bsp.:
+            "o" -> "o/ausgabe"
+            "ausgabe" -> "o/ausgabe"
+            "o/ausgabe" -> Option{...}
+            "i" -> "i/"
+            "i/" -> Option{...}
+            "limit" -> " /limit"
+            " /limit" -> Option{...}
+    ]
+    der HashTabelle optionen mit Standardwert eine leere HashTabelle,
+einen Befehl, und erstellen sie so:
+    "ein Befehl mit Namen <name>",
+    "einen Befehl mit dem Namen <name>",
+    "einem Befehl mit dem Namen <name>"
+
+[
+    Überprüft ob der Standardwert ein valider Typ für einen Standardwert ist.
+]
+Die Funktion Valider_Standardwert mit dem Parameter standardwert vom Typ Variablen Referenz, gibt einen Wahrheitswert zurück, macht:
+    Gib wahr, wenn 
+        standardwert keine Zahl ist und
+        standardwert keine Kommazahl ist und
+        standardwert kein Text ist und
+        standardwert kein Wahrheitswert ist,
+    zurück.
+Und kann so benutzt werden:
+    "<standardwert> kein valider Standardwert ist"
+
+[
+    Fügt einem Befehl eine Option hinzu.
+    Wenn die Option bereits existiert wird sie überschrieben.
+]
+Die öffentliche Funktion Option_Hinzufügen mit den Parametern befehl und option vom Typ Befehl Referenz und Option, gibt nichts zurück, macht:
+    Diese Funktion könnte einen Fehler auslösen.    
+
+    Wenn (standardwert von option) kein valider Standardwert ist, dann:
+        Melde den Fehler "Kein Valider Standardwert".
+        Verlasse die Funktion.
+
+    Wenn die Länge von lang von option gleich 1 ist, dann:
+        Melde den Fehler "Die lange Schreibweise einer Option muss mehr als einen Buchstaben enthalten".
+        Verlasse die Funktion.
+
+    Der Text schlüssel ist option als Text.
+
+    Setze den Wert von ((kurz von option) als Text) in (optionen von befehl) auf (schlüssel als Variable).
+    Setze den Wert von (lang von option) in (optionen von befehl) auf (schlüssel als Variable).
+    
+    Setze den Wert von (schlüssel) in (optionen von befehl) auf (option als Variable).
+Und kann so benutzt werden:
+    "<befehl> hat die Option <option>",
+    "Füge <befehl> <option> hinzu"
+
+[
+    Fügt einem Befehl einen Unterbefehl hinzu.
+    Wenn ein Unterbefehl mit demselben Namen bereits existiert wird er überschrieben.
+]
+Die öffentliche Funktion Unterbefehl_Hinzufügen mit den Parametern befehl und unterBefehl vom Typ Befehl Referenz und Befehl, gibt nichts zurück, macht:
+    Setze den Wert von (name von unterBefehl) in (unterBefehle von befehl) auf (unterBefehl als Variable).
+Und kann so benutzt werden:
+    "Füge <befehl> <unterBefehl> hinzu",
+    "Füge <befehl> den Unterbefehl <unterBefehl> hinzu"
+
+[
+	Ein Index für die optionWerte einer Befehlszeile, der außerdem angibt, ob der Wert vom Nutzer gesetzt wurde.
+]
+Wir nennen die Kombination aus
+	der Zahl index mit Standardwert -1,
+	dem Wahrheitswert vomNutzerGesetzt mit Standardwert falsch,
+einen OptionsIndex,
+und erstellen sie so:
+	"der OptionsIndex <index>"
+
+Die Funktion Optionn_Index_Vom_Nutzer mit dem Parameter index vom Typ Zahl, gibt einen OptionsIndex zurück, macht:
+	Der OptionsIndex f ist der OptionsIndex index.
+	Speichere wahr in vomNutzerGesetzt von f.
+	Gib f zurück.
+Und kann so benutzt werden:
+	"ein OptionsIndex <index>, der vom Nutzer gesetzt wurde"
+
+[
+	Eine geparste Befehlszeile, die alle Unterbefehle, Optionn-Werte und Argumente enthält.
+]
+Wir nennen die öffentliche Kombination aus
+    [ Kurzschreibweise (Text) -> OptionsIndex ]
+    der HashTabelle kurzschreibweisen mit Standardwert eine leere HashTabelle,
+    [ Parametername (Text) -> OptionsIndex ]
+    der HashTabelle langschreibweisen mit Standardwert eine leere HashTabelle,
+    [ Werte der Optionn ]
+    der Variablen Liste optionWerte mit Standardwert  eine leere Variablen Liste,
+    [ Positions Argumente ]
+    der öffentlichen Text Liste argumente mit Standardwert eine leere Text Liste,
+    [ Liste der Unterbefehle in der Befehlszeile ]
+    der öffentlichen Text Liste unterBefehle mit Standardwert eine leere Text Liste,
+eine Befehlszeile, und erstellen sie so:
+    "eine leere Befehlszeile"
+
+[
+    Gibt den Wert der Option zurück.
+]
+Die öffentliche Funktion Parameter_Wert_Lang mit den Parametern befehlszeile und lang vom Typ Befehlszeile Referenz und Text, gibt eine Variable zurück, macht:
+    Diese Funktion könnte einen Fehler auslösen.
+
+    Die Variable optionIndex ist langschreibweisen von befehlszeile an der Stelle lang.
+    Wenn optionIndex kein OptionsIndex ist, gib den Standardwert von einer Variable zurück.
+	Gib optionWerte von befehlszeile an der Stelle index von optionIndex als OptionsIndex zurück.
+Und kann so benutzt werden:
+    "der Wert für <lang> von <befehlszeile>",
+    "dem Wert für <lang> von <befehlszeile>",
+    "den Wert für <lang> von <befehlszeile>"
+
+[
+    Gibt den Wert der Option zurück.
+]
+Die öffentliche Funktion Parameter_Wert_Kurz mit den Parametern befehlszeile und kurz vom Typ Befehlszeile Referenz und Buchstabe, gibt eine Variable zurück, macht:
+    Diese Funktion könnte einen Fehler auslösen.
+
+    Die Variable optionIndex ist kurzschreibweisen von befehlszeile an der Stelle kurz als Text.
+    Wenn optionIndex kein OptionsIndex ist, gib den Standardwert von einer Variable zurück.
+	Gib optionWerte von befehlszeile an der Stelle index von optionIndex als OptionsIndex zurück.
+Und kann so benutzt werden:
+    "der Wert für <kurz> von <befehlszeile>",
+    "dem Wert für <kurz> von <befehlszeile>",
+    "den Wert für <kurz> von <befehlszeile>"
+
+[
+	Gibt wahr zurück, wenn die Option einen Wert vom Nutzer zugewiesen bekommen hat.
+	Kurz- und Langschreibweisen teilen sich denselben Wert.
+]
+Die öffentliche Funktion Hatte_Kurz mit den Parametern befehlszeile und kurz vom Typ Befehlszeile Referenz und Buchstabe, gibt einen Wahrheitswert zurück, macht:
+    Die Variable optionIndex ist kurzschreibweisen von befehlszeile an der Stelle kurz als Text.
+    Wenn optionIndex kein OptionsIndex ist, gib falsch zurück.
+    Gib vomNutzerGesetzt von optionIndex als OptionsIndex zurück.
+Und kann so benutzt werden:
+    "die Option <kurz> in <befehlszeile> <!nicht> vorhanden war",
+    "<kurz> in <befehlszeile> <!nicht> vom Nutzer gesetzt wurde",
+    "<befehlszeile> <kurz> <!nicht> enthält"
+
+[
+	Gibt wahr zurück, wenn die Option einen Wert vom Nutzer zugewiesen bekommen hat.
+	Kurz- und Langschreibweisen teilen sich denselben Wert.
+]
+Die öffentliche Funktion Hatte_Lang mit den Parametern befehlszeile und lang vom Typ Befehlszeile Referenz und Text, gibt einen Wahrheitswert zurück, macht:
+    Die Variable optionIndex ist langschreibweisen von befehlszeile an der Stelle lang als Text.
+    Wenn optionIndex kein OptionsIndex ist, gib falsch zurück.
+    Gib vomNutzerGesetzt von optionIndex als OptionsIndex zurück.
+Und kann so benutzt werden:
+    "<lang> in <befehlszeile> <!nicht> vorhanden war",
+    "<lang> in <befehlszeile> <!nicht> vom Nutzer gesetzt wurde",
+    "<befehlszeile> <lang> <!nicht> enthält"
+
+Die Funktion Analysiere_Unterbefehle mit den Parametern argumente und befehl vom Typ Text Listen Referenz und Befehl, gibt eine Text Liste zurück, macht:
+    Die Text Liste befehlskette ist eine leere Text Liste.
+    Für jeden Text arg in argumente ab dem 2. Element, mache:
+        Wenn "-" am Anfang von arg steht, verlasse die Schleife.
+
+        Die Variable unterBefehl ist unterBefehle von befehl an der Stelle arg.
+        Wenn unterBefehl ein Befehl ist, dann:
+            Füge arg an befehlskette an.
+            Speichere unterBefehl als Befehl in befehl.
+        Sonst verlasse die Schleife.
+    Gib befehlskette zurück.
+Und kann so benutzt werden:
+    "die Unterbefehlskette von <befehl> mit <argumente>"
+
+Die Funktion Analysiere_Optionn_Wert mit den Parametern wert und standardwert vom Typ Text Referenz und Variablen Referenz, gibt eine Variable zurück, macht:
+    Wenn standardwert eine Zahl ist, dann:
+        Wenn wert in eine Zahl umgewandelt werden kann, gib wert als Zahl zurück.
+        Melde den Fehler "invalide Zahl gegeben".
+    Wenn aber standardwert eine Kommazahl ist, dann:
+        Wenn wert in eine Zahl umgewandelt werden kann, gib wert als Zahl zurück.
+        Melde den Fehler "invalide Kommazahl gegeben".
+    Wenn aber standardwert ein Wahrheitswert ist, dann:
+        Wenn wert leer ist, gib wahr zurück.
+
+        Schreibe wert klein.
+        Wenn wert gleich "wahr" ist oder
+            wert gleich "true" ist oder
+            wert gleich "ja" ist oder
+            wert gleich "j" ist oder
+            wert gleich "yes" ist oder
+            wert gleich "y" ist, gib wahr zurück.
+
+        Wenn wert gleich "falsch" ist oder
+            wert gleich "false" ist oder
+            wert gleich "nein" ist oder
+            wert gleich "n" ist oder
+            wert gleich "no" ist, gib falsch zurück.
+
+        Melde den Fehler "invalider Wahrheitswert gegeben".
+    Wenn aber standardwert ein Text ist, dann:
+        Gib wert zurück.
+
+    Gib standardwert zurück.
+Und kann so benutzt werden:
+    "den Wert <wert> als Optionn Wert mit Standardwert <standardwert>"
+
+Die Funktion Analysiere_Lange_Option mit den Parametern optionen, argumente, i und optionsName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Text Referenz, gibt eine Variable zurück, macht:
+    Der Text lang ist argumente an der Stelle i ab dem 3. Element.
+    Der Text wert ist "".
+    Der Wahrheitswert hat_istgleich ist wahr, wenn lang '=' enthält.
+    Wenn hat_istgleich, dann:
+        Die Zahl index ist der Index von '=' in lang.
+        Speichere lang bis zum (index minus 1). Element in optionsName.
+        Speichere lang ab dem (index plus 1). Element in wert.
+    Sonst:
+        Speichere lang in optionsName.
+
+    Die Variable schlüssel ist optionen an der Stelle optionsName.
+    [ langer name nicht vorhanden ]
+    Wenn schlüssel kein Text ist, dann:
+        [ TODO: bessere Fehlerbehandlung ]
+        Melde den Fehler ("Option \"" verkettet mit optionsName verkettet mit "\" nicht vorhanden").
+        Gib den Standardwert von einer Variable zurück.
+
+    Die Option option ist (optionen an der Stelle schlüssel als Text) als Option.
+
+    Wenn standardwert von option kein Wahrheitswert ist und nicht hat_istgleich, dann:
+        Erhöhe i um 1.
+        Wenn i größer als die Länge von argumente ist, dann:
+            Melde den Fehler ("Kein Wert für Option \"" verkettet mit optionsName verkettet mit "\" gegeben").
+            Gib den Standardwert von einer Variable zurück.
+        Speichere argumente an der Stelle i in wert.
+
+    Gib den Wert wert als Optionn Wert mit Standardwert (standardwert von option) zurück.
+Und kann so benutzt werden:
+    "der Wert der nächsten langen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
+
+Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i und optionsName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
+    Wenn die Länge von argumente an der Stelle i ungleich 2 ist, dann:
+        Melde den Fehler ("Kurze Optionn müssen genau 1 Buchstaben lang sein").
+        Gib den Standardwert von einer Variable zurück.
+
+    Speichere argumente an der Stelle i an der Stelle 2 in optionsName.
+
+    Die Variable schlüssel ist optionen an der Stelle (optionsName als Text).
+    [ kurzer name nicht vorhanden ]
+    Wenn schlüssel kein Text ist, dann:
+        [ TODO: bessere Fehlerbehandlung ]
+        Melde den Fehler ("Option \"" verkettet mit optionsName verkettet mit "\" nicht vorhanden").
+        Gib den Standardwert von einer Variable zurück.
+
+    Die Option option ist (optionen an der Stelle schlüssel als Text) als Option.
+
+    Der Text wert ist "".
+    Wenn standardwert von option kein Wahrheitswert ist, dann:
+        Erhöhe i um 1.
+        Wenn i größer als die Länge von argumente ist, dann:
+            Melde den Fehler ("Kein Wert für Option \"" verkettet mit optionsName verkettet mit "\" gegeben").
+            Gib den Standardwert von einer Variable zurück.
+        Speichere argumente an der Stelle i in wert.
+
+    Gib den Wert wert als Optionn Wert mit Standardwert (standardwert von option) zurück.
+Und kann so benutzt werden:
+    "der Wert der nächsten kurzen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
+
+Die Funktion Optionn_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kurz und wert vom Typ HashTabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
+    Die Option o ist eine Option mit der Kurzschreibweise ' '.
+	Der OptionsIndex optionsIndex ist der OptionsIndex -1.
+
+    Wenn lang nicht leer ist, dann:
+        Speichere (optionen an der Stelle (optionen an der Stelle lang) als Text) als Option in o.
+		Speichere (langschreibweisen von ergebnis an der Stelle lang) als OptionsIndex in optionsIndex.
+    Wenn aber kurz ungleich ' ' ist, dann:
+        Speichere (optionen an der Stelle (optionen an der Stelle kurz als Text) als Text) als Option in o.
+		Speichere (kurzschreibweisen von ergebnis an der Stelle kurz als Text) als OptionsIndex in optionsIndex.
+
+	Speichere wert in optionWerte von ergebnis an der Stelle index von optionsIndex.
+
+	Speichere wahr in vomNutzerGesetzt von optionsIndex.
+	Die Variable index ist optionsIndex als Variable.
+    Setze den Wert von (lang von o) in (langschreibweisen von ergebnis) auf index.
+    Setze den Wert von ((kurz von o) als Text) in (kurzschreibweisen von ergebnis) auf index.
+Und kann so benutzt werden:
+    "Setze den Wert von <lang> und <kurz> in <ergebnis> mit <optionen> auf <wert>"
+
+[
+	Analysiert die Befehlszeilenargumente argumente nach den Regeln eines Befehls und gibt die daraus entstandene Befehlszeile zurück.
+]
+Die öffentliche Funktion Analysiere_Befehlszeile mit den Parametern argumente und befehl vom Typ Text Liste und Befehl Referenz, gibt eine Befehlszeile zurück, macht:
+    Wenn argumente leer ist, gib eine leere Befehlszeile zurück.    
+
+    Wenn argumente an der Stelle 1 ungleich name von befehl ist, dann:
+        Melde den Fehler "Falscher Befehl".
+        Gib eine leere Befehlszeile zurück.
+
+    Die Befehlszeile ergebnis ist eine leere Befehlszeile.
+
+    Speichere die Unterbefehlskette von befehl mit argumente in unterBefehle von ergebnis.
+    Die Zahl i ist 2 plus die Länge von unterBefehle von ergebnis.
+
+	Der Befehl finalerBefehl ist befehl.
+	Der Befehl momentanerUnterbefehl ist befehl.
+	Für jeden Text unterBefehl in unterBefehle von ergebnis, mache:
+		Speichere (unterBefehle von momentanerUnterbefehl an der Stelle unterBefehl) als Befehl in momentanerUnterbefehl. 
+		Für jeden Eintrag e in alle Einträge von (optionen von momentanerUnterbefehl), mache:
+		 	Die Variable wert ist Wert von e.
+			Wenn wert eine Option ist, dann:
+				Füge finalerBefehl (wert als Option) hinzu.
+
+	[ Standardwerte für Optionn einfügen ]
+    Für jeden Eintrag e in alle Einträge von (optionen von finalerBefehl), mache:
+        Wenn Wert von e eine Option ist, dann:
+            Die Option o ist (Wert von e) als Option.
+            Füge (standardwert von o) an (optionWerte von ergebnis) an.
+			Die Variable index ist der OptionsIndex (die Länge von optionWerte von ergebnis).
+            Setze den Wert von (lang von o) in (langschreibweisen von ergebnis) auf index.
+            Setze den Wert von ((kurz von o) als Text) in (kurzschreibweisen von ergebnis) auf index.
+
+    Solange i kleiner als, oder die Länge von argumente ist, mache:
+        Der Text arg ist argumente an der Stelle i.
+        Wenn "--" am Anfang von arg steht, dann: [ long flag ]
+            Der Text optionName ist "".
+            Die Variable wert ist der Wert der nächsten langen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
+            Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
+                Setze den Wert von optionName und ' ' in ergebnis mit (optionen von finalerBefehl) auf wert.
+        Wenn aber "-" am Anfang von arg steht, dann: [ short flag ]
+            Der Buchstabe optionName ist ' '.
+            Die Variable wert ist der Wert der nächsten kurzen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
+            Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
+                Setze den Wert von "" und optionName in ergebnis mit (optionen von finalerBefehl) auf wert.
+        Sonst: [ positional arg ]
+            Füge arg an (argumente von ergebnis) an.
+
+        Erhöhe i um 1.
+
+	[ Schlüssel von Optionn löschen, die entweder nur eine Lang- oder Kurzschreibweise haben ]
+    Lösche den Wert für " " aus (kurzschreibweisen von ergebnis).
+    Lösche den Wert für "" aus (langschreibweisen von ergebnis).
+    Gib ergebnis zurück.
+Und kann so benutzt werden:
+    "<argumente> mit <befehl> analysiert"
+
+
+[ Der globale Befehl, der für das Programm selbst bestimmt ist ]
+Der öffentliche Befehl HauptBefehl ist ein Befehl mit Namen (die Befehlszeilenargumente an der Stelle 1).
+[ Die resultierende Befehlszeile nach dem Analysieren des HauptBefehls ]
+Die öffentliche Befehlszeile HauptBefehlszeile ist eine leere Befehlszeile.
+
+[
+    Füge Option dem Hauptbefehl hinzu.
+]
+Die öffentliche Funktion Option_Hinzufügen_Haupt mit dem Parameter option vom Typ Option, gibt nichts zurück, macht:
+    Füge HauptBefehl option hinzu.
+Und kann so benutzt werden:
+    "Es existiert <option>",
+    "Füge der Befehlszeile <option> hinzu"
+
+[
+    Fügt dem Hauptbefehl einen Unterbefehl hinzu.
+    Wenn ein Unterbefehl mit demselben Namen bereits existiert wird er überschrieben.
+]
+Die öffentliche Funktion Unterbefehl_Hinzufügen_Haupt mit dem Parameter unterBefehl vom Typ Befehl, gibt nichts zurück, macht:
+    Füge HauptBefehl unterBefehl hinzu.
+Und kann so benutzt werden:
+    "Füge der Befehlszeile <unterBefehl> hinzu",
+    "Füge der Befehlszeile den Unterbefehl <unterBefehl> hinzu"
+
+[
+    Gibt den Wert des Parameters zurück.
+]
+Die öffentliche Funktion Parameter_Wert_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt eine Variable zurück, macht:
+    Gib den Wert für lang von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+    "der Optionnwert für <lang>",
+    "dem Optionnwert für <lang>",
+    "den Optionnwert für <lang>"
+
+[
+    Gibt den Wert des Parameters zurück.
+]
+Die öffentliche Funktion Parameter_Wert_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt eine Variable zurück, macht:
+    Gib den Wert für kurz von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+    "der Optionnwert für <kurz>",
+    "dem Optionnwert für <kurz>",
+    "den Optionnwert für <kurz>"
+
+[
+	Gibt wahr zurück, wenn der Option ein Wert zugewiesen wurde.
+]
+Die öffentliche Funktion Hatte_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
+    Gib wahr, wenn HauptBefehlszeile kurz enthält, zurück.
+Und kann so benutzt werden:
+    "die Option <kurz> in <!nicht> vorhanden war",
+    "<kurz> <!nicht> vom Nutzer gesetzt wurde",
+    "die Befehlszeile <kurz> <!nicht> enthält"
+
+[
+	Gibt wahr zurück, wenn der Option ein Wert zugewiesen wurde.
+]
+Die öffentliche Funktion Hatte_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt einen Wahrheitswert zurück, macht:
+    Gib wahr, wenn HauptBefehlszeile lang enthält, zurück.
+Und kann so benutzt werden:
+    "die Option <lang> <!nicht> vorhanden war",
+    "<lang> <!nicht> vom Nutzer gesetzt wurde",
+    "die Befehlszeile <lang> <!nicht> enthält"
+
+[
+	Analysiert die HauptBefehlszeile mit den Befehlszeilenargumenten des Programms.
+	Equivalent zu `(die Befehlszeilenargumente) mit HauptBefehl analysiert`.
+]
+Die öffentliche Funktion Analysiere_Befehlszeile_Haupt gibt nichts zurück, macht:
+    Speichere (die Befehlszeilenargumente) mit HauptBefehl analysiert in HauptBefehlszeile.
+Und kann so benutzt werden:
+    "Analysiere die Befehlszeile"
+
+[
+	Gibt die Unterbefehle der HauptBefehlszeile zurück.
+	Equivalent zu `unterBefehle von HauptBefehlszeile`.
+]
+Die öffentliche Funktion Unterbefehle_Haupt gibt eine Text Liste zurück, macht:
+	Gib unterBefehle von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+	"die Unterbefehle der Befehlszeile",
+	"den Unterbefehlen der Befehlszeile"
+
+[
+	Gibt die Positionsargumente der HauptBefehlszeile zurück.
+	Equivalent zu `argumente von HauptBefehlszeile`.
+]
+Die öffentliche Funktion Argumente_Haupt gibt eine Text Liste zurück, macht:
+	Gib argumente von HauptBefehlszeile zurück.
+Und kann so benutzt werden:
+	"die Argumente der Befehlszeile",
+	"den Argumenten der Befehlszeile"
