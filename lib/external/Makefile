@@ -1,4 +1,4 @@
-.PHONY: all clean checkout-submodules
+.PHONY: all clean checkout-submodules clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4
 .DEFAULT_GOAL = all
 
 RM = rm -f
@@ -6,7 +6,7 @@ MKDIR = mkdir -p
 
 CC = gcc
 
-CMAKE_BUILD_TOOL=$(MAKE)
+CMAKE=cmake
 CMAKE_GENERATOR="MinGW Makefiles"
 CMAKE_OPTIONS=-DCMAKE_BUILD_TYPE=Release -G$(CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_COLOR_MAKEFILE=OFF
 
@@ -46,14 +46,14 @@ checkout-submodules:
 $(PCRE2_OUT_FILE_NAME): | checkout-submodules
 	@echo "building pcre2"
 	$(MKDIR) $(PCRE2_DIR)
-	cmake -S./pcre2/ -B$(PCRE2_DIR) $(CMAKE_OPTIONS)
-	cd $(PCRE2_DIR) && $(CMAKE_BUILD_TOOL) pcre2-8-static
+	'$(CMAKE)' -S./pcre2/ -B$(PCRE2_DIR) $(CMAKE_OPTIONS)
+	'$(MAKE)' -C $(PCRE2_DIR) pcre2-8-static
 	cp $(PCRE2_DIR)$(PCRE2_OUT_FILE_NAME) .
 
 $(LIBZ_NAME): | checkout-submodules
 	@echo "building zlib"
-	cmake -S./zlib/ -B$(ZLIB_DIR) $(CMAKE_OPTIONS)
-	cd $(ZLIB_DIR) ; make zlibstatic
+	'$(CMAKE)' -S./zlib/ -B$(ZLIB_DIR) $(CMAKE_OPTIONS)
+	'$(MAKE)' -C $(ZLIB_DIR) zlibstatic
 	mkdir -p $(ZLIB_DIR)include
 	cp ./zlib/*.h $(ZLIB_DIR)include/
 	cp $(ZLIB_DIR)zconf.h $(ZLIB_DIR)include/
@@ -61,37 +61,42 @@ $(LIBZ_NAME): | checkout-submodules
 
 $(XZ_NAME): | checkout-submodules
 	@echo "building lzma"
-	cmake -S./xz/ -B$(XZ_DIR) $(CMAKE_OPTIONS) -DBUILD_SHARED_LIBS=OFF
-	cd $(XZ_DIR) ; make liblzma
-	mkdir -p $(XZ_DIR)include
+	'$(CMAKE)' -S./xz/ -B$(XZ_DIR) $(CMAKE_OPTIONS) -DBUILD_SHARED_LIBS=OFF
+	'$(MAKE)' -C $(XZ_DIR) liblzma
+	mkdir -p $(XZ_DIR)include/
 	cp -r ./xz/src/liblzma/api/* $(XZ_DIR)include/
 	cp $(XZ_DIR)$(XZ_NAME) .
 
 $(BZ2_NAME): | checkout-submodules
 	@echo "building bzip2"
-	cd ./bzip2/ ; make bzip2
+	'$(MAKE)' -C ./bzip2/
 	cp ./bzip2/$(BZ2_NAME) .
 
 $(LZ4_NAME): | checkout-submodules
 	@echo "building lz4"
-	cd ./lz4/ ; make CC=$(CC) liblz4.a
+	'$(MAKE)' -C ./lz4/ 'CC=$(CC)' liblz4.a
 	cp ./lz4/lib/$(LZ4_NAME) .
 
-$(LIBAR_OUT_FILE_NAME): $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
+$(LIBAR_OUT_FILE_NAME): $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME) $(PCRE2_OUT_FILE_NAME)
 	@echo "building libarchive"
-	cmake -S./libarchive/ -B$(LIBAR_DIR) $(CMAKE_OPTIONS) $(LIBAR_CMAKE_OPTIONS) $(LIBAR_DEP_INCLUDES)
-	cd $(LIBAR_DIR) ; make archive_static
-	cp $(LIBAR_DIR)/libarchive/$(LIBAR_OUT_FILE_NAME) .
+	'$(CMAKE)' -S./libarchive/ -B$(LIBAR_DIR) $(CMAKE_OPTIONS) $(LIBAR_CMAKE_OPTIONS) $(LIBAR_DEP_INCLUDES)
+	'$(MAKE)' -C $(LIBAR_DIR) archive_static
+	cp $(LIBAR_DIR)libarchive/$(LIBAR_OUT_FILE_NAME) .
 
-all: checkout-submodules $(PCRE2_OUT_FILE_NAME) $(LIBAR_OUT_FILE_NAME)
+all: checkout-submodules $(LIBAR_OUT_FILE_NAME)
 
-clean:
-ifeq ($(OS),Windows_NT)
-	$(RM) $(PCRE2_OUT_FILE_NAME)
-	cd $(PCRE2_DIR) ; $(CMAKE_BUILD_TOOL) clean
-endif
-	$(RM) $(LIBAR_OUT_FILE_NAME)
-	$(RM) $(LIBZ_NAME)
-	$(RM) $(XZ_NAME)
-	$(RM) $(BZ2_NAME)
-	$(RM) $(LZ4_NAME)
+clean-pcre2:
+	'$(MAKE)' -C $(PCRE2_DIR) clean
+clean-libarchive:
+	'$(MAKE)' -C ./libarchive_build/ clean
+clean-xz:
+	'$(MAKE)' -C $(XZ_DIR) clean
+clean-libz:
+	'$(MAKE)' -C $(ZLIB_DIR) clean
+clean-bz2:
+	'$(MAKE)' -C ./bzip2/ clean
+clean-lz4:
+	'$(MAKE)' -C ./lz4/ clean
+
+clean: clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4
+	$(RM) $(PCRE2_OUT_FILE_NAME) $(LIBAR_OUT_FILE_NAME) $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
