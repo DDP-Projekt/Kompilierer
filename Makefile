@@ -20,8 +20,9 @@ EXT_BIN_LIBBZ2 = libbz2.a
 EXT_BIN_LIBLZ4 = liblz4.a
 PCRE2_DIR = $(EXT_DIR)pcre2_build/
 PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
-PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include
+PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
+LIBAR_HEADERS = $(wildcard $(LIBAR_DIR)*.h)
 LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
@@ -82,111 +83,82 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY: all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
+.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations help
 
-all: $(OUT_DIR) kddp runtime stdlib external ddp-setup ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
+all: kddp runtime stdlib ddp-setup $(OUT_DIR)LICENSE $(OUT_DIR)README.md ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
-debug: $(OUT_DIR) kddp runtime-debug stdlib-debug external ## same as all but the runtime and stdlib print debugging information
+debug: kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
 
-kddp: $(OUT_DIR) ## compiles kddp into build/DDP/bin/
+%/:
+	$(MKDIR) $@
+
+kddp: $(KDDP_DIR_OUT) $(LIB_DIR_OUT) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
-	cd $(CMD_DIR) ; '$(MAKE)' kddp
+	'$(MAKE)' -C $(CMD_DIR) kddp
 	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
-ddp-setup: $(OUT_DIR) ## compiles ddp-setup into build/DDP/bin/
+ddp-setup: $(DDP_SETUP_DIR_OUT) ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"
-	cd $(CMD_DIR) ; '$(MAKE)' ddp-setup
+	'$(MAKE)' -C $(CMD_DIR) ddp-setup
 	$(CP) $(DDP_SETUP_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
 
-stdlib: $(OUT_DIR) external ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
-	@echo "building the ddp-stdlib"
-	cd $(STD_DIR) ; '$(MAKE)'
+stdlib-copies: $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)include/ $(STD_DIR)source/ $(STD_DIR)Makefile $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+
+stdlib: external stdlib-copies $(LIB_DIR_OUT) ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
+	'$(MAKE)' -C $(STD_DIR)
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
-	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug: $(OUT_DIR) external ## same as stdlib but will print debugging information
-	@echo "building the ddp-stdlib in debug mode"
-	cd $(STD_DIR) ; '$(MAKE)' debug
+stdlib-debug: external stdlib-copies $(LIB_DIR_OUT) ## same as stdlib but will print debugging information
+	'$(MAKE)' -C $(STD_DIR) debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
-	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-runtime: $(OUT_DIR) ## compiles the runtime into build/DDP/lib/stdlib
-	@echo "building the ddp-runtime"
-	cd $(RUN_DIR) ; '$(MAKE)'
+runtime-copies: $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)include/ $(RUN_DIR)source/ $(RUN_DIR)Makefile $(RUN_DIR_OUT)
+
+runtime: runtime-copies $(LIB_DIR_OUT) ## compiles the runtime into build/DDP/lib/stdlib
+	'$(MAKE)' -C $(RUN_DIR)
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-runtime-debug: $(OUT_DIR) ## same as runtime but prints debugging information
-	@echo "building the ddp-runtime in debug mode"
-	cd $(RUN_DIR) ; '$(MAKE)' debug
-	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
+runtime-debug: runtime-copies $(LIB_DIR_OUT) ## same as runtime but prints debugging information
+	'$(MAKE)' -C $(RUN_DIR) debug
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-external: $(OUT_DIR)
+external-compile:
 	@echo "building all external libraries"
-	cd $(EXT_DIR) ; '$(MAKE)' all
+	'$(MAKE)' -C $(EXT_DIR)
 
-	# copy pcre2
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_PCRE2),$(LIB_DIR_OUT)$(EXT_BIN_PCRE2))
-	$(MKDIR) $(PCRE2_HEADERS_OUT_DIR)
-	@$(call cp_if_exists,$(PCRE2_HEADERS),$(PCRE2_HEADERS_OUT_DIR))
+external-headers: external-compile $(LIBAR_HEADERS_OUT_DIR) $(PCRE2_HEADERS_OUT_DIR)
+	$(CP) $(LIBAR_HEADERS) $(LIBAR_HEADERS_OUT_DIR)
+	$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR)
 
-	# copy libarchive
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBAR),$(LIB_DIR_OUT)$(EXT_BIN_LIBAR))
-	$(MKDIR) $(LIBAR_HEADERS_OUT_DIR)
-	@$(call cp_if_exists,$(LIBAR_DIR)*.h,$(LIBAR_HEADERS_OUT_DIR))
-	
-	# copy libz
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBZ),$(LIB_DIR_OUT)$(EXT_BIN_LIBZ))
+external: external-headers
+	$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(EXT_DIR)$(EXT_BIN_LIBAR) $(EXT_DIR)$(EXT_BIN_LIBZ) $(EXT_DIR)$(EXT_BIN_LIBLZMA) $(EXT_DIR)$(EXT_BIN_LIBBZ2) $(EXT_DIR)$(EXT_BIN_LIBLZ4) $(LIB_DIR_OUT)
 
-	# copy liblzma
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZMA),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZMA))
-
-	# copy libbz2
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBBZ2),$(LIB_DIR_OUT)$(EXT_BIN_LIBBZ2))
-
-	# copy liblz4
-	@$(call cp_if_exists,$(EXT_DIR)$(EXT_BIN_LIBLZ4),$(LIB_DIR_OUT)$(EXT_BIN_LIBLZ4))
-
-
-$(OUT_DIR): LICENSE README.md ## creates build/DDP/, build/DDP/bin/, build/DDP/lib/, ... and copies the LICENSE and README.md
-	@echo "creating output directories"
-	$(MKDIR) $(OUT_DIR)
-	$(MKDIR) $(DDP_SETUP_DIR_OUT)
-	$(MKDIR) $(KDDP_DIR_OUT)
-	$(MKDIR) $(OUT_DIR)Duden/
-	$(MKDIR) $(STD_DIR_OUT)include/
-	$(MKDIR) $(STD_DIR_OUT)source/
-	$(MKDIR) $(RUN_DIR_OUT)include/
-	$(MKDIR) $(RUN_DIR_OUT)source/
+$(OUT_DIR)LICENSE: LICENSE $(OUT_DIR)
 	$(CP) LICENSE $(OUT_DIR)
+
+$(OUT_DIR)README.md: README.md $(OUT_DIR)
 	$(CP) README.md $(OUT_DIR)
 
-clean: clean-outdir ## deletes everything produced by this Makefile
-	cd $(CMD_DIR) ; '$(MAKE)' clean
-	cd $(STD_DIR) ; '$(MAKE)' clean
-	cd $(RUN_DIR) ; '$(MAKE)' clean
+clean-cmd:
+	'$(MAKE)' -C $(CMD_DIR) clean
+clean-runtime:
+	'$(MAKE)' -C $(RUN_DIR) clean
+clean-stdlib:
+	'$(MAKE)' -C $(STD_DIR) clean
+
+clean: clean-outdir clean-cmd clean-runtime clean-stdlib ## deletes everything produced by this Makefile
 
 clean-outdir: ## deletes build/DDP/
-	@echo "deleting output directory"
 	$(RM) $(OUT_DIR)
 
 clean-all: clean
-	cd $(EXT_DIR) ; '$(MAKE)' clean
+	'$(MAKE)' -C $(EXT_DIR) clean
 
 checkout-llvm: ## clones the llvm-project submodule
 # clone the submodule
