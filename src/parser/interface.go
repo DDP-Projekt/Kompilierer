@@ -31,6 +31,8 @@ type Options struct {
 	// ErrorHandler used during scanning and parsing
 	// May be nil
 	ErrorHandler ddperror.Handler
+	// wether to use the old or new alias parsing
+	StrictAliases bool
 	// Annotators that are used to annotate the AST with additional information
 	// They are called after the parsing is done
 	Annotators []ast.Annotator
@@ -76,7 +78,7 @@ func Parse(options Options) (module *ast.Module, err error) {
 		}
 	}
 
-	module = newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler).parse()
+	module = newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler, options.StrictAliases).parse()
 	if options.FileName != "" {
 		path, err := filepath.Abs(options.FileName)
 		if err != nil {

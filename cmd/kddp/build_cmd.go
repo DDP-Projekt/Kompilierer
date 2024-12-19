@@ -134,6 +134,7 @@ var buildCmd = &cobra.Command{
 			To:                      to,
 			OutputType:              compOutType,
 			ErrorHandler:            errorHandler,
+			StrictAliases:           buildStrictAliases,
 			Log:                     print,
 			DeleteIntermediateFiles: !buildNoDeletes,
 			LinkInModules:           buildLinkModules,
@@ -177,6 +178,7 @@ var (
 	buildLinkListDefs      bool   // flag for kompiliere
 	buildGCCExecutable     string // flag for kompiliere
 	buildOptimizationLevel uint   // flag for kompiliere
+	buildStrictAliases     bool   // flag for kompiliere
 )
 
 func init() {
@@ -189,6 +191,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&buildLinkListDefs, "list-defs-linken", true, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
 	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zur gcc executable, die genutzt werden soll")
 	buildCmd.Flags().UintVarP(&buildOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
+	buildCmd.Flags().BoolVar(&buildStrictAliases, "strenge-aliase", false, "Ob Alias Parameter immer geklammert sein müssen")
 }
 
 // helper function

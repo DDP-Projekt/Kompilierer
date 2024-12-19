@@ -44,6 +44,8 @@ type Options struct {
 	// ErrorHandler used for the scanner, parser, ...
 	// May be nil
 	ErrorHandler ddperror.Handler
+	// wether to use the old or new alias parsing
+	StrictAliases bool
 	// optional Log function to print intermediate messages
 	Log func(string, ...any)
 	// wether or not to delete intermediate .ll files
@@ -67,12 +69,13 @@ func (options *Options) ToParserOptions() parser.Options {
 		annos = append(annos, &annotators.ConstFuncParamAnnotator{})
 	}
 	return parser.Options{
-		FileName:     options.FileName,
-		Source:       options.Source,
-		Tokens:       nil,
-		Modules:      nil,
-		ErrorHandler: options.ErrorHandler,
-		Annotators:   annos,
+		FileName:      options.FileName,
+		Source:        options.Source,
+		Tokens:        nil,
+		Modules:       nil,
+		ErrorHandler:  options.ErrorHandler,
+		StrictAliases: options.StrictAliases,
+		Annotators:    annos,
 	}
 }
 

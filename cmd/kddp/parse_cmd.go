@@ -32,9 +32,10 @@ var parseCmd = &cobra.Command{
 			}
 		}
 		module, err := parser.Parse(parser.Options{
-			FileName:     filePath,
-			Source:       src,
-			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
+			FileName:      filePath,
+			Source:        src,
+			ErrorHandler:  ddperror.MakeBasicHandler(os.Stderr),
+			StrictAliases: parseStrictAliases,
 			Annotators: []ast.Annotator{
 				&annotators.ConstFuncParamAnnotator{},
 			},
@@ -64,8 +65,12 @@ var parseCmd = &cobra.Command{
 	},
 }
 
-var parseOutputPath string // flag for parse
+var (
+	parseOutputPath    string // flag for parse
+	parseStrictAliases bool   // flag for parse
+)
 
 func init() {
 	parseCmd.Flags().StringVarP(&parseOutputPath, "ausgabe", "o", "", "Optionaler Pfad zur Ausgabedatei")
+	parseCmd.Flags().BoolVar(&parseStrictAliases, "strenge-aliase", false, "Ob Alias Parameter immer geklammert sein müssen")
 }

@@ -129,6 +129,7 @@ func TestStdlibCoverage(t *testing.T) {
 			ErrorHandler: func(e ddperror.Error) {
 				t.Fatalf("Error parsing %s: %s", ddp_path, e)
 			},
+			StrictAliases: true,
 		})
 		if err != nil {
 			return err

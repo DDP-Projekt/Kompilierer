@@ -30,6 +30,8 @@ type parser struct {
 	cur int
 	// a function to which errors are passed
 	errorHandler ddperror.Handler
+	// wether to use the old or new alias parsing
+	strictAliases bool
 	// latest reported error
 	lastError ddperror.Error
 
@@ -53,7 +55,7 @@ type parser struct {
 }
 
 // returns a new parser, ready to parse the provided tokens
-func newParser(name string, tokens []token.Token, modules map[string]*ast.Module, errorHandler ddperror.Handler) *parser {
+func newParser(name string, tokens []token.Token, modules map[string]*ast.Module, errorHandler ddperror.Handler, strictAliases bool) *parser {
 	// default error handler does nothing
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
@@ -89,10 +91,11 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	parser := &parser{
-		tokens:       tokens,
-		comments:     comments,
-		cur:          0,
-		errorHandler: nil,
+		tokens:        tokens,
+		comments:      comments,
+		cur:           0,
+		errorHandler:  nil,
+		strictAliases: strictAliases,
 		module: &ast.Module{
 			FileName:             name,
 			Imports:              make([]*ast.ImportStmt, 0),
@@ -240,11 +243,12 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			p.predefinedModules[inclPath] = nil // already add the name to the map to not import it infinetly
 			// parse the new module
 			newMod, err := Parse(Options{
-				FileName:     inclPath,
-				Source:       nil,
-				Tokens:       nil,
-				Modules:      p.predefinedModules,
-				ErrorHandler: p.errorHandler,
+				FileName:      inclPath,
+				Source:        nil,
+				Tokens:        nil,
+				Modules:       p.predefinedModules,
+				ErrorHandler:  p.errorHandler,
+				StrictAliases: p.strictAliases,
 			})
 			// add the module to the list and to the importStmt
 			// or report the error
