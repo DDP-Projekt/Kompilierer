@@ -29,13 +29,8 @@ jobs:
       with:
         go-version-file: go.mod
         cache-key-suffix: kompilierer
-        
-    - name: Setup LLVM
-      if: runner.os == 'Linux'
-      run: sudo apt install llvm-12
 
     - name: Cache LLVM
-      if: runner.os == 'Windows'
       id: cache-llvm
       uses: actions/cache@v4
       with:
@@ -44,10 +39,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-llvm-build-
 
-    - name: Download Prebuilt LLVM
-      if: runner.os == 'Windows' && steps.cache-llvm.outputs.cache-hit != 'true'
+    - name: Setup LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-mingw-12.2.0-x86_64-ucrt-posix-seh.tar.gz
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || 'linux-11.4.0-x86_64' }}.tar.gz
         mkdir -p ./llvm_build/
         tar -xzf ./llvm_build.tar.gz -C ./ --force-local
         rm ./llvm_build.tar.gz
