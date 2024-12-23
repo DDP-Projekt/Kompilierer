@@ -3,6 +3,7 @@ package compiler
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -31,8 +32,11 @@ var (
 
 	ptr = types.NewPointer
 
-	zero  = newInt(0) // 0: i64
-	zerof = constant.NewFloat(ddpfloat, 0)
+	i8ptr = ptr(i8)
+
+	zero     = newInt(0) // 0: i64
+	zerof    = constant.NewFloat(ddpfloat, 0)
+	all_ones = newInt(^0) // int with all bits set to 1
 )
 
 func newInt(value int64) *constant.Int {
@@ -51,8 +55,10 @@ func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
 
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
-	if listType, isList := ddpType.(ddptypes.ListType); isList {
-		switch listType.Underlying {
+	ddpType = ddptypes.TrueUnderlying(ddpType)
+	if listType, isList := ddptypes.CastList(ddpType); isList {
+		underlying := ddptypes.TrueUnderlying(listType.Underlying)
+		switch underlying {
 		case ddptypes.ZAHL:
 			return c.ddpintlist
 		case ddptypes.KOMMAZAHL:
@@ -63,8 +69,10 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpcharlist
 		case ddptypes.TEXT:
 			return c.ddpstringlist
+		case ddptypes.VARIABLE:
+			return c.ddpanylist
 		default:
-			return c.structTypes[listType.Underlying.String()].listType
+			return c.structTypes[underlying.(*ddptypes.StructType)].listType
 		}
 	} else {
 		switch ddpType {
@@ -78,10 +86,12 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpchartyp
 		case ddptypes.TEXT:
 			return c.ddpstring
+		case ddptypes.VARIABLE:
+			return c.ddpany
 		case ddptypes.VoidType{}:
 			return c.void
 		default: // struct types
-			return c.structTypes[ddpType.String()]
+			return c.structTypes[ddpType.(*ddptypes.StructType)]
 		}
 	}
 }
@@ -109,9 +119,16 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 		return c.ddpcharlist
 	case c.ddpstring:
 		return c.ddpstringlist
+	case c.ddpany:
+		return c.ddpanylist
+	default:
+		return ty.(*ddpIrStructType).listType
 	}
-	c.err("no list type found for elementType %s", ty.Name())
-	return nil // unreachable
+}
+
+// returns the aligned size of a type
+func (c *compiler) getTypeSize(ty ddpIrType) uint64 {
+	return c.llTarget.targetData.TypeAllocSize(ty.LLVMType())
 }
 
 func getHashableModuleName(mod *ast.Module) string {
@@ -136,17 +153,19 @@ func getModuleInitDisposeName(mod *ast.Module) (string, string) {
 }
 
 var (
-	hasher            = sha256.New()
-	mangledNamesCache = sync.Map{}
+	hasher                = sha256.New()
+	mangledNamesCacheDecl = sync.Map{}
+	mangledNamesCacheType = sync.Map{}
 )
 
+// returns the mangled name of a declaration
+// mangled names are cached and unique per module
 // NOTE: think about making this demanglable
-func (c *compiler) mangledName(decl ast.Declaration) string {
-	// if mangledName, ok := mangledNamesCache.Load(decl); ok {
-	// 	return mangledName.(string)
-	// }
+func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
+	if mangledName, ok := mangledNamesCacheDecl.Load(decl); ok {
+		return mangledName.(string)
+	}
 
-	hasher.Reset()
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		// extern functions may not be name-mangled
@@ -158,12 +177,38 @@ func (c *compiler) mangledName(decl ast.Declaration) string {
 			return decl.Name()
 		}
 	default:
-		return decl.Name()
+		// do nothing
 	}
 
-	hasher.Write([]byte(getHashableModuleName(decl.Module())))
-	mangledName := decl.Name() + "_mod_" + hex.EncodeToString(hasher.Sum(nil))
-	// mangledNamesCache.Store(decl, mangledName)
+	mangledName := mangledNameBase(decl.Name(), decl.Module())
+	mangledNamesCacheDecl.Store(decl, mangledName)
+	return mangledName
+}
+
+// returns the mangled name of a struct type
+// mangled names are cached and unique per module
+// NOTE: think about making this demanglable
+func (c *compiler) mangledNameType(t ddptypes.Type) string {
+	if mangledName, ok := mangledNamesCacheType.Load(t); ok {
+		return mangledName.(string)
+	}
+
+	module, ok := c.typeMap[t]
+	if !ok {
+		panic(fmt.Errorf("type %s not in typeMap", t))
+	}
+
+	mangledName := mangledNameBase(t.String(), module)
+	mangledNamesCacheType.Store(t, mangledName)
+	return mangledName
+}
+
+// base function for mangledNameType and mangledNameDecl
+// should not be called directly
+func mangledNameBase(name string, module *ast.Module) string {
+	hasher.Reset()
+	hasher.Write([]byte(getHashableModuleName(module)))
+	mangledName := name + "_mod_" + hex.EncodeToString(hasher.Sum(nil))
 	return mangledName
 }
 

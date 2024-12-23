@@ -10,32 +10,32 @@ und erstellen sie so:
 Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"<muster> ein Regex ist"
+	"<muster> <!k>ein Regex ist"
 
 Die öffentliche Funktion Regex_Erster_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"der erster Treffer von <muster> auf <text>"
+	"der erste Treffer von <muster> in <text>"
 
 Die öffentliche Funktion Regex_N_Treffer mit den Parametern muster, text und n vom Typ Text, Text und Zahl, gibt eine Treffer Liste zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die ersten <n> Treffer von <muster> auf <text>"
+	"die ersten <n> Treffer von <muster> in <text>"
 
 Die öffentliche Funktion Regex_Alle_Treffer mit den Parametern muster und text vom Typ Text und Text, gibt eine Treffer Liste zurück, macht:
-	Gib (die ersten -1 Treffer von muster auf text) zurück.
+	Gib (die ersten -1 Treffer von muster in text) zurück.
 Und kann so benutzt werden:
-	"alle Treffer <muster> <text>"
+	"alle Treffer von <muster> in <text>"
 
 Die öffentliche Funktion Regex_Erster_Treffer_Ersetzen mit den Parametern muster, text und ersatz vom Typ Text, Text und Text, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"den ersten Treffer mit dem Regex <muster> auf <text> mit <ersatz> ersetzt"
+	"den ersten Treffer mit dem Regex <muster> in <text> mit <ersatz> ersetzt"
 
 Die öffentliche Funktion Regex_Alle_Treffer_Ersetzen mit den Parametern muster, text und ersatz vom Typ Text, Text und Text, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"alle Treffer mit dem Regex <muster> auf <text> mit <ersatz> ersetzt"
+	"alle Treffer mit dem Regex <muster> in <text> mit <ersatz> ersetzt"
 
 Die öffentliche Funktion Regex_Spalten mit den Parametern muster und text vom Typ Text und Text, gibt eine Text Liste zurück,
 ist in "libddpstdlib.a" definiert

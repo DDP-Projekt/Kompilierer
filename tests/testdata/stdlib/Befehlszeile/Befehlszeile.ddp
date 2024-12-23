@@ -1,0 +1,64 @@
+Binde "Duden/Befehlszeile" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Schreibe ab jetzt alle Fehler.
+
+Der Befehl kddp ist ein Befehl mit Namen "kddp".
+
+Füge kddp (eine Option mit dem Namen "ausgabe" und der Kurzschreibweise 'o' ) hinzu.
+Füge kddp (eine Option mit dem Namen "lang-von-kddp") hinzu.
+Füge kddp (eine Option mit der Kurzschreibweise 'k') hinzu.
+Füge kddp (eine Option mit der Kurzschreibweise 'n') hinzu.
+Füge kddp (eine Option mit dem Namen "datei", der Kurzschreibweise 'd' und dem Standardwert ("test" als Variable)) hinzu.
+
+Die Befehlszeile b ist 
+    (eine Liste, die aus "kddp", "hallo", "--ausgabe", "welt", "--lang-von-kddp",
+	 "-k", "test1", "-d", "test.ddp", "test2" besteht) mit kddp analysiert.
+
+Schreibe (den Wert für "ausgabe" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'o' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für "lang-von-kddp" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'k' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'n' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'd' von b als Text) auf eine Zeile.
+Schreibe (den Wert für "datei" von b als Text) auf eine Zeile.
+Schreibe (argumente von b) auf eine Zeile.
+Schreibe (b 'k' enthält) auf eine Zeile.
+Schreibe (b "ausgabe" enthält) auf eine Zeile.
+Schreibe (b 'o' enthält) auf eine Zeile.
+Schreibe (b 'b' enthält) auf eine Zeile.
+Schreibe (b 'n' enthält) auf eine Zeile.
+Schreibe (b "super-lang" enthält) auf eine Zeile.
+
+Schreibe '\n'.
+[ Unterbefehle ]
+
+Der Befehl kompiliere ist ein Befehl mit Namen "kompiliere".
+
+Füge kompiliere (eine Option mit dem Namen "ausgabe" und der Kurzschreibweise 'o' ) hinzu.
+Füge kompiliere (eine Option mit dem Namen "hilfe" und der Kurzschreibweise 'h' ) hinzu.
+Füge kompiliere (eine Option mit dem Namen "lang-von-kompiliere" ) hinzu.
+Füge kompiliere (eine Option mit der Kurzschreibweise 'c' ) hinzu.
+
+Füge kddp den Unterbefehl kompiliere hinzu.
+
+Die Befehlszeile c ist 
+	(eine Liste, die aus "kddp", "kompiliere", "--ausgabe", "welt", "--hilfe", "--lang-von-kompiliere",
+	 "-c", "test1", "-n", "test2", "--lang-von-kddp" besteht) mit kddp analysiert.
+
+Schreibe (unterBefehle von c) auf eine Zeile.
+Schreibe (argumente von c) auf eine Zeile.
+Schreibe (den Wert für "ausgabe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'o' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für "hilfe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'h' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für "lang-von-kompiliere" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'c' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (den Wert für 'n' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (c 'k' enthält) auf eine Zeile.
+Schreibe (c "ausgabe" enthält) auf eine Zeile.
+Schreibe (c 'o' enthält) auf eine Zeile.
+Schreibe (c 'b' enthält) auf eine Zeile.
+Schreibe (c 'n' enthält) auf eine Zeile.
+Schreibe (c "super-lang" enthält) auf eine Zeile.

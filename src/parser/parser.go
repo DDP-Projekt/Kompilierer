@@ -5,7 +5,9 @@ package parser
 
 import (
 	"fmt"
+	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -20,22 +22,34 @@ import (
 
 // holds state when parsing a .ddp file into an AST
 type parser struct {
-	tokens       []token.Token    // the tokens to parse (without comments)
-	comments     []token.Token    // all the comments from the original tokens slice
-	cur          int              // index of the current token
-	errorHandler ddperror.Handler // a function to which errors are passed
-	lastError    ddperror.Error   // latest reported error
+	// the tokens to parse (without comments)
+	tokens []token.Token
+	// all the comments from the original tokens slice
+	comments []token.Token
+	// index of the current token
+	cur int
+	// a function to which errors are passed
+	errorHandler ddperror.Handler
+	// latest reported error
+	lastError ddperror.Error
 
-	module                *ast.Module
-	predefinedModules     map[string]*ast.Module            // modules that were passed as environment, might not all be used
-	aliases               *at.Trie[*token.Token, ast.Alias] // all found aliases (+ inbuild aliases)
-	typeNames             map[string]ddptypes.Type          // map of struct names to struct types
-	currentFunction       string                            // function which is currently being parsed
-	isCurrentFunctionBool bool                              // wether the current function returns a boolean
-	panicMode             bool                              // flag to not report following errors
-	errored               bool                              // wether the parser found an error
-	resolver              *resolver.Resolver                // used to resolve every node directly after it has been parsed
-	typechecker           *typechecker.Typechecker          // used to typecheck every node directly after it has been parsed
+	module *ast.Module
+	// modules that were passed as environment, might not all be used
+	predefinedModules map[string]*ast.Module
+	// all found aliases (+ inbuild aliases)
+	aliases *at.Trie[*token.Token, ast.Alias]
+	// function which is currently being parsed
+	currentFunction *ast.FuncDecl
+	// wether the current function returns a boolean
+	isCurrentFunctionBool bool
+	// flag to not report following errors
+	panicMode bool
+	// wether the parser found an error
+	errored bool
+	// used to resolve every node directly after it has been parsed
+	resolver *resolver.Resolver
+	// used to typecheck every node directly after it has been parsed
+	typechecker *typechecker.Typechecker
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -54,6 +68,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		tokens = append(tokens, token.Token{Type: token.EOF})
 	}
 
+	is_first_tok_comment := tokens[0].Type == token.COMMENT
+
 	comments := make([]token.Token, 0)
 	// filter the comments out
 	i := 0
@@ -67,6 +83,11 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 	tokens = tokens[:i]
 
+	var module_comment *token.Token
+	if is_first_tok_comment {
+		module_comment = &comments[0]
+	}
+
 	parser := &parser{
 		tokens:       tokens,
 		comments:     comments,
@@ -75,6 +96,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		module: &ast.Module{
 			FileName:             name,
 			Imports:              make([]*ast.ImportStmt, 0),
+			Comment:              module_comment,
 			ExternalDependencies: make(map[string]struct{}, 5),
 			Ast: &ast.Ast{
 				Statements: make([]ast.Statement, 0),
@@ -83,31 +105,30 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 				Faulty:     false,
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
+			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
 		},
-		predefinedModules: modules,
-		aliases:           at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		typeNames:         make(map[string]ddptypes.Type, 8),
-		panicMode:         false,
-		errored:           false,
-		resolver:          &resolver.Resolver{},
-		typechecker:       &typechecker.Typechecker{},
+		predefinedModules:     modules,
+		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
+		currentFunction:       nil,
+		isCurrentFunctionBool: false,
+		panicMode:             false,
+		errored:               false,
+		resolver:              &resolver.Resolver{},
+		typechecker:           &typechecker.Typechecker{},
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
 	// if it is called
 	parser.errorHandler = func(err ddperror.Error) {
-		parser.errored = true
+		if err.Level == ddperror.LEVEL_ERROR {
+			parser.errored = true
+		}
 		errorHandler(err)
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	var err error
-	if parser.resolver, err = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
-		panic(err)
-	}
-	if parser.typechecker, err = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode); err != nil {
-		panic(err)
-	}
+	parser.resolver = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode)
+	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode)
 
 	return parser
 }
@@ -122,6 +143,8 @@ func (p *parser) parse() *ast.Module {
 			p.module.Ast.Statements = append(p.module.Ast.Statements, stmt)
 		}
 	}
+
+	p.validateForwardDecls()
 
 	p.module.Ast.Faulty = p.errored
 	return p.module
@@ -140,24 +163,30 @@ func (p *parser) checkedDeclaration() ast.Statement {
 
 // entry point for the recursive descent parsing
 func (p *parser) declaration() ast.Statement {
-	if p.match(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
+	if p.matchAny(token.DER, token.DIE, token.DAS, token.WIR) { // might indicate a function, variable or struct
 		if p.previous().Type == token.WIR {
-			return &ast.DeclStmt{Decl: p.structDeclaration()}
+			if p.matchSeq(token.NENNEN, token.DIE) {
+				return &ast.DeclStmt{Decl: p.structDeclaration()}
+			} else if p.matchAny(token.DEFINIEREN) {
+				return &ast.DeclStmt{Decl: p.typeDefDecl()}
+			}
+			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
 		}
 
 		n := -1
-		if p.match(token.OEFFENTLICHE) {
+		if p.matchAny(token.OEFFENTLICHE) {
 			n = -2
 		}
 
-		p.advance()
-		switch t := p.previous().Type; t {
+		switch t := p.peek().Type; t {
 		case token.ALIAS:
+			p.advance()
 			return p.aliasDecl()
 		case token.FUNKTION:
-			return &ast.DeclStmt{Decl: p.funcDeclaration(n - 1)}
+			p.advance()
+			return p.funcDeclaration(n - 1)
 		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(n-1, false)}
+			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
 		}
 	}
 
@@ -176,7 +205,7 @@ func (p *parser) checkStatement(stmt ast.Statement) {
 	p.typechecker.TypecheckNode(stmt) // typecheck the node
 }
 
-// fils out importStmt.Module and updates the parser state accordingly
+// fills in importStmt.Modules and updates the parser state accordingly
 func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	p.module.Imports = append(p.module.Imports, importStmt) // add the import to the module
 
@@ -196,37 +225,68 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		inclPath, err = filepath.Abs(filepath.Join(filepath.Dir(p.module.FileName), rawPath+".ddp"))
 	}
 
+	if importStmt.IsDirectoryImport {
+		inclPath = strings.TrimSuffix(inclPath, ".ddp")
+	}
+
 	if err != nil {
 		p.err(ddperror.SYN_MALFORMED_INCLUDE_PATH, importStmt.FileName.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", rawPath+".ddp", err.Error()))
 		return
-	} else if module, ok := p.predefinedModules[inclPath]; !ok { // the module is new
-		p.predefinedModules[inclPath] = nil // already add the name to the map to not import it infinetly
-		// parse the new module
-		importStmt.Module, err = Parse(Options{
-			FileName:     inclPath,
-			Source:       nil,
-			Tokens:       nil,
-			Modules:      p.predefinedModules,
-			ErrorHandler: p.errorHandler,
-		})
+	}
 
-		// add the module to the list and to the importStmt
-		// or report the error
-		if err != nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", rawPath+".ddp", err.Error()))
-			return // return early on error
+	// resolves a single module
+	resolveSingleModule := func(inclPath string) {
+		if module, ok := p.predefinedModules[inclPath]; !ok { // the module is new
+			p.predefinedModules[inclPath] = nil // already add the name to the map to not import it infinetly
+			// parse the new module
+			newMod, err := Parse(Options{
+				FileName:     inclPath,
+				Source:       nil,
+				Tokens:       nil,
+				Modules:      p.predefinedModules,
+				ErrorHandler: p.errorHandler,
+			})
+			// add the module to the list and to the importStmt
+			// or report the error
+			if err != nil {
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", inclPath, err.Error()))
+				return // return early on error
+			}
+
+			newMod.FileNameToken = &importStmt.FileName
+			p.predefinedModules[inclPath] = newMod
+			importStmt.Modules = append(importStmt.Modules, newMod)
+			return
 		} else {
-			importStmt.Module.FileNameToken = &importStmt.FileName
-			p.predefinedModules[inclPath] = importStmt.Module
-		}
-	} else { // we already included the module
-		// circular import error
-		if module == nil {
-			p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), rawPath+".ddp"))
-			return // return early on error
-		}
+			// we already included the module
+			// circular import error
+			if module == nil {
+				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), inclPath))
+				return // return early on error
+			}
 
-		importStmt.Module = module
+			importStmt.Modules = append(importStmt.Modules, module)
+		}
+	}
+
+	if !importStmt.IsDirectoryImport {
+		resolveSingleModule(inclPath)
+	} else {
+		filepath.WalkDir(inclPath, func(path string, d fs.DirEntry, err error) error {
+			if path == inclPath {
+				return nil
+			}
+
+			if d.IsDir() && !importStmt.IsRecursive {
+				return filepath.SkipDir
+			}
+
+			if !d.IsDir() && filepath.Ext(path) == ".ddp" {
+				resolveSingleModule(path)
+			}
+
+			return nil
+		})
 	}
 
 	ast.IterateImportedDecls(importStmt, func(_ string, decl ast.Declaration, tok token.Token) bool {
@@ -247,9 +307,12 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		switch decl := decl.(type) {
 		case *ast.FuncDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.FuncAlias, ast.Alias](decl.Aliases)...)
+			if ast.IsOperatorOverload(decl) {
+				p.insertOperatorOverload(decl)
+			}
 		case *ast.StructDecl:
 			aliases = append(aliases, toInterfaceSlice[*ast.StructAlias, ast.Alias](decl.Aliases)...)
-			p.typeNames[decl.Name()] = decl.Type
+		case *ast.TypeAliasDecl:
 		default: // for VarDecls or BadDecls we don't need to add any aliases
 			needAddAliases = false
 		}
@@ -261,6 +324,18 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 		p.addAliases(aliases, tok.Range)
 		return true
 	})
+}
+
+func (p *parser) validateForwardDecls() {
+	ast.VisitModule(p.module, ast.FuncDeclVisitorFunc(func(decl *ast.FuncDecl) ast.VisitResult {
+		if decl.Body == nil && decl.ExternFile.Type == token.ILLEGAL && decl.Def == nil {
+			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
+				decl.NameTok.Range,
+				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert", decl.Name()))
+			p.panicMode = false
+		}
+		return ast.VisitSkipChildren
+	}))
 }
 
 // if an error was encountered we synchronize to a point where correct parsing is possible again
@@ -330,9 +405,15 @@ func (p *parser) errVal(err ddperror.Error) {
 
 // helper to report errors and enter panic mode
 func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
-	p.errVal(ddperror.New(code, Range, msg, p.module.FileName))
+	p.errVal(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, p.module.FileName))
 }
 
+// helper to report errors and enter panic mode
+func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
+	p.errorHandler(ddperror.New(code, ddperror.LEVEL_WARN, Range, msg, p.module.FileName))
+}
+
+// checks wether the alias already exists AND has a value attached to it
 // returns (aliasExists, isFuncAlias, alias, pTokens)
 func (p *parser) aliasExists(alias []token.Token) (bool, bool, ast.Alias, []*token.Token) {
 	pTokens := toPointerSlice(alias[:len(alias)-1])
@@ -359,5 +440,42 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 		} else {
 			p.aliases.Insert(pTokens, alias)
 		}
+	}
+}
+
+func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
+	overloads := p.module.Operators[decl.Operator]
+
+	valid := true
+	for _, overload := range overloads {
+		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
+			// the als Operator is also differentiated by it's return type
+			if decl.Operator == ast.CAST_OP && !ddptypes.Equal(decl.ReturnType, overload.ReturnType) {
+				continue
+			}
+
+			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
+			valid = false
+		}
+	}
+
+	if valid {
+		// keep the slice sorted in descending order, so that references are prioritized
+		i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
+			countRefArgs := func(params []ast.ParameterInfo) int {
+				result := 0
+				for i := range params {
+					if params[i].Type.IsReference {
+						result++
+					}
+				}
+				return result
+			}
+
+			return countRefArgs(t.Parameters) - countRefArgs(a.Parameters)
+		})
+
+		overloads = slices.Insert(overloads, i, decl)
+		p.module.Operators[decl.Operator] = overloads
 	}
 }

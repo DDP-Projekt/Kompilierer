@@ -19,6 +19,7 @@ const (
 	SYN_MALFORMED_ALIAS                           // an alias is malformed syntatically (invalid tokens etc.)
 	SYN_INVALID_UTF8                              // text was not valid utf8
 	SYN_GENDER_MISMATCH                           // the expected and actual grammatical gender used mismatched
+	SYN_INVALID_OPERATOR                          // the given string is not a valid operator
 )
 
 // semantic error codes
@@ -37,28 +38,36 @@ const (
 	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
 	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
 	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
-	SEM_NON_GLOBAL_STRUCT_DECL                            // a non-global struct was declared
+	SEM_NON_GLOBAL_TYPE_DECL                              // a non-global type was declared
 	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
 	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
 	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop
 	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
 	SEM_UNNECESSARY_EXTERN_VISIBLE                        // a function was specified as both extern visible and extern defined
+	SEM_BAD_OPERATOR_PARAMS                               // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
+	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
+	SEM_TODO_STMT_FOUND                                   // ... wurde gefunden
+	SEM_BAD_TYPEDEF                                       // any was typedefed
+	SEM_FORWARD_DECL_WITHOUT_DEF                          // a function was declared as forward decl but never defined
+	SEM_WRONG_DECL_MODULE                                 // a definition was provided for a function from a different module
+	SEM_DEFINITION_ALREADY_DEFINED                        // a forward decl was already defined
 )
 
 // type error codes
 const (
-	TYP_TYPE_MISMATCH        Code = iota + 3000 // simple type mismatch in an operator
-	TYP_BAD_ASSIGNEMENT                         // invalid variable assignement
-	TYP_BAD_INDEXING                            // type error in index expression
-	TYP_BAD_LIST_LITERAL                        // wrong type in list literal
-	TYP_BAD_CAST                                // invalid type conversion
-	TYP_EXPECTED_REFERENCE                      // a variable (reference parameter) was expected
-	TYP_INVALID_REFERENCE                       // a char in a string was tried to be passed as refernce
-	TYP_BAD_CONDITION                           // condition value was not of type boolean
-	TYP_BAD_FOR                                 // one of the expressions in a for loop was not of type int
-	TYP_WRONG_RETURN_TYPE                       // the return type did not match the function signature
-	TYP_BAD_FIELD_ACCESS                        // a non-struct type was accessed or similar
-	TYP_PRIVATE_FIELD_ACCESS                    // a non-public field was accessed from another module
+	TYP_TYPE_MISMATCH            Code = iota + 3000 // simple type mismatch in an operator
+	TYP_BAD_ASSIGNEMENT                             // invalid variable assignement
+	TYP_BAD_INDEXING                                // type error in index expression
+	TYP_BAD_LIST_LITERAL                            // wrong type in list literal
+	TYP_BAD_CAST                                    // invalid type conversion
+	TYP_EXPECTED_REFERENCE                          // a variable (reference parameter) was expected
+	TYP_INVALID_REFERENCE                           // a char in a string was tried to be passed as refernce
+	TYP_BAD_CONDITION                               // condition value was not of type boolean
+	TYP_BAD_FOR                                     // one of the expressions in a for loop was not of type int
+	TYP_WRONG_RETURN_TYPE                           // the return type did not match the function signature
+	TYP_BAD_FIELD_ACCESS                            // a non-struct type was accessed or similar
+	TYP_PRIVATE_FIELD_ACCESS                        // a non-public field was accessed from another module
+	TYP_BAD_OPERATOR_RETURN_TYPE                    // the return type of a operator overload is void
 )
 
 func (code Code) IsMiscError() bool {
@@ -91,4 +100,20 @@ func (code Code) ErrorPrefix() string {
 		return "Typ"
 	}
 	return "Invalider"
+}
+
+// returns the Prefix before "Warnung" of the given code
+// Prefixes are:
+// Syntax, Semantischer, Typ or nothing for MISC
+func (code Code) WarningPrefix() string {
+	if code.IsMiscError() {
+		return "Sonstige"
+	} else if code.IsSyntaxError() {
+		return "Syntax"
+	} else if code.IsSemanticError() {
+		return "Semantik"
+	} else if code.IsTypeError() {
+		return "Typ"
+	}
+	return "Invalide"
 }

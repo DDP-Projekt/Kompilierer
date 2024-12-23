@@ -60,11 +60,11 @@ func validateOptions(options *Options) error {
 
 // parse the provided ddp-source-code from the given Options
 // if an error occured the resulting Ast is nil
-func Parse(options Options) (*ast.Module, error) {
-	defer panic_wrapper()
+func Parse(options Options) (module *ast.Module, err error) {
+	defer panic_wrapper(&err)
 
 	// validate the options
-	err := validateOptions(&options)
+	err = validateOptions(&options)
 	if err != nil {
 		return nil, fmt.Errorf("Ungültige Parser Optionen: %w", err)
 	}
@@ -76,7 +76,7 @@ func Parse(options Options) (*ast.Module, error) {
 		}
 	}
 
-	module := newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler).parse()
+	module = newParser(options.FileName, options.Tokens, options.Modules, options.ErrorHandler).parse()
 	if options.FileName != "" {
 		path, err := filepath.Abs(options.FileName)
 		if err != nil {
@@ -96,19 +96,19 @@ func Parse(options Options) (*ast.Module, error) {
 }
 
 // wraps a panic with more information and re-panics
-func panic_wrapper() {
+func panic_wrapper(out_err *error) {
 	if err := recover(); err != nil {
 		if err, ok := err.(*ParserError); ok {
 			panic(err)
 		}
 
 		stack_trace := debug.Stack()
-		err, _ := err.(error)
-		panic(&ParserError{
-			Err:        err,
-			Msg:        "unknown parser panic",
+		wraps, _ := err.(error)
+		*out_err = &ParserError{
+			Err:        wraps,
+			Msg:        getParserErrorMsg(err),
 			ModulePath: "not found",
 			StackTrace: stack_trace,
-		})
+		}
 	}
 }

@@ -16,6 +16,8 @@ type Module struct {
 	FileNameToken *token.Token
 	// all the imported modules
 	Imports []*ImportStmt
+	// First token in the file if present, or nil otherwise
+	Comment *token.Token
 	// a set which contains all files needed
 	// to link the final executable
 	// contains .c, .lib, .a and .o files
@@ -24,6 +26,8 @@ type Module struct {
 	Ast *Ast
 	// map of references to all public functions, variables and structs
 	PublicDecls map[string]Declaration
+	// map of all overloads for all operators
+	Operators map[Operator][]*FuncDecl
 }
 
 // returns the string-literal content by which this module was first imported
@@ -51,8 +55,8 @@ func iterateModuleImportsRec(module *Module, fun func(*Module), visited map[*Mod
 	}
 	visited[module] = struct{}{}
 	for _, imprt := range module.Imports {
-		if imprt.Module != nil {
-			iterateModuleImportsRec(imprt.Module, fun, visited)
+		for _, mod := range imprt.Modules {
+			iterateModuleImportsRec(mod, fun, visited)
 		}
 	}
 	fun(module)

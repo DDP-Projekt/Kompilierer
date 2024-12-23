@@ -29,25 +29,20 @@ jobs:
       with:
         go-version-file: go.mod
         cache-key-suffix: kompilierer
-        
-    - name: Setup LLVM
-      if: runner.os == 'Linux'
-      run: sudo apt install llvm-12
 
     - name: Cache LLVM
-      if: runner.os == 'Windows'
       id: cache-llvm
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm_build/
-        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/llvm_build/**') }}
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile', '**/cmd/Makefile') }}
         restore-keys: |
           ${{ runner.os }}-llvm-build-
 
-    - name: Download Prebuilt LLVM
-      if: runner.os == 'Windows' && steps.cache-llvm.outputs.cache-hit != 'true'
+    - name: Setup LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-mingw-12.2.0-x86_64-ucrt-posix-seh.tar.gz
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || 'linux-11.4.0-x86_64' }}.tar.gz
         mkdir -p ./llvm_build/
         tar -xzf ./llvm_build.tar.gz -C ./ --force-local
         rm ./llvm_build.tar.gz
@@ -63,32 +58,30 @@ jobs:
         echo "CGO_LDFLAGS=$('${{ github.workspace}}/llvm_build/bin/llvm-config' --ldflags --libs --system-libs all | tr '\r\n' '  ')" >> $GITHUB_ENV
         echo "CGO_CXXFLAGS=-std=c++14" >> $GITHUB_ENV
         
-    - name: Cache pcre2
-      if: runner.os == 'Windows'
+    - name: Cache External Libs
+      id: cache-external
       uses: actions/cache@v4
       with:
         path: |
-          ${{ github.workspace }}/lib/stdlib/pcre2_build/
-          ${{ github.workspace }}/lib/stdlib/libpcre2-8.a
-        key: ${{ runner.os }}-pcre2-${{ hashFiles('**/lib/stdlib/pcre2_build/**', '**/lib/stdlib/libpcre2-8.a') }}
+          ${{ github.workspace }}/lib/external/*.a
+          ${{ github.workspace }}/lib/external/*_build/
+        key: ${{ runner.os }}-external-${{ hashFiles('**/lib/external/Makefile', '**/.gitmodules') }}
         restore-keys: |
-          ${{ runner.os }}-pcre2-
+          ${{ runner.os }}-external
 
     - name: Build
-      run: make -j4
-      
+      run:  |
+        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} | tee build.log
+
     - name: Run tests
-      run: make test
+      run: make test | tee test.log
     
     - name: Upload Coverage Artifact
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ runner.os }}
-        path: tests/coverage.md
+        path: |
+          tests/coverage.md
+          build.log
+          test.log
         retention-days: 30
-
-    - name: Build debug
-      run: make debug -j4
-    
-    - name: Run memory tests
-      run: make test-memory

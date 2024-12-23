@@ -103,7 +103,7 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 }
 
 // strictly checks if the given keys are in the trie
-// returns either the value for the key or nil
+// returns either the value for the key or the default value
 func (t *Trie[K, V]) Contains(keys []K) (bool, V) {
 	var value_default V
 	node := t.root

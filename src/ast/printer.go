@@ -84,9 +84,12 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 }
 
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
-	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.Type)
+	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.ReturnType)
 	if IsExternFunc(decl) {
 		msg += " [Extern]"
+	}
+	if IsForwardDecl(decl) {
+		msg += " [Forward Decl]"
 	}
 	if decl.IsExternVisible {
 		msg += " [Extern Visible]"
@@ -94,11 +97,17 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	if decl.CommentTok != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
-	if IsExternFunc(decl) {
+	if IsExternFunc(decl) || IsForwardDecl(decl) {
 		pr.parenthesizeNode(msg)
 	} else {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
+	return VisitRecurse
+}
+
+func (pr *printer) VisitFuncDef(decl *FuncDef) VisitResult {
+	msg := fmt.Sprintf("FuncDef[%s]", decl.Func.Name())
+	pr.parenthesizeNode(msg, decl.Body)
 	return VisitRecurse
 }
 
@@ -110,6 +119,16 @@ func (pr *printer) VisitStructDecl(decl *StructDecl) VisitResult {
 		nodes = append(nodes, v)
 	}
 	pr.parenthesizeNode(msg, nodes...)
+	return VisitRecurse
+}
+
+func (pr *printer) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeAliasDecl[%s: Public(%v)] = %s", decl.Name(), decl.IsPublic, decl.Underlying))
+	return VisitRecurse
+}
+
+func (pr *printer) VisitTypeDefDecl(decl *TypeDefDecl) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeDefDecl[%s: Public(%v)] = %s", decl.Name(), decl.IsPublic, decl.Underlying))
 	return VisitRecurse
 }
 
@@ -187,12 +206,17 @@ func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 }
 
 func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.Type), expr.Lhs)
+	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.TargetType), expr.Lhs)
 	return VisitRecurse
 }
 
 func (pr *printer) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("TypeOpExpr[%s]: %s", expr.Operator, expr.Rhs))
+	return VisitRecurse
+}
+
+func (pr *printer) VisitTypeCheck(expr *TypeCheck) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("TypeChec[%s]: %s", expr.CheckType, expr.Lhs))
 	return VisitRecurse
 }
 
@@ -235,7 +259,7 @@ func (pr *printer) VisitExprStmt(stmt *ExprStmt) VisitResult {
 }
 
 func (pr *printer) VisitImportStmt(stmt *ImportStmt) VisitResult {
-	if stmt.Module == nil {
+	if len(stmt.Modules) == 0 {
 		return VisitRecurse
 	}
 	// TODO: pretty print imports
@@ -305,6 +329,11 @@ func (pr *printer) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 	} else {
 		pr.parenthesizeNode("ReturnStmt", stmt.Value)
 	}
+	return VisitRecurse
+}
+
+func (pr *printer) VisitTodoStmt(stmt *TodoStmt) VisitResult {
+	pr.parenthesizeNode("TodoStmt")
 	return VisitRecurse
 }
 

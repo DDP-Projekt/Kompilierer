@@ -15,6 +15,7 @@ package compiler
 import (
 	"fmt"
 
+	"github.com/bafto/Go-LLVM-Bindings/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -30,15 +31,17 @@ type ddpIrListType struct {
 	typ                         types.Type         // the typedef
 	ptr                         *types.PointerType // ptr(typ)
 	elementType                 ddpIrType          // the ir-type of the list elements
-	fromConstantsIrFun          *ir.Func           // the fromConstans ir func
-	freeIrFun                   *ir.Func           // the free ir func
-	deepCopyIrFun               *ir.Func           // the deepCopy ir func
-	equalsIrFun                 *ir.Func           // the equals ir func
-	sliceIrFun                  *ir.Func           // the clice ir func
-	list_list_concat_IrFunc     *ir.Func           // the list_list_verkettet ir func
-	list_scalar_concat_IrFunc   *ir.Func           // the list_scalar_verkettet ir func
-	scalar_scalar_concat_IrFunc *ir.Func           // the scalar_scalar_verkettet ir func
-	scalar_list_concat_IrFunc   *ir.Func           // the scalar_list_verkettet ir func
+	vtable                      *ir.Global
+	llType                      llvm.Type
+	fromConstantsIrFun          *ir.Func // the fromConstans ir func
+	freeIrFun                   *ir.Func // the free ir func
+	deepCopyIrFun               *ir.Func // the deepCopy ir func
+	equalsIrFun                 *ir.Func // the equals ir func
+	sliceIrFun                  *ir.Func // the clice ir func
+	list_list_concat_IrFunc     *ir.Func // the list_list_verkettet ir func
+	list_scalar_concat_IrFunc   *ir.Func // the list_scalar_verkettet ir func
+	scalar_scalar_concat_IrFunc *ir.Func // the scalar_scalar_verkettet ir func
+	scalar_list_concat_IrFunc   *ir.Func // the scalar_list_verkettet ir func
 }
 
 var _ ddpIrType = (*ddpIrListType)(nil)
@@ -65,6 +68,14 @@ func (t *ddpIrListType) DefaultValue() constant.Constant {
 		zero,
 		zero,
 	)
+}
+
+func (t *ddpIrListType) VTable() constant.Constant {
+	return t.vtable
+}
+
+func (t *ddpIrListType) LLVMType() llvm.Type {
+	return t.llType
 }
 
 func (t *ddpIrListType) FreeFunc() *ir.Func {
@@ -101,6 +112,12 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	))
 	list.ptr = ptr(list.typ)
 
+	list.llType = llvm.StructType([]llvm.Type{
+		llvm.PointerType(elementType.LLVMType(), 0),
+		c.ddpinttyp.LLVMType(),
+		c.ddpinttyp.LLVMType(),
+	}, false)
+
 	list.fromConstantsIrFun = c.createListFromConstants(list, declarationOnly)
 	list.freeIrFun = c.createListFree(list, declarationOnly)
 	list.deepCopyIrFun = c.createListDeepCopy(list, declarationOnly)
@@ -112,13 +129,37 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 		list.scalar_scalar_concat_IrFunc,
 		list.scalar_list_concat_IrFunc = c.createListConcats(list, declarationOnly)
 
+	// see equivalent in runtime/include/ddptypes.h
+	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
+		ddpint, // ddpint type_size
+		ptr(types.NewFunc(c.void.IrType(), list.ptr)),                 // free_func_ptr free_func
+		ptr(types.NewFunc(c.void.IrType(), list.ptr, list.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.ddpbooltyp.IrType(), list.ptr, list.ptr)), // equal_func_ptr equal_func
+	))
+
+	var vtable *ir.Global
+	if declarationOnly {
+		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
+		vtable.Linkage = enum.LinkageExternal
+		vtable.Visibility = enum.VisibilityDefault
+	} else {
+		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
+			newInt(24),
+			list.freeIrFun,
+			list.deepCopyIrFun,
+			list.equalsIrFun,
+		))
+	}
+
+	list.vtable = vtable
+
 	return list
 }
 
 const (
-	arr_field_index = 0
-	len_field_index = 1
-	cap_field_index = 2
+	list_arr_field_index = 0
+	list_len_field_index = 1
+	list_cap_field_index = 2
 )
 
 /*
@@ -164,7 +205,7 @@ func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationO
 	)
 
 	// get pointers to the struct fields
-	retArr, retLen, retCap := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+	retArr, retLen, retCap := c.indexStruct(ret, list_arr_field_index), c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 
 	// assign the fields
 	c.cbb.NewStore(result, retArr)
@@ -215,7 +256,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 				free(list->arr[i]);
 			}
 		*/
-		listArr, listLen := c.loadStructField(list, arr_field_index), c.loadStructField(list, len_field_index)
+		listArr, listLen := c.loadStructField(list, list_arr_field_index), c.loadStructField(list, list_len_field_index)
 		c.createFor(zero, c.forDefaultCond(listLen),
 			func(index value.Value) {
 				val := c.indexArray(listArr, index)
@@ -224,7 +265,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 		)
 	}
 
-	listArr, listCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index)
+	listArr, listCap := c.loadStructField(list, list_arr_field_index), c.loadStructField(list, list_cap_field_index)
 	c.freeArr(listArr, listCap)
 
 	c.cbb.NewRet(nil)
@@ -265,11 +306,11 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 
 	c.cf = irFunc
 	c.cbb = c.cf.NewBlock("")
-	arrFieldPtr, lenFieldPtr, capFieldPtr := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
-	origArr, origLen, origCap := c.loadStructField(list, arr_field_index), c.loadStructField(list, len_field_index), c.loadStructField(list, cap_field_index)
+	arrFieldPtr, lenFieldPtr, capFieldPtr := c.indexStruct(ret, list_arr_field_index), c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
+	origArr, origLen, origCap := c.loadStructField(list, list_arr_field_index), c.loadStructField(list, list_len_field_index), c.loadStructField(list, list_cap_field_index)
 
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(ret, i64), c.cbb.NewPtrToInt(list, i64))
-	c.createIfElese(ptrs_equal, func() {
+	c.createIfElse(ptrs_equal, func() {
 		c.cbb.NewRet(nil)
 	},
 		nil,
@@ -339,16 +380,16 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 
 	// if (list1 == list2) return true;
 	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(list1, i64), c.cbb.NewPtrToInt(list2, i64))
-	c.createIfElese(ptrs_equal, func() {
+	c.createIfElse(ptrs_equal, func() {
 		c.cbb.NewRet(constant.True)
 	},
 		nil,
 	)
 
 	// if (list1->len != list2->len) return false;
-	list1_len := c.loadStructField(list1, len_field_index)
-	len_unequal := c.cbb.NewICmp(enum.IPredNE, list1_len, c.loadStructField(list2, len_field_index))
-	c.createIfElese(len_unequal, func() {
+	list1_len := c.loadStructField(list1, list_len_field_index)
+	len_unequal := c.cbb.NewICmp(enum.IPredNE, list1_len, c.loadStructField(list2, list_len_field_index))
+	c.createIfElse(len_unequal, func() {
 		c.cbb.NewRet(constant.False)
 	},
 		nil,
@@ -359,7 +400,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 	if listType.elementType.IsPrimitive() {
 		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len) == 0;
 		size := c.cbb.NewMul(c.sizeof(listType.elementType.IrType()), list1_len)
-		memcmp := c.memcmp(c.loadStructField(list1, arr_field_index), c.loadStructField(list2, arr_field_index), size)
+		memcmp := c.memcmp(c.loadStructField(list1, list_arr_field_index), c.loadStructField(list2, list_arr_field_index), size)
 		c.cbb.NewRet(c.cbb.NewICmp(enum.IPredEQ, memcmp, zero))
 	} else { // non-primitive types need to be seperately compared
 		/*
@@ -370,11 +411,11 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 		*/
 		c.createFor(zero, c.forDefaultCond(list1_len),
 			func(index value.Value) {
-				list1_arr, list2_arr := c.loadStructField(list1, arr_field_index), c.loadStructField(list2, arr_field_index)
+				list1_arr, list2_arr := c.loadStructField(list1, list_arr_field_index), c.loadStructField(list2, list_arr_field_index)
 				list1_at_count, list2_at_count := c.indexArray(list1_arr, index), c.indexArray(list2_arr, index)
 				elements_unequal := c.cbb.NewXor(c.cbb.NewCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), newInt(1))
 
-				c.createIfElese(elements_unequal, func() {
+				c.createIfElse(elements_unequal, func() {
 					c.cbb.NewRet(constant.False)
 				},
 					nil,
@@ -429,15 +470,15 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	c.cbb = c.cf.NewBlock("")
 
 	// empty the ret
-	c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(ret, arr_field_index))
-	c.cbb.NewStore(zero, c.indexStruct(ret, len_field_index))
-	c.cbb.NewStore(zero, c.indexStruct(ret, cap_field_index))
+	c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(ret, list_arr_field_index))
+	c.cbb.NewStore(zero, c.indexStruct(ret, list_len_field_index))
+	c.cbb.NewStore(zero, c.indexStruct(ret, list_cap_field_index))
 
-	listLen := c.loadStructField(list, len_field_index)
+	listLen := c.loadStructField(list, list_len_field_index)
 
 	// if (list->len <= 0) return;
 	list_empty := c.cbb.NewICmp(enum.IPredSLE, listLen, zero)
-	c.createIfElese(list_empty, func() {
+	c.createIfElse(list_empty, func() {
 		c.cbb.NewRet(nil)
 	},
 		nil,
@@ -463,9 +504,9 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	// validate that the indices are valid
 	i2_less_i1 := c.cbb.NewICmp(enum.IPredSLT, index2, index1)
-	c.createIfElese(i2_less_i1,
+	c.createIfElse(i2_less_i1,
 		func() {
-			c.runtime_error(newInt(1), c.slice_error_string, index1, index2)
+			c.runtime_error(1, c.slice_error_string, index1, index2)
 		},
 		nil,
 	)
@@ -474,7 +515,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	index1 = c.cbb.NewSub(index1, newInt(1))
 	index2 = c.cbb.NewSub(index2, newInt(1))
 
-	retArrPtr, retLenPtr, retCapPtr := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+	retArrPtr, retLenPtr, retCapPtr := c.indexStruct(ret, list_arr_field_index), c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 
 	/*
 		ret->len = (index2 - index1) + 1; // + 1 if indices are equal
@@ -484,11 +525,11 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	new_len := c.cbb.NewAdd(c.cbb.NewSub(index2, index1), newInt(1))
 	c.cbb.NewStore(new_len, retLenPtr)
 	c.cbb.NewStore(c.growCapacity(new_len), retCapPtr)
-	c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), c.loadStructField(ret, cap_field_index)), retArrPtr)
+	c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), c.loadStructField(ret, list_cap_field_index)), retArrPtr)
 
 	if listType.elementType.IsPrimitive() {
 		// memcpy primitive types
-		c.memcpyArr(c.loadStructField(ret, arr_field_index), c.indexArray(c.loadStructField(list, arr_field_index), index1), new_len)
+		c.memcpyArr(c.loadStructField(ret, list_arr_field_index), c.indexArray(c.loadStructField(list, list_arr_field_index), index1), new_len)
 	} else {
 		/*
 			size_t j = 0;
@@ -497,7 +538,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 			}
 		*/
 
-		retArr := c.loadStructField(ret, arr_field_index)
+		retArr := c.loadStructField(ret, list_arr_field_index)
 		j := c.NewAlloca(i64) // the j index variable
 		c.cbb.NewStore(zero, j)
 		c.createFor(index1,
@@ -509,7 +550,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 			},
 			// _deep_copy_x(&ret->arr[j], &list->arr[i]); j++
 			func(index value.Value) {
-				listArr := c.loadStructField(list, arr_field_index)
+				listArr := c.loadStructField(list, list_arr_field_index)
 				jval := c.cbb.NewLoad(i64, j)
 				elementPtr := c.indexArray(retArr, jval)
 				listElementPtr := c.indexArray(listArr, index)
@@ -558,9 +599,9 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		list->arr = NULL;
 	*/
 	empty_list := func(list value.Value) {
-		c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(list, arr_field_index))
-		c.cbb.NewStore(zero, c.indexStruct(list, len_field_index))
-		c.cbb.NewStore(zero, c.indexStruct(list, cap_field_index))
+		c.cbb.NewStore(constant.NewNull(listType.elementType.PtrType()), c.indexStruct(list, list_arr_field_index))
+		c.cbb.NewStore(zero, c.indexStruct(list, list_len_field_index))
+		c.cbb.NewStore(zero, c.indexStruct(list, list_cap_field_index))
 	}
 
 	/*
@@ -568,17 +609,17 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		ret->arr = ddp_reallocate(list->arr, sizeof(ddpchar) * list->cap, sizeof(ddpchar) * ret->cap);
 	*/
 	grow_capacity_and_set_arr := func(ret, list value.Value) {
-		retCapPtr := c.indexStruct(ret, cap_field_index)
+		retCapPtr := c.indexStruct(ret, list_cap_field_index)
 		// while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
 		c.createWhile(func() value.Value {
-			return c.cbb.NewICmp(enum.IPredSLT, c.loadStructField(ret, cap_field_index), c.loadStructField(ret, len_field_index))
+			return c.cbb.NewICmp(enum.IPredSLT, c.loadStructField(ret, list_cap_field_index), c.loadStructField(ret, list_len_field_index))
 		}, func() {
-			c.cbb.NewStore(c.growCapacity(c.loadStructField(ret, cap_field_index)), retCapPtr)
+			c.cbb.NewStore(c.growCapacity(c.loadStructField(ret, list_cap_field_index)), retCapPtr)
 		})
 
 		// ret->arr = ddp_reallocate(list1->arr, sizeof(elementType) * list1->cap, sizeof(elementType) * ret->cap)
-		new_arr := c.growArr(c.loadStructField(list, arr_field_index), c.loadStructField(list, cap_field_index), c.loadStructField(ret, cap_field_index))
-		c.cbb.NewStore(new_arr, c.indexStruct(ret, arr_field_index))
+		new_arr := c.growArr(c.loadStructField(list, list_arr_field_index), c.loadStructField(list, list_cap_field_index), c.loadStructField(ret, list_cap_field_index))
+		c.cbb.NewStore(new_arr, c.indexStruct(ret, list_arr_field_index))
 	}
 
 	finish := func(irfun *ir.Func) *ir.Func {
@@ -607,22 +648,22 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		setup(concListList)
 
-		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		retLenPtr, retCapPtr := c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 		// ret->len = list1->len + list2->len
-		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)), retLenPtr)
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list1, list_len_field_index), c.loadStructField(list2, list_len_field_index)), retLenPtr)
 		// ret->cap = list1->cap
-		c.cbb.NewStore(c.loadStructField(list1, cap_field_index), retCapPtr)
+		c.cbb.NewStore(c.loadStructField(list1, list_cap_field_index), retCapPtr)
 
 		grow_capacity_and_set_arr(ret, list1)
 
-		new_arr := c.loadStructField(ret, arr_field_index)
+		new_arr := c.loadStructField(ret, list_arr_field_index)
 
 		if listType.elementType.IsPrimitive() {
 			// memcpy(&ret->arr[list1->len], list2->arr, sizeof(elementType) * list2->len)
-			c.memcpyArr(c.indexArray(new_arr, c.loadStructField(list1, len_field_index)), c.loadStructField(list2, arr_field_index), c.loadStructField(list2, len_field_index))
+			c.memcpyArr(c.indexArray(new_arr, c.loadStructField(list1, list_len_field_index)), c.loadStructField(list2, list_arr_field_index), c.loadStructField(list2, list_len_field_index))
 		} else {
-			list1Len, list2Len := c.loadStructField(list1, len_field_index), c.loadStructField(list2, len_field_index)
-			list2Arr := c.loadStructField(list2, arr_field_index)
+			list1Len, list2Len := c.loadStructField(list1, list_len_field_index), c.loadStructField(list2, list_len_field_index)
+			list2Arr := c.loadStructField(list2, list_arr_field_index)
 			/*
 				for (int i = 0; i < list->len; i++) {
 					ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
@@ -657,16 +698,16 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		setup(concListScal)
 
-		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		retLenPtr, retCapPtr := c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 		// ret->len = list->len + 1
-		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, len_field_index), newInt(1)), retLenPtr)
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, list_len_field_index), newInt(1)), retLenPtr)
 		// ret->cap = list->cap
-		c.cbb.NewStore(c.loadStructField(list, cap_field_index), retCapPtr)
+		c.cbb.NewStore(c.loadStructField(list, list_cap_field_index), retCapPtr)
 
 		grow_capacity_and_set_arr(ret, list)
 
-		retArr := c.loadStructField(ret, arr_field_index)
-		listLen := c.loadStructField(list, len_field_index)
+		retArr := c.loadStructField(ret, list_arr_field_index)
+		listLen := c.loadStructField(list, list_len_field_index)
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[list->len] = scal
 			c.cbb.NewStore(scal, c.indexArray(retArr, listLen))
@@ -702,7 +743,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		setup(concScalScal)
 
-		retArrPtr, retLenPtr, retCapPtr := c.indexStruct(ret, arr_field_index), c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		retArrPtr, retLenPtr, retCapPtr := c.indexStruct(ret, list_arr_field_index), c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 		// ret->len = list->len + 1
 		c.cbb.NewStore(newInt(2), retLenPtr)
 		// ret->cap = list->cap
@@ -710,7 +751,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		// ret->arr = ALLOCATE(elementType, 2)
 		c.cbb.NewStore(c.allocateArr(listType.elementType.IrType(), c.cbb.NewLoad(ddpint, retCapPtr)), retArrPtr)
 
-		retArr := c.loadStructField(ret, arr_field_index)
+		retArr := c.loadStructField(ret, list_arr_field_index)
 		retArr0Ptr, retArr1Ptr := c.indexArray(retArr, zero), c.indexArray(retArr, newInt(1))
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[0] = scal1;
@@ -743,17 +784,17 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		setup(concScalList)
 
-		retLenPtr, retCapPtr := c.indexStruct(ret, len_field_index), c.indexStruct(ret, cap_field_index)
+		retLenPtr, retCapPtr := c.indexStruct(ret, list_len_field_index), c.indexStruct(ret, list_cap_field_index)
 		// ret->len = list->len + 1
-		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, len_field_index), newInt(1)), retLenPtr)
+		c.cbb.NewStore(c.cbb.NewAdd(c.loadStructField(list, list_len_field_index), newInt(1)), retLenPtr)
 		// ret->cap = list->cap
-		c.cbb.NewStore(c.loadStructField(list, cap_field_index), retCapPtr)
+		c.cbb.NewStore(c.loadStructField(list, list_cap_field_index), retCapPtr)
 
 		grow_capacity_and_set_arr(ret, list)
 
 		// memmove(&ret->arr[1], ret->arr, sizeof(elementType) * list->len);
-		retArr := c.loadStructField(ret, arr_field_index)
-		c.memmoveArr(c.indexArray(retArr, newInt(1)), retArr, c.loadStructField(list, len_field_index))
+		retArr := c.loadStructField(ret, list_arr_field_index)
+		c.memmoveArr(c.indexArray(retArr, newInt(1)), retArr, c.loadStructField(list, list_len_field_index))
 
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[0] = scal;

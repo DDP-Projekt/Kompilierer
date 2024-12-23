@@ -1,0 +1,6 @@
+simple
+wahr
+leer
+leer
+fuzz
+Erfolg

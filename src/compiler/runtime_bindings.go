@@ -23,19 +23,20 @@ func (c *compiler) declareExternalRuntimeFunction(name string, returnType types.
 }
 
 var (
-	ddp_reallocate_irfun    *ir.Func
-	ddp_runtime_error_irfun *ir.Func
-	_libc_memcpy_irfun      *ir.Func
-	_libc_memcmp_irfun      *ir.Func
-	_libc_memmove_irfun     *ir.Func
+	ddp_reallocate_irfun      *ir.Func
+	ddp_runtime_error_irfun   *ir.Func
+	utf8_string_to_char_irfun *ir.Func
+	_libc_memcpy_irfun        *ir.Func
+	_libc_memcmp_irfun        *ir.Func
+	_libc_memmove_irfun       *ir.Func
 )
 
 // initializes external functions defined in the ddp-runtime
 func (c *compiler) initRuntimeFunctions() {
 	ddp_reallocate_irfun = c.declareExternalRuntimeFunction(
 		"ddp_reallocate",
-		ptr(i8),
-		ir.NewParam("pointer", ptr(i8)),
+		i8ptr,
+		ir.NewParam("pointer", i8ptr),
 		ir.NewParam("oldSize", i64),
 		ir.NewParam("newSize", i64),
 	)
@@ -44,50 +45,57 @@ func (c *compiler) initRuntimeFunctions() {
 		"ddp_runtime_error",
 		c.void.IrType(),
 		ir.NewParam("exit_code", ddpint),
-		ir.NewParam("fmt", ptr(i8)),
+		ir.NewParam("fmt", i8ptr),
 	)
 	ddp_runtime_error_irfun.Sig.Variadic = true
 
+	utf8_string_to_char_irfun = c.declareExternalRuntimeFunction(
+		"utf8_string_to_char",
+		i64,
+		ir.NewParam("str", i8ptr),
+		ir.NewParam("out", ptr(i32)),
+	)
+
 	_libc_memcpy_irfun = c.declareExternalRuntimeFunction(
 		"memcpy",
-		ptr(i8),
-		ir.NewParam("dest", ptr(i8)),
-		ir.NewParam("src", ptr(i8)),
+		i8ptr,
+		ir.NewParam("dest", i8ptr),
+		ir.NewParam("src", i8ptr),
 		ir.NewParam("n", i64),
 	)
 
 	_libc_memcmp_irfun = c.declareExternalRuntimeFunction(
 		"memcmp",
 		ddpbool,
-		ir.NewParam("buf1", ptr(i8)),
-		ir.NewParam("buf2", ptr(i8)),
+		ir.NewParam("buf1", i8ptr),
+		ir.NewParam("buf2", i8ptr),
 		ir.NewParam("size", i64),
 	)
 
 	_libc_memmove_irfun = c.declareExternalRuntimeFunction(
 		"memmove",
-		ptr(i8),
-		ir.NewParam("dest", ptr(i8)),
-		ir.NewParam("src", ptr(i8)),
+		i8ptr,
+		ir.NewParam("dest", i8ptr),
+		ir.NewParam("src", i8ptr),
 		ir.NewParam("n", i64),
 	)
 }
 
 // helper functions to use the runtime-bindings
 
-func (c *compiler) runtime_error(exit_code, fmt value.Value, args ...value.Value) {
-	args = append([]value.Value{exit_code, c.cbb.NewBitCast(fmt, ptr(i8))}, args...)
+func (c *compiler) runtime_error(exit_code int, fmt value.Value, args ...value.Value) {
+	args = append([]value.Value{newInt(int64(exit_code)), c.cbb.NewBitCast(fmt, i8ptr)}, args...)
 	c.cbb.NewCall(ddp_runtime_error_irfun, args...)
 	c.cbb.NewUnreachable()
 }
 
-func (c *compiler) out_of_bounds_error(index, len value.Value) {
-	c.runtime_error(newInt(1), c.out_of_bounds_error_string, index, len)
+func (c *compiler) out_of_bounds_error(line, column, index, len value.Value) {
+	c.runtime_error(1, c.out_of_bounds_error_string, line, column, index, len)
 }
 
 // calls ddp_reallocate from the runtime
 func (c *compiler) ddp_reallocate(pointer, oldSize, newSize value.Value) value.Value {
-	pointer_param := c.cbb.NewBitCast(pointer, ptr(i8))
+	pointer_param := c.cbb.NewBitCast(pointer, i8ptr)
 	return c.cbb.NewBitCast(c.cbb.NewCall(ddp_reallocate_irfun, pointer_param, oldSize, newSize), pointer.Type())
 }
 
@@ -128,7 +136,7 @@ func (c *compiler) freeArr(ptr, n value.Value) {
 // wraps the memcpy function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *compiler) memcpy(dest, src, n value.Value) value.Value {
-	dest_param, src_param := c.cbb.NewBitCast(dest, ptr(i8)), c.cbb.NewBitCast(src, ptr(i8))
+	dest_param, src_param := c.cbb.NewBitCast(dest, i8ptr), c.cbb.NewBitCast(src, i8ptr)
 	return c.cbb.NewCall(_libc_memcpy_irfun, dest_param, src_param, n)
 }
 
@@ -142,7 +150,7 @@ func (c *compiler) memcpyArr(dest, src, n value.Value) value.Value {
 // wraps the memmove function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *compiler) memmove(dest, src, n value.Value) value.Value {
-	dest_param, src_param := c.cbb.NewBitCast(dest, ptr(i8)), c.cbb.NewBitCast(src, ptr(i8))
+	dest_param, src_param := c.cbb.NewBitCast(dest, i8ptr), c.cbb.NewBitCast(src, i8ptr)
 	return c.cbb.NewCall(_libc_memmove_irfun, dest_param, src_param, n)
 }
 
@@ -154,6 +162,6 @@ func (c *compiler) memmoveArr(dest, src, n value.Value) value.Value {
 }
 
 func (c *compiler) memcmp(buf1, buf2, size value.Value) value.Value {
-	buf1_param, buf2_param := c.cbb.NewBitCast(buf1, ptr(i8)), c.cbb.NewBitCast(buf2, ptr(i8))
+	buf1_param, buf2_param := c.cbb.NewBitCast(buf1, i8ptr), c.cbb.NewBitCast(buf2, i8ptr)
 	return c.cbb.NewCall(_libc_memcmp_irfun, buf1_param, buf2_param, size)
 }

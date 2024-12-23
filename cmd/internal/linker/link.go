@@ -65,6 +65,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	if options.ExternGCCFlags == "" {
 		extern_gcc_flags = []string{}
 	}
+	extern_gcc_flags = append(extern_gcc_flags, "-I"+filepath.Join(ddppath.Lib, "runtime/include/"), "-I"+filepath.Join(ddppath.Lib, "stdlib/include"))
 
 	var (
 		link_objects = map[string][]string{}       // library-search-paths to library-filename map
@@ -132,6 +133,11 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	args = append(args, "-lddpruntime", "-lm")
 	args = append(args, options.MainFile)
 	args = append(args, "-lpcre2-8")
+	args = append(args, "-larchive")
+	args = append(args, "-lz")
+	args = append(args, "-llzma")
+	args = append(args, "-lbz2")
+	args = append(args, "-llz4")
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {

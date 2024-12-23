@@ -19,7 +19,7 @@ func main() {
 func handle_panics() {
 	if err := recover(); err != nil {
 		fmt.Fprintf(os.Stderr,
-			`Unerwarteter Fehler: %v
+			`Unerwarteter Fehler: %s
 Dieser Fehler ist vermutlich ein Bug im DDP-Kompilierer.
 Bitte erstelle einen Issue unter https://github.com/DDP-Projekt/Kompilierer oder melde ihn anderweitig den Entwicklern.
 `,

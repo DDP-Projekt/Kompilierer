@@ -102,11 +102,11 @@ func validateOptions(options *Options) error {
 
 // compile ddp-source-code from the given Options
 // if an error occured, the result is nil
-func Compile(options Options) (*Result, error) {
-	defer panic_wrapper()
+func Compile(options Options) (result *Result, err error) {
+	defer panic_wrapper(&err)
 
 	// validate the options
-	err := validateOptions(&options)
+	err = validateOptions(&options)
 	if err != nil {
 		return nil, fmt.Errorf("Ungültige Compiler Optionen: %w", err)
 	}
@@ -276,8 +276,8 @@ func Compile(options Options) (*Result, error) {
 
 // writes the definitions of the inbuilt ddp list types to w
 // optimizationLevel is the same as in the compiler Options
-func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) error {
-	defer panic_wrapper()
+func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) (err error) {
+	defer panic_wrapper(&err)
 
 	irBuff := bytes.Buffer{}
 	if err := newCompiler(nil, errorHandler, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
@@ -328,18 +328,18 @@ func mapToSlice[T comparable, U any](m map[T]U) []U {
 }
 
 // wraps a panic with more information and re-panics
-func panic_wrapper() {
+func panic_wrapper(out_err *error) {
 	if err := recover(); err != nil {
 		if err, ok := err.(*CompilerError); ok {
 			panic(err)
 		}
 
 		stack_trace := debug.Stack()
-		panic(&CompilerError{
+		*out_err = &CompilerError{
 			Err:        err,
-			Msg:        "unknown compiler panic",
+			Msg:        getCompilerErrorMsg(err),
 			ModulePath: "not found",
 			StackTrace: stack_trace,
-		})
+		}
 	}
 }

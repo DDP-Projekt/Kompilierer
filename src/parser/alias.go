@@ -48,7 +48,7 @@ func (p *parser) alias() ast.Expression {
 				return tok, true
 			case token.NEGATE:
 				p.advance()
-				if !p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL) {
+				if !p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL) {
 					return nil, false
 				}
 				return tok, true
@@ -79,8 +79,26 @@ func (p *parser) alias() ast.Expression {
 
 	// sort the aliases in descending order
 	// Stable so equal aliases stay in the order they were defined
-	sort.SliceStable(matchedAliases, func(i, j int) bool {
-		return len(matchedAliases[i].GetTokens()) > len(matchedAliases[j].GetTokens())
+	sort.Slice(matchedAliases, func(i, j int) bool {
+		toksi, toksj := matchedAliases[i].GetTokens(), matchedAliases[j].GetTokens()
+		if len(toksi) != len(toksj) {
+			return len(toksi) > len(toksj)
+		}
+
+		// Sort by functions that take references up
+		// TODO: improve this heuristic
+
+		countRefArgs := func(params map[string]ddptypes.ParameterType) (n int) {
+			for _, paramType := range params {
+				if paramType.IsReference {
+					n++
+				}
+			}
+			return n
+		}
+
+		refNi, refNj := countRefArgs(matchedAliases[i].GetArgs()), countRefArgs(matchedAliases[j].GetArgs())
+		return refNi > refNj
 	})
 
 	// a argument that was already parsed
@@ -135,7 +153,7 @@ func (p *parser) alias() ast.Expression {
 						p.advance() // single-token argument
 					case token.NEGATE:
 						p.advance()
-						p.match(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
+						p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
 					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
 						isGrouping = true
 						p.advance()
@@ -166,7 +184,6 @@ func (p *parser) alias() ast.Expression {
 							FileName: p.module.FileName,
 						},
 						aliases:     p.aliases,
-						typeNames:   p.typeNames,
 						resolver:    p.resolver,
 						typechecker: p.typechecker,
 					}
@@ -194,13 +211,13 @@ func (p *parser) alias() ast.Expression {
 					typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 
 					didMatch := true
-					if typ != paramType.Type {
+					if !ddptypes.Equal(typ, paramType.Type) {
 						didMatch = false
-					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);             // string-indexings may not be passed as char-reference
-					paramType.IsReference && paramType.Type == ddptypes.BUCHSTABE && // if the parameter is a char-reference
+					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
+					paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
 						ok { // and the argument is a indexing
 						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
-						if lhs == ddptypes.TEXT { // check if the lhs is a string
+						if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
 							didMatch = false
 						}
 					}
@@ -220,13 +237,24 @@ func (p *parser) alias() ast.Expression {
 
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
-			return &ast.FuncCall{
+			fnCall := &ast.FuncCall{
 				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  fnalias.Func.Name(),
 				Func:  fnalias.Func,
 				Args:  args,
 			}
+
+			if fnalias.Negated {
+				return &ast.UnaryExpr{
+					Range:    fnCall.Range,
+					Tok:      p.tokens[start],
+					Operator: ast.UN_NOT,
+					Rhs:      fnCall,
+				}
+			}
+
+			return fnCall
 		}
 
 		stralias := alias.(*ast.StructAlias)
@@ -238,9 +266,15 @@ func (p *parser) alias() ast.Expression {
 		}
 	}
 
+	var mostFitting *ast.Alias
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		if args, errs := checkAlias(matchedAliases[i], true); args != nil {
+		args, errs := checkAlias(matchedAliases[i], true)
+		if args != nil && mostFitting == nil {
+			mostFitting = &matchedAliases[i]
+		}
+
+		if args != nil && len(errs) == 0 {
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
 			return callOrLiteralFromAlias(matchedAliases[i], args)
@@ -251,11 +285,13 @@ func (p *parser) alias() ast.Expression {
 	// so we take the longest one (most likely to be wanted)
 	// and "call" it so that the typechecker will report
 	// errors for the arguments
-	mostFitting := matchedAliases[0]
-	args, errs := checkAlias(mostFitting, false)
+	if mostFitting == nil {
+		mostFitting = &matchedAliases[0]
+	}
+	args, errs := checkAlias(*mostFitting, false)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return callOrLiteralFromAlias(mostFitting, args)
+	return callOrLiteralFromAlias(*mostFitting, args)
 }

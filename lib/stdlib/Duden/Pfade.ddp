@@ -1,5 +1,6 @@
 Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
+Binde "Duden/Fehlerbehandlung" ein.
 Binde Betriebssystem und Arbeitsverzeichnis aus "Duden/Laufzeit" ein.
 
 [
@@ -24,10 +25,10 @@ Und kann so benutzt werden:
 	Der Rückgabewert ist wahr wenn der erste Buchstabe des gegebenen Textes ein '/' ist.
 ]
 Die öffentliche Funktion UNIX_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
-	Wenn die Länge von t gleich 0 ist, gib falsch zurück.
-	Gib wahr, wenn (t an der Stelle 1) gleich '/' ist zurück.
+	Wenn t leer ist, gib falsch zurück.
+	Gib wahr, wenn (t an der Stelle 1) gleich '/' ist, zurück.
 Und kann so benutzt werden:
-	"<t> ein absoluter UNIX Pfad ist"
+	"<t> <!k>ein absoluter UNIX Pfad ist"
 
 [
 	Säubert/Normalisiert einen UNIX Pfad:
@@ -244,9 +245,9 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Windows_Ist_Absolut mit dem Parameter t vom Typ Text, gibt einen Wahrheitswert zurück, macht:
 	Wenn t gleich "" ist, gib falsch zurück.
 	Wenn t an der Stelle 1 gleich '\\' ist, gib wahr zurück. [ "\Users\admin\" ]
-	Gib wahr, wenn die Länge von t größer als, oder 2 ist und (t an der Stelle 1) ein lateinischer Buchstabe ist und t an der Stelle 2 gleich ':' ist zurück. [ "C:\Users\admin\" ]
+	Gib wahr, wenn die Länge von t größer als, oder 2 ist und (t an der Stelle 1) ein lateinischer Buchstabe ist und t an der Stelle 2 gleich ':' ist, zurück. [ "C:\Users\admin\" ]
 Und kann so benutzt werden:
-    "<t> ein absoluter Windows Pfad ist"
+    "<t> <!k>ein absoluter Windows Pfad ist"
 
 [
 	Säubert/Normalisiert einen gegebenen Windows Pfad. Entfernt keine doppelten Schrägstrichen (\\)! 
@@ -401,7 +402,7 @@ Die öffentliche Funktion Pfad_Ist_Absolut mit dem Parameter t vom Typ Text, gib
 	Wenn das Betriebssystem gleich "Windows" ist, gib t ein absoluter Windows Pfad ist zurück.
 	Gib t ein absoluter UNIX Pfad ist zurück.
 Und kann so benutzt werden:
-	"<t> ein absoluter Pfad ist"
+	"<t> <!k>ein absoluter Pfad ist"
 
 [
 	Säubert/Normalisiert den gegebenen Pfad:

@@ -33,16 +33,16 @@ Schreibe (' ' ein Leerzeichen ist) auf eine Zeile.
 Schreibe ('k' ein Leerzeichen ist) auf eine Zeile.
 
 Schreibe "--- IstZahl Test ---" auf eine Zeile.
-Schreibe ('0' eine Zahl ist) auf eine Zeile.
-Schreibe ('1' eine Zahl ist) auf eine Zeile.
-Schreibe ('2' eine Zahl ist) auf eine Zeile.
-Schreibe ('3' eine Zahl ist) auf eine Zeile.
-Schreibe ('4' eine Zahl ist) auf eine Zeile.
-Schreibe ('5' eine Zahl ist) auf eine Zeile.
-Schreibe ('6' eine Zahl ist) auf eine Zeile.
-Schreibe ('7' eine Zahl ist) auf eine Zeile.
-Schreibe ('8' eine Zahl ist) auf eine Zeile.
-Schreibe ('9' eine Zahl ist) auf eine Zeile.
+Schreibe ('0' eine Ziffer ist) auf eine Zeile.
+Schreibe ('1' eine Ziffer ist) auf eine Zeile.
+Schreibe ('2' eine Ziffer ist) auf eine Zeile.
+Schreibe ('3' eine Ziffer ist) auf eine Zeile.
+Schreibe ('4' eine Ziffer ist) auf eine Zeile.
+Schreibe ('5' eine Ziffer ist) auf eine Zeile.
+Schreibe ('6' eine Ziffer ist) auf eine Zeile.
+Schreibe ('7' eine Ziffer ist) auf eine Zeile.
+Schreibe ('8' eine Ziffer ist) auf eine Zeile.
+Schreibe ('9' eine Ziffer ist) auf eine Zeile.
 
 Schreibe "--- IstLateinischerBuchstabe Test ---" auf eine Zeile.
 Schreibe ('A' ein lateinischer Buchstabe ist) auf eine Zeile.

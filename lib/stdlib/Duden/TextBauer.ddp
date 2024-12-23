@@ -1,0 +1,68 @@
+Binde "Duden/C" ein.
+Binde "Duden/Laufzeit" ein.
+
+Wir nennen die öffentliche Kombination aus
+	dem Text puffer mit Standardwert ein neuer Puffer der Länge 128,
+	der Zahl länge mit Standardwert 0,
+einen TextBauer,
+und erstellen sie so:
+	"ein neuer TextBauer"
+
+Die Funktion Erhoehe_Kapazitaet mit den Parametern bauer und neue_kapa vom Typ TextBauer Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Passe die Kapazität von <bauer> auf <neue_kapa> an"
+
+Die Funktion TextBauer_Buchstabe_Anfuegen_C mit den Parametern bauer und b vom Typ TextBauer Referenz und Buchstabe, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Füge <b> effizient an <bauer> an"
+
+Die Funktion Kapazität_Berechnen mit den Parametern bauer und n vom Typ TextBauer Referenz und Zahl, gibt eine Zahl zurück, macht:
+	Die Zahl kapa ist die Byte Größe von (puffer von bauer).	
+	Wenn n kleiner als kapa mal 1,75 ist, dann:
+		Gib (kapa mal 1,75) als Zahl zurück.
+	Gib n zurück.
+Und kann so benutzt werden:
+	"die nächste Kapazität von <bauer> (mindestens <n>)"
+
+Die Funktion Bauer_Ende_Zeiger mit dem Parameter bauer vom Typ TextBauer Referenz, gibt einen Zeiger zurück, macht:
+	Gib ((puffer von bauer) als CString als Zeiger als Zahl plus (länge von bauer)) als Zeiger zurück.
+Und kann so benutzt werden:
+	"ein Zeiger auf das Ende von <bauer>"
+
+Die öffentliche Funktion TextBauer_Text_Referenz_Anfügen mit den Parametern bauer und text vom Typ TextBauer Referenz und Text Referenz, gibt nichts zurück, macht:
+	Die Zahl kapa_bauer ist die Byte Größe von (puffer von bauer).	
+	Die Zahl kapa_text ist die Byte Größe von text.	
+	Wenn kapa_bauer minus (länge von bauer) kleiner als kapa_text ist, dann:
+		Passe die Kapazität von bauer auf (die nächste Kapazität von bauer (mindestens (kapa_bauer plus kapa_text))) an.
+
+	Kopiere kapa_text Bytes von (text als CString als Zeiger) nach (ein Zeiger auf das Ende von bauer).
+	Erhöhe länge von bauer um kapa_text.
+Und kann so benutzt werden:
+	"Füge <text> an <bauer> an",
+	"füge <text> an <bauer> an"
+
+Die öffentliche Funktion TextBauer_Buchstabe_Anfügen mit den Parametern bauer und b vom Typ TextBauer Referenz und Buchstabe, gibt nichts zurück, macht:
+	Wenn b als Zahl gleich 0 ist, verlasse die Funktion.
+
+	Die Zahl kapa_bauer ist die Byte Größe von (puffer von bauer).	
+	Die Zahl kapa_text ist die Byte Größe von b.	
+	Wenn kapa_bauer minus (länge von bauer) kleiner als kapa_text ist, dann:
+		Passe die Kapazität von bauer auf (die nächste Kapazität von bauer (mindestens (kapa_bauer plus kapa_text))) an.
+	
+	Füge b effizient an bauer an.
+	Erhöhe länge von bauer um kapa_text.
+Und kann so benutzt werden:
+	"Füge <b> an <bauer> an",
+	"füge <b> an <bauer> an"
+
+Die öffentliche Funktion TextBauer_Text_Anfügen mit den Parametern bauer und text vom Typ TextBauer Referenz und Text, gibt nichts zurück, macht:
+	Füge text an bauer an.
+Und kann so benutzt werden:
+	"Füge <text> an <bauer> an",
+	"füge <text> an <bauer> an"
+
+Die öffentliche Funktion TextBauer_Als_Text mit dem Parameter bauer vom Typ TextBauer Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und überlädt den "als" Operator.

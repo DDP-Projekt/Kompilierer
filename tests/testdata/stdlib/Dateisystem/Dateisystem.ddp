@@ -56,3 +56,24 @@ Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Lesen" auf eine Zeile.
 [Datei_Schliessen]
 Schließe datei.
 Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Schließen" auf eine Zeile.
+
+Öffne datei mit dem Pfad "test_datei.txt" zum Lesen.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Lesen" auf eine Zeile.
+
+[Datei_Lies_Zeilen]
+Schreibe (die Zeilen aus datei) auf eine Zeile.
+
+Schließe datei.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Schließen" auf eine Zeile.
+
+
+[Datei_Oeffnen_Lesen]
+Öffne datei mit dem Pfad "test_datei2.txt" zum Lesen.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Öffnen" auf eine Zeile.
+
+[Datei_Lies_Alles]
+Schreibe (den gesamten Inhalt von datei) auf eine Zeile.
+Wenn es dabei einen Fehler gab, Schreibe (den letzten Fehler) auf eine Zeile.
+
+Schließe datei.
+Wenn es dabei einen Fehler gab, Schreibe "Fehler beim Schließen" auf eine Zeile.

@@ -49,9 +49,9 @@ Und kann so benutzt werden:
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' '), eine neue Zeile ('\n'), ein Tabulator ('\t') oder ein Wagenrücklauf ('\r') ist.
 ]
 Die öffentliche Funktion Ist_Leer mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist zurück.
+	Gib wahr, wenn b gleich ' ' ist oder b gleich '\n' ist oder b gleich '\t' ist oder b gleich '\r' ist, zurück.
 Und kann so benutzt werden:
-	"<b> ein leeres Zeichen ist"
+	"<b> <!k>ein leeres Zeichen ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b groß ist.
@@ -65,7 +65,7 @@ Die öffentliche Funktion Ist_Groß mit dem Parameter b vom Typ Buchstabe, gibt 
 		[... es gibt noch viel mehr ...]
 	Gib erg zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein großer Buchstabe ist"
+	[Wenn] "<b> <!k>ein großer Buchstabe ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b klein ist.
@@ -79,31 +79,31 @@ Die öffentliche Funktion Ist_Klein mit dem Parameter b vom Typ Buchstabe, gibt 
 		[... es gibt noch viel mehr ...]
 	Gib erg zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein kleiner Buchstabe ist"
+	[Wenn] "<b> <!k>ein kleiner Buchstabe ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Leerzeichen (' ') ist. 
 ]
 Die öffentliche Funktion Ist_Leerzeichen mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b gleich ' ' ist zurück.
+	Gib wahr, wenn b gleich ' ' ist, zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein Leerzeichen ist"
+	[Wenn] "<b> <!k>ein Leerzeichen ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b eine Zahl (Code 48-57) ist. 
 ]
-Die öffentliche Funktion Buchstabe_Ist_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist zurück.
+Die öffentliche Funktion Buchstabe_Ist_Ziffer mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn b als Zahl größer als, oder 48 ist und b als Zahl kleiner als, oder 57 ist, zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> eine Zahl ist"
+	[Wenn] "<b> <!k>eine Ziffer ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein Kontrollzeichen (Code 0-31) ist. 
 ]
 Die öffentliche Funktion Ist_Kontroll mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist zurück.
+	Gib wahr, wenn b als Zahl größer als, oder 0 ist und b als Zahl kleiner als, oder 31 ist, zurück.
 Und kann so benutzt werden:
-	[Wenn] "<b> ein Kontrollzeichen ist"
+	[Wenn] "<b> <!k>ein Kontrollzeichen ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein lateinischer Buchstabe (a-Z) ist. 
@@ -115,15 +115,15 @@ Die öffentliche Funktion Ist_Lateinischer_Buchstabe mit dem Parameter b vom Typ
 		(z größer als, oder 97 ist und z kleiner als, oder 122 ist) [A-Z]
 		zurück.
 Und kann so benutzt werden:
-	"<b> ein lateinischer Buchstabe ist"
+	"<b> <!k>ein lateinischer Buchstabe ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein lateinischer Buchstabe (a-Z) oder eine Zahl ist. 
 ]
 Die öffentliche Funktion Ist_Lateinischer_Buchstabe_Oder_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b ein lateinischer Buchstabe ist oder b eine Zahl ist zurück.
+	Gib wahr, wenn b ein lateinischer Buchstabe ist oder b eine Ziffer ist, zurück.
 Und kann so benutzt werden:
-	"<b> ein lateinischer Buchstabe oder eine Zahl ist"
+	"<b> <!nicht> ein lateinischer Buchstabe oder eine Zahl ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe (a-Z, äöü, ÄÖÜ und ß) ist. 
@@ -139,15 +139,15 @@ Die öffentliche Funktion Ist_Deutscher_Buchstabe mit dem Parameter b vom Typ Bu
 		(z gleich 223 ist) [ß]
 		zurück.
 Und kann so benutzt werden:
-	"<b> ein deutscher Buchstabe ist"
+	"<b> <!k>ein deutscher Buchstabe ist"
 
 [
 	Gibt wahr zurück wenn der Buchstabe b ein deutscher Buchstabe oder eine Zahl ist. 
 ]
 Die öffentliche Funktion Ist_Deutscher_Buchstabe_Oder_Zahl mit dem Parameter b vom Typ Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn b ein deutscher Buchstabe ist oder b eine Zahl ist zurück.
+	Gib wahr, wenn b ein deutscher Buchstabe ist oder b eine Ziffer ist, zurück.
 Und kann so benutzt werden:
-	"<b> ein deutscher Buchstabe oder eine Zahl ist"
+	"<b> <!nicht> ein deutscher Buchstabe oder eine Zahl ist"
 
 [
 	Gibt den gegebenen Buchstaben als großgeschriebe Variante zurück. 
@@ -185,14 +185,14 @@ Und kann so benutzt werden:
 	Gibt zurück ob die ASCII-Nummer von z1 größer als z2 ist.
 ]
 Die öffentliche Funktion ASCII_Größer mit den Parametern z1 und z2 vom Typ Buchstabe und Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn z1 als Zahl größer als z2 als Zahl ist zurück.
+	Gib wahr, wenn z1 als Zahl größer als z2 als Zahl ist, zurück.
 Und kann so benutzt werden:
-	"der ASCII-Wert von <z1> größer als <z2>"
+	"der ASCII-Wert von <z1> <!nicht> größer als <z2>"
 
 [
 	Gibt zurück ob die ASCII-Nummer von z1 kleiner als z2 ist.
 ]
 Die öffentliche Funktion ASCII_Kleiner mit den Parametern z1 und z2 vom Typ Buchstabe und Buchstabe, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn z1 als Zahl kleiner als z2 als Zahl ist zurück.
+	Gib wahr, wenn z1 als Zahl kleiner als z2 als Zahl ist, zurück.
 Und kann so benutzt werden:
-	"der ASCII-Wert von <z1> kleiner als <z2>"
+	"der ASCII-Wert von <z1> <!nicht> kleiner als <z2>"

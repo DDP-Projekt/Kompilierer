@@ -1,0 +1,4 @@
+Die oeffentliche Funktion foo gibt eine Zahl zurück, macht:
+	Gib 10 zurück.
+Und kann so benutzt werden:
+	"foo"

@@ -9,6 +9,31 @@ type Operator interface {
 	Operator() // dummy function for the interface
 }
 
+// map of op.String() -> op
+var operator_map = map[string]Operator{}
+
+// add all operators that can be overloaded to the operator_map
+func init() {
+	for op := UN_INVALID + 1; op < un_end; op++ {
+		operator_map[op.String()] = op
+	}
+	for op := BIN_INVALID + 1; op < bin_end; op++ {
+		operator_map[op.String()] = op
+	}
+	for op := TER_INVALID + 1; op < ter_end; op++ {
+		operator_map[op.String()] = op
+	}
+	for op := CAST_INVALID + 1; op < cast_end; op++ {
+		operator_map[op.String()] = op
+	}
+}
+
+// returns the corresponding Operator for it's string representation
+func GetOperator(s string) (Operator, bool) {
+	op, ok := operator_map[s]
+	return op, ok
+}
+
 type UnaryOperator int
 
 func (UnaryOperator) Operator() {}
@@ -20,6 +45,7 @@ const (
 	UN_NEGATE                  // -
 	UN_NOT                     // nicht
 	UN_LOGIC_NOT               // logisch nicht
+	un_end                     // unexported constant to enable looping over all values
 )
 
 func (op UnaryOperator) String() string {
@@ -29,7 +55,7 @@ func (op UnaryOperator) String() string {
 	case UN_LEN:
 		return "Länge"
 	case UN_NEGATE:
-		return "-"
+		return "unäres minus"
 	case UN_NOT:
 		return "nicht"
 	case UN_LOGIC_NOT:
@@ -70,6 +96,7 @@ const (
 	BIN_FIELD_ACCESS                // von
 	BIN_SLICE_TO                    // bis zum
 	BIN_SLICE_FROM                  // ab dem
+	bin_end                         // unexported constant to enable looping over all values
 )
 
 func (op BinaryOperator) String() string {
@@ -79,9 +106,9 @@ func (op BinaryOperator) String() string {
 	case BIN_OR:
 		return "oder"
 	case BIN_XOR:
-		return "entweder oder"
+		return "entweder ... oder"
 	case BIN_CONCAT:
-		return "verkettet"
+		return "verkettet mit"
 	case BIN_PLUS:
 		return "plus"
 	case BIN_MINUS:
@@ -105,21 +132,21 @@ func (op BinaryOperator) String() string {
 	case BIN_MOD:
 		return "modulo"
 	case BIN_LEFT_SHIFT:
-		return "links"
+		return "links verschiebung"
 	case BIN_RIGHT_SHIFT:
-		return "rechts"
+		return "rechts verschiebung"
 	case BIN_EQUAL:
 		return "gleich"
 	case BIN_UNEQUAL:
 		return "ungleich"
 	case BIN_LESS:
-		return "kleiner"
+		return "kleiner als"
 	case BIN_GREATER:
-		return "größer"
+		return "größer als"
 	case BIN_LESS_EQ:
-		return "kleiner oder"
+		return "kleiner als, oder"
 	case BIN_GREATER_EQ:
-		return "größer oder"
+		return "größer als, oder"
 	case BIN_FIELD_ACCESS:
 		return "von"
 	case BIN_SLICE_TO:
@@ -139,12 +166,13 @@ const (
 	TER_SLICE                   // von bis
 	TER_BETWEEN                 // zwischen
 	TER_FALLS                   // <a>, falls <b>, ansonsten <c>
+	ter_end                     // unexported constant to enable looping over all values
 )
 
 func (op TernaryOperator) String() string {
 	switch op {
 	case TER_SLICE:
-		return "von_bis"
+		return "von bis"
 	case TER_BETWEEN:
 		return "zwischen"
 	case TER_FALLS:
@@ -162,6 +190,7 @@ const (
 	TYPE_INVALID TypeOperator = iota
 	TYPE_SIZE                 // Größe
 	TYPE_DEFAULT              // Standardwert
+	TYPE_OF                   // ein, eine
 )
 
 func (op TypeOperator) String() string {
@@ -170,6 +199,27 @@ func (op TypeOperator) String() string {
 		return "Größe"
 	case TYPE_DEFAULT:
 		return "Standardwert"
+	case TYPE_OF:
+		return "ein ... ist"
 	}
 	panic(fmt.Errorf("unbekannter Typ-Operator %d", op))
+}
+
+// dummy type to support operator overloading on cast expressions
+type CastOperator int
+
+func (CastOperator) Operator() {}
+
+const (
+	CAST_INVALID CastOperator = iota
+	CAST_OP                   // als
+	cast_end                  // unexported constant to enable looping over all values
+)
+
+func (op CastOperator) String() string {
+	switch op {
+	case CAST_OP:
+		return "als"
+	}
+	panic(fmt.Errorf("unbekannter Cast-Operator %d", op))
 }

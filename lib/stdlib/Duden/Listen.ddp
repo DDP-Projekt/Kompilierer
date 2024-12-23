@@ -101,49 +101,99 @@ Und kann so benutzt werden:
 [
 	Gibt den Index der gegebenen Zahl aus der Liste zurück oder -1 wenn die Zahl nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Index_Von_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Zahl_Ref mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), wenn liste an der Stelle i gleich elm ist, gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
-	"der Index von <elm> in <liste>"
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt den Index der gegebenen Zahl aus der Liste zurück oder -1 wenn die Zahl nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt eine Zahl zurück, macht:
+	Gib den Index von elm in liste zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+[
+	Gibt zurück ob die Zahl in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Zahl_Ref mit den Parametern liste und elm vom Typ Zahlen Listen Referenz und Zahl, gibt einen Wahrheitswert zurück, macht:
+	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
 
 [
 	Gibt zurück ob die Zahl in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Zahl mit den Parametern liste und elm vom Typ Zahlen Liste und Zahl, gibt einen Wahrheitswert zurück, macht:
-	Für jede Zahl z in liste, wenn z gleich elm ist, gib wahr zurück.
-	Gib falsch zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
-	"<liste> <elm> enthält"
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Zahlen Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Zahl_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Zahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Zahl_Ref mit den Parametern liste und n vom Typ Zahlen Listen Referenz und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste bis zum n. Element zurück.
 ]
 Die öffentliche Funktion Erste_N_Elemente_Zahl mit den Parametern liste und n vom Typ Zahlen Liste und Zahl, gibt eine Zahlen Liste zurück, macht:
-	Gib liste bis zum n. Element zurück.
+	Gib die ersten n Elemente von liste zurück.
 Und kann so benutzt werden:
 	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
 ]
-Die öffentliche Funktion Letzten_N_Elemente_Zahl mit den Parametern liste und n vom Typ Zahlen Liste und Zahl, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche Funktion Letzten_N_Elemente_Zahl_Ref mit den Parametern liste und n vom Typ Zahlen Listen Referenz und Zahl, gibt eine Zahlen Liste zurück, macht:
 	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
 Und kann so benutzt werden:
 	"die letzten <n> Elemente von <liste>"
 
-Die öffentliche Funktion Spiegeln_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Zahl mit den Parametern liste und n vom Typ Zahlen Liste und Zahl, gibt eine Zahlen Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Zahl_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt eine Zahlen Liste zurück, macht:
 	Die Zahlen Liste neu ist die Länge von liste Mal 0.
 	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
 	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
+
+Die öffentliche Funktion Spiegeln_Zahl mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+	Gib liste gespiegelt zurück.
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
@@ -320,44 +370,92 @@ Und kann so benutzt werden:
 [
 	Gibt den Index der gegebenen Kommazahl aus der Liste zurück oder -1 wenn die Kommazahl nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Index_Von_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Kommazahl_Ref mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt den Index der gegebenen Kommazahl aus der Liste zurück oder -1 wenn die Kommazahl nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt eine Zahl zurück, macht:
+	Gib den Index von elm in liste zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 [
 	Gibt zurück ob die Kommazahl in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Wahrheitswert zurück, macht:
+Die öffentliche Funktion Enthält_Kommazahl_Ref mit den Parametern liste und elm vom Typ Kommazahlen Listen Referenz und Kommazahl, gibt einen Wahrheitswert zurück, macht:
 	Für jede Kommazahl z in liste, wenn z gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
-	"<liste> <elm> enthält"
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Kommazahl in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Kommazahl mit den Parametern liste und elm vom Typ Kommazahlen Liste und Kommazahl, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn liste elm enthält, zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+Die öffentliche Funktion Ist_Leer_Kommazahl_Ref mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Kommazahlen Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib [wahr wenn] die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Kommazahl_Ref mit den Parametern liste und n vom Typ Kommazahlen Listen Referenz und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste bis zum n. Element zurück.
 ]
 Die öffentliche Funktion Erste_N_Elemente_Kommazahl mit den Parametern liste und n vom Typ Kommazahlen Liste und Zahl, gibt eine Kommazahlen Liste zurück, macht:
-	Gib liste bis zum n. Element zurück.
+	Gib die ersten n Elemente von liste zurück.
 Und kann so benutzt werden:
 	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
 ]
-Die öffentliche Funktion Letzten_N_Elemente_Kommazahl mit den Parametern liste und n vom Typ Kommazahlen Liste und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+Die öffentliche Funktion Letzten_N_Elemente_Kommazahl_Ref mit den Parametern liste und n vom Typ Kommazahlen Listen Referenz und Zahl, gibt eine Kommazahlen Liste zurück, macht:
 	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
 Und kann so benutzt werden:
 	"die letzten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Kommazahl mit den Parametern liste und n vom Typ Kommazahlen Liste und Zahl, gibt eine Kommazahlen Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Kommazahl_Ref mit dem Parameter liste vom Typ Kommazahlen Listen Referenz, gibt eine Kommazahlen Liste zurück, macht:
+	Die Kommazahlen Liste neu ist die Länge von liste Mal 0,0.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
 
 Die öffentliche Funktion Spiegeln_Kommazahl mit dem Parameter liste vom Typ Kommazahlen Liste, gibt eine Kommazahlen Liste zurück, macht:
 	Die Kommazahlen Liste neu ist die Länge von liste Mal 0,0.
@@ -537,51 +635,100 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 [
+	Gibt den Index des gegebenen Wahrheitswert aus der Liste zurück oder -1 wenn der Wahrheitswert nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Wahrheitswert_Ref mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
 	Gibt den Index des gegebenen Wahrheitswerts aus der Liste zurück oder -1 wenn der Wahrheitswert nicht in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Index_Von_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
-	Gib -1 zurück.
+	Gib den Index von elm in liste zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 [
 	Gibt zurück ob der Wahrheitswert in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt einen Wahrheitswert zurück, macht:
+Die öffentliche Funktion Enthält_Wahrheitswert_Ref mit den Parametern liste und elm vom Typ Wahrheitswert Listen Referenz und Wahrheitswert, gibt einen Wahrheitswert zurück, macht:
 	Für jeden Wahrheitswert b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
-	"<liste> <elm> enthält"
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob der Wahrheitswert in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Wahrheitswert mit den Parametern liste und elm vom Typ Wahrheitswert Liste und Wahrheitswert, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn liste elm enthält, zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Wahrheitswert Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Wahrheitswert_Ref mit dem Parameter liste vom Typ Wahrheitswert Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Wahrheitswert Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Wahrheitswert_Ref mit den Parametern liste und n vom Typ Wahrheitswert Listen Referenz und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste bis zum n. Element zurück.
 ]
 Die öffentliche Funktion Erste_N_Elemente_Wahrheitswert mit den Parametern liste und n vom Typ Wahrheitswert Liste und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
-	Gib liste bis zum n. Element zurück.
+	Gib die ersten n Elemente von liste zurück.
 Und kann so benutzt werden:
 	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
 ]
-Die öffentliche Funktion Letzten_N_Elemente_Wahrheitswert mit den Parametern liste und n vom Typ Wahrheitswert Liste und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
+Die öffentliche Funktion Letzten_N_Elemente_Wahrheitswert_Ref mit den Parametern liste und n vom Typ Wahrheitswert Listen Referenz und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
 	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
 Und kann so benutzt werden:
 	"die letzten <n> Elemente von <liste>"
 
-Die öffentliche Funktion Spiegeln_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt eine Wahrheitswert Liste zurück, macht:
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Wahrheitswert mit den Parametern liste und n vom Typ Wahrheitswert Liste und Zahl, gibt eine Wahrheitswert Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Wahrheitswert_Ref mit dem Parameter liste vom Typ Wahrheitswert Listen Referenz, gibt eine Wahrheitswert Liste zurück, macht:
 	Die Wahrheitswert Liste neu ist die Länge von liste Mal falsch.
 	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
 	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
+
+Die öffentliche Funktion Spiegeln_Wahrheitswert mit dem Parameter liste vom Typ Wahrheitswert Liste, gibt eine Wahrheitswert Liste zurück, macht:
+	Gib liste gespiegelt zurück.
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
@@ -686,63 +833,119 @@ Und kann so benutzt werden:
 	"Fülle <liste> mit <elm>"
 
 [
+	Gibt den Index des gegebenen Buchstaben aus der Liste zurück oder -1 wenn der Buchstaben nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Buchstabe_Ref mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
 	Gibt den Index des gegebenen Buchstabens aus der Liste zurück oder -1 wenn der Buchstabe nicht in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Index_Von_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt eine Zahl zurück, macht:
-	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
-	Gib -1 zurück.
+	Gib den Index von elm in liste zurück.
 Und kann so benutzt werden:
 	"der Index von <elm> in <liste>"
 
 [
 	Gibt zurück ob der Buchstabe in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Wahrheitswert zurück, macht:
+Die öffentliche Funktion Enthält_Buchstabe_Ref mit den Parametern liste und elm vom Typ Buchstaben Listen Referenz und Buchstabe, gibt einen Wahrheitswert zurück, macht:
 	Für jeden Buchstaben b in liste, wenn b gleich elm ist, gib wahr zurück.
 	Gib falsch zurück.
 Und kann so benutzt werden:
-	"<liste> <elm> enthält"
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob der Buchstabe in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Buchstabe mit den Parametern liste und elm vom Typ Buchstaben Liste und Buchstabe, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn liste elm enthält, zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Buchstaben Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Buchstaben Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Buchstabe_Ref mit den Parametern liste und n vom Typ Buchstaben Listen Referenz und Zahl, gibt eine Buchstaben Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste bis zum n. Element zurück.
 ]
 Die öffentliche Funktion Erste_N_Elemente_Buchstabe mit den Parametern liste und n vom Typ Buchstaben Liste und Zahl, gibt eine Buchstaben Liste zurück, macht:
-	Gib liste bis zum n. Element zurück.
+	Gib die ersten n Elemente von liste zurück.
 Und kann so benutzt werden:
 	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
 ]
-Die öffentliche Funktion Letzten_N_Elemente_Buchstabe mit den Parametern liste und n vom Typ Buchstaben Liste und Zahl, gibt eine Buchstaben Liste zurück, macht:
+Die öffentliche Funktion Letzten_N_Elemente_Buchstabe_Ref mit den Parametern liste und n vom Typ Buchstaben Listen Referenz und Zahl, gibt eine Buchstaben Liste zurück, macht:
 	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
 Und kann so benutzt werden:
 	"die letzten <n> Elemente von <liste>"
 
-Die öffentliche Funktion Spiegeln_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt eine Buchstaben Liste zurück, macht:
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Buchstabe mit den Parametern liste und n vom Typ Buchstaben Liste und Zahl, gibt eine Buchstaben Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt eine Buchstaben Liste zurück, macht:
 	Die Buchstaben Liste neu ist die Länge von liste Mal ' '.
 	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
 	Gib neu zurück.
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
+Die öffentliche Funktion Spiegeln_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt eine Buchstaben Liste zurück, macht:
+	Gib liste gespiegelt zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
+
+[
+	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
+]
+Die öffentliche Funktion Aneinandergehaengt_Buchstabe_Ref mit dem Parameter liste vom Typ Buchstaben Listen Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"<liste> aneinandergehängt"
+
 [
 	Verkettet alle Buchstaben der gegebenen Liste zu einem Text und gibt diesen zurück.
 ]
 Die öffentliche Funktion Aneinandergehängt_Buchstabe mit dem Parameter liste vom Typ Buchstaben Liste, gibt einen Text zurück, macht:
-	Der Text t ist "".
-	Für jeden Buchstabe b in liste, speichere t verkettet mit b in t.
-	Gib t zurück.
+	Gib liste aneinandergehängt zurück.
 Und kann so benutzt werden:
 	"<liste> aneinandergehängt"
+
 
 [ Text Listen Funktionen ]
 [
@@ -847,56 +1050,106 @@ Und kann so benutzt werden:
 [
 	Gibt den Index des gegebenen Textes aus der Liste zurück oder -1 wenn der Text nicht in der Liste vorhanden ist.
 ]
-Die öffentliche Funktion Index_Von_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
+Die öffentliche Funktion Index_Von_Text_Ref mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt eine Zahl zurück, macht:
 	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
 	Gib -1 zurück.
 Und kann so benutzt werden:
-	"der Index von <elm> in <liste>"
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt den Index des gegebenen Textes aus der Liste zurück oder -1 wenn der Text nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt eine Zahl zurück, macht:
+	Gib den Index von elm in liste zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt zurück ob der Text in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Text_Ref mit den Parametern liste und elm vom Typ Text Listen Referenz und Text, gibt einen Wahrheitswert zurück, macht:
+	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
 
 [
 	Gibt zurück ob der Text in der Liste vorhanden ist.
 ]
 Die öffentliche Funktion Enthält_Text mit den Parametern liste und elm vom Typ Text Liste und Text, gibt einen Wahrheitswert zurück, macht:
-	Für jeden Text t in liste, wenn t gleich elm ist, gib wahr zurück.
-	Gib falsch zurück.
+	Gib wahr, wenn liste elm enthält, zurück.
 Und kann so benutzt werden:
-	"<liste> <elm> enthält"
+	"<liste> <elm> <!nicht> enthält"
+[
+	Gibt zurück ob die Text Liste leer ist.
+]
+Die	öffentliche Funktion Ist_Leer_Text_Ref mit dem Parameter liste vom Typ Text Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
 
 [
 	Gibt zurück ob die Text Liste leer ist.
 ]
 Die öffentliche Funktion Ist_Leer_Text mit dem Parameter liste vom Typ Text Liste, gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn die Länge von liste gleich 0 ist zurück.
+	Gib wahr, wenn liste leer ist, zurück.
 Und kann so benutzt werden:
-	"<liste> leer ist"
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Text_Ref mit den Parametern liste und n vom Typ Text Listen Referenz und Zahl, gibt eine Text Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste bis zum n. Element zurück.
 ]
 Die öffentliche Funktion Erste_N_Elemente_Text mit den Parametern liste und n vom Typ Text Liste und Zahl, gibt eine Text Liste zurück, macht:
-	Gib liste bis zum n. Element zurück.
+	Gib die ersten n Elemente von liste zurück.
 Und kann so benutzt werden:
 	"die ersten <n> Elemente von <liste>"
 
 [
 	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
 ]
-Die öffentliche Funktion Letzten_N_Elemente_Text mit den Parametern liste und n vom Typ Text Liste und Zahl, gibt eine Text Liste zurück, macht:
+Die öffentliche Funktion Letzten_N_Elemente_Text_Ref mit den Parametern liste und n vom Typ Text Listen Referenz und Zahl, gibt eine Text Liste zurück, macht:
 	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
 Und kann so benutzt werden:
 	"die letzten <n> Elemente von <liste>"
 
-Die öffentliche Funktion Spiegeln_Text mit dem Parameter liste vom Typ Text Liste, gibt eine Text Liste zurück, macht:
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Text mit den Parametern liste und n vom Typ Text Liste und Zahl, gibt eine Text Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Text_Ref mit dem Parameter liste vom Typ Text Listen Referenz, gibt eine Text Liste zurück, macht:
 	Die Text Liste neu ist die Länge von liste Mal "".
 	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
 	Gib neu zurück.
 Und kann so benutzt werden:
 	"<liste> gespiegelt"
 
+Die öffentliche Funktion Spiegeln_Text mit dem Parameter liste vom Typ Text Liste, gibt eine Text Liste zurück, macht:
+	Gib liste gespiegelt zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
+
 [
 	Verkettet alle Texte in der gegebenen Text liste.
 ]
-Die öffentliche Funktion Verketten_Text_Liste mit dem Parameter liste vom Typ Text Liste, gibt einen Text zurück, macht:
+Die öffentliche Funktion Verketten_Text_Liste_Ref mit dem Parameter liste vom Typ Text Listen Referenz, gibt einen Text zurück, macht:
 	Der Text text ist "".
 	Für jeden Text t in liste, speichere text verkettet mit t in text.
 	Gib text zurück.
@@ -904,13 +1157,30 @@ Und kann so benutzt werden:
 	"alle Texte in <liste> aneinandergehängt"
 
 [
+	Verkettet alle Texte in der gegebenen Text liste.
+]	
+Die öffentliche Funktion Verketten_Text_Liste mit dem Parameter liste vom Typ Text Liste, gibt einen Text zurück, macht:
+	Gib alle Texte in liste aneinandergehängt zurück.
+Und kann so benutzt werden:
+	"alle Texte in <liste> aneinandergehängt"
+
+[
+	Verkettet jedes Element aus l1 mit l2.
+	Beide Listen müssen gleich lang sein.
+]
+Die öffentliche Funktion Elementweise_Verketten_Text_Ref mit den Parametern l1 und l2 vom Typ Text Listen Referenz und Text Listen Referenz, gibt eine Text Liste zurück, macht:
+	Die Text Liste erg ist l1.
+	Für jede Zahl i von 1 bis die Länge von l1, speichere (l1 an der Stelle i) verkettet mit (l2 an der Stelle i) in erg an der Stelle i.
+	Gib erg zurück.
+Und kann so benutzt werden:
+	"jeden Text aus <l1> mit <l2> verkettet"
+
+[
 	Verkettet jedes Elements aus l1 mit l2.
 	Beide Listen müssen gleich lang sein.
 ]
 Die öffentliche Funktion Elementweise_Verketten_Text mit den Parametern l1 und l2 vom Typ Text Liste und Text Liste, gibt eine Text Liste zurück, macht:
-	Die Text Liste erg ist l1.
-	Für jede Zahl i von 1 bis die Länge von l1, speichere (l1 an der Stelle i) verkettet mit (l2 an der Stelle i) in erg an der Stelle i.
-	Gib erg zurück.
+	Gib jeden Text aus l1 mit l2 verkettet zurück.
 Und kann so benutzt werden:
 	"jeden Text aus <l1> mit <l2> verkettet"
 
@@ -973,3 +1243,203 @@ Die öffentliche Funktion Logspace mit den Parametern start, ende und anzahl vom
 	Gib l zurück.
 Und kann so benutzt werden:
 	"eine logarithmische Kommazahlen Liste von <start> bis <ende> mit <anzahl> Elementen"
+
+[ Variablen Listen Funktionen ]
+
+[
+	Löscht alle Variablen aus der gegebenen Variablen Liste.
+]
+Die öffentliche Funktion Leere_Variable mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt nichts zurück, macht:
+	Speichere eine leere Variablen Liste in liste.
+Und kann so benutzt werden:
+	"Leere <liste>"
+
+[Hilfsfunktion für Hinzufügen_X]
+Die Funktion efficient_list_append_any mit den Parametern list, elem und elem_size vom Typ Variablen Listen Referenz, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_any <list> <elem> <elem_size>"
+
+[
+	Fügt eine Variable am Ende der gegeben Variablen Liste hinzu.
+]
+Die öffentliche Funktion Hinzufügen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	efficient_list_append_any liste elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Füge <elm> an <liste> an",
+	"füge <elm> an <liste> an"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_insert_any mit den Parametern list, index, elem und elem_size vom Typ Variablen Listen Referenz, Zahl, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_any <list> <index> <elem> <elem_size>"
+
+[
+	Fügt eine Variable vor einem Index in der gegebenen Variablen Liste ein.
+]
+Die öffentliche Funktion Einfügen_Variable mit den Parametern liste, index und elm vom Typ Variablen Listen Referenz, Zahl und Variable, gibt nichts zurück, macht:
+	efficient_list_insert_any liste (index minus 1) elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Setze <elm> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für Einfügen_Bereich_X]
+Die Funktion efficient_list_insert_range_any mit den Parametern list, index, range und elem_size vom Typ Variablen Listen Referenz, Zahl, Variablen Listen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_insert_range_any <list> <index> <range> <elem_size>"
+
+[
+	Fügt eine Variablen Liste vor einem Index in der gegebenen Variablen Liste ein.
+]
+Die öffentliche Funktion Einfügen_Bereich_Variable mit den Parametern liste, index und range vom Typ Variablen Listen Referenz, Zahl und Variablen Liste, gibt nichts zurück, macht:
+	efficient_list_insert_range_any liste (index minus 1) range (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Setze die Elemente in <range> an die Stelle <index> von <liste>"
+
+[Hilfsfunktion für EinfügenX]
+Die Funktion efficient_list_prepend_any mit den Parametern liste, elem und elem_size vom Typ Variablen Listen Referenz, Variablen Referenz und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_any <liste> <elem> <elem_size>"
+
+[
+	Fügt eine Variable am Anfang der gegeben Variablen Liste hinzu.
+]
+Die öffentliche Funktion Voranstellen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	[Speichere elm verkettet mit liste in liste.]
+	efficient_list_prepend_any liste elm (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Stelle <elm> vor <liste>"
+
+[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
+Die Funktion efficient_list_delete_range_any mit den Parametern list, start, end und elem_size vom Typ Variablen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_delete_range_any <list> <start> <end> <elem_size>"
+
+[
+	Entfernt die Variable an dem gegeben Index aus der gegeben Variablen Liste.
+]
+Die öffentliche Funktion Lösche_Element_Variable mit den Parametern liste und index vom Typ Variablen Listen Referenz und Zahl, gibt nichts zurück, macht:
+	Speichere index minus 1 in index.
+	efficient_list_delete_range_any liste index index (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Lösche das Element an der Stelle <index> aus <liste>"
+
+[
+	Entfernt alle Variablen aus der Liste im Bereich [start, end] (inklusiv)
+]
+Die öffentliche Funktion Lösche_Bereich_Variable mit den Parametern liste, start und end vom Typ Variablen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	efficient_list_delete_range_any liste (start minus 1) (end minus 1) (die Größe von einer Variable).
+Und kann so benutzt werden:
+	"Lösche alle Elemente von <start> bis <end> aus <liste>"
+
+[
+	Füllt die gegebene Variablen Liste mit der gegebenen Variable.
+]
+Die öffentliche Funktion Füllen_Variable mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt nichts zurück, macht:
+	Die Variablen Liste neueListe ist die Länge von liste Mal elm.
+	Speichere neueListe in liste.
+Und kann so benutzt werden:
+	"Fülle <liste> mit <elm>"
+
+[
+	Gibt den Index der gegebenen Variable aus der Liste zurück oder -1 wenn die Variable nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Variable_Ref mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt eine Zahl zurück, macht:
+	Für jede Zahl i von 1 bis (die Länge von liste), Wenn liste an der Stelle i gleich elm ist, Gib i zurück.
+	Gib -1 zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt den Index der gegebenen Variable aus der Liste zurück oder -1 wenn die Variable nicht in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Index_Von_Variable mit den Parametern liste und elm vom Typ Variablen Liste und Variable, gibt eine Zahl zurück, macht:
+	Gib den Index von elm in liste zurück.
+Und kann so benutzt werden:
+	"der Index von <elm> in <liste>",
+	"den Index von <elm> in <liste>",
+	"dem Index von <elm> in <liste>"
+
+[
+	Gibt zurück ob die Variable in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Variable_Ref mit den Parametern liste und elm vom Typ Variablen Listen Referenz und Variable, gibt einen Wahrheitswert zurück, macht:
+	Für jede Variable v in liste, wenn v gleich elm ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Variable in der Liste vorhanden ist.
+]
+Die öffentliche Funktion Enthält_Variable mit den Parametern liste und elm vom Typ Variablen Liste und Variable, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn liste elm enthält, zurück.
+Und kann so benutzt werden:
+	"<liste> <elm> <!nicht> enthält"
+
+[
+	Gibt zurück ob die Variablen Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Variable_Ref mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn die Länge von liste gleich 0 ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt zurück ob die Variablen Liste leer ist.
+]
+Die öffentliche Funktion Ist_Leer_Variable mit dem Parameter liste vom Typ Variablen Liste, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn liste leer ist, zurück.
+Und kann so benutzt werden:
+	"<liste> <!nicht> leer ist",
+	"<liste> <!nicht> leer sind"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Variable_Ref mit den Parametern liste und n vom Typ Variablen Listen Referenz und Zahl, gibt eine Variablen Liste zurück, macht:
+	Gib liste bis zum n. Element zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste bis zum n. Element zurück.
+]
+Die öffentliche Funktion Erste_N_Elemente_Variable mit den Parametern liste und n vom Typ Variablen Liste und Zahl, gibt eine Variablen Liste zurück, macht:
+	Gib die ersten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die ersten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Variable_Ref mit den Parametern liste und n vom Typ Variablen Listen Referenz und Zahl, gibt eine Variablen Liste zurück, macht:
+	Gib liste ab dem (die Länge von liste minus n plus 1). Element zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+[
+	Gibt liste ab dem (die Länge von liste minus n). Element zurück.
+]
+Die öffentliche Funktion Letzten_N_Elemente_Variable mit den Parametern liste und n vom Typ Variablen Liste und Zahl, gibt eine Variablen Liste zurück, macht:
+	Gib die letzten n Elemente von liste zurück.
+Und kann so benutzt werden:
+	"die letzten <n> Elemente von <liste>"
+
+Die öffentliche Funktion Spiegeln_Variable_Ref mit dem Parameter liste vom Typ Variablen Listen Referenz, gibt eine Variablen Liste zurück, macht:
+	Die Variablen Liste neu ist die Länge von liste Mal der Standardwert von einer Variable.
+	Für jede Zahl i von 1 bis (die Länge von liste), Speichere liste an der Stelle i in neu an der Stelle (die Länge von liste minus i plus 1).
+	Gib neu zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"
+
+Die öffentliche Funktion Spiegeln_Variable mit dem Parameter liste vom Typ Variablen Liste, gibt eine Variablen Liste zurück, macht:
+	Gib liste gespiegelt zurück.
+Und kann so benutzt werden:
+	"<liste> gespiegelt"

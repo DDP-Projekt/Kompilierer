@@ -1,4 +1,4 @@
-#include "runtime.h"
+#include "DDP/runtime.h"
 
 extern int ddp_ddpmain(void); // implicitly defined by the ddp code
 

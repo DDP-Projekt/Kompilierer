@@ -13,6 +13,7 @@ type helperVisitor struct {
 }
 
 // visits the AST of the given module
+// does nothing if module == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -26,6 +27,10 @@ type helperVisitor struct {
 // if the given Visitor implements the ModuleSetter interface,
 // the SetModule method is called before visiting the module
 func VisitModule(module *Module, visitor Visitor) {
+	if module == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
@@ -49,6 +54,7 @@ func visitSingleModule(module *Module, v *helperVisitor) {
 }
 
 // visits the given module and all the modules it imports recursively
+// does nothing if module == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -64,6 +70,10 @@ func visitSingleModule(module *Module, v *helperVisitor) {
 // if the given Visitor implements the ModuleSetter interface,
 // the SetModule method is called before visiting each module
 func VisitModuleRec(module *Module, visitor Visitor) {
+	if module == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
@@ -89,8 +99,8 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 
 	// visit imports
 	for _, imprt := range imports {
-		if imprt.Module != nil {
-			visitModuleRec(imprt.Module, visitor, visited)
+		for _, mod := range imprt.Modules {
+			visitModuleRec(mod, visitor, visited)
 		}
 	}
 
@@ -98,6 +108,7 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 }
 
 // visits the given node and all its children recursively
+// does nothing if node == nil
 //
 // visitor can implement any of the Visit<Node> interfaces, and
 // the corresponding method is called for each node
@@ -108,6 +119,10 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 // if the given Visitor implements the ScopeSetter interface,
 // the SetScope method is called when the scope changes
 func VisitNode(visitor Visitor, node Node, currentScope *SymbolTable) {
+	if node == nil {
+		return
+	}
+
 	helper := &helperVisitor{
 		actualVisitor: visitor,
 	}
@@ -173,12 +188,34 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	return h.visitChildren(result, decl.Body)
 }
 
+func (h *helperVisitor) VisitFuncDef(decl *FuncDef) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(FuncDefVisitor); ok {
+		result = vis.VisitFuncDef(decl)
+	}
+	return h.visitChildren(result, decl.Body)
+}
+
 func (h *helperVisitor) VisitStructDecl(decl *StructDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(StructDeclVisitor); ok {
 		result = vis.VisitStructDecl(decl)
 	}
 	return h.visitChildren(result, sortedByRange(decl.Fields)...)
+}
+
+func (h *helperVisitor) VisitTypeAliasDecl(decl *TypeAliasDecl) VisitResult {
+	if vis, ok := h.actualVisitor.(TypeAliasDeclVisitor); ok {
+		return vis.VisitTypeAliasDecl(decl)
+	}
+	return VisitRecurse
+}
+
+func (h *helperVisitor) VisitTypeDefDecl(decl *TypeDefDecl) VisitResult {
+	if vis, ok := h.actualVisitor.(TypeDefDeclVisitor); ok {
+		return vis.VisitTypeDefDecl(decl)
+	}
+	return VisitRecurse
 }
 
 // if a BadExpr exists the AST is faulty
@@ -308,6 +345,14 @@ func (h *helperVisitor) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	return result
 }
 
+func (h *helperVisitor) VisitTypeCheck(expr *TypeCheck) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(TypeCheckVisitor); ok {
+		result = vis.VisitTypeCheck(expr)
+	}
+	return h.visitChildren(result, expr.Lhs)
+}
+
 func (h *helperVisitor) VisitGrouping(expr *Grouping) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(GroupingVisitor); ok {
@@ -430,7 +475,7 @@ func (h *helperVisitor) VisitForRangeStmt(stmt *ForRangeStmt) VisitResult {
 }
 
 func (h *helperVisitor) VisitBreakContinueStmt(stmt *BreakContinueStmt) VisitResult {
-	if vis, ok := h.actualVisitor.(BreakContineStmtVisitor); ok {
+	if vis, ok := h.actualVisitor.(BreakContinueStmtVisitor); ok {
 		return vis.VisitBreakContinueStmt(stmt)
 	}
 	return VisitRecurse
@@ -442,6 +487,13 @@ func (h *helperVisitor) VisitReturnStmt(stmt *ReturnStmt) VisitResult {
 		result = vis.VisitReturnStmt(stmt)
 	}
 	return h.visitChildren(result, stmt.Value)
+}
+
+func (h *helperVisitor) VisitTodoStmt(stmt *TodoStmt) VisitResult {
+	if vis, ok := h.actualVisitor.(TodoStmtVisitor); ok {
+		return vis.VisitTodoStmt(stmt)
+	}
+	return VisitRecurse
 }
 
 // helper for visitFuncCall and visitStructLiteral

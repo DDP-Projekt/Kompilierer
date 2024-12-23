@@ -12,3 +12,5 @@ fi
 export CGO_CPPFLAGS="`$llvm_config --cppflags`"
 export CGO_CXXFLAGS=-std=c++14
 export CGO_LDFLAGS="`$llvm_config --ldflags --libs --system-libs all`"
+
+"$1" .

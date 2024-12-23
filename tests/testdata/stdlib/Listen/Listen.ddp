@@ -7,6 +7,7 @@ Die Kommazahlen Liste listK ist eine Liste, die aus 3,14, 0,183, 2,5 besteht.
 Die Wahrheitswert Liste listB ist eine Liste, die aus wahr, falsch, wahr besteht.
 Die Buchstaben Liste listC ist eine Liste, die aus 'a', 'b', 'c' besteht.
 Die Text Liste listT ist eine Liste, die aus "hi", "yo", "test" besteht.
+Die Variablen Liste listV ist eine Liste, die aus "1" als Variable, 2 als Variable, '3' als Variable besteht.
 
 Schreibe den Text "-- contains tests --" auf eine Zeile.
 [ contains tests]
@@ -15,6 +16,7 @@ Schreibe (listK 0,183 enthält) auf eine Zeile.
 Schreibe (listB falsch enthält) auf eine Zeile.
 Schreibe (listC 'b' enthält) auf eine Zeile.
 Schreibe (listT "yo" enthält) auf eine Zeile.
+Schreibe (listV ("1" als Variable) enthält) auf eine Zeile.
 
 Schreibe den Text "-- indexOf tests --" auf eine Zeile.
 [ indexOf tests ]
@@ -24,6 +26,7 @@ Schreibe (der Index von wahr in listB) auf eine Zeile.
 Schreibe (der Index von 'b' in listC) auf eine Zeile.
 Schreibe (der Index von "test" in listT) auf eine Zeile.
 Schreibe (der Index von "invalid" in listT) auf eine Zeile.
+Schreibe (der Index von (2 als Variable) in listV) auf eine Zeile.
 
 Schreibe den Text "-- add tests --" auf eine Zeile.
 [ add tests ]
@@ -32,12 +35,14 @@ Füge 5,5 an listK an.
 Füge falsch an listB an.
 Füge 'd' an listC an.
 Füge "neu" an listT an.
+Füge (wahr als Variable) an listV an.
 
 Schreibe (listZ an der Stelle 4) auf eine Zeile.
 Schreibe (listK an der Stelle 4) auf eine Zeile.
 Schreibe (listB an der Stelle 4) auf eine Zeile.
 Schreibe (listC an der Stelle 4) auf eine Zeile.
 Schreibe (listT an der Stelle 4) auf eine Zeile.
+Schreibe ((listV an der Stelle 4) als Wahrheitswert) auf eine Zeile.
 
 Schreibe den Text "-- insert tests --" auf eine Zeile.
 [ insert tests ]
@@ -46,6 +51,7 @@ Setze 0,1 an die Stelle 2 von listK.
 Setze falsch an die Stelle 2 von listB.
 Setze '0' an die Stelle 2 von listC.
 Setze "world" an die Stelle 2 von listT.
+Setze (2,3 als Variable) an die Stelle 2 von listV.
 
 Schreibe listZ.
 Schreibe '\n'.
@@ -56,6 +62,8 @@ Schreibe '\n'.
 Schreibe listC.
 Schreibe '\n'.
 Schreibe listT.
+Schreibe '\n'.
+Schreibe ((listV an der Stelle 2) eine Kommazahl ist).
 Schreibe '\n'.
 
 Schreibe den Text "-- insert range tests --" auf eine Zeile.
@@ -84,6 +92,7 @@ Lösche das Element an der Stelle 2 aus listK.
 Lösche das Element an der Stelle 2 aus listB.
 Lösche das Element an der Stelle 2 aus listC.
 Lösche das Element an der Stelle 2 aus listT.
+Lösche das Element an der Stelle 2 aus listV.
 
 Schreibe listZ.
 Schreibe '\n'.
@@ -94,6 +103,8 @@ Schreibe '\n'.
 Schreibe listC.
 Schreibe '\n'.
 Schreibe listT.
+Schreibe '\n'.
+Schreibe ((listV an der Stelle 2) eine Kommazahl ist).
 Schreibe '\n'.
 
 Schreibe den Text "-- remove range tests --" auf eine Zeile.
@@ -202,6 +213,8 @@ Schreibe den Wahrheitswert (listT leer ist) auf eine Zeile.
 Schreibe den Text "-- Aneinandergehängt_C test --" auf eine Zeile.
 [Aneinandergehängt_C test]
 Schreibe den Text ((eine Liste, die aus 'h', 'a', 'l', 'l', 'o' besteht) aneinandergehängt) auf eine Zeile.
+Schreibe den Text ((eine Liste, die aus 'ü', 'b', 'Ö', 'r', 'ä' besteht) aneinandergehängt) auf eine Zeile.
+Schreibe den Text ((eine Liste, die aus '프', 'a', '렌', 'l', '즈' besteht) aneinandergehängt) auf eine Zeile.
 [Aufsteigende_Zahlen test]
 Schreibe den Text "-- Aufsteigende_Zahlen test --" auf eine Zeile.
 Schreibe (eine aufsteigende Zahlen Liste von 0 bis 0) auf eine Zeile.

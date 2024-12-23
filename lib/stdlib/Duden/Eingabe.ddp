@@ -15,15 +15,8 @@ Der Wahrheitswert war_eof ist falsch.
 Die öffentliche Funktion War_EOF gibt einen Wahrheitswert zurück, macht:
 	Gib war_eof zurück.
 Und kann so benutzt werden:
-	"die Benutzereingabe zu Ende gewesen ist"
-
-[
-	Gibt wahr zurück wenn noch kein EOF Zeichen gelesen wurde.
-]
-Die öffentliche Funktion Ist_Nicht_EOF gibt einen Wahrheitswert zurück, macht:
-	Gib nicht war_eof zurück.
-Und kann so benutzt werden:
-	"die Benutzereingabe nicht vorbei ist"
+	"die Benutzereingabe <!nicht> zu Ende gewesen ist",
+	"die Benutzereingabe <!nicht> vorbei ist"
 
 [
 	Setzt die interne war_eof variable auf falsch.
@@ -199,25 +192,25 @@ Die öffentliche Funktion Hat_Token gibt einen Wahrheitswert zurück, macht:
 	Wenn die Länge von Eingabe_Puffer größer als 0 ist, gib wahr zurück.
 	Wenn die Benutzereingabe zu Ende gewesen ist, gib falsch zurück.
 	Speichere den nächsten Text in Eingabe_Puffer.
-	Gib wahr, wenn die Länge von Eingabe_Puffer größer als 0 ist zurück.
+	Gib wahr, wenn die Länge von Eingabe_Puffer größer als 0 ist, zurück.
 Und kann so benutzt werden:
-	"eine Eingabe vorhanden ist"
+	"<!k>eine Eingabe vorhanden ist"
 
 [
 	Gibt an ob die nächste Eingabe (direkt oder im Puffer)
 	zu einer Zahl umgewandelt werden kann.
 ]
 Die öffentliche Funktion Hat_Zahl gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer eine Zahl ist zurück.
+	Gib wahr, wenn eine Eingabe vorhanden ist und Eingabe_Puffer in eine Zahl umgewandelt werden kann, zurück.
 Und kann so benutzt werden:
-	"die nächste Eingabe eine Zahl ist" oder
-	"die naechste Eingabe eine Zahl ist"
+	"die nächste Eingabe <!k>eine Zahl ist" oder
+	"die naechste Eingabe <!k>eine Zahl ist"
 
 [
 	Gibt an ob ein Buchstabe (direkt oder aus dem Puffer)
 	gelesen werden kann.
 ]
 Die öffentliche Funktion Hat_Buchstabe gibt einen Wahrheitswert zurück, macht:
-	Gib wahr, wenn nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist zurück.
+	Gib wahr, wenn nicht war_eof oder die Länge von Eingabe_Puffer ungleich 0 ist oder Gepufferter_Buchstabe als Zahl ungleich 0 ist, zurück.
 Und kann so benutzt werden:
-	"ein Buchstabe vorhanden ist"
+	"<!k>ein Buchstabe vorhanden ist"

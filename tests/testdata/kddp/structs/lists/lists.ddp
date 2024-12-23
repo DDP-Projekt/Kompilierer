@@ -62,3 +62,9 @@ Schreibe '\n'.
 
 Speichere 42 in x von (vektoren von vek_liste an der Stelle 3).
 Schreibe (x von (vektoren von vek_liste an der Stelle 3)) auf eine Zeile.
+
+Die Vektor2 Liste vektoren2 ist ein Vektor2 mit x gleich 5 und y gleich 6 als Vektor2 Liste.
+
+Schreibe (x von (vektoren2 an der Stelle 1)) auf eine Zeile.
+Schreibe (y von (vektoren2 an der Stelle 1)) auf eine Zeile.
+

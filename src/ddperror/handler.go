@@ -26,12 +26,13 @@ func MakeBasicHandler(w io.Writer) Handler {
 func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 	lines := strings.Split(string(src), "\n")
 	file = filepath.Clean(file)
+	basicHandler := MakeBasicHandler(w)
 
 	return func(err Error) {
 		// we don't have the text of included files
 		// so we handle them with the basic error handler
 		if filepath.Clean(err.File) != file {
-			fmt.Fprintf(w, "%s: %s", makeErrorHeader(err, file), err.Msg)
+			basicHandler(err)
 			return
 		}
 
@@ -111,13 +112,20 @@ func MakePanicHandler() Handler {
 // helper to create the common error header of all handlers
 // prints the error type, code and place
 func makeErrorHeader(err Error, file string) string {
+	kind := "Fehler"
+	prefix := err.Code.ErrorPrefix()
+	if err.Level == LEVEL_WARN {
+		kind = "Warnung"
+		prefix = err.Code.WarningPrefix()
+	}
 	if path, e := filepath.Rel(file, err.File); e != nil {
 		file = err.File
 	} else {
 		file = path
 	}
-	return fmt.Sprintf("%s Fehler (%04d) in %s (Z: %d, S: %d)",
-		err.Code.ErrorPrefix(),
+	return fmt.Sprintf("%s %s (%04d) in %s (Z: %d, S: %d)",
+		prefix,
+		kind,
 		err.Code,
 		file,
 		err.Range.Start.Line,

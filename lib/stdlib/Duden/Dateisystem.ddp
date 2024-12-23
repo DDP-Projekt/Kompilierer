@@ -2,6 +2,7 @@
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Zahlen" ein.
+Binde "Duden/Listen" ein.
 
 [
 	Die Funktion Schreibe_Text_Datei schreibt einen Text (text) in die Datei an dem gegebenen Text Pfad.
@@ -28,9 +29,9 @@ und kann so benutzt werden:
 Die öffentliche Funktion Existiert_Pfad mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die Datei <Pfad> existiert" oder
-	"der Ordner <Pfad> existiert" oder
-	"der Pfad <Pfad> existiert"
+	"die Datei <Pfad> <!nicht> existiert" oder
+	"der Ordner <Pfad> <!nicht> existiert" oder
+	"der Pfad <Pfad> <!nicht> existiert"
 
 [
 	Überprüft ob der gegebene Pfad ein Ordner ist
@@ -38,7 +39,7 @@ und kann so benutzt werden:
 Die öffentliche Funktion Ist_Ordner mit dem Parameter Pfad vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"<Pfad> ein Ordner ist"
+	"<Pfad> <!k>ein Ordner ist"
 
 [
 	Überprüft ob der gegebene Pfad eine Datei ist
@@ -47,7 +48,7 @@ Die öffentliche Funktion Ist_Datei mit dem Parameter Pfad vom Typ Text, gibt ei
 	Wenn die Länge von Pfad gleich 0 ist oder Pfad ein Ordner ist, gib falsch zurück.
 	Gib wahr zurück.
 Und kann so benutzt werden:
-	"<Pfad> eine Datei ist"
+	"<Pfad> <!k>eine Datei ist"
 
 [
 	Erstellt rekursiv den Ordner Pfad.
@@ -59,7 +60,7 @@ Die öffentliche Funktion Erstelle_Ordner mit dem Parameter Pfad vom Typ Text, g
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Erstelle den Ordner <Pfad>" oder
-	"der Ordner <Pfad> erfolgreich erstellt wurde"
+	"der Ordner <Pfad> <!nicht> erfolgreich erstellt wurde"
 
 [
 	!!!Nicht unbedingt sicher!!!
@@ -73,11 +74,11 @@ Die öffentliche Funktion Loesche_Pfad mit dem Parameter Pfad vom Typ Text, gibt
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Lösche <Pfad>" oder
-	"<Pfad> erfolgreich gelöscht wurde" oder
+	"<Pfad> <!nicht> erfolgreich gelöscht wurde" oder
 	"Lösche die Datei <Pfad>" oder
-	"die Datei <Pfad> erfolgreich gelöscht wurde" oder
+	"die Datei <Pfad> <!nicht> erfolgreich gelöscht wurde" oder
 	"Lösche den Ordner <Pfad>" oder
-	"der Ordner <Pfad> erfolgreich gelöscht wurde"
+	"der Ordner <Pfad> <!nicht> erfolgreich gelöscht wurde"
 
 [
 	!!!Nicht unbedings sicher!!!
@@ -91,7 +92,7 @@ Die öffentliche Funktion Pfad_Verschieben mit den Parametern Pfad und NeuerName
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"Verschiebe <Pfad> nach <NeuerName>" oder
-	"<Pfad> erfolgreich nach <NeuerName> verschoben wurde"
+	"<Pfad> <!nicht> erfolgreich nach <NeuerName> verschoben wurde"
 
 [
 	Equavilent zu C's stat.st_atime formatiert als Text
@@ -141,7 +142,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Datei_Kopieren mit den Parametern Pfad und Kopiepfad vom Typ Text und Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"Kopiere die Datei <Pfad> nach <Kopiepfad>"
+	"Kopiere die Datei <Pfad> nach <Kopiepfad>" oder
+	"die Datei <Pfad> <!nicht> erfolgreich nach <Kopiepfad> wurde"
 
 [
 
@@ -283,15 +285,17 @@ und kann so benutzt werden:
 Die öffentliche Funktion Datei_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"<datei> zuende ist"
+	"<datei> <!nicht> zuende ist"
 
 [
-	Ob die Datei nicht zuende gelesen wurde.
+	Liest den gesamten Inhalt von datei als Text
 ]
-Die öffentliche Funktion Datei_Nicht_Zuende mit dem Parameter datei vom Typ Datei Referenz, gibt einen Wahrheitswert zurück, macht:
-	Gib nicht datei zuende ist zurück.
-Und kann so benutzt werden:
-	"<datei> nicht zuende ist"
+Die öffentliche Funktion Datei_Lies_Alles mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der gesamte Inhalt von <datei>",
+	"dem gesamten Inhalt von <datei>",
+	"den gesamten Inhalt von <datei>"
 
 [
 	Liest die nächsten N Byte aus der Datei und gibt sie als Text zurück.
@@ -307,7 +311,8 @@ und kann so benutzt werden:
 Die öffentliche Funktion Datei_Lies_Zeile mit dem Parameter datei vom Typ Datei Referenz, gibt einen Text zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"die nächste Zeile aus <datei>" oder
+	"die nächste Zeile aus <datei>",
+	"der nächsten Zeile aus <datei>",
 	"die naechste Zeile aus <datei>"
 
 [
@@ -331,6 +336,19 @@ Und kann so benutzt werden:
 	"die naechsten <n> Zeilen aus <datei>" oder
 	"den nächsten <n> Zeilen aus <datei>" oder
 	"den naechsten <n> Zeilen aus <datei>"
+
+[
+	Liest alle Zeilen aus der Datei und gibt sie als Text Liste zurück.
+]
+Die öffentliche Funktion Datei_Lies_Zeilen mit dem Parameter datei vom Typ Datei Referenz, gibt eine Text Liste zurück, macht:
+	Die Text Liste zeilen ist eine leere Text Liste.
+	Solange datei nicht zuende ist, mache:
+		Füge (die nächste Zeile aus datei) an zeilen an.
+		Wenn es dabei einen Fehler gab, gib zeilen zurück.
+	Gib zeilen zurück.
+Und kann so benutzt werden:
+	"die Zeilen aus <datei>" oder
+	"den Zeilen aus <datei>"
 
 [
 	Liest das nächste Wort ohne Leerzeichen aus der Datei und gibt es als Text zurück.
@@ -370,7 +388,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche Funktion Datei_Lies_Zahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Zahl zurück, macht:
 	Der Text wort ist das nächste Wort aus datei.
-	Wenn nicht wort eine Zahl ist, dann:
+	Wenn wort nicht in eine Zahl umgewandelt werden kann, dann:
 		Melde den Fehler "Keine Zahl gefunden".
 	Gib wort als Zahl zurück.
 Und kann so benutzt werden:
@@ -407,7 +425,7 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Datei_Lies_Kommazahl mit dem Parameter datei vom Typ Datei Referenz, gibt eine Kommazahl zurück, macht:
 	Der Text wort ist das nächste Wort aus datei.
 	[jede Zahl kann auch als Kommazahl formatiert werden]
-	Wenn nicht wort eine Zahl ist, dann:
+	Wenn wort nicht in eine Zahl umgewandelt werden kann, dann:
 		Melde den Fehler "Keine Kommazahl gefunden".
 	Gib wort als Kommazahl zurück.
 Und kann so benutzt werden:

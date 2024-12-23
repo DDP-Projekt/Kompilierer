@@ -1,11 +1,29 @@
-KDDP_DIR = ./cmd/kddp/
+CMD_DIR = ./cmd/
 STD_DIR = ./lib/stdlib/
 RUN_DIR = ./lib/runtime/
+EXT_DIR = ./lib/external/
+
+DDP_SETUP_BUILD_DIR = $(CMD_DIR)ddp-setup/build/
 
 KDDP_BIN = ""
+DDP_SETUP_BIN = ""
+
+KDDP_DIR = $(CMD_DIR)kddp/
+DDP_SETUP_DIR = $(CMD_DIR)ddp-setup/
+
 STD_BIN = libddpstdlib.a
-STD_BIN_PCRE2 = libpcre2-8.a
-PCRE2_DIR = $(STD_DIR)pcre2/
+EXT_BIN_PCRE2 = libpcre2-8.a
+EXT_BIN_LIBAR = libarchive.a
+EXT_BIN_LIBZ = libz.a
+EXT_BIN_LIBLZMA = liblzma.a
+EXT_BIN_LIBBZ2 = libbz2.a
+EXT_BIN_LIBLZ4 = liblz4.a
+PCRE2_DIR = $(EXT_DIR)pcre2_build/
+PCRE2_HEADERS = $(PCRE2_DIR)pcre2.h
+PCRE2_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
+LIBAR_DIR = $(EXT_DIR)libarchive/libarchive/
+LIBAR_HEADERS = $(wildcard $(LIBAR_DIR)*.h)
+LIBAR_HEADERS_OUT_DIR = $(STD_DIR_OUT)include/
 STD_BIN_DEBUG = $(STD_BIN:.a=debug.a)
 RUN_BIN = libddpruntime.a
 RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
@@ -28,6 +46,13 @@ MKDIR = mkdir -p
 SED = sed -u
 TAR = tar
 
+define cp_if_exists
+	@if [ -f $(1) ]; then \
+		echo copying $(1) to $(2); \
+		$(CP) $(1) $(2); \
+	fi
+endef
+
 LLVM_BUILD_TYPE=Release
 LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
@@ -36,8 +61,10 @@ LLVM_ADDITIONAL_CMAKE_VARIABLES= -DCMAKE_INSTALL_PREFIX=llvm_build/  -DLLVM_BUIL
 
 ifeq ($(OS),Windows_NT)
 	KDDP_BIN = kddp.exe
+	DDP_SETUP_BIN = ddp-setup.exe
 else
 	KDDP_BIN = kddp
+	DDP_SETUP_BIN = ddp-setup
 	LLVM_CMAKE_GENERATOR="Unix Makefiles"
 endif
 
@@ -46,6 +73,7 @@ OUT_DIR = ./build/DDP/
 .DEFAULT_GOAL = all
 
 KDDP_DIR_OUT = $(OUT_DIR)bin/
+DDP_SETUP_DIR_OUT = $(OUT_DIR)
 LIB_DIR_OUT = $(OUT_DIR)lib/
 STD_DIR_OUT = $(LIB_DIR_OUT)stdlib/
 RUN_DIR_OUT = $(LIB_DIR_OUT)runtime/
@@ -55,89 +83,84 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY = all clean clean-outdir debug kddp stdlib stdlib-debug runtime runtime-debug test test-memory checkout-llvm llvm help test-complete test-with-optimizations coverage
+.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations help
 
-all: $(OUT_DIR) kddp runtime stdlib
+all: kddp runtime stdlib ddp-setup $(OUT_DIR)LICENSE $(OUT_DIR)README.md ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
-debug: $(OUT_DIR) kddp runtime-debug stdlib-debug
+debug: kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
 
-kddp:
+%/:
+	$(MKDIR) $@
+
+kddp: $(KDDP_DIR_OUT) $(LIB_DIR_OUT) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
-	cd $(KDDP_DIR) ; '$(MAKE)'
-	$(CP) $(KDDP_DIR)build/$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	'$(MAKE)' -C $(CMD_DIR) kddp
+	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
-stdlib:
-	@echo "building the ddp-stdlib"
-	cd $(STD_DIR) ; '$(MAKE)'
+ddp-setup: $(DDP_SETUP_DIR_OUT) ## compiles ddp-setup into build/DDP/bin/
+	@echo "building ddp-setup"
+	'$(MAKE)' -C $(CMD_DIR) ddp-setup
+	$(CP) $(DDP_SETUP_DIR)$(DDP_SETUP_BIN) $(DDP_SETUP_DIR_OUT)$(DDP_SETUP_BIN)
+
+stdlib-copies: $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)include/ $(STD_DIR)source/ $(STD_DIR)Makefile $(STD_DIR_OUT)
+	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
+
+stdlib: external stdlib-copies $(LIB_DIR_OUT) ## compiles the stdlib and the Duden into build/DDP/lib/stdlib and build/DDP/Duden
+	'$(MAKE)' -C $(STD_DIR)
 	$(CP) $(STD_DIR)$(STD_BIN) $(LIB_DIR_OUT)$(STD_BIN)
-	@if [ -f $(STD_DIR)$(STD_BIN_PCRE2) ]; then \
-		$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2); \
-	fi
-	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	@if [ -d $(PCRE2_DIR) ]; then \
-		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
-	fi
-	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-stdlib-debug:
-	@echo "building the ddp-stdlib in debug mode"
-	cd $(STD_DIR) ; '$(MAKE)' debug
+stdlib-debug: external stdlib-copies $(LIB_DIR_OUT) ## same as stdlib but will print debugging information
+	'$(MAKE)' -C $(STD_DIR) debug
 	$(CP) $(STD_DIR)$(STD_BIN_DEBUG) $(LIB_DIR_OUT)$(STD_BIN)
-	@if [ -f $(STD_DIR)$(STD_BIN_PCRE2) ]; then \
-		$(CP) $(STD_DIR)$(STD_BIN_PCRE2) $(LIB_DIR_OUT)$(STD_BIN_PCRE2); \
-	fi
-	$(CP) $(STD_DIR)include/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)source/ $(STD_DIR_OUT)
-	$(CP) $(STD_DIR)Duden/ $(OUT_DIR)
-	@if [ -d $(PCRE2_DIR) ]; then \
-		$(CP) $(PCRE2_DIR) $(STD_DIR_OUT); \
-	fi
-	$(CP) $(STD_DIR)Makefile $(STD_DIR_OUT)Makefile
 
-runtime:
-	@echo "building the ddp-runtime"
-	cd $(RUN_DIR) ; '$(MAKE)'
+runtime-copies: $(RUN_DIR_OUT)
+	$(CP) $(RUN_DIR)include/ $(RUN_DIR)source/ $(RUN_DIR)Makefile $(RUN_DIR_OUT)
+
+runtime: runtime-copies $(LIB_DIR_OUT) ## compiles the runtime into build/DDP/lib/stdlib
+	'$(MAKE)' -C $(RUN_DIR)
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-runtime-debug:
-	@echo "building the ddp-runtime in debug mode"
-	cd $(RUN_DIR) ; '$(MAKE)' debug
-	@echo copying $(RUN_DIR)$(RUN_BIN_DEBUG) to $(LIB_DIR_OUT)$(RUN_BIN)
+runtime-debug: runtime-copies $(LIB_DIR_OUT) ## same as runtime but prints debugging information
+	'$(MAKE)' -C $(RUN_DIR) debug
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) $(RUN_DIR)include/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)source/ $(RUN_DIR_OUT)
-	$(CP) $(RUN_DIR)Makefile $(RUN_DIR_OUT)Makefile
 
-$(OUT_DIR): LICENSE README.md
-	@echo "creating output directories"
-	$(MKDIR) $(OUT_DIR)
-	$(MKDIR) $(KDDP_DIR_OUT)
-	$(MKDIR) $(OUT_DIR)Duden/
-	$(MKDIR) $(STD_DIR_OUT)include/
-	$(MKDIR) $(STD_DIR_OUT)source/
-	$(MKDIR) $(RUN_DIR_OUT)include/
-	$(MKDIR) $(RUN_DIR_OUT)source/
+external-compile:
+	@echo "building all external libraries"
+	'$(MAKE)' -C $(EXT_DIR)
+
+external-headers: external-compile $(LIBAR_HEADERS_OUT_DIR) $(PCRE2_HEADERS_OUT_DIR)
+	$(CP) $(LIBAR_HEADERS) $(LIBAR_HEADERS_OUT_DIR)
+	$(CP) $(PCRE2_HEADERS) $(PCRE2_HEADERS_OUT_DIR)
+
+external: external-headers
+	$(CP) $(EXT_DIR)$(EXT_BIN_PCRE2) $(EXT_DIR)$(EXT_BIN_LIBAR) $(EXT_DIR)$(EXT_BIN_LIBZ) $(EXT_DIR)$(EXT_BIN_LIBLZMA) $(EXT_DIR)$(EXT_BIN_LIBBZ2) $(EXT_DIR)$(EXT_BIN_LIBLZ4) $(LIB_DIR_OUT)
+
+$(OUT_DIR)LICENSE: LICENSE $(OUT_DIR)
 	$(CP) LICENSE $(OUT_DIR)
+
+$(OUT_DIR)README.md: README.md $(OUT_DIR)
 	$(CP) README.md $(OUT_DIR)
 
-clean: clean-outdir
-	cd $(KDDP_DIR) ; '$(MAKE)' clean
-	cd $(STD_DIR) ; '$(MAKE)' clean
-	cd $(RUN_DIR) ; '$(MAKE)' clean
+clean-cmd:
+	'$(MAKE)' -C $(CMD_DIR) clean
+clean-runtime:
+	'$(MAKE)' -C $(RUN_DIR) clean
+clean-stdlib:
+	'$(MAKE)' -C $(STD_DIR) clean
 
-clean-outdir:
-	@echo "deleting output directory"
+clean: clean-outdir clean-cmd clean-runtime clean-stdlib ## deletes everything produced by this Makefile
+
+clean-outdir: ## deletes build/DDP/
 	$(RM) $(OUT_DIR)
 
-checkout-llvm:
+clean-all: clean
+	'$(MAKE)' -C $(EXT_DIR) clean
+
+checkout-llvm: ## clones the llvm-project submodule
 # clone the submodule
 	@echo "cloning the llvm repo"
 	git submodule update --init llvm-project
@@ -145,7 +168,7 @@ checkout-llvm:
 # ignore gopls errors
 	cd ./llvm-project ; go mod init ignored || true
 
-llvm: checkout-llvm
+llvm: checkout-llvm ## compiles llvm
 # generate cmake build files
 	@echo "building llvm"
 	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
@@ -159,45 +182,27 @@ TEST_DIRS =
 # will hold additional arguments to pass to kddp
 KDDP_ARGS = 
 
-test:
-	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
+test-normal: all ## runs the tests
 	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-test-memory:
+test-memory: debug ## runs the tests checking for memory leaks
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-coverage:
+test-normal-memory: ## runs test-normal and test-memory in the correct order
+	'$(MAKE)' test-normal 
+	'$(MAKE)' test-memory
+	'$(MAKE)' all
+
+test-sumtypes: ## validates that sumtypes in the source tree are correctly used
+	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
+
+coverage: all ## creates a coverage report for tests/testdata/stdlib
 	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-# runs all tests and test-memory
-# everything is done manually to ensure the build is finished
-# before the tests even with -j n
-test-complete: 
-	'$(MAKE)' all 
-	'$(MAKE)' test 
-	'$(MAKE)' debug 
-	'$(MAKE)' test-memory
+test: test-sumtypes test-normal-memory coverage ## runs all the tests
 
-# runs all the tests with optimizations enabled
-test-with-optimizations:
-	'$(MAKE)' KDDP_ARGS="-O 2" test-complete
+test-with-optimizations: ## runs all tests with full optimizations enabled
+	'$(MAKE)' KDDP_ARGS="-O 2" test
 
-help:
-	@echo "Targets:"
-	@echo "    all (default target): compile kddp the runtime and the stdlib into $(OUT_DIR)"
-	@echo "    debug: compile kddp the runtime and the stdlib into $(OUT_DIR) in debug mode"
-	@echo "    kddp: compile kddp into $(OUT_DIR)"
-	@echo "    stdlib: compile only the stdlib into $(OUT_DIR)"
-	@echo "    stdlib-debug: compile only the stdlib in debug mode into $(OUT_DIR)"
-	@echo "    runtime: compile only the runtime into $(OUT_DIR)"
-	@echo "    runtime-debug: compile only the runtime in debug mode into $(OUT_DIR)"
-	@echo "    clean: delete the output directory $(OUT_DIR)"
-	@echo "    llvm: clone the llvm-project repo at version 14.0.0 and build it"
-	@echo "    test: run the ddp tests"
-	@echo "          you can specifiy directory names with the TEST_DIRS variable"
-	@echo "          to only run those tests"
-	@echo '          example: make test TEST_DIRS="slicing assignement if"'
-	@echo "    test-memory: run the ddp tests and test for memory leaks"
-	@echo '          the runtime and stdlib have to be compiled in debug mode beforehand'
-	@echo "    test-complete: runs test and test-memory and automatically"
-	@echo '          compiles everything correctly beforehand'
+help: ## Show this help.
+	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'

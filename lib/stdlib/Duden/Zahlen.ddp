@@ -1,8 +1,10 @@
+Binde "Duden/Fehlerbehandlung" ein.
+
 [
 	Gibt -9223372036854775807 zurück.
 ]
 Die öffentliche Funktion MinZahl gibt eine Zahl zurück, macht:
-	Gib -9223372036854775807 zurück.
+	Gib 1 um 63 Bit nach Links verschoben zurück.
 Und kann so benutzt werden:
 	"der minimale Wert einer Zahl"
 
@@ -327,3 +329,41 @@ Die öffentliche Funktion Zahl_Duzent mit dem Parameter z vom Typ Zahl, gibt ein
 	Gib z mal 12 zurück.
 Und kann so benutzt werden:
 	"<z> Dutzend"
+
+Die öffentliche Funktion Hex_Zu_Zahl mit dem Parameter hex vom Typ Text, gibt eine Zahl zurück, macht:
+	Die Zahl l ist die Länge von hex.
+	Die Zahl ergebnis ist 0.
+	Für jede Zahl i von die Länge von hex bis 1 mit Schrittgröße -1, mache:
+		Die Zahl bz ist (hex an der Stelle i) als Zahl.
+		Wenn bz zwischen 96 und 103 ist, verringere bz um 87.
+		Wenn aber bz zwischen 47 und 58 ist, verringere bz um 48.
+		Wenn aber bz zwischen 64 und 71 ist, verringere bz um 55.
+		Sonst:
+			Melde den Fehler "Ungültige Hexadezimalzahl".
+			Gib 0 zurück.
+
+		Erhöhe ergebnis um (bz mal 16 hoch (l minus i)) als Zahl.
+
+	Gib ergebnis zurück.
+Und kann so benutzt werden:
+	"die Hexadezimalzahl <hex>"
+
+Die Buchstaben Liste hexZiffern ist eine Liste, die aus
+	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+besteht.
+
+Die öffentliche Funktion Zahl_Zu_Hex mit dem Parameter zahl vom Typ Zahl, gibt einen Text zurück, macht:
+	Wenn zahl gleich 0 ist, dann:
+		Gib "0" zurück.
+
+	Wenn zahl kleiner als 0 ist, dann:
+		Gib '-' verkettet mit (-zahl in Hexadezimal) zurück.
+
+	Der Text ergebnis ist "".
+	Solange zahl ungleich 0 ist, mache:
+		Speichere hexZiffern an der Stelle (zahl modulo 16) verkettet mit ergebnis in ergebnis.
+		Speichere (zahl durch 16) als Zahl in zahl.
+
+	Gib ergebnis zurück.
+Und kann so benutzt werden:
+	"<zahl> in Hexadezimal"

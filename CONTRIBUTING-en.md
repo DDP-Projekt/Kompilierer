@@ -8,7 +8,7 @@ Instructions for setting up a development environment are written below.
 
 ## Prerequisites
 
-The DDP Compiler is written in Go. Therefore you need to have Golang version 1.18 or later installed. You can download it here: https://go.dev/dl/. <br>
+The DDP Compiler is written in Go. Therefore you need to have Golang version 1.22.2 or later installed. You can download it here: https://go.dev/dl/. <br>
 NOTE: Some package managers don't install the correct version of Go. Please check your Go version with `go version`.
 
 To build the DDP Compiler, you need to have a build of LLVM 14.0.0 installed.
@@ -35,6 +35,7 @@ it was built to compile DDP programs. Keep that in mind when setting DDP on any 
 
 After you installed LLVM, simply run `make` from the root of the repo.
 To run the tests, use `make test`.
+To display a short explanation of all make targets run `make help`.
 To build LLVM from the llvm-project submodule, run `make llvm`.
 If you built llvm from the submodule, make will use this llvm build instead of the global one.
 

@@ -38,7 +38,7 @@ func (p *parser) expression() ast.Expression {
 // <a> wenn <b>, sonst <c>
 func (p *parser) ifExpression() ast.Expression {
 	expr := p.boolXOR()
-	for p.matchN(token.COMMA, token.FALLS) {
+	for p.matchSeq(token.COMMA, token.FALLS) {
 		tok := p.previous()
 		cond := p.ifExpression()
 		p.consume(token.COMMA, token.ANSONSTEN)
@@ -60,7 +60,7 @@ func (p *parser) ifExpression() ast.Expression {
 
 // entweder <a> oder <b> ist
 func (p *parser) boolXOR() ast.Expression {
-	for p.match(token.ENTWEDER) {
+	for p.matchAny(token.ENTWEDER) {
 		tok := p.previous()
 		lhs := p.boolOR()
 		p.consume(token.COMMA, token.ODER)
@@ -81,7 +81,7 @@ func (p *parser) boolXOR() ast.Expression {
 
 func (p *parser) boolOR() ast.Expression {
 	expr := p.boolAND()
-	for p.match(token.ODER) {
+	for p.matchAny(token.ODER) {
 		tok := p.previous()
 		rhs := p.boolAND()
 		expr = &ast.BinaryExpr{
@@ -100,7 +100,7 @@ func (p *parser) boolOR() ast.Expression {
 
 func (p *parser) boolAND() ast.Expression {
 	expr := p.bitwiseOR()
-	for p.match(token.UND) {
+	for p.matchAny(token.UND) {
 		tok := p.previous()
 		rhs := p.bitwiseOR()
 		expr = &ast.BinaryExpr{
@@ -119,7 +119,7 @@ func (p *parser) boolAND() ast.Expression {
 
 func (p *parser) bitwiseOR() ast.Expression {
 	expr := p.bitwiseXOR()
-	for p.matchN(token.LOGISCH, token.ODER) {
+	for p.matchSeq(token.LOGISCH, token.ODER) {
 		tok := p.previous()
 		rhs := p.bitwiseXOR()
 		expr = &ast.BinaryExpr{
@@ -138,7 +138,7 @@ func (p *parser) bitwiseOR() ast.Expression {
 
 func (p *parser) bitwiseXOR() ast.Expression {
 	expr := p.bitwiseAND()
-	for p.matchN(token.LOGISCH, token.KONTRA) {
+	for p.matchSeq(token.LOGISCH, token.KONTRA) {
 		tok := p.previous()
 		rhs := p.bitwiseAND()
 		expr = &ast.BinaryExpr{
@@ -157,7 +157,7 @@ func (p *parser) bitwiseXOR() ast.Expression {
 
 func (p *parser) bitwiseAND() ast.Expression {
 	expr := p.equality()
-	for p.matchN(token.LOGISCH, token.UND) {
+	for p.matchSeq(token.LOGISCH, token.UND) {
 		tok := p.previous()
 		rhs := p.equality()
 		expr = &ast.BinaryExpr{
@@ -176,27 +176,60 @@ func (p *parser) bitwiseAND() ast.Expression {
 
 func (p *parser) equality() ast.Expression {
 	expr := p.comparison()
-	for p.match(token.GLEICH, token.UNGLEICH) {
+	for p.matchAny(token.GLEICH, token.UNGLEICH, token.EIN, token.EINE, token.KEIN, token.KEINE) {
 		tok := p.previous()
-		rhs := p.comparison()
-		operator := ast.BIN_EQUAL
-		if tok.Type == token.UNGLEICH {
-			operator = ast.BIN_UNEQUAL
+
+		bin_operator := ast.BIN_EQUAL
+		switch tok.Type {
+		case token.UNGLEICH:
+			bin_operator = ast.BIN_UNEQUAL
+			fallthrough
+		case token.GLEICH:
+			rhs := p.comparison()
+			expr = &ast.BinaryExpr{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   rhs.GetRange().End,
+				},
+				Tok:      *tok,
+				Lhs:      expr,
+				Operator: bin_operator,
+				Rhs:      rhs,
+			}
+		case token.EIN, token.EINE, token.KEIN, token.KEINE:
+			checkType := p.parseType()
+			expr = &ast.TypeCheck{
+				Range: token.Range{
+					Start: expr.GetRange().Start,
+					End:   p.previous().Range.End,
+				},
+				Tok:       *tok,
+				CheckType: checkType,
+				Lhs:       expr,
+			}
+			if tok.Type == token.KEIN || tok.Type == token.KEINE {
+				expr = &ast.UnaryExpr{
+					Range:    expr.GetRange(),
+					Tok:      expr.Token(),
+					Operator: ast.UN_NOT,
+					Rhs:      expr,
+				}
+			}
+
+			// gender check
+			if checkType != nil {
+				if (tok.Type == token.EIN || tok.Type == token.KEIN) && checkType.Gender() == ddptypes.FEMININ {
+					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'ein'?")
+				} else if (tok.Type == token.EINE || tok.Type == token.KEINE) && checkType.Gender() != ddptypes.FEMININ {
+					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'eine'?")
+				}
+			}
 		}
-		expr = &ast.BinaryExpr{
-			Range: token.Range{
-				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
-			},
-			Tok:      *tok,
-			Lhs:      expr,
-			Operator: operator,
-			Rhs:      rhs,
-		}
+
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
 		} else {
-			p.match(token.IST)
+			p.matchAny(token.IST)
 		}
 	}
 	return expr
@@ -204,7 +237,7 @@ func (p *parser) equality() ast.Expression {
 
 func (p *parser) comparison() ast.Expression {
 	expr := p.bitShift()
-	for p.match(token.GRÖßER, token.KLEINER, token.ZWISCHEN) {
+	for p.matchAny(token.GRÖßER, token.KLEINER, token.ZWISCHEN) {
 		tok := p.previous()
 		if tok.Type == token.ZWISCHEN {
 			mid := p.bitShift()
@@ -228,7 +261,7 @@ func (p *parser) comparison() ast.Expression {
 				operator = ast.BIN_LESS
 			}
 			p.consume(token.ALS)
-			if p.match(token.COMMA) {
+			if p.matchAny(token.COMMA) {
 				p.consume(token.ODER)
 				if tok.Type == token.GRÖßER {
 					operator = ast.BIN_GREATER_EQ
@@ -252,7 +285,7 @@ func (p *parser) comparison() ast.Expression {
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
 		} else {
-			p.match(token.IST)
+			p.matchAny(token.IST)
 		}
 	}
 	return expr
@@ -260,10 +293,10 @@ func (p *parser) comparison() ast.Expression {
 
 func (p *parser) bitShift() ast.Expression {
 	expr := p.term()
-	for p.match(token.UM) {
+	for p.matchAny(token.UM) {
 		rhs := p.term()
 		p.consume(token.BIT, token.NACH)
-		if !p.match(token.LINKS, token.RECHTS) {
+		if !p.matchAny(token.LINKS, token.RECHTS) {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
 			return &ast.BadExpr{
 				Err: p.lastError,
@@ -292,7 +325,7 @@ func (p *parser) bitShift() ast.Expression {
 
 func (p *parser) term() ast.Expression {
 	expr := p.factor()
-	for p.match(token.PLUS, token.MINUS, token.VERKETTET) {
+	for p.matchAny(token.PLUS, token.MINUS, token.VERKETTET) {
 		tok := p.previous()
 		operator := ast.BIN_PLUS
 		if tok.Type == token.VERKETTET { // string concatenation
@@ -318,7 +351,7 @@ func (p *parser) term() ast.Expression {
 
 func (p *parser) factor() ast.Expression {
 	expr := p.unary()
-	for p.match(token.MAL, token.DURCH, token.MODULO) {
+	for p.matchAny(token.MAL, token.DURCH, token.MODULO) {
 		tok := p.previous()
 		operator := ast.BIN_MULT
 		if tok.Type == token.DURCH {
@@ -346,27 +379,32 @@ func (p *parser) unary() ast.Expression {
 		return p.power(expr)
 	}
 	// match the correct unary operator
-	if p.match(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM) {
+	if p.matchAny(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM, token.DEN) {
 		start := p.previous()
 
 		switch start.Type {
 		case token.DIE:
-			if !p.match(token.GRÖßE, token.LÄNGE) { // nominativ
+			if !p.matchAny(token.GRÖßE, token.LÄNGE) { // nominativ
 				p.decrease() // DIE does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.DER:
-			if !p.match(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT) { // Betrag: nominativ, Größe/Länge: dativ
+			if !p.matchAny(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT) { // Betrag: nominativ, Größe/Länge: dativ
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
+		case token.DEN:
+			if !p.matchAny(token.BETRAG, token.STANDARDWERT) { // dativ
+				p.decrease() // DEN does not belong to a operator, so maybe it is a function call
+				return p.negate()
+			}
 		case token.DEM:
-			if !p.match(token.BETRAG, token.STANDARDWERT) { // dativ
+			if !p.matchAny(token.BETRAG, token.STANDARDWERT) { // dativ
 				p.decrease() // DEM does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.LOGISCH:
-			if !p.match(token.NICHT) {
+			if !p.matchAny(token.NICHT) {
 				p.decrease() // LOGISCH does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
@@ -438,7 +476,7 @@ func (p *parser) unary() ast.Expression {
 }
 
 func (p *parser) negate() ast.Expression {
-	for p.match(token.NEGATE) {
+	for p.matchAny(token.NEGATE) {
 		tok := p.previous()
 		rhs := p.negate()
 		return &ast.UnaryExpr{
@@ -458,8 +496,8 @@ func (p *parser) negate() ast.Expression {
 // TODO: check precedence
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
-	if lhs == nil && p.match(token.DIE, token.DER) {
-		if p.match(token.LOGARITHMUS) {
+	if lhs == nil && p.matchAny(token.DIE, token.DER) {
+		if p.matchAny(token.LOGARITHMUS) {
 			tok := p.previous()
 			p.consume(token.VON)
 			numerus := p.expression()
@@ -507,7 +545,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 	lhs = p.slicing(lhs) // make sure postfix operators after a function call are parsed
 
-	for p.match(token.HOCH) {
+	for p.matchAny(token.HOCH) {
 		tok := p.previous()
 		rhs := p.unary()
 		lhs = &ast.BinaryExpr{
@@ -526,7 +564,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 	lhs = p.indexing(lhs)
-	for p.match(token.IM, token.BIS, token.AB) {
+	for p.matchAny(token.IM, token.BIS, token.AB) {
 		switch p.previous().Type {
 		// im Bereich von ... bis ...
 		case token.IM:
@@ -548,7 +586,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 			}
 			// t bis zum n. Element
 		case token.BIS:
-			if !p.match(token.ZUM) {
+			if !p.matchAny(token.ZUM) {
 				p.decrease()
 				return lhs
 			}
@@ -586,7 +624,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 
 func (p *parser) indexing(lhs ast.Expression) ast.Expression {
 	lhs = p.field_access(lhs)
-	for p.match(token.AN) {
+	for p.matchAny(token.AN) {
 		p.consume(token.DER, token.STELLE)
 		tok := p.previous()
 		rhs := p.field_access(nil)
@@ -608,7 +646,7 @@ func (p *parser) indexing(lhs ast.Expression) ast.Expression {
 
 func (p *parser) field_access(lhs ast.Expression) ast.Expression {
 	lhs = p.type_cast(lhs)
-	for p.match(token.VON) {
+	for p.matchAny(token.VON) {
 		von := p.previous()
 		rhs := p.field_access(nil) // recursive call to enable x von y von z (right-associative)
 		lhs = &ast.BinaryExpr{
@@ -627,15 +665,15 @@ func (p *parser) field_access(lhs ast.Expression) ast.Expression {
 
 func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
 	lhs = p.primary(lhs)
-	for p.match(token.ALS) {
+	for p.matchAny(token.ALS) {
 		Type := p.parseType()
 		lhs = &ast.CastExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
-			Type: Type,
-			Lhs:  lhs,
+			TargetType: Type,
+			Lhs:        lhs,
 		}
 	}
 
@@ -684,7 +722,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
 	case token.EINE, token.EINER: // list literals
 		begin := p.previous()
-		if begin.Type == token.EINER && p.match(token.LEEREN) {
+		if begin.Type == token.EINER && p.matchAny(token.LEEREN) {
 			typ := p.parseListType()
 			lhs = &ast.ListLit{
 				Tok:    *begin,
@@ -692,7 +730,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Type:   typ,
 				Values: nil,
 			}
-		} else if p.match(token.LEERE) {
+		} else if p.matchAny(token.LEERE) {
 			typ := p.parseListType()
 			lhs = &ast.ListLit{
 				Tok:    *begin,
@@ -703,7 +741,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		} else {
 			p.consume(token.LISTE, token.COMMA, token.DIE, token.AUS)
 			values := append(make([]ast.Expression, 0, 2), p.expression())
-			for p.match(token.COMMA) {
+			for p.matchAny(token.COMMA) {
 				values = append(values, p.expression())
 			}
 			p.consume(token.BESTEHT)
@@ -753,8 +791,8 @@ func (p *parser) assigneable() ast.Assigneable {
 		}
 		var ass ast.Assigneable = ident
 
-		for p.match(token.VON) {
-			if p.match(token.IDENTIFIER) {
+		for p.matchAny(token.VON) {
+			if p.matchAny(token.IDENTIFIER) {
 				rhs := assigneable_impl(true)
 				ass = &ast.FieldAccess{
 					Rhs:   rhs,
@@ -771,14 +809,14 @@ func (p *parser) assigneable() ast.Assigneable {
 		}
 
 		if !isInFieldAcess {
-			for p.match(token.AN) {
+			for p.matchAny(token.AN) {
 				p.consume(token.DER, token.STELLE)
 				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
 				ass = &ast.Indexing{
 					Lhs:   ass,
 					Index: index,
 				}
-				if !p.match(token.COMMA) {
+				if !p.matchAny(token.COMMA) {
 					break
 				}
 			}

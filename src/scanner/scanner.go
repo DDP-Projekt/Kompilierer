@@ -64,19 +64,19 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			return nil, ddperror.New(ddperror.SYN_MALFORMED_INCLUDE_PATH, scan.currentRange(), ddperror.MSG_INVALID_FILE_EXTENSION, scan.file)
+			return nil, ddperror.New(ddperror.SYN_MALFORMED_INCLUDE_PATH, ddperror.LEVEL_ERROR, scan.currentRange(), ddperror.MSG_INVALID_FILE_EXTENSION, scan.file)
 		}
 
 		file, err := os.ReadFile(filePath)
 		if err != nil {
-			return nil, ddperror.New(ddperror.MISC_INCLUDE_ERROR, scan.currentRange(), err.Error(), scan.file)
+			return nil, ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, scan.currentRange(), err.Error(), scan.file)
 		}
 
 		src = file
 	}
 
 	if !utf8.Valid(src) {
-		return nil, ddperror.New(ddperror.SYN_INVALID_UTF8, scan.currentRange(), ddperror.MSG_INVALID_UTF8, scan.file)
+		return nil, ddperror.New(ddperror.SYN_INVALID_UTF8, ddperror.LEVEL_ERROR, scan.currentRange(), ddperror.MSG_INVALID_UTF8, scan.file)
 	}
 
 	scan.src = src
@@ -119,6 +119,11 @@ func (s *Scanner) NextToken() token.Token {
 	case '-':
 		return s.newToken(token.NEGATE)
 	case '.':
+		if s.peek() == '.' && s.peekNext() == '.' {
+			s.advance()
+			s.advance()
+			return s.newToken(token.ELIPSIS)
+		}
 		return s.newToken(token.DOT)
 	case ',':
 		return s.newToken(token.COMMA)
@@ -289,16 +294,19 @@ func (s *Scanner) aliasParameter() token.Token {
 	if !isAlpha(s.peek()) {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 	}
+
 	for !s.atEnd() && s.peek() != '>' {
 		if !isAlphaNumeric(s.advance()) {
 			s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
 		}
 	}
+
 	if s.atEnd() {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Offener Parameter")
 	} else {
 		s.advance() // consume the closing >
 	}
+
 	if s.cur-s.start <= 2 && !s.atEnd() {
 		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten")
 	}
@@ -416,7 +424,7 @@ func (s *Scanner) peekNext() rune {
 }
 
 func (s *Scanner) err(code ddperror.Code, Range token.Range, msg string) {
-	e := ddperror.New(code, Range, msg, s.file)
+	e := ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, s.file)
 	if s.aliasMode() {
 		e.Msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), e.Msg)
 	}

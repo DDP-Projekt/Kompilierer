@@ -81,7 +81,6 @@ const (
 	REFERENZ
 	FUNKTION
 	BINDE
-	EIN
 	GIB
 	ZURÜCK
 	NICHTS
@@ -99,8 +98,13 @@ const (
 	VOM
 	TYP
 	GIBT
+	EIN
 	EINE
 	EINEN
+	EINER
+	EINEM
+	KEIN
+	KEINE
 	MACHT
 	KANN
 	SO
@@ -118,16 +122,16 @@ const (
 	LEEREN
 	AUS
 	BESTEHT
-	EINER
-	EINEM
 	VERLASSE
 	COUNT_MAL
 	ALIAS
 	STEHT
+	OEFFENTLICH
 	OEFFENTLICHE
 	OEFFENTLICHEN
 	WIR
 	NENNEN
+	DEFINIEREN
 	KOMBINATION
 	STANDARDWERT
 	ERSTELLEN
@@ -143,12 +147,23 @@ const (
 	EXTERN
 	SICHTBAR
 	SICHTBARE
+	AUCH
+	ÜBERLÄDT
+	OPERATOR
+	VARIABLE
+	VARIABLEN
+	WIRD
+	SPÄTER
+	REKURSIV
+	ALLE
+	MODULE
 
-	DOT    // .
-	COMMA  // ,
-	COLON  // :
-	LPAREN // (
-	RPAREN // )
+	DOT     // .
+	COMMA   // ,
+	COLON   // :
+	LPAREN  // (
+	RPAREN  // )
+	ELIPSIS // ...
 )
 
 var tokenStrings = [...]string{
@@ -273,10 +288,12 @@ var tokenStrings = [...]string{
 	COUNT_MAL:     "Mal",
 	ALIAS:         "Alias",
 	STEHT:         "Steht",
+	OEFFENTLICH:   "öffentlich",
 	OEFFENTLICHE:  "öffentliche",
 	OEFFENTLICHEN: "öffentlichen",
 	WIR:           "Wir",
 	NENNEN:        "nennen",
+	DEFINIEREN:    "definieren",
 	KOMBINATION:   "Kombination",
 	STANDARDWERT:  "Standardwert",
 	ERSTELLEN:     "erstellen",
@@ -294,12 +311,25 @@ var tokenStrings = [...]string{
 	EXTERN:        "extern",
 	SICHTBAR:      "sichtbar",
 	SICHTBARE:     "sichtbare",
+	AUCH:          "auch",
+	ÜBERLÄDT:      "überlädt",
+	OPERATOR:      "Operator",
+	VARIABLE:      "Variable",
+	VARIABLEN:     "Variablen",
+	KEIN:          "kein",
+	KEINE:         "keine",
+	WIRD:          "wird",
+	SPÄTER:        "später",
+	REKURSIV:      "rekursiv",
+	ALLE:          "alle",
+	MODULE:        "Module",
 
-	DOT:    ".",
-	COMMA:  ",",
-	COLON:  ":",
-	LPAREN: "(",
-	RPAREN: ")",
+	DOT:     ".",
+	COMMA:   ",",
+	COLON:   ":",
+	LPAREN:  "(",
+	RPAREN:  ")",
+	ELIPSIS: "...",
 }
 
 func (t TokenType) String() string {
@@ -422,12 +452,15 @@ var KeywordMap = map[string]TokenType{
 	"Mal":            COUNT_MAL,
 	"Alias":          ALIAS,
 	"steht":          STEHT,
+	"öffentlich":     OEFFENTLICH,
+	"oeffentlich":    OEFFENTLICH,
 	"öffentliche":    OEFFENTLICHE,
 	"oeffentliche":   OEFFENTLICHE,
 	"öffentlichen":   OEFFENTLICHEN,
 	"oeffentlichen":  OEFFENTLICHEN,
 	"Wir":            WIR,
 	"nennen":         NENNEN,
+	"definieren":     DEFINIEREN,
 	"Kombination":    KOMBINATION,
 	"Standardwert":   STANDARDWERT,
 	"erstellen":      ERSTELLEN,
@@ -445,6 +478,22 @@ var KeywordMap = map[string]TokenType{
 	"extern":         EXTERN,
 	"sichtbar":       SICHTBAR,
 	"sichtbare":      SICHTBARE,
+	"auch":           AUCH,
+	"überlädt":       ÜBERLÄDT,
+	"ueberlädt":      ÜBERLÄDT,
+	"überlaedt":      ÜBERLÄDT,
+	"ueberlaedt":     ÜBERLÄDT,
+	"Operator":       OPERATOR,
+	"Variable":       VARIABLE,
+	"Variablen":      VARIABLEN,
+	"kein":           KEIN,
+	"keine":          KEINE,
+	"wird":           WIRD,
+	"später":         SPÄTER,
+	"spaeter":        SPÄTER,
+	"rekursiv":       REKURSIV,
+	"alle":           ALLE,
+	"Module":         MODULE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

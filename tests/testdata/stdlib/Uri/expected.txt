@@ -1,0 +1,37 @@
+ |  |  |  |  |  |  | 
+https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor | https | user:password | example.com | 8080 | /index.html | a=hi&b=bye | anchor
+https://de.wikipedia.org/wiki/Uniform_Resource_Identifier | https |  | de.wikipedia.org |  | /wiki/Uniform_Resource_Identifier |  | 
+https://ddp.bafto.dev/Spielplatz/?nolines&readonly | https |  | ddp.bafto.dev |  | /Spielplatz/ | nolines&readonly | 
+ftp://ftp.is.co.za/rfc/rfc1808.txt | ftp |  | ftp.is.co.za |  | /rfc/rfc1808.txt |  | 
+file:///C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html | file |  |  |  | /C:/Users/Benutzer/Desktop/Uniform%20Resource%20Identifier.html |  | 
+file:///etc/fstab | file |  |  |  | /etc/fstab |  | 
+geo:48.33,14.122;u=22.5 | geo |  |  |  | 48.33,14.122;u=22.5 |  | 
+ldap://[2001:db8::7]/c=GB?objectClass?one | ldap |  | [2001:db8::7] |  | /c=GB | objectClass?one | 
+gopher://gopher.floodgap.com | gopher |  | gopher.floodgap.com |  |  |  | 
+mailto:John.Doe@example.com | mailto |  |  |  | John.Doe@example.com |  | 
+mailto:jemand@beispiel.com,jemand_anderes@beispiel.com | mailto |  |  |  | jemand@beispiel.com,jemand_anderes@beispiel.com |  | 
+mailto:jemand@beispiel.com?subject=Betreff&cc=jemand_anderes@beispiel.com&body=Dies%20ist%20eine%20Textnachricht | mailto |  |  |  | jemand@beispiel.com | subject=Betreff&cc=jemand_anderes@beispiel.com&body=Dies%20ist%20eine%20Textnachricht | 
+sip:911@pbx.mycompany.com | sip |  |  |  | 911@pbx.mycompany.com |  | 
+news:comp.infosystems.www.servers.unix | news |  |  |  | comp.infosystems.www.servers.unix |  | 
+data:text/plain;charset=iso-8859-7,%be%fa%be | data |  |  |  | text/plain;charset=iso-8859-7,%be%fa%be |  | 
+tel:+1-816-555-1212 | tel |  |  |  | +1-816-555-1212 |  | 
+telnet://192.0.2.16:80/ | telnet |  | 192.0.2.16 | 80 | / |  | 
+urn:oasis:names:specification:docbook:dtd:xml:4.1.2 | urn |  |  |  | oasis:names:specification:docbook:dtd:xml:4.1.2 |  | 
+git://github.com/rails/rails.git | git |  | github.com |  | /rails/rails.git |  | 
+crid://broadcaster.com/movies/BestActionMovieEver | crid |  | broadcaster.com |  | /movies/BestActionMovieEver |  | 
+
+Abfragen
+
+wahr
+wahr
+falsch
+wahr
+falsch
+a=b&c=d
+a&c=d
+a=hi&b=bye
+
+b
+
+hi
+

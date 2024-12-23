@@ -1,0 +1,125 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+
+    env: 
+      DDPPATH: ${{ github.workspace }}/build/DDP/
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup and Cache Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+        cache-key-suffix: kompilierer
+
+    - name: Setup LLVM
+      run: |
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || 'linux-11.4.0-x86_64' }}.tar.gz
+        mkdir -p ./llvm_build/
+        tar -xzf ./llvm_build.tar.gz -C ./ --force-local
+        rm ./llvm_build.tar.gz
+
+    - name: Build
+      run: make -j4
+
+    - name: Extract Version
+      id: extract_version
+      if: runner.os == 'Linux'
+      run: |
+        echo "version=$(${{ github.workspace }}/build/DDP/bin/kddp version | head -n1 | cut -d ' ' -f1)" >> "$GITHUB_OUTPUT"
+
+    - name: Download DDPLS
+      id: download_ddpls
+      uses: robinraju/release-downloader@v1.9
+      with:
+        repository: 'DDP-Projekt/DDPLS'
+        latest: true
+        filename: ${{ runner.os == 'Windows' && 'DDPLS.exe' || 'DDPLS' }}
+
+    - name: Download MinGW
+      id: download_mingw
+      uses: robinraju/release-downloader@v1.9
+      with:
+        repository: 'brechtsanders/winlibs_mingw'
+        tag: '12.2.0-16.0.0-10.0.0-ucrt-r5'
+        filename: 'winlibs-x86_64-posix-seh-gcc-12.2.0-mingw-w64ucrt-10.0.0-r5.zip'
+
+    - name: Install Zip
+      if: runner.os == 'Windows'
+      run: choco install zip -y
+
+    - name: Create Release Archive
+      run: |
+        chmod +x ./release.sh
+        ./release.sh '${{ fromJson(steps.download_ddpls.outputs.downloaded_files)[0] }}'
+        if [[ ${{ runner.os }} == 'Windows' ]]; then
+          ./release.sh '${{ fromJson(steps.download_ddpls.outputs.downloaded_files)[0] }}' '${{ fromJson(steps.download_mingw.outputs.downloaded_files)[0] }}'
+        fi
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-Release
+        path: |
+          DDP-*.zip
+          DDP-*.tar.gz
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: 'ubuntu-latest'
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+
+      - name: Split Changelog
+        run: csplit -f split_ -z CHANGELOG.md '/In Entwicklung/' '/## v/'
+
+      - name: Create Release
+        id: create_release
+        uses: shogo82148/actions-create-release@v1.7.4
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          release_name: ${{ needs.build.outputs.version }} TODO
+          body_path: split_01
+          draft: true
+
+      - name: Upload Asset Windows without MingW
+        uses: shogo82148/actions-upload-release-asset@v1.7.5
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Windows-Release/DDP-*-no-mingw.zip
+
+      - name: Upload Asset Windows
+        uses: shogo82148/actions-upload-release-asset@v1.7.5
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Windows-Release/DDP-*amd64.zip
+
+      - name: Upload Asset Linux
+        uses: shogo82148/actions-upload-release-asset@v1.7.5
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Linux-Release/DDP-*.tar.gz

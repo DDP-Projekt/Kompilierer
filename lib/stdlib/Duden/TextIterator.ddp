@@ -1,0 +1,118 @@
+Binde "Duden/C" ein.
+
+[
+    Ein TextIterator kann zum einfachen und performanten Iterieren über Texte benutzt werden.
+]
+Wir nennen die öffentliche Kombination aus
+    dem Zeiger ptr mit Standardwert NULL,
+    dem Zeiger end_ptr mit Standardwert NULL,
+    dem Zeiger text mit Standardwert NULL,
+    der Zahl index mit Standardwert 1,
+einen TextIterator,
+und erstellen sie so:
+    "ein neuer TextIterator"
+
+[ 
+    Erstellt einen TextIterator, der über den Text <t> iteriert.
+    Solange der Iterator benutzt wird darf <t> nicht verändert werden.
+]
+Die öffentliche Funktion TextIterator_von_Text mit dem Parameter t vom Typ Text Referenz, gibt einen TextIterator zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "ein TextIterator über <t>"
+
+[
+    Gibt den momentanen Index des Iterators zurück.
+]
+Die öffentliche Funktion TextIterator_Index mit dem Parameter it vom Typ TextIterator, gibt eine Zahl zurück, macht:
+    Gib index von it zurück.
+Und kann so benutzt werden:
+    "der momentane Index von <it>",
+    "dem momentanen Index von <it>",
+    "den momentanen Index von <it>"
+
+[
+    Gibt den momentanen Index des Iterators zurück.
+]
+Die öffentliche Funktion TextIterator_als_Zahl mit dem Parameter it vom Typ TextIterator, gibt eine Zahl zurück, macht:
+    Gib den momentanen Index von it zurück.
+Und überlädt den "als" Operator.
+
+[
+    Gibt den momentanen Buchstaben des Iterators zurück.
+]
+Die öffentliche Funktion TextIterator_Buchstabe mit dem Parameter it vom Typ TextIterator, gibt einen Buchstaben zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "der momentane Buchstabe von <it>",
+    "dem momentanen Buchstaben von <it>",
+    "den momentanen Buchstaben von <it>"
+
+[
+    Gibt den momentanen Buchstaben des Iterators zurück.
+]
+Die öffentliche Funktion TextIterator_als_Buchstabe mit dem Parameter it vom Typ TextIterator, gibt einen Buchstaben zurück, macht:
+    Gib den momentanen Buchstaben von it zurück.
+Und überlädt den "als" Operator.
+
+[
+    Ob der Iterator das Ende des Textes erreicht hat.    
+]
+Die öffentliche Funktion TextIterator_Zuende mit dem Parameter it vom Typ TextIterator, gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "<it> <!nicht> zuende ist"
+
+[
+    Bewegt den Iterator zum nächsten Buchstaben und gibt diesen zurück.
+]
+Die öffentliche Funktion TextIterator_Naechster mit dem Parameter it vom Typ TextIterator Referenz, gibt einen Buchstaben zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "der nächste Buchstabe von <it>",
+    "dem nächste Buchstabe von <it>",
+    "den nächste Buchstabe von <it>",
+    "Setzte <it> auf den nächsten Buchstaben"
+
+[
+    Gibt einen neuen TextIterator zurück, der um n Indices vorrangeschritten ist.
+]
+Die öffentliche Funktion TextIterator_Plus mit den Parametern it und n vom Typ TextIterator und Zahl, gibt einen TextIterator zurück, macht:
+    Setzte it auf den nächsten Buchstaben n Mal.
+    Gib it zurück.
+Und überlädt den "plus" Operator.
+
+[
+    Gibt die Anzahl der verbleibenden Buchstaben zurück.
+]
+Die öffentliche Funktion TextIterator_Verbleibend mit dem Parameter it vom Typ TextIterator, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "die Anzahl der verbleibenden Buchstaben von <it>",
+    "der Anzahl der verbleibenden Buchstaben von <it>"
+
+Die öffentliche Funktion TextIterator_Behandelt mit dem Parameter it vom Typ TextIterator, gibt eine Zahl zurück, macht:
+    Gib index von it minus 1 zurück.
+Und kann so benutzt werden:
+    "die Anzahl der bereits behandelten Buchstaben von <it>",
+    "der Anzahl der bereits behandelten Buchstaben von <it>"
+
+[
+    Gibt den verbleibenden Text in dem Iterator zurück.
+]
+Die öffentliche Funktion TextIterator_Rest mit dem Parameter it vom Typ TextIterator, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "der Rest von <it>",
+    "dem Rest von <it>",
+    "den Rest von <it>"
+
+[
+    Gibt den bisherigen Text in dem Iterator zurück.
+]
+Die öffentliche Funktion TextIterator_Bisher mit dem Parameter it vom Typ TextIterator, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+    "den bisherigen Text von <it>",
+    "dem bisherigen Text von <it>",
+    "der bisherige Text von <it>"

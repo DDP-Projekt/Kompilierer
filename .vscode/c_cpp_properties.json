@@ -5,7 +5,8 @@
 			"name": "Win32",
 			"includePath": [
 				"lib/runtime/include",
-				"lib/stdlib/include"
+				"lib/stdlib/include",
+				"lib/external/libarchive/libarchive"
 			],
 			"configurationProvider": "ms-vscode.makefile-tools",
 			"intelliSenseMode": "windows-gcc-x64",
@@ -15,7 +16,8 @@
 			"name": "Linux",
 			"includePath": [
 				"lib/runtime/include",
-				"lib/stdlib/include"
+				"lib/stdlib/include",
+				"lib/external/libarchive/libarchive"
 			],
 			"cStandard": "c11"
 		}

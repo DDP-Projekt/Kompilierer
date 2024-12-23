@@ -1,0 +1,182 @@
+Binde "Duden/Regex" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Wir nennen die öffentliche Kombination aus
+    dem Text RoheUri mit Standardwert "",
+    dem öffentlichen Text Schema mit Standardwert "",
+    dem öffentlichen Text Nutzer mit Standardwert "",
+    dem öffentlichen Text Host mit Standardwert "",
+    dem öffentlichen Text Port mit Standardwert "",
+    dem öffentlichen Text Pfad mit Standardwert "",
+    dem öffentlichen Text Abfrage mit Standardwert "",
+    dem öffentlichen Text Fragment mit Standardwert "",
+eine Uri,
+und erstellen sie so:
+    "eine leere Uri"
+
+Der Text uri_regex ist "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?".
+Der Text authority_regex ist "^((.+)@)?((\\[[:0-9A-Fa-f.]+\\])|([a-zA-Z0-9\\-\\._~!$&'\\(\\)\\*\\+,;=])*)(:(\\d+))?".
+Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt eine Uri zurück, macht:
+    Diese Funktion könnte einen Fehler melden.
+	Wenn uri leer ist, gib eine leere Uri zurück.
+
+    Der Treffer t ist der erste Treffer von uri_regex in uri.
+    Wenn es dabei einen Fehler gab oder (text von t) leer ist, 
+        gib eine leere Uri zurück.
+    
+    Die Uri ergebnis ist eine leere Uri.
+    Speichere text von t in RoheUri von ergebnis.
+    Speichere gruppen von t an der Stelle 2 in Schema von ergebnis.
+
+    [authority]
+    Wenn (gruppen von t an der Stelle 4) nicht leer ist, dann:
+        Der Treffer t ist der erste Treffer von authority_regex in (gruppen von t an der Stelle 4).
+        Wenn es dabei keinen Fehler gab und (text von t) nicht leer ist, dann:
+            Speichere gruppen von t an der Stelle 2 in Nutzer von ergebnis.
+            Speichere gruppen von t an der Stelle 3 in Host von ergebnis.
+            Speichere gruppen von t an der Stelle 7 in Port von ergebnis.
+
+    Speichere gruppen von t an der Stelle 5 in Pfad von ergebnis.
+    Speichere gruppen von t an der Stelle 7 in Abfrage von ergebnis.
+    Speichere gruppen von t an der Stelle 9 in Fragment von ergebnis.
+
+    Gib ergebnis zurück.
+Und überlädt den "als" Operator.
+
+Die öffentliche Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt einen Text zurück, macht:
+    [ TODO: durch TextBauer ersetzen ]
+    Der Text t ist "".
+    
+    Wenn (Schema von uri) nicht leer ist, dann:
+        Füge (Schema von uri) an t an.
+        Füge ':' an t an.
+
+	[URN edge case]
+	Wenn (Host von uri) nicht leer ist oder '/' am Anfang von (Pfad von uri) steht, dann:
+		Füge "//" an t an.
+
+    Wenn (Host von uri) nicht leer ist, dann:
+        Wenn (Nutzer von uri) nicht leer ist, dann:
+            Füge (Nutzer von uri) an t an.
+            Füge '@' an t an.
+        Füge (Host von uri) an t an.
+        Wenn (Port von uri) nicht leer ist, dann:
+            Füge ':' an t an.
+            Füge (Port von uri) an t an.
+
+    Füge (Pfad von uri) an t an.
+
+    Wenn (Abfrage von uri) nicht leer ist, dann:
+        Füge '?' an t an.
+        Füge (Abfrage von uri) an t an.
+
+    Wenn (Fragment von uri) nicht leer ist, dann:
+        Füge '#' an t an.
+        Füge (Fragment von uri) an t an.
+    
+    Gib t zurück.
+Und überlädt den "als" Operator.
+
+[
+	TODO: Query parsing sollte in einem Duden/Http Module o.ä. sein, und nicht hier,
+	da die URI specification kein Query Format vorschreibt.
+]
+
+[
+	Ein einzelner Parameter einer Abfrage im Format "name=wert".
+]
+Wir nennen die öffentliche Kombination aus
+	dem öffentlichen Text name mit Standardwert "",
+	dem öffentlichen Text wert mit Standardwert "",
+einen AbfragenParameter,
+und erstellen sie so:
+	"ein AbfragenParameter <name>=<wert>",
+	"einem AbfragenParameter <name>=<wert>",
+	"ein leerer AbfragenParameter",
+	"einem leeren AbfragenParameter"
+
+[
+	Gibt p im Format name=wert zurück.
+]
+Die öffentliche Funktion AbfragenParameter_als_Text mit dem Parameter p vom Typ AbfragenParameter, gibt einen Text zurück, macht:
+	Wenn (name von p) leer ist, gib "" zurück.
+	Wenn (wert von p) leer ist, gib name von p zurück.
+	Gib name von p verkettet mit '=' verkettet mit wert von p zurück.
+Und überlädt den "als" Operator.
+
+[
+	Gibt abfrage im Format "name=wert&name2=wert2..." zurück.
+]
+Die öffentliche Funktion AbfragenParameter_Liste_als_Text mit dem Parameter abfrage vom Typ AbfragenParameter Liste, gibt einen Text zurück, macht:
+	Der Text t ist "".
+	Für jede Zahl i von 1 bis die Länge von abfrage, mache:
+		Der Text p ist ((abfrage an der Stelle i) als Text).
+		Wenn p nicht leer ist, dann:
+			Füge p an t an.
+			Wenn i ungleich die Länge von abfrage ist, Füge '&' an t an.
+	Gib t zurück.
+Und überlädt den "als" Operator.
+
+[
+	Gibt eine Liste aller AbfragenParameter in abfrage zurück,
+	angenommen abfrage ist im Format "name=wert&name2=wert2..." sein (was nicht bei jeder URI der Fall ist).
+]
+Die öffentliche Funktion Abfragen_Parameter_Liste mit dem Parameter abfrage vom Typ Text, gibt eine AbfragenParameter Liste zurück, macht:
+	Wenn abfrage leer ist, gib eine leere AbfragenParameter Liste zurück.
+
+	Die AbfragenParameter Liste ergebnis ist eine Leere AbfragenParameter Liste.
+	Die Zahl i ist 1.
+	Die Zahl l ist die Länge von abfrage.
+	Solange i kleiner als, oder l ist, mache:
+		Der AbfragenParameter p ist ein leerer AbfragenParameter.
+
+		Die Zahl name_start ist i.
+		Erhöhe i um 1.
+		Solange i kleiner als, oder l ist und abfrage an der Stelle i ungleich '=' ist und abfrage an der Stelle i ungleich '&' ist, mache:
+			Erhöhe i um 1.
+
+		Speichere abfrage im Bereich von name_start bis (i minus 1) in name von p.
+
+		Wenn abfrage an der Stelle i gleich '&' ist, dann:
+			Erhöhe i um 1.
+			Speichere ergebnis verkettet mit p in ergebnis.
+			Fahre mit der Schleife fort.
+
+		Erhöhe i um 1.
+		Die Zahl wert_start ist i.
+		Solange i kleiner als, oder l ist und abfrage an der Stelle i ungleich '&' ist, mache:
+			Erhöhe i um 1.
+		Speichere abfrage im Bereich von wert_start bis (i minus 1) in wert von p.
+		Erhöhe i um 1.
+		Speichere ergebnis verkettet mit p in ergebnis.
+
+	Gib ergebnis zurück.
+Und kann so benutzt werden:
+	"alle AbfragenParameter aus <abfrage>",
+	"allen AbfragenParametern aus <abfrage>"
+
+[
+	Gibt den Wert des AbfragenParameters mit dem Namen name zurück
+	angenommen abfrage ist im Format "name=wert&name2=wert2..." sein (was nicht bei jeder URI der Fall ist).
+]
+Die öffentliche Funktion Abfragen_Parameter_Wert mit den Parametern abfrage und name vom Typ Text und Text, gibt einen Text zurück, macht:
+	Die AbfragenParameter Liste l ist alle AbfragenParameter aus abfrage.
+	Für jede Zahl i von 1 bis die Länge von l, mache:
+		Wenn (name von (l an der Stelle i)) gleich name ist, dann:
+			Gib (wert von (l an der Stelle i)) zurück.
+	Gib "" zurück.
+Und kann so benutzt werden:
+	"den Wert des AbfragenParameters <name> aus <abfrage>"
+
+[
+	Überprüft ob der Abfragen Teil einer URI einen benannten Parameter (name=) enthält,
+	angenommen abfrage ist im Format "name=wert&name2=wert2..." sein (was nicht bei jeder URI der Fall ist).
+]
+Die öffentliche Funktion Hat_Abfragen_Parameter mit den Parametern abfrage und name vom Typ Text und Text, gibt einen Wahrheitswert zurück, macht:
+	Die AbfragenParameter Liste l ist alle AbfragenParameter aus abfrage.
+	Für jede Zahl i von 1 bis die Länge von l, mache:
+		Wenn (name von (l an der Stelle i)) gleich name ist, gib wahr zurück.
+	Gib falsch zurück.
+Und kann so benutzt werden:
+	"<abfrage> einen AbfragenParameter mit Namen <name> enthält"

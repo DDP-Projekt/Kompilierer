@@ -1,0 +1,140 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl z mit Standardwert 1,
+	dem Text t mit Standardwert "test text",
+eine Struktur, und erstellen sie so:
+	"eine neue Struktur"
+
+Die Variable x ist 2.
+Speichere 2,0 in x.
+Speichere 'B' in x.
+Speichere wahr in x.
+Speichere eine neue Struktur in x.
+Speichere "Hallo Welt" in x.
+
+Schreibe (x als Text) auf eine Zeile.
+
+Wenn x ein Text ist, Schreibe "Text" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+Sonst Schreibe "Text" auf eine Zeile.
+
+Wenn x kein Text ist, Schreibe "Kein Text" auf eine Zeile.
+Sonst Schreibe "Text" auf eine Zeile.
+Wenn x keine Zahl ist, Schreibe "Keine Zahl" auf eine Zeile.
+Sonst Schreibe "Zahl" auf eine Zeile.
+
+Schreibe '\n'.
+
+
+
+Die Funktion foo mit dem Parameter v vom Typ Variable, gibt eine Variable zurück, macht:
+	Wenn v ein Text ist, gib 2 zurück.
+	Gib "Text" zurück.
+Und kann so benutzt werden:
+	"foo <v>"
+
+Schreibe (foo ("hi" als Variable) als Zahl) auf eine Zeile.
+Schreibe (foo (2 als Variable) als Text) auf eine Zeile.
+
+
+Schreibe '\n'.
+
+
+
+Speichere eine neue Struktur in x.
+Wenn x eine Struktur ist, Schreibe "Struktur" auf eine Zeile.
+
+
+Wir definieren eine Nummer als eine Zahl.
+
+Speichere 0 als Nummer in x.
+
+
+Wenn x eine Nummer ist, Schreibe "Nummer" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+
+Speichere 0 in x.
+
+Wenn x eine Nummer ist, Schreibe "Nummer" auf eine Zeile.
+Wenn x eine Zahl ist, Schreibe "Zahl" auf eine Zeile.
+
+
+Schreibe '\n'.
+
+
+
+Wir definieren eine Struktur2 als eine Struktur.
+
+Speichere eine neue Struktur als Struktur2 in x.
+
+Wenn x eine Struktur2 ist, Schreibe "Struktur2" auf eine Zeile.
+Wenn x eine Struktur ist, Schreibe "Struktur" auf eine Zeile.
+
+Speichere eine neue Struktur in x.
+
+Schreibe (x als Struktur gleich eine neue Struktur ist) auf eine Zeile.
+
+Wenn x eine Struktur2 ist, Schreibe "Struktur2" auf eine Zeile.
+Wenn x eine Struktur ist, Schreibe "Struktur" auf eine Zeile.
+
+Schreibe '\n'.
+
+
+
+Die Variablen Liste l ist eine Liste, die aus 22 als Variable, "Hallo" als Variable, wahr als Variable besteht.
+Schreibe ((l an der Stelle 1) als Zahl) auf eine Zeile.
+Schreibe ((l an der Stelle 2) als Text) auf eine Zeile.
+Schreibe ((l an der Stelle 3) als Wahrheitswert) auf eine Zeile.
+
+Schreibe (l gleich l ist) auf eine Zeile.
+Die Variablen Liste l2 ist l.
+Speichere "test" in l an der Stelle 1.
+Schreibe (l gleich l2 ist) auf eine Zeile.
+
+
+Schreibe '\n'.
+
+
+
+Speichere 2 in x.
+Die Variable y ist "test".
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere "test" in x.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere 2 in x.
+Speichere 2 in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere eine neue Struktur in x.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere eine neue Struktur in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere 2 in x.
+Speichere x in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+Speichere "test" in x.
+Speichere x in y.
+Schreibe (x gleich y ist) auf eine Zeile.
+
+
+Schreibe '\n'.
+
+
+
+Die Variable v ist der Standardwert von einer Variable.
+Schreibe (v eine Zahl ist) auf eine Zeile.
+Schreibe (v eine Kommazahl ist) auf eine Zeile.
+Schreibe (v ein Wahrheitswert ist) auf eine Zeile.
+Schreibe (v ein Buchstabe ist) auf eine Zeile.
+Schreibe (v ein Text ist) auf eine Zeile.
+Schreibe (v eine Struktur ist) auf eine Zeile.
+Schreibe (v eine Nummer ist) auf eine Zeile.
+Schreibe (v eine Struktur2 ist) auf eine Zeile.
+
+Wenn v gleich dem Standardwert von einer Variable ist, Schreibe "gleich var" auf eine Zeile.

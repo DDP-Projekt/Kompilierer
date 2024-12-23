@@ -6,6 +6,12 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+// holds information on the parsed operator-overload for an expression
+type OperatorOverload struct {
+	Decl *FuncDecl             // the function that overloads the operator
+	Args map[string]Expression // the parsed (assigneable) arguments for the operator
+}
+
 type (
 	BadExpr struct {
 		Tok token.Token
@@ -73,45 +79,57 @@ type (
 	}
 
 	UnaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Operator UnaryOperator
-		Rhs      Expression
+		Range        token.Range
+		Tok          token.Token
+		Operator     UnaryOperator
+		Rhs          Expression
+		OverloadedBy *OperatorOverload
 	}
 
 	BinaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Lhs      Expression
-		Operator BinaryOperator
-		Rhs      Expression
+		Range        token.Range
+		Tok          token.Token
+		Lhs          Expression
+		Operator     BinaryOperator
+		Rhs          Expression
+		OverloadedBy *OperatorOverload
 	}
 
 	// currently only used for von bis
 	TernaryExpr struct {
-		Range    token.Range
-		Tok      token.Token
-		Lhs      Expression
-		Mid      Expression
-		Rhs      Expression
-		Operator TernaryOperator
+		Range        token.Range
+		Tok          token.Token
+		Lhs          Expression
+		Mid          Expression
+		Rhs          Expression
+		Operator     TernaryOperator
+		OverloadedBy *OperatorOverload
 	}
 
 	// als Expressions cannot be unary
 	// because the type operator might be multiple
 	// tokens long
 	CastExpr struct {
-		Range token.Range
-		Type  ddptypes.Type
-		Lhs   Expression
+		Range        token.Range
+		TargetType   ddptypes.Type
+		Lhs          Expression
+		OverloadedBy *OperatorOverload
 	}
 
-	// expressions that operate on types (Standardwert, Größe)
+	// expressions that operate on types (Standardwert, Größe, ein/eine)
 	TypeOpExpr struct {
 		Range    token.Range
 		Tok      token.Token
 		Operator TypeOperator
 		Rhs      ddptypes.Type
+	}
+
+	// ein/eine, seperate from CastExpr as it should not be overloadable
+	TypeCheck struct {
+		Range     token.Range
+		Tok       token.Token
+		CheckType ddptypes.Type
+		Lhs       Expression
 	}
 
 	Grouping struct {
@@ -158,6 +176,7 @@ func (expr *BinaryExpr) node()    {}
 func (expr *TernaryExpr) node()   {}
 func (expr *CastExpr) node()      {}
 func (expr *TypeOpExpr) node()    {}
+func (expr *TypeCheck) node()     {}
 func (expr *Grouping) node()      {}
 func (expr *FuncCall) node()      {}
 func (expr *StructLiteral) node() {}
@@ -177,6 +196,7 @@ func (expr *BinaryExpr) String() string    { return "BinaryExpr" }
 func (expr *TernaryExpr) String() string   { return "BinaryExpr" }
 func (expr *CastExpr) String() string      { return "CastExpr" }
 func (expr *TypeOpExpr) String() string    { return "TypeOpExpr" }
+func (expr *TypeCheck) String() string     { return "TypeCheck" }
 func (expr *Grouping) String() string      { return "Grouping" }
 func (expr *FuncCall) String() string      { return "FuncCall" }
 func (expr *StructLiteral) String() string { return "StructLiteral" }
@@ -196,6 +216,7 @@ func (expr *BinaryExpr) Token() token.Token    { return expr.Tok }
 func (expr *TernaryExpr) Token() token.Token   { return expr.Tok }
 func (expr *CastExpr) Token() token.Token      { return expr.Lhs.Token() }
 func (expr *TypeOpExpr) Token() token.Token    { return expr.Tok }
+func (expr *TypeCheck) Token() token.Token     { return expr.Tok }
 func (expr *Grouping) Token() token.Token      { return expr.LParen }
 func (expr *FuncCall) Token() token.Token      { return expr.Tok }
 func (expr *StructLiteral) Token() token.Token { return expr.Tok }
@@ -220,6 +241,7 @@ func (expr *BinaryExpr) GetRange() token.Range    { return expr.Range }
 func (expr *TernaryExpr) GetRange() token.Range   { return expr.Range }
 func (expr *CastExpr) GetRange() token.Range      { return expr.Range }
 func (expr *TypeOpExpr) GetRange() token.Range    { return expr.Range }
+func (expr *TypeCheck) GetRange() token.Range     { return expr.Range }
 func (expr *Grouping) GetRange() token.Range      { return expr.Range }
 func (expr *FuncCall) GetRange() token.Range      { return expr.Range }
 func (expr *StructLiteral) GetRange() token.Range { return expr.Range }
@@ -239,6 +261,7 @@ func (expr *BinaryExpr) Accept(v FullVisitor) VisitResult    { return v.VisitBin
 func (expr *TernaryExpr) Accept(v FullVisitor) VisitResult   { return v.VisitTernaryExpr(expr) }
 func (expr *CastExpr) Accept(v FullVisitor) VisitResult      { return v.VisitCastExpr(expr) }
 func (expr *TypeOpExpr) Accept(v FullVisitor) VisitResult    { return v.VisitTypeOpExpr(expr) }
+func (expr *TypeCheck) Accept(v FullVisitor) VisitResult     { return v.VisitTypeCheck(expr) }
 func (expr *Grouping) Accept(v FullVisitor) VisitResult      { return v.VisitGrouping(expr) }
 func (expr *FuncCall) Accept(v FullVisitor) VisitResult      { return v.VisitFuncCall(expr) }
 func (expr *StructLiteral) Accept(v FullVisitor) VisitResult { return v.VisitStructLiteral(expr) }
@@ -258,6 +281,7 @@ func (expr *BinaryExpr) expressionNode()    {}
 func (expr *TernaryExpr) expressionNode()   {}
 func (expr *CastExpr) expressionNode()      {}
 func (expr *TypeOpExpr) expressionNode()    {}
+func (expr *TypeCheck) expressionNode()     {}
 func (expr *Grouping) expressionNode()      {}
 func (expr *FuncCall) expressionNode()      {}
 func (expr *StructLiteral) expressionNode() {}
