@@ -86,6 +86,24 @@ jobs:
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
+
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/llvm_build/
+        key: ${{ runner.os }}-llvm-build-${{ hashFiles('**/Makefile', '**/cmd/Makefile') }}
+        restore-keys: |
+          ${{ runner.os }}-llvm-build-
+
+    - name: Setup LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || 'linux-11.4.0-x86_64' }}.tar.gz
+        mkdir -p ./llvm_build/
+        tar -xzf ./llvm_build.tar.gz -C ./ --force-local
+        rm ./llvm_build.tar.gz
+
     # If the analyze step fails for one of the languages you are analyzing with
     # "We were unable to automatically build your code", modify the matrix above
     # to set the build mode to "manual" for that language. Then modify this step
@@ -94,7 +112,6 @@ jobs:
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
     - if: matrix.build-mode == 'manual'
       run: |
-        sudo apt install llvm-12
         sudo locale-gen de_DE.UTF-8
         make -j$(nproc)
 
