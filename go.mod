@@ -4,7 +4,6 @@ go 1.22.2
 
 require (
 	github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11
-	github.com/bafto/Go-LLVM-Bindings v1.0.2
 	github.com/google/go-github/v55 v55.0.0
 	github.com/jwalton/go-supportscolor v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0

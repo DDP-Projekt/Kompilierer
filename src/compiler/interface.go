@@ -9,10 +9,10 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 type OutputType int

@@ -1,6 +1,4 @@
-#!/bin/bash
-
-[[ $_ != $0 ]] || (echo "usage: \$source prepare_env.sh" && exit 1);
+#!/bin/bash -xe
 
 llvm_config="llvm-config"
 if [[ -d "llvm_build" ]]; then

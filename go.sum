@@ -5,8 +5,6 @@ github.com/ProtonMail/go-crypto v1.0.0 h1:LRuvITjQWX+WIfr930YHG2HNfjR1uOfyf5vE0k
 github.com/ProtonMail/go-crypto v1.0.0/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
 github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11 h1:mHFGX+f2A1RbzXZGoP8+Ols07GH7p67MowDeJqBQWwY=
 github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11/go.mod h1:VH2OewlcVKqR07Snhs1i8wyyRL+9DJH4djx7jNknI+M=
-github.com/bafto/Go-LLVM-Bindings v1.0.2 h1:nr6df2/pTE4tjcGzVenl4p89s45soZDu4wuy7q1a0aI=
-github.com/bafto/Go-LLVM-Bindings v1.0.2/go.mod h1:/RW0wtnLwxG0HVCy6BLbCJisWmi5QTyXcZEU98srmTY=
 github.com/bwesterb/go-ristretto v1.2.3/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/cloudflare/circl v1.3.3/go.mod h1:5XYMA4rFBvNIrhs50XuiBJ15vF2pZn4nnUKZrLbUZFA=
 github.com/cloudflare/circl v1.3.9 h1:QFrlgFYf2Qpi8bSpVPK1HBvWpx16v/1TZivyo7pGuBE=

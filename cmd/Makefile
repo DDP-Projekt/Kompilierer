@@ -48,6 +48,7 @@ clean:
 	$(RM) $(DDP_SETUP_DIR)$(DDP_SETUP_OUT_FILE_NAME)
 
 kddp:
+	@echo $(CGO_CPPFLAGS)
 	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -tags byollvm -ldflags $(KDDP_LDFLAGS)
 
 SETUP_LDFLAGS := "-s -w"
