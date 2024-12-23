@@ -1028,10 +1028,14 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		if claimsLhs && !isTempLhs {
 			dest := c.NewAlloca(lhsTyp.IrType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)
+		} else if claimsLhs && isTempLhs && lhsTyp.PerformCowFunc() != nil {
+			c.cbb.NewCall(lhsTyp.PerformCowFunc(), lhs)
 		}
 		if claimsRhs && !isTempRhs {
 			dest := c.NewAlloca(rhsTyp.IrType())
 			rhs = c.deepCopyInto(dest, rhs, rhsTyp)
+		} else if claimsRhs && isTempRhs && rhsTyp.PerformCowFunc() != nil {
+			c.cbb.NewCall(rhsTyp.PerformCowFunc(), rhs)
 		}
 
 		c.cbb.NewCall(concat_func, result, lhs, rhs)
@@ -2351,7 +2355,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	if inTyp == c.ddpstring {
 		iter_ptr_type = i8ptr
 		iter_ptr = c.NewAlloca(iter_ptr_type)
-		iter_ptr_val := c.loadStructField(in, string_str_field_index)
+		iter_ptr_val := c.getStringPtr(in)
 		c.cbb.NewStore(iter_ptr_val, iter_ptr)
 		length = c.loadStructField(in, string_cap_field_index)
 		end_ptr = c.indexArray(iter_ptr_val, c.cbb.NewSub(length, newInt(1)))

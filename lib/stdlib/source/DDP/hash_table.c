@@ -7,7 +7,7 @@
 ddpint FNV_Hash(ddpstringref str) {
 	uint32_t hash = INITIAL_HASH;
 
-	uint8_t *bytes = (uint8_t *)str->str;
+	uint8_t *bytes = (uint8_t *)DDP_GET_STRING_PTR(str);
 	if (!bytes) {
 		bytes = (uint8_t *)"";
 	}

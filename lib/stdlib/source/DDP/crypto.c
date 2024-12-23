@@ -10,7 +10,7 @@ void SHA_256(ddpstring *ret, ddpstring *text) {
 	}
 
 	SHA256_HASH digest;
-	Sha256Calculate((char *)text->str, text->cap - 1, &digest);
+	Sha256Calculate(DDP_GET_STRING_PTR(text), text->cap - 1, &digest);
 
 	// convert hash in buf to hex string and store in ret
 	ret->refc = NULL;
@@ -29,7 +29,7 @@ void SHA_512(ddpstring *ret, ddpstring *text) {
 	}
 
 	SHA512_HASH digest;
-	Sha512Calculate((char *)text->str, text->cap - 1, &digest);
+	Sha512Calculate((char *)DDP_GET_STRING_PTR(text), text->cap - 1, &digest);
 
 	// convert hash in buf to hex string and store in ret
 	ret->refc = NULL;

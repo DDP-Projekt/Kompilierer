@@ -3,29 +3,23 @@
 	Duden/Umbegungsvariablen.ddp
 */
 
-#include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
 #include "DDP/ddpwindows.h"
 #include <stdlib.h>
-#include <string.h>
 
 void Hole_Umgebungsvariable(ddpstring *ret, ddpstring *Name) {
 	*ret = DDP_EMPTY_STRING;
 
-	const char *env = getenv(Name->str);
+	const char *env = getenv(DDP_GET_STRING_PTR(Name));
 	if (env) {
-		ret->refc = NULL;
-		ret->cap = strlen(env) + 1;
-		ret->str = DDP_ALLOCATE(char, ret->cap);
-		strcpy(ret->str, env);
-		ret->str[ret->cap - 1] = '\0';
+		ddp_string_from_constant(ret, env);
 	}
 }
 
 void Setze_Umgebungsvariable(ddpstring *Name, ddpstring *Wert) {
 #ifdef DDPOS_WINDOWS
-	_putenv_s(Name->str, Wert->str);
+	_putenv_s(DDP_GET_STRING_PTR(Name), DDP_GET_STRING_PTR(Wert));
 #else
-	setenv(Name->str, Wert->str, 1);
+	setenv(DDP_GET_STRING_PTR(Name), DDP_GET_STRING_PTR(Wert), 1);
 #endif // DDPOS_WINDOWS
 }

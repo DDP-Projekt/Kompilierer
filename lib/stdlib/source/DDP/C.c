@@ -12,7 +12,7 @@ void C_Memcpy(pointer dest, pointer src, ddpint size) {
 typedef pointer CString;
 
 CString Text_Zu_CString(ddpstringref t) {
-	return (CString)t->str;
+	return (CString)DDP_GET_STRING_PTR(t);
 }
 
 pointer Text_Zu_Zeiger(ddpstringref t) {
@@ -20,10 +20,13 @@ pointer Text_Zu_Zeiger(ddpstringref t) {
 }
 
 void Erstelle_Byte_Puffer(ddpstring *ret, ddpint n) {
-	ret->refc = NULL;
-	ret->str = DDP_ALLOCATE(char, n + 1);
 	ret->cap = n + 1;
-	ret->str[n] = '\0';
+	if (!DDP_IS_SMALL_STRING(ret)) {
+		ret->refc = NULL;
+		ret->str = DDP_ALLOCATE(char, n + 1);
+	}
+	DDP_GET_STRING_PTR(ret)
+	[n] = '\0';
 }
 
 ddpint Text_Byte_Groesse(ddpstringref t) {

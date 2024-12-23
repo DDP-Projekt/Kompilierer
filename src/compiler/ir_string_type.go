@@ -10,6 +10,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // implementation of ddpIrType for a ddpstring
@@ -179,4 +180,15 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.vtable = vtable
 
 	return ddpstring
+}
+
+var DDP_SMALL_STRING_LIMIT = constant.NewInt(ddpint, 16)
+
+func (c *compiler) getStringPtr(ddp_str value.Value) value.Value {
+	cond := c.cbb.NewICmp(enum.IPredSLE, c.loadStructField(ddp_str, string_cap_field_index), DDP_SMALL_STRING_LIMIT)
+	return c.createTernary(cond, func() value.Value {
+		return c.cbb.NewBitCast(c.indexStruct(ddp_str, 0), i8ptr)
+	}, func() value.Value {
+		return c.loadStructField(ddp_str, string_str_field_index)
+	})
 }

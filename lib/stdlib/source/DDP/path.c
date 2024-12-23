@@ -14,16 +14,12 @@ void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 	}
 
 	char cleaned[DDP_MAX_WIN_PATH];
-	if (!PathCanonicalize(cleaned, path->str)) {
+	if (!PathCanonicalize(cleaned, DDP_GET_STRING_PTR(path))) {
 		ddp_error("Pfad konnte nicht gesäubert werden", false);
 		return;
 	}
 
-	int len = strlen(cleaned) + 1;
-	char *str = DDP_ALLOCATE(char, len);
-	memcpy(str, cleaned, len);
-	ret->str = str;
-	ret->cap = len;
+	ddp_string_from_constant(ret, cleaned);
 }
 
 // TODO: Use PathCchCombine
@@ -35,14 +31,10 @@ void Windows_Pfad_Verbinden(ddpstring *ret, ddpstring *a, ddpstring *b) {
 	}
 
 	char joined[DDP_MAX_WIN_PATH];
-	if (!PathCombine(joined, a->str, b->str)) {
+	if (!PathCombine(joined, DDP_GET_STRING_PTR(a), DDP_GET_STRING_PTR(b))) {
 		ddp_error("Pfad konnte nicht verbunden werden", false);
 		return;
 	}
 
-	int len = strlen(joined) + 1;
-	char *str = DDP_ALLOCATE(char, len);
-	memcpy(str, joined, len);
-	ret->str = str;
-	ret->cap = len;
+	ddp_string_from_constant(ret, joined);
 }

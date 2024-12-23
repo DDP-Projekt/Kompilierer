@@ -500,6 +500,8 @@ func (c *compiler) createListPerformCow(listType *ddpIrListType, declarationOnly
 	refc_val := c.cbb.NewLoad(ddpint, refc)
 	refc_is_one := c.cbb.NewICmp(enum.IPredEQ, refc_val, newInt(1))
 	c.createIfElse(refc_is_one, func() {
+		c.free(refc)
+		c.cbb.NewStore(constant.NewNull(ptr(ddpint)), c.indexStruct(list, list_refc_field_index))
 		c.cbb.NewRet(nil)
 	}, nil)
 

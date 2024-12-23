@@ -291,13 +291,17 @@ void Aneinandergehaengt_Buchstabe_Ref(ddpstring *ret, ddpcharlistref liste) {
 		num_bytes += utf8_num_bytes_char(*it);
 	}
 
-	ret->str = DDP_ALLOCATE(char, num_bytes + 1);
 	ret->cap = num_bytes + 1;
+	if (!DDP_IS_SMALL_STRING(ret)) {
+		ret->str = DDP_ALLOCATE(char, num_bytes + 1);
+		ret->refc = NULL;
+	}
+	char *ret_ptr = DDP_GET_STRING_PTR(ret);
 
-	char *str_it = ret->str;
+	char *str_it = ret_ptr;
 	for (ddpchar *it = liste->arr; it != end; it++) {
 		str_it += utf8_char_to_string(str_it, *it);
 	}
 
-	ret->str[num_bytes] = '\0';
+	ret_ptr[num_bytes] = '\0';
 }

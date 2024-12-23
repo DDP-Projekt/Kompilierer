@@ -7,27 +7,36 @@
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
-void ddp_string_from_constant(ddpstring *ret, char *str) {
+void ddp_string_from_constant(ddpstring *ret, const char *str) {
 	DDP_DBGLOG("ddp_string_from_constant: ret: %p, str: %s", ret, str);
 	size_t size = strlen(str) + 1;
-	if (size == 1) {
+	if (size <= 1) {
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}
 
-	char *string = DDP_ALLOCATE(char, size); // the char array of the string (plus null terminator)
+	// set the string fields
+	ret->cap = size;
+
+	char *string = &ret->small_string_buffer[0];
+	if (size > DDP_SMALL_STRING_LIMIT) {
+		ret->str = string = DDP_ALLOCATE(char, size);
+		ret->refc = NULL;
+	}
+
 	// copy the passed char array
 	memcpy(string, str, size);
-
-	// set the string fields
-	ret->refc = NULL;
-	ret->str = string;
-	ret->cap = size;
 }
 
 // free a ddpstring
 void ddp_free_string(ddpstring *str) {
-	DDP_DBGLOG("free_string: %p, refc: %p, str: %p, cap: " DDP_INT_FMT, str, str->refc, str->str, str->cap);
+	DDP_DBGLOG("free_string: %p", str);
+
+	if (DDP_IS_SMALL_STRING(str)) {
+		DDP_DBGLOG("not freeing small string");
+		return;
+	}
+
 	if (str->refc == NULL) {
 		DDP_DBGLOG("freeing str only");
 		DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
@@ -47,21 +56,33 @@ void ddp_free_string(ddpstring *str) {
 
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
-	DDP_DBGLOG("ddp_deep_copy_string: %p, ret: %p", str, ret);
+	DDP_DBGLOG("ddp_deep_copy_string: %p, ret: %p, %s (%lld: %p)", str, ret, DDP_GET_STRING_PTR(str), str->cap, DDP_GET_STRING_PTR(str));
 	if (ret == str) {
 		return;
 	}
-	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
-	memcpy(cpy, str->str, str->cap);		  // copy the chars
-	// set the fields of the copy
-	ret->refc = NULL;
-	ret->str = cpy;
+
 	ret->cap = str->cap;
+
+	char *string = &ret->small_string_buffer[0];
+	if (!DDP_IS_SMALL_STRING(str)) {
+		string = DDP_ALLOCATE(char, str->cap);
+		ret->refc = NULL;
+		ret->str = string;
+	}
+
+	// copy the passed char array
+	memcpy(string, DDP_GET_STRING_PTR(str), str->cap);
 }
 
 void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str) {
 	DDP_DBGLOG("ddp_shallow_copy_string: %p, ret: %p", str, ret);
 	if (ret == str) {
+		return;
+	}
+
+	// for small strings shallow_copy == deep_copy
+	if (DDP_IS_SMALL_STRING(str)) {
+		ddp_deep_copy_string(ret, str);
 		return;
 	}
 
@@ -83,7 +104,18 @@ void ddp_shallow_copy_string(ddpstring *ret, ddpstring *str) {
 // copies a string into itself
 void ddp_perform_cow_string(ddpstring *str) {
 	DDP_DBGLOG("ddp_perform_cow_string: %p", str);
-	if (str->refc == NULL || *str->refc == 1) {
+	if (DDP_IS_SMALL_STRING(str)) {
+		DDP_DBGLOG("not cowing small string");
+		return;
+	}
+
+	if (str->refc == NULL) {
+		return;
+	}
+
+	if (*str->refc == 1) {
+		DDP_FREE(ddpint, str->refc);
+		str->refc = NULL;
 		return;
 	}
 
@@ -97,14 +129,52 @@ void ddp_perform_cow_string(ddpstring *str) {
 
 // returns wether the length of str is 0
 ddpbool ddp_string_empty(ddpstring *str) {
-	return str->str == NULL || str->cap <= 0 || (str->str[0] == '\0');
+	return str->cap <= 0 || DDP_GET_STRING_PTR(str) == NULL || DDP_GET_STRING_PTR(str)[0] == '\0';
 }
 
 ddpint ddp_strlen(ddpstring *str) {
-	if (str == NULL || str->str == NULL) {
+	if (ddp_string_empty(str)) {
 		return 0;
 	}
-	return strlen(str->str);
+	return strlen(DDP_GET_STRING_PTR(str));
+}
+
+// allocates/frees/copies space if needed so that str has a capacity of at least size
+void ddp_ensure_string_size(ddpstring *str, ddpint size) {
+	ddp_perform_cow_string(str);
+	if (size <= DDP_SMALL_STRING_LIMIT) {
+		if (!DDP_IS_SMALL_STRING(str)) {
+			char *old_str = str->str;
+			ddpint old_cap = str->cap;
+			str->cap = size;
+			memcpy(DDP_GET_STRING_PTR(str), old_str, str->cap);
+			DDP_FREE_ARRAY(char, old_str, old_cap);
+			DDP_GET_STRING_PTR(str)
+			[str->cap - 1] = '\0';
+			DDP_DBGLOG("ensured shrank string");
+			return;
+		}
+
+		str->cap = size;
+		DDP_GET_STRING_PTR(str)
+		[size - 1] = '\0';
+		DDP_DBGLOG("ensured set new cap for already small string");
+		return;
+	}
+
+	if (DDP_IS_SMALL_STRING(str)) {
+		char *cpy = DDP_ALLOCATE(char, size);
+		memcpy(cpy, DDP_GET_STRING_PTR(str), str->cap);
+		str->str = cpy;
+		str->refc = NULL;
+		str->cap = size;
+		DDP_DBGLOG("ensured allocated new space");
+	} else {
+		str->str = ddp_reallocate(str->str, str->cap, size);
+		str->cap = size;
+		str->str[str->cap - 1] = size;
+		DDP_DBGLOG("ensured grew allocated space");
+	}
 }
 
 static bool is_primitive_vtable(vtable *table) {

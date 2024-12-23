@@ -22,9 +22,14 @@ typedef int32_t ddpchar; // needs to be 32 bit to hold every possible unicode ch
 
 // a ddp string is a null-terminated utf8-encoded byte array
 typedef struct {
-	ddpint *refc; // refcount for cow
-	char *str;	  // the byte array
-	ddpint cap;	  // the capacity of the array
+	union {
+		struct {
+			ddpint *refc; // refcount for cow
+			char *str;	  // the byte array
+		};
+		char small_string_buffer[16];
+	};
+	ddpint cap; // the capacity of the array
 } ddpstring;
 
 // to be sure it matches the vtable declaration in ir_string_type.go
@@ -32,7 +37,7 @@ static_assert(sizeof(ddpstring) == 24, "sizeof(ddpstring) != 24");
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
-void ddp_string_from_constant(ddpstring *ret, char *str);
+void ddp_string_from_constant(ddpstring *ret, const char *str);
 // free a ddpstring
 void ddp_free_string(ddpstring *str);
 // allocate a new ddpstring as copy of str
@@ -45,6 +50,8 @@ void ddp_perform_cow_string(ddpstring *str);
 ddpbool ddp_string_empty(ddpstring *str);
 // returns the strlen of str->str or 0 if str is NULL
 ddpint ddp_strlen(ddpstring *str);
+// allocates/frees/copies space if needed so that str has a capacity of at least size
+void ddp_ensure_string_size(ddpstring *str, ddpint size);
 
 typedef void (*free_func_ptr)(void *);
 typedef void (*deep_copy_func_ptr)(void *, void *);
@@ -199,8 +206,20 @@ extern void ddp_perform_cow_ddpanylist(ddpanylist *list);
 #define DDP_GROW_CAPACITY(capacity) \
 	(capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
 
-#define DDP_EMPTY_STRING \
-	(ddpstring){NULL, NULL, 0}
+#define DDP_EMPTY_STRING             \
+	(ddpstring){                     \
+		{.refc = NULL, .str = NULL}, \
+		.cap = 0 \
+	}
+
+#define DDP_SMALL_STRING_LIMIT 16
+// checks wether a string is a small string
+#define DDP_IS_SMALL_STRING(str) ((str)->cap <= DDP_SMALL_STRING_LIMIT)
+// returns the correct c-string pointer for small and big strings
+#define DDP_GET_STRING_PTR(ddp_str)             \
+	(DDP_IS_SMALL_STRING((ddp_str)) ?           \
+		 &((ddp_str)->small_string_buffer[0]) : \
+		 (ddp_str)->str)
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \

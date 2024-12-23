@@ -49,11 +49,13 @@ void Schreibe_Buchstabe(ddpchar p1) {
 
 void Schreibe_Text(ddpstring *p1) {
 	// {NULL, 0} is a valid string, so we need to check for NULL
-	printf(DDP_STRING_FMT, p1->str ? p1->str : "");
+	char *str_ptr = DDP_GET_STRING_PTR(p1);
+	printf(DDP_STRING_FMT, p1->cap <= 0 ? "" : str_ptr);
 }
 
 void Schreibe_Fehler(ddpstring *fehler) {
-	fprintf(stderr, DDP_STRING_FMT, fehler->str);
+	char *str_ptr = DDP_GET_STRING_PTR(fehler);
+	fprintf(stderr, DDP_STRING_FMT, fehler->cap <= 0 ? "" : str_ptr);
 }
 
 #ifdef DDPOS_WINDOWS

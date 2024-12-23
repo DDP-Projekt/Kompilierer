@@ -44,7 +44,7 @@ ddpbool Existiert_Pfad(ddpstring *Pfad) {
 	if (ddp_string_empty(Pfad)) {
 		return false;
 	}
-	return access(Pfad->str, F_OK) == 0;
+	return access(DDP_GET_STRING_PTR(Pfad), F_OK) == 0;
 }
 
 ddpbool Erstelle_Ordner(ddpstring *Pfad) {
@@ -55,22 +55,24 @@ ddpbool Erstelle_Ordner(ddpstring *Pfad) {
 		return false;
 	}
 	// recursively create every directory needed to create the final one
-	char *it = Pfad->str;
+	char *it = DDP_GET_STRING_PTR(Pfad);
+	char *Pfad_ptr = it;
 	while ((it = strpbrk(it, PATH_SEPERATOR)) != NULL) {
 		*it = '\0';
-		if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-			ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad->str);
+		if (mkdir(Pfad_ptr) != 0 && errno != EEXIST) {
+			ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad_ptr);
 			return false;
 		}
 		*it = '/';
 		it++;
 	}
 
+	ddp_perform_cow_string(Pfad);
 	// == '/' because it might have already been created
-	if (Pfad->str[Pfad->cap - 2] == '/') {
+	if (DDP_GET_STRING_PTR(Pfad)[Pfad->cap - 2] == '/') {
 		return true;
-	} else if (mkdir(Pfad->str) != 0 && errno != EEXIST) {
-		ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad->str);
+	} else if (mkdir(DDP_GET_STRING_PTR(Pfad)) != 0 && errno != EEXIST) {
+		ddp_error("Fehler beim Erstellen des Ordners '" DDP_STRING_FMT "': ", true, Pfad_ptr);
 		return false;
 	}
 	return true;
@@ -84,8 +86,9 @@ ddpbool Ist_Ordner(ddpstring *Pfad) {
 	}
 
 	// remove possible trailing seperators
-	char *it = Pfad->str + Pfad->cap - 2; // last character in str
-	while (it >= Pfad->str) {
+	char *it = DDP_GET_STRING_PTR(Pfad) + Pfad->cap - 2; // last character in str
+	char *Pfad_ptr = DDP_GET_STRING_PTR(Pfad);
+	while (it >= Pfad_ptr) {
 		if (strpbrk(it--, PATH_SEPERATOR) != NULL) {
 			*(it + 1) = '\0';
 		} else {
@@ -94,8 +97,8 @@ ddpbool Ist_Ordner(ddpstring *Pfad) {
 	}
 
 	struct stat path_stat;
-	if (stat(Pfad->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+	if (stat(Pfad_ptr, &path_stat) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad_ptr);
 		return false;
 	}
 	return S_ISDIR(path_stat.st_mode);
@@ -167,11 +170,12 @@ ddpbool Loesche_Pfad(ddpstring *Pfad) {
 		return false;
 	}
 
+	const char *Pfad_ptr = DDP_GET_STRING_PTR(Pfad);
 	if (Ist_Ordner(Pfad)) {
-		return remove_directory(Pfad->str) == 0;
+		return remove_directory(Pfad_ptr) == 0;
 	}
-	if (unlink(Pfad->str) != 0) {
-		ddp_error("Fehler beim Löschen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+	if (unlink(Pfad_ptr) != 0) {
+		ddp_error("Fehler beim Löschen des Pfades '" DDP_STRING_FMT "': ", true, Pfad_ptr);
 		return false;
 	}
 	return true;
@@ -186,15 +190,15 @@ ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 	}
 
 	struct stat path_stat;
-	if (stat(NeuerName->str, &path_stat) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, NeuerName->str);
+	if (stat(DDP_GET_STRING_PTR(NeuerName), &path_stat) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(NeuerName));
 		return false;
 	}
 
 	// https://stackoverflow.com/questions/64276902/mv-command-implementation-in-c-not-moving-files-to-different-directory
 	if (S_ISDIR(path_stat.st_mode)) {
 		char *path_copy = DDP_ALLOCATE(char, Pfad->cap);
-		memcpy(path_copy, Pfad->str, Pfad->cap);
+		memcpy(path_copy, DDP_GET_STRING_PTR(Pfad), Pfad->cap);
 
 		char *base = basename(path_copy);
 		size_t len_base = strlen(base);
@@ -213,28 +217,24 @@ ddpbool Pfad_Verschieben(ddpstring *Pfad, ddpstring *NeuerName) {
 	return true;
 }
 
-static void formatDateStr(ddpstring *str, struct tm *time) {
+static void formatDateStr(ddpstring *ret, struct tm *time) {
 	// make string empty
-	*str = DDP_EMPTY_STRING;
+	*ret = DDP_EMPTY_STRING;
 
 	// format string
 	char buff[30];
-	int size = sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon + 1, time->tm_year + 1900);
+	sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon + 1, time->tm_year + 1900);
 
-	str->refc = NULL;
-	str->cap = size + 1;
-	str->str = DDP_ALLOCATE(char, str->cap);
-	strcpy(str->str, buff);
-	str->str[str->cap - 1] = '\0';
+	ddp_string_from_constant(ret, buff);
 }
 
 void Zugriff_Datum(ddpstring *ret, ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
 	struct stat st;
-	if (stat(Pfad->str, &st) != 0) {
+	if (stat(DDP_GET_STRING_PTR(Pfad), &st) != 0) {
 		*ret = DDP_EMPTY_STRING;
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return;
 	}
 	struct tm *tm = localtime(&st.st_atime);
@@ -246,9 +246,9 @@ void AEnderung_Datum(ddpstring *ret, ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
 	struct stat st;
-	if (stat(Pfad->str, &st) != 0) {
+	if (stat(DDP_GET_STRING_PTR(Pfad), &st) != 0) {
 		*ret = DDP_EMPTY_STRING;
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return;
 	}
 	struct tm *tm = localtime(&st.st_mtime);
@@ -260,9 +260,9 @@ void Status_Datum(ddpstring *ret, ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
 	struct stat st;
-	if (stat(Pfad->str, &st) != 0) {
+	if (stat(DDP_GET_STRING_PTR(Pfad), &st) != 0) {
 		*ret = DDP_EMPTY_STRING;
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return;
 	}
 	struct tm *tm = localtime(&st.st_ctime);
@@ -274,8 +274,8 @@ ddpint Datei_Groesse(ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
 	struct stat st;
-	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+	if (stat(DDP_GET_STRING_PTR(Pfad), &st) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return -1;
 	}
 
@@ -286,8 +286,8 @@ ddpint Datei_Modus(ddpstring *Pfad) {
 	DDP_MIGHT_ERROR;
 
 	struct stat st;
-	if (stat(Pfad->str, &st) != 0) {
-		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, Pfad->str);
+	if (stat(DDP_GET_STRING_PTR(Pfad), &st) != 0) {
+		ddp_error("Fehler beim Überprüfen des Pfades '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return -1;
 	}
 
@@ -303,19 +303,19 @@ ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
 		return -1;
 	}
 
-#ifdef DDPOS_WINDOWS
-	return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
-#else  // DDPOW_LINUX
-	if (!Pfad->str || !Kopiepfad->str) {
+	if (ddp_string_empty(Kopiepfad)) {
 		return (ddpbool) false;
 	}
 
+#ifdef DDPOS_WINDOWS
+	return (ddpbool)CopyFile(DDP_GET_STRING_PTR(Pfad), DDP_GET_STRING_PTR(Kopiepfad), false);
+#else  // DDPOW_LINUX
 	int fd_to, fd_from;
 
-	if ((fd_from = open(Pfad->str, O_RDONLY)) < 0) {
+	if ((fd_from = open(DDP_GET_STRING_PTR(Pfad), O_RDONLY)) < 0) {
 		return (ddpbool) false;
 	}
-	if ((fd_to = open(Kopiepfad->str, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
+	if ((fd_to = open(DDP_GET_STRING_PTR(Kopiepfad), O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
 		goto out_error;
 	}
 
@@ -364,30 +364,36 @@ ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 		return 0;
 	}
 
-	int fd = open(Pfad->str, O_RDONLY);
+	int fd = open(DDP_GET_STRING_PTR(Pfad), O_RDONLY);
 	if (fd < 0) {
-		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return 0;
 	}
 
 	struct stat stat;
 	if (fstat(fd, &stat) < 0) {
-		ddp_error("Fehler beim staten der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim staten der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return 0;
 	}
 
 	size_t string_size = stat.st_size + 1;
-	ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
+	if (string_size > DDP_SMALL_STRING_LIMIT) {
+		ddp_perform_cow_string(ref);
+		ref->str = ddp_reallocate(ref->str, ref->cap, string_size);
+	}
 	ref->cap = string_size;
+	char *ref_ptr = DDP_GET_STRING_PTR(ref);
 
-	int r = read(fd, ref->str, string_size - 1);
+	int r = read(fd, ref_ptr, string_size - 1);
 	if (r < 0) {
-		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return 0;
 	}
 
 	close(fd);
-	ref->str = ddp_reallocate(ref->str, ref->cap, r + 1);
+	if (!DDP_IS_SMALL_STRING(ref)) {
+		ref->str = ddp_reallocate(ref->str, ref->cap, r + 1);
+	}
 	ref->cap = r + 1;
 	ref->str[r] = '\0';
 	return (ddpint)r;
@@ -400,15 +406,15 @@ ddpint Schreibe_Text_Datei(ddpstring *Pfad, ddpstring *text) {
 		return 0;
 	}
 
-	int fd = open(Pfad->str, O_WRONLY | O_TRUNC | O_CREAT, 0200);
+	int fd = open(DDP_GET_STRING_PTR(Pfad), O_WRONLY | O_TRUNC | O_CREAT, 0200);
 	if (fd < 0) {
-		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return 0;
 	}
 
-	int w = write(fd, text->str, text->cap - 1);
+	int w = write(fd, DDP_GET_STRING_PTR(text), text->cap - 1);
 	if (w < 0) {
-		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, Pfad->str);
+		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(Pfad));
 		return 0;
 	}
 
@@ -536,6 +542,7 @@ static InternalFile *get_internal_file(ddpint index, ddpint id) {
 
 // closes the file descriptor and zeros out the file
 static void close_internal_file(ddpint index) {
+	DDP_DBGLOG("closing file %lld", index);
 	if (index < 0) {
 		ddp_error("Nicht offene Datei kann nicht geschlossen werden", false);
 		return;
@@ -548,7 +555,7 @@ static void close_internal_file(ddpint index) {
 	// attempt to close the file and report possible errors (very rare)
 	if (file->fd >= 0) {
 		if (close(file->fd) < 0) {
-			ddp_error("Fehler beim Schließen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
+			ddp_error("Fehler beim Schließen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(&file->path));
 		}
 	}
 
@@ -605,22 +612,25 @@ static char *read_buff_end_ptr(InternalFile *file) {
 static int fill_read_buffer(InternalFile *file) {
 	// validate that the file can be read from
 	if (!is_read_mode(file->mode)) {
-		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Lesen geöffnet", false, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Lesen geöffnet", false, DDP_GET_STRING_PTR(&file->path));
 		return -1;
 	}
 	if (file->eof) {
-		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Das Ende der Datei ist erreicht", false, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': Das Ende der Datei ist erreicht", false, DDP_GET_STRING_PTR(&file->path));
 		return -1;
 	}
 
 	// allocate the buffer if needed
 	if (file->read_buffer.cap < BUFFER_SIZE) {
+		DDP_DBGLOG("allocating read buffer");
 		file->read_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE + 1);
 		file->read_buffer.cap = BUFFER_SIZE + 1;
 		file->read_buffer.str[BUFFER_SIZE] = '\0';
+		file->read_buffer.refc = NULL;
 	}
 
 	// read in the next chunk
+	DDP_DBGLOG("reading next chunk from %d", file->fd);
 	int ret = read(file->fd, file->read_buffer.str, BUFFER_SIZE);
 	file->read_buffer_start = 0;
 	file->read_buffer_end = ret;
@@ -628,20 +638,21 @@ static int fill_read_buffer(InternalFile *file) {
 	file->read_buffer.str[ret] = '\0';
 
 	if (ret < 0) {
-		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
+		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(&file->path));
 		file->read_buffer_end = 0;
 	} else if (ret == 0) {
 		file->eof = true;
 	}
 
+	DDP_DBGLOG("filled read buffer1");
 	return ret;
 }
 
 // validate that the file can be written to
-#define DDP_ENSURE_WRITE_MODE(file)                                                                                                                \
-	if (!is_write_mode(file->mode)) {                                                                                                              \
-		ddp_error("Fehler beim Schreiben in die Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Schreiben geöffnet", false, file->path.str); \
-		return;                                                                                                                                    \
+#define DDP_ENSURE_WRITE_MODE(file)                                                                                                                                 \
+	if (!is_write_mode(file->mode)) {                                                                                                                               \
+		ddp_error("Fehler beim Schreiben in die Datei '" DDP_STRING_FMT "': Die Datei wurde nicht zum Schreiben geöffnet", false, DDP_GET_STRING_PTR(&file->path)); \
+		return;                                                                                                                                                     \
 	}
 
 static int flush_write_buffer(InternalFile *file) {
@@ -651,7 +662,7 @@ static int flush_write_buffer(InternalFile *file) {
 
 	int ret = write(file->fd, file->write_buffer.str, file->write_index);
 	if (ret < 0) {
-		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
+		ddp_error("Fehler beim Schreiben der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(&file->path));
 		return -1;
 	}
 
@@ -670,6 +681,7 @@ static int write_to_buffer(InternalFile *file, const char *data, ddpint len) {
 		file->write_buffer.str = DDP_ALLOCATE(char, BUFFER_SIZE + 1);
 		file->write_buffer.cap = BUFFER_SIZE + 1;
 		file->write_buffer.str[BUFFER_SIZE] = '\0';
+		file->write_buffer.refc = NULL;
 	}
 
 	while (len > 0) {
@@ -717,9 +729,9 @@ void Datei_Oeffnen(DateiRef datei, ddpstring *Pfad, ddpint Modus) {
 	// not needed (even mostly non-existent) on unix
 	flags |= O_BINARY;
 #endif // DDPOS_WINDOWS
-	if ((file->fd = open(file->path.str, flags, 0666)) < 0) {
+	if ((file->fd = open(DDP_GET_STRING_PTR(&file->path), flags, 0666)) < 0) {
 		close_internal_file(datei->index);
-		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, file->path.str);
+		ddp_error("Fehler beim Öffnen der Datei '" DDP_STRING_FMT "': ", true, DDP_GET_STRING_PTR(&file->path));
 		datei->index = -1;
 	}
 	// add validation information
@@ -753,10 +765,13 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 	}
 
 	// preallocate the string
-	ret->refc = NULL;
-	ret->str = DDP_ALLOCATE(char, N + 1);
 	ret->cap = N + 1;
-	ret->str[N] = '\0';
+	if (!DDP_IS_SMALL_STRING(ret)) {
+		ret->str = DDP_ALLOCATE(char, N + 1);
+		ret->refc = NULL;
+	}
+	char *ret_ptr = DDP_GET_STRING_PTR(ret);
+	ret_ptr[N] = '\0';
 
 	// read buffer-sized chunks until N characters are read
 	for (ddpint copied = 0; copied < N;) {
@@ -766,14 +781,14 @@ void Datei_Lies_N_Zeichen(ddpstring *ret, DateiRef datei, ddpint N) {
 				return;
 			} else if (read == 0) {
 				// EOF was reached so we need to move the null-terminator to the actual end of the string
-				ret->str[copied] = '\0';
+				ret_ptr[copied] = '\0';
 				return;
 			}
 		}
 
 		// copy the next chunk
 		ddpint copy_amount = DDP_MIN(read_buff_len(file), N - copied);
-		memcpy(ret->str + copied, read_buff_start_ptr(file), copy_amount);
+		memcpy(ret_ptr + copied, read_buff_start_ptr(file), copy_amount);
 		file->read_buffer_start += copy_amount;
 		copied += copy_amount;
 	}
@@ -802,6 +817,7 @@ void Datei_Lies_Alles(ddpstring *ret, DateiRef datei) {
 #define DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file) \
 	if (read_buff_len(file) == 0) {                \
 		int read = fill_read_buffer(file);         \
+		DDP_DBGLOG("read %d", read)                \
 		if (read < 0) {                            \
 			return;                                \
 		} else if (read == 0) {                    \
@@ -811,6 +827,7 @@ void Datei_Lies_Alles(ddpstring *ret, DateiRef datei) {
 
 void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 	DDP_MIGHT_ERROR;
+	DDP_DBGLOG("Datei_Lies_Zeile: %p", ret);
 
 	*ret = DDP_EMPTY_STRING;
 	// get the internal file and validate it
@@ -824,15 +841,16 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 		DDP_FILL_READ_BUFFER_OR_RETURN_BREAK(file);
 
 		// search for the next newline
+		DDP_DBGLOG("searching newline");
 		char *newline = memchr(read_buff_start_ptr(file), '\n', read_buff_len(file));
 		if (newline) {
 			const size_t copy_amount = newline - read_buff_start_ptr(file) + 1;
 
 			// allocate space for the string + '\n' (without '\0'!)
-			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			const ddpint old_cap = ret->cap;
+			ddp_ensure_string_size(ret, ret->cap + copy_amount);
 			// copy the string and the newline
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
-			ret->cap += copy_amount;
+			memcpy(DDP_GET_STRING_PTR(ret) + old_cap, read_buff_start_ptr(file), copy_amount);
 
 			DDP_DBGLOG("newline found: " DDP_INT_FMT ", %llu", ret->cap, copy_amount);
 #ifdef DDPOS_WINDOWS
@@ -841,12 +859,12 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 				DDP_DBGLOG("carriage return found: " DDP_INT_FMT, ret->cap);
 				// the carriage return becomes the null terminator
 				ret->str[ret->cap - 2] = '\0';
-				ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap - 1);
-				ret->cap--;
+				ddp_ensure_string_size(ret, ret->cap - 1);
 			} else {
 #endif
 				// the newline becomes the null terminator
-				ret->str[ret->cap - 1] = '\0';
+				DDP_GET_STRING_PTR(ret)
+				[ret->cap - 1] = '\0';
 #ifdef DDPOS_WINDOWS
 			}
 #endif
@@ -858,19 +876,21 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 			const size_t copy_amount = read_buff_len(file);
 
 			// allocate space for the string (without '\0'!)
-			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			const ddpint old_cap = ret->cap;
+			ddp_ensure_string_size(ret, ret->cap + copy_amount);
 			// copy the string
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
-			ret->cap += copy_amount;
+			memcpy(DDP_GET_STRING_PTR(ret) + old_cap, read_buff_start_ptr(file), copy_amount);
 
 			file->read_buffer_start += copy_amount; // consume the whole buffer
 		}
 	}
 	// EOF reached
-	ret->refc = NULL;
-	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
-	ret->str[ret->cap] = '\0';
-	ret->cap++;
+	if (ret->cap > 0) {
+		ddp_ensure_string_size(ret, ret->cap + 1);
+		DDP_GET_STRING_PTR(ret)
+		[ret->cap - 1] = '\0';
+	}
+	DDP_DBGLOG("Datei_Lies_Zeile finished");
 }
 
 void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
@@ -921,11 +941,12 @@ void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
 			}
 
 			// allocate space for the string + null terminator
-			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount + 1);
+			const ddpint old_cap = ret->cap;
+			ddp_ensure_string_size(ret, ret->cap + copy_amount + 1);
 			// copy the string
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
-			ret->cap += copy_amount + 1; // + nullterminator
-			ret->str[ret->cap - 1] = '\0';
+			memcpy(DDP_GET_STRING_PTR(ret) + old_cap, read_buff_start_ptr(file), copy_amount);
+			DDP_GET_STRING_PTR(ret)
+			[ret->cap - 1] = '\0';
 
 			file->read_buffer_start += copy_amount; // consume up to but not including the whitespace
 			return;
@@ -934,18 +955,20 @@ void Datei_Lies_Wort(ddpstring *ret, DateiRef datei) {
 			const size_t copy_amount = read_buff_len(file);
 
 			// allocate space for the string (without '\0'!)
-			ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + copy_amount);
+			const ddpint old_cap = ret->cap;
+			ddp_ensure_string_size(ret, ret->cap + copy_amount);
 			// copy the string
-			memcpy(ret->str + ret->cap, read_buff_start_ptr(file), copy_amount);
-			ret->cap += copy_amount;
+			memcpy(DDP_GET_STRING_PTR(ret) + old_cap, read_buff_start_ptr(file), copy_amount);
 
 			file->read_buffer_start += copy_amount; // consume the whole buffer
 		}
 	}
 	// EOF reached
-	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + 1);
-	ret->str[ret->cap] = '\0';
-	ret->cap++;
+	if (ret->cap > 0) {
+		ddp_ensure_string_size(ret, ret->cap + 1);
+		DDP_GET_STRING_PTR(ret)
+		[ret->cap - 1] = '\0';
+	}
 }
 
 ddpbool Datei_Zuende(DateiRef datei) {
@@ -987,7 +1010,7 @@ void Datei_Schreibe_Text(DateiRef datei, ddpstring *s) {
 	}
 	DDP_ENSURE_WRITE_MODE(file);
 
-	write_to_buffer(file, s->str, s->cap - 1); // -1 to not write the null terminator
+	write_to_buffer(file, DDP_GET_STRING_PTR(s), s->cap - 1); // -1 to not write the null terminator
 }
 
 void Datei_Schreibe_Buchstabe(DateiRef datei, ddpchar c) {
