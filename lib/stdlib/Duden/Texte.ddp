@@ -661,7 +661,7 @@ Die öffentliche Funktion Spalte mit den Parametern text und zeichen vom Typ Tex
 	Wenn die Länge von text gleich 0 ist, gib eine leere Text Liste zurück.
 	Die Text Liste endliste ist eine leere Text Liste.
 
-	Die Zahl n ist die Anzahl der zeichen Buchstaben in text plus 1.
+	Die Zahl n ist (die Anzahl der zeichen Buchstaben in text) plus 1.
 
 	Die Zahl i ist 1.
 	Solange i kleiner als, oder n ist, mache:
@@ -688,7 +688,7 @@ Die öffentliche Funktion Spalte_Text mit den Parametern text und trenntext vom 
 	Wenn l gleich 0 ist, gib die Buchstaben in text als Text Liste zurück.
 	Wenn l gleich 1 ist, gib text an (trenntext an der Stelle 1) gespalten zurück.
 
-	Die Zahl n ist die Anzahl der nicht überlappenden Subtexte trenntext in text plus 1.
+	Die Zahl n ist (die Anzahl der nicht überlappenden Subtexte trenntext in text) plus 1.
 
 	Die Zahl i ist 1.
 	Solange i kleiner als, oder n ist, mache:
@@ -846,7 +846,7 @@ Die öffentliche Funktion Levenshtein_Distanz mit den Parametern t1 und t2 vom T
 
 			Wenn t1 an der Stelle i ungleich t2 an der Stelle j ist, erhöhe substitutionCost um 1.
 			
-			Speichere die kleinere Zahl von deletionCost, insertionCost und substitutionCost in newCost an der Stelle (j plus 1).
+			Speichere die kleinere Zahl von deletionCost, insertionCost, und substitutionCost in newCost an der Stelle (j plus 1).
 		Die Zahlen Liste temp ist cost.
 		Speichere newCost in cost.
 		Speichere temp in newCost.

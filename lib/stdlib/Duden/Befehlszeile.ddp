@@ -350,12 +350,12 @@ Die öffentliche Funktion Analysiere_Befehlszeile mit den Parametern argumente u
             Der Text optionName ist "".
             Die Variable wert ist der Wert der nächsten langen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
-                Setze den Wert von optionName und ' ' in ergebnis mit (optionen von finalerBefehl) auf wert.
+                Setze den Wert von optionName, und ' ' in ergebnis mit (optionen von finalerBefehl) auf wert.
         Wenn aber "-" am Anfang von arg steht, dann: [ short flag ]
             Der Buchstabe optionName ist ' '.
             Die Variable wert ist der Wert der nächsten kurzen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
-                Setze den Wert von "" und optionName in ergebnis mit (optionen von finalerBefehl) auf wert.
+                Setze den Wert von "", und optionName in ergebnis mit (optionen von finalerBefehl) auf wert.
         Sonst: [ positional arg ]
             Füge arg an (argumente von ergebnis) an.
 
@@ -397,7 +397,7 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt eine Variable zurück, macht:
-    Gib den Wert für lang von HauptBefehlszeile zurück.
+    Gib den Wert für lang, von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Optionnwert für <lang>",
     "dem Optionnwert für <lang>",
@@ -407,7 +407,7 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt eine Variable zurück, macht:
-    Gib den Wert für kurz von HauptBefehlszeile zurück.
+    Gib den Wert für kurz, von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Optionnwert für <kurz>",
     "dem Optionnwert für <kurz>",

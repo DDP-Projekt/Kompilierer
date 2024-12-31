@@ -5,7 +5,7 @@
 			"name": "Launch build/test.ddp",
 			"type": "go",
 			"request": "launch",
-			"mode": "auto",
+			"mode": "debug",
 			"program": "${workspaceFolder}/cmd/kddp/",
 			"args": [
 				"kompiliere",
@@ -22,19 +22,19 @@
 			"name": "Parse build/test.ddp",
 			"type": "go",
 			"request": "launch",
-			"mode": "auto",
+			"mode": "debug",
 			"program": "${workspaceFolder}/cmd/kddp/",
 			"args": [
 				"parse",
 				"${workspaceFolder}/build/test.ddp",
-				"--wortreich",
+				"--wortreich"
 			]
 		},
 		{
 			"name": "Launch dump-list-defs to build/ddp_list_defs",
 			"type": "go",
 			"request": "launch",
-			"mode": "auto",
+			"mode": "debug",
 			"program": "${workspaceFolder}/cmd/kddp/",
 			"args": [
 				"dump-list-defs",

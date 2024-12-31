@@ -63,7 +63,7 @@ Schreibe ','.
 Schreibe (v ungleich v ist).
 Schreibe ','.
 
-Der Vektor2 v2 ist ein Vektor2 aus 1 und 2.
+Der Vektor2 v2 ist ein Vektor2 aus (1) und 2.
 Schreibe (x von v2).
 Schreibe (y von v2).
 Schreibe ','.
@@ -94,7 +94,7 @@ Schreibe ','.
 Schreibe (nv ungleich nv ist).
 Schreibe ','.
 
-Der BenannteVektor2 nv2 ist ein BenanntenVektor2 aus v2 und "v2".
+Der BenannteVektor2 nv2 ist ein BenanntenVektor2 aus (v2) und "v2".
 
 Schreibe (x von v von nv2).
 Schreibe (y von v von nv2).

@@ -17,17 +17,51 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-// attempts to parse an expression but returns a possible error
-func (p *parser) expressionOrErr() (ast.Expression, *ddperror.Error) {
+func (p *parser) orErr(f func() ast.Expression) (ast.Expression, *ddperror.Error) {
 	errHndl := p.errorHandler
+	panicMode := p.panicMode
 
 	var err *ddperror.Error
 	p.errorHandler = func(e ddperror.Error) {
-		err = &e
+		if err == nil {
+			err = &e
+		}
 	}
-	expr := p.expression()
+	p.panicMode = false
+	expr := f()
 	p.errorHandler = errHndl
+	p.panicMode = panicMode
 	return expr, err
+}
+
+func (p *parser) inAliasMode(f func() ast.Expression) (ast.Expression, *ddperror.Error) {
+	aliasMode := p.aliasMode
+	p.aliasMode = true
+	expr, ddperr := p.orErr(f)
+	p.aliasMode = aliasMode
+	if expr == nil {
+		return expr, ddperr
+	}
+	return expr, nil
+}
+
+func (p *parser) parameterExpression() ast.Expression {
+	errHndl := p.errorHandler
+	errored := p.errored
+
+	p.errored = false
+	p.errorHandler = func(err ddperror.Error) {
+		p.errored = true
+	}
+
+	aliasMode := p.aliasMode
+	p.aliasMode = true
+	expr := p.expression()
+	p.aliasMode = aliasMode
+
+	p.errorHandler = errHndl
+	p.errored = errored
+	return expr
 }
 
 // entry for expression parsing
@@ -38,11 +72,23 @@ func (p *parser) expression() ast.Expression {
 // <a> wenn <b>, sonst <c>
 func (p *parser) ifExpression() ast.Expression {
 	expr := p.boolXOR()
+	if p.aliasMode && p.panicMode {
+		return expr
+	}
+	cur := p.cur
 	for p.matchSeq(token.COMMA, token.FALLS) {
 		tok := p.previous()
 		cond := p.ifExpression()
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return expr
+		}
 		p.consume(token.COMMA, token.ANSONSTEN)
 		other := p.ifExpression()
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return expr
+		}
 		expr = &ast.TernaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
@@ -60,11 +106,17 @@ func (p *parser) ifExpression() ast.Expression {
 
 // entweder <a> oder <b> ist
 func (p *parser) boolXOR() ast.Expression {
-	for p.matchAny(token.ENTWEDER) {
+	if p.matchAny(token.ENTWEDER) {
 		tok := p.previous()
 		lhs := p.boolOR()
+		if p.aliasMode && p.panicMode {
+			return nil
+		}
 		p.consume(token.COMMA, token.ODER)
 		rhs := p.boolOR()
+		if p.aliasMode && p.panicMode {
+			return nil
+		}
 		return &ast.BinaryExpr{
 			Range: token.Range{
 				Start: tok.Range.Start,
@@ -80,102 +132,152 @@ func (p *parser) boolXOR() ast.Expression {
 }
 
 func (p *parser) boolOR() ast.Expression {
-	expr := p.boolAND()
+	lhs := p.boolAND()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchAny(token.ODER) {
 		tok := p.previous()
 		rhs := p.boolAND()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: ast.BIN_OR,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) boolAND() ast.Expression {
-	expr := p.bitwiseOR()
+	lhs := p.bitwiseOR()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchAny(token.UND) {
 		tok := p.previous()
 		rhs := p.bitwiseOR()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: ast.BIN_AND,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) bitwiseOR() ast.Expression {
-	expr := p.bitwiseXOR()
+	lhs := p.bitwiseXOR()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchSeq(token.LOGISCH, token.ODER) {
 		tok := p.previous()
 		rhs := p.bitwiseXOR()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: ast.BIN_LOGIC_OR,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) bitwiseXOR() ast.Expression {
-	expr := p.bitwiseAND()
+	lhs := p.bitwiseAND()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchSeq(token.LOGISCH, token.KONTRA) {
 		tok := p.previous()
 		rhs := p.bitwiseAND()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: ast.BIN_LOGIC_XOR,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) bitwiseAND() ast.Expression {
-	expr := p.equality()
+	lhs := p.equality()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchSeq(token.LOGISCH, token.UND) {
 		tok := p.previous()
 		rhs := p.equality()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: ast.BIN_LOGIC_AND,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) equality() ast.Expression {
-	expr := p.comparison()
+	lhs := p.comparison()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.GLEICH, token.UNGLEICH, token.EIN, token.EINE, token.KEIN, token.KEINE) {
 		tok := p.previous()
 
@@ -186,6 +288,10 @@ func (p *parser) equality() ast.Expression {
 			fallthrough
 		case token.GLEICH:
 			rhs := p.comparison()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return expr
+			}
 			expr = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -196,8 +302,13 @@ func (p *parser) equality() ast.Expression {
 				Operator: bin_operator,
 				Rhs:      rhs,
 			}
+			cur = p.cur
 		case token.EIN, token.EINE, token.KEIN, token.KEINE:
 			checkType := p.parseType()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return expr
+			}
 			expr = &ast.TypeCheck{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -207,6 +318,7 @@ func (p *parser) equality() ast.Expression {
 				CheckType: checkType,
 				Lhs:       expr,
 			}
+			cur = p.cur
 			if tok.Type == token.KEIN || tok.Type == token.KEINE {
 				expr = &ast.UnaryExpr{
 					Range:    expr.GetRange(),
@@ -228,6 +340,10 @@ func (p *parser) equality() ast.Expression {
 
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
+			if p.aliasMode && p.panicMode { // TODO: return the correct nested expression
+				p.cur = cur
+				return lhs
+			}
 		} else {
 			p.matchAny(token.IST)
 		}
@@ -236,13 +352,26 @@ func (p *parser) equality() ast.Expression {
 }
 
 func (p *parser) comparison() ast.Expression {
-	expr := p.bitShift()
+	lhs := p.bitShift()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.GRÖßER, token.KLEINER, token.ZWISCHEN) {
 		tok := p.previous()
 		if tok.Type == token.ZWISCHEN {
 			mid := p.bitShift()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			p.consume(token.UND)
 			rhs := p.bitShift()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 
 			// expr > mid && expr < rhs
 			expr = &ast.TernaryExpr{
@@ -255,14 +384,18 @@ func (p *parser) comparison() ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.TER_BETWEEN,
 			}
+			cur = p.cur
 		} else {
 			operator := ast.BIN_GREATER
 			if tok.Type == token.KLEINER {
 				operator = ast.BIN_LESS
 			}
 			p.consume(token.ALS)
-			if p.matchAny(token.COMMA) {
-				p.consume(token.ODER)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			if p.matchSeq(token.COMMA, token.ODER) {
 				if tok.Type == token.GRÖßER {
 					operator = ast.BIN_GREATER_EQ
 				} else {
@@ -271,6 +404,10 @@ func (p *parser) comparison() ast.Expression {
 			}
 
 			rhs := p.bitShift()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			expr = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -281,9 +418,14 @@ func (p *parser) comparison() ast.Expression {
 				Operator: operator,
 				Rhs:      rhs,
 			}
+			cur = p.cur
 		}
 		if p.previous().Type != token.IST {
 			p.consume(token.IST)
+			if p.aliasMode && p.panicMode { // TODO: return the correct nested expression
+				p.cur = cur
+				return lhs
+			}
 		} else {
 			p.matchAny(token.IST)
 		}
@@ -292,12 +434,25 @@ func (p *parser) comparison() ast.Expression {
 }
 
 func (p *parser) bitShift() ast.Expression {
-	expr := p.term()
+	lhs := p.term()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.UM) {
 		rhs := p.term()
 		p.consume(token.BIT, token.NACH)
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
 		if !p.matchAny(token.LINKS, token.RECHTS) {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
+			if p.aliasMode {
+				p.cur = cur
+				return lhs
+			}
 			return &ast.BadExpr{
 				Err: p.lastError,
 				Tok: expr.Token(),
@@ -319,38 +474,59 @@ func (p *parser) bitShift() ast.Expression {
 			Rhs:      rhs,
 		}
 		p.consume(token.VERSCHOBEN)
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
 	}
 	return expr
 }
 
 func (p *parser) term() ast.Expression {
-	expr := p.factor()
+	lhs := p.factor()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchAny(token.PLUS, token.MINUS, token.VERKETTET) {
 		tok := p.previous()
 		operator := ast.BIN_PLUS
 		if tok.Type == token.VERKETTET { // string concatenation
 			p.consume(token.MIT)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			operator = ast.BIN_CONCAT
 		} else if tok.Type == token.MINUS {
 			operator = ast.BIN_MINUS
 		}
 		rhs := p.factor()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) factor() ast.Expression {
-	expr := p.unary()
+	lhs := p.unary()
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 	for p.matchAny(token.MAL, token.DURCH, token.MODULO) {
 		tok := p.previous()
 		operator := ast.BIN_MULT
@@ -360,18 +536,23 @@ func (p *parser) factor() ast.Expression {
 			operator = ast.BIN_MOD
 		}
 		rhs := p.unary()
-		expr = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		lhs = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: expr.GetRange().Start,
+				Start: lhs.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      expr,
+			Lhs:      lhs,
 			Operator: operator,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return expr
+	return lhs
 }
 
 func (p *parser) unary() ast.Expression {
@@ -410,6 +591,9 @@ func (p *parser) unary() ast.Expression {
 			}
 		case token.BETRAG, token.LÄNGE, token.GRÖßE, token.STANDARDWERT:
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, start.Range, fmt.Sprintf("Vor '%s' fehlt der Artikel", start))
+			if p.aliasMode {
+				return nil
+			}
 		}
 
 		tok := p.previous()
@@ -424,6 +608,9 @@ func (p *parser) unary() ast.Expression {
 			if p.peekN(-2).Type == token.LOGISCH {
 				operator = ast.UN_LOGIC_NOT
 			}
+		}
+		if p.aliasMode && p.panicMode {
+			return nil
 		}
 		switch tok.Type {
 		case token.NICHT:
@@ -451,6 +638,9 @@ func (p *parser) unary() ast.Expression {
 					}
 				}
 			}
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 
 			return &ast.TypeOpExpr{
 				Range:    token.NewRange(start, p.previous()),
@@ -462,6 +652,9 @@ func (p *parser) unary() ast.Expression {
 			operator = ast.UN_LEN
 		}
 		rhs := p.unary()
+		if p.aliasMode && p.panicMode {
+			return nil
+		}
 		return &ast.UnaryExpr{
 			Range: token.Range{
 				Start: token.NewStartPos(start),
@@ -476,9 +669,12 @@ func (p *parser) unary() ast.Expression {
 }
 
 func (p *parser) negate() ast.Expression {
-	for p.matchAny(token.NEGATE) {
+	if p.matchAny(token.NEGATE) {
 		tok := p.previous()
 		rhs := p.negate()
+		if p.aliasMode && p.panicMode {
+			return nil
+		}
 		return &ast.UnaryExpr{
 			Range: token.Range{
 				Start: token.NewStartPos(tok),
@@ -501,8 +697,17 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 			tok := p.previous()
 			p.consume(token.VON)
 			numerus := p.expression()
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 			p.consume(token.ZUR, token.BASIS)
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 			rhs := p.unary()
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
@@ -516,12 +721,21 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 			}
 		} else {
 			lhs = p.unary()
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 			p.consume(token.DOT, token.WURZEL)
 			tok := p.previous()
 			p.consume(token.VON)
-			// root is implemented as pow(degree, 1/radicant)
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 			expr := p.unary()
+			if p.aliasMode && p.panicMode {
+				return nil
+			}
 
+			// root is implemented as pow(degree, 1/radicant)
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -544,10 +758,18 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 	}
 
 	lhs = p.slicing(lhs) // make sure postfix operators after a function call are parsed
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
 
 	for p.matchAny(token.HOCH) {
 		tok := p.previous()
 		rhs := p.unary()
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
 		lhs = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
@@ -564,6 +786,11 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 	lhs = p.indexing(lhs)
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.IM, token.BIS, token.AB) {
 		switch p.previous().Type {
 		// im Bereich von ... bis ...
@@ -571,113 +798,177 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 			p.consume(token.BEREICH, token.VON)
 			von := p.previous()
 			mid := p.expression()
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			p.consume(token.BIS)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			rhs := p.indexing(nil)
-			lhs = &ast.TernaryExpr{
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			expr = &ast.TernaryExpr{
 				Range: token.Range{
-					Start: lhs.GetRange().Start,
+					Start: expr.GetRange().Start,
 					End:   rhs.GetRange().End,
 				},
 				Tok:      *von,
-				Lhs:      lhs,
+				Lhs:      expr,
 				Mid:      mid,
 				Rhs:      rhs,
 				Operator: ast.TER_SLICE,
 			}
+			cur = p.cur
 			// t bis zum n. Element
 		case token.BIS:
 			if !p.matchAny(token.ZUM) {
 				p.decrease()
-				return lhs
+				return expr
 			}
 			rhs := p.expression()
-			lhs = &ast.BinaryExpr{
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			expr = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: lhs.GetRange().Start,
+					Start: expr.GetRange().Start,
 					End:   token.NewEndPos(p.previous()),
 				},
 				Tok:      rhs.Token(),
-				Lhs:      lhs,
+				Lhs:      expr,
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_TO,
 			}
 			p.consume(token.DOT, token.ELEMENT)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			cur = p.cur
 			// t ab dem n. Element
 		case token.AB:
 			p.consume(token.DEM)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
 			rhs := p.expression()
-			lhs = &ast.BinaryExpr{
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			expr = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: lhs.GetRange().Start,
+					Start: expr.GetRange().Start,
 					End:   token.NewEndPos(p.previous()),
 				},
 				Tok:      rhs.Token(),
-				Lhs:      lhs,
+				Lhs:      expr,
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_FROM,
 			}
 			p.consume(token.DOT, token.ELEMENT)
+			if p.aliasMode && p.panicMode {
+				p.cur = cur
+				return lhs
+			}
+			cur = p.cur
 		}
 	}
-	return lhs
+	return expr
 }
 
 func (p *parser) indexing(lhs ast.Expression) ast.Expression {
 	lhs = p.field_access(lhs)
-	for p.matchAny(token.AN) {
-		p.consume(token.DER, token.STELLE)
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
+	for p.matchSeq(token.AN, token.DER, token.STELLE) { // p.matchSeq(token.AN, token.DER, token.STELLE)
 		tok := p.previous()
 		rhs := p.field_access(nil)
-		lhs = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		expr = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: lhs.GetRange().Start,
+				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *tok,
-			Lhs:      lhs,
+			Lhs:      expr,
 			Operator: ast.BIN_INDEX,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return lhs
+	return expr
 }
 
 // x von y von z = x von (y von z)
 
 func (p *parser) field_access(lhs ast.Expression) ast.Expression {
 	lhs = p.type_cast(lhs)
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.VON) {
 		von := p.previous()
 		rhs := p.field_access(nil) // recursive call to enable x von y von z (right-associative)
-		lhs = &ast.BinaryExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		expr = &ast.BinaryExpr{
 			Range: token.Range{
-				Start: lhs.GetRange().Start,
+				Start: expr.GetRange().Start,
 				End:   rhs.GetRange().End,
 			},
 			Tok:      *von,
-			Lhs:      lhs,
+			Lhs:      expr,
 			Operator: ast.BIN_FIELD_ACCESS,
 			Rhs:      rhs,
 		}
+		cur = p.cur
 	}
-	return lhs
+	return expr
 }
 
 func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
 	lhs = p.primary(lhs)
+	if p.aliasMode && p.panicMode {
+		return lhs
+	}
+	cur := p.cur
+	expr := lhs
 	for p.matchAny(token.ALS) {
 		Type := p.parseType()
-		lhs = &ast.CastExpr{
+		if p.aliasMode && p.panicMode {
+			p.cur = cur
+			return lhs
+		}
+		expr = &ast.CastExpr{
 			Range: token.Range{
-				Start: lhs.GetRange().Start,
+				Start: expr.GetRange().Start,
 				End:   token.NewEndPos(p.previous()),
 			},
 			TargetType: Type,
-			Lhs:        lhs,
+			Lhs:        expr,
 		}
+		cur = p.cur
 	}
 
-	return lhs
+	return expr
 }
 
 // when called from power() lhs might be a funcCall
@@ -758,6 +1049,9 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			Tok: *tok,
 		}
 	}
+	if p.aliasMode && p.panicMode {
+		return nil
+	}
 
 	return lhs
 }
@@ -768,6 +1062,9 @@ func (p *parser) grouping() ast.Expression {
 	lParen := p.previous()
 	innerExpr := p.expression()
 	p.consume(token.RPAREN)
+	if p.aliasMode && p.panicMode {
+		return nil
+	}
 
 	return &ast.Grouping{
 		Range:  token.NewRange(lParen, p.previous()),
@@ -790,6 +1087,7 @@ func (p *parser) assigneable() ast.Assigneable {
 			Literal: *p.previous(),
 		}
 		var ass ast.Assigneable = ident
+		cur := p.cur
 
 		for p.matchAny(token.VON) {
 			if p.matchAny(token.IDENTIFIER) {
@@ -799,7 +1097,10 @@ func (p *parser) assigneable() ast.Assigneable {
 					Field: ident,
 				}
 			} else {
-				p.consume(token.LPAREN)
+				if !p.consume(token.LPAREN) && p.aliasMode {
+					p.cur = cur
+					return ass
+				}
 				rhs := assigneable_impl(false)
 				ass = &ast.FieldAccess{
 					Rhs:   rhs,
@@ -810,7 +1111,10 @@ func (p *parser) assigneable() ast.Assigneable {
 
 		if !isInFieldAcess {
 			for p.matchAny(token.AN) {
-				p.consume(token.DER, token.STELLE)
+				if !p.consume(token.DER, token.STELLE) && p.aliasMode {
+					p.cur = cur
+					return ass
+				}
 				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
 				ass = &ast.Indexing{
 					Lhs:   ass,
@@ -823,7 +1127,9 @@ func (p *parser) assigneable() ast.Assigneable {
 		}
 
 		if isParenthesized {
-			p.consume(token.RPAREN)
+			if !p.consume(token.RPAREN) && p.aliasMode {
+				return nil
+			}
 		}
 		return ass
 	}

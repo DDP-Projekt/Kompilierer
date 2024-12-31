@@ -84,7 +84,7 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 }
 
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
-	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.ReturnType)
+	msg := fmt.Sprintf("FuncDecl[%s: (%d) %v, %s]", decl.Name(), len(decl.Parameters), decl.Parameters, decl.ReturnType)
 	if IsExternFunc(decl) {
 		msg += " [Extern]"
 	}
@@ -230,7 +230,7 @@ func (pr *printer) VisitFuncCall(expr *FuncCall) VisitResult {
 	for _, v := range expr.Args {
 		args = append(args, v)
 	}
-	pr.parenthesizeNode(fmt.Sprintf("FuncCall[%s]", expr.Name), args...)
+	pr.parenthesizeNode(fmt.Sprintf("FuncCall[%s]: [%v]", expr.Name, expr.Args), args...)
 	return VisitRecurse
 }
 

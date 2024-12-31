@@ -19,7 +19,7 @@ type trieNode[K, V any] struct {
 
 // though generic it is only meant to be used with
 // K = *token.Token and V = ast.Alias
-type Trie[K, V any] struct {
+type Trie[K any, V comparable] struct {
 	root     *trieNode[K, V]        // root node of the trie (empty node)
 	key_eq   orderedmap.CompFunc[K] // used to check if two keys are equal
 	key_less orderedmap.CompFunc[K] // used to check if a key is less than another
@@ -27,7 +27,7 @@ type Trie[K, V any] struct {
 
 // create a new trie
 // should only be used with K = *token.Token and V = ast.Alias
-func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
+func New[K any, V comparable](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 	var key_default K
 	var value_default V
 	return &Trie[K, V]{
@@ -100,6 +100,50 @@ func (t *Trie[K, V]) Search(keys TrieKeyGen[K]) []V {
 
 	searchImpl(keys, t.root)
 	return values
+}
+
+// returns wether a > b
+type ValueGreater[V any] func(a, b V) bool
+
+func (t *Trie[K, V]) Find(keys TrieKeyGen[K], greater ValueGreater[V]) (V, []K, bool) {
+	i := 0
+	var value, defaultV V
+	var (
+		resultKeys     []K
+		resultKeysTemp = make([]K, 0, 12)
+	)
+
+	var searchImpl func(TrieKeyGen[K], *trieNode[K, V])
+	searchImpl = func(keys TrieKeyGen[K], node *trieNode[K, V]) {
+		node_index := i
+		i++
+
+		node.children.IterateKeys(func(child_key K) bool {
+			k, ok := keys(node_index, child_key)
+			if !ok {
+				return true // continue
+			}
+
+			if t.key_eq(k, child_key) {
+				resultKeysTemp = append(resultKeysTemp, child_key)
+
+				child_node, _ := node.children.Get(child_key)
+				if child_node.hasValue && (value == defaultV || greater(child_node.value, value)) {
+					value = child_node.value
+					resultKeys = make([]K, len(resultKeysTemp))
+					copy(resultKeys, resultKeysTemp)
+				}
+
+				limit := len(resultKeysTemp) - 1
+				searchImpl(keys, child_node)
+				resultKeysTemp = resultKeysTemp[:limit]
+			}
+			return true // continue
+		})
+	}
+
+	searchImpl(keys, t.root)
+	return value, resultKeys, value != defaultV
 }
 
 // strictly checks if the given keys are in the trie

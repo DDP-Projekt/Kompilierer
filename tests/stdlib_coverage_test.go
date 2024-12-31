@@ -72,9 +72,10 @@ func init() {
 		}
 
 		module, err := parser.Parse(parser.Options{
-			FileName:     path,
-			Modules:      duden_modules,
-			ErrorHandler: ddperror.MakePanicHandler(),
+			FileName:      path,
+			Modules:       duden_modules,
+			ErrorHandler:  ddperror.MakePanicHandler(),
+			StrictAliases: true,
 		})
 		if err != nil {
 			return err

@@ -149,7 +149,9 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	// p.checkStatement(stmt)
 
 	cur := p.cur
-	count, err := p.expressionOrErr()
+	count, err := p.orErr(func() ast.Expression {
+		return p.expression()
+	})
 	p.panicMode = false
 	if p.peek().Type == token.COUNT_MAL {
 		p.checkStatement(stmt)

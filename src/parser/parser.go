@@ -40,6 +40,10 @@ type parser struct {
 	predefinedModules map[string]*ast.Module
 	// all found aliases (+ inbuild aliases)
 	aliases *at.Trie[*token.Token, ast.Alias]
+	// wether an alias is currently being parsed
+	aliasMode bool
+	// wether to recursively call p.alias()
+	nonRecusive bool
 	// function which is currently being parsed
 	currentFunction *ast.FuncDecl
 	// wether the current function returns a boolean

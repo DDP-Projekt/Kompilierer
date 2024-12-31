@@ -413,7 +413,7 @@ Und kann so benutzt werden:
 	Zeitkomplexität: O(n)
 ]
 Die öffentliche Funktion Kleinster_Gemeinsamer_Teiler mit den Parametern a und b vom Typ Zahl und Zahl, gibt eine Zahl zurück, macht:
-	Gib (der Betrag von (a mal b) durch (der größte gemeinsame Teiler von a und b)) als Zahl zurück.
+	Gib (der Betrag von (a mal b) durch (der größte gemeinsame Teiler von a, und b)) als Zahl zurück.
 Und kann so benutzt werden:
 	"das kleinste gemeinsame Vielfache von <a> und <b>"
 

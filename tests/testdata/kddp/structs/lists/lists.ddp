@@ -21,8 +21,8 @@ Und kann so benutzt werden:
 
 Die Vektor2 Liste vektoren ist eine Liste, die aus 
 	der Nullvektor2, 
-	ein Vektor2 mit x gleich 5, 
-	ein Vektor2 mit x gleich 5 und y gleich 6, 
+	ein Vektor2 mit (x) gleich 5, 
+	ein Vektor2 mit (x) gleich (5) und (y) gleich 6, 
 	der Nullvektor2 
 besteht.
 
