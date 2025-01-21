@@ -106,11 +106,18 @@ func (p *parser) new_alias() ast.Expression {
 	start := p.cur // save start position to restore the state if no alias was recognized
 
 	type cachedToken struct {
-		end      int             // cur after parsing expr or ass
-		expr     ast.Expression  // possibly already parsed expression starting at cur
-		exprType ddptypes.Type   // type of expr
-		ass      ast.Assigneable // possibly already parsed assignable starting at cur
-		assType  ddptypes.Type   // type of ass
+		expr         ast.Expression  // possibly already parsed expression starting at cur
+		exprType     ddptypes.Type   // type of expr
+		exprEnd      int             // p.cur after parsing expr
+		short        ast.Expression  // possibly already in Alias Mode parsed expression starting at cur
+		shortType    ddptypes.Type   // type of short
+		shortEnd     int             // p.cur after parsing short
+		ass          ast.Assigneable // possibly already parsed assignable starting at cur
+		assType      ddptypes.Type   // type of ass
+		assEnd       int             // p.cur after parsing ass
+		shortAss     ast.Assigneable // possibly already parsed assignable starting at cur
+		shortAssType ddptypes.Type   // type of ass
+		shortAssEnd  int             // p.cur after parsing ass
 	}
 
 	keyEnds := make(map[*token.Token]int, 30)
@@ -189,7 +196,7 @@ func (p *parser) new_alias() ast.Expression {
 				}
 
 				cachedTok.ass = ass.(ast.Assigneable)
-				cachedTok.end = p.cur
+				cachedTok.assEnd = p.cur
 			}
 			finalExpr = cachedTok.ass
 		} else {
@@ -199,23 +206,15 @@ func (p *parser) new_alias() ast.Expression {
 
 				if node_index == 0 {
 					expr, ddperr = p.strictParam(tok.AliasInfo.IsReference)
+				} else if p.peek().Type == token.LPAREN {
+					p.matchAny(token.LPAREN)
+					expr, ddperr = p.orErr(func() ast.Expression {
+						return p.grouping()
+					})
 				} else {
-					switch p.peek().Type {
-					case token.LPAREN:
-						p.matchAny(token.LPAREN)
-						expr, ddperr = p.orErr(func() ast.Expression {
-							return p.grouping()
-						})
-						if ddperr == nil {
-							break
-						}
-						p.cur = cur
-						fallthrough
-					default:
-						expr, ddperr = p.inAliasMode(func() ast.Expression {
-							return p.expression()
-						})
-					}
+					expr, ddperr = p.inAliasMode(func() ast.Expression {
+						return p.expression()
+					})
 				}
 
 				if ddperr != nil {

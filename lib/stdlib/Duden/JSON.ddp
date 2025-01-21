@@ -44,7 +44,7 @@ Die Funktion Zu_Escape_Sequenz mit den Parametern json und lauf_index vom Typ Bu
 			Gib 'u' zurück.
 		Der Text hex ist (json im Bereich von (lauf_index plus 1) bis (lauf_index plus 4)) aneinandergehängt.
 		Erhöhe lauf_index um 4.
-		Gib die Hexadezimalzahl hex als Buchstabe zurück.
+		Gib (die Hexadezimalzahl hex) als Buchstabe zurück.
 	Sonst:
 		Melde den Fehler "invalide Escape Sequenz".
 	Gib b zurück.
