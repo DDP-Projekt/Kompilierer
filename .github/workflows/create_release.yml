@@ -32,7 +32,7 @@ jobs:
 
     - name: Setup LLVM
       run: |
-        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || 'linux-11.4.0-x86_64' }}.tar.gz
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-${{ runner.os == 'Windows' && 'mingw-12.2.0-x86_64-ucrt-posix-seh' || '14.0.0-linux-gcc-11.4.0-x86_64' }}.tar.gz
         mkdir -p ./llvm_build/
         tar -xzf ./llvm_build.tar.gz -C ./ --force-local
         rm ./llvm_build.tar.gz
