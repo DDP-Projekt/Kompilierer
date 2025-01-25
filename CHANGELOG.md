@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Anders] Der Kompilierer benutzt jetzt LLVM Version 14.0.0 (anstatt 12.0.0)
 - [Neu] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten
 - [Fix] Verschachtelte Struktur Literale verhalten sich jetzt mit Einbindungen korrekt
 - [Fix] Variablen in Kombinations Literalen werden nun korrekt umgewandelt
