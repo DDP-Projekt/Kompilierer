@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
-	"github.com/bafto/Go-LLVM-Bindings/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"

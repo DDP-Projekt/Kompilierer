@@ -19,7 +19,7 @@ else
 	ifneq ("$(wildcard ../llvm_build/bin/llvm-config)","")
 		LLVM_CONFIG := "../llvm_build/bin/llvm-config"
 	else
-		LLVM_CONFIG := "llvm-config-12"
+		LLVM_CONFIG := "llvm-config-14"
 	endif
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
@@ -48,6 +48,7 @@ clean:
 	$(RM) $(DDP_SETUP_DIR)$(DDP_SETUP_OUT_FILE_NAME)
 
 kddp:
+	@echo $(CGO_CPPFLAGS)
 	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -tags byollvm -ldflags $(KDDP_LDFLAGS)
 
 SETUP_LDFLAGS := "-s -w"

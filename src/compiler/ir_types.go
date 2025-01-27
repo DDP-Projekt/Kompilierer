@@ -5,7 +5,7 @@ with the llir representation of ddptypes
 package compiler
 
 import (
-	"github.com/bafto/Go-LLVM-Bindings/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
