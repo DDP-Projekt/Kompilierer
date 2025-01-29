@@ -41,7 +41,7 @@ func (p *parser) ifExpression() ast.Expression {
 	for p.matchSeq(token.COMMA, token.FALLS) {
 		tok := p.previous()
 		cond := p.ifExpression()
-		p.consume(token.COMMA, token.ANSONSTEN)
+		p.consumeSeq(token.COMMA, token.ANSONSTEN)
 		other := p.ifExpression()
 		expr = &ast.TernaryExpr{
 			Range: token.Range{
@@ -63,7 +63,7 @@ func (p *parser) boolXOR() ast.Expression {
 	for p.matchAny(token.ENTWEDER) {
 		tok := p.previous()
 		lhs := p.boolOR()
-		p.consume(token.COMMA, token.ODER)
+		p.consumeSeq(token.COMMA, token.ODER)
 		rhs := p.boolOR()
 		return &ast.BinaryExpr{
 			Range: token.Range{
@@ -227,7 +227,7 @@ func (p *parser) equality() ast.Expression {
 		}
 
 		if p.previous().Type != token.IST {
-			p.consume(token.IST)
+			p.consumeSeq(token.IST)
 		} else {
 			p.matchAny(token.IST)
 		}
@@ -241,7 +241,7 @@ func (p *parser) comparison() ast.Expression {
 		tok := p.previous()
 		if tok.Type == token.ZWISCHEN {
 			mid := p.bitShift()
-			p.consume(token.UND)
+			p.consumeSeq(token.UND)
 			rhs := p.bitShift()
 
 			// expr > mid && expr < rhs
@@ -260,9 +260,9 @@ func (p *parser) comparison() ast.Expression {
 			if tok.Type == token.KLEINER {
 				operator = ast.BIN_LESS
 			}
-			p.consume(token.ALS)
+			p.consumeSeq(token.ALS)
 			if p.matchAny(token.COMMA) {
-				p.consume(token.ODER)
+				p.consumeSeq(token.ODER)
 				if tok.Type == token.GRÖßER {
 					operator = ast.BIN_GREATER_EQ
 				} else {
@@ -283,7 +283,7 @@ func (p *parser) comparison() ast.Expression {
 			}
 		}
 		if p.previous().Type != token.IST {
-			p.consume(token.IST)
+			p.consumeSeq(token.IST)
 		} else {
 			p.matchAny(token.IST)
 		}
@@ -295,7 +295,7 @@ func (p *parser) bitShift() ast.Expression {
 	expr := p.term()
 	for p.matchAny(token.UM) {
 		rhs := p.term()
-		p.consume(token.BIT, token.NACH)
+		p.consumeSeq(token.BIT, token.NACH)
 		if !p.matchAny(token.LINKS, token.RECHTS) {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
 			return &ast.BadExpr{
@@ -318,7 +318,7 @@ func (p *parser) bitShift() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consume(token.VERSCHOBEN)
+		p.consumeSeq(token.VERSCHOBEN)
 	}
 	return expr
 }
@@ -329,7 +329,7 @@ func (p *parser) term() ast.Expression {
 		tok := p.previous()
 		operator := ast.BIN_PLUS
 		if tok.Type == token.VERKETTET { // string concatenation
-			p.consume(token.MIT)
+			p.consumeSeq(token.MIT)
 			operator = ast.BIN_CONCAT
 		} else if tok.Type == token.MINUS {
 			operator = ast.BIN_MINUS
@@ -416,9 +416,9 @@ func (p *parser) unary() ast.Expression {
 		operator := ast.UN_ABS
 		switch tok.Type {
 		case token.BETRAG, token.LÄNGE:
-			p.consume(token.VON)
+			p.consumeSeq(token.VON)
 		case token.GRÖßE, token.STANDARDWERT:
-			p.consume(token.VON)
+			p.consumeSeq(token.VON)
 			p.consumeAny(token.EINEM, token.EINER)
 		case token.NICHT:
 			if p.peekN(-2).Type == token.LOGISCH {
@@ -499,9 +499,9 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 	if lhs == nil && p.matchAny(token.DIE, token.DER) {
 		if p.matchAny(token.LOGARITHMUS) {
 			tok := p.previous()
-			p.consume(token.VON)
+			p.consumeSeq(token.VON)
 			numerus := p.expression()
-			p.consume(token.ZUR, token.BASIS)
+			p.consumeSeq(token.ZUR, token.BASIS)
 			rhs := p.unary()
 
 			lhs = &ast.BinaryExpr{
@@ -516,9 +516,9 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 			}
 		} else {
 			lhs = p.unary()
-			p.consume(token.DOT, token.WURZEL)
+			p.consumeSeq(token.DOT, token.WURZEL)
 			tok := p.previous()
-			p.consume(token.VON)
+			p.consumeSeq(token.VON)
 			// root is implemented as pow(degree, 1/radicant)
 			expr := p.unary()
 
@@ -568,10 +568,10 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 		switch p.previous().Type {
 		// im Bereich von ... bis ...
 		case token.IM:
-			p.consume(token.BEREICH, token.VON)
+			p.consumeSeq(token.BEREICH, token.VON)
 			von := p.previous()
 			mid := p.expression()
-			p.consume(token.BIS)
+			p.consumeSeq(token.BIS)
 			rhs := p.indexing(nil)
 			lhs = &ast.TernaryExpr{
 				Range: token.Range{
@@ -601,10 +601,10 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_TO,
 			}
-			p.consume(token.DOT, token.ELEMENT)
+			p.consumeSeq(token.DOT, token.ELEMENT)
 			// t ab dem n. Element
 		case token.AB:
-			p.consume(token.DEM)
+			p.consumeSeq(token.DEM)
 			rhs := p.expression()
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
@@ -616,7 +616,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_FROM,
 			}
-			p.consume(token.DOT, token.ELEMENT)
+			p.consumeSeq(token.DOT, token.ELEMENT)
 		}
 	}
 	return lhs
@@ -625,7 +625,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 func (p *parser) indexing(lhs ast.Expression) ast.Expression {
 	lhs = p.field_access(lhs)
 	for p.matchAny(token.AN) {
-		p.consume(token.DER, token.STELLE)
+		p.consumeSeq(token.DER, token.STELLE)
 		tok := p.previous()
 		rhs := p.field_access(nil)
 		lhs = &ast.BinaryExpr{
@@ -739,12 +739,12 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Values: nil,
 			}
 		} else {
-			p.consume(token.LISTE, token.COMMA, token.DIE, token.AUS)
+			p.consumeSeq(token.LISTE, token.COMMA, token.DIE, token.AUS)
 			values := append(make([]ast.Expression, 0, 2), p.expression())
 			for p.matchAny(token.COMMA) {
 				values = append(values, p.expression())
 			}
-			p.consume(token.BESTEHT)
+			p.consumeSeq(token.BESTEHT)
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
@@ -767,7 +767,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 func (p *parser) grouping() ast.Expression {
 	lParen := p.previous()
 	innerExpr := p.expression()
-	p.consume(token.RPAREN)
+	p.consumeSeq(token.RPAREN)
 
 	return &ast.Grouping{
 		Range:  token.NewRange(lParen, p.previous()),
@@ -784,7 +784,7 @@ func (p *parser) assigneable() ast.Assigneable {
 	assigneable_impl = func(isInFieldAcess bool) ast.Assigneable {
 		isParenthesized := p.previous().Type == token.LPAREN
 		if isParenthesized {
-			p.consume(token.IDENTIFIER)
+			p.consumeSeq(token.IDENTIFIER)
 		}
 		ident := &ast.Ident{
 			Literal: *p.previous(),
@@ -799,7 +799,7 @@ func (p *parser) assigneable() ast.Assigneable {
 					Field: ident,
 				}
 			} else {
-				p.consume(token.LPAREN)
+				p.consumeSeq(token.LPAREN)
 				rhs := assigneable_impl(false)
 				ass = &ast.FieldAccess{
 					Rhs:   rhs,
@@ -810,7 +810,7 @@ func (p *parser) assigneable() ast.Assigneable {
 
 		if !isInFieldAcess {
 			for p.matchAny(token.AN) {
-				p.consume(token.DER, token.STELLE)
+				p.consumeSeq(token.DER, token.STELLE)
 				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
 				ass = &ast.Indexing{
 					Lhs:   ass,
@@ -823,7 +823,7 @@ func (p *parser) assigneable() ast.Assigneable {
 		}
 
 		if isParenthesized {
-			p.consume(token.RPAREN)
+			p.consumeSeq(token.RPAREN)
 		}
 		return ass
 	}

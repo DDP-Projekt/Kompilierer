@@ -26,7 +26,7 @@ func (p *parser) statement() ast.Statement {
 	// parse all possible statements
 	switch p.peek().Type {
 	case token.BINDE:
-		p.consume(token.BINDE)
+		p.consumeSeq(token.BINDE)
 		return p.importStatement()
 	case token.ERHÖHE, token.VERRINGERE,
 		token.VERVIELFACHE, token.TEILE,
@@ -34,37 +34,37 @@ func (p *parser) statement() ast.Statement {
 		p.advance()
 		return p.compoundAssignement()
 	case token.SPEICHERE:
-		p.consume(token.SPEICHERE)
+		p.consumeSeq(token.SPEICHERE)
 		return p.assignNoLiteral() // Speichere ... in x, where non-literal expressions are allowed
 	case token.WENN:
-		p.consume(token.WENN)
+		p.consumeSeq(token.WENN)
 		return p.ifStatement()
 	case token.SOLANGE:
-		p.consume(token.SOLANGE)
+		p.consumeSeq(token.SOLANGE)
 		return p.whileStatement()
 	case token.MACHE:
-		p.consume(token.MACHE)
+		p.consumeSeq(token.MACHE)
 		return p.doWhileStmt()
 	case token.WIEDERHOLE:
-		p.consume(token.WIEDERHOLE)
+		p.consumeSeq(token.WIEDERHOLE)
 		return p.repeatStmt()
 	case token.FÜR:
-		p.consume(token.FÜR)
+		p.consumeSeq(token.FÜR)
 		return p.forStatement()
 	case token.GIB:
-		p.consume(token.GIB)
+		p.consumeSeq(token.GIB)
 		return p.returnStatement()
 	case token.VERLASSE:
-		p.consume(token.VERLASSE)
+		p.consumeSeq(token.VERLASSE)
 		return p.voidReturnOrBreak()
 	case token.FAHRE:
-		p.consume(token.FAHRE)
+		p.consumeSeq(token.FAHRE)
 		return p.continueStatement()
 	case token.COLON:
-		p.consume(token.COLON)
+		p.consumeSeq(token.COLON)
 		return p.blockStatement(nil)
 	case token.ELIPSIS:
-		p.consume(token.ELIPSIS)
+		p.consumeSeq(token.ELIPSIS)
 		return p.todoStmt()
 	}
 
@@ -84,21 +84,21 @@ func (p *parser) importStatement() ast.Statement {
 		importedSymbols := []token.Token{*p.previous()}
 		if p.peek().Type != token.AUS {
 			if p.matchAny(token.UND) {
-				p.consume(token.IDENTIFIER)
+				p.consumeSeq(token.IDENTIFIER)
 				importedSymbols = append(importedSymbols, *p.previous())
 			} else {
 				for p.matchAny(token.COMMA) {
-					if p.consume(token.IDENTIFIER) {
+					if p.consumeSeq(token.IDENTIFIER) {
 						importedSymbols = append(importedSymbols, *p.previous())
 					}
 				}
-				if p.consume(token.UND) && p.consume(token.IDENTIFIER) {
+				if p.consumeSeq(token.UND) && p.consumeSeq(token.IDENTIFIER) {
 					importedSymbols = append(importedSymbols, *p.previous())
 				}
 			}
 		}
-		p.consume(token.AUS)
-		if p.consume(token.STRING) {
+		p.consumeSeq(token.AUS)
+		if p.consumeSeq(token.STRING) {
 			stmt = &ast.ImportStmt{
 				FileName:        *p.previous(),
 				ImportedSymbols: importedSymbols,
@@ -113,10 +113,10 @@ func (p *parser) importStatement() ast.Statement {
 	} else if p.matchAny(token.ALLE, token.REKURSIV) {
 		isRecursive := p.previous().Type == token.REKURSIV
 		if isRecursive {
-			p.consume(token.ALLE)
+			p.consumeSeq(token.ALLE)
 		}
-		p.consume(token.MODULE, token.AUS)
-		if p.consume(token.STRING) {
+		p.consumeSeq(token.MODULE, token.AUS)
+		if p.consumeSeq(token.STRING) {
 			stmt = &ast.ImportStmt{
 				FileName:          *p.previous(),
 				ImportedSymbols:   nil,
@@ -136,7 +136,7 @@ func (p *parser) importStatement() ast.Statement {
 			Err: p.lastError,
 		}
 	}
-	p.consume(token.EIN, token.DOT)
+	p.consumeSeq(token.EIN, token.DOT)
 	stmt.Range = token.NewRange(binde, p.previous())
 	return stmt
 }
@@ -158,7 +158,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 		}
 	} else {
 		p.cur = cur
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 		return stmt
 	}
 
@@ -172,7 +172,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	}
 	tok := p.previous()
 	tok.Type = token.WIEDERHOLE
-	p.consume(token.DOT)
+	p.consumeSeq(token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: stmt.GetRange().Start,
@@ -206,7 +206,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
 		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
@@ -226,15 +226,15 @@ func (p *parser) compoundAssignement() ast.Statement {
 	}
 
 	if tok.Type == token.TEILE {
-		p.consume(token.DURCH)
+		p.consumeSeq(token.DURCH)
 	} else {
-		p.consume(token.UM)
+		p.consumeSeq(token.UM)
 	}
 
 	operand := p.expression()
 
 	if tok.Type == token.VERSCHIEBE {
-		p.consume(token.BIT, token.NACH)
+		p.consumeSeq(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		assign_token := tok
 		tok = p.previous()
@@ -242,7 +242,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		if tok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   *assign_token,
@@ -256,7 +256,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 			},
 		}
 	} else {
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   *tok,
@@ -275,7 +275,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 // helper to parse assignements which may only be literals
 func (p *parser) assignLiteral() ast.Statement {
 	ident := p.assigneable() // name of the variable was already consumed
-	p.consume(token.IST)
+	p.consumeSeq(token.IST)
 	expr := p.assignRhs(false) // parse the expression
 	// validate that the expression is a literal
 	switch expr := expr.(type) {
@@ -300,7 +300,7 @@ func (p *parser) assignLiteral() ast.Statement {
 func (p *parser) assignNoLiteral() ast.Statement {
 	speichere := p.previous() // Speichere token
 	expr := p.expression()
-	p.consume(token.IN)
+	p.consumeSeq(token.IN)
 	p.consumeAny(token.IDENTIFIER, token.LPAREN)
 	name := p.assigneable() // name of the variable is the just consumed identifier
 	return p.finishStatement(
@@ -316,11 +316,11 @@ func (p *parser) assignNoLiteral() ast.Statement {
 func (p *parser) ifStatement() ast.Statement {
 	If := p.previous()          // the already consumed wenn token
 	condition := p.expression() // parse the condition
-	p.consume(token.COMMA)      // must be boolean, so an ist is required for grammar
+	p.consumeSeq(token.COMMA)   // must be boolean, so an ist is required for grammar
 	var Then ast.Statement
 	thenScope := p.newScope()
 	if p.matchAny(token.DANN) { // with dann: the body is a block statement
-		p.consume(token.COLON)
+		p.consumeSeq(token.COLON)
 		Then = p.blockStatement(thenScope)
 	} else { // otherwise it is a single statement
 		if p.peek().Type == token.COLON { // block statements are only allowed with the syntax above
@@ -361,7 +361,7 @@ func (p *parser) ifStatement() ast.Statement {
 		}
 	} else if p.matchAny(token.WENN) { // if-else blocks are parsed as nested ifs where the else of the first if is an if-statement
 		if p.previous().Indent == If.Indent && p.peek().Type == token.ABER {
-			p.consume(token.ABER)
+			p.consumeSeq(token.ABER)
 			Else = p.ifStatement() // parse the wenn aber
 		} else {
 			p.decrease() // no if-else just if, so decrease to parse the next if seperately
@@ -388,12 +388,12 @@ func (p *parser) ifStatement() ast.Statement {
 func (p *parser) whileStatement() ast.Statement {
 	While := p.previous()
 	condition := p.expression()
-	p.consume(token.COMMA)
+	p.consumeSeq(token.COMMA)
 	var Body ast.Statement
 	bodyTable := p.newScope()
 	p.resolver.LoopDepth++
 	if p.matchAny(token.MACHE) {
-		p.consume(token.COLON)
+		p.consumeSeq(token.COLON)
 		Body = p.blockStatement(bodyTable)
 	} else {
 		is := p.previous()
@@ -421,13 +421,13 @@ func (p *parser) whileStatement() ast.Statement {
 
 func (p *parser) doWhileStmt() ast.Statement {
 	Do := p.previous()
-	p.consume(token.COLON)
+	p.consumeSeq(token.COLON)
 	p.resolver.LoopDepth++
 	body := p.blockStatement(nil)
 	p.resolver.LoopDepth--
-	p.consume(token.SOLANGE)
+	p.consumeSeq(token.SOLANGE)
 	condition := p.expression()
-	p.consume(token.DOT)
+	p.consumeSeq(token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(Do),
@@ -441,12 +441,12 @@ func (p *parser) doWhileStmt() ast.Statement {
 
 func (p *parser) repeatStmt() ast.Statement {
 	repeat := p.previous()
-	p.consume(token.COLON)
+	p.consumeSeq(token.COLON)
 	p.resolver.LoopDepth++
 	body := p.blockStatement(nil)
 	p.resolver.LoopDepth--
 	count := p.expression()
-	p.consume(token.COUNT_MAL, token.DOT)
+	p.consumeSeq(token.COUNT_MAL, token.DOT)
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(repeat),
@@ -482,7 +482,7 @@ func (p *parser) forStatement() ast.Statement {
 		}
 	}
 
-	p.consume(token.IDENTIFIER)
+	p.consumeSeq(token.IDENTIFIER)
 	Ident := p.previous()
 	iteratorComment := p.getLeadingOrTrailingComment()
 	if p.matchAny(token.VON) {
@@ -499,23 +499,23 @@ func (p *parser) forStatement() ast.Statement {
 			Mod:        p.module,
 			InitVal:    from,
 		}
-		p.consume(token.BIS)
+		p.consumeSeq(token.BIS)
 		to := p.expression()                            // end of the counter
 		var step ast.Expression = &ast.IntLit{Value: 1} // step-size (default = 1)
 		if ddptypes.Equal(Typ, ddptypes.KOMMAZAHL) {
 			step = &ast.FloatLit{Value: 1.0}
 		}
 		if p.matchAny(token.MIT) {
-			p.consume(token.SCHRITTGRÖßE)
+			p.consumeSeq(token.SCHRITTGRÖßE)
 			step = p.expression() // custom specified step-size
 		}
-		p.consume(token.COMMA)
+		p.consumeSeq(token.COMMA)
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
 		p.resolver.LoopDepth++
 		if p.matchAny(token.MACHE) { // body is a block statement
-			p.consume(token.COLON)
+			p.consumeSeq(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
@@ -545,26 +545,55 @@ func (p *parser) forStatement() ast.Statement {
 			StepSize:    step,
 			Body:        Body,
 		}
-	} else if p.matchAny(token.IN) {
+	} else if p.matchAny(token.IN, token.MIT) {
+		var index *ast.VarDecl
+		if p.previous().Type == token.MIT {
+			indexTok := p.peek()
+			p.consumeSeq(token.INDEX, token.IDENTIFIER)
+			indexComment := p.getLeadingOrTrailingComment()
+
+			index = &ast.VarDecl{
+				Range: token.Range{
+					Start: token.NewStartPos(indexTok),
+					End:   p.previous().Range.End,
+				},
+				CommentTok: indexComment,
+				Type:       ddptypes.ZAHL,
+				NameTok:    *p.previous(),
+				IsPublic:   false,
+				Mod:        p.module,
+				InitVal: &ast.IntLit{
+					Literal: *indexTok,
+					Value:   1,
+				},
+			}
+
+			p.consumeAny(token.IN)
+		}
+
 		In := p.expression()
 		initializer := &ast.VarDecl{
 			Range: token.Range{
 				Start: token.NewStartPos(TypeTok),
 				End:   In.GetRange().End,
 			},
-			Type:     Typ,
-			NameTok:  *Ident,
-			IsPublic: false,
-			Mod:      p.module,
-			InitVal:  In,
+			CommentTok: iteratorComment,
+			Type:       Typ,
+			NameTok:    *Ident,
+			IsPublic:   false,
+			Mod:        p.module,
+			InitVal:    In,
 		}
-		p.consume(token.COMMA)
+		p.consumeSeq(token.COMMA)
 		var Body *ast.BlockStmt
 		bodyTable := p.newScope()                        // temporary symbolTable for the loop variable
 		bodyTable.InsertDecl(Ident.Literal, initializer) // add the loop variable to the table
+		if index != nil {
+			bodyTable.InsertDecl(index.Name(), index) // add the loop variable to the table
+		}
 		p.resolver.LoopDepth++
 		if p.matchAny(token.MACHE) { // body is a block statement
-			p.consume(token.COLON)
+			p.consumeSeq(token.COLON)
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
@@ -590,6 +619,7 @@ func (p *parser) forStatement() ast.Statement {
 			},
 			For:         *For,
 			Initializer: initializer,
+			Index:       index,
 			In:          In,
 			Body:        Body,
 		}
@@ -610,7 +640,7 @@ func (p *parser) returnStatement() ast.Statement {
 		expr = p.expression()
 	}
 
-	p.consume(token.ZURÜCK, token.DOT)
+	p.consumeSeq(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
 	if p.currentFunction == nil {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
@@ -625,16 +655,16 @@ func (p *parser) returnStatement() ast.Statement {
 
 func (p *parser) voidReturnOrBreak() ast.Statement {
 	Leave := p.previous()
-	p.consume(token.DIE)
+	p.consumeSeq(token.DIE)
 	if p.matchAny(token.SCHLEIFE) {
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 		return &ast.BreakContinueStmt{
 			Range: token.NewRange(Leave, p.previous()),
 			Tok:   *Leave,
 		}
 	}
 
-	p.consume(token.FUNKTION, token.DOT)
+	p.consumeSeq(token.FUNKTION, token.DOT)
 	rnge := token.NewRange(Leave, p.previous())
 	if p.currentFunction == nil {
 		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
@@ -649,7 +679,7 @@ func (p *parser) voidReturnOrBreak() ast.Statement {
 
 func (p *parser) continueStatement() ast.Statement {
 	Continue := p.previous()
-	p.consume(token.MIT, token.DER, token.SCHLEIFE, token.FORT, token.DOT)
+	p.consumeSeq(token.MIT, token.DER, token.SCHLEIFE, token.FORT, token.DOT)
 	return &ast.BreakContinueStmt{
 		Range: token.NewRange(Continue, p.previous()),
 		Tok:   *Continue,

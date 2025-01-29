@@ -52,19 +52,19 @@ func (p *parser) parseType() ddptypes.Type {
 		}
 		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
 	case token.ZAHLEN:
-		p.consume(token.LISTE)
+		p.consumeSeq(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
 	case token.KOMMAZAHLEN:
-		p.consume(token.LISTE)
+		p.consumeSeq(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
 	case token.BUCHSTABEN:
 		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
 			return ddptypes.BUCHSTABE
 		}
-		p.consume(token.LISTE)
+		p.consumeSeq(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
 	case token.VARIABLEN:
-		p.consume(token.LISTE)
+		p.consumeSeq(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.VARIABLE}
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
@@ -108,7 +108,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
 		}
 	}
-	p.consume(token.LISTE)
+	p.consumeSeq(token.LISTE)
 
 	return result
 }
@@ -130,7 +130,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		if p.matchAny(token.LISTE) {
 			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
 		} else if p.matchAny(token.LISTEN) {
-			if !p.consume(token.REFERENZ) {
+			if !p.consumeSeq(token.REFERENZ) {
 				// report the error on the REFERENZ token, but still advance
 				// because there is a valid token afterwards
 				p.advance()
@@ -144,44 +144,44 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		if p.matchAny(token.LISTE) {
 			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, false
 		} else if p.matchAny(token.LISTEN) {
-			p.consume(token.REFERENZ)
+			p.consumeSeq(token.REFERENZ)
 			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, true
 		}
-		p.consume(token.REFERENZ)
+		p.consumeSeq(token.REFERENZ)
 		return ddptypes.ZAHL, true
 	case token.KOMMAZAHLEN:
 		if p.matchAny(token.LISTE) {
 			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, false
 		} else if p.matchAny(token.LISTEN) {
-			p.consume(token.REFERENZ)
+			p.consumeSeq(token.REFERENZ)
 			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, true
 		}
-		p.consume(token.REFERENZ)
+		p.consumeSeq(token.REFERENZ)
 		return ddptypes.KOMMAZAHL, true
 	case token.BUCHSTABEN:
 		if p.matchAny(token.LISTE) {
 			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, false
 		} else if p.matchAny(token.LISTEN) {
-			p.consume(token.REFERENZ)
+			p.consumeSeq(token.REFERENZ)
 			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, true
 		}
-		p.consume(token.REFERENZ)
+		p.consumeSeq(token.REFERENZ)
 		return ddptypes.BUCHSTABE, true
 	case token.VARIABLEN:
 		if p.matchAny(token.LISTE) {
 			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, false
 		} else if p.matchAny(token.LISTEN) {
-			p.consume(token.REFERENZ)
+			p.consumeSeq(token.REFERENZ)
 			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, true
 		}
-		p.consume(token.REFERENZ)
+		p.consumeSeq(token.REFERENZ)
 		return ddptypes.VARIABLE, true
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			if p.matchAny(token.LISTE) {
 				return ddptypes.ListType{Underlying: Type}, false
 			} else if p.matchAny(token.LISTEN) {
-				if !p.consume(token.REFERENZ) {
+				if !p.consumeSeq(token.REFERENZ) {
 					// report the error on the REFERENZ token, but still advance
 					// because there is a valid token afterwards
 					p.advance()

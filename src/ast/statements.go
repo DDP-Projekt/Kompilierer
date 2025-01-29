@@ -83,6 +83,7 @@ type (
 		Range       token.Range
 		For         token.Token // Für
 		Initializer *VarDecl    // InitVal is the same pointer as In
+		Index       *VarDecl    // optional index during iteration
 		In          Expression  // the string/list to range over
 		Body        *BlockStmt
 	}
