@@ -26,7 +26,7 @@ func TrimStringLit(lit *token.Token) string {
 	if lit == nil {
 		return ""
 	}
-	return strings.Trim(lit.Literal, "\"")
+	return strings.TrimSuffix(strings.TrimPrefix(lit.Literal, "\""), "\"")
 }
 
 // returns wether table is the global scope
