@@ -53,7 +53,7 @@ func (p *parser) assignRhs(withComma bool) ast.Expression {
 				expr = p.expression() // wahr wenn simply becomes a normal expression
 			}
 			if withComma {
-				p.consume(token.COMMA)
+				p.consumeSeq(token.COMMA)
 			}
 		} else { // no wahr/falsch wenn, only a boolean literal
 			p.decrease() // decrease, so expression() can recognize the literal
@@ -78,9 +78,9 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	isExternVisible := false
 	if isPublic && p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
 		if p.previous().Type == token.COMMA {
-			p.consume(token.EXTERN)
+			p.consumeSeq(token.EXTERN)
 		}
-		p.consume(token.SICHTBARE)
+		p.consumeSeq(token.SICHTBARE)
 		isExternVisible = true
 	}
 
@@ -117,7 +117,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	// we need a name, so bailout if none is provided
-	if !p.consume(token.IDENTIFIER) {
+	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Err: ddperror.Error{
 				Range: token.NewRange(p.peekN(-2), p.peek()),
@@ -131,9 +131,9 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 
 	name := p.previous()
 	if isField {
-		p.consume(token.MIT, token.STANDARDWERT)
+		p.consumeSeq(token.MIT, token.STANDARDWERT)
 	} else {
-		p.consume(token.IST)
+		p.consumeSeq(token.IST)
 	}
 	var expr ast.Expression
 
@@ -156,7 +156,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	if !isField {
-		p.consume(token.DOT)
+		p.consumeSeq(token.DOT)
 	}
 	// prefer trailing comments as long as they are on the same line
 	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
@@ -200,7 +200,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	}
 
 	// parse the first param name
-	validate(p.consume(token.IDENTIFIER))
+	validate(p.consumeSeq(token.IDENTIFIER))
 	firstName := p.previous()
 	if !p.paramNameAllowed(firstName) { // check that the parameter name is not already used
 		perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
@@ -229,16 +229,16 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 		}
 
 		if p.matchAny(token.UND) {
-			validate(p.consume(token.IDENTIFIER))
+			validate(p.consumeSeq(token.IDENTIFIER))
 			addParamName(p.previous())
 		} else {
 			for p.matchAny(token.COMMA) { // the function takes multiple parameters
-				if !p.consume(token.IDENTIFIER) {
+				if !p.consumeSeq(token.IDENTIFIER) {
 					break
 				}
 				addParamName(p.previous())
 			}
-			if !p.consume(token.UND, token.IDENTIFIER) {
+			if !p.consumeSeq(token.UND, token.IDENTIFIER) {
 				perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?")
 			}
 			addParamName(p.previous())
@@ -246,7 +246,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	}
 
 	// parse the types of the parameters
-	validate(p.consume(token.VOM, token.TYP))
+	validate(p.consumeSeq(token.VOM, token.TYP))
 	firstTypeStart := p.previous()
 	firstType, ref := p.parseReferenceType()
 	firstTypeEnd := p.previous()
@@ -279,12 +279,12 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 				}
 				addType()
 			}
-			p.consume(token.UND)
+			p.consumeSeq(token.UND)
 			addType()
 		}
 	}
 
-	p.consume(token.COMMA)
+	p.consumeSeq(token.COMMA)
 
 	invalidTypeIndex := slices.IndexFunc(params, isDefaultValue[ast.ParameterInfo])
 	// we need as many parmeter names as types
@@ -303,14 +303,14 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 // helper for funcDeclaration
 func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(bool)) ([]*ast.FuncAlias, [][]*token.Token) {
 	// parse the alias definitions before the body to enable recursion
-	validate(p.consume(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
+	validate(p.consumeSeq(token.UND, token.KANN, token.SO, token.BENUTZT, token.WERDEN, token.COLON, token.STRING)) // at least 1 alias is required
 	rawAliases := make([]*token.Token, 0)
 	if p.previous().Type == token.STRING {
 		rawAliases = append(rawAliases, p.previous())
 	}
 	// append the raw aliases
 	for (p.matchAny(token.COMMA) || p.matchAny(token.ODER)) && p.peek().Indent > 0 && !p.atEnd() {
-		if p.consume(token.STRING) {
+		if p.consumeSeq(token.STRING) {
 			rawAliases = append(rawAliases, p.previous())
 		}
 	}
@@ -381,7 +381,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 
 // helper for funcDeclaration
 func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType ddptypes.Type, validate func(bool)) ast.Operator {
-	validate(p.consume(token.DEN, token.STRING, token.OPERATOR, token.DOT))
+	validate(p.consumeSeq(token.DEN, token.STRING, token.OPERATOR, token.DOT))
 	operator_token := p.peekN(-3)
 	operator_name := ast.TrimStringLit(operator_token)
 
@@ -440,7 +440,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 
 	// we need a name, so bailout if none is provided
-	if !p.consume(token.IDENTIFIER) {
+	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.DeclStmt{
 			Decl: &ast.BadDecl{
 				Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, ddperror.LEVEL_ERROR, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.module.FileName),
@@ -465,7 +465,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	params := p.parseFunctionParameters(perr, validate)
 
 	// parse the return type declaration
-	validate(p.consume(token.GIBT))
+	validate(p.consumeSeq(token.GIBT))
 	returnTypeStart := p.previous()
 	returnType := p.parseReturnType()
 	returnTypeEnd := p.previous()
@@ -474,7 +474,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 	p.isCurrentFunctionBool = ddptypes.Equal(returnType, ddptypes.WAHRHEITSWERT)
 
-	validate(p.consume(token.ZURÜCK, token.COMMA))
+	validate(p.consumeSeq(token.ZURÜCK, token.COMMA))
 
 	isExternVisible := false
 	externVisibleRange := token.Range{} // for the possible error message below
@@ -487,17 +487,17 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	bodyStart := -1
 	definedIn := &token.Token{Type: token.ILLEGAL}
 	if p.matchAny(token.MACHT) {
-		validate(p.consume(token.COLON))
+		validate(p.consumeSeq(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
 		indent := p.previous().Indent + 1             // indentation level of the function body
 		for p.peek().Indent >= indent && !p.atEnd() { // advance to the alias definitions by checking the indentation
 			p.advance()
 		}
 	} else if p.matchAny(token.WIRD) {
-		validate(p.consume(token.SPÄTER, token.DEFINIERT))
+		validate(p.consumeSeq(token.SPÄTER, token.DEFINIERT))
 		isForwardDecl = true
 	} else {
-		validate(p.consume(token.IST, token.IN, token.STRING, token.DEFINIERT))
+		validate(p.consumeSeq(token.IST, token.IN, token.STRING, token.DEFINIERT))
 		definedIn = p.peekN(-2)
 		switch filepath.Ext(ast.TrimStringLit(definedIn)) {
 		case ".c", ".lib", ".a", ".o":
@@ -644,7 +644,7 @@ func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
 		return nil
 	}
 
-	p.consume(token.COLON)
+	p.consumeSeq(token.COLON)
 
 	body := p.parseFunctionBody(decl)
 
@@ -843,7 +843,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.matchAny(token.OEFFENTLICHE)
-	p.consume(token.KOMBINATION, token.AUS)
+	p.consumeSeq(token.KOMBINATION, token.AUS)
 
 	// parse the fields
 	var fields []ast.Declaration
@@ -855,7 +855,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 			n = -2
 		}
 		fields = append(fields, p.varDeclaration(n, true))
-		if !p.consume(token.COMMA) {
+		if !p.consumeSeq(token.COMMA) {
 			p.advance()
 		}
 	}
@@ -863,7 +863,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	// deterime the grammatical gender
 	gender := p.parseGender()
 
-	if !p.consume(token.IDENTIFIER) {
+	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.BadDecl{
 			Err: ddperror.Error{
 				Code:  ddperror.SEM_NAME_UNDEFINED,
@@ -881,13 +881,13 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
 	}
 
-	p.consume(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
+	p.consumeSeq(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
 	var rawAliases []*token.Token
 	if p.previous().Type == token.STRING {
 		rawAliases = append(rawAliases, p.previous())
 	}
 	for p.matchAny(token.COMMA) || p.matchAny(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
-		if p.consume(token.STRING) {
+		if p.consumeSeq(token.STRING) {
 			rawAliases = append(rawAliases, p.previous())
 		}
 	}
@@ -946,20 +946,20 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	begin := p.previous() // Wir
 	comment := p.parseDeclComment(begin.Range)
 
-	p.consume(token.NENNEN)
+	p.consumeSeq(token.NENNEN)
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
 	underlying := p.parseType()
 	underlyingEnd := p.previous()
 
 	isPublic := p.matchAny(token.OEFFENTLICH)
-	p.consume(token.AUCH)
+	p.consumeSeq(token.AUCH)
 
 	gender := p.parseGender()
-	p.consume(token.IDENTIFIER)
+	p.consumeSeq(token.IDENTIFIER)
 	typeName := p.previous()
 
-	p.consume(token.DOT)
+	p.consumeSeq(token.DOT)
 
 	decl := &ast.TypeAliasDecl{
 		Range:           token.NewRange(begin, p.previous()),
@@ -985,11 +985,11 @@ func (p *parser) typeDefDecl() ast.Declaration {
 	comment := p.parseDeclComment(begin.Range)
 
 	gender := p.parseGender()
-	p.consume(token.IDENTIFIER)
+	p.consumeSeq(token.IDENTIFIER)
 	typeName := p.previous()
 
 	isPublic := p.matchAny(token.OEFFENTLICH)
-	p.consume(token.ALS)
+	p.consumeSeq(token.ALS)
 
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
@@ -1001,7 +1001,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 		p.err(ddperror.SEM_BAD_TYPEDEF, underlyingRange, fmt.Sprintf("Es kann kein neuer Typ als '%s' definiert werden", ddptypes.VARIABLE))
 	}
 
-	p.consume(token.DOT)
+	p.consumeSeq(token.DOT)
 
 	decl := &ast.TypeDefDecl{
 		Range:           token.NewRange(begin, p.previous()),
@@ -1028,9 +1028,9 @@ func (p *parser) aliasDecl() ast.Statement {
 	if begin.Type != token.DER {
 		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", token.DER))
 	}
-	p.consume(token.STRING)
+	p.consumeSeq(token.STRING)
 	aliasTok := p.previous()
-	p.consume(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
+	p.consumeSeq(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)
 	fun := p.previous()
 
 	decl, ok, isVar := p.scope().LookupDecl(fun.Literal)
@@ -1067,7 +1067,7 @@ func (p *parser) aliasDecl() ast.Statement {
 		p.errVal(*err)
 	}
 
-	p.consume(token.DOT)
+	p.consumeSeq(token.DOT)
 
 	if begin.Indent > 0 {
 		p.err(ddperror.SEM_ALIAS_MUST_BE_GLOBAL, token.NewRange(begin, p.previous()), "Ein Alias darf nur im globalen Bereich deklariert werden!")

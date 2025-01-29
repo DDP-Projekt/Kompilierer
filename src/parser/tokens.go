@@ -36,23 +36,15 @@ func (p *parser) matchSeq(types ...token.TokenType) bool {
 	return true
 }
 
-// if the current token is of type t advance, otherwise error
-func (p *parser) consume1(t token.TokenType) bool {
-	if p.check(t) {
-		p.advance()
-		return true
-	}
-
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, t))
-	return false
-}
-
-// consume a series of tokens
-func (p *parser) consume(t ...token.TokenType) bool {
+// consumeSeq a series of tokens
+func (p *parser) consumeSeq(t ...token.TokenType) bool {
 	for _, v := range t {
-		if !p.consume1(v) {
+		if !p.check(v) {
+			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, t))
 			return false
 		}
+
+		p.advance()
 	}
 	return true
 }

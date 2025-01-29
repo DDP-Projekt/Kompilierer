@@ -17,7 +17,7 @@ import (
 
 func testHandler(t *testing.T) ddperror.Handler {
 	return func(err ddperror.Error) {
-		t.Error(err.Error())
+		t.Errorf("%v", err)
 	}
 }
 

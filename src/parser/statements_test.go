@@ -64,4 +64,8 @@ func TestForRangeWithIndex(t *testing.T) {
 	assert.Equal("i", for_stmt.Index.Name())
 	assert.Equal(for_stmt.Initializer.Name(), "z")
 	assert.Equal(for_stmt.Initializer.Type, ddptypes.ZAHL)
+	decl, exists, _ := for_stmt.Body.Symbols.LookupDecl("i")
+	assert.NotNil(decl)
+	assert.True(exists)
+	assert.IsType(&ast.IntLit{}, decl.(*ast.VarDecl).InitVal)
 }

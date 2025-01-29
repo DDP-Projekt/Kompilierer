@@ -61,3 +61,19 @@ Die Text Liste tl ist eine Liste, die aus "Hallo", "du", "da", ".", ";" besteht.
 Für jeden Text z in tl, mache:
 	Schreibe z.
 Für jeden Text z in tl, Schreibe z.
+Schreibe den Buchstaben '\n'.
+
+[Mit Index]
+
+Für jeden Buchstaben b mit Index i in "Hallo", mache:
+	Schreibe den Buchstaben b.
+	Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+Für jeden Buchstaben b mit Index i in "프a렌l즈", mache:
+	Schreibe den Buchstaben b.
+	Schreibe die Zahl i.
+Schreibe den Buchstaben '\n'.
+
+Für jede Zahl z mit Index i in einer Liste, die aus 1, 2, 3, 4 besteht, mache:
+	Schreibe z.
+	Schreibe i.

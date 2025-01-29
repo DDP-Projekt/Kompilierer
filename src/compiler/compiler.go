@@ -7,11 +7,11 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -2327,7 +2327,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		iter_ptr_type types.Type
 		end_ptr       value.Value // points to the one-after-last element
 		length        value.Value
+		index         value.Value = c.NewAlloca(c.ddpinttyp.IrType())
 	)
+
 	if inTyp == c.ddpstring {
 		iter_ptr_type = i8ptr
 		iter_ptr = c.NewAlloca(iter_ptr_type)
@@ -2350,6 +2352,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.cbb = loopStart
 	irType := c.toIrType(s.Initializer.Type)
 	c.scp.addProtected(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
+	if s.Index != nil {
+		c.scp.addVar(s.Index.Name(), index, c.ddpinttyp, false)
+		c.cbb.NewStore(newInt(1), index)
+	}
 	c.cbb.NewBr(condBlock)
 
 	c.cbb = condBlock
@@ -2416,6 +2422,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 			),
 			iter_ptr,
 		)
+	}
+	if s.Index != nil {
+		c.cbb.NewStore(c.cbb.NewAdd(c.cbb.NewLoad(c.ddpinttyp.IrType(), index), newInt(1)), index) // index += 1
 	}
 	c.cbb.NewBr(condBlock)
 
