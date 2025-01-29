@@ -10,6 +10,7 @@ import (
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/resolver"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
+	"github.com/DDP-Projekt/Kompilierer/src/scanner"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/stretchr/testify/assert"
 )
@@ -117,21 +118,56 @@ func createTokens(args ...any) (result []token.Token) {
 	return result
 }
 
+func scanTokens(t *testing.T, src string) []token.Token {
+	result, err := scanner.Scan(scanner.Options{
+		FileName:     "test.ddp",
+		ScannerMode:  scanner.ModeStrictCapitalization,
+		ErrorHandler: testHandler(t),
+		Source:       []byte(src),
+	})
+	if err != nil {
+		t.Error("scanner error: " + err.Error())
+	}
+	return result
+}
+
+// takes name type pairs to create a symbol table
+func createSymbols(args ...any) *ast.SymbolTable {
+	symbols := ast.NewSymbolTable(nil)
+	for i := 0; i < len(args); i += 2 {
+		symbols.InsertDecl(args[i].(string),
+			&ast.VarDecl{
+				NameTok:  token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
+				Type:     ddptypes.ListType{Underlying: args[i+1].(ddptypes.Type)},
+				InitType: args[i+1].(ddptypes.Type),
+			})
+	}
+	return symbols
+}
+
+func success(assert *assert.Assertions, parser *parser, node ast.Node) bool {
+	return cmp.Or(
+		assert.NotNil(node),
+		assert.False(parser.panicMode),
+		assert.False(parser.errored),
+	)
+}
+
 func TestTypeAliasDecl(t *testing.T) {
 	assert := assert.New(t)
 	given := createParser(t,
 		parser{
-			tokens: createTokens(
-				token.WIR, token.NENNEN, token.EINE, token.ZAHL, token.AUCH, token.EINE,
-				token.IDENTIFIER, "Nummer",
-				token.DOT,
+			tokens: scanTokens(t,
+				`Wir nennen eine Zahl auch eine Nummer.`,
 			),
 		},
 	)
 	given.cur = 1 // skip WIR
 
 	raw_decl := given.typeAliasDecl()
-	assert.NotNil(raw_decl)
+	if !success(assert, given, raw_decl) {
+		t.FailNow()
+	}
 	decl := raw_decl.(*ast.TypeAliasDecl)
 
 	assert.Equal(given.tokens[0], decl.Tok)

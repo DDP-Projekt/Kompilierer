@@ -157,6 +157,7 @@ const (
 	REKURSIV
 	ALLE
 	MODULE
+	INDEX
 
 	DOT     // .
 	COMMA   // ,
@@ -323,6 +324,7 @@ var tokenStrings = [...]string{
 	REKURSIV:      "rekursiv",
 	ALLE:          "alle",
 	MODULE:        "Module",
+	INDEX:         "Index",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -494,6 +496,7 @@ var KeywordMap = map[string]TokenType{
 	"rekursiv":       REKURSIV,
 	"alle":           ALLE,
 	"Module":         MODULE,
+	"Index":          INDEX,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
