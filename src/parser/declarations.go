@@ -66,8 +66,8 @@ func (p *parser) assignRhs(withComma bool) ast.Expression {
 	return expr
 }
 
-func (p *parser) matchExternSichtbar() bool {
-	if p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
+func (p *parser) matchExternSichtbar(isPublic bool) bool {
+	if isPublic && p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
 		if p.previous().Type == token.COMMA {
 			p.consumeSeq(token.EXTERN)
 		}
@@ -86,7 +86,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
-	isExternVisible := isPublic && p.matchExternSichtbar()
+	isExternVisible := p.matchExternSichtbar(isPublic)
 
 	p.consumeSeq(token.KONSTANTE)
 
@@ -139,7 +139,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
-	isExternVisible := isPublic && p.matchExternSichtbar()
+	isExternVisible := p.matchExternSichtbar(isPublic)
 
 	type_start := p.peek()
 	typ := p.parseType()
