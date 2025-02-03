@@ -353,7 +353,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 
 		negMarkerStart := strings.Index(v.Literal, "<!")
 		if negMarkerStart != -1 {
-			if !p.isCurrentFunctionBool {
+			if !p.isCurrentFunctionBool() {
 				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
 				continue
 			}
@@ -437,7 +437,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	begin := p.peekN(startDepth) // token.DIE
 	comment := p.parseDeclComment(begin.Range)
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+2).Type == token.OEFFENTLICHE
+	isGeneric := p.peekN(startDepth+1).Type == token.GENERISCHE || p.peekN(startDepth+2).Type == token.GENERISCHE
 
 	// we need a name, so bailout if none is provided
 	if !p.consumeSeq(token.IDENTIFIER) {
@@ -472,7 +473,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	if returnType == nil {
 		valid = false
 	}
-	p.isCurrentFunctionBool = ddptypes.Equal(returnType, ddptypes.WAHRHEITSWERT)
 
 	validate(p.consumeSeq(token.ZURÜCK, token.COMMA))
 
@@ -537,6 +537,12 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	}
 
+	// TODO: properly instantiate this later
+	var genericInfo *ast.GenericFuncInfo
+	if isGeneric {
+		genericInfo = &ast.GenericFuncInfo{}
+	}
+
 	decl := &ast.FuncDecl{
 		Range:           token.NewRange(begin, p.previous()),
 		CommentTok:      comment,
@@ -553,6 +559,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		ExternFile:      *definedIn,
 		Operator:        operator,
 		Aliases:         funcAliases,
+		Generic:         genericInfo,
 	}
 
 	for i := range funcAliases {

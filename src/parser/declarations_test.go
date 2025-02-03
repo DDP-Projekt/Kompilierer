@@ -56,7 +56,7 @@ func createParser(test *testing.T, overrider parser) *parser {
 		Ast: &ast.Ast{
 			Statements: NotNilSlice(overrider.module.Ast.Statements),
 			Comments:   NotNilSlice(overrider.module.Ast.Comments),
-			Symbols:    cmp.Or(overrider.module.Ast.Symbols, symbols),
+			Symbols:    symbols,
 			Faulty:     overrider.module.Ast.Faulty,
 		},
 		PublicDecls: NotNilMap(overrider.module.PublicDecls),
@@ -68,20 +68,19 @@ func createParser(test *testing.T, overrider parser) *parser {
 	}
 
 	parser := parser{
-		tokens:                NotNilSlice(overrider.tokens),
-		comments:              NotNilSlice(overrider.comments),
-		cur:                   overrider.cur,
-		errorHandler:          errorHandler,
-		lastError:             overrider.lastError,
-		module:                cmp.Or(overrider.module, module),
-		predefinedModules:     NotNilMap(overrider.predefinedModules),
-		aliases:               cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
-		currentFunction:       overrider.currentFunction,
-		isCurrentFunctionBool: overrider.isCurrentFunctionBool,
-		panicMode:             overrider.panicMode,
-		errored:               overrider.errored,
-		resolver:              overrider.resolver,
-		typechecker:           overrider.typechecker,
+		tokens:            NotNilSlice(overrider.tokens),
+		comments:          NotNilSlice(overrider.comments),
+		cur:               overrider.cur,
+		errorHandler:      errorHandler,
+		lastError:         overrider.lastError,
+		module:            module,
+		predefinedModules: NotNilMap(overrider.predefinedModules),
+		aliases:           cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
+		currentFunction:   overrider.currentFunction,
+		panicMode:         overrider.panicMode,
+		errored:           overrider.errored,
+		resolver:          overrider.resolver,
+		typechecker:       overrider.typechecker,
 	}
 	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
 	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
@@ -265,4 +264,61 @@ func TestTypeAliasAliasInsert(t *testing.T) {
 	assert.True(isFunc)
 	assert.Equal(expectedAlias, actualFuncAlias)
 	assert.Equal([]*token.Token{&testTokens[0], &testTokens[1]}, pTokens)
+}
+
+func TestFuncDeclProperties(t *testing.T) {
+	assert := assert.New(t)
+
+	runTest := func(tokens string, public, generic, shouldSucceed bool) {
+		var errorHandler ddperror.Handler
+		mockHandler := ddperror.MockHandler{}
+		if !shouldSucceed {
+			errorHandler = mockHandler.GetHandler()
+		}
+		given := createParser(t,
+			parser{
+				tokens:       scanTokens(t, tokens),
+				errorHandler: errorHandler,
+			},
+		)
+
+		decl_stmt := given.declaration()
+		if !shouldSucceed {
+			assert.True(mockHandler.DidError())
+			return
+		}
+		if !success(assert, given, decl_stmt) {
+			t.FailNow()
+		}
+
+		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+		assert.Equal(public, func_decl.IsPublic)
+		assert.Equal(generic, ast.IsGeneric(func_decl))
+	}
+	runTest(`
+Die Funktion foo gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo"`, false, false, true,
+	)
+	runTest(`
+Die öffentliche Funktion foo gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo"`, true, false, true,
+	)
+	runTest(`
+Die generische Funktion foo gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo"`, false, true, true,
+	)
+	runTest(`
+Die öffentliche generische Funktion foo gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo"`, true, true, true,
+	)
+	// illegal case
+	runTest(`
+Die generische öffentliche Funktion foo gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo"`, true, true, false,
+	)
 }

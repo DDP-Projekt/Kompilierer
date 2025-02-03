@@ -21,6 +21,10 @@ func IsOperatorOverload(fun *FuncDecl) bool {
 	return fun.Operator != nil
 }
 
+func IsGeneric(fun *FuncDecl) bool {
+	return fun.Generic != nil
+}
+
 // trims the "" from the literal
 func TrimStringLit(lit *token.Token) string {
 	if lit == nil {

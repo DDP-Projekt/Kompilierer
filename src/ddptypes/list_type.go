@@ -50,6 +50,7 @@ func GetNestedListUnderlying(typ Type) Type {
 	return typ
 }
 
+// helper that flattens list types to not contain typedefs/aliases
 func getTrueListUnderlying(typ Type) Type {
 	typ = TrueUnderlying(typ)
 	if IsList(typ) {
@@ -58,6 +59,14 @@ func getTrueListUnderlying(typ Type) Type {
 	return typ
 }
 
+// Returns the True Underlying type for a list
+// that is the element type of a list all the way down
+// example:
+// - int 				  	  -> int
+// - list(int) 			 	  -> int
+// - list(typedef(int)) 	  -> int
+// - list(list(int))     	  -> int
+// - list(list(typedef(int))) -> int
 func ListTrueUnderlying(typ Type) Type {
 	typ = TrueUnderlying(typ)
 	if IsList(typ) {

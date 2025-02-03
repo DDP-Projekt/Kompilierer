@@ -56,6 +56,17 @@ func TestIsOperatorOverload(t *testing.T) {
 	}))
 }
 
+func TestIsGeneric(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.True(IsGeneric(&FuncDecl{
+		Generic: &GenericFuncInfo{},
+	}))
+	assert.False(IsGeneric(&FuncDecl{
+		Generic: nil,
+	}))
+}
+
 func TestTrimStringLit(t *testing.T) {
 	assert := assert.New(t)
 

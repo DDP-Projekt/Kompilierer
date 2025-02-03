@@ -24,6 +24,21 @@ type Type interface {
 
 // helper functions
 
+// checks wether t matches any of the provided genders
+func MatchesGender(t Type, genders ...GrammaticalGender) bool {
+	// generic types match every gender
+	if _, ok := t.(*GenericType); ok {
+		return true
+	}
+
+	for _, gender := range genders {
+		if t.Gender() == gender {
+			return true
+		}
+	}
+	return false
+}
+
 // checks wether t1 equals t2,
 // that is, wether t1 and t2 refer to the same type
 // throughout TypeAliases but not TypeDefs

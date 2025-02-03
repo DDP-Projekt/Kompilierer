@@ -634,7 +634,7 @@ func (p *parser) forStatement() ast.Statement {
 func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	var expr ast.Expression
-	if p.isCurrentFunctionBool {
+	if p.isCurrentFunctionBool() {
 		expr = p.assignRhs(true)
 	} else {
 		expr = p.expression()

@@ -37,11 +37,9 @@ type parser struct {
 	// modules that were passed as environment, might not all be used
 	predefinedModules map[string]*ast.Module
 	// all found aliases (+ inbuild aliases)
-	aliases *at.Trie[*token.Token, ast.Alias]
+	aliases ast.AliasTrie
 	// function which is currently being parsed
 	currentFunction *ast.FuncDecl
-	// wether the current function returns a boolean
-	isCurrentFunctionBool bool
 	// flag to not report following errors
 	panicMode bool
 	// wether the parser found an error
@@ -107,14 +105,13 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			PublicDecls: make(map[string]ast.Declaration, 8),
 			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
 		},
-		predefinedModules:     modules,
-		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
-		currentFunction:       nil,
-		isCurrentFunctionBool: false,
-		panicMode:             false,
-		errored:               false,
-		resolver:              &resolver.Resolver{},
-		typechecker:           &typechecker.Typechecker{},
+		predefinedModules: modules,
+		aliases:           at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
+		currentFunction:   nil,
+		panicMode:         false,
+		errored:           false,
+		resolver:          &resolver.Resolver{},
+		typechecker:       &typechecker.Typechecker{},
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
@@ -173,20 +170,24 @@ func (p *parser) declaration() ast.Statement {
 			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
 		}
 
-		n := -1
+		func_decl_start_depth := -2
 		if p.matchAny(token.OEFFENTLICHE) {
-			n = -2
+			func_decl_start_depth -= 1
 		}
 
 		switch t := p.peek().Type; t {
 		case token.ALIAS:
 			p.advance()
 			return p.aliasDecl()
+		case token.GENERISCHE:
+			func_decl_start_depth -= 1
+			p.advance() // skip generische
+			fallthrough
 		case token.FUNKTION:
-			p.advance()
-			return p.funcDeclaration(n - 1)
+			p.consumeAny(token.FUNKTION)
+			return p.funcDeclaration(func_decl_start_depth)
 		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
+			return &ast.DeclStmt{Decl: p.varDeclaration(func_decl_start_depth, false)}
 		}
 	}
 
@@ -411,6 +412,10 @@ func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
 // helper to report errors and enter panic mode
 func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
 	p.errorHandler(ddperror.New(code, ddperror.LEVEL_WARN, Range, msg, p.module.FileName))
+}
+
+func (p *parser) isCurrentFunctionBool() bool {
+	return p.currentFunction != nil && ddptypes.Equal(p.currentFunction.ReturnType, ddptypes.WAHRHEITSWERT)
 }
 
 // checks wether the alias already exists AND has a value attached to it
