@@ -185,6 +185,8 @@ func (p *parser) declaration() ast.Statement {
 		case token.FUNKTION:
 			p.advance()
 			return p.funcDeclaration(n - 1)
+		case token.KONSTANTE:
+			return &ast.DeclStmt{Decl: p.constDeclaration(n)}
 		default:
 			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
 		}

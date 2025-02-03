@@ -24,7 +24,7 @@ func MsgGotExpected(got any, expected ...any) string {
 }
 
 func MsgNameAlreadyExists(name string) string {
-	return fmt.Sprintf("Der Name %s steht bereits für eine Variable, Funktion oder Struktur", name)
+	return fmt.Sprintf("Der Name %s steht bereits für eine Variable, Konstante, Funktion oder Struktur", name)
 }
 
 func MsgAliasAlreadyExists(alias, name string, isFunc bool) string {

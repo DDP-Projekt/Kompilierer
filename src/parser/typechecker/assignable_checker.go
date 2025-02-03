@@ -19,7 +19,6 @@ func isAssignable(expr ast.Expression) (ast.Assigneable, bool) {
 	default:
 		return nil, false
 	}
-	return nil, false
 }
 
 func isBinaryExprAssignable(expr *ast.BinaryExpr) (ast.Assigneable, bool) {

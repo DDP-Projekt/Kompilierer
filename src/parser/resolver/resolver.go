@@ -81,6 +81,23 @@ func (r *Resolver) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (r *Resolver) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
+	r.visit(decl.Val)
+
+	// insert the variable into the current scope (SymbolTable)
+	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
+		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+	}
+
+	if decl.Public() && !ast.IsGlobalScope(r.CurrentTable) {
+		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Konstante können öffentlich sein")
+	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
+		r.Module.PublicDecls[decl.Name()] = decl
+	}
+
+	return ast.VisitRecurse
+}
+
 func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)

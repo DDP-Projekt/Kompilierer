@@ -103,6 +103,16 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
+	decl.Type = t.Evaluate(decl.Val)
+
+	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.Range, "Der Typ einer öffentlichen Konstante muss ebenfalls öffentlich sein")
+	}
+
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
 	decl.InitType = initialType

@@ -456,6 +456,10 @@ func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitConstDecl(d *ast.ConstDecl) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
