@@ -204,7 +204,7 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	} else if !isVar {
 		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", expr.Literal.Literal))
 	} else { // set the reference to the declaration
-		expr.Declaration = &decl
+		expr.Declaration = decl
 	}
 	return ast.VisitRecurse
 }
@@ -361,7 +361,7 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 		} else if _, isConst := varDecl.(*ast.ConstDecl); isConst {
 			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für einer Konstante und kann daher nicht zugewiesen werden", assign.Literal.Literal))
 		} else { // set the reference to the declaration
-			assign.Declaration = &varDecl
+			assign.Declaration = varDecl
 		}
 	case *ast.Indexing:
 		r.visit(assign.Lhs)

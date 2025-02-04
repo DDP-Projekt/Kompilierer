@@ -85,8 +85,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 
 	comment := p.parseDeclComment(begin.Range)
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
-	isExternVisible := p.matchExternSichtbar(isPublic)
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
 
 	p.consumeSeq(token.KONSTANTE)
 
@@ -112,6 +111,13 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	if _, isLiteral := expr.(ast.Literal); !isLiteral {
 		p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 	}
+	if expr, isList := expr.(*ast.ListLit); isList {
+		for _, v := range expr.Values {
+			if _, isLiteral := v.(ast.Literal); !isLiteral {
+				p.err(ddperror.SYN_EXPECTED_LITERAL, v.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+			}
+		}
+	}
 
 	// prefer trailing comments as long as they are on the same line
 	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
@@ -119,13 +125,12 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	}
 
 	return &ast.ConstDecl{
-		Range:           token.NewRange(begin, p.previous()),
-		Mod:             p.module,
-		CommentTok:      comment,
-		IsPublic:        isPublic,
-		IsExternVisible: isExternVisible,
-		NameTok:         *name,
-		Val:             expr,
+		Range:      token.NewRange(begin, p.previous()),
+		Mod:        p.module,
+		CommentTok: comment,
+		IsPublic:   isPublic,
+		NameTok:    *name,
+		Val:        expr,
 	}
 }
 

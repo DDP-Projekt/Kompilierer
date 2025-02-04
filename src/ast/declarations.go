@@ -15,14 +15,13 @@ type (
 	}
 
 	ConstDecl struct {
-		Range           token.Range
-		Mod             *Module       // the module in which the variable was declared
-		CommentTok      *token.Token  // optional comment (also contained in ast.Comments)
-		Type            ddptypes.Type // type of the variable
-		NameTok         token.Token   // identifier name
-		Val             Expression
-		IsPublic        bool // wether the function is marked with öffentliche
-		IsExternVisible bool // wether the variable is marked as extern visible
+		Range      token.Range
+		Mod        *Module       // the module in which the variable was declared
+		CommentTok *token.Token  // optional comment (also contained in ast.Comments)
+		Type       ddptypes.Type // type of the variable
+		NameTok    token.Token   // identifier name
+		Val        Expression
+		IsPublic   bool // wether the function is marked with öffentliche
 	}
 
 	VarDecl struct {

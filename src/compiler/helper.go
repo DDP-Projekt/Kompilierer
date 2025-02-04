@@ -176,10 +176,6 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		if decl.IsExternVisible {
 			return decl.Name()
 		}
-	case *ast.ConstDecl:
-		if decl.IsExternVisible {
-			return decl.Name()
-		}
 	default:
 		// do nothing
 	}

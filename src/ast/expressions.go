@@ -22,7 +22,7 @@ type (
 		Literal token.Token
 		// the variable declaration this identifier refers to
 		// is set by the resolver, or nil if the name was not found
-		Declaration *Declaration
+		Declaration Declaration
 	}
 
 	// also exists as Binary expression for Literals
