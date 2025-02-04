@@ -1,0 +1,25 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Konstante k_z ist 4.
+Die Konstante k_k ist 4,2.
+Die Konstante k_w ist wahr.
+Die Konstante k_b ist 'g'.
+Die Konstante k_t ist "hallo welt".
+Die Konstante k_t2 ist "".
+Die Konstante k_lz ist eine Liste, die aus 3, 5, 6 besteht.
+Die Konstante k_lk ist eine Liste, die aus 3,2, 5,76, 6,0 besteht.
+Die Konstante k_lw ist eine Liste, die aus wahr, falsch, wahr besteht.
+Die Konstante k_lb ist eine Liste, die aus 'd', 'a', 'd' besteht.
+Die Konstante k_lt ist eine Liste, die aus "hallo welt", "yo", "" besteht.
+
+Schreibe k_z auf eine Zeile.
+Schreibe k_k auf eine Zeile.
+Schreibe k_w auf eine Zeile.
+Schreibe k_b auf eine Zeile.
+Schreibe k_t auf eine Zeile.
+Schreibe k_t2 auf eine Zeile.
+Schreibe k_lz auf eine Zeile.
+Schreibe k_lk auf eine Zeile.
+Schreibe k_lw auf eine Zeile.
+Schreibe k_lb auf eine Zeile.
+Schreibe k_lt auf eine Zeile.
