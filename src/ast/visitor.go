@@ -25,6 +25,7 @@ type FullVisitor interface {
 	*/
 
 	BadDeclVisitor
+	ConstDeclVisitor
 	VarDeclVisitor
 	FuncDeclVisitor
 	FuncDefVisitor
@@ -79,6 +80,10 @@ type (
 	BadDeclVisitor interface {
 		Visitor
 		VisitBadDecl(*BadDecl) VisitResult
+	}
+	ConstDeclVisitor interface {
+		Visitor
+		VisitConstDecl(*ConstDecl) VisitResult
 	}
 	VarDeclVisitor interface {
 		Visitor
@@ -244,6 +249,15 @@ var _ BadDeclVisitor = (BadDeclVisitorFunc)(nil)
 
 func (BadDeclVisitorFunc) Visitor() {}
 func (f BadDeclVisitorFunc) VisitBadDecl(stmt *BadDecl) VisitResult {
+	return f(stmt)
+}
+
+type ConstDeclVisitorFunc func(*ConstDecl) VisitResult
+
+var _ ConstDeclVisitor = (ConstDeclVisitorFunc)(nil)
+
+func (ConstDeclVisitorFunc) Visitor() {}
+func (f ConstDeclVisitorFunc) VisitConstDecl(stmt *ConstDecl) VisitResult {
 	return f(stmt)
 }
 

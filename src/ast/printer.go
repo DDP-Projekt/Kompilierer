@@ -74,6 +74,15 @@ func (pr *printer) VisitBadDecl(decl *BadDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitConstDecl(decl *ConstDecl) VisitResult {
+	msg := fmt.Sprintf("ConstDecl[%s: %s]", decl.Name(), decl.Type)
+	if decl.CommentTok != nil {
+		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
+	}
+	pr.parenthesizeNode(msg, decl.Val)
+	return VisitRecurse
+}
+
 func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 	msg := fmt.Sprintf("VarDecl[%s: %s]", decl.Name(), decl.Type)
 	if decl.CommentTok != nil {
@@ -138,7 +147,7 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 }
 
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("Ident[%s]", expr.Literal.Literal))
+	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration.String()))
 	return VisitRecurse
 }
 

@@ -22,7 +22,7 @@ type (
 		Literal token.Token
 		// the variable declaration this identifier refers to
 		// is set by the resolver, or nil if the name was not found
-		Declaration *VarDecl
+		Declaration Declaration
 	}
 
 	// also exists as Binary expression for Literals
@@ -39,6 +39,11 @@ type (
 	FieldAccess struct {
 		Rhs   Assigneable // variable Name or other indexing
 		Field *Ident      // the field name
+	}
+
+	Literal interface {
+		Expression
+		literal()
 	}
 
 	IntLit struct {
@@ -289,3 +294,10 @@ func (expr *StructLiteral) expressionNode() {}
 func (expr *Ident) assigneable()       {}
 func (expr *Indexing) assigneable()    {}
 func (expr *FieldAccess) assigneable() {}
+
+func (expr *IntLit) literal()    {}
+func (expr *FloatLit) literal()  {}
+func (expr *BoolLit) literal()   {}
+func (expr *CharLit) literal()   {}
+func (expr *StringLit) literal() {}
+func (expr *ListLit) literal()   {}

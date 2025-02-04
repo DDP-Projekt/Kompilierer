@@ -1,0 +1,12 @@
+4
+4,2
+wahr
+g
+hallo welt
+
+3, 5, 6
+3,2, 5,76, 6
+wahr, falsch, wahr
+d, a, d
+hallo welt, yo, 
+2, 2, 2, 2, 2

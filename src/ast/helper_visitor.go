@@ -172,6 +172,14 @@ func (h *helperVisitor) VisitBadDecl(decl *BadDecl) VisitResult {
 	return VisitRecurse
 }
 
+func (h *helperVisitor) VisitConstDecl(decl *ConstDecl) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(ConstDeclVisitor); ok {
+		result = vis.VisitConstDecl(decl)
+	}
+	return h.visitChildren(result, decl.Val)
+}
+
 func (h *helperVisitor) VisitVarDecl(decl *VarDecl) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(VarDeclVisitor); ok {

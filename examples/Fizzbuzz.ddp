@@ -1,6 +1,6 @@
 Binde "Duden/Ausgabe" ein.
 Binde Ist_Teilbar aus "Duden/Mathe" ein.
-Binde Zahl_Eins, Zahl_Drei, Zahl_Fünf und Zahl_Hundert aus "Duden/Zahlen" ein.
+Binde Zahl_Eins, drei, fünf und hundert aus "Duden/Zahlen" ein.
 
 Für jede Zahl i von eins bis hundert, mache:
     Wenn i durch drei teilbar ist und i durch fünf teilbar ist, Schreibe den Text "FizzBuzz" auf eine Zeile.

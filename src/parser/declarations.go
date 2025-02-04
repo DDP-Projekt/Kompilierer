@@ -66,6 +66,106 @@ func (p *parser) assignRhs(withComma bool) ast.Expression {
 	return expr
 }
 
+func (p *parser) matchExternSichtbar(isPublic bool) bool {
+	if isPublic && p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
+		if p.previous().Type == token.COMMA {
+			p.consumeSeq(token.EXTERN)
+		}
+		p.consumeSeq(token.SICHTBARE)
+		return true
+	}
+	return false
+}
+
+func (p *parser) constDeclaration(startDepth int) ast.Declaration {
+	begin := p.peekN(startDepth) // Die
+	if begin.Type != token.DIE {
+		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", "Die"))
+	}
+
+	comment := p.parseDeclComment(begin.Range)
+
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+
+	p.consumeSeq(token.KONSTANTE)
+
+	// we need a name, so bailout if none is provided
+	if !p.consumeSeq(token.IDENTIFIER) {
+		return &ast.BadDecl{
+			Err: ddperror.Error{
+				Range: token.NewRange(p.peekN(-2), p.peek()),
+				File:  p.module.FileName,
+				Msg:   "Es wurde ein Name für die Konstante erwartet",
+			},
+			Tok: *p.peek(),
+			Mod: p.module,
+		}
+	}
+	name := p.previous()
+
+	p.consumeSeq(token.IST)
+
+	expr := p.expression()
+	_, isLiteral := expr.(ast.Literal)
+	if !isLiteral {
+		p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+	}
+
+	if p.matchAny(token.COUNT_MAL) {
+		value := p.expression()
+		if _, isLiteral := value.(ast.Literal); !isLiteral {
+			p.err(ddperror.SYN_EXPECTED_LITERAL, value.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+		}
+
+		expr_tok := expr.Token()
+		expr = &ast.ListLit{
+			Tok:    expr.Token(),
+			Range:  token.NewRange(&expr_tok, p.previous()),
+			Type:   ddptypes.ListType{},
+			Values: nil,
+			Count:  expr,
+			Value:  value,
+		}
+	}
+
+	if expr, isList := expr.(*ast.ListLit); isList {
+		// TODO: does not yet work with nested lists
+		for _, v := range expr.Values {
+			if _, isLiteral := v.(ast.Literal); !isLiteral {
+				p.err(ddperror.SYN_EXPECTED_LITERAL, v.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+			}
+		}
+	}
+
+	p.consumeSeq(token.DOT)
+
+	if !isLiteral {
+		return &ast.BadDecl{
+			Mod: p.module,
+			Tok: expr.Token(),
+			Err: ddperror.Error{
+				Range: expr.GetRange(),
+				File:  p.module.FileName,
+				Msg:   "Es wurde ein Literal erwartet aber ein Ausdruck gefunden",
+			},
+		}
+	}
+
+	// prefer trailing comments as long as they are on the same line
+	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
+		comment = trailingComment
+	}
+
+	return &ast.ConstDecl{
+		Range:      token.NewRange(begin, p.previous()),
+		Mod:        p.module,
+		CommentTok: comment,
+		IsPublic:   isPublic,
+		NameTok:    *name,
+		Val:        expr.(ast.Literal),
+	}
+}
+
 // parses a variable declaration
 // startDepth is the int passed to p.peekN(n) to get to the DER/DIE token of the declaration
 // isField indicates that this declaration should be parsed as a struct field
@@ -74,15 +174,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	comment := p.parseDeclComment(begin.Range)
 
 	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+1).Type == token.OEFFENTLICHEN
-
-	isExternVisible := false
-	if isPublic && p.matchAny(token.COMMA) || p.matchAny(token.EXTERN) {
-		if p.previous().Type == token.COMMA {
-			p.consumeSeq(token.EXTERN)
-		}
-		p.consumeSeq(token.SICHTBARE)
-		isExternVisible = true
-	}
+	isExternVisible := p.matchExternSichtbar(isPublic)
 
 	type_start := p.peek()
 	typ := p.parseType()
@@ -122,7 +214,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 			Err: ddperror.Error{
 				Range: token.NewRange(p.peekN(-2), p.peek()),
 				File:  p.module.FileName,
-				Msg:   "Es wurde ein Variablen Name erwartet",
+				Msg:   "Es wurde ein Name für die Variable erwartet",
 			},
 			Tok: *p.peek(),
 			Mod: p.module,
@@ -158,6 +250,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	if !isField {
 		p.consumeSeq(token.DOT)
 	}
+
 	// prefer trailing comments as long as they are on the same line
 	if trailingComment := p.commentAfterPos(p.previous().Range.End); trailingComment != nil && trailingComment.Range.Start.Line == p.previous().Range.End.Line {
 		comment = trailingComment
