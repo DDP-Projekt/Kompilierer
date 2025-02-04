@@ -95,7 +95,7 @@ jobs:
       - uses: actions/download-artifact@v4
 
       - name: Split Changelog
-        run: csplit -f split_ -z CHANGELOG.md '/In Entwicklung/' '/## v/'
+        run: csplit -f split_ -z CHANGELOG.md '/## ${{ needs.build.outputs.version }}/' '/## v/'
 
       - name: Create Release
         id: create_release
