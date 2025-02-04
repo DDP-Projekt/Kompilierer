@@ -42,6 +42,7 @@ type (
 	}
 
 	Literal interface {
+		Expression
 		literal()
 	}
 

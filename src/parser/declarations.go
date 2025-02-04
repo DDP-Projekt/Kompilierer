@@ -105,17 +105,49 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 
 	p.consumeSeq(token.IST)
 
-	expr := p.assignRhs(false) // TODO: add support for lists "N Mal x"
-	p.consumeSeq(token.DOT)
-
-	if _, isLiteral := expr.(ast.Literal); !isLiteral {
+	expr := p.expression()
+	_, isLiteral := expr.(ast.Literal)
+	if !isLiteral {
 		p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 	}
+
+	if p.matchAny(token.COUNT_MAL) {
+		value := p.expression()
+		if _, isLiteral := value.(ast.Literal); !isLiteral {
+			p.err(ddperror.SYN_EXPECTED_LITERAL, value.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+		}
+
+		expr_tok := expr.Token()
+		expr = &ast.ListLit{
+			Tok:    expr.Token(),
+			Range:  token.NewRange(&expr_tok, p.previous()),
+			Type:   ddptypes.ListType{},
+			Values: nil,
+			Count:  expr,
+			Value:  value,
+		}
+	}
+
 	if expr, isList := expr.(*ast.ListLit); isList {
+		// TODO: does not yet work with nested lists
 		for _, v := range expr.Values {
 			if _, isLiteral := v.(ast.Literal); !isLiteral {
 				p.err(ddperror.SYN_EXPECTED_LITERAL, v.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 			}
+		}
+	}
+
+	p.consumeSeq(token.DOT)
+
+	if !isLiteral {
+		return &ast.BadDecl{
+			Mod: p.module,
+			Tok: expr.Token(),
+			Err: ddperror.Error{
+				Range: expr.GetRange(),
+				File:  p.module.FileName,
+				Msg:   "Es wurde ein Literal erwartet aber ein Ausdruck gefunden",
+			},
 		}
 	}
 
@@ -130,7 +162,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 		CommentTok: comment,
 		IsPublic:   isPublic,
 		NameTok:    *name,
-		Val:        expr,
+		Val:        expr.(ast.Literal),
 	}
 }
 

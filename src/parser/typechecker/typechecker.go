@@ -273,9 +273,8 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
-		if val := t.Evaluate(expr.Value); !ddptypes.Equal(val, expr.Type.Underlying) {
-			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Falscher Typ (%s) in Listen Literal vom Typ %s", val, expr.Type.Underlying)
-		}
+
+		expr.Type = ddptypes.ListType{Underlying: t.Evaluate(expr.Value)}
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse

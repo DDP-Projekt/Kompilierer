@@ -20,7 +20,7 @@ type (
 		CommentTok *token.Token  // optional comment (also contained in ast.Comments)
 		Type       ddptypes.Type // type of the variable
 		NameTok    token.Token   // identifier name
-		Val        Expression
+		Val        Literal
 		IsPublic   bool // wether the function is marked with öffentliche
 	}
 
