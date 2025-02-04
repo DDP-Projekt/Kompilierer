@@ -109,9 +109,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	expr := p.assignRhs(false) // TODO: add support for lists "N Mal x"
 	p.consumeSeq(token.DOT)
 
-	switch expr := expr.(type) {
-	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
-	default:
+	if _, isLiteral := expr.(ast.Literal); !isLiteral {
 		p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 	}
 

@@ -199,6 +199,7 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 			t.latestReturnedType = decl.Type
 		case *ast.ConstDecl:
 			t.latestReturnedType = decl.Type
+		default:
 		}
 	}
 	return ast.VisitRecurse

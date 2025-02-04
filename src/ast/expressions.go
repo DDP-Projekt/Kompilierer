@@ -41,6 +41,10 @@ type (
 		Field *Ident      // the field name
 	}
 
+	Literal interface {
+		literal()
+	}
+
 	IntLit struct {
 		Literal token.Token
 		Value   int64
@@ -289,3 +293,10 @@ func (expr *StructLiteral) expressionNode() {}
 func (expr *Ident) assigneable()       {}
 func (expr *Indexing) assigneable()    {}
 func (expr *FieldAccess) assigneable() {}
+
+func (expr *IntLit) literal()    {}
+func (expr *FloatLit) literal()  {}
+func (expr *BoolLit) literal()   {}
+func (expr *CharLit) literal()   {}
+func (expr *StringLit) literal() {}
+func (expr *ListLit) literal()   {}
