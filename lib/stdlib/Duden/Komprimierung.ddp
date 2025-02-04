@@ -1,11 +1,11 @@
 Binde "Duden/Fehlerbehandlung" ein.
 
-Die öffentliche Zahl ZIP ist 5242880.
-Die öffentliche Zahl GZIP ist 3145777.
-Die öffentliche Zahl XZ ist 3145782.
-Die öffentliche Zahl BZIP2 ist 3145778.
-Die öffentliche Zahl LZ4 ist 3145789.
-Die öffentliche Zahl SevenZip ist 14680064.
+Die öffentliche Konstante ZIP ist 5242880.
+Die öffentliche Konstante GZIP ist 3145777.
+Die öffentliche Konstante XZ ist 3145782.
+Die öffentliche Konstante BZIP2 ist 3145778.
+Die öffentliche Konstante LZ4 ist 3145789.
+Die öffentliche Konstante SevenZip ist 14680064.
 
 [
 	Verpacken

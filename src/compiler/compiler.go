@@ -2026,6 +2026,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 	ast.IterateImportedDecls(s, func(name string, decl ast.Declaration, _ token.Token) bool {
 		switch decl := decl.(type) {
+		case *ast.ConstDecl:
+			c.declareIfStruct(decl.Type) // not needed yet
 		case *ast.VarDecl: // declare the variable as external
 			c.declareIfStruct(decl.Type)
 			Typ := c.toIrType(decl.Type)

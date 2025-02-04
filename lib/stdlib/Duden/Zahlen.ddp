@@ -74,165 +74,108 @@ Die öffentliche Funktion KeineZahl gibt eine Kommazahl zurück, macht:
 Und kann so benutzt werden:
 	"keine Zahl"
 
-[
-	Gibt 0 zurück.
-]
-Die öffentliche Funktion Zahl_Null gibt eine Zahl zurück, macht:
-	Gib 0 zurück.
-Und kann so benutzt werden:
-	"Null" oder "null"
+Die öffentliche Konstante Null ist 0.
+Die öffentliche Konstante null ist 0.
 
-[
-	Gibt 1 zurück.
-]
 Die öffentliche Funktion Zahl_Eins gibt eine Zahl zurück, macht:
+	[ Funktion, weil "ein" ein reservierter Token ist ]
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"Eins", "eins", "ein", "erste", "ersten"
+	"ein", "Eins", "eins", "erste", "ersten"
 
-[
-	Gibt 2 zurück.
-]
-Die öffentliche Funktion Zahl_Zwei gibt eine Zahl zurück, macht:
-	Gib 2 zurück.
-Und kann so benutzt werden:
-	"Zwei", "zwei", "zweite", "zweiten"
+Die öffentliche Konstante Zwei ist 2.
+Die öffentliche Konstante zwei ist 2.
+Die öffentliche Konstante zweite ist 2.
+Die öffentliche Konstante zweiten ist 2.
 
-[
-	Gibt 3 zurück.
-]
-Die öffentliche Funktion Zahl_Drei gibt eine Zahl zurück, macht:
-	Gib 3 zurück.
-Und kann so benutzt werden:
-	"Drei", "drei", "dritte", "dritten"
+Die öffentliche Konstante Drei ist 3.
+Die öffentliche Konstante drei ist 3.
+Die öffentliche Konstante dritte ist 3.
+Die öffentliche Konstante dritten ist 3.
 
-[
-	Gibt 4 zurück.
-]
-Die öffentliche Funktion Zahl_Vier gibt eine Zahl zurück, macht:
-	Gib 4 zurück.
-Und kann so benutzt werden:
-	"Vier", "vier", "vierte", "vierten"
+Die öffentliche Konstante Vier ist 4.
+Die öffentliche Konstante vier ist 4.
+Die öffentliche Konstante vierte ist 4.
+Die öffentliche Konstante vierten ist 4.
 
-[
-	Gibt 5 zurück.
-]
-Die öffentliche Funktion Zahl_Fünf gibt eine Zahl zurück, macht:
-	Gib 5 zurück.
-Und kann so benutzt werden:
-	"Fünf", "fünf", "fünfte", "fünften"
+Die öffentliche Konstante Fünf ist 5.
+Die öffentliche Konstante fünf ist 5.
+Die öffentliche Konstante fünfte ist 5.
+Die öffentliche Konstante fünften ist 5.
 
-[
-	Gibt 6 zurück.
-]
-Die öffentliche Funktion Zahl_Sechs gibt eine Zahl zurück, macht:
-	Gib 6 zurück.
-Und kann so benutzt werden:
-	"Sechs", "sechs", "sechste", "sechsten"
+Die öffentliche Konstante Sechs ist 6.
+Die öffentliche Konstante sechs ist 6.
+Die öffentliche Konstante sechste ist 6.
+Die öffentliche Konstante sechsten ist 6.
 
-[
-	Gibt 7 zurück.
-]
-Die öffentliche Funktion Zahl_Sieben gibt eine Zahl zurück, macht:
-	Gib 7 zurück.
-Und kann so benutzt werden:
-	"Sieben", "sieben", "siebte", "siebten"
+Die öffentliche Konstante Sieben ist 7.
+Die öffentliche Konstante sieben ist 7.
+Die öffentliche Konstante siebte ist 7.
+Die öffentliche Konstante siebten ist 7.
 
-[
-	Gibt 8 zurück.
-]
-Die öffentliche Funktion Zahl_Acht gibt eine Zahl zurück, macht:
-	Gib 8 zurück.
-Und kann so benutzt werden:
-	"Acht", "acht", "achte", "achten"
+Die öffentliche Konstante Acht ist 8.
+Die öffentliche Konstante acht ist 8.
+Die öffentliche Konstante achte ist 8.
+Die öffentliche Konstante achten ist 8.
 
-[
-	Gibt 9 zurück.
-]
-Die öffentliche Funktion Zahl_Neun gibt eine Zahl zurück, macht:
-	Gib 9 zurück.
-Und kann so benutzt werden:
-	"Neun", "neun", "neunte", "neunten"
+Die öffentliche Konstante Neun ist 9.
+Die öffentliche Konstante neun ist 9.
+Die öffentliche Konstante neunte ist 9.
+Die öffentliche Konstante neunten ist 9.
 
-[
-	Gibt 10 zurück.
-]
-Die öffentliche Funktion Zahl_Zehn gibt eine Zahl zurück, macht:
-	Gib 10 zurück.
-Und kann so benutzt werden:
-	"Zehn", "zehn", "zehnte", "zehnten"
+Die öffentliche Konstante Zehn ist 10.
+Die öffentliche Konstante zehn ist 10.
+Die öffentliche Konstante zehnte ist 10.
+Die öffentliche Konstante zehnten ist 10.
 
-[
-	Gibt 11 zurück.
-]
-Die öffentliche Funktion Zahl_Elf gibt eine Zahl zurück, macht:
-	Gib 11 zurück.
-Und kann so benutzt werden:
-	"Elf", "elf", "elfte", "elften"
+Die öffentliche Konstante Elf ist 11.
+Die öffentliche Konstante elf ist 11.
+Die öffentliche Konstante elfte ist 11.
+Die öffentliche Konstante elften ist 11.
 
-[
-	Gibt 12 zurück.
-]
-Die öffentliche Funktion Zahl_Zwölf gibt eine Zahl zurück, macht:
-	Gib 12 zurück.
-Und kann so benutzt werden:
-	"Zwölf", "zwölf", "zwölfte", "zwölften"
+Die öffentliche Konstante Zwölf ist 12.
+Die öffentliche Konstante zwölf ist 12.
+Die öffentliche Konstante zwölfte ist 12.
+Die öffentliche Konstante zwölften ist 12.
 
-[
-	Gibt 100 zurück.
-]
-Die öffentliche Funktion Zahl_Hundert gibt eine Zahl zurück, macht:
-	Gib 100 zurück.
-Und kann so benutzt werden:
-	"Einhundert", "Hundert", "hundert", "hunderte", "hunderten"
+Die öffentliche Konstante Einhundert ist 100.
+Die öffentliche Konstante Hundert ist 100.
+Die öffentliche Konstante hundert ist 100.
+Die öffentliche Konstante hunderte ist 100.
+Die öffentliche Konstante hunderten ist 100.
 
-[
-	Gibt 1000 zurück.
-]
-Die öffentliche Funktion Zahl_Tausend gibt eine Zahl zurück, macht:
-	Gib 1000 zurück.
-Und kann so benutzt werden:
-	"Eintausend", "Tausend", "tausend", "tausenste", "tausensten"
+Die öffentliche Konstante Eintausend ist 1000.
+Die öffentliche Konstante Tausend ist 1000.
+Die öffentliche Konstante tausend ist 1000.
+Die öffentliche Konstante tausenste ist 1000.
+Die öffentliche Konstante tausensten ist 1000.
 
-[
-	Gibt 10000 zurück.
-]
-Die öffentliche Funktion Zahl_Zehntausend gibt eine Zahl zurück, macht:
-	Gib 10000 zurück.
-Und kann so benutzt werden:
-	"Zehntausend" oder "zehntausend"
+Die öffentliche Konstante Zehntausend ist 10000.
+Die öffentliche Konstante zehntausend ist 10000.
 
-[
-	Gibt 100000 zurück.
-]
-Die öffentliche Funktion Zahl_Hunderttausend gibt eine Zahl zurück, macht:
-	Gib 100000 zurück.
-Und kann so benutzt werden:
-	"Einhunderttausend" oder "einhunderttausend"
+Die öffentliche Konstante Einhunderttausend ist 100000.
+Die öffentliche Konstante einhunderttausend ist 100000.
 
+Die öffentliche Konstante Million ist 1000000.
 [
 	Gibt 1000000 zurück.
 ]
-Die öffentliche Funktion Zahl_Million gibt eine Zahl zurück, macht:
-	Gib 1000000 zurück.
+Die öffentliche Funktion Zahl_Million mit dem Parameter n vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Gib n mal 1000000 zurück.
 Und kann so benutzt werden:
-	"eine Million" oder "Million"
+	"<n> Million"
 
 [
 	Gibt 0,5 zurück.
 ]
-Die öffentliche Funktion Zahl_Halb gibt eine Kommazahl zurück, macht:
-	Gib 0,5 zurück.
-Und kann so benutzt werden:
-	"einhalb" oder "halb"
+Die öffentliche Konstante einhalb ist 0,5.
+Die öffentliche Konstante halb ist 0,5.
 
 [
 	Gibt 1,5 zurück.
 ]
-Die öffentliche Funktion Zahl_Anderthalb gibt eine Kommazahl zurück, macht:
-	Gib 1,5 zurück.
-Und kann so benutzt werden:
-	"anderthalb" oder "eineinhalb"
+Die öffentliche Konstante anderthalb ist 1,5.
+Die öffentliche Konstante eineinhalb ist 1,5.
 
 [
 	Gibt <n> durch 2 zurück.
