@@ -457,6 +457,35 @@ func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitConstDecl(d *ast.ConstDecl) ast.VisitResult {
+	// TODO
+	Typ := c.toIrType(d.Type) // get the llvm type
+	var varLocation value.Value
+	if c.scp.enclosing == nil { // global scope
+		// globals are first assigned in ddp_main or module_init
+		// so we assign them a default value here
+		//
+		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
+		globalDef := c.mod.NewGlobalDef(c.mangledNameDecl(d), Typ.DefaultValue())
+		// make private variables static like in C
+		if !d.IsPublic && !d.IsExternVisible {
+			globalDef.Linkage = enum.LinkageInternal
+		}
+		globalDef.Visibility = enum.VisibilityDefault
+		varLocation = globalDef
+	} else {
+		c.commentNode(c.cbb, d, d.Name())
+		varLocation = c.NewAlloca(Typ.IrType())
+	}
+
+	addInitializer := func() {
+		initVal, _, isTemp := c.evaluate(d.Val) // evaluate the initial value
+
+		c.claimOrCopy(varLocation, initVal, Typ, isTemp)
+	}
+	addInitializer()
+
+	c.scp.addVar(d.Name(), varLocation, Typ, false)
+
 	return ast.VisitRecurse
 }
 
@@ -659,7 +688,7 @@ func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
-	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
+	Var := c.scp.lookupVar((*e.Declaration).Name()) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
@@ -1802,7 +1831,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Declaration.Name())
+		Var := c.scp.lookupVar((*assign.Declaration).Name())
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable

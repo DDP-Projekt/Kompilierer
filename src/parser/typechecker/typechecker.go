@@ -194,7 +194,12 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	if !ok || !isVar || decl == nil {
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
-		t.latestReturnedType = decl.(*ast.VarDecl).Type
+		switch decl := decl.(type) {
+		case *ast.VarDecl:
+			t.latestReturnedType = decl.Type
+		case *ast.ConstDecl:
+			t.latestReturnedType = decl.Type
+		}
 	}
 	return ast.VisitRecurse
 }

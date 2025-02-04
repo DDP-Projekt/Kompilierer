@@ -129,7 +129,7 @@ func doesReferenceVarMutable(expr ast.Expression, decls []*ast.VarDecl) []*ast.V
 	switch ass := ass.(type) {
 	case *ast.Ident:
 		for _, decl := range decls {
-			if decl == ass.Declaration {
+			if decl == *ass.Declaration {
 				return []*ast.VarDecl{decl}
 			}
 		}

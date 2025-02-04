@@ -147,7 +147,7 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 }
 
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("Ident[%s]", expr.Literal.Literal))
+	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, (*expr.Declaration).String()))
 	return VisitRecurse
 }
 
