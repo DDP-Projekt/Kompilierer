@@ -38,3 +38,24 @@ func TestStructurallyEqual(t *testing.T) {
 		}
 	}
 }
+
+func TestCastGeneric(t *testing.T) {
+	assert := assert.New(t)
+
+	generic := &GenericType{}
+	ty, ok := CastGeneric(generic)
+	assert.True(ok)
+	assert.Equal(generic, ty)
+
+	ty, ok = CastGeneric(ZAHL)
+	assert.False(ok)
+	assert.Nil(ty)
+
+	ty, ok = CastGeneric(ListType{Underlying: generic})
+	assert.True(ok)
+	assert.Equal(generic, ty)
+
+	ty, ok = CastGeneric(ListType{Underlying: ListType{Underlying: generic}})
+	assert.True(ok)
+	assert.Equal(generic, ty)
+}

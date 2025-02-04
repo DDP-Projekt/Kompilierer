@@ -186,7 +186,7 @@ func (p *parser) paramNameAllowed(name *token.Token) bool {
 
 // helper for funcDeclaration
 // parses the parameters of a function declaration
-func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool)) (params []ast.ParameterInfo) {
+func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool), isGeneric bool) (params []ast.ParameterInfo) {
 	if !p.matchAny(token.MIT) {
 		return params
 	}
@@ -248,7 +248,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	// parse the types of the parameters
 	validate(p.consumeSeq(token.VOM, token.TYP))
 	firstTypeStart := p.previous()
-	firstType, ref := p.parseReferenceType()
+	firstType, ref := p.parseReferenceType(isGeneric)
 	firstTypeEnd := p.previous()
 	validate(firstType != nil)
 	params[0].Type = ddptypes.ParameterType{Type: firstType, IsReference: ref}
@@ -260,7 +260,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 		addType := func() {
 			// validate the parameter type and append it
 			typeStart := p.peek()
-			typ, ref := p.parseReferenceType()
+			typ, ref := p.parseReferenceType(isGeneric)
 			typeEnd := p.previous()
 			validate(typ != nil)
 			if i < len(params) {
@@ -463,12 +463,18 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 
 	// parse the parameter declaration
-	params := p.parseFunctionParameters(perr, validate)
+	params := p.parseFunctionParameters(perr, validate, isGeneric)
+	genericTypes := make(map[string]*ddptypes.GenericType)
+	for _, param := range params {
+		if generic, isGeneric := ddptypes.CastGeneric(param.Type.Type); isGeneric {
+			genericTypes[generic.String()] = generic
+		}
+	}
 
 	// parse the return type declaration
 	validate(p.consumeSeq(token.GIBT))
 	returnTypeStart := p.previous()
-	returnType := p.parseReturnType()
+	returnType := p.parseReturnType(genericTypes)
 	returnTypeEnd := p.previous()
 	if returnType == nil {
 		valid = false
@@ -540,7 +546,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	// TODO: properly instantiate this later
 	var genericInfo *ast.GenericFuncInfo
 	if isGeneric {
-		genericInfo = &ast.GenericFuncInfo{}
+		genericInfo = &ast.GenericFuncInfo{Types: genericTypes}
 	}
 
 	decl := &ast.FuncDecl{

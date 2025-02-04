@@ -116,7 +116,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 // parses tokens into a DDPType and returns wether the type is a reference type
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found
-func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
+func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
@@ -177,7 +177,11 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 		p.consumeSeq(token.REFERENZ)
 		return ddptypes.VARIABLE, true
 	case token.IDENTIFIER:
-		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
+		if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
+			if generic && !exists {
+				Type = &ddptypes.GenericType{Name: p.previous().Literal}
+			}
+
 			if p.matchAny(token.LISTE) {
 				return ddptypes.ListType{Underlying: Type}, false
 			} else if p.matchAny(token.LISTEN) {
@@ -202,7 +206,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 // parses tokens into a DDPType
 // unlike parseType it may return void
 // the error return is ILLEGAL
-func (p *parser) parseReturnType() ddptypes.Type {
+func (p *parser) parseReturnType(genericTypes map[string]*ddptypes.GenericType) ddptypes.Type {
 	getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
 		switch gender {
 		case ddptypes.MASKULIN:
@@ -214,18 +218,44 @@ func (p *parser) parseReturnType() ddptypes.Type {
 		}
 		return token.ILLEGAL // unreachable
 	}
+	expectedGender := func(tok token.TokenType) ddptypes.GrammaticalGender {
+		switch tok {
+		case token.EINEN:
+			return ddptypes.MASKULIN
+		case token.EINE:
+			return ddptypes.FEMININ
+		case token.EIN:
+			return ddptypes.NEUTRUM
+		}
+		return ddptypes.INVALID_GENDER // unreachable
+	}
 
 	if p.matchAny(token.NICHTS) {
 		return ddptypes.VoidType{}
 	}
 	p.consumeAny(token.EINEN, token.EINE, token.EIN)
 	tok := p.previous()
-	typ := p.parseType()
+
+	var typ ddptypes.Type
+	if len(genericTypes) > 0 && p.peek().Type == token.IDENTIFIER {
+		var ok bool
+		if typ, ok = genericTypes[p.peek().Literal]; !ok {
+			typ = p.parseType()
+		} else {
+			p.advance()
+			if p.matchAny(token.LISTE) {
+				typ = ddptypes.ListType{Underlying: typ}
+			}
+		}
+	} else {
+		typ = p.parseType()
+	}
+
 	if typ == nil {
 		return typ // prevent the crash from the if below
 	}
-	if article := getArticle(typ.Gender()); article != tok.Type {
-		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+	if !ddptypes.MatchesGender(typ, expectedGender(tok.Type)) {
+		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", getArticle(typ.Gender())))
 	}
 	return typ
 }
