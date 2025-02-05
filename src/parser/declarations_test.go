@@ -69,19 +69,20 @@ func createParser(test *testing.T, overrider parser) *parser {
 	}
 
 	parser := parser{
-		tokens:            NotNilSlice(overrider.tokens),
-		comments:          NotNilSlice(overrider.comments),
-		cur:               overrider.cur,
-		errorHandler:      errorHandler,
-		lastError:         overrider.lastError,
-		module:            module,
-		predefinedModules: NotNilMap(overrider.predefinedModules),
-		aliases:           cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
-		currentFunction:   overrider.currentFunction,
-		panicMode:         overrider.panicMode,
-		errored:           overrider.errored,
-		resolver:          overrider.resolver,
-		typechecker:       overrider.typechecker,
+		tokens:                NotNilSlice(overrider.tokens),
+		comments:              NotNilSlice(overrider.comments),
+		cur:                   overrider.cur,
+		errorHandler:          errorHandler,
+		lastError:             overrider.lastError,
+		module:                module,
+		predefinedModules:     NotNilMap(overrider.predefinedModules),
+		aliases:               cmp.Or(overrider.aliases, at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)),
+		currentFunction:       overrider.currentFunction,
+		isCurrentFunctionBool: overrider.isCurrentFunctionBool,
+		panicMode:             overrider.panicMode,
+		errored:               overrider.errored,
+		resolver:              overrider.resolver,
+		typechecker:           overrider.typechecker,
 	}
 	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
 	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))

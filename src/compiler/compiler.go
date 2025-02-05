@@ -456,6 +456,10 @@ func (c *compiler) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitConstDecl(d *ast.ConstDecl) ast.VisitResult {
+	return ast.VisitRecurse
+}
+
 func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
@@ -655,6 +659,11 @@ func (c *compiler) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
+	if decl, isConst := e.Declaration.(*ast.ConstDecl); isConst {
+		c.evaluate(decl.Val)
+		return ast.VisitRecurse
+	}
+
 	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
@@ -2017,6 +2026,8 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 	ast.IterateImportedDecls(s, func(name string, decl ast.Declaration, _ token.Token) bool {
 		switch decl := decl.(type) {
+		case *ast.ConstDecl:
+			c.declareIfStruct(decl.Type) // not needed yet
 		case *ast.VarDecl: // declare the variable as external
 			c.declareIfStruct(decl.Type)
 			Typ := c.toIrType(decl.Type)

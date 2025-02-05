@@ -278,9 +278,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	p.consumeSeq(token.IST)
 	expr := p.assignRhs(false) // parse the expression
 	// validate that the expression is a literal
-	switch expr := expr.(type) {
-	case *ast.IntLit, *ast.FloatLit, *ast.BoolLit, *ast.StringLit, *ast.CharLit, *ast.ListLit:
-	default:
+	if _, isLiteral := expr.(ast.Literal); !isLiteral {
 		if typ := p.typechecker.Evaluate(ident); !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
@@ -634,7 +632,7 @@ func (p *parser) forStatement() ast.Statement {
 func (p *parser) returnStatement() ast.Statement {
 	Return := p.previous()
 	var expr ast.Expression
-	if p.isCurrentFunctionBool() {
+	if p.isCurrentFunctionBool {
 		expr = p.assignRhs(true)
 	} else {
 		expr = p.expression()

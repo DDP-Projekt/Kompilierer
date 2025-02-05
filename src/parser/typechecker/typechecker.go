@@ -103,6 +103,16 @@ func (t *Typechecker) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
+	decl.Type = t.Evaluate(decl.Val)
+
+	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
+		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.Range, "Der Typ einer öffentlichen Konstante muss ebenfalls öffentlich sein")
+	}
+
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
 	decl.InitType = initialType
@@ -184,7 +194,13 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	if !ok || !isVar || decl == nil {
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
-		t.latestReturnedType = decl.(*ast.VarDecl).Type
+		switch decl := decl.(type) {
+		case *ast.VarDecl:
+			t.latestReturnedType = decl.Type
+		case *ast.ConstDecl:
+			t.latestReturnedType = decl.Type
+		default:
+		}
 	}
 	return ast.VisitRecurse
 }
@@ -257,9 +273,8 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
-		if val := t.Evaluate(expr.Value); !ddptypes.Equal(val, expr.Type.Underlying) {
-			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Falscher Typ (%s) in Listen Literal vom Typ %s", val, expr.Type.Underlying)
-		}
+
+		expr.Type = ddptypes.ListType{Underlying: t.Evaluate(expr.Value)}
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse

@@ -28,7 +28,8 @@ func (scope *SymbolTable) LookupDecl(name string) (Declaration, bool, bool) {
 		return nil, false, false
 	} else {
 		_, isVar := decl.(*VarDecl)
-		return decl, true, isVar
+		_, isConst := decl.(*ConstDecl)
+		return decl, true, isVar || isConst
 	}
 }
 

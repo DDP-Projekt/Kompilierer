@@ -2,38 +2,26 @@
 	Gibt den Wert von der Kreiszahl "PI" (π) mit 15 Nachkommastellen zurück:
 	3,141592653589793
 ]
-Die öffentliche Funktion PI gibt eine Kommazahl zurück, macht:
-	Gib 3,141592653589793 zurück.
-Und kann so benutzt werden:
-	"PI"
+Die öffentliche Konstante PI ist 3,141592653589793.
 
 [
 	Gibt den Wert der Eulerschen Zahl "E" mit 15 Nachkommastellen zurück:
 	2,718281828459045
 ]
-Die öffentliche Funktion E gibt eine Kommazahl zurück, macht:
-	Gib 2,718281828459045 zurück.
-Und kann so benutzt werden:
-	"E"
+Die öffentliche Konstante E ist 2,718281828459045.
 
 [
 	Gibt den Wert der alternativen Kreiszahl "TAU" (τ) mit 15 Nachkommastellen zurück:
 	6,283185307179586
 	Es entspricht exakt den Wert von 2 mal PI.
 ]
-Die öffentliche Funktion TAU gibt eine Kommazahl zurück, macht:
-	Gib 6,283185307179586 zurück.
-Und kann so benutzt werden:
-	"TAU"
+Die öffentliche Konstante TAU ist 6,283185307179586.
 
 [
 	Gibt den Wert des Goldenen Schittes "PHI" (Φ) mit 15 Nachkommastellen zurück:
 	1,618033988749895
 ]
-Die öffentliche Funktion PHI gibt eine Kommazahl zurück, macht:
-	Gib 1,618033988749895 zurück.
-Und kann so benutzt werden:
-	"PHI"
+Die öffentliche Konstante PHI ist 1,618033988749895.
 
 [
 	Wenn a >= b ist wird a zurück gegeben.

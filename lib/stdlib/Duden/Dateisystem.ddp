@@ -158,13 +158,13 @@ Und kann so benutzt werden:
 	!!! Müssen mit den C Flags übereinstimmen !!!
 ]
 
-Die öffentliche Zahl MODUS_NUR_LESEN ist 1.
-Die öffentliche Zahl MODUS_NUR_SCHREIBEN ist 2.
-Die öffentliche Zahl MODUS_LESEN_SCHREIBEN ist 4.
+Die öffentliche Konstante MODUS_NUR_LESEN ist 1.
+Die öffentliche Konstante MODUS_NUR_SCHREIBEN ist 2.
+Die öffentliche Konstante MODUS_LESEN_SCHREIBEN ist 4.
 
-Die öffentliche Zahl MODUS_ERSTELLEN ist 8.
-Die öffentliche Zahl MODUS_ANHAENGEN ist 16.
-Die öffentliche Zahl MODUS_TRUNKIEREN ist 32.
+Die öffentliche Konstante MODUS_ERSTELLEN ist 8.
+Die öffentliche Konstante MODUS_ANHAENGEN ist 16.
+Die öffentliche Konstante MODUS_TRUNKIEREN ist 32.
 
 [
 	Eine Kombination, die Daten über eine Datei enthält, von der gelesen oder in die geschrieben werden kann.

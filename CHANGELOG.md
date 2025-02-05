@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+## v0.6.0
+
+- [Neu] Konstante hinzugefügt
 - [Neu] Bei Iterierenden Schleifen kann man jetzt einen Index angeben (Für jeden Typname t mit Index i in ...)
 - [Anders] Der Kompilierer benutzt jetzt LLVM Version 14.0.0 (anstatt 12.0.0)
 - [Neu] Duden/Befehlszeile zum Arbeiten mit Befehlszeilenargumenten

@@ -159,6 +159,7 @@ const (
 	MODULE
 	INDEX
 	GENERISCHE
+	KONSTANTE
 
 	DOT     // .
 	COMMA   // ,
@@ -327,6 +328,7 @@ var tokenStrings = [...]string{
 	MODULE:        "Module",
 	INDEX:         "Index",
 	GENERISCHE:    "generische",
+	KONSTANTE:     "Konstante",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -500,6 +502,7 @@ var KeywordMap = map[string]TokenType{
 	"Module":         MODULE,
 	"Index":          INDEX,
 	"generische":     GENERISCHE,
+	"Konstante":      KONSTANTE,
 }
 
 func KeywordToTokenType(keyword string) TokenType {
