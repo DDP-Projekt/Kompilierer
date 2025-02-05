@@ -557,11 +557,15 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 	// parse the parameter declaration
 	params := p.parseFunctionParameters(perr, validate, isGeneric)
-	genericTypes := make(map[string]*ddptypes.GenericType)
+	genericTypes := make(map[string]*ddptypes.GenericType, 4)
 	for _, param := range params {
 		if generic, isGeneric := ddptypes.CastGeneric(param.Type.Type); isGeneric {
 			genericTypes[generic.String()] = generic
 		}
+	}
+
+	if isGeneric && len(genericTypes) == 0 {
+		perr(ddperror.SEM_GENERIC_FUNCTION_WITHOUT_TYPEPARAM, funcName.Range, "Eine generische Funktion braucht mindestens einen Typparameter")
 	}
 
 	// parse the return type declaration

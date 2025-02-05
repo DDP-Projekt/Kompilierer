@@ -307,15 +307,33 @@ Die öffentliche Funktion foo gibt nichts zurück, macht:
 Und kann so benutzt werden:
 	"foo"`, true, false, true,
 	)
+	// illegal case
 	runTest(`
 Die generische Funktion foo gibt nichts zurück, macht:
 Und kann so benutzt werden:
-	"foo"`, false, true, true,
+	"foo"`, false, true, false,
 	)
+	// illegal case
+	runTest(`
+Die generische Funktion foo mit dem Parameter a vom Typ Zahl, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <a>"`, false, true, false,
+	)
+	runTest(`
+Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <a>"`, false, true, true,
+	)
+	// illegal case
 	runTest(`
 Die öffentliche generische Funktion foo gibt nichts zurück, macht:
 Und kann so benutzt werden:
-	"foo"`, true, true, true,
+	"foo"`, true, true, false,
+	)
+	runTest(`
+Die öffentliche generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <a>"`, true, true, true,
 	)
 	// illegal case
 	runTest(`

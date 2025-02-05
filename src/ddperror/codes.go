@@ -24,33 +24,34 @@ const (
 
 // semantic error codes
 const (
-	SEM_NAME_ALREADY_DEFINED           Code = iota + 2000 // multiple definition of Name (duplicate variable/function names)
-	SEM_NAME_UNDEFINED                                    // a function or variable name is not yet defined
-	SEM_PARAM_NAME_TYPE_COUNT_MISMATCH                    // number of names and types of parameters in function declaration don't match
-	SEM_EXPECTED_LINKABLE_FILEPATH                        // expected a filepath to a .c, .lib, ... file
-	SEM_NON_GLOBAL_FUNCTION                               // a function was declared in a non-global scope
-	SEM_MISSING_RETURN                                    // return statement in function body is missing
-	SEM_MALFORMED_ALIAS                                   // an alias is malformed (too few/many parameters, too short, whatever)
-	SEM_ALIAS_ALREADY_TAKEN                               // the alias already stands for another function
-	SEM_ALIAS_ALREADY_DEFINED                             // the alias already stands for a different function
-	SEM_ALIAS_MUST_BE_GLOBAL                              // a non-global alias declaration was found
-	SEM_ALIAS_BAD_ARGS                                    // the number of arguments is wrong or then names don't match etc.
-	SEM_GLOBAL_RETURN                                     // a return statement outside a function was found
-	SEM_BAD_NAME_CONTEXT                                  // a function name was used in place of a variable name or vice versa
-	SEM_NON_GLOBAL_PUBLIC_DECL                            // a non-global variable was declared public
-	SEM_NON_GLOBAL_TYPE_DECL                              // a non-global type was declared
-	SEM_BAD_FIELD_ACCESS                                  // a non-existend field was accessed or similar
-	SEM_BAD_PUBLIC_MODIFIER                               // a public modifier was missing or similar, for example in a struct decl
-	SEM_BREAK_CONTINUE_NOT_IN_LOOP                        // a break or continue statement was found outside a loop
-	SEM_UNKNOWN_TYPE                                      // a type was used that was not imported yet
-	SEM_UNNECESSARY_EXTERN_VISIBLE                        // a function was specified as both extern visible and extern defined
-	SEM_BAD_OPERATOR_PARAMS                               // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
-	SEM_OVERLOAD_ALREADY_DEFINED                          // an overload for the given types is already present
-	SEM_TODO_STMT_FOUND                                   // ... wurde gefunden
-	SEM_BAD_TYPEDEF                                       // any was typedefed
-	SEM_FORWARD_DECL_WITHOUT_DEF                          // a function was declared as forward decl but never defined
-	SEM_WRONG_DECL_MODULE                                 // a definition was provided for a function from a different module
-	SEM_DEFINITION_ALREADY_DEFINED                        // a forward decl was already defined
+	SEM_NAME_ALREADY_DEFINED               Code = iota + 2000 // multiple definition of Name (duplicate variable/function names)
+	SEM_NAME_UNDEFINED                                        // a function or variable name is not yet defined
+	SEM_PARAM_NAME_TYPE_COUNT_MISMATCH                        // number of names and types of parameters in function declaration don't match
+	SEM_EXPECTED_LINKABLE_FILEPATH                            // expected a filepath to a .c, .lib, ... file
+	SEM_NON_GLOBAL_FUNCTION                                   // a function was declared in a non-global scope
+	SEM_MISSING_RETURN                                        // return statement in function body is missing
+	SEM_MALFORMED_ALIAS                                       // an alias is malformed (too few/many parameters, too short, whatever)
+	SEM_ALIAS_ALREADY_TAKEN                                   // the alias already stands for another function
+	SEM_ALIAS_ALREADY_DEFINED                                 // the alias already stands for a different function
+	SEM_ALIAS_MUST_BE_GLOBAL                                  // a non-global alias declaration was found
+	SEM_ALIAS_BAD_ARGS                                        // the number of arguments is wrong or then names don't match etc.
+	SEM_GLOBAL_RETURN                                         // a return statement outside a function was found
+	SEM_BAD_NAME_CONTEXT                                      // a function name was used in place of a variable name or vice versa
+	SEM_NON_GLOBAL_PUBLIC_DECL                                // a non-global variable was declared public
+	SEM_NON_GLOBAL_TYPE_DECL                                  // a non-global type was declared
+	SEM_BAD_FIELD_ACCESS                                      // a non-existend field was accessed or similar
+	SEM_BAD_PUBLIC_MODIFIER                                   // a public modifier was missing or similar, for example in a struct decl
+	SEM_BREAK_CONTINUE_NOT_IN_LOOP                            // a break or continue statement was found outside a loop
+	SEM_UNKNOWN_TYPE                                          // a type was used that was not imported yet
+	SEM_UNNECESSARY_EXTERN_VISIBLE                            // a function was specified as both extern visible and extern defined
+	SEM_BAD_OPERATOR_PARAMS                                   // the function parameters do not fit the overloaded operator (e.g. they are too few/too many)
+	SEM_OVERLOAD_ALREADY_DEFINED                              // an overload for the given types is already present
+	SEM_TODO_STMT_FOUND                                       // ... wurde gefunden
+	SEM_BAD_TYPEDEF                                           // any was typedefed
+	SEM_FORWARD_DECL_WITHOUT_DEF                              // a function was declared as forward decl but never defined
+	SEM_WRONG_DECL_MODULE                                     // a definition was provided for a function from a different module
+	SEM_DEFINITION_ALREADY_DEFINED                            // a forward decl was already defined
+	SEM_GENERIC_FUNCTION_WITHOUT_TYPEPARAM                    // a generic function without any generic parameters
 )
 
 // type error codes
