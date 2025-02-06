@@ -408,7 +408,7 @@ Und kann so benutzt werden:
 func TestGenericFuncDeclBodyTokens(t *testing.T) {
 	assert := assert.New(t)
 
-	runTest := func(src string, from, to int, shouldSucceed bool) {
+	runTest := func(src string, from, to int, shouldSucceed bool, code ddperror.Code) {
 		var errorHandler ddperror.Handler
 		mockHandler := ddperror.MockHandler{}
 		if !shouldSucceed {
@@ -425,6 +425,9 @@ func TestGenericFuncDeclBodyTokens(t *testing.T) {
 		decl_stmt := given.declaration()
 		if !shouldSucceed {
 			assert.True(mockHandler.DidError())
+			assert.Contains(mapSlice(mockHandler.Errors, func(err ddperror.Error) ddperror.Code {
+				return err.Code
+			}), code)
 			return
 		}
 		if !success(assert, given, decl_stmt) {
@@ -438,18 +441,29 @@ func TestGenericFuncDeclBodyTokens(t *testing.T) {
 	runTest(`
 Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
 Und kann so benutzt werden:
-	"foo <a>"`, 0, 0, true,
+	"foo <a>"`, 0, 0, true, 0,
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, 22, 26, true,
+	"foo <a> <b>"`, 22, 26, true, 0,
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,
-ist in "libddpstdlib.a"
+ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"foo <a> <b>"`, 0, 0, false,
+	"foo <a> <b>"`, 0, 0, false, ddperror.SEM_GENERIC_FUNCTION_EXTERN,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,
+wird später definiert
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, false, ddperror.SEM_GENERIC_FUNCTION_BODY_UNDEFINED,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück, ist extern sichtbar, macht:
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, false, ddperror.SEM_GENERIC_FUNCTION_EXTERN_VISIBLE,
 	)
 }

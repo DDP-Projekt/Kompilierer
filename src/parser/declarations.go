@@ -585,6 +585,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	if p.matchSeq(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
 		isExternVisible = true
 		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
+		if isGeneric {
+			perr(ddperror.SEM_GENERIC_FUNCTION_EXTERN_VISIBLE, externVisibleRange, "Eine generische Funktion kann nicht extern sichtbar sein")
+		}
 	}
 
 	isForwardDecl := false
@@ -600,6 +603,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	} else if p.matchAny(token.WIRD) {
 		validate(p.consumeSeq(token.SPÄTER, token.DEFINIERT))
 		isForwardDecl = true
+		if isGeneric {
+			perr(ddperror.SEM_GENERIC_FUNCTION_BODY_UNDEFINED, p.previous().Range, "Eine generische Funktion muss sofort definiert werden")
+		}
 	} else {
 		validate(p.consumeSeq(token.IST, token.IN, token.STRING, token.DEFINIERT))
 		definedIn = p.peekN(-2)
@@ -608,7 +614,9 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		default:
 			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
 		}
-		if isExternVisible {
+		if isGeneric {
+			perr(ddperror.SEM_GENERIC_FUNCTION_EXTERN, definedIn.Range, "Eine generische Funktion kann nicht extern definiert werden")
+		} else if isExternVisible {
 			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}

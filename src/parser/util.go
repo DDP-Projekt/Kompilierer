@@ -124,3 +124,11 @@ func operatorParameterTypesEqual(pi1, pi2 []ast.ParameterInfo) bool {
 		return ddptypes.ParamTypesEqual(pi1.Type, pi2.Type)
 	})
 }
+
+func mapSlice[T, U any](s []T, mapper func(T) U) []U {
+	result := make([]U, len(s))
+	for i := range s {
+		result[i] = mapper(s[i])
+	}
+	return result
+}

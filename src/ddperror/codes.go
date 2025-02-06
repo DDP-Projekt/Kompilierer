@@ -52,6 +52,9 @@ const (
 	SEM_WRONG_DECL_MODULE                                     // a definition was provided for a function from a different module
 	SEM_DEFINITION_ALREADY_DEFINED                            // a forward decl was already defined
 	SEM_GENERIC_FUNCTION_WITHOUT_TYPEPARAM                    // a generic function without any generic parameters
+	SEM_GENERIC_FUNCTION_EXTERN                               // a generic function was defined as extern
+	SEM_GENERIC_FUNCTION_EXTERN_VISIBLE                       // a generic function was marked as extern visible
+	SEM_GENERIC_FUNCTION_BODY_UNDEFINED                       // a generic function was declared without a definition
 )
 
 // type error codes
