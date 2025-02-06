@@ -612,6 +612,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}
+	bodyEnd := p.cur
 
 	var (
 		funcAliases     []*ast.FuncAlias
@@ -644,7 +645,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	// TODO: properly instantiate this later
 	var genericInfo *ast.GenericFuncInfo
 	if isGeneric {
-		genericInfo = &ast.GenericFuncInfo{Types: genericTypes}
+		genericInfo = &ast.GenericFuncInfo{
+			Types:  genericTypes,
+			Tokens: p.tokens[bodyStart:bodyEnd],
+		}
 	}
 
 	decl := &ast.FuncDecl{
@@ -672,7 +676,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 
 	// parse the body after the aliases to enable recursion
-	if bodyStart != -1 {
+	if bodyStart != -1 && !isGeneric {
 		p.cur = bodyStart // go back to the body
 		decl.Body = p.parseFunctionBody(decl)
 	} else { // the function is defined in an extern file

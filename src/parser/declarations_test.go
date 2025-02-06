@@ -404,3 +404,52 @@ Und kann so benutzt werden:
 	"foo <a> <b>"`, []string{"T"}, "T Liste",
 	)
 }
+
+func TestGenericFuncDeclBodyTokens(t *testing.T) {
+	assert := assert.New(t)
+
+	runTest := func(src string, from, to int, shouldSucceed bool) {
+		var errorHandler ddperror.Handler
+		mockHandler := ddperror.MockHandler{}
+		if !shouldSucceed {
+			errorHandler = mockHandler.GetHandler()
+		}
+		tokens := scanTokens(t, src)
+		given := createParser(t,
+			parser{
+				tokens:       tokens,
+				errorHandler: errorHandler,
+			},
+		)
+
+		decl_stmt := given.declaration()
+		if !shouldSucceed {
+			assert.True(mockHandler.DidError())
+			return
+		}
+		if !success(assert, given, decl_stmt) {
+			t.FailNow()
+		}
+
+		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+		assert.NotNil(func_decl.Generic)
+		assert.Equal(tokens[from:to], func_decl.Generic.Tokens)
+	}
+	runTest(`
+Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <a>"`, 0, 0, true,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück, macht:
+	Gib 1 zurück.
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 22, 26, true,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,
+ist in "libddpstdlib.a"
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, false,
+	)
+}
