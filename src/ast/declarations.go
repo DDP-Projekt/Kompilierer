@@ -10,7 +10,7 @@ type (
 	// an invalid Declaration
 	BadDecl struct {
 		Tok token.Token
-		Err ddperror.Error
+		Err ddperror.Message
 		Mod *Module
 	}
 

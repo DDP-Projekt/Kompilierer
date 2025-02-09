@@ -4,8 +4,6 @@ This file contains functions to parse DDP Types
 package parser
 
 import (
-	"fmt"
-
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -39,7 +37,7 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 func (p *parser) parseType() ddptypes.Type {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.UNEXPECTED_TYPE, p.peek().Range, p.peek().Literal)
 		return nil
 	}
 
@@ -73,7 +71,7 @@ func (p *parser) parseType() ddptypes.Type {
 			}
 			return Type
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.UNEXPECTED_TYPE, p.peek().Range, p.peek().Literal)
 	}
 
 	return nil // unreachable
@@ -85,7 +83,7 @@ func (p *parser) parseType() ddptypes.Type {
 // returns a ddptypes.ListType
 func (p *parser) parseListType() ddptypes.ListType {
 	if !p.matchAny(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLEN) {
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
+		p.err(ddperror.UNEXPECTED_LIST_TYPE, p.peek().Range, p.peek().Literal)
 		return ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
 	}
 
@@ -105,7 +103,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
 			result = ddptypes.ListType{Underlying: Type}
 		} else {
-			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
+			p.err(ddperror.UNEXPECTED_LIST_TYPE, p.previous().Range, p.previous().Literal)
 		}
 	}
 	p.consumeSeq(token.LISTE)
@@ -119,7 +117,7 @@ func (p *parser) parseListType() ddptypes.ListType {
 func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.UNEXPECTED_TYPE, p.peek().Range, p.peek().Literal)
 		return nil, false // void indicates error
 	}
 
@@ -193,7 +191,7 @@ func (p *parser) parseReferenceType() (ddptypes.Type, bool) {
 
 			return Type, false
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.UNEXPECTED_TYPE, p.previous().Range, p.peek().Literal)
 	}
 
 	return nil, false // unreachable
@@ -225,7 +223,7 @@ func (p *parser) parseReturnType() ddptypes.Type {
 		return typ // prevent the crash from the if below
 	}
 	if article := getArticle(typ.Gender()); article != tok.Type {
-		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+		p.err(ddperror.WRONG_ARTIKEL, tok.Range, article)
 	}
 	return typ
 }

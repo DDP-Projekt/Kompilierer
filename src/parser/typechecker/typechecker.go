@@ -66,34 +66,26 @@ func (t *Typechecker) EvaluateSilent(expr ast.Expression) ddptypes.Type {
 }
 
 // helper for errors
-func (t *Typechecker) err(code ddperror.Code, Range token.Range, msg string) {
+func (t *Typechecker) err(code ddperror.ErrorCode, Range token.Range, a ...any) {
 	t.Module.Ast.Faulty = true
 	if !*t.panicMode {
 		*t.panicMode = true
-		t.ErrorHandler(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, t.Module.FileName))
+		t.ErrorHandler(ddperror.NewError(code, Range, t.Module.FileName, a...))
 	}
-}
-
-// helper to not always pass range and file
-func (t *Typechecker) errExpr(code ddperror.Code, expr ast.Expression, msgfmt string, fmtargs ...any) {
-	t.err(code, expr.GetRange(), fmt.Sprintf(msgfmt, fmtargs...))
 }
 
 // helper for commmon error message
 func (t *Typechecker) errExpected(operator ast.Operator, expr ast.Expression, got ddptypes.Type, expected ...ddptypes.Type) {
-	msg := fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ ", operator)
 	if len(expected) == 1 {
-		msg = fmt.Sprintf("Der %s Operator erwartet einen Ausdruck vom Typ %s", operator, expected[0])
-	} else {
-		for i, v := range expected {
-			if i >= len(expected)-1 {
-				break
-			}
-			msg += fmt.Sprintf("'%s', ", v)
-		}
-		msg += fmt.Sprintf("oder '%s'", expected[len(expected)-1])
+		t.err(ddperror.OPERATOR_EXPECTS_TYPE, expr.GetRange(), operator, expected[0], got)
+		return
 	}
-	t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, msg+" aber hat '%s' bekommen", got)
+
+	t.Module.Ast.Faulty = true
+	if !*t.panicMode {
+		*t.panicMode = true
+		t.ErrorHandler(ddperror.NewUnexpectedType(t.Module.FileName, operator.String(), expr.GetRange(), got, expected...))
+	}
 }
 
 func (*Typechecker) Visitor() {}
@@ -107,7 +99,7 @@ func (t *Typechecker) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
 	decl.Type = t.Evaluate(decl.Val)
 
 	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
-		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.Range, "Der Typ einer öffentlichen Konstante muss ebenfalls öffentlich sein")
+		t.err(ddperror.PUBLIC_CONST_MUST_HAVE_PUBLIC_TYPE, decl.Range)
 	}
 
 	return ast.VisitRecurse
@@ -117,15 +109,11 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
 	decl.InitType = initialType
 	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
-		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
-		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
-			decl.InitVal,
-			msg,
-		)
+		t.err(ddperror.VAR_ASSIGN_TYPE_MISMATCH, decl.GetRange(), initialType, decl.Type)
 	}
 
 	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
-		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.TypeRange, "Der Typ einer öffentlichen Variable muss ebenfalls öffentlich sein")
+		t.err(ddperror.PUBLIC_VAR_MUST_HAVE_PUBLIC_TYPE, decl.TypeRange)
 	}
 	return ast.VisitRecurse
 }
@@ -138,12 +126,12 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	if decl.IsPublic {
 		if !IsPublicType(decl.ReturnType, t.CurrentTable) {
-			t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.ReturnTypeRange, "Der Rückgabetyp einer öffentlichen Funktion muss ebenfalls öffentlich sein")
+			t.err(ddperror.PUBLIC_FUNC_RETURN_MUST_BE_PUBLIC, decl.ReturnTypeRange)
 		}
 
 		for _, param := range decl.Parameters {
 			if !IsPublicType(param.Type.Type, t.CurrentTable) {
-				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, param.TypeRange, "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
+				t.err(ddperror.PUBLIC_FUNC_PARAMS_MUST_BE_PUBLIC, param.TypeRange)
 			}
 		}
 	}
@@ -160,7 +148,7 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 		if varDecl, isVar := field.(*ast.VarDecl); isVar {
 			// check that all public fields also are of public type
 			if decl.IsPublic && varDecl.IsPublic && !IsPublicType(varDecl.Type, t.CurrentTable) {
-				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, varDecl.NameTok.Range, "Wenn eine Struktur öffentlich ist, müssen alle ihre öffentlichen Felder von öffentlichem Typ sein")
+				t.err(ddperror.PUBLIC_STRUCT_FIELDS_MUST_BE_PUBLIC, varDecl.NameTok.Range)
 			}
 		}
 		t.visit(field)
@@ -170,7 +158,7 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 
 func (t *Typechecker) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 	if decl.IsPublic && !IsPublicType(decl.Underlying, t.CurrentTable) {
-		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der unterliegende Typ eines öffentlichen Typ-Aliases muss ebenfalls öffentlich sein")
+		t.err(ddperror.PUBLIC_ALIAS_UNDERLYING_MUST_BE_PUBLIC, decl.NameTok.Range)
 	}
 
 	return ast.VisitRecurse
@@ -178,7 +166,7 @@ func (t *Typechecker) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResul
 
 func (t *Typechecker) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
 	if decl.IsPublic && !IsPublicType(decl.Underlying, t.CurrentTable) {
-		t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, decl.NameTok.Range, "Der unterliegende Typ eines öffentlichen Typ-Aliases muss ebenfalls öffentlich sein")
+		t.err(ddperror.PUBLIC_ALIAS_UNDERLYING_MUST_BE_PUBLIC, decl.NameTok.Range)
 	}
 
 	return ast.VisitRecurse
@@ -207,12 +195,12 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	if typ := t.Evaluate(expr.Index); !ddptypes.Equal(typ, ddptypes.ZAHL) {
-		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
+		t.err(ddperror.OPERATOR_INDEX_MUST_BE_NUMBER, expr.Index.GetRange(), typ)
 	}
 
 	lhs := t.Evaluate(expr.Lhs)
 	if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
-		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
+		t.err(ddperror.OPERATOR_INDEXING_OPERAND_WRONG_TYPE, expr.Lhs.GetRange(), lhs)
 	}
 
 	if ddptypes.IsList(lhs) {
@@ -226,7 +214,7 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	rhs := t.Evaluate(expr.Rhs)
 	if !ddptypes.IsStruct(rhs) {
-		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, expr.Rhs, "Der VON Operator erwartet eine Struktur als rechten Operanden, nicht %s", rhs)
+		t.err(ddperror.OPERATOR_VON_EXPECTS_STRUCT, expr.Rhs.GetRange(), rhs)
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
 		t.latestReturnedType = t.checkFieldAccess(expr.Field, rhs)
@@ -264,14 +252,13 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
 			if ty := t.Evaluate(v); !ddptypes.Equal(elementType, ty) {
-				msg := fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
-				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, msg)
+				t.err(ddperror.LIST_LITERAL_WRONG_TYPE, expr.GetRange(), ty, elementType)
 			}
 		}
 		expr.Type = ddptypes.ListType{Underlying: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
 		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
-			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
+			t.err(ddperror.LIST_SIZE_MUST_BE_NUMBER, expr.GetRange(), count)
 		}
 
 		expr.Type = ddptypes.ListType{Underlying: t.Evaluate(expr.Value)}
@@ -309,7 +296,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 		t.latestReturnedType = ddptypes.ZAHL
 	case ast.UN_LEN:
 		if !ddptypes.IsList(rhs) && !ddptypes.Equal(rhs, ddptypes.TEXT) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
+			t.err(ddperror.OPERATOR_EXPECTS_TEXT_OR_LIST, expr.GetRange(), ast.UN_LEN, rhs)
 		}
 
 		t.latestReturnedType = ddptypes.ZAHL
@@ -346,7 +333,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
 			if !ddptypes.Equal(ddptypes.GetListUnderlying(lhs), ddptypes.GetListUnderlying(rhs)) {
-				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
+				t.err(ddperror.OPERATOR_VERKETTET_TYPE_MISMATCH, expr.GetRange(), lhs, rhs)
 			}
 			t.latestReturnedType = ddptypes.ListType{Underlying: ddptypes.GetListUnderlying(lhs)}
 		}
@@ -360,10 +347,10 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		}
 	case ast.BIN_INDEX:
 		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
+			t.err(ddperror.OPERATOR_INDEXING_OPERAND_WRONG_TYPE, expr.Lhs.GetRange(), lhs)
 		}
 		if !ddptypes.Equal(rhs, ddptypes.ZAHL) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", rhs)
+			t.err(ddperror.OPERATOR_INDEX_MUST_BE_NUMBER, expr.Rhs.GetRange(), rhs)
 		}
 
 		if listType, isList := ddptypes.CastList(lhs); isList {
@@ -373,7 +360,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
 		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
-			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der '%s' Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
+			t.err(ddperror.OPERATOR_EXPECTS_TEXT_OR_LIST_FIRST_OPERAND, expr.Lhs.GetRange(), expr.Operator, lhs)
 		}
 		if !isOneOf(rhs, ddptypes.ZAHL) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
@@ -409,7 +396,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		t.latestReturnedType = ddptypes.ZAHL
 	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
 		if !ddptypes.Equal(lhs, rhs) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
+			t.err(ddperror.OPERATOR_EXPECTS_TWO_SAME_TYPES, expr.GetRange(), expr.Operator, lhs, rhs)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_GREATER, ast.BIN_LESS, ast.BIN_GREATER_EQ, ast.BIN_LESS_EQ:
@@ -438,7 +425,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	switch expr.Operator {
 	case ast.TER_SLICE:
 		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
-			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
+			t.err(ddperror.OPERATOR_EXPECTS_TEXT_OR_LIST_FIRST_OPERAND, expr.Lhs.GetRange(), expr.Operator, lhs)
 		}
 
 		if !isOneOf(mid, ddptypes.ZAHL) {
@@ -466,10 +453,10 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.TER_FALLS:
 		if !ddptypes.Equal(lhs, rhs) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des 'falls' Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
+			t.err(ddperror.OPERATOR_FALLS_TYPE_MISMATCH, expr.GetRange(), lhs, rhs)
 		}
 		if !isOneOf(mid, ddptypes.WAHRHEITSWERT) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Bedingung des 'falls' Ausdrucks muss vom Typ %s sein, aber es wurde %s gefunden", ddptypes.WAHRHEITSWERT, mid)
+			t.err(ddperror.OPERATOR_FALLS_CONDITION_MUST_BE_BOOL, expr.GetRange(), mid)
 		}
 		t.latestReturnedType = lhs
 	default:
@@ -481,7 +468,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
-		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
+		t.err(ddperror.INVALID_CAST, expr.GetRange(), lhs, expr.TargetType)
 	}
 
 	overloads := t.Module.Operators[ast.CAST_OP]
@@ -584,15 +571,10 @@ func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	if !ddptypes.Equal(lhs, ddptypes.VARIABLE) {
-		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs,
-			"Der '%s' Operator erwartet einen Ausdruck vom Typ '%s' aber hat '%s' bekommen",
-			expr.Tok.Literal,
-			ddptypes.VARIABLE,
-			lhs,
-		)
+		t.err(ddperror.OPERATOR_EXPECTS_TYPE, expr.Lhs.GetRange(), expr.Tok.Literal, ddptypes.VARIABLE, lhs)
 	}
 	if ddptypes.Equal(expr.CheckType, ddptypes.VARIABLE) {
-		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Dieser Ausdruck ist immer 'wahr'")
+		t.err(ddperror.EXPRESSION_ALWAYS_TRUE, expr.GetRange())
 	}
 	t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	return ast.VisitRecurse
@@ -620,16 +602,15 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 		}
 
 		if ass, ok := expr.(ast.Assigneable); paramType.IsReference && !ok {
-			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
+			t.err(ddperror.EXPECTED_REFERENCE_TYPE, expr.GetRange())
 		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && ok {
 			lhs := t.Evaluate(ass.Lhs)
 			if ddptypes.Equal(lhs, ddptypes.TEXT) {
-				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
+				t.err(ddperror.TEXT_CHAR_CANNOT_BE_REFERENCE, expr.GetRange())
 			}
 		}
 		if !ddptypes.Equal(argType, paramType.Type) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
-				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
+			t.err(ddperror.FUNC_PARAM_TYPE_MISMATCH, expr.GetRange(),
 				callExpr.Name,
 				paramType,
 				k,
@@ -655,8 +636,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		}
 
 		if !ddptypes.Equal(argType, paramType) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
-				"Die Struktur %s erwartet einen Wert vom Typ %s für das Feld %s, aber hat %s bekommen",
+			t.err(ddperror.STRUCT_FIELD_TYPE_MISMATCH, arg.GetRange(),
 				expr.Struct.Name(),
 				paramType,
 				argName,
@@ -694,11 +674,7 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	target := t.Evaluate(stmt.Var)
 
 	if !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{})) {
-		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
-			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
-			rhs,
-			target,
-		)
+		t.err(ddperror.VAR_ASSIGN_TYPE_MISMATCH, stmt.Rhs.GetRange(), rhs, target)
 	}
 	return ast.VisitRecurse
 }
@@ -715,10 +691,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
-		t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
-			"Die Bedingung einer Wenn-Anweisung muss ein Wahrheitswert sein, war aber vom Typ %s",
-			conditionType,
-		)
+		t.err(ddperror.IF_CONDITION_MUST_BE_BOOL, stmt.Condition.GetRange(), conditionType)
 	}
 	t.visit(stmt.Then)
 	if stmt.Else != nil {
@@ -732,18 +705,11 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
 		if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
-			t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
-				"Die Bedingung einer %s muss ein Wahrheitswert sein, war aber vom Typ %s",
-				stmt.While.Type,
-				conditionType,
-			)
+			t.err(ddperror.LOOP_CONDITION_MUST_BE_BOOL, stmt.Condition.GetRange(), stmt.While.Type, conditionType)
 		}
 	case token.WIEDERHOLE:
 		if !ddptypes.Equal(conditionType, ddptypes.ZAHL) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, stmt.Condition,
-				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
-				conditionType,
-			)
+			t.err(ddperror.LOOP_REPEAT_MUST_BE_NUMBER, stmt.Condition.GetRange(), conditionType)
 		}
 	}
 	stmt.Body.Accept(t)
@@ -754,22 +720,14 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	t.visit(stmt.Initializer)
 	iter_type := stmt.Initializer.Type
 	if !ddptypes.IsNumeric(iter_type) {
-		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
+		t.err(ddperror.LOOP_COUNTER_MUST_BE_NUMBER, stmt.Initializer.GetRange())
 	}
 	if toType := t.Evaluate(stmt.To); !ddptypes.Equal(toType, iter_type) {
-		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
-			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-			iter_type,
-			toType,
-		)
+		t.err(ddperror.FOR_LOOP_TYPE_MISMATCH, stmt.To.GetRange(), iter_type, toType)
 	}
 	if stmt.StepSize != nil {
 		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.Equal(stepType, iter_type) {
-			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
-				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-				iter_type,
-				stepType,
-			)
+			t.err(ddperror.FOR_LOOP_INC_TYPE_MISMATCH, stmt.StepSize.GetRange(), iter_type, stepType)
 		}
 	}
 	stmt.Body.Accept(t)
@@ -781,19 +739,13 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 	inType := t.Evaluate(stmt.In)
 
 	if !ddptypes.IsList(inType) && !ddptypes.Equal(inType, ddptypes.TEXT) {
-		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
+		t.err(ddperror.CAN_ONLY_ITERATE_OVER_TEXT_OR_LIST, stmt.In.GetRange())
 	}
 
 	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.Underlying) {
-		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
-			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
-				elementType, inTypeList),
-		)
+		t.err(ddperror.EXPECTED_LIST_TYPE_FOR_ITERATOR, stmt.Initializer.GetRange(), elementType, inTypeList)
 	} else if ddptypes.Equal(inType, ddptypes.TEXT) && !ddptypes.Equal(elementType, ddptypes.BUCHSTABE) {
-		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
-			fmt.Sprintf("Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
-				elementType),
-		)
+		t.err(ddperror.EXPECTED_CHAR_TYPE, stmt.Initializer.GetRange(), elementType)
 	}
 	stmt.Body.Accept(t)
 	return ast.VisitRecurse
@@ -819,11 +771,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 			errRange = stmt.Value.GetRange()
 		}
 
-		t.err(ddperror.TYP_WRONG_RETURN_TYPE, errRange,
-			fmt.Sprintf("Eine Funktion mit Rückgabetyp %s kann keinen Wert vom Typ %s zurückgeben",
-				stmt.Func.ReturnType,
-				returnType),
-		)
+		t.err(ddperror.FUNC_RETURN_TYPE_MISMATCH, errRange, stmt.Func.ReturnType, returnType)
 	}
 	return ast.VisitRecurse
 }
@@ -865,7 +813,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 		case ddptypes.FEMININ:
 			article = "Eine"
 		}
-		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, Lhs, "%s %s hat kein Feld mit Name %s", article, originalType.String(), Lhs.Literal.Literal)
+		t.err(ddperror.STRUCT_FIELD_NOT_FOUND, Lhs.GetRange(), "%s %s hat kein Feld mit Name %s", article, originalType.String(), Lhs.Literal.Literal)
 		return ddptypes.VoidType{}
 	}
 
@@ -876,7 +824,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 			for _, field := range structDecl.Fields {
 				if field.Name() == Lhs.Literal.Literal {
 					if field, ok := field.(*ast.VarDecl); ok && !field.IsPublic {
-						t.errExpr(ddperror.TYP_PRIVATE_FIELD_ACCESS, Lhs, "Das Feld %s der Struktur %s ist nicht öffentlich", Lhs.Literal.Literal, originalType.String())
+						t.err(ddperror.STRUCT_FIELD_NOT_PUBLIC, Lhs.GetRange(), Lhs.Literal.Literal, originalType.String())
 					}
 					break
 				}

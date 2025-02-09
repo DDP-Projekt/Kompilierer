@@ -16,7 +16,7 @@ import (
 )
 
 func testHandler(t *testing.T) ddperror.Handler {
-	return func(err ddperror.Error) {
+	return func(err ddperror.Message) {
 		t.Errorf("%v", err)
 	}
 }
@@ -195,8 +195,8 @@ func TestTypeAliasDeclError(t *testing.T) {
 				},
 			},
 		},
-	}, func(err ddperror.Error) {
-		assert.Equal(ddperror.SEM_BAD_PUBLIC_MODIFIER, err.Code)
+	}, func(err ddperror.Message) {
+		assert.Equal(ddperror.PUBLIC_STRUCT_FIELDS_MUST_BE_PUBLIC, err.Code)
 	}, t.Name(), &panicMode)
 
 	given.TypecheckNode(&ast.TypeAliasDecl{

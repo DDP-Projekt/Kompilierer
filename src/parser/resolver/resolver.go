@@ -65,11 +65,11 @@ func (r *Resolver) exitScope() {
 }
 
 // helper for errors
-func (r *Resolver) err(code ddperror.Code, Range token.Range, msg string) {
+func (r *Resolver) err(code ddperror.ErrorCode, Range token.Range, a ...any) {
 	r.Module.Ast.Faulty = true
 	if !*r.panicMode {
 		*r.panicMode = true
-		r.ErrorHandler(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, r.Module.FileName))
+		r.ErrorHandler(ddperror.NewError(code, Range, r.Module.FileName, a...))
 	}
 }
 
@@ -86,11 +86,11 @@ func (r *Resolver) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
 
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+		r.err(ddperror.NAME_ALREADY_IN_USE, decl.NameTok.Range, decl.Name()) // variables may only be declared once in the same scope
 	}
 
 	if decl.Public() && !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Konstante können öffentlich sein")
+		r.err(ddperror.PUBLIC_CONST_MUST_BE_GLOBAL, decl.NameTok.Range)
 	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
@@ -102,11 +102,11 @@ func (r *Resolver) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	r.visit(decl.InitVal) // resolve the initial value
 	// insert the variable into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // variables may only be declared once in the same scope
+		r.err(ddperror.NAME_ALREADY_IN_USE, decl.NameTok.Range, decl.Name()) // variables may only be declared once in the same scope
 	}
 
 	if decl.Public() && !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_PUBLIC_DECL, decl.NameTok.Range, "Nur globale Variablen können öffentlich sein")
+		r.err(ddperror.PUBLIC_VAR_MUST_BE_GLOBAL, decl.NameTok.Range)
 	} else if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists { // insert the variable int othe public module decls
 		r.Module.PublicDecls[decl.Name()] = decl
 	}
@@ -140,7 +140,7 @@ func (r *Resolver) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 
 func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+		r.err(ddperror.TYPE_MUST_BE_GLOBAL, decl.NameTok.Range)
 	}
 
 	for _, field := range decl.Fields {
@@ -152,7 +152,7 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 	}
 	// insert the struct into the current scope (SymbolTable)
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // structs may only be declared once in the same module
+		r.err(ddperror.NAME_ALREADY_IN_USE, decl.NameTok.Range, decl.Name()) // structs may only be declared once in the same module
 	}
 	// insert the struct into the public module decls
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
@@ -163,11 +163,11 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 
 func (r *Resolver) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+		r.err(ddperror.TYPE_MUST_BE_GLOBAL, decl.NameTok.Range)
 	}
 
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type aliases may only be declared once in the same module
+		r.err(ddperror.NAME_ALREADY_IN_USE, decl.NameTok.Range, decl.Name()) // type aliases may only be declared once in the same module
 	}
 	// insert the type decl into the public module decls
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
@@ -178,11 +178,11 @@ func (r *Resolver) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 
 func (r *Resolver) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
 	if !ast.IsGlobalScope(r.CurrentTable) {
-		r.err(ddperror.SEM_NON_GLOBAL_TYPE_DECL, decl.NameTok.Range, "Es können nur globale Typen deklariert werden")
+		r.err(ddperror.TYPE_MUST_BE_GLOBAL, decl.NameTok.Range)
 	}
 
 	if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-		r.err(ddperror.SEM_NAME_ALREADY_DEFINED, decl.NameTok.Range, ddperror.MsgNameAlreadyExists(decl.Name())) // type defs may only be declared once in the same module
+		r.err(ddperror.NAME_ALREADY_IN_USE, decl.NameTok.Range, decl.Name()) // type defs may only be declared once in the same module
 	}
 	// insert the type decl into the public module decls
 	if _, alreadyExists := r.Module.PublicDecls[decl.Name()]; decl.IsPublic && !alreadyExists {
@@ -200,9 +200,9 @@ func (r *Resolver) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	// check if the variable exists
 	if decl, exists, isVar := r.CurrentTable.LookupDecl(expr.Literal.Literal); !exists {
-		r.err(ddperror.SEM_NAME_UNDEFINED, expr.Token().Range, fmt.Sprintf("Der Name '%s' wurde noch nicht als Variable deklariert", expr.Literal.Literal))
+		r.err(ddperror.VAR_NOT_DECLARED, expr.Token().Range, expr.Literal.Literal)
 	} else if !isVar {
-		r.err(ddperror.SEM_BAD_NAME_CONTEXT, expr.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", expr.Literal.Literal))
+		r.err(ddperror.NAME_NOT_A_VAR, expr.Token().Range, expr.Literal.Literal)
 	} else { // set the reference to the declaration
 		expr.Declaration = decl
 	}
@@ -263,7 +263,7 @@ func (r *Resolver) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	if expr.Operator != ast.BIN_FIELD_ACCESS {
 		r.visit(expr.Lhs)
 	} else if _, isIdent := expr.Lhs.(*ast.Ident); !isIdent {
-		r.err(ddperror.SEM_BAD_FIELD_ACCESS, expr.Lhs.GetRange(), fmt.Sprintf("Der VON Operator erwartet einen Namen als Linken Operanden, nicht %s", expr.Lhs))
+		r.err(ddperror.OPERATOR_VON_EXPECTS_NAME, expr.Lhs.GetRange(), expr.Lhs)
 	}
 	r.visit(expr.Rhs)
 	return ast.VisitRecurse
@@ -333,7 +333,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 	resolveDecl := func(decl ast.Declaration) {
 		if existed := r.CurrentTable.InsertDecl(decl.Name(), decl); existed {
-			r.err(ddperror.SEM_NAME_ALREADY_DEFINED, stmt.FileName.Range, fmt.Sprintf("Der Name '%s' aus dem Modul '%s' existiert bereits in diesem Modul", decl.Name(), decl.Module().GetIncludeFilename()))
+			r.err(ddperror.NAME_ALREADY_USED_IN_MODULE, stmt.FileName.Range, decl.Name(), decl.Module().GetIncludeFilename())
 			return
 		}
 	}
@@ -341,7 +341,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	// add imported symbols
 	ast.IterateImportedDecls(stmt, func(name string, decl ast.Declaration, tok token.Token) bool {
 		if decl == nil {
-			r.err(ddperror.SEM_NAME_UNDEFINED, tok.Range, fmt.Sprintf("Der Name '%s' entspricht keiner öffentlichen Deklaration aus dem Modul '%s'", name, ast.TrimStringLit(&stmt.FileName)))
+			r.err(ddperror.NAME_NOT_PUBLIC_IN_MODULE, tok.Range, name, ast.TrimStringLit(&stmt.FileName))
 		} else {
 			resolveDecl(decl)
 		}
@@ -355,11 +355,11 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	case *ast.Ident:
 		// check if the variable exists
 		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
-			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
+			r.err(ddperror.VAR_NOT_DECLARED, assign.Literal.Range, assign.Literal.Literal)
 		} else if !isVar {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", assign.Literal.Literal))
+			r.err(ddperror.NAME_NOT_A_VAR, assign.Token().Range, assign.Literal.Literal)
 		} else if _, isConst := varDecl.(*ast.ConstDecl); isConst {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für einer Konstante und kann daher nicht zugewiesen werden", assign.Literal.Literal))
+			r.err(ddperror.CONST_NOT_ASSIGNABLE, assign.Token().Range, assign.Literal.Literal)
 		} else { // set the reference to the declaration
 			assign.Declaration = varDecl
 		}
@@ -429,7 +429,7 @@ func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
 
 func (r *Resolver) VisitBreakContinueStmt(stmt *ast.BreakContinueStmt) ast.VisitResult {
 	if r.LoopDepth == 0 {
-		r.err(ddperror.SEM_BREAK_CONTINUE_NOT_IN_LOOP, stmt.Tok.Range, "Break oder Continue darf nur in einer Schleife benutzt werden")
+		r.err(ddperror.BREAK_OR_CONTINUE_ONLY_IN_LOOP, stmt.Tok.Range)
 	}
 	return ast.VisitRecurse
 }

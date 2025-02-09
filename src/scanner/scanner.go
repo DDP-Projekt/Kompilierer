@@ -2,7 +2,6 @@
 package scanner
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,19 +63,19 @@ func New(filePath string, src []byte, errorHandler ddperror.Handler, mode Mode) 
 	// if src is nil filePath is used to load the src from a file
 	if src == nil {
 		if filepath.Ext(filePath) != ".ddp" {
-			return nil, ddperror.New(ddperror.SYN_MALFORMED_INCLUDE_PATH, ddperror.LEVEL_ERROR, scan.currentRange(), ddperror.MSG_INVALID_FILE_EXTENSION, scan.file)
+			return nil, ddperror.NewError(ddperror.INVALID_FILE_TYPE, scan.currentRange(), scan.file)
 		}
 
 		file, err := os.ReadFile(filePath)
 		if err != nil {
-			return nil, ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, scan.currentRange(), err.Error(), scan.file)
+			return nil, ddperror.NewError(ddperror.INCLUDE_ERROR, scan.currentRange(), scan.file, err.Error())
 		}
 
 		src = file
 	}
 
 	if !utf8.Valid(src) {
-		return nil, ddperror.New(ddperror.SYN_INVALID_UTF8, ddperror.LEVEL_ERROR, scan.currentRange(), ddperror.MSG_INVALID_UTF8, scan.file)
+		return nil, ddperror.NewError(ddperror.INVALID_UTF8, scan.currentRange(), scan.file)
 	}
 
 	scan.src = src
@@ -168,7 +167,7 @@ func (s *Scanner) scanEscape(quote rune) bool {
 		return true
 	default:
 		s.err(
-			ddperror.SYN_MALFORMED_LITERAL,
+			ddperror.UNKNOWN_ESCAPE_SEQ,
 			token.Range{
 				Start: token.Position{
 					Line:   s.line,
@@ -179,7 +178,7 @@ func (s *Scanner) scanEscape(quote rune) bool {
 					Column: s.column + 2,
 				},
 			},
-			fmt.Sprintf("Unbekannte Escape Sequenz '\\%v'", s.peekNext()),
+			s.peekNext(),
 		)
 		return false
 	}
@@ -229,10 +228,10 @@ func (s *Scanner) char() token.Token {
 	case 3:
 	case 4:
 		if !gotBackslash {
-			s.err(ddperror.SYN_MALFORMED_LITERAL, tok.Range, ddperror.MSG_CHAR_LITERAL_TOO_LARGE)
+			s.err(ddperror.CHAR_TOO_LONG, tok.Range)
 		}
 	default:
-		s.err(ddperror.SYN_MALFORMED_LITERAL, tok.Range, ddperror.MSG_CHAR_LITERAL_TOO_LARGE)
+		s.err(ddperror.CHAR_TOO_LONG, tok.Range)
 	}
 	return tok
 }
@@ -269,7 +268,7 @@ func (s *Scanner) identifier(start rune) token.Token {
 	tokenType := s.identifierType()
 
 	if shouldReportCapitailzation && tokenType != token.IDENTIFIER {
-		s.err(ddperror.SYN_EXPECTED_CAPITAL, capitalRange, "Nach einem Punkt muss ein Großbuchstabe folgen") // not a critical error, so continue and let the error handler to the job
+		s.err(ddperror.EXPECTED_CAPITAL, capitalRange) // not a critical error, so continue and let the error handler to the job
 	}
 
 	return s.newToken(tokenType)
@@ -292,27 +291,27 @@ func (s *Scanner) identifierType() token.TokenType {
 // helper to scan the <argname> in aliases
 func (s *Scanner) aliasParameter() token.Token {
 	if !isAlpha(s.peek()) {
-		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
+		s.err(ddperror.INVALID_PARAMETER_NAME, s.currentRange())
 	}
 
 	for !s.atEnd() && s.peek() != '>' {
 		if !isAlphaNumeric(s.advance()) {
-			s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Invalider Parameter Name")
+			s.err(ddperror.INVALID_PARAMETER_NAME, s.currentRange())
 		}
 	}
 
 	if s.atEnd() {
-		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Offener Parameter")
+		s.err(ddperror.OPEN_PARAMETER, s.currentRange())
 	} else {
 		s.advance() // consume the closing >
 	}
 
 	if s.cur-s.start <= 2 && !s.atEnd() {
-		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Ein Parameter in einem Alias muss mindestens einen Buchstaben enthalten")
+		s.err(ddperror.EMPTY_PARAMETER, s.currentRange())
 	}
 
 	if tokenType := s.identifierType(); tokenType != token.IDENTIFIER {
-		s.err(ddperror.SYN_MALFORMED_ALIAS, s.currentRange(), "Es wurde ein Name als Alias-Parameter erwartet")
+		s.err(ddperror.ALIAS_EXPECTED_NAME, s.currentRange())
 	}
 
 	return s.newToken(token.ALIAS_PARAMETER)
@@ -423,10 +422,10 @@ func (s *Scanner) peekNext() rune {
 	return r
 }
 
-func (s *Scanner) err(code ddperror.Code, Range token.Range, msg string) {
-	e := ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, s.file)
+func (s *Scanner) err(code ddperror.ErrorCode, Range token.Range, a ...any) {
+	e := ddperror.NewError(code, Range, s.file, a)
 	if s.aliasMode() {
-		e.Msg = fmt.Sprintf("Fehler im Alias '%s': %s", string(s.src), e.Msg)
+		e = ddperror.NewError(ddperror.ALIAS_ERROR, Range, s.file, string(s.src), a)
 	}
 	s.errorHandler(e)
 }

@@ -8,14 +8,14 @@ import (
 	"unicode/utf8"
 )
 
-type Handler func(Error) // used by most ddp packages
+type Handler func(Message) // used by most ddp packages
 
 // does nothing
-func EmptyHandler(Error) {}
+func EmptyHandler(Message) {}
 
 // creates a basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
-	return func(err Error) {
+	return func(err Message) {
 		fmt.Fprintf(w, "%s: %s\n", makeErrorHeader(err, ""), err.Msg)
 	}
 }
@@ -28,7 +28,7 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 	file = filepath.Clean(file)
 	basicHandler := MakeBasicHandler(w)
 
-	return func(err Error) {
+	return func(err Message) {
 		// we don't have the text of included files
 		// so we handle them with the basic error handler
 		if filepath.Clean(err.File) != file {
@@ -43,16 +43,8 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 			}
 		}
 
-		// helper to find the maximum of two uints
-		uMax := func(a, b uint) uint {
-			if a > b {
-				return a
-			}
-			return b
-		}
-
 		rnge := err.Range
-		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", uMax(rnge.Start.Line, rnge.End.Line)))
+		maxLineCount, maxLineNumLen := 0, utf8.RuneCountInString(fmt.Sprintf("%d", max(rnge.Start.Line, rnge.End.Line)))
 		fmt.Fprintf(w, "%s\n\n", makeErrorHeader(err, filepath.Dir(file)))
 
 		for lineIndex := rnge.Start.Line - 1; lineIndex < rnge.End.Line; lineIndex++ {
@@ -104,27 +96,24 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 
 // creates a Handler that panics with the passed ddperror.Error if called
 func MakePanicHandler() Handler {
-	return func(err Error) {
+	return func(err Message) {
 		panic(err)
 	}
 }
 
 // helper to create the common error header of all handlers
 // prints the error type, code and place
-func makeErrorHeader(err Error, file string) string {
+func makeErrorHeader(err Message, file string) string {
 	kind := "Fehler"
-	prefix := err.Code.ErrorPrefix()
 	if err.Level == LEVEL_WARN {
 		kind = "Warnung"
-		prefix = err.Code.WarningPrefix()
 	}
 	if path, e := filepath.Rel(file, err.File); e != nil {
 		file = err.File
 	} else {
 		file = path
 	}
-	return fmt.Sprintf("%s %s (%04d) in %s (Z: %d, S: %d)",
-		prefix,
+	return fmt.Sprintf("%s (%04d) in %s (Z: %d, S: %d)",
 		kind,
 		err.Code,
 		file,

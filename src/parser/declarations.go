@@ -4,7 +4,6 @@ This file contains functions to parse function/struct/... declarations
 package parser
 
 import (
-	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -80,7 +79,7 @@ func (p *parser) matchExternSichtbar(isPublic bool) bool {
 func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	begin := p.peekN(startDepth) // Die
 	if begin.Type != token.DIE {
-		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", "Die"))
+		p.err(ddperror.WRONG_ARTIKEL, begin.Range, "Die")
 	}
 
 	comment := p.parseDeclComment(begin.Range)
@@ -92,7 +91,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	// we need a name, so bailout if none is provided
 	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: ddperror.Error{
+			Err: ddperror.Message{
 				Range: token.NewRange(p.peekN(-2), p.peek()),
 				File:  p.module.FileName,
 				Msg:   "Es wurde ein Name für die Konstante erwartet",
@@ -108,13 +107,13 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 	expr := p.expression()
 	_, isLiteral := expr.(ast.Literal)
 	if !isLiteral {
-		p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+		p.err(ddperror.EXPECTED_LITERAL, expr.GetRange())
 	}
 
 	if p.matchAny(token.COUNT_MAL) {
 		value := p.expression()
 		if _, isLiteral := value.(ast.Literal); !isLiteral {
-			p.err(ddperror.SYN_EXPECTED_LITERAL, value.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+			p.err(ddperror.EXPECTED_LITERAL, value.GetRange())
 		}
 
 		expr_tok := expr.Token()
@@ -132,7 +131,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 		// TODO: does not yet work with nested lists
 		for _, v := range expr.Values {
 			if _, isLiteral := v.(ast.Literal); !isLiteral {
-				p.err(ddperror.SYN_EXPECTED_LITERAL, v.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+				p.err(ddperror.EXPECTED_LITERAL, v.GetRange())
 			}
 		}
 	}
@@ -143,7 +142,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 		return &ast.BadDecl{
 			Mod: p.module,
 			Tok: expr.Token(),
-			Err: ddperror.Error{
+			Err: ddperror.Message{
 				Range: expr.GetRange(),
 				File:  p.module.FileName,
 				Msg:   "Es wurde ein Literal erwartet aber ein Ausdruck gefunden",
@@ -180,7 +179,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	typ := p.parseType()
 	type_end := p.previous()
 	if typ == nil {
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
+		p.err(ddperror.INVALID_TYPE, token.NewRange(type_start, p.previous()), p.previous())
 	} else {
 		getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
 			switch gender {
@@ -204,14 +203,14 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		}
 
 		if article := getArticle(typ.Gender()); begin.Type != article {
-			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+			p.err(ddperror.WRONG_ARTIKEL, begin.Range, article)
 		}
 	}
 
 	// we need a name, so bailout if none is provided
 	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: ddperror.Error{
+			Err: ddperror.Message{
 				Range: token.NewRange(p.peekN(-2), p.peek()),
 				File:  p.module.FileName,
 				Msg:   "Es wurde ein Name für die Variable erwartet",
@@ -279,7 +278,7 @@ func (p *parser) paramNameAllowed(name *token.Token) bool {
 
 // helper for funcDeclaration
 // parses the parameters of a function declaration
-func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool)) (params []ast.ParameterInfo) {
+func (p *parser) parseFunctionParameters(perr func(ddperror.ErrorCode, token.Range, ...any), validate func(bool)) (params []ast.ParameterInfo) {
 	if !p.matchAny(token.MIT) {
 		return params
 	}
@@ -289,14 +288,14 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	if p.matchSeq(token.DEN, token.PARAMETERN) {
 		singleParameter = false
 	} else if !p.matchSeq(token.DEM, token.PARAMETER) {
-		perr(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'de[n/m] Parameter[n]'"))
+		perr(ddperror.PARAM_WRONG_GENDER, p.peek().Range, p.peek())
 	}
 
 	// parse the first param name
 	validate(p.consumeSeq(token.IDENTIFIER))
 	firstName := p.previous()
 	if !p.paramNameAllowed(firstName) { // check that the parameter name is not already used
-		perr(ddperror.SEM_NAME_ALREADY_DEFINED, firstName.Range, ddperror.MsgNameAlreadyExists(firstName.Literal))
+		perr(ddperror.NAME_ALREADY_IN_USE, firstName.Range, firstName.Literal)
 	}
 
 	params = append(params, ast.ParameterInfo{
@@ -308,11 +307,11 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 		// helper function to avoid too much repitition
 		addParamName := func(name *token.Token) {
 			if containsName(params, name.Literal) { // check that each parameter name is unique
-				perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Parameter mit dem Namen '%s' ist bereits vorhanden", name.Literal))
+				perr(ddperror.PARAM_ALREADY_EXISTS, name.Range, name.Literal)
 				return
 			}
 			if !p.paramNameAllowed(name) { // check that the parameter name is not already used
-				perr(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, ddperror.MsgNameAlreadyExists(name.Literal))
+				perr(ddperror.NAME_ALREADY_IN_USE, name.Range, name.Literal)
 				return
 			}
 			params = append(params, ast.ParameterInfo{
@@ -332,7 +331,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 				addParamName(p.previous())
 			}
 			if !p.consumeSeq(token.UND, token.IDENTIFIER) {
-				perr(ddperror.SYN_EXPECTED_IDENTIFIER, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "der letzte Parameter (und <Name>)")+"\nMeintest du vorher vielleicht 'dem Parameter' anstatt 'den Parametern'?")
+				perr(ddperror.FUNC_LAST_PARAM_MISSING, p.peek().Range)
 			}
 			addParamName(p.previous())
 		}
@@ -382,12 +381,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	invalidTypeIndex := slices.IndexFunc(params, isDefaultValue[ast.ParameterInfo])
 	// we need as many parmeter names as types
 	if invalidTypeIndex >= 0 {
-		perr(
-			ddperror.SEM_PARAM_NAME_TYPE_COUNT_MISMATCH,
-			token.NewRange(&params[0].Name, p.previous()),
-			fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)",
-				len(params),
-				invalidTypeIndex))
+		perr(ddperror.FUNC_PARAM_AND_TYPE_COUNT_MISMATCH, token.NewRange(&params[0].Name, p.previous()), len(params), invalidTypeIndex)
 	}
 
 	return params
@@ -422,7 +416,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 	for _, v := range rawAliases {
 		// scan the raw alias withouth the ""
 		didError := false
-		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		errHandleWrapper := func(err ddperror.Message) { didError = true; p.errorHandler(err) }
 
 		scanAndValidate := func(t token.Token, negated bool) {
 			alias, err := scanner.ScanAlias(t, errHandleWrapper)
@@ -431,10 +425,10 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 			}
 
 			if len(alias) < 2 { // empty strings are not allowed (we need at least 1 token + EOF)
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+				p.err(ddperror.ALIAS_NAME_EMPTY, v.Range)
 			} else if err := p.validateFunctionAlias(alias, params); err == nil { // check that the alias fits the function
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
+					p.err(ddperror.AliasExistsCode(isFun), v.Range, v.Literal, existingAlias.Decl().Name())
 				} else {
 					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: t, Func: nil, Args: paramTypesMap, Negated: negated})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
@@ -447,12 +441,12 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		negMarkerStart := strings.Index(v.Literal, "<!")
 		if negMarkerStart != -1 {
 			if !p.isCurrentFunctionBool {
-				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
+				p.err(ddperror.ALIAS_NEGATION_MARKER_IN_NON_BOOL_FUNC, v.Range)
 				continue
 			}
 
 			if strings.Contains(v.Literal[negMarkerStart+1:], "<!") {
-				p.err(ddperror.SEM_MALFORMED_ALIAS, v.Range, "Der Alias enthält mehr als eine Aliasnegationsmarkierung")
+				p.err(ddperror.ALIAS_MULTIPLE_NEGATION_MARKER, v.Range)
 			}
 
 			original := v.Literal
@@ -480,30 +474,26 @@ func (p *parser) parseOperatorOverloading(params []ast.ParameterInfo, returnType
 
 	operator, is_operator := ast.GetOperator(operator_name)
 	if !is_operator {
-		p.err(ddperror.SYN_INVALID_OPERATOR, operator_token.Range, fmt.Sprintf("'%s' steht nicht für einen Operator", operator_name))
+		p.err(ddperror.OPERATOR_UNKNOWN, operator_token.Range, operator_name)
 	}
 
 	switch op := operator.(type) {
-	case ast.UnaryOperator:
+	case ast.UnaryOperator, ast.CastOperator:
 		if len(params) != 1 {
-			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet nur einen Parameter, aber hat %d bekommen", op, len(params)))
+			p.err(ddperror.OPERATOR_UNARY_WRONG_PARAM_COUNT, operator_token.Range, op, len(params))
 		}
 	case ast.BinaryOperator:
 		if len(params) != 2 {
-			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet zwei Parameter, aber hat %d bekommen", op, len(params)))
+			p.err(ddperror.OPERATOR_BINARY_WRONG_PARAM_COUNT, operator_token.Range, op, len(params))
 		}
 	case ast.TernaryOperator:
 		if len(params) != 3 {
-			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet drei Parameter, aber hat %d bekommen", op, len(params)))
-		}
-	case ast.CastOperator:
-		if len(params) != 1 {
-			p.err(ddperror.SEM_BAD_OPERATOR_PARAMS, operator_token.Range, fmt.Sprintf("Der '%s' Operator erwartet nur einen Parameter, aber hat %d bekommen", op, len(params)))
+			p.err(ddperror.OPERATOR_TERNARY_WRONG_PARAM_COUNT, operator_token.Range, op, len(params))
 		}
 	}
 
 	if ddptypes.IsVoid(returnType) {
-		p.err(ddperror.TYP_BAD_OPERATOR_RETURN_TYPE, operator_token.Range, "Ein Operator muss einen Wert zurückgeben")
+		p.err(ddperror.OPERATOR_MUST_RETURN_VALUE, operator_token.Range)
 	}
 
 	return operator
@@ -522,8 +512,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 
 	// local version of p.err that also sets valid = false
-	perr := func(code ddperror.Code, Range token.Range, msg string) {
-		p.err(code, Range, msg)
+	perr := func(code ddperror.ErrorCode, Range token.Range, a ...any) {
+		p.err(code, Range, a...)
 		valid = false
 	}
 
@@ -536,7 +526,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.DeclStmt{
 			Decl: &ast.BadDecl{
-				Err: ddperror.New(ddperror.SYN_EXPECTED_IDENTIFIER, ddperror.LEVEL_ERROR, token.NewRange(begin, p.peek()), "Es wurde ein Funktions Name erwartet", p.module.FileName),
+				Err: ddperror.NewError(ddperror.EXPECTED_FUNC_NAME, token.NewRange(begin, p.peek()), p.module.FileName),
 				Tok: *p.peek(),
 				Mod: p.module,
 			},
@@ -551,7 +541,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 	// early error report if the name is already used
 	if _, existed, _ := p.scope().LookupDecl(funcName.Literal); existed {
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, funcName.Range, ddperror.MsgNameAlreadyExists(funcName.Literal))
+		p.err(ddperror.NAME_ALREADY_IN_USE, funcName.Range, funcName.Literal)
 	}
 
 	// parse the parameter declaration
@@ -595,10 +585,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		switch filepath.Ext(ast.TrimStringLit(definedIn)) {
 		case ".c", ".lib", ".a", ".o":
 		default:
-			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
+			perr(ddperror.FUNC_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, definedIn.Literal)
 		}
 		if isExternVisible {
-			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
+			perr(ddperror.FUNC_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange)
 		}
 	}
 
@@ -616,7 +606,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	aliasEnd := p.cur // save the end of the function declaration for later
 
 	if !ast.IsGlobalScope(p.scope()) {
-		perr(ddperror.SEM_NON_GLOBAL_FUNCTION, begin.Range, "Es können nur globale Funktionen deklariert werden")
+		perr(ddperror.FUNC_MUST_BE_GLOBAL, begin.Range)
 	}
 
 	if !valid {
@@ -710,14 +700,14 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 	// check that the function has a return statement if it needs one
 	if !ddptypes.IsVoid(decl.ReturnType) { // only if the function does not return void
 		if len(body.Statements) < 1 { // at least the return statement is needed
-			p.err(ddperror.SEM_MISSING_RETURN, body.Range, ddperror.MSG_MISSING_RETURN)
+			p.err(ddperror.FUNC_MISSING_RETURN, body.Range)
 		} else {
 			// the last statement must be a return statement or a todo statement
 			lastStmt := body.Statements[len(body.Statements)-1]
 			switch lastStmt.(type) {
 			case *ast.ReturnStmt, *ast.TodoStmt:
 			default:
-				p.err(ddperror.SEM_MISSING_RETURN, token.NewRange(p.previous(), p.previous()), ddperror.MSG_MISSING_RETURN)
+				p.err(ddperror.FUNC_MISSING_RETURN, token.NewRange(p.previous(), p.previous()))
 			}
 		}
 	}
@@ -733,7 +723,7 @@ func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
 	}
 
 	if !ast.IsGlobalScope(p.scope()) {
-		p.err(ddperror.SEM_NON_GLOBAL_FUNCTION, p.previous().Range, "Funktionen müssen global definiert werden")
+		p.err(ddperror.FUNC_MUST_BE_GLOBAL, p.previous().Range)
 		return nil
 	}
 
@@ -753,13 +743,13 @@ func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
 // returns nil in case of error
 func (p *parser) getDeclForDefinition(nameTok *token.Token) *ast.FuncDecl {
 	if decl, exists, _ := p.scope().LookupDecl(nameTok.Literal); !exists {
-		p.err(ddperror.SEM_NAME_UNDEFINED, nameTok.Range, fmt.Sprintf("Es wurde noch keine Funktion mit dem Namen '%s' deklariert", nameTok.Literal))
+		p.err(ddperror.FUNC_NOT_DECLARED, nameTok.Range, nameTok.Literal)
 	} else if funcDecl, ok := decl.(*ast.FuncDecl); !ok {
-		p.err(ddperror.SEM_BAD_NAME_CONTEXT, nameTok.Range, fmt.Sprintf("Der Name '%s' steht für eine Variable oder Struktur und nicht für eine Funktion", nameTok.Literal))
+		p.err(ddperror.NAME_NOT_A_FUNCTION, nameTok.Range, nameTok.Literal)
 	} else if funcDecl.Mod != p.module {
-		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, "Es können nur Funktionen aus demselben Modul definiert werden")
+		p.err(ddperror.FUNC_MUST_BE_IN_SAME_MODULE, nameTok.Range)
 	} else if funcDecl.Body != nil || funcDecl.ExternFile.Type != token.ILLEGAL || funcDecl.Def != nil {
-		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert", nameTok.Literal))
+		p.err(ddperror.FUNC_ALREADY_DEFINED, nameTok.Range, nameTok.Literal)
 	} else {
 		return funcDecl
 	}
@@ -772,24 +762,22 @@ func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }      
 
 // helper for funcDeclaration to check that every parameter is provided exactly once
 // and that no ILLEGAL tokens are present
-func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.ParameterInfo) *ddperror.Error {
+func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.ParameterInfo) *ddperror.Message {
 	// validate that the alias contains as many parameters as the function
 	if count := countElements(aliasTokens, isAliasParam); count != len(params) {
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+		err := ddperror.NewError(ddperror.ALIAS_PARAM_COUNT_MISMATCH,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(params), count),
 			p.module.FileName,
+			len(params), count,
 		)
 		return &err
 	}
 
 	// validate that the alias does not contain illegal tokens
 	if countElements(aliasTokens, isIllegalToken) > 0 {
-		err := ddperror.New(
-			ddperror.SEM_MALFORMED_ALIAS,
-			ddperror.LEVEL_ERROR,
+		err := ddperror.NewError(
+			ddperror.ALIAS_HAS_INVALID_SYMBOLS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
 		return &err
@@ -812,10 +800,10 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 		if _, ok := nameSet[k]; !ok {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.NewError(ddperror.FUNC_PARAM_DOESNT_EXIST,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-				fmt.Sprintf("Die Funktion hat keinen Parameter mit Namen %s", k),
 				p.module.FileName,
+				k,
 			)
 			return &err
 		}
@@ -824,10 +812,10 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 			aliasTokens[i].AliasInfo = &argTyp
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.NewError(ddperror.ALIAS_DUPLICATE_PARAMS,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
+				k,
 			)
 			return &err
 		}
@@ -839,24 +827,22 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 // and that no ILLEGAL tokens are present
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
-func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
+func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Message, map[string]ddptypes.Type) {
 	// validate that the alias contains as many parameters as the struct
 	if count := countElements(aliasTokens, isAliasParam); count > len(fields) {
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+		err := ddperror.NewError(ddperror.ALIAS_TOO_MANY_PARAMS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
 			p.module.FileName,
+			len(fields), count,
 		)
 		return &err, nil
 	}
 
 	// validate that the alias does not contain illegal tokens
 	if countElements(aliasTokens, isIllegalToken) > 0 {
-		err := ddperror.New(
-			ddperror.SEM_MALFORMED_ALIAS,
-			ddperror.LEVEL_ERROR,
+		err := ddperror.NewError(
+			ddperror.ALIAS_HAS_INVALID_SYMBOLS,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-			"Der Alias enthält ungültige Symbole",
 			p.module.FileName,
 		)
 		return &err, nil
@@ -882,10 +868,10 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 		if _, ok := nameSet[k]; !ok {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.NewError(ddperror.STRUCT_FIELD_NOT_FOUND,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
 				p.module.FileName,
+				"Die", "Struktur", k,
 			)
 			return &err, nil
 		}
@@ -894,10 +880,10 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 			aliasTokens[i].AliasInfo = &argTyp
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.NewError(ddperror.ALIAS_DUPLICATE_PARAMS,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
-				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
+				k,
 			)
 			return &err, nil
 		}
@@ -958,12 +944,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 
 	if !p.consumeSeq(token.IDENTIFIER) {
 		return &ast.BadDecl{
-			Err: ddperror.Error{
-				Code:  ddperror.SEM_NAME_UNDEFINED,
-				Range: token.NewRange(p.peekN(-2), p.peek()),
-				File:  p.module.FileName,
-				Msg:   "Es wurde ein Kombinations Name erwartet",
-			},
+			Err: ddperror.NewError(ddperror.EXPECTED_STRUCT_NAME, token.NewRange(p.peekN(-2), p.peek()), p.module.FileName),
 			Tok: *p.peek(),
 			Mod: p.module,
 		}
@@ -971,7 +952,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	name := p.previous()
 
 	if _, exists := p.scope().LookupType(name.Literal); exists {
-		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
+		p.err(ddperror.TYPE_ALREADY_EXISTS, name.Range, name.Literal)
 	}
 
 	p.consumeSeq(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
@@ -992,13 +973,13 @@ func (p *parser) structDeclaration() ast.Declaration {
 	)
 	for _, rawAlias := range rawAliases {
 		didError := false
-		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		errHandleWrapper := func(err ddperror.Message) { didError = true; p.errorHandler(err) }
 		if aliasTokens, err := scanner.ScanAlias(*rawAlias, errHandleWrapper); err == nil && !didError {
 			if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				p.err(ddperror.SEM_MALFORMED_ALIAS, rawAlias.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+				p.err(ddperror.ALIAS_NAME_EMPTY, rawAlias.Range)
 			} else if err, args := p.validateStructAlias(aliasTokens, fieldsForValidation); err == nil {
 				if ok, isFunc, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, rawAlias.Range, ddperror.MsgAliasAlreadyExists(rawAlias.Literal, existingAlias.Decl().Name(), isFunc))
+					p.err(ddperror.AliasExistsCode(isFunc), rawAlias.Range, rawAlias.Literal, existingAlias.Decl().Name())
 				} else {
 					structAliases = append(structAliases, &ast.StructAlias{Tokens: aliasTokens, Original: *rawAlias, Struct: nil, Args: args})
 					structAliasTokens = append(structAliasTokens, pTokens)
@@ -1091,7 +1072,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 	underlyingRange := token.NewRange(underlyingStart, underlyingEnd)
 
 	if ddptypes.Equal(underlying, ddptypes.VARIABLE) {
-		p.err(ddperror.SEM_BAD_TYPEDEF, underlyingRange, fmt.Sprintf("Es kann kein neuer Typ als '%s' definiert werden", ddptypes.VARIABLE))
+		p.err(ddperror.TYPE_CANNOT_BE_DEFINED, underlyingRange, ddptypes.VARIABLE)
 	}
 
 	p.consumeSeq(token.DOT)
@@ -1119,7 +1100,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 func (p *parser) aliasDecl() ast.Statement {
 	begin := p.peekN(-1)
 	if begin.Type != token.DER {
-		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", token.DER))
+		p.err(ddperror.WRONG_ARTIKEL, begin.Range, token.DER)
 	}
 	p.consumeSeq(token.STRING)
 	aliasTok := p.previous()
@@ -1128,10 +1109,10 @@ func (p *parser) aliasDecl() ast.Statement {
 
 	decl, ok, isVar := p.scope().LookupDecl(fun.Literal)
 	if !ok {
-		p.err(ddperror.SEM_NAME_UNDEFINED, fun.Range, fmt.Sprintf("Der Name %s wurde noch nicht deklariert", fun.Literal))
+		p.err(ddperror.NAME_NOT_DECLARED, fun.Range, fun.Literal)
 		return nil
 	} else if isVar {
-		p.err(ddperror.SEM_BAD_NAME_CONTEXT, fun.Range, fmt.Sprintf("Der Name %s steht für eine Variable und nicht für eine Funktion", fun.Literal))
+		p.err(ddperror.NAME_IS_VARIABLE_NOT_FUNC, fun.Range, fun.Literal)
 		return nil
 	}
 	funDecl := decl.(*ast.FuncDecl)
@@ -1147,11 +1128,11 @@ func (p *parser) aliasDecl() ast.Statement {
 	// scan the raw alias withouth the ""
 	var alias *ast.FuncAlias
 	var pTokens []*token.Token
-	if aliasTokens, err := scanner.ScanAlias(*aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+	if aliasTokens, err := scanner.ScanAlias(*aliasTok, func(err ddperror.Message) { p.err(ddperror.ErrorCode(err.Code), err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+		p.err(ddperror.ALIAS_NAME_EMPTY, aliasTok.Range)
 	} else if err := p.validateFunctionAlias(aliasTokens, funDecl.Parameters); err == nil { // check that the alias fits the function
 		if ok, isFun, existingAlias, toks := p.aliasExists(aliasTokens); ok {
-			p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, aliasTok.Range, ddperror.MsgAliasAlreadyExists(aliasTok.Literal, existingAlias.Decl().Name(), isFun))
+			p.err(ddperror.AliasExistsCode(isFun), aliasTok.Range, aliasTok.Literal, existingAlias.Decl().Name())
 		} else {
 			alias = &ast.FuncAlias{Tokens: aliasTokens, Original: *aliasTok, Func: funDecl, Args: paramTypes}
 			pTokens = toks
@@ -1163,7 +1144,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	p.consumeSeq(token.DOT)
 
 	if begin.Indent > 0 {
-		p.err(ddperror.SEM_ALIAS_MUST_BE_GLOBAL, token.NewRange(begin, p.previous()), "Ein Alias darf nur im globalen Bereich deklariert werden!")
+		p.err(ddperror.ALIAS_MUST_BE_GLOBAL, token.NewRange(begin, p.previous()))
 		return &ast.BadStmt{
 			Err: p.lastError,
 			Tok: *begin,

@@ -6,7 +6,6 @@ The rules are roughly sorted by precedence in ascending order, meaning functions
 package parser
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -18,11 +17,11 @@ import (
 )
 
 // attempts to parse an expression but returns a possible error
-func (p *parser) expressionOrErr() (ast.Expression, *ddperror.Error) {
+func (p *parser) expressionOrErr() (ast.Expression, *ddperror.Message) {
 	errHndl := p.errorHandler
 
-	var err *ddperror.Error
-	p.errorHandler = func(e ddperror.Error) {
+	var err *ddperror.Message
+	p.errorHandler = func(e ddperror.Message) {
 		err = &e
 	}
 	expr := p.expression()
@@ -219,9 +218,9 @@ func (p *parser) equality() ast.Expression {
 			// gender check
 			if checkType != nil {
 				if (tok.Type == token.EIN || tok.Type == token.KEIN) && checkType.Gender() == ddptypes.FEMININ {
-					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'ein'?")
+					p.err(ddperror.WRONG_ARTIKEL, token.NewRange(tok, tok), "ein")
 				} else if (tok.Type == token.EINE || tok.Type == token.KEINE) && checkType.Gender() != ddptypes.FEMININ {
-					p.err(ddperror.SYN_GENDER_MISMATCH, token.NewRange(tok, tok), "Meintest du 'eine'?")
+					p.err(ddperror.WRONG_ARTIKEL, token.NewRange(tok, tok), "eine")
 				}
 			}
 		}
@@ -297,7 +296,7 @@ func (p *parser) bitShift() ast.Expression {
 		rhs := p.term()
 		p.consumeSeq(token.BIT, token.NACH)
 		if !p.matchAny(token.LINKS, token.RECHTS) {
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
+			p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.peek(), "Links", "Rechts"))
 			return &ast.BadExpr{
 				Err: p.lastError,
 				Tok: expr.Token(),
@@ -409,7 +408,7 @@ func (p *parser) unary() ast.Expression {
 				return p.negate()
 			}
 		case token.BETRAG, token.LÄNGE, token.GRÖßE, token.STANDARDWERT:
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, start.Range, fmt.Sprintf("Vor '%s' fehlt der Artikel", start))
+			p.err(ddperror.ARTICLE_MISSING, start.Range, start)
 		}
 
 		tok := p.previous()
@@ -443,11 +442,11 @@ func (p *parser) unary() ast.Expression {
 				switch _type.Gender() {
 				case ddptypes.FEMININ:
 					if article.Type != token.EINER {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einer"))
+						p.err(ddperror.WRONG_ARTIKEL, article.Range, "einer")
 					}
 				default:
 					if article.Type != token.EINEM {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einem"))
+						p.err(ddperror.WRONG_ARTIKEL, article.Range, "einem")
 					}
 				}
 			}
@@ -704,7 +703,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 		if val, err := strconv.ParseFloat(strings.Replace(lit.Literal, ",", ".", 1), 64); err == nil {
 			lhs = &ast.FloatLit{Literal: *lit, Value: val}
 		} else {
-			p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Kommazahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+			p.err(ddperror.INVALID_FLOAT_LITERAL, lit.Range, lit.Literal)
 			lhs = &ast.FloatLit{Literal: *lit, Value: 0}
 		}
 	case token.CHAR:
@@ -752,7 +751,7 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			}
 		}
 	default:
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Literal", "ein Name"))
+		p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.previous(), "ein Literal", "ein Name"))
 		lhs = &ast.BadExpr{
 			Err: p.lastError,
 			Tok: *tok,
@@ -856,7 +855,7 @@ func (p *parser) parseChar(s string) (r rune) {
 			r = '\''
 		case '\\':
 		default:
-			p.err(ddperror.SYN_MALFORMED_LITERAL, p.previous().Range, fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Buchstaben Literal", string(r)))
+			p.err(ddperror.INVALID_ESCAPE_SEQ_IN_CHAR, p.previous().Range, string(r))
 		}
 		return r
 	}
@@ -886,7 +885,7 @@ func (p *parser) parseString(s string) string {
 			case '"':
 			case '\\':
 			default:
-				p.err(ddperror.SYN_MALFORMED_LITERAL, p.previous().Range, fmt.Sprintf("Ungültige Escape Sequenz '\\%s' im Text Literal", string(seq)))
+				p.err(ddperror.INVALID_ESCAPE_SEQ_IN_STR, p.previous().Range, string(seq))
 				continue
 			}
 
@@ -902,7 +901,7 @@ func (p *parser) parseIntLit() *ast.IntLit {
 	if val, err := strconv.ParseInt(lit.Literal, 10, 64); err == nil {
 		return &ast.IntLit{Literal: *lit, Value: val}
 	} else {
-		p.err(ddperror.SYN_MALFORMED_LITERAL, lit.Range, fmt.Sprintf("Das Zahlen Literal '%s' kann nicht gelesen werden", lit.Literal))
+		p.err(ddperror.INVALID_INT_LITERAL, lit.Range, lit.Literal)
 		return &ast.IntLit{Literal: *lit, Value: 0}
 	}
 }

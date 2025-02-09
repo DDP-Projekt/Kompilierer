@@ -4,7 +4,6 @@ This File defines the entry point and some general functions of the parser
 package parser
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"slices"
@@ -31,7 +30,7 @@ type parser struct {
 	// a function to which errors are passed
 	errorHandler ddperror.Handler
 	// latest reported error
-	lastError ddperror.Error
+	lastError ddperror.Message
 
 	module *ast.Module
 	// modules that were passed as environment, might not all be used
@@ -119,7 +118,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 
 	// wrap the errorHandler to set the parsers Errored variable
 	// if it is called
-	parser.errorHandler = func(err ddperror.Error) {
+	parser.errorHandler = func(err ddperror.Message) {
 		if err.Level == ddperror.LEVEL_ERROR {
 			parser.errored = true
 		}
@@ -215,7 +214,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	inclPath := ""
 
 	if rawPath == "" {
-		p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.FileName.Range, "Bei Einbindungen muss ein Dateipfad angegeben werden")
+		p.err(ddperror.INCLUDE_MISSING_FILENAME, importStmt.FileName.Range)
 		return
 	}
 
@@ -232,7 +231,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 	}
 
 	if err != nil {
-		p.err(ddperror.SYN_MALFORMED_INCLUDE_PATH, importStmt.FileName.Range, fmt.Sprintf("Fehlerhafter Dateipfad '%s': \"%s\"", rawPath+".ddp", err.Error()))
+		p.err(ddperror.INCLUDE_INVALID_FILE_PATH, importStmt.FileName.Range, rawPath+".ddp", err.Error())
 		return
 	}
 
@@ -251,7 +250,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			// add the module to the list and to the importStmt
 			// or report the error
 			if err != nil {
-				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Fehler beim einbinden von '%s': %s", inclPath, err.Error()))
+				p.err(ddperror.INCLUDE_ERROR, importStmt.Range, inclPath, err.Error())
 				return // return early on error
 			}
 
@@ -263,7 +262,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 			// we already included the module
 			// circular import error
 			if module == nil {
-				p.err(ddperror.MISC_INCLUDE_ERROR, importStmt.Range, fmt.Sprintf("Zwei Module dürfen sich nicht gegenseitig einbinden! Das Modul '%s' versuchte das Modul '%s' einzubinden, während es von diesem Module eingebunden wurde", p.module.GetIncludeFilename(), inclPath))
+				p.err(ddperror.INCLUDE_RECURSIVE, importStmt.Range, p.module.GetIncludeFilename(), inclPath)
 				return // return early on error
 			}
 
@@ -331,9 +330,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 func (p *parser) validateForwardDecls() {
 	ast.VisitModule(p.module, ast.FuncDeclVisitorFunc(func(decl *ast.FuncDecl) ast.VisitResult {
 		if decl.Body == nil && decl.ExternFile.Type == token.ILLEGAL && decl.Def == nil {
-			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
-				decl.NameTok.Range,
-				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert", decl.Name()))
+			p.err(ddperror.FUNC_NOT_DEFINED, decl.NameTok.Range, decl.Name())
 			p.panicMode = false
 		}
 		return ast.VisitSkipChildren
@@ -397,7 +394,7 @@ func (p *parser) exitScope() {
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
 }
 
-func (p *parser) errVal(err ddperror.Error) {
+func (p *parser) errVal(err ddperror.Message) {
 	if !p.panicMode {
 		p.panicMode = true
 		p.lastError = err
@@ -406,13 +403,15 @@ func (p *parser) errVal(err ddperror.Error) {
 }
 
 // helper to report errors and enter panic mode
-func (p *parser) err(code ddperror.Code, Range token.Range, msg string) {
-	p.errVal(ddperror.New(code, ddperror.LEVEL_ERROR, Range, msg, p.module.FileName))
+func (p *parser) err(code ddperror.ErrorCode, Range token.Range, a ...any) ddperror.Message {
+	e := ddperror.NewError(code, Range, p.module.FileName, a...)
+	p.errVal(e)
+	return e
 }
 
 // helper to report errors and enter panic mode
-func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
-	p.errorHandler(ddperror.New(code, ddperror.LEVEL_WARN, Range, msg, p.module.FileName))
+func (p *parser) warn(code ddperror.WarnCode, Range token.Range, a ...any) {
+	p.errorHandler(ddperror.NewWarning(code, Range, p.module.FileName, a...))
 }
 
 // checks wether the alias already exists AND has a value attached to it
@@ -438,7 +437,7 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 		alias := alias
 
 		if ok, isFun, existingAlias, pTokens := p.aliasExists(alias.GetTokens()); ok {
-			p.err(ddperror.SEM_ALIAS_ALREADY_DEFINED, errRange, ddperror.MsgAliasAlreadyExists(existingAlias.GetOriginal().Literal, existingAlias.Decl().Name(), isFun))
+			p.err(ddperror.AliasExistsCode(isFun), errRange, existingAlias.GetOriginal().Literal, existingAlias.Decl().Name())
 		} else {
 			p.aliases.Insert(pTokens, alias)
 		}
@@ -456,7 +455,7 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 				continue
 			}
 
-			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
+			p.err(ddperror.OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, decl.Operator)
 			valid = false
 		}
 	}

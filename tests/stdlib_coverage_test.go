@@ -126,7 +126,7 @@ func TestStdlibCoverage(t *testing.T) {
 		module, err := parser.Parse(parser.Options{
 			FileName: ddp_path,
 			Modules:  duden_modules,
-			ErrorHandler: func(e ddperror.Error) {
+			ErrorHandler: func(e ddperror.Message) {
 				t.Fatalf("Error parsing %s: %s", ddp_path, e)
 			},
 		})

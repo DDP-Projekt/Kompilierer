@@ -40,7 +40,7 @@ func (p *parser) matchSeq(types ...token.TokenType) bool {
 func (p *parser) consumeSeq(t ...token.TokenType) bool {
 	for _, v := range t {
 		if !p.check(v) {
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, t))
+			p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.peek(), t))
 			return false
 		}
 
@@ -58,7 +58,7 @@ func (p *parser) consumeAny(tokenTypes ...token.TokenType) bool {
 		}
 	}
 
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, toInterfaceSlice[token.TokenType, any](tokenTypes)...))
+	p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.peek(), toInterfaceSlice[token.TokenType, any](tokenTypes)...))
 	return false
 }
 

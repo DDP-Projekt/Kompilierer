@@ -103,9 +103,9 @@ func (p *parser) alias() ast.Expression {
 
 	// a argument that was already parsed
 	type cachedArg struct {
-		Arg     ast.Expression   // expression (might be an assignable)
-		Errors  []ddperror.Error // the errors that occured while parsing the argument
-		exprEnd int              // where the expression was over (p.cur for the token after)
+		Arg     ast.Expression     // expression (might be an assignable)
+		Errors  []ddperror.Message // the errors that occured while parsing the argument
+		exprEnd int                // where the expression was over (p.cur for the token after)
 	}
 
 	// a key for a cached argument
@@ -120,10 +120,10 @@ func (p *parser) alias() ast.Expression {
 	// returns nil if argument and parameter types don't match
 	// similar to the alogrithm above
 	// it also returns all errors that might have occured while doing so
-	checkAlias := func(mAlias ast.Alias, typeSensitive bool) (map[string]ast.Expression, []ddperror.Error) {
+	checkAlias := func(mAlias ast.Alias, typeSensitive bool) (map[string]ast.Expression, []ddperror.Message) {
 		p.cur = start
 		args := make(map[string]ast.Expression, 4)
-		reported_errors := make([]ddperror.Error, 0)
+		reported_errors := make([]ddperror.Message, 0)
 		mAliasTokens := mAlias.GetTokens()
 		mAliasArgs := mAlias.GetArgs()
 
@@ -176,7 +176,7 @@ func (p *parser) alias() ast.Expression {
 					tokens = append(tokens, eof)
 					argParser := &parser{
 						tokens: tokens,
-						errorHandler: func(err ddperror.Error) {
+						errorHandler: func(err ddperror.Message) {
 							reported_errors = append(reported_errors, err)
 							cached_arg.Errors = append(cached_arg.Errors, err)
 						},

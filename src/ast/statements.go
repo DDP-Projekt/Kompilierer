@@ -9,7 +9,7 @@ import (
 type (
 	BadStmt struct {
 		Tok token.Token
-		Err ddperror.Error
+		Err ddperror.Message
 	}
 
 	DeclStmt struct {

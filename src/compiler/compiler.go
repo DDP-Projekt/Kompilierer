@@ -55,8 +55,7 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	// add the external dependencies
 	for path := range mod.ExternalDependencies {
 		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(mod.FileName), path)); err != nil {
-			errHndl(ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, token.Range{},
-				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), mod.FileName))
+			errHndl(ddperror.NewError(ddperror.ABS_FILEPATH_NOT_FOUND, token.Range{}, mod.FileName, path, err))
 		} else {
 			path = abspath
 		}
@@ -248,8 +247,7 @@ func (c *compiler) addExternalDependencies() {
 	// add the external dependencies
 	for path := range c.ddpModule.ExternalDependencies {
 		if abspath, err := filepath.Abs(filepath.Join(filepath.Dir(c.ddpModule.FileName), path)); err != nil {
-			c.errorHandler(ddperror.New(ddperror.MISC_INCLUDE_ERROR, ddperror.LEVEL_ERROR, token.Range{},
-				fmt.Sprintf("Es konnte kein Absoluter Dateipfad für die Datei '%s' gefunden werden: %s", path, err), c.ddpModule.FileName))
+			c.errorHandler(ddperror.NewError(ddperror.ABS_FILEPATH_NOT_FOUND, token.Range{}, c.ddpModule.FileName, path, err))
 		} else {
 			path = abspath
 		}

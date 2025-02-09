@@ -4,8 +4,6 @@ This file defines functions to parse DDP statements.
 package parser
 
 import (
-	"fmt"
-
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
@@ -130,7 +128,7 @@ func (p *parser) importStatement() ast.Statement {
 			}
 		}
 	} else {
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "ein Text Literal, ein Name, 'alle' oder 'rekursiv'"))
+		p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.peek(), "ein Text Literal, ein Name, 'alle' oder 'rekursiv'"))
 		return &ast.BadStmt{
 			Tok: *p.peek(),
 			Err: p.lastError,
@@ -154,7 +152,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.peek().Type == token.COUNT_MAL {
 		p.checkStatement(stmt)
 		if err != nil {
-			p.err(err.Code, err.Range, err.Msg)
+			p.err(ddperror.ErrorCode(err.Code), err.Range, err.Msg)
 		}
 	} else {
 		p.cur = cur
@@ -164,11 +162,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 
 	if !p.matchAny(token.COUNT_MAL) {
 		count_tok := count.Token()
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
-			fmt.Sprintf("%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
-				ddperror.MsgGotExpected(p.previous(), token.COUNT_MAL), &count_tok,
-			),
-		)
+		p.err(ddperror.MAYBE_MISSING_DOT, count.GetRange(), p.previous(), &count_tok)
 	}
 	tok := p.previous()
 	tok.Type = token.WIEDERHOLE
@@ -280,7 +274,7 @@ func (p *parser) assignLiteral() ast.Statement {
 	// validate that the expression is a literal
 	if _, isLiteral := expr.(ast.Literal); !isLiteral {
 		if typ := p.typechecker.Evaluate(ident); !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
-			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
+			p.err(ddperror.EXPECTED_LITERAL, expr.GetRange())
 		}
 	}
 	ident_tok := ident.Token()
@@ -322,7 +316,7 @@ func (p *parser) ifStatement() ast.Statement {
 		Then = p.blockStatement(thenScope)
 	} else { // otherwise it is a single statement
 		if p.peek().Type == token.COLON { // block statements are only allowed with the syntax above
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, "In einer Wenn Anweisung, muss ein 'dann' vor dem ':' stehen")
+			p.err(ddperror.MISSING_DANN, p.peek().Range)
 		}
 		comma := p.previous()
 		p.setScope(thenScope)
@@ -476,7 +470,7 @@ func (p *parser) forStatement() ast.Statement {
 	Typ := p.parseType()
 	if Typ != nil {
 		if pronoun := getPronoun(Typ.Gender()); pronoun != pronoun_tok.Type {
-			p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", pronoun))
+			p.err(ddperror.WRONG_PRONOUN, pronoun_tok.Range, pronoun)
 		}
 	}
 
@@ -622,7 +616,8 @@ func (p *parser) forStatement() ast.Statement {
 			Body:        Body,
 		}
 	}
-	p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek(), "'von'", "'in'"))
+
+	p.errVal(ddperror.NewUnexpectedTokenError(p.module.FileName, p.peek(), "'von'", "'in'"))
 	return &ast.BadStmt{
 		Err: p.lastError,
 		Tok: *p.previous(),
@@ -641,7 +636,7 @@ func (p *parser) returnStatement() ast.Statement {
 	p.consumeSeq(token.ZURÜCK, token.DOT)
 	rnge := token.NewRange(Return, p.previous())
 	if p.currentFunction == nil {
-		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
+		p.err(ddperror.GLOBAL_RETURN_INVALID, rnge)
 	}
 	return &ast.ReturnStmt{
 		Range:  rnge,
@@ -665,7 +660,7 @@ func (p *parser) voidReturnOrBreak() ast.Statement {
 	p.consumeSeq(token.FUNKTION, token.DOT)
 	rnge := token.NewRange(Leave, p.previous())
 	if p.currentFunction == nil {
-		p.err(ddperror.SEM_GLOBAL_RETURN, rnge, ddperror.MSG_GLOBAL_RETURN)
+		p.err(ddperror.GLOBAL_RETURN_INVALID, rnge)
 	}
 	return &ast.ReturnStmt{
 		Range:  token.NewRange(Leave, p.previous()),
@@ -687,7 +682,7 @@ func (p *parser) continueStatement() ast.Statement {
 func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 	colon := p.previous()
 	if p.peek().Line() <= colon.Line() {
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, "Nach einem Doppelpunkt muss eine neue Zeile beginnen")
+		p.err(ddperror.NO_NEWLINE_AFTER_BLOCK, p.peek().Range)
 	}
 	statements := make([]ast.Statement, 0)
 	indent := colon.Indent + 1
@@ -712,7 +707,7 @@ func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
 }
 
 func (p *parser) todoStmt() ast.Statement {
-	p.warn(ddperror.SEM_TODO_STMT_FOUND, p.previous().Range, "Für diesen Teil des Programms fehlt eine Implementierung und es wird ein Laufzeitfehler ausgelöst")
+	p.warn(ddperror.TODO_STMT_FOUND, p.previous().Range)
 	return &ast.TodoStmt{
 		Tok: *p.previous(),
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 func testHandler(t *testing.T) ddperror.Handler {
-	return func(err ddperror.Error) {
+	return func(err ddperror.Message) {
 		t.Error(err.Error())
 	}
 }

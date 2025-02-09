@@ -15,7 +15,7 @@ type OperatorOverload struct {
 type (
 	BadExpr struct {
 		Tok token.Token
-		Err ddperror.Error
+		Err ddperror.Message
 	}
 
 	Ident struct {
