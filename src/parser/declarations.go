@@ -656,6 +656,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		genericInfo = &ast.GenericFuncInfo{
 			Types:  genericTypes,
 			Tokens: p.tokens[bodyStart:bodyEnd],
+			Context: ast.GenericContext{
+				Symbols: p.scope(),
+				Aliases: p.aliases,
+			},
 		}
 	}
 

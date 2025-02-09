@@ -136,12 +136,21 @@ func scanTokens(t *testing.T, src string) []token.Token {
 func createSymbols(args ...any) *ast.SymbolTable {
 	symbols := ast.NewSymbolTable(nil)
 	for i := 0; i < len(args); i += 2 {
+		if args[i+1] == nil {
+			symbols.InsertDecl(args[i].(string),
+				&ast.FuncDecl{
+					NameTok: token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
+				},
+			)
+			continue
+		}
 		symbols.InsertDecl(args[i].(string),
 			&ast.VarDecl{
 				NameTok:  token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
 				Type:     ddptypes.ListType{Underlying: args[i+1].(ddptypes.Type)},
 				InitType: args[i+1].(ddptypes.Type),
-			})
+			},
+		)
 	}
 	return symbols
 }
@@ -466,4 +475,60 @@ Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nic
 Und kann so benutzt werden:
 	"foo <a> <b>"`, 0, 0, false, ddperror.SEM_GENERIC_FUNCTION_EXTERN_VISIBLE,
 	)
+}
+
+func TestGenericFuncDeclContext(t *testing.T) {
+	assert := assert.New(t)
+
+	parseAndAssertConext := func(src string, symbols *ast.SymbolTable, aliases [][]*token.Token, decls ...string) *ast.FuncDecl {
+		trie := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+		for _, alias := range aliases {
+			trie.Insert(alias, &ast.FuncAlias{})
+		}
+
+		given := createParser(t,
+			parser{
+				tokens:  scanTokens(t, src),
+				aliases: trie,
+				module:  &ast.Module{Ast: &ast.Ast{Symbols: symbols}},
+			},
+		)
+
+		decl_stmt := given.declaration()
+		if !success(assert, given, decl_stmt) {
+			t.FailNow()
+		}
+
+		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+		assert.NotNil(func_decl.Generic)
+		assert.NotNil(func_decl.Generic.Context)
+		for _, decl := range decls {
+			_, exists, _ := func_decl.Generic.Context.Symbols.LookupDecl(decl)
+			assert.True(exists)
+		}
+		for _, alias := range aliases {
+			exists, _ := func_decl.Generic.Context.Aliases.Contains(alias)
+			assert.True(exists)
+		}
+		return func_decl
+	}
+	symbols := createSymbols(
+		"i", ddptypes.ZAHL,
+		"bar", nil,
+	)
+
+	decl := parseAndAssertConext(`
+Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+"foo <a>"`, symbols, [][]*token.Token{
+		toPointerSlice(scanTokens(t, `bar`)),
+		toPointerSlice(scanTokens(t, `baz`)),
+		toPointerSlice(scanTokens(t, `test`)),
+	}, "i", "foo",
+	)
+	_, exists, _ := decl.Generic.Context.Symbols.LookupDecl("test")
+	assert.False(exists)
+	symbols.InsertDecl("test", &ast.VarDecl{})
+	_, exists, _ = decl.Generic.Context.Symbols.LookupDecl("test")
+	assert.True(exists)
 }

@@ -7,7 +7,7 @@ import (
 	orderedmap "github.com/DDP-Projekt/Kompilierer/src/parser/ordered_map"
 )
 
-const defaultCapacity = 4
+const defaultCapacity = 8
 
 // a single node of the trie
 type trieNode[K, V any] struct {
