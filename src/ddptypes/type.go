@@ -138,6 +138,11 @@ func IsAny(t Type) bool {
 	return ok
 }
 
+func IsGeneric(t Type) bool {
+	_, ok := CastGeneric(t)
+	return ok
+}
+
 func CastGeneric(t Type) (*GenericType, bool) {
 	t = GetNestedListUnderlying(t)
 	generic, ok := t.(*GenericType)

@@ -79,27 +79,7 @@ func (p *parser) alias() ast.Expression {
 
 	// sort the aliases in descending order
 	// Stable so equal aliases stay in the order they were defined
-	sort.Slice(matchedAliases, func(i, j int) bool {
-		toksi, toksj := matchedAliases[i].GetTokens(), matchedAliases[j].GetTokens()
-		if len(toksi) != len(toksj) {
-			return len(toksi) > len(toksj)
-		}
-
-		// Sort by functions that take references up
-		// TODO: improve this heuristic
-
-		countRefArgs := func(params map[string]ddptypes.ParameterType) (n int) {
-			for _, paramType := range params {
-				if paramType.IsReference {
-					n++
-				}
-			}
-			return n
-		}
-
-		refNi, refNj := countRefArgs(matchedAliases[i].GetArgs()), countRefArgs(matchedAliases[j].GetArgs())
-		return refNi > refNj
-	})
+	sortAliases(matchedAliases)
 
 	// a argument that was already parsed
 	type cachedArg struct {
@@ -294,4 +274,40 @@ func (p *parser) alias() ast.Expression {
 	apply(p.errorHandler, errs)
 
 	return callOrLiteralFromAlias(*mostFitting, args)
+}
+
+// sorts aliases by
+//   - their length
+//   - how many reference parameters they take
+//   - how many generic parameters they take (TODO)
+func sortAliases(matchedAliases []ast.Alias) {
+	sort.Slice(matchedAliases, func(i, j int) bool {
+		toksi, toksj := matchedAliases[i].GetTokens(), matchedAliases[j].GetTokens()
+		if len(toksi) != len(toksj) {
+			return len(toksi) > len(toksj)
+		}
+
+		// Sort by functions that take references up and generics down
+		// TODO: improve this heuristic
+
+		countRefAndGenericArgs := func(params map[string]ddptypes.ParameterType) (refs, gen int) {
+			for _, paramType := range params {
+				if paramType.IsReference {
+					refs++
+				}
+				if ddptypes.IsGeneric(paramType.Type) {
+					gen++
+				}
+			}
+			return refs, gen
+		}
+
+		refNi, genNi := countRefAndGenericArgs(matchedAliases[i].GetArgs())
+		refNj, genNj := countRefAndGenericArgs(matchedAliases[j].GetArgs())
+		if genNi != genNj {
+			return genNi < genNj // generic functions are sorted down, not up
+		}
+
+		return refNi > refNj
+	})
 }
