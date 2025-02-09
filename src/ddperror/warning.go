@@ -17,12 +17,12 @@ func NewWarning(code WarnCode, Range token.Range, file string, a ...any) Message
 		Code:  int(code),
 		Range: Range,
 		File:  file,
-		Msg:   code.WarnMessage(a),
+		Msg:   code.WarnMessage(a...),
 	}
 }
 
 func (c WarnCode) WarnMessage(a ...any) string {
 	return fmt.Sprintf([]string{
-		"Für diesen Teil des Programms fehlt eine Implementierung und es wird ein Laufzeitfehler ausgelöst.",
+		"Für diesen Teil des Programms fehlt eine Implementierung und es wird ein Laufzeitfehler ausgelöst",
 	}[c], a...)
 }

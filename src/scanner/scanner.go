@@ -423,7 +423,7 @@ func (s *Scanner) peekNext() rune {
 }
 
 func (s *Scanner) err(code ddperror.ErrorCode, Range token.Range, a ...any) {
-	e := ddperror.NewError(code, Range, s.file, a)
+	e := ddperror.NewError(code, Range, s.file, a...)
 	if s.aliasMode() {
 		e = ddperror.NewError(ddperror.ALIAS_ERROR, Range, s.file, string(s.src), a)
 	}

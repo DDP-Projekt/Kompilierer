@@ -12,7 +12,7 @@ func NewError(code ErrorCode, Range token.Range, file string, a ...any) Message 
 	return Message{
 		Code:  int(code),
 		Range: Range,
-		Msg:   code.ErrorMessage(a),
+		Msg:   code.ErrorMessage(a...),
 		File:  file,
 		Level: LEVEL_ERROR,
 	}
