@@ -355,7 +355,7 @@ Und kann so benutzt werden:
 func TestGenericFuncDeclParameterTypes(t *testing.T) {
 	assert := assert.New(t)
 
-	runTest := func(tokens string, genericTypes []string, returnType string) {
+	runTest := func(tokens string, genericTypes []string, returnType string, parameterTypes []string) {
 		given := createParser(t,
 			parser{
 				tokens: scanTokens(t, tokens),
@@ -375,42 +375,43 @@ func TestGenericFuncDeclParameterTypes(t *testing.T) {
 		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
 		assert.NotNil(func_decl.Generic)
 		assert.ElementsMatch(genericTypes, maps.Keys(func_decl.Generic.Types))
+		assert.ElementsMatch(parameterTypes, mapSlice(func_decl.Parameters, func(p ast.ParameterInfo) string { return p.Type.Type.String() }))
 		assert.Equal(returnType, func_decl.ReturnType.String())
 	}
 	runTest(`
 Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
 Und kann so benutzt werden:
-	"foo <a>"`, []string{"T"}, "nichts",
+	"foo <a>"`, []string{"T"}, "nichts", []string{"T"},
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt ein R zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T", "R"}, "R",
+	"foo <a> <b>"`, []string{"T", "R"}, "R", []string{"T", "R"},
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und T, gibt eine Zahl zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T"}, "Zahl",
+	"foo <a> <b>"`, []string{"T"}, "Zahl", []string{"T", "T"},
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und Zahl, gibt ein T zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T"}, "T",
+	"foo <a> <b>"`, []string{"T"}, "T", []string{"T", "Zahl"},
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T Liste und Zahl, gibt ein T zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T"}, "T",
+	"foo <a> <b>"`, []string{"T"}, "T", []string{"T Liste", "Zahl"},
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und Zahl, gibt eine T Liste zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T"}, "T Liste",
+	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T", "Zahl"},
 	)
 }
 

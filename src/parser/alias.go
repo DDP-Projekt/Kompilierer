@@ -4,6 +4,7 @@ This file defines the functions used to parse Aliases
 package parser
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -81,140 +82,6 @@ func (p *parser) alias() ast.Expression {
 	// Stable so equal aliases stay in the order they were defined
 	sortAliases(matchedAliases)
 
-	// a argument that was already parsed
-	type cachedArg struct {
-		Arg     ast.Expression   // expression (might be an assignable)
-		Errors  []ddperror.Error // the errors that occured while parsing the argument
-		exprEnd int              // where the expression was over (p.cur for the token after)
-	}
-
-	// a key for a cached argument
-	type cachedArgKey struct {
-		cur         int  // the start pos of that argument
-		isReference bool // wether the argument was parsed with p.assignable() or p.expression()
-	}
-
-	// used for the algorithm below to parse each argument only once
-	cached_args := make(map[cachedArgKey]*cachedArg, 4)
-	// attempts to evaluate the arguments for the passed alias and checks if types match
-	// returns nil if argument and parameter types don't match
-	// similar to the alogrithm above
-	// it also returns all errors that might have occured while doing so
-	checkAlias := func(mAlias ast.Alias, typeSensitive bool) (map[string]ast.Expression, []ddperror.Error) {
-		p.cur = start
-		args := make(map[string]ast.Expression, 4)
-		reported_errors := make([]ddperror.Error, 0)
-		mAliasTokens := mAlias.GetTokens()
-		mAliasArgs := mAlias.GetArgs()
-
-		for i, l := 0, len(mAliasTokens); i < l && mAliasTokens[i].Type != token.EOF; i++ {
-			tok := &mAliasTokens[i]
-
-			if tok.Type == token.ALIAS_PARAMETER {
-				argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
-				paramType := mAliasArgs[argName]           // type of the current parameter
-
-				pType := p.peek().Type
-				// early return if a non-identifier expression is passed as reference
-				if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
-					return nil, reported_errors
-				}
-
-				// create the key for the argument
-				cached_arg_key := cachedArgKey{cur: p.cur, isReference: paramType.IsReference}
-				cached_arg, ok := cached_args[cached_arg_key]
-
-				if !ok { // if the argument was not already parsed
-					cached_arg = &cachedArg{}
-					exprStart := p.cur
-					isGrouping := false
-					switch pType {
-					case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER, token.SYMBOL:
-						p.advance() // single-token argument
-					case token.NEGATE:
-						p.advance()
-						p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
-					case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
-						isGrouping = true
-						p.advance()
-						numLparens := 1
-						for numLparens > 0 && !p.atEnd() {
-							switch p.advance().Type {
-							case token.LPAREN:
-								numLparens++
-							case token.RPAREN:
-								numLparens--
-							}
-						}
-					}
-					cached_arg.exprEnd = p.cur
-
-					tokens := make([]token.Token, p.cur-exprStart, p.cur-exprStart+1)
-					copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
-					// append the EOF needed for the parser
-					eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
-					tokens = append(tokens, eof)
-					argParser := &parser{
-						tokens: tokens,
-						errorHandler: func(err ddperror.Error) {
-							reported_errors = append(reported_errors, err)
-							cached_arg.Errors = append(cached_arg.Errors, err)
-						},
-						module: &ast.Module{
-							FileName: p.module.FileName,
-						},
-						aliases:     p.aliases,
-						resolver:    p.resolver,
-						typechecker: p.typechecker,
-					}
-
-					if paramType.IsReference {
-						argParser.advance() // consume the identifier or LPAREN for assigneable() to work
-						cached_arg.Arg = argParser.assigneable()
-					} else if isGrouping {
-						argParser.advance() // consume the LPAREN for grouping() to work
-						cached_arg.Arg = argParser.grouping()
-					} else {
-						cached_arg.Arg = argParser.expression() // parse the argument
-					}
-					cached_args[cached_arg_key] = cached_arg
-				} else {
-					p.cur = cached_arg.exprEnd // skip the already parsed argument
-					reported_errors = append(reported_errors, cached_arg.Errors...)
-				}
-
-				// check if the argument type matches the prameter type
-
-				// we are in the for loop below, so the types must match
-				// otherwise it doesn't matter
-				if typeSensitive {
-					typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
-
-					didMatch := true
-					if !ddptypes.Equal(typ, paramType.Type) {
-						didMatch = false
-					} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
-					paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
-						ok { // and the argument is a indexing
-						lhs := p.typechecker.EvaluateSilent(ass.Lhs)
-						if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
-							didMatch = false
-						}
-					}
-
-					if !didMatch {
-						return nil, reported_errors
-					}
-				}
-
-				args[argName] = cached_arg.Arg
-				p.decrease() // to not skip a token
-			}
-			p.advance() // ignore non-argument tokens
-		}
-		return args, reported_errors
-	}
-
 	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
 			fnCall := &ast.FuncCall{
@@ -247,9 +114,11 @@ func (p *parser) alias() ast.Expression {
 	}
 
 	var mostFitting *ast.Alias
+	cached_args := make(map[cachedArgKey]*cachedArg, 4)
+
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		args, errs := checkAlias(matchedAliases[i], true)
+		args, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
 		if args != nil && mostFitting == nil {
 			mostFitting = &matchedAliases[i]
 		}
@@ -268,7 +137,7 @@ func (p *parser) alias() ast.Expression {
 	if mostFitting == nil {
 		mostFitting = &matchedAliases[0]
 	}
-	args, errs := checkAlias(*mostFitting, false)
+	args, errs := p.checkAlias(*mostFitting, false, start, cached_args)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
@@ -310,4 +179,175 @@ func sortAliases(matchedAliases []ast.Alias) {
 
 		return refNi > refNj
 	})
+}
+
+// used for caching by checkAlias
+// represents an argument that was already parsed
+type cachedArg struct {
+	Arg     ast.Expression   // expression (might be an assignable)
+	Errors  []ddperror.Error // the errors that occured while parsing the argument
+	exprEnd int              // where the expression was over (p.cur for the token after)
+}
+
+// used for caching by checkAlias
+// represents a key for a cached argument
+type cachedArgKey struct {
+	cur         int  // the start pos of that argument
+	isReference bool // wether the argument was parsed with p.assignable() or p.expression()
+}
+
+// used by p.alias
+// attempts to evaluate the arguments for the passed alias and checks if types match
+// returns nil if argument and parameter types don't match
+// it also returns all errors that might have occured while doing so
+func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cached_args map[cachedArgKey]*cachedArg) (map[string]ast.Expression, []ddperror.Error) {
+	p.cur = start
+	args := make(map[string]ast.Expression, 4)
+	reported_errors := make([]ddperror.Error, 0)
+	mAliasTokens := mAlias.GetTokens()
+	mAliasArgs := mAlias.GetArgs()
+
+	for i, l := 0, len(mAliasTokens); i < l && mAliasTokens[i].Type != token.EOF; i++ {
+		tok := &mAliasTokens[i]
+
+		if tok.Type == token.ALIAS_PARAMETER {
+			argName := strings.Trim(tok.Literal, "<>") // remove the <> from the alias parameter
+			paramType := mAliasArgs[argName]           // type of the current parameter
+
+			pType := p.peek().Type
+			// early return if a non-identifier expression is passed as reference
+			if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
+				return nil, reported_errors
+			}
+
+			// create the key for the argument
+			cached_arg_key := cachedArgKey{cur: p.cur, isReference: paramType.IsReference}
+			cached_arg, ok := cached_args[cached_arg_key]
+
+			if !ok { // if the argument was not already parsed
+				cached_arg = &cachedArg{}
+				exprStart := p.cur
+				isGrouping := false
+				switch pType {
+				case token.INT, token.FLOAT, token.TRUE, token.FALSE, token.CHAR, token.STRING, token.IDENTIFIER, token.SYMBOL:
+					p.advance() // single-token argument
+				case token.NEGATE:
+					p.advance()
+					p.matchAny(token.INT, token.FLOAT, token.IDENTIFIER, token.SYMBOL)
+				case token.LPAREN: // multiple-token arguments must be wrapped in parentheses
+					isGrouping = true
+					p.advance()
+					numLparens := 1
+					for numLparens > 0 && !p.atEnd() {
+						switch p.advance().Type {
+						case token.LPAREN:
+							numLparens++
+						case token.RPAREN:
+							numLparens--
+						}
+					}
+				}
+				cached_arg.exprEnd = p.cur
+
+				tokens := make([]token.Token, p.cur-exprStart, p.cur-exprStart+1)
+				copy(tokens, p.tokens[exprStart:p.cur]) // copy all the tokens of the expression to be able to append the EOF
+				// append the EOF needed for the parser
+				eof := token.Token{Type: token.EOF, Literal: "", Indent: 0, Range: tok.Range, AliasInfo: nil}
+				tokens = append(tokens, eof)
+				argParser := &parser{
+					tokens: tokens,
+					errorHandler: func(err ddperror.Error) {
+						reported_errors = append(reported_errors, err)
+						cached_arg.Errors = append(cached_arg.Errors, err)
+					},
+					module: &ast.Module{
+						FileName: p.module.FileName,
+					},
+					aliases:     p.aliases,
+					resolver:    p.resolver,
+					typechecker: p.typechecker,
+				}
+
+				if paramType.IsReference {
+					argParser.advance() // consume the identifier or LPAREN for assigneable() to work
+					cached_arg.Arg = argParser.assigneable()
+				} else if isGrouping {
+					argParser.advance() // consume the LPAREN for grouping() to work
+					cached_arg.Arg = argParser.grouping()
+				} else {
+					cached_arg.Arg = argParser.expression() // parse the argument
+				}
+				cached_args[cached_arg_key] = cached_arg
+			} else {
+				p.cur = cached_arg.exprEnd // skip the already parsed argument
+				reported_errors = append(reported_errors, cached_arg.Errors...)
+			}
+
+			// check if the argument type matches the prameter type
+
+			// we are in the for loop below, so the types must match
+			// otherwise it doesn't matter
+			if typeSensitive {
+				typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
+
+				didMatch := true
+				if !ddptypes.Equal(typ, paramType.Type) {
+					didMatch = false
+				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
+				paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
+					ok { // and the argument is a indexing
+					lhs := p.typechecker.EvaluateSilent(ass.Lhs)
+					if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
+						didMatch = false
+					}
+				}
+
+				if !didMatch {
+					return nil, reported_errors
+				}
+			}
+
+			args[argName] = cached_arg.Arg
+			p.decrease() // to not skip a token
+		}
+		p.advance() // ignore non-argument tokens
+	}
+	return args, reported_errors
+}
+
+// instantiates a generic function with the given types
+// genericTypes maps GenericTypeName -> Type
+// returns the new instantiation and any errors that occured during instatiation
+func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
+	if !ast.IsGeneric(fun) {
+		panic("tried to instantiate non-generic function")
+	}
+
+	// TODO: parse function with the given types
+
+	parameters := make([]ast.ParameterInfo, len(fun.Parameters))
+	// assign the types to the parameters
+	// unification of generic types must have taken place beforehand
+	// meaning types must contain the correct type for each parameter
+	for i, param := range fun.Parameters {
+		parameters[i] = param
+		if !ddptypes.IsGeneric(param.Type.Type) {
+			continue
+		}
+
+		var ok bool
+		if parameters[i].Type.Type, ok = genericTypes[param.Type.Type.String()]; !ok {
+			panic(fmt.Errorf("instantiateGenericFunction: parameter %s was not in type map", param.Name.Literal))
+		}
+	}
+
+	decl := *fun
+	decl.Parameters = parameters
+	decl.ReturnType = returnType
+	decl.Body = nil // TODO
+	decl.Generic = nil
+
+	fun.Generic.Instantiations = append(fun.Generic.Instantiations, &decl)
+
+	return &decl, nil
 }

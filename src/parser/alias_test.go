@@ -115,3 +115,52 @@ func TestAliasSorter(t *testing.T) {
 	sortAliases(aliases)
 	assert.Equal([]ast.Alias{i, k, j, f, e, b, d, c, h, g, a}, aliases)
 }
+
+func TestCheckAlias(t *testing.T) {
+	assert := assert.New(t)
+
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 2`),
+	})
+
+	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ZAHL, IsReference: false},
+	})
+	cached_args := make(map[cachedArgKey]*cachedArg, 4)
+	args, errs := given.checkAlias(f, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.IntLit{}, args["b"])
+
+	// generic test
+
+	genericFunc := &ast.FuncDecl{
+		NameTok: token.Token{Literal: "foo"},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+		},
+	}
+	_ = genericFunc
+
+	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
+	})
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.IntLit{}, args["b"])
+}
+
+func TestInstantiateGenericFunction(t *testing.T) {
+	assert := assert.New(t)
+	_ = assert
+
+	t.FailNow()
+}
