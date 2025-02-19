@@ -3,6 +3,8 @@ package parser
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func testMap(m *OrderedMap[int, string], t *testing.T) {
@@ -77,4 +79,47 @@ func TestOrderedMapCapacity(t *testing.T) {
 		return a < b
 	}, 50)
 	testMap(m, t)
+}
+
+func TestOrderedMapCopy(t *testing.T) {
+	assert := assert.New(t)
+	// create a new OrderedMap
+	m := New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 0)
+	testMap(m, t)
+	testMap(Copy(m), t)
+	testMap(Copy(Copy(m)), t)
+
+	m = New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 0)
+	m.Set(1, "one")
+	m2 := Copy(m)
+	m.Set(2, "two")
+	assert.Equal(2, len(m.Keys()))
+	assert.Equal(1, len(m2.Keys()))
+	m2.Set(3, "three")
+	assert.Equal(2, len(m.Keys()))
+	assert.Equal(2, len(m2.Keys()))
+}
+
+// write a test for OrderedMap
+func TestOrderedMapLen(t *testing.T) {
+	assert := assert.New(t)
+	// create a new OrderedMap
+	m := New[int, string](func(a, b int) bool {
+		return a == b
+	}, func(a, b int) bool {
+		return a < b
+	}, 0)
+	assert.Equal(0, Len(m))
+	m.Set(0, "zero")
+	assert.Equal(1, Len(m))
+	m.Set(1, "one")
+	assert.Equal(2, Len(m))
 }

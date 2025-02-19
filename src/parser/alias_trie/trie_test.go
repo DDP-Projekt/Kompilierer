@@ -3,6 +3,8 @@ package parser
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // write a test for Trie
@@ -77,5 +79,45 @@ func TestTrie(t *testing.T) {
 	if ok, _ := trie.Contains([]int{1}); !ok {
 		t.Errorf("Expected true, got false")
 	}
+}
 
+func TestTrieCopy(t *testing.T) {
+	assert := assert.New(t)
+
+	// create a new Trie
+	trie := New[int, string](
+		func(a, b int) bool {
+			return a == b
+		},
+		func(a, b int) bool {
+			return a < b
+		},
+	)
+	// insert some values
+	trie.Insert([]int{1, 2, 3}, "three")
+	trie.Insert([]int{1, 2, 3, 4}, "four")
+	trie.Insert([]int{1, 2, 3, 4, 5}, "five")
+	trie.Insert([]int{1, 2, 3, 4, 5, 6}, "six")
+
+	trie2 := Copy(trie)
+	assert.True(trie.Contains([]int{1, 2, 3}))
+	assert.True(trie.Contains([]int{1, 2, 3, 4, 5, 6}))
+	assert.True(trie2.Contains([]int{1, 2, 3}))
+	assert.True(trie2.Contains([]int{1, 2, 3, 4, 5, 6}))
+
+	trie.Insert([]int{1, 2, 3, 4, 5, 6, 7}, "seven")
+	trie2.Insert([]int{1, 2, 3, 4, 5, 6, 7, 8}, "eight")
+	contains, value := trie.Contains([]int{1, 2, 3, 4, 5, 6, 7})
+	assert.True(contains)
+	assert.Equal("seven", value)
+	contains, value = trie2.Contains([]int{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.True(contains)
+	assert.Equal("eight", value)
+
+	contains, value = trie.Contains([]int{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.False(contains)
+	assert.Equal("", value)
+	contains, value = trie2.Contains([]int{1, 2, 3, 4, 5, 6, 7})
+	assert.True(contains)
+	assert.Equal("", value)
 }

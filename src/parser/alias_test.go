@@ -170,12 +170,14 @@ func TestCreateGenericContext(t *testing.T) {
 	assert := assert.New(t)
 	_ = assert
 
-	aliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+	parserAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 	foo_a := scanAlias(t, `foo`, nil)
-	aliases.Insert(toPointerSlice(foo_a.GetTokens()), foo_a)
+	parserAliases.Insert(toPointerSlice(foo_a.GetTokens()), foo_a)
+	baz_a_parser := scanAlias(t, `baz`, nil)
+	parserAliases.Insert(toPointerSlice(baz_a_parser.GetTokens()), baz_a_parser)
 
 	given := createParser(t, parser{
-		aliases: aliases,
+		aliases: parserAliases,
 	})
 
 	baz_context := &ast.FuncDecl{}
@@ -190,9 +192,11 @@ func TestCreateGenericContext(t *testing.T) {
 		},
 	))
 
-	aliases2 := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+	declContextAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 	bar_a := scanAlias(t, `bar`, nil)
-	aliases.Insert(toPointerSlice(bar_a.GetTokens()), bar_a)
+	declContextAliases.Insert(toPointerSlice(bar_a.GetTokens()), bar_a)
+	baz_a_declContext := scanAlias(t, `baz`, nil)
+	declContextAliases.Insert(toPointerSlice(baz_a_declContext.GetTokens()), baz_a_declContext)
 
 	declContext := ast.GenericContext{
 		Symbols: createSymbols(
@@ -202,7 +206,7 @@ func TestCreateGenericContext(t *testing.T) {
 			"Bar", &ast.StructDecl{
 				Type: &ddptypes.StructType{Name: "Bar"},
 			}),
-		Aliases: aliases2,
+		Aliases: declContextAliases,
 	}
 
 	context := given.generateGenericContext(declContext, nil)
@@ -242,8 +246,11 @@ func TestCreateGenericContext(t *testing.T) {
 
 	has_foo_a, _ := context.Aliases.Contains(toPointerSlice(foo_a.GetTokens()))
 	has_bar_a, _ := context.Aliases.Contains(toPointerSlice(bar_a.GetTokens()))
+	has_baz_a, context_baz_a := context.Aliases.Contains(toPointerSlice(baz_a_parser.GetTokens()))
 	assert.True(has_foo_a)
 	assert.True(has_bar_a)
+	assert.True(has_baz_a)
+	assert.Same(baz_a_declContext.(*ast.FuncAlias), context_baz_a.(*ast.FuncAlias))
 
 	// inserting into the context should not change the parser or declContext tables
 	assert.False(context.Symbols.InsertDecl("new", &ast.FuncDecl{}))

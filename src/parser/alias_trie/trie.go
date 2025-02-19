@@ -17,6 +17,21 @@ type trieNode[K, V any] struct {
 	value    V                                          // value of the node or the default value if hasValue is false
 }
 
+func copyNode[K, V any](n *trieNode[K, V], key_eq, key_less orderedmap.CompFunc[K]) *trieNode[K, V] {
+	children := orderedmap.New[K, *trieNode[K, V]](key_eq, key_less, orderedmap.Len(n.children))
+	n.children.IterateValues(func(tn *trieNode[K, V]) bool {
+		children.Set(tn.key, copyNode(tn, key_eq, key_less))
+		return true
+	})
+
+	return &trieNode[K, V]{
+		children: children,
+		key:      n.key,
+		hasValue: n.hasValue,
+		value:    n.value,
+	}
+}
+
 // though generic it is only meant to be used with
 // K = *token.Token and V = ast.Alias
 type Trie[K, V any] struct {
@@ -39,6 +54,14 @@ func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 		},
 		key_eq:   key_eq,
 		key_less: key_less,
+	}
+}
+
+func Copy[K, V any](t *Trie[K, V]) *Trie[K, V] {
+	return &Trie[K, V]{
+		root:     copyNode(t.root, t.key_eq, t.key_less),
+		key_eq:   t.key_eq,
+		key_less: t.key_less,
 	}
 }
 

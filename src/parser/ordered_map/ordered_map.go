@@ -15,6 +15,20 @@ func New[K, V any](eq, less CompFunc[K], capacity int) *OrderedMap[K, V] {
 	return &OrderedMap[K, V]{make([]any, 0, capacity*2), eq, less}
 }
 
+func Copy[K, V any](m *OrderedMap[K, V]) *OrderedMap[K, V] {
+	data := make([]any, len(m.data))
+	copy(data, m.data)
+	return &OrderedMap[K, V]{
+		data: data,
+		eq:   m.eq,
+		less: m.less,
+	}
+}
+
+func Len[K, V any](m *OrderedMap[K, V]) int {
+	return len(m.data) / 2
+}
+
 // finds the given key using binary search and returns it's index and wether it exists
 func (m *OrderedMap[K, V]) binarySearch(key K) (int, bool) {
 	low, high := 0, len(m.data)/2
