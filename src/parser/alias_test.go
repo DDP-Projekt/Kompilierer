@@ -171,9 +171,9 @@ func TestCreateGenericContext(t *testing.T) {
 	_ = assert
 
 	parserAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
-	foo_a := scanAlias(t, `foo`, nil)
+	foo_a := scanAlias(t, `ein alias foo`, nil)
 	parserAliases.Insert(toPointerSlice(foo_a.GetTokens()), foo_a)
-	baz_a_parser := scanAlias(t, `baz`, nil)
+	baz_a_parser := scanAlias(t, `ein alias baz`, nil)
 	parserAliases.Insert(toPointerSlice(baz_a_parser.GetTokens()), baz_a_parser)
 
 	given := createParser(t, parser{
@@ -193,9 +193,9 @@ func TestCreateGenericContext(t *testing.T) {
 	))
 
 	declContextAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
-	bar_a := scanAlias(t, `bar`, nil)
+	bar_a := scanAlias(t, `ein alias bar`, nil)
 	declContextAliases.Insert(toPointerSlice(bar_a.GetTokens()), bar_a)
-	baz_a_declContext := scanAlias(t, `baz`, nil)
+	baz_a_declContext := scanAlias(t, `ein alias baz`, nil)
 	declContextAliases.Insert(toPointerSlice(baz_a_declContext.GetTokens()), baz_a_declContext)
 
 	declContext := ast.GenericContext{
@@ -251,6 +251,16 @@ func TestCreateGenericContext(t *testing.T) {
 	assert.True(has_bar_a)
 	assert.True(has_baz_a)
 	assert.Same(baz_a_declContext.(*ast.FuncAlias), context_baz_a.(*ast.FuncAlias))
+
+	newAlias := scanAlias(t, `neuer Alias`, nil)
+	context.Aliases.Insert(toPointerSlice(newAlias.GetTokens()), newAlias)
+
+	has_new_alias, _ := given.aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	assert.False(has_new_alias)
+	has_new_alias, _ = declContext.Aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	assert.False(has_new_alias)
+	has_new_alias, _ = context.Aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	assert.True(has_new_alias)
 
 	// inserting into the context should not change the parser or declContext tables
 	assert.False(context.Symbols.InsertDecl("new", &ast.FuncDecl{}))

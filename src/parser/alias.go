@@ -11,6 +11,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -353,8 +354,17 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 }
 
 func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo) ast.GenericContext {
+	aliases := at.Copy(p.aliases)
+
+	matched := fun.Aliases.Search(func(i int, t *token.Token) (*token.Token, bool) {
+		return t, true
+	})
+	for _, alias := range matched {
+		aliases.Insert(toPointerSlice(alias.GetTokens()), alias)
+	}
+
 	return ast.GenericContext{
 		Symbols: newGenericSymbolTable(p.scope(), fun.Symbols),
-		Aliases: p.aliases, // TODO
+		Aliases: aliases,
 	}
 }
