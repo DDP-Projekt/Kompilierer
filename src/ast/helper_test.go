@@ -79,6 +79,6 @@ func TestTrimStringLit(t *testing.T) {
 func TestIsGlobalScope(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.True(IsGlobalScope(&SymbolTable{Enclosing: nil}))
-	assert.False(IsGlobalScope(&SymbolTable{Enclosing: &SymbolTable{}}))
+	assert.True(IsGlobalScope(&BasicSymbolTable{EnclosingTable: nil}))
+	assert.False(IsGlobalScope(&BasicSymbolTable{EnclosingTable: &BasicSymbolTable{}}))
 }

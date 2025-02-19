@@ -24,7 +24,7 @@ import (
 // TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
-	CurrentTable *ast.SymbolTable // needed state, public for the parser
+	CurrentTable ast.SymbolTable  // needed state, public for the parser
 	Module       *ast.Module      // the module that is being resolved
 	LoopDepth    uint             // for break and continue statements
 	panicMode    *bool            // panic mode synchronized with the parser and resolver
@@ -56,12 +56,12 @@ func (r *Resolver) visit(node ast.Node) {
 	node.Accept(r)
 }
 
-func (r *Resolver) setScope(symbols *ast.SymbolTable) {
+func (r *Resolver) setScope(symbols ast.SymbolTable) {
 	r.CurrentTable = symbols
 }
 
 func (r *Resolver) exitScope() {
-	r.CurrentTable = r.CurrentTable.Enclosing
+	r.CurrentTable = r.CurrentTable.Enclosing()
 }
 
 // helper for errors

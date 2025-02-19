@@ -684,7 +684,7 @@ func (p *parser) continueStatement() ast.Statement {
 	}
 }
 
-func (p *parser) blockStatement(symbols *ast.SymbolTable) ast.Statement {
+func (p *parser) blockStatement(symbols ast.SymbolTable) ast.Statement {
 	colon := p.previous()
 	if p.peek().Line() <= colon.Line() {
 		p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, "Nach einem Doppelpunkt muss eine neue Zeile beginnen")

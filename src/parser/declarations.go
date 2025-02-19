@@ -716,7 +716,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 	p.currentFunction = decl
 	bodyTable := p.newScope() // temporary symbolTable for the function parameters
-	globalScope := bodyTable.Enclosing
+	globalScope := bodyTable.Enclosing()
 	// insert the name of the current function
 	if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
 		p.module.PublicDecls[decl.Name()] = decl

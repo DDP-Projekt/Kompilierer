@@ -42,11 +42,11 @@ func createParser(test *testing.T, overrider parser) *parser {
 	// prevent nil-pointer exceptions
 	overrider.module = cmp.Or(overrider.module, &ast.Module{})
 	overrider.module.Ast = cmp.Or(overrider.module.Ast, &ast.Ast{})
-	overrider.module.Ast.Symbols = cmp.Or(overrider.module.Ast.Symbols, &ast.SymbolTable{})
+	overrider.module.Ast.Symbols = cmp.Or(overrider.module.Ast.Symbols, ast.SymbolTable(&ast.BasicSymbolTable{}))
 
-	symbols := &ast.SymbolTable{
-		Enclosing:    overrider.module.Ast.Symbols.Enclosing,
-		Declarations: NotNilMap(overrider.module.Ast.Symbols.Declarations),
+	symbols := &ast.BasicSymbolTable{
+		EnclosingTable: overrider.module.Ast.Symbols.Enclosing(),
+		Declarations:   NotNilMap(overrider.module.Ast.Symbols.(*ast.BasicSymbolTable).Declarations),
 	}
 	module := &ast.Module{
 		FileName:             cmp.Or(overrider.module.FileName, test.Name()),
@@ -133,9 +133,28 @@ func scanTokens(t *testing.T, src string) []token.Token {
 }
 
 // takes name type pairs to create a symbol table
-func createSymbols(args ...any) *ast.SymbolTable {
+// a string followed by a ddptypes.Type creates a variable
+// a string followed by nil creates a FuncDecl
+func createSymbols(args ...any) ast.SymbolTable {
 	symbols := ast.NewSymbolTable(nil)
 	for i := 0; i < len(args); i += 2 {
+		switch typ := args[i+1].(type) {
+		case ddptypes.Type:
+			symbols.InsertDecl(args[i].(string),
+				&ast.VarDecl{
+					NameTok:  token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
+					Type:     args[i+1].(ddptypes.Type),
+					InitType: args[i+1].(ddptypes.Type),
+				},
+			)
+		case *ast.FuncDecl:
+			typ.NameTok = token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)}
+			symbols.InsertDecl(args[i].(string), typ)
+		case *ast.StructDecl:
+			typ.NameTok = token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)}
+			symbols.InsertDecl(args[i].(string), typ)
+		}
+
 		if args[i+1] == nil {
 			symbols.InsertDecl(args[i].(string),
 				&ast.FuncDecl{
@@ -144,13 +163,6 @@ func createSymbols(args ...any) *ast.SymbolTable {
 			)
 			continue
 		}
-		symbols.InsertDecl(args[i].(string),
-			&ast.VarDecl{
-				NameTok:  token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
-				Type:     ddptypes.ListType{Underlying: args[i+1].(ddptypes.Type)},
-				InitType: args[i+1].(ddptypes.Type),
-			},
-		)
 	}
 	return symbols
 }
@@ -196,7 +208,7 @@ func TestTypeAliasDeclError(t *testing.T) {
 	}
 	given := typechecker.New(&ast.Module{
 		Ast: &ast.Ast{
-			Symbols: &ast.SymbolTable{
+			Symbols: &ast.BasicSymbolTable{
 				Declarations: map[string]ast.Declaration{
 					"Struktur": &ast.StructDecl{
 						IsPublic: false,
@@ -481,7 +493,7 @@ Und kann so benutzt werden:
 func TestGenericFuncDeclContext(t *testing.T) {
 	assert := assert.New(t)
 
-	parseAndAssertConext := func(src string, symbols *ast.SymbolTable, aliases [][]*token.Token, decls ...string) *ast.FuncDecl {
+	parseAndAssertConext := func(src string, symbols ast.SymbolTable, aliases [][]*token.Token, decls ...string) *ast.FuncDecl {
 		trie := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 		for _, alias := range aliases {
 			trie.Insert(alias, &ast.FuncAlias{})
@@ -515,7 +527,7 @@ func TestGenericFuncDeclContext(t *testing.T) {
 	}
 	symbols := createSymbols(
 		"i", ddptypes.ZAHL,
-		"bar", nil,
+		"bar", &ast.FuncDecl{},
 	)
 
 	decl := parseAndAssertConext(`

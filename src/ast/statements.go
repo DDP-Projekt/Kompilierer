@@ -52,7 +52,7 @@ type (
 		Range      token.Range
 		Colon      token.Token
 		Statements []Statement
-		Symbols    *SymbolTable
+		Symbols    SymbolTable
 	}
 
 	IfStmt struct {

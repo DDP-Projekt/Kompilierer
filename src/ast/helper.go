@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -25,6 +26,33 @@ func IsGeneric(fun *FuncDecl) bool {
 	return fun.Generic != nil
 }
 
+func IsVarConstDecl(decl Declaration) bool {
+	if decl == nil {
+		return false
+	}
+
+	_, isVar := decl.(*VarDecl)
+	_, isConst := decl.(*ConstDecl)
+	return isVar || isConst
+}
+
+func IsTypeDecl(decl Declaration) (ddptypes.Type, bool) {
+	if decl == nil {
+		return nil, false
+	}
+
+	switch decl := decl.(type) {
+	case *StructDecl:
+		return decl.Type, true
+	case *TypeAliasDecl:
+		return decl.Type, true
+	case *TypeDefDecl:
+		return decl.Type, true
+	default:
+		return nil, false
+	}
+}
+
 // trims the "" from the literal
 func TrimStringLit(lit *token.Token) string {
 	if lit == nil {
@@ -35,8 +63,8 @@ func TrimStringLit(lit *token.Token) string {
 
 // returns wether table is the global scope
 // table.Enclosing == nil
-func IsGlobalScope(table *SymbolTable) bool {
-	return table.Enclosing == nil
+func IsGlobalScope(table SymbolTable) bool {
+	return table.Enclosing() == nil
 }
 
 // applies fun to all declarations imported by imprt

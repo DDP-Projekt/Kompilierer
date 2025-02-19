@@ -6,6 +6,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/scanner"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,93 @@ func TestInstantiateGenericFunction(t *testing.T) {
 	_ = assert
 
 	t.FailNow()
+}
+
+func TestCreateGenericContext(t *testing.T) {
+	assert := assert.New(t)
+	_ = assert
+
+	aliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+	foo_a := scanAlias(t, `foo`, nil)
+	aliases.Insert(toPointerSlice(foo_a.GetTokens()), foo_a)
+
+	given := createParser(t, parser{
+		aliases: aliases,
+	})
+
+	baz_context := &ast.FuncDecl{}
+	baz_parser := &ast.FuncDecl{}
+
+	given.setScope(createSymbols(
+		"z", ddptypes.ZAHL,
+		"foo", &ast.FuncDecl{},
+		"baz", baz_parser,
+		"Foo", &ast.StructDecl{
+			Type: &ddptypes.StructType{Name: "Foo"},
+		},
+	))
+
+	aliases2 := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
+	bar_a := scanAlias(t, `bar`, nil)
+	aliases.Insert(toPointerSlice(bar_a.GetTokens()), bar_a)
+
+	declContext := ast.GenericContext{
+		Symbols: createSymbols(
+			"z1", ddptypes.ZAHL,
+			"bar", &ast.FuncDecl{},
+			"baz", baz_context,
+			"Bar", &ast.StructDecl{
+				Type: &ddptypes.StructType{Name: "Bar"},
+			}),
+		Aliases: aliases2,
+	}
+
+	context := given.generateGenericContext(declContext, nil)
+
+	assert.NotNil(context.Symbols)
+	assert.NotNil(context.Aliases)
+
+	_, has_z, _ := context.Symbols.LookupDecl("z")
+	_, has_foo, _ := context.Symbols.LookupDecl("foo")
+	_, has_z1, _ := context.Symbols.LookupDecl("z1")
+	_, has_bar, _ := context.Symbols.LookupDecl("bar")
+	_, has_Foo, _ := context.Symbols.LookupDecl("Foo")
+	_, has_Bar, _ := context.Symbols.LookupDecl("Bar")
+
+	// variables from the parser should not be used
+	assert.False(has_z)
+	// everything else from both tables should be present
+	assert.True(has_foo)
+	assert.True(has_z1)
+	assert.True(has_bar)
+	assert.True(has_Foo)
+	assert.True(has_Bar)
+
+	// the original context should be prefered when the parser and context both contain a name
+	bazDecl, has_baz, _ := context.Symbols.LookupDecl("baz")
+	assert.True(has_baz)
+	assert.Same(baz_context, bazDecl)
+	assert.NotSame(baz_parser, bazDecl)
+
+	// types as well
+	FooType, has_Foo_type := context.Symbols.LookupType("Foo")
+	BarType, has_Bar_type := context.Symbols.LookupType("Bar")
+	assert.True(has_Foo_type)
+	assert.True(has_Bar_type)
+	assert.Equal("Foo", FooType.String())
+	assert.Equal("Bar", BarType.String())
+
+	has_foo_a, _ := context.Aliases.Contains(toPointerSlice(foo_a.GetTokens()))
+	has_bar_a, _ := context.Aliases.Contains(toPointerSlice(bar_a.GetTokens()))
+	assert.True(has_foo_a)
+	assert.True(has_bar_a)
+
+	// inserting into the context should not change the parser or declContext tables
+	assert.False(context.Symbols.InsertDecl("new", &ast.FuncDecl{}))
+	_, existed, _ := declContext.Symbols.LookupDecl("new")
+	assert.False(existed)
+	_, existed, _ = given.scope().LookupDecl("new")
+	assert.False(existed)
+	_, existed, _ = context.Symbols.LookupDecl("new")
+	assert.True(existed)
 }

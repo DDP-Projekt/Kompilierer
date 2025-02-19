@@ -11,7 +11,7 @@ import (
 type Ast struct {
 	Statements []Statement   // the top level statements
 	Comments   []token.Token // all the comments in the source code
-	Symbols    *SymbolTable
+	Symbols    SymbolTable
 	Faulty     bool              // set if the ast has any errors (doesn't matter what from which phase they came)
 	metadata   map[Node]Metadata // metadata for each node
 }

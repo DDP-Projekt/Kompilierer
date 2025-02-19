@@ -381,24 +381,24 @@ func (p *parser) synchronize() {
 }
 
 // returns the current scope of the parser, resolver and typechecker
-func (p *parser) scope() *ast.SymbolTable {
+func (p *parser) scope() ast.SymbolTable {
 	// same pointer as the one of the typechecker
 	return p.resolver.CurrentTable
 }
 
 // create a sub-scope of the current scope
-func (p *parser) newScope() *ast.SymbolTable {
+func (p *parser) newScope() ast.SymbolTable {
 	return ast.NewSymbolTable(p.resolver.CurrentTable)
 }
 
 // set the current scope for the resolver and typechecker
-func (p *parser) setScope(symbols *ast.SymbolTable) {
+func (p *parser) setScope(symbols ast.SymbolTable) {
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = symbols, symbols
 }
 
 // exit the current scope of the resolver and typechecker
 func (p *parser) exitScope() {
-	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing(), p.typechecker.CurrentTable.Enclosing()
 }
 
 func (p *parser) errVal(err ddperror.Error) {

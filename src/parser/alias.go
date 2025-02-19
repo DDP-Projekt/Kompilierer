@@ -351,3 +351,10 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 
 	return &decl, nil
 }
+
+func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo) ast.GenericContext {
+	return ast.GenericContext{
+		Symbols: newGenericSymbolTable(p.scope(), fun.Symbols),
+		Aliases: p.aliases, // TODO
+	}
+}

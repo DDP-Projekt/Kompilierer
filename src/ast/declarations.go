@@ -71,7 +71,7 @@ type (
 	// to parse an instantiation it has to be merged with the symbols and aliases at
 	// the point of instantiation
 	GenericContext struct {
-		Symbols *SymbolTable
+		Symbols SymbolTable
 		Aliases AliasTrie
 	}
 

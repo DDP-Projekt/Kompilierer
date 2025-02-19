@@ -17,7 +17,7 @@ import (
 // TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
-	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
+	CurrentTable       ast.SymbolTable  // SymbolTable of the current scope (needed for name type-checking)
 	latestReturnedType ddptypes.Type    // type of the last visited expression
 	Module             *ast.Module      // the module that is being typechecked
 	panicMode          *bool            // panic mode synchronized with the parser and resolver
@@ -708,7 +708,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	for _, stmt := range stmt.Statements {
 		t.visit(stmt)
 	}
-	t.CurrentTable = t.CurrentTable.Enclosing
+	t.CurrentTable = t.CurrentTable.Enclosing()
 	return ast.VisitRecurse
 }
 
@@ -890,7 +890,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 // reports wether the given type from this module of the given table is public
 // should only be called from the global scope
 // and with the SymbolTable that was in use when the type was declared
-func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
+func IsPublicType(typ ddptypes.Type, table ast.SymbolTable) bool {
 	// a list-type is public if its underlying type is public
 	typ = ddptypes.GetNestedListUnderlying(typ)
 
