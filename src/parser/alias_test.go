@@ -209,7 +209,7 @@ func TestCreateGenericContext(t *testing.T) {
 		Aliases: declContextAliases,
 	}
 
-	context := given.generateGenericContext(declContext, nil)
+	context := given.generateGenericContext(declContext)
 
 	assert.NotNil(context.Symbols)
 	assert.NotNil(context.Aliases)

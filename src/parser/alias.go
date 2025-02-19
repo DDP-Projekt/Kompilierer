@@ -353,7 +353,7 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 	return &decl, nil
 }
 
-func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo) ast.GenericContext {
+func (p *parser) generateGenericContext(fun ast.GenericContext) ast.GenericContext {
 	aliases := at.Copy(p.aliases)
 
 	matched := fun.Aliases.Search(func(i int, t *token.Token) (*token.Token, bool) {
