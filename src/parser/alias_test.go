@@ -184,6 +184,7 @@ func TestCreateGenericContext(t *testing.T) {
 	baz_parser := &ast.FuncDecl{}
 
 	given.setScope(createSymbols(
+		"a", ddptypes.KOMMAZAHL,
 		"z", ddptypes.ZAHL,
 		"foo", &ast.FuncDecl{},
 		"baz", baz_parser,
@@ -200,6 +201,7 @@ func TestCreateGenericContext(t *testing.T) {
 
 	declContext := ast.GenericContext{
 		Symbols: createSymbols(
+			"a", ddptypes.KOMMAZAHL,
 			"z1", ddptypes.ZAHL,
 			"bar", &ast.FuncDecl{},
 			"baz", baz_context,
@@ -209,11 +211,17 @@ func TestCreateGenericContext(t *testing.T) {
 		Aliases: declContextAliases,
 	}
 
-	context := given.generateGenericContext(declContext)
+	context := given.generateGenericContext(declContext, []ast.ParameterInfo{
+		{Name: token.Token{Literal: "a"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
+		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
+	})
 
 	assert.NotNil(context.Symbols)
 	assert.NotNil(context.Aliases)
 
+	a_decl, has_a, _ := context.Symbols.LookupDecl("a")
+	a_decl_given, _, _ := given.scope().LookupDecl("a")
+	a_decl_declContext, _, _ := declContext.Symbols.LookupDecl("a")
 	_, has_z, _ := context.Symbols.LookupDecl("z")
 	_, has_foo, _ := context.Symbols.LookupDecl("foo")
 	_, has_z1, _ := context.Symbols.LookupDecl("z1")
@@ -229,6 +237,10 @@ func TestCreateGenericContext(t *testing.T) {
 	assert.True(has_bar)
 	assert.True(has_Foo)
 	assert.True(has_Bar)
+	// parameters should override everything
+	assert.True(has_a)
+	assert.NotSame(a_decl.(*ast.VarDecl), a_decl_given.(*ast.VarDecl))
+	assert.NotSame(a_decl.(*ast.VarDecl), a_decl_declContext.(*ast.VarDecl))
 
 	// the original context should be prefered when the parser and context both contain a name
 	bazDecl, has_baz, _ := context.Symbols.LookupDecl("baz")
