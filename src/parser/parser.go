@@ -113,8 +113,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		isCurrentFunctionBool: false,
 		panicMode:             false,
 		errored:               false,
-		resolver:              &resolver.Resolver{},
-		typechecker:           &typechecker.Typechecker{},
+		resolver:              nil,
+		typechecker:           nil,
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable

@@ -12,6 +12,8 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
+	"github.com/DDP-Projekt/Kompilierer/src/parser/resolver"
+	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -324,8 +326,6 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 		panic("tried to instantiate non-generic function")
 	}
 
-	// TODO: parse function with the given types
-
 	parameters := make([]ast.ParameterInfo, len(fun.Parameters))
 	// assign the types to the parameters
 	// unification of generic types must have taken place beforehand
@@ -345,12 +345,32 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 	decl := *fun
 	decl.Parameters = parameters
 	decl.ReturnType = returnType
-	decl.Body = nil // TODO
 	decl.Generic = nil
+
+	context := p.generateGenericContext(fun.Generic.Context, parameters)
+
+	errorCollector := ddperror.Collector{}
+	declParser := &parser{
+		tokens:          fun.Generic.Tokens,
+		errorHandler:    errorCollector.GetHandler(),
+		module:          fun.Mod,
+		aliases:         context.Aliases,
+		currentFunction: &decl,
+	}
+	// prepare the resolver and typechecker with the inbuild symbols and types
+	declParser.resolver = resolver.New(declParser.module, declParser.errorHandler, fun.Mod.FileName, &declParser.panicMode)
+	declParser.typechecker = typechecker.New(declParser.module, declParser.errorHandler, fun.Mod.FileName, &declParser.panicMode)
+
+	decl.Body = declParser.blockStatement(declParser.scope()).(*ast.BlockStmt)
+	declParser.ensureReturnStatementPresent(&decl, decl.Body)
+
+	if errorCollector.DidError() {
+		return &decl, errorCollector.Errors
+	}
 
 	fun.Generic.Instantiations = append(fun.Generic.Instantiations, &decl)
 
-	return &decl, nil
+	return &decl, errorCollector.Errors
 }
 
 func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo) ast.GenericContext {

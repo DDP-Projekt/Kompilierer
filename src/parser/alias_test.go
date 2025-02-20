@@ -159,13 +159,6 @@ func TestCheckAlias(t *testing.T) {
 	assert.IsType(&ast.IntLit{}, args["b"])
 }
 
-func TestInstantiateGenericFunction(t *testing.T) {
-	assert := assert.New(t)
-	_ = assert
-
-	t.FailNow()
-}
-
 func TestCreateGenericContext(t *testing.T) {
 	assert := assert.New(t)
 	_ = assert
@@ -282,4 +275,11 @@ func TestCreateGenericContext(t *testing.T) {
 	assert.False(existed)
 	_, existed, _ = context.Symbols.LookupDecl("new")
 	assert.True(existed)
+}
+
+func TestInstantiateGenericFunction(t *testing.T) {
+	assert := assert.New(t)
+	_ = assert
+
+	t.FailNow()
 }

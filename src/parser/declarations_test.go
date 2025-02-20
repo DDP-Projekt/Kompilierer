@@ -294,7 +294,7 @@ func TestFuncDeclProperties(t *testing.T) {
 
 	runTest := func(tokens string, public, generic, shouldSucceed bool) {
 		var errorHandler ddperror.Handler
-		mockHandler := ddperror.MockHandler{}
+		mockHandler := ddperror.Collector{}
 		if !shouldSucceed {
 			errorHandler = mockHandler.GetHandler()
 		}
@@ -432,7 +432,7 @@ func TestGenericFuncDeclBodyTokens(t *testing.T) {
 
 	runTest := func(src string, from, to int, shouldSucceed bool, code ddperror.Code) {
 		var errorHandler ddperror.Handler
-		mockHandler := ddperror.MockHandler{}
+		mockHandler := ddperror.Collector{}
 		if !shouldSucceed {
 			errorHandler = mockHandler.GetHandler()
 		}
@@ -463,13 +463,13 @@ func TestGenericFuncDeclBodyTokens(t *testing.T) {
 	runTest(`
 Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
 Und kann so benutzt werden:
-	"foo <a>"`, 0, 0, true, 0,
+	"foo <a>"`, 17, 18, true, 0,
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, 22, 26, true, 0,
+	"foo <a> <b>"`, 21, 26, true, 0,
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,

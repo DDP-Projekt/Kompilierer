@@ -135,17 +135,17 @@ func makeErrorHeader(err Error, file string) string {
 
 // a handler that captures it's errores
 // used for testing
-type MockHandler struct {
+type Collector struct {
 	Errors []Error
 }
 
 // wether the handler was called
-func (m *MockHandler) DidError() bool {
+func (m *Collector) DidError() bool {
 	return len(m.Errors) != 0
 }
 
 // creates a Handler for the given MockHandler
-func (m *MockHandler) GetHandler() Handler {
+func (m *Collector) GetHandler() Handler {
 	return func(err Error) {
 		m.Errors = append(m.Errors, err)
 	}

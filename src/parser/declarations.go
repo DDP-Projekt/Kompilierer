@@ -655,7 +655,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	if isGeneric {
 		genericInfo = &ast.GenericFuncInfo{
 			Types:  genericTypes,
-			Tokens: p.tokens[bodyStart:bodyEnd],
+			Tokens: p.tokens[bodyStart-1 : bodyEnd], // -1 to include the colon
 			Context: ast.GenericContext{
 				Symbols: p.scope(),
 				Aliases: p.aliases,
@@ -741,6 +741,14 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 	}
 	body := p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 
+	p.ensureReturnStatementPresent(decl, body)
+
+	p.currentFunction = nil
+	return body
+}
+
+// check that the function has a return statement if it needs one
+func (p *parser) ensureReturnStatementPresent(decl *ast.FuncDecl, body *ast.BlockStmt) {
 	// check that the function has a return statement if it needs one
 	if !ddptypes.IsVoid(decl.ReturnType) { // only if the function does not return void
 		if len(body.Statements) < 1 { // at least the return statement is needed
@@ -755,9 +763,6 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 			}
 		}
 	}
-
-	p.currentFunction = nil
-	return body
 }
 
 func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
