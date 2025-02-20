@@ -86,6 +86,9 @@ func (p *parser) advance() *token.Token {
 
 // returns the current token without advancing
 func (p *parser) peek() *token.Token {
+	if p.cur >= len(p.tokens) {
+		return &token.Token{Type: token.EOF}
+	}
 	return &p.tokens[p.cur]
 }
 

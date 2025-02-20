@@ -321,16 +321,16 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 // instantiates a generic function with the given types
 // genericTypes maps GenericTypeName -> Type
 // returns the new instantiation and any errors that occured during instatiation
-func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
-	if !ast.IsGeneric(fun) {
+func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
+	if !ast.IsGeneric(genericFunc) {
 		panic("tried to instantiate non-generic function")
 	}
 
-	parameters := make([]ast.ParameterInfo, len(fun.Parameters))
+	parameters := make([]ast.ParameterInfo, len(genericFunc.Parameters))
 	// assign the types to the parameters
 	// unification of generic types must have taken place beforehand
 	// meaning types must contain the correct type for each parameter
-	for i, param := range fun.Parameters {
+	for i, param := range genericFunc.Parameters {
 		parameters[i] = param
 		if !ddptypes.IsGeneric(param.Type.Type) {
 			continue
@@ -342,25 +342,28 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 		}
 	}
 
-	decl := *fun
+	decl := *genericFunc
 	decl.Parameters = parameters
 	decl.ReturnType = returnType
 	decl.Generic = nil
 
-	context := p.generateGenericContext(fun.Generic.Context, parameters)
+	context := p.generateGenericContext(genericFunc.Generic.Context, parameters)
 
 	errorCollector := ddperror.Collector{}
 	declParser := &parser{
-		tokens:          fun.Generic.Tokens,
+		tokens:          genericFunc.Generic.Tokens,
 		errorHandler:    errorCollector.GetHandler(),
-		module:          fun.Mod,
+		module:          genericFunc.Mod,
 		aliases:         context.Aliases,
 		currentFunction: &decl,
 	}
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	declParser.resolver = resolver.New(declParser.module, declParser.errorHandler, fun.Mod.FileName, &declParser.panicMode)
-	declParser.typechecker = typechecker.New(declParser.module, declParser.errorHandler, fun.Mod.FileName, &declParser.panicMode)
+	declParser.resolver = resolver.New(declParser.module, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
+	declParser.typechecker = typechecker.New(declParser.module, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
 
+	declParser.setScope(context.Symbols)
+
+	declParser.advance() // skip the colon for blockStatement()
 	decl.Body = declParser.blockStatement(declParser.scope()).(*ast.BlockStmt)
 	declParser.ensureReturnStatementPresent(&decl, decl.Body)
 
@@ -368,7 +371,7 @@ func (p *parser) instantiateGenericFunction(fun *ast.FuncDecl, genericTypes map[
 		return &decl, errorCollector.Errors
 	}
 
-	fun.Generic.Instantiations = append(fun.Generic.Instantiations, &decl)
+	genericFunc.Generic.Instantiations = append(genericFunc.Generic.Instantiations, &decl)
 
 	return &decl, errorCollector.Errors
 }

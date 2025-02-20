@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/scanner"
@@ -279,7 +280,38 @@ func TestCreateGenericContext(t *testing.T) {
 
 func TestInstantiateGenericFunction(t *testing.T) {
 	assert := assert.New(t)
-	_ = assert
 
-	t.FailNow()
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion foo mit den Parametern a und b vom Typ T und T, gibt ein T zurück, macht:
+	Gib a plus b zurück.
+Und kann so benutzt werden:
+	"foo <a> <b>"`),
+	})
+
+	decl_stmt := given.declaration()
+	decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+
+	instantiation, errors := given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	}, ddptypes.ZAHL)
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.Contains(decl.Generic.Instantiations, instantiation)
+
+	instantiation, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.KOMMAZAHL,
+	}, ddptypes.KOMMAZAHL)
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.Contains(decl.Generic.Instantiations, instantiation)
+
+	_, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.BUCHSTABE,
+	}, ddptypes.BUCHSTABE)
+
+	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
+	assert.Equal(2, len(decl.Generic.Instantiations))
 }
