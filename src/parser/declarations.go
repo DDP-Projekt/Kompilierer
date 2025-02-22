@@ -660,6 +660,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 				Symbols: p.scope(),
 				Aliases: p.aliases,
 			},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl, 8),
 		}
 	}
 

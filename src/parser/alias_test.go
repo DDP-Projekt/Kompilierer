@@ -298,7 +298,8 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
-	assert.Contains(decl.Generic.Instantiations, instantiation)
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
 	instantiation, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.KOMMAZAHL,
@@ -306,12 +307,13 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
-	assert.Contains(decl.Generic.Instantiations, instantiation)
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
 	_, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.BUCHSTABE,
 	}, ddptypes.BUCHSTABE)
 
 	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
-	assert.Equal(2, len(decl.Generic.Instantiations))
+	assert.Equal(2, len(decl.Generic.Instantiations[given.module]))
 }

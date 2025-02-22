@@ -64,7 +64,7 @@ type (
 		Types          map[string]*ddptypes.GenericType // all declared generic types
 		Tokens         []token.Token                    // tokens of the body that need to be parsed
 		Context        GenericContext                   // context up to the point where the function was declared
-		Instantiations []*FuncDecl                      // all existing instantiations
+		Instantiations map[*Module][]*FuncDecl          // all existing instantiations for a given module
 	}
 
 	// the context captured by a generic function declaration

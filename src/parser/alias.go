@@ -371,7 +371,7 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		return &decl, errorCollector.Errors
 	}
 
-	genericFunc.Generic.Instantiations = append(genericFunc.Generic.Instantiations, &decl)
+	genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
 
 	return &decl, errorCollector.Errors
 }
