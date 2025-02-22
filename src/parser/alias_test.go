@@ -26,7 +26,7 @@ func scanAlias(t *testing.T, alias string, params map[string]ddptypes.ParameterT
 		}
 	}
 	return &ast.FuncAlias{
-		Tokens:   result,
+		Tokens:   result[:len(result)-1], // remove EOF
 		Original: orig,
 		Args:     params,
 	}
@@ -116,48 +116,6 @@ func TestAliasSorter(t *testing.T) {
 	aliases = []ast.Alias{a, b, c, d, e, f, g, h, i, j, k}
 	sortAliases(aliases)
 	assert.Equal([]ast.Alias{i, k, j, f, e, b, d, c, h, g, a}, aliases)
-}
-
-func TestCheckAlias(t *testing.T) {
-	assert := assert.New(t)
-
-	given := createParser(t, parser{
-		tokens: scanTokens(t, `foo 1 2`),
-	})
-
-	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ZAHL, IsReference: false},
-	})
-	cached_args := make(map[cachedArgKey]*cachedArg, 4)
-	args, errs := given.checkAlias(f, true, 0, cached_args)
-	assert.Empty(errs)
-	assert.IsType(&ast.IntLit{}, args["a"])
-	assert.IsType(&ast.IntLit{}, args["b"])
-
-	// generic test
-
-	genericFunc := &ast.FuncDecl{
-		NameTok: token.Token{Literal: "foo"},
-		Parameters: []ast.ParameterInfo{
-			{
-				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
-			},
-		},
-	}
-	_ = genericFunc
-
-	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
-	})
-	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, errs = given.checkAlias(g, true, 0, cached_args)
-	assert.Empty(errs)
-	assert.NotEmpty(args)
-	assert.IsType(&ast.IntLit{}, args["a"])
-	assert.IsType(&ast.IntLit{}, args["b"])
 }
 
 func TestCreateGenericContext(t *testing.T) {
@@ -316,4 +274,59 @@ Und kann so benutzt werden:
 
 	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
 	assert.Equal(2, len(decl.Generic.Instantiations[given.module]))
+}
+
+func TestCheckAlias(t *testing.T) {
+	assert := assert.New(t)
+
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 2`),
+	})
+
+	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ZAHL, IsReference: false},
+	})
+	cached_args := make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs := given.checkAlias(f, true, 0, cached_args)
+	assert.Nil(instantiation)
+	assert.Empty(errs)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.IntLit{}, args["b"])
+
+	// generic test
+
+	genericFunc := &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+		},
+		Generic: &ast.GenericFuncInfo{
+			Types: map[string]*ddptypes.GenericType{"T": {Name: "T"}},
+			Tokens: scanTokens(t, `:
+Ende`),
+			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
+		},
+	}
+	_ = genericFunc
+
+	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
+	})
+	g.(*ast.FuncAlias).Func = genericFunc
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.NotNil(instantiation)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.IntLit{}, args["b"])
 }

@@ -10,20 +10,20 @@ import (
 
 // check if the function is defined externally
 func IsExternFunc(fun *FuncDecl) bool {
-	return fun.Body == nil && fun.Def == nil
+	return fun != nil && fun.Body == nil && fun.Def == nil
 }
 
 // check if the declaration is only a forward decl
 func IsForwardDecl(fun *FuncDecl) bool {
-	return fun.Def != nil
+	return fun != nil && fun.Def != nil
 }
 
 func IsOperatorOverload(fun *FuncDecl) bool {
-	return fun.Operator != nil
+	return fun != nil && fun.Operator != nil
 }
 
 func IsGeneric(fun *FuncDecl) bool {
-	return fun.Generic != nil
+	return fun != nil && fun.Generic != nil
 }
 
 func IsVarConstDecl(decl Declaration) bool {
@@ -64,7 +64,7 @@ func TrimStringLit(lit *token.Token) string {
 // returns wether table is the global scope
 // table.Enclosing == nil
 func IsGlobalScope(table SymbolTable) bool {
-	return table.Enclosing() == nil
+	return table != nil && table.Enclosing() == nil
 }
 
 // applies fun to all declarations imported by imprt

@@ -493,7 +493,7 @@ Und kann so benutzt werden:
 func TestGenericFuncDeclContext(t *testing.T) {
 	assert := assert.New(t)
 
-	parseAndAssertConext := func(src string, symbols ast.SymbolTable, aliases [][]*token.Token, decls ...string) *ast.FuncDecl {
+	parseAndAssertConext := func(src string, symbols ast.SymbolTable, aliases [][]*token.Token, decls ...string) (*ast.FuncDecl, *parser) {
 		trie := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 		for _, alias := range aliases {
 			trie.Insert(alias, &ast.FuncAlias{})
@@ -523,14 +523,14 @@ func TestGenericFuncDeclContext(t *testing.T) {
 			exists, _ := func_decl.Generic.Context.Aliases.Contains(alias)
 			assert.True(exists)
 		}
-		return func_decl
+		return func_decl, given
 	}
 	symbols := createSymbols(
 		"i", ddptypes.ZAHL,
 		"bar", &ast.FuncDecl{},
 	)
 
-	decl := parseAndAssertConext(`
+	decl, given := parseAndAssertConext(`
 Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
 Und kann so benutzt werden:
 "foo <a>"`, symbols, [][]*token.Token{
@@ -544,4 +544,12 @@ Und kann so benutzt werden:
 	symbols.InsertDecl("test", &ast.VarDecl{})
 	_, exists, _ = decl.Generic.Context.Symbols.LookupDecl("test")
 	assert.True(exists)
+
+	foo_alias := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
+		"a": {Type: decl.Generic.Types["T"], IsReference: false},
+	})
+
+	exists, alias := given.aliases.Contains(toPointerSlice(foo_alias.GetTokens()))
+	assert.True(exists)
+	assert.Equal(decl, alias.Decl())
 }

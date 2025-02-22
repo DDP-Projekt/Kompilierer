@@ -85,13 +85,18 @@ func (p *parser) alias() ast.Expression {
 	// Stable so equal aliases stay in the order they were defined
 	sortAliases(matchedAliases)
 
-	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression) ast.Expression {
+	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression, instantiation ast.Declaration) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
+			fun := fnalias.Func
+			if genericFunInstantiation, isFun := instantiation.(*ast.FuncDecl); isFun {
+				fun = genericFunInstantiation
+			}
+
 			fnCall := &ast.FuncCall{
 				Range: token.NewRange(&p.tokens[start], p.previous()),
 				Tok:   p.tokens[start],
 				Name:  fnalias.Func.Name(),
-				Func:  fnalias.Func,
+				Func:  fun,
 				Args:  args,
 			}
 
@@ -121,7 +126,7 @@ func (p *parser) alias() ast.Expression {
 
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		args, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
+		args, instantiation, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
 		if args != nil && mostFitting == nil {
 			mostFitting = &matchedAliases[i]
 		}
@@ -129,7 +134,7 @@ func (p *parser) alias() ast.Expression {
 		if args != nil && len(errs) == 0 {
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
-			return callOrLiteralFromAlias(matchedAliases[i], args)
+			return callOrLiteralFromAlias(matchedAliases[i], args, instantiation)
 		}
 	}
 
@@ -140,12 +145,12 @@ func (p *parser) alias() ast.Expression {
 	if mostFitting == nil {
 		mostFitting = &matchedAliases[0]
 	}
-	args, errs := p.checkAlias(*mostFitting, false, start, cached_args)
+	args, instantiation, errs := p.checkAlias(*mostFitting, false, start, cached_args)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return callOrLiteralFromAlias(*mostFitting, args)
+	return callOrLiteralFromAlias(*mostFitting, args, instantiation)
 }
 
 // sorts aliases by
@@ -201,14 +206,17 @@ type cachedArgKey struct {
 
 // used by p.alias
 // attempts to evaluate the arguments for the passed alias and checks if types match
+// also unifies generic types and attempts to instantiate generic functions
 // returns nil if argument and parameter types don't match
 // it also returns all errors that might have occured while doing so
-func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cached_args map[cachedArgKey]*cachedArg) (map[string]ast.Expression, []ddperror.Error) {
+func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cached_args map[cachedArgKey]*cachedArg) (map[string]ast.Expression, ast.Declaration, []ddperror.Error) {
 	p.cur = start
 	args := make(map[string]ast.Expression, 4)
 	reported_errors := make([]ddperror.Error, 0)
 	mAliasTokens := mAlias.GetTokens()
 	mAliasArgs := mAlias.GetArgs()
+
+	genericTypes := make(map[string]ddptypes.Type, 4)
 
 	for i, l := 0, len(mAliasTokens); i < l && mAliasTokens[i].Type != token.EOF; i++ {
 		tok := &mAliasTokens[i]
@@ -220,7 +228,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 			pType := p.peek().Type
 			// early return if a non-identifier expression is passed as reference
 			if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
-				return nil, reported_errors
+				return nil, nil, reported_errors
 			}
 
 			// create the key for the argument
@@ -294,10 +302,22 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 				typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 
 				didMatch := true
-				if !ddptypes.Equal(typ, paramType.Type) {
+
+				underlyingParamType := paramType.Type
+				if generic, ok := ddptypes.CastGeneric(paramType.Type); ok {
+					unified := false
+					underlyingParamType, unified = genericTypes[generic.Name]
+
+					if !unified {
+						genericTypes[generic.Name] = typ
+						underlyingParamType = typ
+					}
+				}
+
+				if !ddptypes.Equal(typ, underlyingParamType) {
 					didMatch = false
-				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                           // string-indexings may not be passed as char-reference
-				paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
+				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                                // string-indexings may not be passed as char-reference
+				paramType.IsReference && ddptypes.Equal(underlyingParamType, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
 					ok { // and the argument is a indexing
 					lhs := p.typechecker.EvaluateSilent(ass.Lhs)
 					if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
@@ -306,7 +326,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 				}
 
 				if !didMatch {
-					return nil, reported_errors
+					return nil, nil, reported_errors
 				}
 			}
 
@@ -315,7 +335,20 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 		}
 		p.advance() // ignore non-argument tokens
 	}
-	return args, reported_errors
+
+	funcDecl, isFuncDecl := mAlias.Decl().(*ast.FuncDecl)
+	if isFuncDecl && ast.IsGeneric(funcDecl) {
+		returnType := funcDecl.ReturnType
+		if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
+			returnType = genericTypes[generic.Name]
+		}
+
+		instantiation, errs := p.instantiateGenericFunction(funcDecl, genericTypes, returnType)
+		reported_errors = append(reported_errors, errs...)
+		return args, instantiation, reported_errors
+	}
+
+	return args, nil, reported_errors
 }
 
 // instantiates a generic function with the given types
@@ -336,8 +369,8 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 			continue
 		}
 
-		var ok bool
-		if parameters[i].Type.Type, ok = genericTypes[param.Type.Type.String()]; !ok {
+		var isFuncDecl bool
+		if parameters[i].Type.Type, isFuncDecl = genericTypes[param.Type.Type.String()]; !isFuncDecl {
 			panic(fmt.Errorf("instantiateGenericFunction: parameter %s was not in type map", param.Name.Literal))
 		}
 	}

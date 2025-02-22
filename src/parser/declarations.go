@@ -650,7 +650,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	}
 
-	// TODO: properly instantiate this later
 	var genericInfo *ast.GenericFuncInfo
 	if isGeneric {
 		genericInfo = &ast.GenericFuncInfo{
@@ -698,7 +697,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 
-		if !isForwardDecl {
+		if !isForwardDecl && !isGeneric {
 			// add the extern declaration
 			p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{}
 		}
