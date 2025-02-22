@@ -268,6 +268,16 @@ Und kann so benutzt werden:
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
+	second_instantiation, errors := given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.KOMMAZAHL,
+	}, ddptypes.KOMMAZAHL)
+
+	assert.Empty(errors)
+	assert.NotNil(second_instantiation)
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Contains(decl.Generic.Instantiations[given.module], second_instantiation)
+	assert.Same(instantiation, second_instantiation)
+
 	_, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.BUCHSTABE,
 	}, ddptypes.BUCHSTABE)
@@ -329,4 +339,7 @@ Ende`),
 	assert.NotNil(instantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.IntLit{}, args["b"])
+
+	_, second_instantiation, _ := given.checkAlias(g, true, 0, cached_args)
+	assert.Same(instantiation, second_instantiation)
 }

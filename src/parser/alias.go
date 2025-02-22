@@ -5,6 +5,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -372,6 +373,15 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		var isFuncDecl bool
 		if parameters[i].Type.Type, isFuncDecl = genericTypes[param.Type.Type.String()]; !isFuncDecl {
 			panic(fmt.Errorf("instantiateGenericFunction: parameter %s was not in type map", param.Name.Literal))
+		}
+	}
+
+	instantiations := genericFunc.Generic.Instantiations[p.module]
+	for _, instantiation := range instantiations {
+		if slices.EqualFunc(instantiation.Parameters, parameters, func(a, b ast.ParameterInfo) bool {
+			return ddptypes.ParamTypesEqual(a.Type, b.Type)
+		}) {
+			return instantiation, nil
 		}
 	}
 
