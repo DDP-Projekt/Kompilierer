@@ -15,3 +15,18 @@ func (*GenericType) Gender() GrammaticalGender {
 func (t *GenericType) String() string {
 	return t.Name
 }
+
+// represents a resolved generic type that is used during parsing of the generic function
+type InstantiatedGenericType struct {
+	Actual Type
+}
+
+func (*InstantiatedGenericType) ddpType() {}
+
+func (t *InstantiatedGenericType) Gender() GrammaticalGender {
+	return t.Actual.Gender()
+}
+
+func (t *InstantiatedGenericType) String() string {
+	return t.Actual.String()
+}

@@ -31,6 +31,10 @@ func MatchesGender(t Type, genders ...GrammaticalGender) bool {
 		return true
 	}
 
+	if _, ok := t.(*InstantiatedGenericType); ok {
+		return true
+	}
+
 	for _, gender := range genders {
 		if t.Gender() == gender {
 			return true
@@ -55,12 +59,16 @@ func DeepEqual(t1, t2 Type) bool {
 
 // returns the underlying type for nested TypeAliases
 func GetUnderlying(t Type) Type {
-	if alias, ok := t.(*TypeAlias); ok {
-		return GetUnderlying(alias.Underlying)
-	} else if list, ok := t.(ListType); ok {
-		return ListType{Underlying: GetUnderlying(list.Underlying)}
+	switch typ := t.(type) {
+	case *TypeAlias:
+		return GetUnderlying(typ.Underlying)
+	case ListType:
+		return ListType{Underlying: GetUnderlying(typ.Underlying)}
+	case *InstantiatedGenericType:
+		return GetUnderlying(typ.Actual)
+	default:
+		return t
 	}
-	return t
 }
 
 func IsPrimitive(t Type) bool {

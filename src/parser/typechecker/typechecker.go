@@ -604,8 +604,7 @@ func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
-	symbol, _, _ := t.CurrentTable.LookupDecl(callExpr.Name)
-	decl := symbol.(*ast.FuncDecl)
+	decl := callExpr.Func
 
 	for k, expr := range callExpr.Args {
 		argType := t.Evaluate(expr)

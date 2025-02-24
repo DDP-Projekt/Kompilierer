@@ -151,21 +151,29 @@ func TestCreateGenericContext(t *testing.T) {
 	baz_a_declContext := scanAlias(t, `ein alias baz`, nil)
 	declContextAliases.Insert(toPointerSlice(baz_a_declContext.GetTokens()), baz_a_declContext)
 
+	structDecl := &ast.StructDecl{
+		Type: &ddptypes.StructType{Name: "Bar"},
+	}
+
 	declContext := ast.GenericContext{
 		Symbols: createSymbols(
 			"a", ddptypes.KOMMAZAHL,
 			"z1", ddptypes.ZAHL,
 			"bar", &ast.FuncDecl{},
 			"baz", baz_context,
-			"Bar", &ast.StructDecl{
-				Type: &ddptypes.StructType{Name: "Bar"},
-			}),
+			"Bar", structDecl,
+		),
 		Aliases: declContextAliases,
 	}
 
 	context := given.generateGenericContext(declContext, []ast.ParameterInfo{
 		{Name: token.Token{Literal: "a"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
 		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
+		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}, IsReference: false}},
+		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "R"}, IsReference: false}},
+	}, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+		"R": structDecl.Type,
 	})
 
 	assert.NotNil(context.Symbols)
@@ -180,6 +188,8 @@ func TestCreateGenericContext(t *testing.T) {
 	_, has_bar, _ := context.Symbols.LookupDecl("bar")
 	_, has_Foo, _ := context.Symbols.LookupDecl("Foo")
 	_, has_Bar, _ := context.Symbols.LookupDecl("Bar")
+	_, has_T, _ := context.Symbols.LookupDecl("T")
+	RDecl, has_R, _ := context.Symbols.LookupDecl("R")
 
 	// variables from the parser should not be used
 	assert.False(has_z)
@@ -189,6 +199,10 @@ func TestCreateGenericContext(t *testing.T) {
 	assert.True(has_bar)
 	assert.True(has_Foo)
 	assert.True(has_Bar)
+	// generic types should not have a decl themselves
+	assert.False(has_T)
+	assert.True(has_R)
+	assert.Same(RDecl, structDecl)
 	// parameters should override everything
 	assert.True(has_a)
 	assert.NotSame(a_decl.(*ast.VarDecl), a_decl_given.(*ast.VarDecl))
@@ -203,10 +217,26 @@ func TestCreateGenericContext(t *testing.T) {
 	// types as well
 	FooType, has_Foo_type := context.Symbols.LookupType("Foo")
 	BarType, has_Bar_type := context.Symbols.LookupType("Bar")
+	TType, has_T_type := context.Symbols.LookupType("T")
+	RType, has_R_type := context.Symbols.LookupType("R")
 	assert.True(has_Foo_type)
 	assert.True(has_Bar_type)
+	assert.True(has_T_type)
+	assert.True(has_R_type)
 	assert.Equal("Foo", FooType.String())
 	assert.Equal("Bar", BarType.String())
+	assert.True(ddptypes.Equal(ddptypes.ZAHL, TType))
+	assert.True(ddptypes.Equal(structDecl.Type, RType))
+
+	assert.Equal("Zahl", TType.String())
+	assert.Equal("Bar", RType.String())
+
+	assert.True(ddptypes.MatchesGender(TType, ddptypes.MASKULIN))
+	assert.True(ddptypes.MatchesGender(TType, ddptypes.FEMININ))
+	assert.True(ddptypes.MatchesGender(TType, ddptypes.NEUTRUM))
+	assert.True(ddptypes.MatchesGender(RType, ddptypes.MASKULIN))
+	assert.True(ddptypes.MatchesGender(RType, ddptypes.FEMININ))
+	assert.True(ddptypes.MatchesGender(RType, ddptypes.NEUTRUM))
 
 	has_foo_a, _ := context.Aliases.Contains(toPointerSlice(foo_a.GetTokens()))
 	has_bar_a, _ := context.Aliases.Contains(toPointerSlice(bar_a.GetTokens()))
@@ -284,6 +314,28 @@ Und kann so benutzt werden:
 
 	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
 	assert.Equal(2, len(decl.Generic.Instantiations[given.module]))
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion foo mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Das T temp ist a.
+	Speichere b in a.
+	Speichere temp in b.
+Und kann so benutzt werden:
+	"foo <a> <b>"`),
+	})
+
+	decl_stmt = given.declaration()
+	decl = decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+
+	instantiation, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	}, ddptypes.VoidType{})
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 }
 
 func TestCheckAlias(t *testing.T) {

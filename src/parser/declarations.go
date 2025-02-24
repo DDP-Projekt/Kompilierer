@@ -182,29 +182,8 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	if typ == nil {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
 	} else {
-		getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
-			switch gender {
-			case ddptypes.MASKULIN:
-				if isField {
-					return token.DEM
-				}
-				return token.DER
-			case ddptypes.FEMININ:
-				if isField {
-					return token.DER
-				}
-				return token.DIE
-			case ddptypes.NEUTRUM:
-				if isField {
-					return token.DEM
-				}
-				return token.DAS
-			}
-			return token.ILLEGAL // unreachable
-		}
-
-		if article := getArticle(typ.Gender()); begin.Type != article {
-			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+		if !ddptypes.MatchesGender(typ, genderFromArticle(begin.Type, isField)) {
+			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", articleFromGender(typ.Gender(), isField)))
 		}
 	}
 

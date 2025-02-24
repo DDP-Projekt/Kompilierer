@@ -8,10 +8,16 @@ import (
 type genericSymbolTable struct {
 	parserTable  ast.SymbolTable
 	contextTable ast.SymbolTable
+	genericTypes map[string]*ddptypes.InstantiatedGenericType
 }
 
-func newGenericSymbolTable(parserTable, contextTable ast.SymbolTable) ast.SymbolTable {
-	return genericSymbolTable{parserTable: parserTable, contextTable: contextTable}
+func newGenericSymbolTable(parserTable, contextTable ast.SymbolTable, genericTypes map[string]ddptypes.Type) ast.SymbolTable {
+	instantiatedTypes := make(map[string]*ddptypes.InstantiatedGenericType, len(genericTypes))
+	for name, typ := range genericTypes {
+		instantiatedTypes[name] = &ddptypes.InstantiatedGenericType{Actual: typ}
+	}
+
+	return genericSymbolTable{parserTable: parserTable, contextTable: contextTable, genericTypes: instantiatedTypes}
 }
 
 func (s genericSymbolTable) Enclosing() ast.SymbolTable {
@@ -19,6 +25,10 @@ func (s genericSymbolTable) Enclosing() ast.SymbolTable {
 }
 
 func (s genericSymbolTable) LookupDecl(name string) (ast.Declaration, bool, bool) {
+	if typ, ok := s.genericTypes[name]; ok {
+		name = typ.String()
+	}
+
 	decl, exists, isVar := s.contextTable.LookupDecl(name)
 	if !exists {
 		decl, exists, isVar = s.parserTable.LookupDecl(name)
@@ -34,9 +44,13 @@ func (s genericSymbolTable) InsertDecl(name string, decl ast.Declaration) bool {
 }
 
 func (s genericSymbolTable) LookupType(name string) (ddptypes.Type, bool) {
-	typ, ok := s.contextTable.LookupType(name)
-	if !ok {
-		typ, ok = s.parserTable.LookupType(name)
+	if typ, ok := s.genericTypes[name]; ok {
+		return typ, ok
 	}
-	return typ, ok
+
+	if typ, ok := s.contextTable.LookupType(name); ok {
+		return typ, ok
+	}
+
+	return s.parserTable.LookupType(name)
 }

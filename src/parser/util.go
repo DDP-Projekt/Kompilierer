@@ -68,6 +68,73 @@ func tokenLess(t1, t2 *token.Token) bool {
 	return false
 }
 
+func genderFromArticle(t token.TokenType, isField bool) ddptypes.GrammaticalGender {
+	if isField {
+		switch t {
+		case token.DEM:
+			return ddptypes.MASKULIN
+		case token.DER:
+			return ddptypes.FEMININ
+		}
+		return ddptypes.INVALID_GENDER
+	}
+
+	switch t {
+	case token.DER:
+		return ddptypes.MASKULIN
+	case token.DIE:
+		return ddptypes.FEMININ
+	case token.DAS:
+		return ddptypes.NEUTRUM
+	}
+	return ddptypes.INVALID_GENDER
+}
+
+func articleFromGender(g ddptypes.GrammaticalGender, isField bool) token.TokenType {
+	switch g {
+	case ddptypes.MASKULIN:
+		if isField {
+			return token.DEM
+		}
+		return token.DER
+	case ddptypes.FEMININ:
+		if isField {
+			return token.DER
+		}
+		return token.DIE
+	case ddptypes.NEUTRUM:
+		if isField {
+			return token.DEM
+		}
+		return token.DAS
+	}
+	return token.ILLEGAL
+}
+
+func genderFromForPronoun(t token.TokenType) ddptypes.GrammaticalGender {
+	switch t {
+	case token.JEDEN:
+		return ddptypes.MASKULIN
+	case token.JEDE:
+		return ddptypes.FEMININ
+	case token.JEDES:
+		return ddptypes.NEUTRUM
+	}
+	return ddptypes.INVALID_GENDER
+}
+
+func forPronounFromGender(gender ddptypes.GrammaticalGender) token.TokenType {
+	switch gender {
+	case ddptypes.MASKULIN:
+		return token.JEDEN
+	case ddptypes.FEMININ:
+		return token.JEDE
+	case ddptypes.NEUTRUM:
+		return token.JEDES
+	}
+	return token.ILLEGAL // unreachable
+}
+
 // counts all elements in the slice which fulfill the provided predicate function
 func countElements[T any](elements []T, pred func(T) bool) (count int) {
 	for _, v := range elements {

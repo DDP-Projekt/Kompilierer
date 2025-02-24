@@ -457,26 +457,14 @@ func (p *parser) repeatStmt() ast.Statement {
 }
 
 func (p *parser) forStatement() ast.Statement {
-	getPronoun := func(gender ddptypes.GrammaticalGender) token.TokenType {
-		switch gender {
-		case ddptypes.MASKULIN:
-			return token.JEDEN
-		case ddptypes.FEMININ:
-			return token.JEDE
-		case ddptypes.NEUTRUM:
-			return token.JEDES
-		}
-		return token.ILLEGAL // unreachable
-	}
-
 	For := p.previous()
 	p.consumeAny(token.JEDE, token.JEDEN, token.JEDES)
 	pronoun_tok := p.previous()
 	TypeTok := p.peek()
 	Typ := p.parseType()
 	if Typ != nil {
-		if pronoun := getPronoun(Typ.Gender()); pronoun != pronoun_tok.Type {
-			p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", pronoun))
+		if !ddptypes.MatchesGender(Typ, genderFromForPronoun(pronoun_tok.Type)) {
+			p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", forPronounFromGender(Typ.Gender())))
 		}
 	}
 

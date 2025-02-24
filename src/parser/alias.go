@@ -390,7 +390,7 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	decl.ReturnType = returnType
 	decl.Generic = nil
 
-	context := p.generateGenericContext(genericFunc.Generic.Context, parameters)
+	context := p.generateGenericContext(genericFunc.Generic.Context, parameters, genericTypes)
 
 	errorCollector := ddperror.Collector{}
 	declParser := &parser{
@@ -419,7 +419,7 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	return &decl, errorCollector.Errors
 }
 
-func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo) ast.GenericContext {
+func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.ParameterInfo, genericTypes map[string]ddptypes.Type) ast.GenericContext {
 	aliases := at.Copy(p.aliases)
 
 	matched := fun.Aliases.Search(func(i int, t *token.Token) (*token.Token, bool) {
@@ -429,7 +429,7 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 		aliases.Insert(toPointerSlice(alias.GetTokens()), alias)
 	}
 
-	symbols := ast.NewSymbolTable(newGenericSymbolTable(p.scope(), fun.Symbols))
+	symbols := ast.NewSymbolTable(newGenericSymbolTable(p.scope(), fun.Symbols, genericTypes))
 
 	// add the parameters to the table
 	for i := range params {
