@@ -50,6 +50,16 @@ func (a *ConstFuncParamAnnotator) ShouldVisit(node ast.Node) bool {
 
 func (a *ConstFuncParamAnnotator) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	a.currentDecl = nil
+
+	if ast.IsGeneric(decl) {
+		for _, instantiations := range decl.Generic.Instantiations {
+			for _, instantiation := range instantiations {
+				a.VisitFuncDecl(instantiation)
+			}
+		}
+		return ast.VisitRecurse
+	}
+
 	// if the function is extern, we have to assume that the parameters are not const
 	if ast.IsExternFunc(decl) {
 		attachement := ConstFuncParamMeta{

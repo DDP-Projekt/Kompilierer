@@ -529,7 +529,7 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	args, _, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.NotEmpty(errs)
 
 	// test it with not-working instantiation and recusive generic functions
@@ -570,6 +570,57 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	args, _, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.NotEmpty(errs)
+
+	// generic test with references and recursive generic functions
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 i`),
+	})
+	symbols := createSymbols("i", ddptypes.ListType{Underlying: ddptypes.ZAHL})
+	given.setScope(symbols)
+
+	genericType = &ddptypes.GenericType{Name: "T"}
+	genericFunc = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+			{
+				Name: token.Token{Literal: "b"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: true},
+			},
+		},
+		Generic: &ast.GenericFuncInfo{
+			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Tokens: scanTokens(t, `:
+	foo a b.
+Ende`),
+			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
+		},
+	}
+
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: true},
+	})
+	g.(*ast.FuncAlias).Func = genericFunc
+	given.aliases.Insert(toPointerSlice(g.GetTokens()), g)
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.NotNil(instantiation)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.Ident{}, args["b"])
+
+	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
+	assert.Same(instantiation, second_instantiation)
 }

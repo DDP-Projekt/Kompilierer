@@ -421,15 +421,12 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	// meaning types must contain the correct type for each parameter
 	for i, param := range genericFunc.Parameters {
 		parameters[i] = param
-		genericType, isGeneric := ddptypes.CastGeneric(param.Type.Type)
+		_, isGeneric := ddptypes.CastDeeplyNestedGeneric(param.Type.Type)
 		if !isGeneric {
 			continue
 		}
 
-		var isFuncDecl bool
-		if parameters[i].Type.Type, isFuncDecl = genericTypes[genericType.String()]; !isFuncDecl {
-			panic(fmt.Errorf("(%v) instantiateGenericFunction: parameter %s was not in type map", p.previous().Range, param.Name.Literal))
-		}
+		parameters[i].Type.Type = ddptypes.GetInstantiatedType(parameters[i].Type.Type, genericTypes)
 	}
 
 	instantiations := genericFunc.Generic.Instantiations[p.module]
@@ -462,15 +459,18 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 
 	declParser.setScope(context.Symbols)
 
+	// add the instantiation to prevent recursion
+	genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
+
 	declParser.advance() // skip the colon for blockStatement()
 	decl.Body = declParser.blockStatement(declParser.scope()).(*ast.BlockStmt)
 	declParser.ensureReturnStatementPresent(&decl, decl.Body)
 
 	if errorCollector.DidError() {
+		// remove the instantiation as we errored
+		genericFunc.Generic.Instantiations[p.module] = slices.DeleteFunc(genericFunc.Generic.Instantiations[p.module], func(f *ast.FuncDecl) bool { return f == &decl })
 		return &decl, errorCollector.Errors
 	}
-
-	genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
 
 	return &decl, errorCollector.Errors
 }
