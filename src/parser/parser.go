@@ -334,7 +334,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 
 func (p *parser) validateForwardDecls() {
 	ast.VisitModule(p.module, ast.FuncDeclVisitorFunc(func(decl *ast.FuncDecl) ast.VisitResult {
-		if !ast.IsGeneric(decl) && !ast.IsExternFunc(decl) && decl.Def == nil {
+		if decl.Body == nil && !ast.IsGeneric(decl) && !ast.IsExternFunc(decl) && decl.Def == nil {
 			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
 				decl.NameTok.Range,
 				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert", decl.Name()))

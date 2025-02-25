@@ -538,7 +538,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	params := p.parseFunctionParameters(perr, validate, isGeneric)
 	genericTypes := make(map[string]*ddptypes.GenericType, 4)
 	for _, param := range params {
-		if generic, isGeneric := ddptypes.CastGeneric(param.Type.Type); isGeneric {
+		if generic, isGeneric := ddptypes.CastDeeplyNestedGeneric(param.Type.Type); isGeneric {
 			genericTypes[generic.String()] = generic
 		}
 	}

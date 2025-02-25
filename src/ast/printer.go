@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -94,6 +95,9 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.ReturnType)
+	if IsGeneric(decl) {
+		msg += " [generisch]"
+	}
 	if IsExternFunc(decl) {
 		msg += " [Extern]"
 	}
@@ -108,6 +112,13 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	}
 	if IsExternFunc(decl) || IsForwardDecl(decl) {
 		pr.parenthesizeNode(msg)
+	} else if IsGeneric(decl) {
+		var instantiations []Node
+		for inst := range maps.Values(decl.Generic.Instantiations) {
+			instantiations = append(instantiations, toInterfaceSlice[*FuncDecl, Node](inst)...)
+		}
+
+		pr.parenthesizeNode(msg, instantiations...)
 	} else {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
@@ -147,7 +158,7 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 }
 
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration.String()))
+	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration))
 	return VisitRecurse
 }
 

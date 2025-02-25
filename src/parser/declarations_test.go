@@ -425,6 +425,18 @@ Die generische Funktion foo mit den Parametern a und b vom Typ T und Zahl, gibt 
 Und kann so benutzt werden:
 	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T", "Zahl"},
 	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T Liste und Zahl, gibt eine T Liste zurück, macht:
+	Gib 1 zurück.
+Und kann so benutzt werden:
+	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T Liste", "Zahl"},
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T Listen Referenz und Zahl, gibt eine T Liste zurück, macht:
+	Gib 1 zurück.
+Und kann so benutzt werden:
+	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T Liste", "Zahl"},
+	)
 }
 
 func TestGenericFuncDeclBodyTokens(t *testing.T) {
@@ -525,6 +537,7 @@ func TestGenericFuncDeclContext(t *testing.T) {
 		}
 		return func_decl, given
 	}
+
 	symbols := createSymbols(
 		"i", ddptypes.ZAHL,
 		"bar", &ast.FuncDecl{},

@@ -197,7 +197,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 
 			return Type, false
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
 	}
 
 	return nil, false // unreachable

@@ -152,7 +152,7 @@ func IsGeneric(t Type) bool {
 }
 
 func CastGeneric(t Type) (*GenericType, bool) {
-	t = GetNestedListUnderlying(t)
+	t = GetUnderlying(t)
 	generic, ok := t.(*GenericType)
 	return generic, ok
 }

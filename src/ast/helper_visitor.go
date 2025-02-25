@@ -193,7 +193,10 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	if vis, ok := h.actualVisitor.(FuncDeclVisitor); ok {
 		result = vis.VisitFuncDecl(decl)
 	}
-	return h.visitChildren(result, decl.Body)
+	if decl.Body != nil {
+		return h.visitChildren(result, decl.Body)
+	}
+	return result
 }
 
 func (h *helperVisitor) VisitFuncDef(decl *FuncDef) VisitResult {

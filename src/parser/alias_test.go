@@ -118,7 +118,7 @@ func TestAliasSorter(t *testing.T) {
 	assert.Equal([]ast.Alias{i, k, j, f, e, b, d, c, h, g, a}, aliases)
 }
 
-func TestCreateGenericContext(t *testing.T) {
+func TestGenerateGenericContext(t *testing.T) {
 	assert := assert.New(t)
 	_ = assert
 
@@ -171,6 +171,7 @@ func TestCreateGenericContext(t *testing.T) {
 		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
 		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}, IsReference: false}},
 		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "R"}, IsReference: false}},
+		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}, IsReference: false}},
 	}, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 		"R": structDecl.Type,
@@ -227,6 +228,14 @@ func TestCreateGenericContext(t *testing.T) {
 	assert.Equal("Bar", BarType.String())
 	assert.True(ddptypes.Equal(ddptypes.ZAHL, TType))
 	assert.True(ddptypes.Equal(structDecl.Type, RType))
+	// parameter types should be correctly instantiated
+	c_decl_context, _, _ := context.Symbols.LookupDecl("c")
+	assert.True(ddptypes.Equal(ddptypes.ZAHL, c_decl_context.(*ast.VarDecl).Type))
+	assert.True(ddptypes.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ListType{Underlying: TType}))
+	e_decl_context, e_exists, e_isVar := context.Symbols.LookupDecl("e")
+	assert.True(e_exists)
+	assert.True(e_isVar)
+	assert.True(ddptypes.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, e_decl_context.(*ast.VarDecl).Type))
 
 	assert.Equal("Zahl", TType.String())
 	assert.Equal("Bar", RType.String())
@@ -338,6 +347,45 @@ Und kann so benutzt werden:
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 }
 
+func TestUnifyGenericType(t *testing.T) {
+	assert := assert.New(t)
+
+	typ := unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: ddptypes.ZAHL}, nil)
+	assert.Equal(ddptypes.ZAHL, typ)
+
+	genericTypes := map[string]ddptypes.Type{}
+	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ddptypes.ZAHL, typ)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
+
+	genericTypes = map[string]ddptypes.Type{"T": ddptypes.ZAHL}
+	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ddptypes.ZAHL, typ)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
+
+	genericTypes = map[string]ddptypes.Type{"T": ddptypes.TEXT}
+	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ddptypes.TEXT, typ)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.TEXT}, genericTypes)
+
+	// with lists
+
+	genericTypes = map[string]ddptypes.Type{}
+	typ = unifyGenericType(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}}, genericTypes)
+	assert.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, typ)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
+
+	genericTypes = map[string]ddptypes.Type{}
+	typ = unifyGenericType(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, typ)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ListType{Underlying: ddptypes.ZAHL}}, genericTypes)
+
+	genericTypes = map[string]ddptypes.Type{}
+	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}}, genericTypes)
+	assert.Equal(nil, typ)
+	assert.NotContains(genericTypes, "T")
+}
+
 func TestCheckAlias(t *testing.T) {
 	assert := assert.New(t)
 
@@ -394,4 +442,134 @@ Ende`),
 
 	_, second_instantiation, _ := given.checkAlias(g, true, 0, cached_args)
 	assert.Same(instantiation, second_instantiation)
+
+	// generic test with list types
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 (eine Liste, die aus 1, 2, 3 besteht)`),
+	})
+
+	genericType := &ddptypes.GenericType{Name: "T"}
+	genericFunc = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "bar"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+			{
+				Name: token.Token{Literal: "b"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+			},
+		},
+		Generic: &ast.GenericFuncInfo{
+			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Tokens: scanTokens(t, `:
+Ende`),
+			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
+		},
+	}
+
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+	})
+	g.(*ast.FuncAlias).Func = genericFunc
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.NotNil(instantiation)
+	assert.IsType(&ast.IntLit{}, args["a"])
+	assert.IsType(&ast.Grouping{}, args["b"])
+	assert.IsType(&ast.ListLit{}, args["b"].(*ast.Grouping).Expr)
+
+	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
+	assert.Same(instantiation, second_instantiation)
+
+	// test it with not-working instantiation
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 (eine Liste, die aus "a", "b", "c" besteht)`),
+	})
+
+	genericType = &ddptypes.GenericType{Name: "T"}
+	genericFunc = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "bar"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+			{
+				Name: token.Token{Literal: "b"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+			},
+		},
+		Generic: &ast.GenericFuncInfo{
+			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Tokens: scanTokens(t, `:
+	Speichere a in b an der Stelle 1.
+Ende`),
+			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
+		},
+	}
+
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+	})
+	g.(*ast.FuncAlias).Func = genericFunc
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.NotEmpty(errs)
+
+	// test it with not-working instantiation and recusive generic functions
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo 1 (eine Liste, die aus "a", "b", "c" besteht)`),
+	})
+
+	genericType = &ddptypes.GenericType{Name: "T"}
+	genericFunc = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "bar"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+			},
+			{
+				Name: token.Token{Literal: "b"},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+			},
+		},
+		Generic: &ast.GenericFuncInfo{
+			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Tokens: scanTokens(t, `:
+	Speichere a in b an der Stelle 1.
+Ende`),
+			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
+		},
+	}
+
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL, IsReference: false},
+		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+	})
+	g.(*ast.FuncAlias).Func = genericFunc
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.NotEmpty(errs)
 }

@@ -122,14 +122,33 @@ func (p *parser) alias() ast.Expression {
 		}
 	}
 
-	var mostFitting *ast.Alias
+	createInstantiationError := func(instantiation *ast.FuncDecl, errs []ddperror.Error) ddperror.Error {
+		msg := strings.Builder{}
+		msg.WriteString(fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s':", instantiation.Name()))
+
+		for _, err := range errs {
+			msg.WriteString("\n\t")
+			msg.WriteString(err.String())
+		}
+
+		return ddperror.New(ddperror.SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION, ddperror.LEVEL_ERROR, p.previous().Range, msg.String(), p.module.FileName)
+	}
+
+	type checkAliasResult struct {
+		alias         ast.Alias
+		errs          []ddperror.Error
+		instantiation ast.Declaration
+		args          map[string]ast.Expression
+	}
+
+	var mostFitting *checkAliasResult
 	cached_args := make(map[cachedArgKey]*cachedArg, 4)
 
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
 		args, instantiation, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
-		if args != nil && mostFitting == nil {
-			mostFitting = &matchedAliases[i]
+		if mostFitting == nil {
+			mostFitting = &checkAliasResult{matchedAliases[i], errs, instantiation, args}
 		}
 
 		if args != nil && len(errs) == 0 {
@@ -143,15 +162,20 @@ func (p *parser) alias() ast.Expression {
 	// so we take the longest one (most likely to be wanted)
 	// and "call" it so that the typechecker will report
 	// errors for the arguments
-	if mostFitting == nil {
-		mostFitting = &matchedAliases[0]
+
+	// generic aliases may not be called with typeSensitive = false
+	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) {
+		p.errVal(createInstantiationError(mostFitting.instantiation.(*ast.FuncDecl), mostFitting.errs))
+		p.cur = start
+		return nil
 	}
-	args, instantiation, errs := p.checkAlias(*mostFitting, false, start, cached_args)
+
+	args, instantiation, errs := p.checkAlias(mostFitting.alias, false, start, cached_args)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return callOrLiteralFromAlias(*mostFitting, args, instantiation)
+	return callOrLiteralFromAlias(mostFitting.alias, args, instantiation)
 }
 
 // sorts aliases by
@@ -304,16 +328,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 				didMatch := true
 
-				underlyingParamType := paramType.Type
-				if generic, ok := ddptypes.CastGeneric(paramType.Type); ok {
-					unified := false
-					underlyingParamType, unified = genericTypes[generic.Name]
-
-					if !unified {
-						genericTypes[generic.Name] = typ
-						underlyingParamType = typ
-					}
-				}
+				underlyingParamType := unifyGenericType(typ, paramType, genericTypes)
 
 				if !ddptypes.Equal(typ, underlyingParamType) {
 					didMatch = false
@@ -352,6 +367,46 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 	return args, nil, reported_errors
 }
 
+// helper for checkAlias
+func unifyGenericType(argType ddptypes.Type, paramType ddptypes.ParameterType, genericTypes map[string]ddptypes.Type) ddptypes.Type {
+	instantiatedType, genericType := argType, paramType.Type
+
+	argListType, isArgList := ddptypes.CastList(instantiatedType)
+	paramListType, isParamList := ddptypes.CastList(genericType)
+
+	listDepth := 0
+	for isArgList && isParamList {
+		listDepth++
+		instantiatedType, genericType = argListType.Underlying, paramListType.Underlying
+
+		if ddptypes.IsGeneric(genericType) {
+			break
+		}
+
+		argListType, isArgList = ddptypes.CastList(instantiatedType)
+		paramListType, isParamList = ddptypes.CastList(genericType)
+	}
+
+	if isParamList && !isArgList {
+		return nil
+	}
+
+	if generic, ok := ddptypes.CastGeneric(genericType); ok {
+		unified := false
+		genericType, unified = genericTypes[generic.Name]
+
+		if !unified {
+			genericTypes[generic.Name] = instantiatedType
+			genericType = instantiatedType
+		}
+	}
+
+	for range listDepth {
+		genericType = ddptypes.ListType{Underlying: genericType}
+	}
+	return genericType
+}
+
 // instantiates a generic function with the given types
 // genericTypes maps GenericTypeName -> Type
 // returns the new instantiation and any errors that occured during instatiation
@@ -366,13 +421,14 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	// meaning types must contain the correct type for each parameter
 	for i, param := range genericFunc.Parameters {
 		parameters[i] = param
-		if !ddptypes.IsGeneric(param.Type.Type) {
+		genericType, isGeneric := ddptypes.CastGeneric(param.Type.Type)
+		if !isGeneric {
 			continue
 		}
 
 		var isFuncDecl bool
-		if parameters[i].Type.Type, isFuncDecl = genericTypes[param.Type.Type.String()]; !isFuncDecl {
-			panic(fmt.Errorf("instantiateGenericFunction: parameter %s was not in type map", param.Name.Literal))
+		if parameters[i].Type.Type, isFuncDecl = genericTypes[genericType.String()]; !isFuncDecl {
+			panic(fmt.Errorf("(%v) instantiateGenericFunction: parameter %s was not in type map", p.previous().Range, param.Name.Literal))
 		}
 	}
 
@@ -443,7 +499,7 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 				NameTok:    params[i].Name,
 				IsPublic:   false,
 				Mod:        p.module,
-				Type:       params[i].Type.Type,
+				Type:       ddptypes.GetInstantiatedType(params[i].Type.Type, genericTypes),
 				Range:      token.NewRange(&params[i].Name, &params[i].Name),
 				CommentTok: params[i].Comment,
 			},

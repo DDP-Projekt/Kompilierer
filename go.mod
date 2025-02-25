@@ -1,6 +1,6 @@
 module github.com/DDP-Projekt/Kompilierer
 
-go 1.22.2
+go 1.24
 
 require (
 	github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11

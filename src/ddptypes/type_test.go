@@ -39,23 +39,39 @@ func TestStructurallyEqual(t *testing.T) {
 	}
 }
 
-func TestCastGeneric(t *testing.T) {
+func TestCastDeeplyNestedGeneric(t *testing.T) {
 	assert := assert.New(t)
 
 	generic := &GenericType{}
-	ty, ok := CastGeneric(generic)
+	ty, ok := CastDeeplyNestedGeneric(generic)
 	assert.True(ok)
 	assert.Equal(generic, ty)
 
-	ty, ok = CastGeneric(ZAHL)
+	ty, ok = CastDeeplyNestedGeneric(ZAHL)
 	assert.False(ok)
 	assert.Nil(ty)
 
-	ty, ok = CastGeneric(ListType{Underlying: generic})
+	ty, ok = CastDeeplyNestedGeneric(ListType{Underlying: generic})
 	assert.True(ok)
 	assert.Equal(generic, ty)
 
-	ty, ok = CastGeneric(ListType{Underlying: ListType{Underlying: generic}})
+	ty, ok = CastDeeplyNestedGeneric(ListType{Underlying: ListType{Underlying: generic}})
 	assert.True(ok)
 	assert.Equal(generic, ty)
+}
+
+func TestGetInstantiatedType(t *testing.T) {
+	assert := assert.New(t)
+
+	instantiated := GetInstantiatedType(ZAHL, nil)
+	assert.Equal(ZAHL, instantiated)
+
+	instantiated = GetInstantiatedType(ListType{Underlying: ZAHL}, nil)
+	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
+
+	instantiated = GetInstantiatedType(&GenericType{Name: "T"}, map[string]Type{"T": ZAHL})
+	assert.Equal(ZAHL, instantiated)
+
+	instantiated = GetInstantiatedType(ListType{Underlying: &GenericType{Name: "T"}}, map[string]Type{"T": ZAHL})
+	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
 }

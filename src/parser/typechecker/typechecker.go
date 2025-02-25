@@ -117,10 +117,9 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	initialType := t.Evaluate(decl.InitVal)
 	decl.InitType = initialType
 	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
-		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
-			msg,
+			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
 		)
 	}
 
@@ -264,8 +263,7 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
 			if ty := t.Evaluate(v); !ddptypes.Equal(elementType, ty) {
-				msg := fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
-				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, msg)
+				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
 		expr.Type = ddptypes.ListType{Underlying: elementType}
