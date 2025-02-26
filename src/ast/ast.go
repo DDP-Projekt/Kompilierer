@@ -76,6 +76,9 @@ type (
 	Alias interface {
 		// tokens of the alias
 		GetTokens() []token.Token
+		// tokens of the alias but as slice of *token.Token and without the EOF
+		// this is the slice that is used as keys in the AliasTrie
+		GetKey() []*token.Token
 		// the original string
 		GetOriginal() token.Token
 		// *FuncDecl or *StructDecl
@@ -87,6 +90,7 @@ type (
 	// wrapper for a function alias
 	FuncAlias struct {
 		Tokens   []token.Token                     // tokens of the alias
+		pTokens  []*token.Token                    // cache for GetPTokens
 		Original token.Token                       // the original string
 		Func     *FuncDecl                         // the function it refers to (if it is used outside a FuncDecl)
 		Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
@@ -96,6 +100,7 @@ type (
 	// wrapper for a struct alias
 	StructAlias struct {
 		Tokens   []token.Token            // tokens of the alias
+		pTokens  []*token.Token           // cache for GetPTokens
 		Original token.Token              // the original string
 		Struct   *StructDecl              // the struct decl it refers to
 		Args     map[string]ddptypes.Type // types of the arguments (only those that the alias needs)
@@ -104,6 +109,13 @@ type (
 
 func (alias *FuncAlias) GetTokens() []token.Token {
 	return alias.Tokens
+}
+
+func (alias *FuncAlias) GetKey() []*token.Token {
+	if alias.pTokens == nil {
+		alias.pTokens = toPointerSlice(alias.Tokens[:len(alias.Tokens)-1])
+	}
+	return alias.pTokens
 }
 
 func (alias *FuncAlias) GetOriginal() token.Token {
@@ -120,6 +132,13 @@ func (alias *FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
 
 func (alias *StructAlias) GetTokens() []token.Token {
 	return alias.Tokens
+}
+
+func (alias *StructAlias) GetKey() []*token.Token {
+	if alias.pTokens == nil {
+		alias.pTokens = toPointerSlice(alias.Tokens[:len(alias.Tokens)-1])
+	}
+	return alias.pTokens
 }
 
 func (alias *StructAlias) GetOriginal() token.Token {

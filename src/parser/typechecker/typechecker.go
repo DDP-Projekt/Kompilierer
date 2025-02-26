@@ -18,12 +18,13 @@ import (
 type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
 	CurrentTable       ast.SymbolTable  // SymbolTable of the current scope (needed for name type-checking)
-	latestReturnedType ddptypes.Type    // type of the last visited expression
-	Module             *ast.Module      // the module that is being typechecked
-	panicMode          *bool            // panic mode synchronized with the parser and resolver
+	Operators          ast.OperatorOverloadMap
+	latestReturnedType ddptypes.Type // type of the last visited expression
+	Module             *ast.Module   // the module that is being typechecked
+	panicMode          *bool         // panic mode synchronized with the parser and resolver
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -33,6 +34,7 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
 		CurrentTable:       Mod.Ast.Symbols,
+		Operators:          operators,
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
 		panicMode:          panicMode,
@@ -482,7 +484,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	overloads := t.Module.Operators[ast.CAST_OP]
+	overloads := t.Operators[ast.CAST_OP]
 	if len(overloads) > 0 {
 		// copy of findOverload adjusted to also check the return type
 		for _, overload := range overloads {
@@ -908,7 +910,7 @@ type operand struct {
 }
 
 func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
-	overloads := t.Module.Operators[operator]
+	overloads := t.Operators[operator]
 	if len(overloads) > 0 {
 	overload_loop:
 		for _, overload := range overloads {

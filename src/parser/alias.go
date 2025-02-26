@@ -5,6 +5,7 @@ package parser
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -452,10 +453,11 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		module:          genericFunc.Mod,
 		aliases:         context.Aliases,
 		currentFunction: &decl,
+		Operators:       context.Operators,
 	}
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	declParser.resolver = resolver.New(declParser.module, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
-	declParser.typechecker = typechecker.New(declParser.module, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
+	declParser.resolver = resolver.New(declParser.module, declParser.Operators, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
+	declParser.typechecker = typechecker.New(declParser.module, declParser.Operators, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
 
 	declParser.setScope(context.Symbols)
 
@@ -482,7 +484,7 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 		return t, true
 	})
 	for _, alias := range matched {
-		aliases.Insert(toPointerSlice(alias.GetTokens()), alias)
+		aliases.Insert(alias.GetKey(), alias)
 	}
 
 	symbols := ast.NewSymbolTable(newGenericSymbolTable(p.scope(), fun.Symbols, genericTypes))
@@ -506,8 +508,12 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 		)
 	}
 
+	operators := maps.Clone(p.Operators)
+	maps.Copy(operators, fun.Operators)
+
 	return ast.GenericContext{
-		Symbols: symbols,
-		Aliases: aliases,
+		Symbols:   symbols,
+		Aliases:   aliases,
+		Operators: operators,
 	}
 }

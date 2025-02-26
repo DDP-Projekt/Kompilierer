@@ -71,8 +71,9 @@ type (
 	// to parse an instantiation it has to be merged with the symbols and aliases at
 	// the point of instantiation
 	GenericContext struct {
-		Symbols SymbolTable
-		Aliases AliasTrie
+		Symbols   SymbolTable
+		Aliases   AliasTrie
+		Operators map[Operator][]*FuncDecl
 	}
 
 	// is a statement and not a declaration but grouped in this File with FuncDecl for readability

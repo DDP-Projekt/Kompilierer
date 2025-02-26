@@ -25,13 +25,14 @@ import (
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
 	CurrentTable ast.SymbolTable  // needed state, public for the parser
-	Module       *ast.Module      // the module that is being resolved
-	LoopDepth    uint             // for break and continue statements
-	panicMode    *bool            // panic mode synchronized with the parser and resolver
+	Operators    ast.OperatorOverloadMap
+	Module       *ast.Module // the module that is being resolved
+	LoopDepth    uint        // for break and continue statements
+	panicMode    *bool       // panic mode synchronized with the parser and resolver
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -41,6 +42,7 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: Mod.Ast.Symbols,
+		Operators:    operators,
 		Module:       Mod,
 		panicMode:    panicMode,
 	}

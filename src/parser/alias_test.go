@@ -26,7 +26,7 @@ func scanAlias(t *testing.T, alias string, params map[string]ddptypes.ParameterT
 		}
 	}
 	return &ast.FuncAlias{
-		Tokens:   result[:len(result)-1], // remove EOF
+		Tokens:   result,
 		Original: orig,
 		Args:     params,
 	}
@@ -124,12 +124,20 @@ func TestGenerateGenericContext(t *testing.T) {
 
 	parserAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 	foo_a := scanAlias(t, `ein alias foo`, nil)
-	parserAliases.Insert(toPointerSlice(foo_a.GetTokens()), foo_a)
+	parserAliases.Insert(foo_a.GetKey(), foo_a)
 	baz_a_parser := scanAlias(t, `ein alias baz`, nil)
-	parserAliases.Insert(toPointerSlice(baz_a_parser.GetTokens()), baz_a_parser)
+	parserAliases.Insert(baz_a_parser.GetKey(), baz_a_parser)
+
+	op_decl1 := &ast.FuncDecl{}
+	op_decl2 := &ast.FuncDecl{}
+	op_decl3 := &ast.FuncDecl{}
 
 	given := createParser(t, parser{
 		aliases: parserAliases,
+		Operators: map[ast.Operator][]*ast.FuncDecl{
+			ast.BIN_PLUS:  {op_decl1},
+			ast.BIN_MINUS: {op_decl2},
+		},
 	})
 
 	baz_context := &ast.FuncDecl{}
@@ -147,9 +155,9 @@ func TestGenerateGenericContext(t *testing.T) {
 
 	declContextAliases := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 	bar_a := scanAlias(t, `ein alias bar`, nil)
-	declContextAliases.Insert(toPointerSlice(bar_a.GetTokens()), bar_a)
+	declContextAliases.Insert(bar_a.GetKey(), bar_a)
 	baz_a_declContext := scanAlias(t, `ein alias baz`, nil)
-	declContextAliases.Insert(toPointerSlice(baz_a_declContext.GetTokens()), baz_a_declContext)
+	declContextAliases.Insert(baz_a_declContext.GetKey(), baz_a_declContext)
 
 	structDecl := &ast.StructDecl{
 		Type: &ddptypes.StructType{Name: "Bar"},
@@ -164,6 +172,9 @@ func TestGenerateGenericContext(t *testing.T) {
 			"Bar", structDecl,
 		),
 		Aliases: declContextAliases,
+		Operators: map[ast.Operator][]*ast.FuncDecl{
+			ast.BIN_PLUS: {op_decl3},
+		},
 	}
 
 	context := given.generateGenericContext(declContext, []ast.ParameterInfo{
@@ -179,6 +190,7 @@ func TestGenerateGenericContext(t *testing.T) {
 
 	assert.NotNil(context.Symbols)
 	assert.NotNil(context.Aliases)
+	assert.NotNil(context.Operators)
 
 	a_decl, has_a, _ := context.Symbols.LookupDecl("a")
 	a_decl_given, _, _ := given.scope().LookupDecl("a")
@@ -247,22 +259,22 @@ func TestGenerateGenericContext(t *testing.T) {
 	assert.True(ddptypes.MatchesGender(RType, ddptypes.FEMININ))
 	assert.True(ddptypes.MatchesGender(RType, ddptypes.NEUTRUM))
 
-	has_foo_a, _ := context.Aliases.Contains(toPointerSlice(foo_a.GetTokens()))
-	has_bar_a, _ := context.Aliases.Contains(toPointerSlice(bar_a.GetTokens()))
-	has_baz_a, context_baz_a := context.Aliases.Contains(toPointerSlice(baz_a_parser.GetTokens()))
+	has_foo_a, _ := context.Aliases.Contains(foo_a.GetKey())
+	has_bar_a, _ := context.Aliases.Contains(bar_a.GetKey())
+	has_baz_a, context_baz_a := context.Aliases.Contains(baz_a_parser.GetKey())
 	assert.True(has_foo_a)
 	assert.True(has_bar_a)
 	assert.True(has_baz_a)
 	assert.Same(baz_a_declContext.(*ast.FuncAlias), context_baz_a.(*ast.FuncAlias))
 
 	newAlias := scanAlias(t, `neuer Alias`, nil)
-	context.Aliases.Insert(toPointerSlice(newAlias.GetTokens()), newAlias)
+	context.Aliases.Insert(newAlias.GetKey(), newAlias)
 
-	has_new_alias, _ := given.aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	has_new_alias, _ := given.aliases.Contains(newAlias.GetKey())
 	assert.False(has_new_alias)
-	has_new_alias, _ = declContext.Aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	has_new_alias, _ = declContext.Aliases.Contains(newAlias.GetKey())
 	assert.False(has_new_alias)
-	has_new_alias, _ = context.Aliases.Contains(toPointerSlice(newAlias.GetTokens()))
+	has_new_alias, _ = context.Aliases.Contains(newAlias.GetKey())
 	assert.True(has_new_alias)
 
 	// inserting into the context should not change the parser or declContext tables
@@ -273,6 +285,19 @@ func TestGenerateGenericContext(t *testing.T) {
 	assert.False(existed)
 	_, existed, _ = context.Symbols.LookupDecl("new")
 	assert.True(existed)
+
+	// assert operators
+	assert.ElementsMatch([]*ast.FuncDecl{op_decl2}, context.Operators[ast.BIN_MINUS])
+	assert.ElementsMatch([]*ast.FuncDecl{op_decl2}, context.Operators[ast.BIN_PLUS])
+
+	assert.NotEmpty(given.Operators[ast.BIN_PLUS])
+	assert.NotEmpty(declContext.Operators[ast.BIN_PLUS])
+	clear(declContext.Operators[ast.BIN_PLUS])
+	assert.NotEmpty(given.Operators[ast.BIN_PLUS])
+	assert.NotEmpty(declContext.Operators[ast.BIN_PLUS])
+	context.Operators[ast.BIN_PLUS] = []*ast.FuncDecl{}
+	assert.NotEmpty(given.Operators[ast.BIN_PLUS])
+	assert.NotEmpty(declContext.Operators[ast.BIN_PLUS])
 }
 
 func TestInstantiateGenericFunction(t *testing.T) {
@@ -611,7 +636,7 @@ Ende`),
 		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: true},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
-	given.aliases.Insert(toPointerSlice(g.GetTokens()), g)
+	given.aliases.Insert(g.GetKey(), g)
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
 	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)

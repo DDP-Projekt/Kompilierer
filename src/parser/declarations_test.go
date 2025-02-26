@@ -61,6 +61,7 @@ func createParser(test *testing.T, overrider parser) *parser {
 			Faulty:     overrider.module.Ast.Faulty,
 		},
 		PublicDecls: NotNilMap(overrider.module.PublicDecls),
+		Operators:   NotNilMap(overrider.module.Operators),
 	}
 
 	errorHandler := overrider.errorHandler
@@ -83,9 +84,10 @@ func createParser(test *testing.T, overrider parser) *parser {
 		errored:               overrider.errored,
 		resolver:              overrider.resolver,
 		typechecker:           overrider.typechecker,
+		Operators:             NotNilMap(overrider.Operators),
 	}
-	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
-	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, errorHandler, parser.module.FileName, &parser.panicMode))
+	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, parser.Operators, errorHandler, parser.module.FileName, &parser.panicMode))
+	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, parser.Operators, errorHandler, parser.module.FileName, &parser.panicMode))
 
 	return &parser
 }
@@ -217,7 +219,7 @@ func TestTypeAliasDeclError(t *testing.T) {
 				},
 			},
 		},
-	}, func(err ddperror.Error) {
+	}, nil, func(err ddperror.Error) {
 		assert.Equal(ddperror.SEM_BAD_PUBLIC_MODIFIER, err.Code)
 	}, t.Name(), &panicMode)
 
@@ -562,7 +564,7 @@ Und kann so benutzt werden:
 		"a": {Type: decl.Generic.Types["T"], IsReference: false},
 	})
 
-	exists, alias := given.aliases.Contains(toPointerSlice(foo_alias.GetTokens()))
+	exists, alias := given.aliases.Contains(foo_alias.GetKey())
 	assert.True(exists)
 	assert.Equal(decl, alias.Decl())
 }

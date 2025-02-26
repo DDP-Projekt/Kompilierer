@@ -50,6 +50,8 @@ type parser struct {
 	resolver *resolver.Resolver
 	// used to typecheck every node directly after it has been parsed
 	typechecker *typechecker.Typechecker
+	// map of all overloads for all operators
+	Operators ast.OperatorOverloadMap
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -105,7 +107,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 				Faulty:     false,
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
-			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
+			Operators:   nil,
 		},
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
@@ -115,6 +117,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 		errored:               false,
 		resolver:              nil,
 		typechecker:           nil,
+		Operators:             make(map[ast.Operator][]*ast.FuncDecl, 8),
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
@@ -127,8 +130,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	parser.resolver = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode)
-	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode)
+	parser.resolver = resolver.New(parser.module, parser.Operators, parser.errorHandler, name, &parser.panicMode)
+	parser.typechecker = typechecker.New(parser.module, parser.Operators, parser.errorHandler, name, &parser.panicMode)
 
 	return parser
 }
@@ -146,6 +149,7 @@ func (p *parser) parse() *ast.Module {
 
 	p.validateForwardDecls()
 
+	p.module.Operators = p.Operators
 	p.module.Ast.Faulty = p.errored
 	return p.module
 }
@@ -422,7 +426,7 @@ func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
 // checks wether the alias already exists AND has a value attached to it
 // returns (aliasExists, isFuncAlias, alias, pTokens)
 func (p *parser) aliasExists(alias []token.Token) (bool, bool, ast.Alias, []*token.Token) {
-	pTokens := toPointerSlice(alias[:len(alias)-1])
+	pTokens := toPointerSlice(alias[:len(alias)-1]) // -1 to remove EOF
 	if ok, alias := p.aliases.Contains(pTokens); ok {
 		_, isFun := alias.(*ast.FuncAlias)
 		return alias != nil, isFun, alias, pTokens
@@ -450,7 +454,7 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 }
 
 func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
-	overloads := p.module.Operators[decl.Operator]
+	overloads := p.Operators[decl.Operator]
 
 	valid := true
 	for _, overload := range overloads {
@@ -482,6 +486,6 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 		})
 
 		overloads = slices.Insert(overloads, i, decl)
-		p.module.Operators[decl.Operator] = overloads
+		p.Operators[decl.Operator] = overloads
 	}
 }

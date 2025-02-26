@@ -117,3 +117,11 @@ func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declarat
 		}
 	}
 }
+
+func toPointerSlice[T any](slice []T) []*T {
+	result := make([]*T, len(slice))
+	for i := range slice {
+		result[i] = &slice[i]
+	}
+	return result
+}
