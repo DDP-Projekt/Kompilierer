@@ -2,9 +2,11 @@
 package scanner
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
@@ -166,6 +168,11 @@ func (s *Scanner) scanEscape(quote rune) bool {
 		s.advance()
 		return true
 	default:
+		d := s.peekNext()
+		esc := fmt.Sprintf("<U+%04v>", d)
+		if unicode.IsPrint(d) {
+			esc = string(d)
+		}
 		s.err(
 			ddperror.UNKNOWN_ESCAPE_SEQ,
 			token.Range{
@@ -178,7 +185,7 @@ func (s *Scanner) scanEscape(quote rune) bool {
 					Column: s.column + 2,
 				},
 			},
-			s.peekNext(),
+			esc,
 		)
 		return false
 	}

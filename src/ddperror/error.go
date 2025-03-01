@@ -188,7 +188,7 @@ const (
 func (c ErrorCode) ErrorMessage(a ...any) string {
 	return fmt.Sprintf([]string{
 		"Nach einem Punkt muss ein Großbuchstabe folgen",
-		"Unbekannte Escape Sequenz '\\%v'",
+		"Unbekannte Escape Sequenz: '\\%s'",
 		"Ein Buchstaben Literal darf nur einen Buchstaben enthalten",
 		"Ungültiger Datei Typ (nicht .ddp)",
 		"Ungültiger Parameter Name",
