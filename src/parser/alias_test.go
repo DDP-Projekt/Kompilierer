@@ -370,6 +370,7 @@ Und kann so benutzt werden:
 	assert.NotNil(instantiation)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
+	assert.Same(decl, instantiation.GenericDecl)
 }
 
 func TestUnifyGenericType(t *testing.T) {
@@ -464,9 +465,11 @@ Ende`),
 	assert.NotNil(instantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.IntLit{}, args["b"])
+	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
 
 	_, second_instantiation, _ := given.checkAlias(g, true, 0, cached_args)
 	assert.Same(instantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
 
 	// generic test with list types
 
@@ -512,9 +515,11 @@ Ende`),
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Grouping{}, args["b"])
 	assert.IsType(&ast.ListLit{}, args["b"].(*ast.Grouping).Expr)
+	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
 
 	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
 	assert.Same(instantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
 
 	// test it with not-working instantiation
 
@@ -645,7 +650,9 @@ Ende`),
 	assert.NotNil(instantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Ident{}, args["b"])
+	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
 
 	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
 	assert.Same(instantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
 }

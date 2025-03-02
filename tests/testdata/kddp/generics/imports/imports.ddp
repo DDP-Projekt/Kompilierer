@@ -1,0 +1,5 @@
+Binde "decl" ein.
+Binde "Duden/Ausgabe" ein.
+
+Schreibe (foo 2) auf eine Zeile.
+Schreibe (foo 2,0) auf eine Zeile.

@@ -420,12 +420,8 @@ func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 }
 
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
-	r.setScope(stmt.Body.Symbols)
-	// only visit the InitVal because the variable is already in the scope
-	r.visit(stmt.Initializer.InitVal)
 	r.visit(stmt.In)
-	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
-	r.exitScope()
+	// no need to visit anything else, because the body was already visited and In is outside the body scope
 	return ast.VisitRecurse
 }
 

@@ -297,9 +297,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 						reported_errors = append(reported_errors, err)
 						cached_arg.Errors = append(cached_arg.Errors, err)
 					},
-					module: &ast.Module{
-						FileName: p.module.FileName,
-					},
+					module:      p.module,
 					aliases:     p.aliases,
 					resolver:    p.resolver,
 					typechecker: p.typechecker,
@@ -443,6 +441,8 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	decl.Parameters = parameters
 	decl.ReturnType = returnType
 	decl.Generic = nil
+	decl.GenericDecl = genericFunc
+	decl.Mod = p.module
 
 	context := p.generateGenericContext(genericFunc.Generic.Context, parameters, genericTypes)
 

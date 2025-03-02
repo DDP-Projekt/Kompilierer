@@ -166,11 +166,18 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		return mangledName.(string)
 	}
 
+	declName := decl.Name()
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		// extern functions may not be name-mangled
 		if ast.IsExternFunc(decl) || decl.IsExternVisible {
 			return decl.Name()
+		}
+		if ast.IsGenericInstantiation(decl) {
+			declName += "_generic_"
+			for _, p := range decl.Parameters {
+				declName += strings.ReplaceAll(p.Type.Type.String(), " ", "_")
+			}
 		}
 	case *ast.VarDecl:
 		if decl.IsExternVisible {
@@ -180,7 +187,7 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		// do nothing
 	}
 
-	mangledName := mangledNameBase(decl.Name(), decl.Module())
+	mangledName := mangledNameBase(declName, decl.Module())
 	mangledNamesCacheDecl.Store(decl, mangledName)
 	return mangledName
 }

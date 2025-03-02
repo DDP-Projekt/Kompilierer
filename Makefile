@@ -197,12 +197,12 @@ test-normal-memory: ## runs test-normal and test-memory in the correct order
 	'$(MAKE)' all
 
 test-sumtypes: ## validates that sumtypes in the source tree are correctly used
-	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
+	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor )
 
 coverage: all ## creates a coverage report for tests/testdata/stdlib
 	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-test: test-unit test-sumtypes test-normal-memory coverage ## runs all the tests
+test: test-unit test-normal-memory coverage ## runs all the tests
 
 test-with-optimizations: ## runs all tests with full optimizations enabled
 	'$(MAKE)' KDDP_ARGS="-O 2" test

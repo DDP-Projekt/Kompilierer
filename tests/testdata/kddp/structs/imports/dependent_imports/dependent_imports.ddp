@@ -2,5 +2,15 @@ Binde "Duden/Ausgabe" ein.
 Binde Vektor3 und vek aus "decls" ein.
 Binde "decls2" ein.
 
+Die öffentliche Funktion foo gibt nichts zurück, macht:
+	Schreibe "foo von hier" auf eine Zeile.
+Und kann so benutzt werden:
+	"wird nicht benutzt"
+
+Die öffentliche Zahl bar ist 66.
+
 Schreibe (x von vek von vek von vek) auf eine Zeile.
 Schreibe (z von eine neue Struktur) auf eine Zeile.
+Schreibe (z2 von eine neue Struktur) auf eine Zeile.
+Wird nicht benutzt.
+Schreibe bar auf eine Zeile.

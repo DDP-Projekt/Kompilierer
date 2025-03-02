@@ -1,0 +1,19 @@
+Binde "Duden/Ausgabe" ein.
+
+Die generische Funktion Tausche mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Das T temp ist a.
+	Speichere b in a.
+	Speichere temp in b.
+Und kann so benutzt werden:
+	"Tausche <a> und <b>"
+
+Die Zahl z ist 1.
+Die Zahl z2 ist 2.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+
+Tausche z und z2.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.

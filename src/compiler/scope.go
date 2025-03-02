@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/llir/llvm/ir/value"
 )
 
@@ -14,26 +15,30 @@ type varwrapper struct {
 
 // wraps local variables of a scope + the enclosing scope
 type scope struct {
-	enclosing   *scope                // enclosing scope, nil if it is the global scope
-	variables   map[string]varwrapper // variables in this scope
-	temporaries []varwrapper          // intermediate values that need to be freed when the scope ends
+	enclosing   *scope                      // enclosing scope, nil if it is the global scope
+	variables   map[*ast.VarDecl]varwrapper // variables in this scope
+	temporaries []varwrapper                // intermediate values that need to be freed when the scope ends
 }
 
 // create a new scope in the enclosing scope
 func newScope(enclosing *scope) *scope {
 	return &scope{
 		enclosing: enclosing,
-		variables: make(map[string]varwrapper),
+		variables: make(map[*ast.VarDecl]varwrapper),
 	}
+}
+
+func (s *scope) isGlobalScope() bool {
+	return s.enclosing == nil
 }
 
 // returns the named variable
 // if not present the enclosing scopes are checked
 // until the global scope
-func (s *scope) lookupVar(name string) varwrapper {
-	if v, ok := s.variables[name]; !ok {
+func (s *scope) lookupVar(decl *ast.VarDecl) varwrapper {
+	if v, ok := s.variables[decl]; !ok {
 		if s.enclosing != nil {
-			return s.enclosing.lookupVar(name)
+			return s.enclosing.lookupVar(decl)
 		}
 		return varwrapper{val: nil, typ: nil} // variable doesn't exist (should not happen, resolver should take care of that)
 	} else {
@@ -42,13 +47,13 @@ func (s *scope) lookupVar(name string) varwrapper {
 }
 
 // add a variable to the scope
-func (scope *scope) addVar(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
+func (scope *scope) addVar(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
 	return val
 }
 
-func (scope *scope) addProtected(name string, val value.Value, ty ddpIrType, isRef bool) value.Value {
-	scope.variables[name] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
+func (scope *scope) addProtected(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
 	return val
 }
 

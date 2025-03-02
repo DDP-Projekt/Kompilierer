@@ -56,6 +56,7 @@ type (
 		ExternFile      token.Token      // string literal with filepath (only pesent if Body is nil)
 		Operator        Operator         // the operator this function overloads, or nil if it does not overload an operator
 		Generic         *GenericFuncInfo // only filled if the function was declared as generic
+		GenericDecl     *FuncDecl        // non-nil if this decl is a instantiation of a generic function
 		Aliases         []*FuncAlias
 	}
 
