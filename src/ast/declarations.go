@@ -35,6 +35,7 @@ type (
 		TypeRange       token.Range   // range of the type (mainly used by the LSP)
 		IsPublic        bool          // wether the function is marked with öffentliche
 		IsExternVisible bool          // wether the variable is marked as extern visible
+		IsGlobal        bool          // wether this is a global variable
 		Mod             *Module       // the module in which the variable was declared
 		InitVal         Expression    // initial value
 		InitType        ddptypes.Type // type of InitVal, filled in by the typechecker, used to keep information about typedefs

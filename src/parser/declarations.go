@@ -243,6 +243,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		TypeRange:       token.NewRange(type_start, type_end),
 		IsPublic:        isPublic,
 		IsExternVisible: isExternVisible,
+		IsGlobal:        ast.IsGlobalScope(p.scope()),
 		Mod:             p.module,
 		InitVal:         expr,
 	}

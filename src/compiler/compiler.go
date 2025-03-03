@@ -676,7 +676,7 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	if e.Declaration.Module() != c.ddpModule {
+	if e.Declaration.(*ast.VarDecl).IsGlobal && e.Declaration.Module() != c.ddpModule {
 		c.declareImportedVarDecl(e.Declaration.(*ast.VarDecl))
 	}
 
@@ -1862,20 +1862,22 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
+	mangledName := c.mangledNameDecl(e.Func)
+	_, ok := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
+	needsInstantiation := !ok && ast.IsGenericInstantiation(e.Func)
+
+	if needsInstantiation {
+		c.VisitFuncDecl(e.Func)
+	}
+
 	// declare the function if it is imported
 	// this is needed so that plain expressions from other modules
 	// (i.e. struct literals) work
-	if e.Func.Module() != c.ddpModule {
+	if !needsInstantiation && e.Func.Module() != c.ddpModule {
 		c.declareImportedFuncDecl(e.Func)
 	}
 
-	mangledName := c.mangledNameDecl(e.Func)
-	fun, ok := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
-
-	if !ok && ast.IsGenericInstantiation(e.Func) {
-		c.VisitFuncDecl(e.Func)
-		fun = c.functions[mangledName]
-	}
+	fun := c.functions[mangledName]
 
 	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
 
