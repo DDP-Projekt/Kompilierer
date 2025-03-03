@@ -584,7 +584,7 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 
 // helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
 func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params []*ir.Param, decl *ast.FuncDecl) {
-	fun, block := c.cf, c.cbb // safe the state before the function body
+	fun, block, cfscp := c.cf, c.cbb, c.cfscp // safe the state before the function body
 	c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 	c.cfscp = c.scp
 
@@ -647,7 +647,7 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	} else {
 		c.scp = c.exitFuncScope(decl)
 	}
-	c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
+	c.cf, c.cbb, c.cfscp = fun, block, cfscp // restore state before the function (to main)
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
