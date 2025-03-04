@@ -282,8 +282,7 @@ func (s *Scanner) identifier(start rune) token.Token {
 }
 
 func (s *Scanner) identifierType() token.TokenType {
-	lit := string(s.src[s.start:s.cur])
-
+	lit := strings.Trim(string(s.src[s.start:s.cur]), "<>")
 	tokenType := token.KeywordToTokenType(lit)
 	if tokenType == token.IDENTIFIER {
 		litTokenType := token.KeywordToTokenType(strings.ToLower(lit))
@@ -297,7 +296,9 @@ func (s *Scanner) identifierType() token.TokenType {
 
 // helper to scan the <argname> in aliases
 func (s *Scanner) aliasParameter() token.Token {
-	if !isAlpha(s.peek()) {
+	// first symbol can't be number
+	// and check for '>' to let OPEN_PARAMETER error occur
+	if s.peek() != '>' && !isAlpha(s.peek()) {
 		s.err(ddperror.INVALID_PARAMETER_NAME, s.currentRange())
 	}
 
@@ -313,7 +314,7 @@ func (s *Scanner) aliasParameter() token.Token {
 		s.advance() // consume the closing >
 	}
 
-	if s.cur-s.start <= 2 && !s.atEnd() {
+	if s.cur-s.start <= 2 {
 		s.err(ddperror.EMPTY_PARAMETER, s.currentRange())
 	}
 
@@ -432,7 +433,7 @@ func (s *Scanner) peekNext() rune {
 func (s *Scanner) err(code ddperror.ErrorCode, Range token.Range, a ...any) {
 	e := ddperror.NewError(code, Range, s.file, a...)
 	if s.aliasMode() {
-		e = ddperror.NewError(ddperror.ALIAS_ERROR, Range, s.file, string(s.src), a)
+		e = ddperror.NewError(ddperror.ALIAS_ERROR, Range, s.file, string(s.src), code.ErrorMessage(a...))
 	}
 	s.errorHandler(e)
 }
