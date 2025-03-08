@@ -1,5 +1,7 @@
 package ddptypes
 
+import "slices"
+
 // enum Type for the grammatical gender of a type
 type GrammaticalGender int
 
@@ -35,12 +37,7 @@ func MatchesGender(t Type, genders ...GrammaticalGender) bool {
 		return true
 	}
 
-	for _, gender := range genders {
-		if t.Gender() == gender {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(genders, t.Gender())
 }
 
 // checks wether t1 equals t2,

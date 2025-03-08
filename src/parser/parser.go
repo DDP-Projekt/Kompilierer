@@ -456,7 +456,6 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	overloads := p.Operators[decl.Operator]
 
-	valid := true
 	for _, overload := range overloads {
 		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
 			// the als Operator is also differentiated by it's return type
@@ -465,27 +464,35 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 			}
 
 			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
-			valid = false
+			return
 		}
 	}
 
-	if valid {
-		// keep the slice sorted in descending order, so that references are prioritized
-		i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
-			countRefArgs := func(params []ast.ParameterInfo) int {
-				result := 0
-				for i := range params {
-					if params[i].Type.IsReference {
-						result++
-					}
+	// keep the slice sorted in descending order, so that references are prioritized
+	i, _ := slices.BinarySearchFunc(overloads, decl, func(a, b *ast.FuncDecl) int {
+		countRefAndGenericArgs := func(params []ast.ParameterInfo) (refs, gen int) {
+			for i := range params {
+				if params[i].Type.IsReference {
+					refs++
 				}
-				return result
+				if ddptypes.IsGeneric(params[i].Type.Type) {
+					gen++
+				}
 			}
+			return refs, gen
+		}
 
-			return countRefArgs(t.Parameters) - countRefArgs(a.Parameters)
-		})
+		refsA, genA := countRefAndGenericArgs(a.Parameters)
+		refsB, genB := countRefAndGenericArgs(b.Parameters)
 
-		overloads = slices.Insert(overloads, i, decl)
-		p.Operators[decl.Operator] = overloads
-	}
+		// TODO
+		if refsA != refsB {
+			return refsB - refsA
+		}
+
+		return genB - genA
+	})
+
+	overloads = slices.Insert(overloads, i, decl)
+	p.Operators[decl.Operator] = overloads
 }

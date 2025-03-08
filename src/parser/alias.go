@@ -182,7 +182,7 @@ func (p *parser) alias() ast.Expression {
 // sorts aliases by
 //   - their length
 //   - how many reference parameters they take
-//   - how many generic parameters they take (TODO)
+//   - how many generic parameters they take
 func sortAliases(matchedAliases []ast.Alias) {
 	sort.Slice(matchedAliases, func(i, j int) bool {
 		toksi, toksj := matchedAliases[i].GetTokens(), matchedAliases[j].GetTokens()
@@ -191,7 +191,6 @@ func sortAliases(matchedAliases []ast.Alias) {
 		}
 
 		// Sort by functions that take references up and generics down
-		// TODO: improve this heuristic
 
 		countRefAndGenericArgs := func(params map[string]ddptypes.ParameterType) (refs, gen int) {
 			for _, paramType := range params {
