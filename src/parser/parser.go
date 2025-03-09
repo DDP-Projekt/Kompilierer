@@ -459,7 +459,7 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	for _, overload := range overloads {
 		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
 			// the als Operator is also differentiated by it's return type
-			if decl.Operator == ast.CAST_OP && !ddptypes.Equal(decl.ReturnType, overload.ReturnType) {
+			if decl.Operator == ast.CAST_OP && !operatorReturnTypeEqual(overload.ReturnType, decl.ReturnType) {
 				continue
 			}
 
@@ -469,7 +469,7 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	}
 
 	// keep the slice sorted in descending order, so that references are prioritized
-	i, _ := slices.BinarySearchFunc(overloads, decl, func(a, b *ast.FuncDecl) int {
+	i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
 		countRefAndGenericArgs := func(params []ast.ParameterInfo) (refs, gen int) {
 			for i := range params {
 				if params[i].Type.IsReference {
@@ -483,14 +483,13 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 		}
 
 		refsA, genA := countRefAndGenericArgs(a.Parameters)
-		refsB, genB := countRefAndGenericArgs(b.Parameters)
+		refsT, genT := countRefAndGenericArgs(t.Parameters)
 
-		// TODO
-		if refsA != refsB {
-			return refsB - refsA
+		if genA != genT {
+			return genA - genT // the more generics the "greater"
 		}
 
-		return genB - genA
+		return refsT - refsA // the more refs the "smaller"
 	})
 
 	overloads = slices.Insert(overloads, i, decl)
