@@ -44,3 +44,9 @@ Schreibe (z von vec3) auf eine Zeile.
 
 Schreibe (z von vec3 plus 3) auf eine Zeile.
 Schreibe (x von basis von vec3 plus y von basis von vec3) auf eine Zeile.
+Wir nennen die Kombination aus
+	dem Text t mit Standardwert "hi",
+eine Struktur, und erstellen sie so:
+	"einer Struktur"
+
+Schreibe (t von einer Struktur) auf eine Zeile.
