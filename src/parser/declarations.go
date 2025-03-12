@@ -201,14 +201,18 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	name := p.previous()
+	has_init_value := true
 	if isField {
-		p.consumeSeq(token.MIT, token.STANDARDWERT)
+		has_init_value = p.matchAny(token.MIT)
+		if has_init_value {
+			p.consumeAny(token.STANDARDWERT)
+		}
 	} else {
 		p.consumeSeq(token.IST)
 	}
 	var expr ast.Expression
 
-	if !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
+	if has_init_value && !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.matchAny(token.COUNT_MAL) {
 			value := p.expression()
@@ -222,7 +226,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 				Value:  value,
 			}
 		}
-	} else {
+	} else if has_init_value {
 		expr = p.assignRhs(false)
 	}
 

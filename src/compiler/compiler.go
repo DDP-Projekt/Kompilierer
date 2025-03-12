@@ -1952,11 +1952,17 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 	resultType := c.toIrType(structType)
 	result := c.NewAlloca(resultType.IrType())
 	for i, field := range structType.Fields {
-		initType := structDecl.Fields[i].(*ast.VarDecl).InitType
-		argExpr := structDecl.Fields[i].(*ast.VarDecl).InitVal
+		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
+		initType := fieldDecl.InitType
+		argExpr := fieldDecl.InitVal
 		if fieldArg, hasArg := args[field.Name]; hasArg {
 			// the arg was passed so use that instead
 			argExpr = fieldArg
+		}
+
+		// if no default value was given
+		if argExpr == nil {
+			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: fieldDecl.Type}
 		}
 
 		argVal, argType, isTempArg := c.evaluate(argExpr)

@@ -147,7 +147,9 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 
 	for _, field := range decl.Fields {
 		if varDecl, isVar := field.(*ast.VarDecl); isVar {
-			r.visit(varDecl.InitVal)
+			if varDecl.InitVal != nil {
+				r.visit(varDecl.InitVal)
+			}
 		} else { // BadDecl
 			r.visit(field)
 		}
