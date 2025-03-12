@@ -946,7 +946,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn, c.latestIsTemp = fieldPtr, false
 			} else {
 				dest := c.NewAlloca(fieldType.IrType())
-				c.cbb.NewStore(fieldPtr, dest)
+				c.cbb.NewStore(c.cbb.NewLoad(fieldType.IrType(), fieldPtr), dest)
 				c.cbb.NewStore(fieldType.DefaultValue(), fieldPtr)
 				c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
 				c.latestIsTemp = true
