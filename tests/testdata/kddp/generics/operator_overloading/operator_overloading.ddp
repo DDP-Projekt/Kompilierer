@@ -1,0 +1,28 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl z mit Standardwert 0,
+	dem Text t mit Standardwert "hi",
+eine Struktur, und erstellen sie so:
+	"eine Struktur mit z gleich <z>"
+
+Die generische Funktion foo mit den Parametern a und b vom Typ T und T, gibt eine Zahl zurück, macht:
+	Gib z von a plus z von b zurück.
+Und überlädt den "plus" Operator.
+
+Die Struktur a ist eine Struktur mit z gleich 2.
+Die Struktur b ist eine Struktur mit z gleich 3.
+
+Schreibe (a plus b) auf eine Zeile.
+Schreibe (a plus b) auf eine Zeile. [ second time should give same result ]
+
+Die generische Funktion bar mit dem Parameter a vom Typ T, gibt eine Zahl zurück, macht:
+	Gib z von a zurück.
+Und überlädt den "als" Operator.
+
+Die generische Funktion baz mit dem Parameter a vom Typ T, gibt einen Text zurück, macht:
+	Gib t von a zurück.
+Und überlädt den "als" Operator.
+
+Schreibe (a als Zahl) auf eine Zeile.
+Schreibe (a als Text) auf eine Zeile.

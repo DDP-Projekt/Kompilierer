@@ -326,7 +326,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 				didMatch := true
 
-				underlyingParamType := unifyGenericType(typ, paramType, genericTypes)
+				underlyingParamType := ddptypes.UnifyGenericType(typ, paramType, genericTypes)
 
 				if !ddptypes.Equal(typ, underlyingParamType) {
 					didMatch = false
@@ -357,7 +357,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 			returnType = genericTypes[generic.Name]
 		}
 
-		instantiation, errs := p.instantiateGenericFunction(funcDecl, genericTypes, returnType)
+		instantiation, errs := p.InstantiateGenericFunction(funcDecl, genericTypes, returnType)
 		reported_errors = append(reported_errors, errs...)
 		return args, instantiation, reported_errors
 	}
@@ -365,50 +365,10 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 	return args, nil, reported_errors
 }
 
-// helper for checkAlias
-func unifyGenericType(argType ddptypes.Type, paramType ddptypes.ParameterType, genericTypes map[string]ddptypes.Type) ddptypes.Type {
-	instantiatedType, genericType := argType, paramType.Type
-
-	argListType, isArgList := ddptypes.CastList(instantiatedType)
-	paramListType, isParamList := ddptypes.CastList(genericType)
-
-	listDepth := 0
-	for isArgList && isParamList {
-		listDepth++
-		instantiatedType, genericType = argListType.Underlying, paramListType.Underlying
-
-		if ddptypes.IsGeneric(genericType) {
-			break
-		}
-
-		argListType, isArgList = ddptypes.CastList(instantiatedType)
-		paramListType, isParamList = ddptypes.CastList(genericType)
-	}
-
-	if isParamList && !isArgList {
-		return nil
-	}
-
-	if generic, ok := ddptypes.CastGeneric(genericType); ok {
-		unified := false
-		genericType, unified = genericTypes[generic.Name]
-
-		if !unified {
-			genericTypes[generic.Name] = instantiatedType
-			genericType = instantiatedType
-		}
-	}
-
-	for range listDepth {
-		genericType = ddptypes.ListType{Underlying: genericType}
-	}
-	return genericType
-}
-
 // instantiates a generic function with the given types
 // genericTypes maps GenericTypeName -> Type
 // returns the new instantiation and any errors that occured during instatiation
-func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
+func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
 	if !ast.IsGeneric(genericFunc) {
 		panic("tried to instantiate non-generic function")
 	}
@@ -455,8 +415,8 @@ func (p *parser) instantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		Operators:       context.Operators,
 	}
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	declParser.resolver = resolver.New(declParser.module, declParser.Operators, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
-	declParser.typechecker = typechecker.New(declParser.module, declParser.Operators, declParser.errorHandler, genericFunc.Mod.FileName, &declParser.panicMode)
+	declParser.resolver = resolver.New(declParser.module, declParser.Operators, declParser.errorHandler, &declParser.panicMode)
+	declParser.typechecker = typechecker.New(declParser.module, declParser.Operators, declParser.errorHandler, declParser, &declParser.panicMode)
 
 	declParser.setScope(context.Symbols)
 

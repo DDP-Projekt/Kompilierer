@@ -32,7 +32,7 @@ type Resolver struct {
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, panicMode *bool) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}

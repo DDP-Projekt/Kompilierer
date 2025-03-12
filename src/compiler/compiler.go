@@ -497,7 +497,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 			}
 
-			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
+			initVal, _, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
 		}
 
 		c.claimOrCopy(varLocation, initVal, Typ, isTemp)

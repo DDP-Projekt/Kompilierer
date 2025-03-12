@@ -22,6 +22,46 @@ func CastDeeplyNestedGeneric(t Type) (*GenericType, bool) {
 	return generic, ok
 }
 
+// helper to unify generic types in a loop
+func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[string]Type) Type {
+	instantiatedType, genericType := argType, paramType.Type
+
+	argListType, isArgList := CastList(instantiatedType)
+	paramListType, isParamList := CastList(genericType)
+
+	listDepth := 0
+	for isArgList && isParamList {
+		listDepth++
+		instantiatedType, genericType = argListType.Underlying, paramListType.Underlying
+
+		if IsGeneric(genericType) {
+			break
+		}
+
+		argListType, isArgList = CastList(instantiatedType)
+		paramListType, isParamList = CastList(genericType)
+	}
+
+	if isParamList && !isArgList {
+		return nil
+	}
+
+	if generic, ok := CastGeneric(genericType); ok {
+		unified := false
+		genericType, unified = genericTypes[generic.Name]
+
+		if !unified {
+			genericTypes[generic.Name] = instantiatedType
+			genericType = instantiatedType
+		}
+	}
+
+	for range listDepth {
+		genericType = ListType{Underlying: genericType}
+	}
+	return genericType
+}
+
 // represents a resolved generic type that is used during parsing of the generic function
 type InstantiatedGenericType struct {
 	Actual Type

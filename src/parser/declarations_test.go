@@ -86,8 +86,8 @@ func createParser(test *testing.T, overrider parser) *parser {
 		typechecker:           overrider.typechecker,
 		Operators:             NotNilMap(overrider.Operators),
 	}
-	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, parser.Operators, errorHandler, parser.module.FileName, &parser.panicMode))
-	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, parser.Operators, errorHandler, parser.module.FileName, &parser.panicMode))
+	parser.resolver = cmp.Or(parser.resolver, resolver.New(parser.module, parser.Operators, errorHandler, &parser.panicMode))
+	parser.typechecker = cmp.Or(parser.typechecker, typechecker.New(parser.module, parser.Operators, errorHandler, &parser, &parser.panicMode))
 
 	return &parser
 }
@@ -221,7 +221,7 @@ func TestTypeAliasDeclError(t *testing.T) {
 		},
 	}, nil, func(err ddperror.Error) {
 		assert.Equal(ddperror.SEM_BAD_PUBLIC_MODIFIER, err.Code)
-	}, t.Name(), &panicMode)
+	}, nil, &panicMode)
 
 	given.TypecheckNode(&ast.TypeAliasDecl{
 		IsPublic:   true,

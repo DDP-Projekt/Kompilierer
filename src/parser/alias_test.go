@@ -314,7 +314,7 @@ Und kann so benutzt werden:
 	decl_stmt := given.declaration()
 	decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
 
-	instantiation, errors := given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+	instantiation, errors := given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 	}, ddptypes.ZAHL)
 
@@ -323,7 +323,7 @@ Und kann so benutzt werden:
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
-	instantiation, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.KOMMAZAHL,
 	}, ddptypes.KOMMAZAHL)
 
@@ -332,7 +332,7 @@ Und kann so benutzt werden:
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
-	second_instantiation, errors := given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+	second_instantiation, errors := given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.KOMMAZAHL,
 	}, ddptypes.KOMMAZAHL)
 
@@ -342,7 +342,7 @@ Und kann so benutzt werden:
 	assert.Contains(decl.Generic.Instantiations[given.module], second_instantiation)
 	assert.Same(instantiation, second_instantiation)
 
-	_, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+	_, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.BUCHSTABE,
 	}, ddptypes.BUCHSTABE)
 
@@ -362,7 +362,7 @@ Und kann so benutzt werden:
 	decl_stmt = given.declaration()
 	decl = decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
 
-	instantiation, errors = given.instantiateGenericFunction(decl, map[string]ddptypes.Type{
+	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 	}, ddptypes.VoidType{})
 

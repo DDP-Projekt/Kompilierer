@@ -2,12 +2,17 @@ package typechecker
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
+
+type GenericInstantiator interface {
+	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type, ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
+}
 
 // holds state to check if the types of an AST are valid
 //
@@ -19,12 +24,13 @@ type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
 	CurrentTable       ast.SymbolTable  // SymbolTable of the current scope (needed for name type-checking)
 	Operators          ast.OperatorOverloadMap
-	latestReturnedType ddptypes.Type // type of the last visited expression
-	Module             *ast.Module   // the module that is being typechecked
-	panicMode          *bool         // panic mode synchronized with the parser and resolver
+	latestReturnedType ddptypes.Type       // type of the last visited expression
+	Module             *ast.Module         // the module that is being typechecked
+	panicMode          *bool               // panic mode synchronized with the parser and resolver
+	instantiator       GenericInstantiator // used to instantiate generic operator overloads
 }
 
-func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, instantiator GenericInstantiator, panicMode *bool) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -38,6 +44,7 @@ func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperr
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
 		panicMode:          panicMode,
+		instantiator:       instantiator,
 	}
 }
 
@@ -484,29 +491,10 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	overloads := t.Operators[ast.CAST_OP]
-	if len(overloads) > 0 {
-		// copy of findOverload adjusted to also check the return type
-		for _, overload := range overloads {
-			if !ddptypes.Equal(overload.Parameters[0].Type.Type, lhs) || !ddptypes.Equal(overload.ReturnType, expr.TargetType) {
-				continue
-			}
-			operator_overload := &ast.OperatorOverload{
-				Decl: overload,
-				Args: make(map[string]ast.Expression, 1),
-			}
-			operator_overload.Args[overload.Parameters[0].Name.Literal] = expr.Lhs
-			if overload.Parameters[0].Type.IsReference {
-				if ass, isAssignable := isAssignable(expr.Lhs); isAssignable {
-					operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
-				} else {
-					continue
-				}
-			}
-			expr.OverloadedBy = operator_overload
-			t.latestReturnedType = expr.TargetType
-			return ast.VisitRecurse
-		}
+	if overload := t.findOverloadCast(expr, operand{lhs, expr.Lhs}); overload != nil {
+		expr.OverloadedBy = overload
+		t.latestReturnedType = overload.Decl.ReturnType
+		return ast.VisitRecurse
 	}
 
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
@@ -911,31 +899,131 @@ type operand struct {
 
 func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
 	overloads := t.Operators[operator]
-	if len(overloads) > 0 {
-	overload_loop:
-		for _, overload := range overloads {
-			operator_overload := &ast.OperatorOverload{
-				Decl: overload,
-				Args: make(map[string]ast.Expression, len(overload.Parameters)),
+	if len(overloads) == 0 {
+		return nil
+	}
+
+	containsUserDefinedType := slices.ContainsFunc(operands, func(o operand) bool {
+		return ddptypes.IsStruct(ddptypes.GetNestedListUnderlying(o.typ))
+	})
+
+	genericTypes := make(map[string]ddptypes.Type, len(operands))
+
+overload_loop:
+	for _, overload := range overloads {
+		// generics can only overload operators for user defined types
+		if !containsUserDefinedType && ast.IsGeneric(overload) {
+			// we can return because all following overloads will be generic as well
+			return nil
+		}
+		clear(genericTypes)
+
+		operator_overload := &ast.OperatorOverload{
+			Decl: overload,
+			Args: make(map[string]ast.Expression, len(overload.Parameters)),
+		}
+
+		for i, operand := range operands {
+			actualParamType := overload.Parameters[i].Type
+			if ast.IsGeneric(overload) {
+				actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			}
 
-			for i, operand := range operands {
-				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand.typ) {
+			if !ddptypes.Equal(actualParamType.Type, operand.typ) {
+				continue overload_loop
+			}
+
+			// turn arguments for reference parameters into assigneables
+			operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
+			if actualParamType.IsReference {
+				if ass, isAssignable := isAssignable(operand.expr); isAssignable {
+					operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
+				} else {
 					continue overload_loop
 				}
-
-				// turn arguments for reference parameters into assigneables
-				operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
-				if overload.Parameters[i].Type.IsReference {
-					if ass, isAssignable := isAssignable(operand.expr); isAssignable {
-						operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
-					} else {
-						continue overload_loop
-					}
-				}
 			}
+		}
+
+		// early return for normal overloads
+		if !ast.IsGeneric(overload) {
 			return operator_overload
 		}
+
+		// instantiate generic overloads
+		returnType := overload.ReturnType
+		if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
+			returnType = genericTypes[generic.Name]
+		}
+
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes, returnType)
+		if len(errs) != 0 {
+			return nil
+		}
+
+		operator_overload.Decl = instantiation
+		return operator_overload
+	}
+	return nil
+}
+
+func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast.OperatorOverload {
+	overloads := t.Operators[ast.CAST_OP]
+	if len(overloads) == 0 {
+		return nil
+	}
+
+	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedListUnderlying(operand.typ))
+
+	genericTypes := make(map[string]ddptypes.Type, 1)
+
+	for _, overload := range overloads {
+		// generics can only overload operators for user defined types
+		if !containsUserDefinedType && ast.IsGeneric(overload) {
+			// we can return because all following overloads will be generic as well
+			return nil
+		}
+		clear(genericTypes)
+
+		operator_overload := &ast.OperatorOverload{
+			Decl: overload,
+			Args: make(map[string]ast.Expression, 1),
+		}
+
+		actualParamType := overload.Parameters[0].Type
+		returnType := overload.ReturnType
+		if ast.IsGeneric(overload) {
+			actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
+			if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
+				returnType = genericTypes[generic.Name]
+			}
+		}
+
+		if !ddptypes.Equal(actualParamType.Type, operand.typ) || !ddptypes.Equal(returnType, expr.TargetType) {
+			continue
+		}
+
+		// turn arguments for reference parameters into assigneables
+		operator_overload.Args[overload.Parameters[0].Name.Literal] = operand.expr
+		if actualParamType.IsReference {
+			if ass, isAssignable := isAssignable(operand.expr); isAssignable {
+				operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
+			} else {
+				continue
+			}
+		}
+
+		// early return for normal overloads
+		if !ast.IsGeneric(overload) {
+			return operator_overload
+		}
+
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes, returnType)
+		if len(errs) != 0 {
+			return nil
+		}
+
+		operator_overload.Decl = instantiation
+		return operator_overload
 	}
 	return nil
 }
