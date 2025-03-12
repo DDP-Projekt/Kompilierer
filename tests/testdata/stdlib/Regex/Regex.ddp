@@ -1,0 +1,13 @@
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Regex" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Texte" ein.
+Schreibe ab jetzt alle Fehler.
+
+Schreibe ("^abc+" ein Regex ist) auf eine Zeile.
+Schreibe (text von (der erste Treffer von "(ha){2}" in "abchahaha3")) auf eine Zeile.
+Schreibe (die Länge von (die ersten 3 Treffer von "(ha){1,2}?" in "hahahaha")) auf eine Zeile.
+Schreibe (die Länge von (alle Treffer von "(ha){1,2}?" in "hahahahaha")) auf eine Zeile.
+Schreibe (den ersten Treffer mit dem Regex "(?<=\"name\":\\s\")(\\w+)(?=\")" in "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"}]" mit "Hendrik" ersetzt) auf eine Zeile.
+Schreibe (alle Treffer mit dem Regex "(?<=\"name\":\\s\")\\w+(?=\")" in "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"},{\"name\": \"Sebastian\"},{\"name\": \"Florian\"}]" mit "Hendrik" ersetzt) auf eine Zeile.
+Schreibe (den Text "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"},{\"name\": \"Sebastian\"},{\"name\": \"Florian\"}]" am Regex "([^\\w+]|name)+" gespalten) auf eine Zeile.
