@@ -19,7 +19,7 @@ typedef struct TrefferList {
 	ddpint cap;
 } TrefferList;
 
-static pcre2_code *compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstring *muster) {
+static pcre2_code *compile_regex(PCRE2_SPTR pattern) {
 	int errornumber;
 	size_t erroroffset;
 
@@ -37,7 +37,7 @@ static pcre2_code *compile_regex(PCRE2_SPTR pattern, PCRE2_SPTR subject, ddpstri
 	if (re == NULL) {
 		PCRE2_UCHAR buffer[256];
 		pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
-		ddp_error("Regex-Feher in '" DDP_STRING_FMT "' bei Spalte %d: %s\n", false, muster->str, (int)erroroffset, buffer);
+		ddp_error("Regex-Feher in '" DDP_STRING_FMT "' bei Spalte %d: %s\n", false, pattern, (int)erroroffset, buffer);
 	}
 
 	return re;
@@ -85,7 +85,7 @@ void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	PCRE2_SPTR pattern = (PCRE2_SPTR)muster->str; // The regex pattern
 	PCRE2_SPTR subject = (PCRE2_SPTR)text->str;	  // The string to match against
 
-	pcre2_code *re = compile_regex(pattern, subject, muster);
+	pcre2_code *re = compile_regex(pattern);
 	if (re == NULL) {
 		ret->text = DDP_EMPTY_STRING;
 		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
@@ -140,7 +140,7 @@ void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpin
 	// Initialize an empty list into ret
 	*ret = DDP_EMPTY_LIST(TrefferList);
 
-	pcre2_code *re = compile_regex(pattern, subject, muster);
+	pcre2_code *re = compile_regex(pattern);
 	if (re == NULL) {
 		return;
 	}
@@ -205,7 +205,7 @@ static void substitute(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpst
 	PCRE2_SPTR replacement = (PCRE2_SPTR)ersatz->str; // The replacement string
 
 	*ret = DDP_EMPTY_STRING;
-	pcre2_code *re = compile_regex(pattern, subject, muster);
+	pcre2_code *re = compile_regex(pattern);
 	if (re == NULL) {
 		return;
 	}
@@ -271,7 +271,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	// Initialize an empty list into ret
 	ddp_ddpstringlist_from_constants(ret, 0);
 
-	pcre2_code *re = compile_regex(pattern, subject, muster);
+	pcre2_code *re = compile_regex(pattern);
 	if (re == NULL) {
 		return;
 	}
@@ -284,12 +284,13 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	}
 
 	PCRE2_SIZE start_offset = 0;
+	const size_t text_u8_len = utf8_strlen(text->str);
 	// Perform the match
 	while (true) {
 		int rc = pcre2_match(
-			re,						// the compiled pattern
-			subject,				// the subject string
-			utf8_strlen(text->str), // the length of the subject
+			re,			 // the compiled pattern
+			subject,	 // the subject string
+			text_u8_len, // the length of the subject
 			start_offset,
 			0,			// default options
 			match_data, // block for storing the result
@@ -318,11 +319,11 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
 			ret->cap = DDP_GROW_CAPACITY(ret->cap);
-			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
+			ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(ddpstring), ret->cap * sizeof(ddpstring));
 		}
 
 		// append new element
-		memcpy(&((uint8_t *)ret->arr)[ret->len * sizeof(ddpstring)], &r, sizeof(ddpstring));
+		ret->arr[ret->len] = r;
 		ret->len++;
 
 		start_offset = pcre2_get_ovector_pointer(match_data)[1];
@@ -332,18 +333,19 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	if (ret->len == ret->cap) {
 		ddpint old_cap = ret->cap;
 		ret->cap = DDP_GROW_CAPACITY(ret->cap);
-		ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(Treffer), ret->cap * sizeof(Treffer));
+		ret->arr = ddp_reallocate(ret->arr, old_cap * sizeof(ddpstring), ret->cap * sizeof(ddpstring));
 	}
 
+	const ddpint text_len = ddp_strlen(text);
 	ddpstring r;
-	r.str = DDP_ALLOCATE(char, ddp_strlen(text) - start_offset + 1);
-	strncpy(r.str, text->str + start_offset, ddp_strlen(text) - start_offset);
+	r.str = DDP_ALLOCATE(char, text_len - start_offset + 1);
+	strncpy(r.str, text->str + start_offset, text_len - start_offset);
 
-	r.str[ddp_strlen(text) - start_offset] = '\0';
-	r.cap = ddp_strlen(text) - start_offset + 1;
+	r.str[text_len - start_offset] = '\0';
+	r.cap = text_len - start_offset + 1;
 
 	// append new element
-	memcpy(&((uint8_t *)ret->arr)[ret->len * sizeof(ddpstring)], &r, sizeof(ddpstring));
+	ret->arr[ret->len] = r;
 	ret->len++;
 
 	// Free up the regular expression and match data
