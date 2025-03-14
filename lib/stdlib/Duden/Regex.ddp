@@ -1,4 +1,5 @@
 Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/C" ein.
 
 Wir nennen die öffentliche Kombination aus
 	dem öffentlichen Text text mit Standardwert "",
@@ -41,3 +42,51 @@ Die öffentliche Funktion Regex_Spalten mit den Parametern muster und text vom T
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
 	"den Text <text> am Regex <muster> gespalten"
+
+[ Kompiliert ]
+Wir nennen die öffentliche Kombination aus
+	dem öffentlichen Text ausdruck mit Standardwert "",
+	dem Zeiger obj mit Standardwert NULL,
+einen Regex,
+und erstellen sie so:
+	"einen leeren Regex"
+
+Die öffentliche Funktion Regex_Kompilieren mit dem Parameter muster vom Typ Text, gibt einen Regex zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"ein Regex mit dem Muster <muster>"
+
+Die öffentliche Funktion Regex_Kompiliert_Free mit dem Parameter regex vom Typ Regex, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Free <regex>"
+
+Die öffentliche Funktion Regex_Kompiliert_Erster_Treffer mit den Parametern regex und text vom Typ Regex und Text, gibt einen Treffer zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"der erste Treffer von <regex> in <text>"
+
+Die öffentliche Funktion Regex_Kompiliert_N_Treffer mit den Parametern regex, text und n vom Typ Regex, Text und Zahl, gibt eine Treffer Liste zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die ersten <n> Treffer von <regex> in <text>"
+
+Die öffentliche Funktion Regex_Kompiliert_Alle_Treffer mit den Parametern regex und text vom Typ Regex und Text, gibt eine Treffer Liste zurück, macht:
+	Gib (die ersten -1 Treffer von regex in text) zurück.
+Und kann so benutzt werden:
+	"alle Treffer von <regex> in <text>"
+
+Die öffentliche Funktion Regex_Kompiliert_Erster_Treffer_Ersetzen mit den Parametern regex, text und ersatz vom Typ Regex, Text und Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"den ersten Treffer mit dem Regex <regex> in <text> mit <ersatz> ersetzt"
+
+Die öffentliche Funktion Regex_Kompiliert_Alle_Treffer_Ersetzen mit den Parametern regex, text und ersatz vom Typ Regex, Text und Text, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"alle Treffer mit dem Regex <regex> in <text> mit <ersatz> ersetzt"
+
+Die öffentliche Funktion Regex_Kompiliert_Spalten mit den Parametern regex und text vom Typ Regex und Text, gibt eine Text Liste zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"den Text <text> am Regex <regex> gespalten"
