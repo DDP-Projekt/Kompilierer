@@ -55,3 +55,6 @@ Schreibe (den Wert des AbfragenParameters "a" aus "a=b&c=d") auf eine Zeile.
 Schreibe (den Wert des AbfragenParameters "a" aus "a&c=d") auf eine Zeile.
 Schreibe (den Wert des AbfragenParameters "a" aus "a=hi&c=d") auf eine Zeile.
 Schreibe (den Wert des AbfragenParameters "a" aus "") auf eine Zeile.
+
+Der AbfragenParameter param ist ein AbfragenParameter "a"="3".
+Schreibe (param als Text) auf eine Zeile.

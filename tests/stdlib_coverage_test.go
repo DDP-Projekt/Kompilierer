@@ -55,6 +55,38 @@ func (v funcCallVisitor) VisitFuncCall(f *ast.FuncCall) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+type unaryExprVisitor func(*ast.UnaryExpr)
+
+func (unaryExprVisitor) Visitor() {}
+func (v unaryExprVisitor) VisitUnaryExpr(c *ast.UnaryExpr) ast.VisitResult {
+	v(c)
+	return ast.VisitRecurse
+}
+
+type binaryExprVisitor func(*ast.BinaryExpr)
+
+func (binaryExprVisitor) Visitor() {}
+func (v binaryExprVisitor) VisitBinaryExpr(c *ast.BinaryExpr) ast.VisitResult {
+	v(c)
+	return ast.VisitRecurse
+}
+
+type ternaryExprVisitor func(*ast.TernaryExpr)
+
+func (ternaryExprVisitor) Visitor() {}
+func (v ternaryExprVisitor) VisitTernaryExpr(c *ast.TernaryExpr) ast.VisitResult {
+	v(c)
+	return ast.VisitRecurse
+}
+
+type castExprVisitor func(*ast.CastExpr)
+
+func (castExprVisitor) Visitor() {}
+func (v castExprVisitor) VisitCastExpr(c *ast.CastExpr) ast.VisitResult {
+	v(c)
+	return ast.VisitRecurse
+}
+
 var (
 	duden_modules = make(map[string]*ast.Module, 30)
 	duden_funcs   = make(map[*ast.FuncDecl]struct{}, 100)
@@ -117,6 +149,17 @@ func TestStdlibCoverage(t *testing.T) {
 
 	const stdlib_testdata = "testdata/stdlib"
 	called_functions := make(map[*ast.FuncDecl]int, len(duden_funcs))
+	func_called := func(f *ast.FuncDecl) {
+		if _, ok := duden_funcs[f]; !ok {
+			return
+		}
+		if n, ok := called_functions[f]; ok {
+			called_functions[f] = n + 1
+		} else {
+			called_functions[f] = 1
+		}
+	}
+
 	err = filepath.WalkDir(stdlib_testdata, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || !d.IsDir() || path == stdlib_testdata {
 			return nil
@@ -135,13 +178,30 @@ func TestStdlibCoverage(t *testing.T) {
 		}
 
 		ast.VisitModule(module, funcCallVisitor(func(f *ast.FuncCall) {
-			if _, ok := duden_funcs[f.Func]; !ok {
-				return
+			func_called(f.Func)
+		}))
+
+		ast.VisitModule(module, unaryExprVisitor(func(c *ast.UnaryExpr) {
+			if c.OverloadedBy != nil {
+				func_called(c.OverloadedBy.Decl)
 			}
-			if n, ok := called_functions[f.Func]; ok {
-				called_functions[f.Func] = n + 1
-			} else {
-				called_functions[f.Func] = 1
+		}))
+
+		ast.VisitModule(module, binaryExprVisitor(func(c *ast.BinaryExpr) {
+			if c.OverloadedBy != nil {
+				func_called(c.OverloadedBy.Decl)
+			}
+		}))
+
+		ast.VisitModule(module, ternaryExprVisitor(func(c *ast.TernaryExpr) {
+			if c.OverloadedBy != nil {
+				func_called(c.OverloadedBy.Decl)
+			}
+		}))
+
+		ast.VisitModule(module, castExprVisitor(func(c *ast.CastExpr) {
+			if c.OverloadedBy != nil {
+				func_called(c.OverloadedBy.Decl)
 			}
 		}))
 
