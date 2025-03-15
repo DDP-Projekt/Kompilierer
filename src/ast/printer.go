@@ -147,6 +147,11 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 }
 
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
+	// in FieldAccess the Declaration is nil
+	if expr.Declaration == nil {
+		pr.parenthesizeNode(fmt.Sprintf("Ident[%s, nil]", expr.Literal.Literal))
+		return VisitRecurse
+	}
 	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration.String()))
 	return VisitRecurse
 }

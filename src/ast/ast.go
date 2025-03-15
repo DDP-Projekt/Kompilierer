@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -53,6 +54,7 @@ func (ast *Ast) RemoveAttachment(node Node, kind MetadataKind) {
 
 // returns a string representation of the AST as S-Expressions
 func (ast *Ast) String() string {
+	defer panic_wrapper()
 	printer := &printer{ast: ast}
 	for _, stmt := range ast.Statements {
 		stmt.Accept(printer)
@@ -62,11 +64,15 @@ func (ast *Ast) String() string {
 
 // print the AST to stdout
 func (ast *Ast) Print() {
-	printer := &printer{ast: ast}
-	for _, stmt := range ast.Statements {
-		stmt.Accept(printer)
+	fmt.Println(ast.String())
+}
+
+// wraps a panic with more information and re-panics
+func panic_wrapper() {
+	if err := recover(); err != nil {
+		stack_trace := debug.Stack()
+		panic(fmt.Errorf("%w\nStack Trace: %s", err, string(stack_trace)))
 	}
-	fmt.Println(printer.returned)
 }
 
 type (
