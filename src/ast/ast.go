@@ -71,7 +71,8 @@ func (ast *Ast) Print() {
 func panic_wrapper() {
 	if err := recover(); err != nil {
 		stack_trace := debug.Stack()
-		panic(fmt.Errorf("%w\nStack Trace: %s", err, string(stack_trace)))
+		wraps, _ := err.(error)
+		panic(fmt.Errorf("%w\nStack Trace: %s", wraps, string(stack_trace)))
 	}
 }
 

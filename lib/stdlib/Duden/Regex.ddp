@@ -49,7 +49,9 @@ Wir nennen die öffentliche Kombination aus
 	dem Zeiger obj mit Standardwert NULL,
 einen Regex,
 und erstellen sie so:
-	"einen leeren Regex"
+	"einen leeren Regex",
+	"einem leeren Regex",
+	"ein leerer Regex"
 
 Die öffentliche Funktion Regex_Kompilieren mit dem Parameter muster vom Typ Text, gibt einen Regex zurück,
 ist in "libddpstdlib.a" definiert
@@ -59,7 +61,7 @@ und kann so benutzt werden:
 Die öffentliche Funktion Regex_Kompiliert_Free mit dem Parameter regex vom Typ Regex, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"Free <regex>"
+	"Befreie <regex>"
 
 Die öffentliche Funktion Regex_Kompiliert_Erster_Treffer mit den Parametern regex und text vom Typ Regex und Text, gibt einen Treffer zurück,
 ist in "libddpstdlib.a" definiert

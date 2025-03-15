@@ -26,7 +26,7 @@ typedef struct Regex {
 
 static pcre2_code *compile_regex(PCRE2_SPTR pattern) {
 	if (pattern == NULL) {
-		ddp_error("Regex-Feher: Muster war NULL", false);
+		ddp_error("Regex-Fehler: Muster war NULL", false);
 		return NULL;
 	}
 
@@ -106,13 +106,13 @@ void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) 
 
 	// Perform the match
 	int rc = pcre2_match(
-		re, 					// the compiled pattern
-		(PCRE2_SPTR)text, 		// the subject string
-		utf8_strlen(text), 	// the length of the subject
-		0, 						// start at offset 0 in the subject
-		0, 						// default options
-		match_data, 			// block for storing the result
-		NULL					// use default match context
+		re,				   // the compiled pattern
+		(PCRE2_SPTR)text,  // the subject string
+		utf8_strlen(text), // the length of the subject
+		0,				   // start at offset 0 in the subject
+		0,				   // default options
+		match_data,		   // block for storing the result
+		NULL			   // use default match context
 	);
 
 	// Check the result
@@ -151,11 +151,11 @@ void regex_n_match(TrefferList *ret, pcre2_code *re, char *pattern, char *text, 
 	// Perform the match
 	while (i < n || n == -1) {
 		int rc = pcre2_match(
-			re, 					// the compiled pattern
-			(PCRE2_SPTR)text, 		// the subject string
-			utf8_strlen(text), 	// the length of the subject
+			re,				   // the compiled pattern
+			(PCRE2_SPTR)text,  // the subject string
+			utf8_strlen(text), // the length of the subject
 			start_offset,
-			0, 			// default options
+			0,			// default options
 			match_data, // block for storing the result
 			NULL		// use default match context
 		);
@@ -207,17 +207,17 @@ static void substitute(ddpstring *ret, pcre2_code *re, char *pattern, char *text
 	size_t result_length = SUBSTITUTE_BUFFER_SIZE;
 	// Perform the match
 	int rc = pcre2_substitute(
-		re,									// the compiled pattern
-		(PCRE2_SPTR)text,					// the subject string
+		re,				  // the compiled pattern
+		(PCRE2_SPTR)text, // the subject string
 		PCRE2_ZERO_TERMINATED,
-		0,									// start at offset 0 in the subject
-		all ? PCRE2_SUBSTITUTE_GLOBAL : 0, 	// subtitute all
-		match_data,							// block for storing the result
-		NULL,								// use default match context
-		(PCRE2_SPTR)ersatz->str,			// the replacement string
+		0,								   // start at offset 0 in the subject
+		all ? PCRE2_SUBSTITUTE_GLOBAL : 0, // subtitute all
+		match_data,						   // block for storing the result
+		NULL,							   // use default match context
+		(PCRE2_SPTR)ersatz->str,		   // the replacement string
 		PCRE2_ZERO_TERMINATED,
-		result,								// where to put the result
-		&result_length						// where to put the result length
+		result,		   // where to put the result
+		&result_length // where to put the result length
 	);
 
 	pcre2_match_data_free(match_data);
@@ -253,13 +253,13 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 	// Perform the match
 	while (true) {
 		int rc = pcre2_match(
-			re, 		 		// the compiled pattern
-			(PCRE2_SPTR)text, 	// the subject string
-			text_u8_len, 		// the length of the subject
+			re,				  // the compiled pattern
+			(PCRE2_SPTR)text, // the subject string
+			text_u8_len,	  // the length of the subject
 			start_offset,
-			0,					// default options
-			match_data, 		// block for storing the result
-			NULL				// use default match context
+			0,			// default options
+			match_data, // block for storing the result
+			NULL		// use default match context
 		);
 
 		if (rc < 0) {
@@ -316,9 +316,7 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 	pcre2_match_data_free(match_data);
 }
 
-
 // DDP Funktionen
-
 
 // return true if regex is a valid pcre regex
 ddpbool Ist_Regex(ddpstring *muster) {
@@ -375,7 +373,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 
 // Kompiliert
 
-void Regex_Kompilieren(Regex* ret, ddpstring *muster) {
+void Regex_Kompilieren(Regex *ret, ddpstring *muster) {
 	DDP_MIGHT_ERROR;
 
 	ddp_string_from_constant(&ret->ausdruck, muster->str);

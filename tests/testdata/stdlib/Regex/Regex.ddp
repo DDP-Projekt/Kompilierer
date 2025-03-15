@@ -17,13 +17,15 @@ Schreibe (text von (der erste Treffer von r in "abchahaha3")) auf eine Zeile.
 Schreibe (die Länge von (die ersten 3 Treffer von r in "hahahaha")) auf eine Zeile.
 Schreibe (die Länge von (alle Treffer von r in "hahahahaha")) auf eine Zeile.
 
-Free r.
+Befreie r.
 
 Der Regex r2 ist ein Regex mit dem Muster "(?<=\"name\":\\s\")\\w+(?=\")".
 Schreibe (den ersten Treffer mit dem Regex r2 in "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"}]" mit "Hendrik" ersetzt) auf eine Zeile.
 Schreibe (alle Treffer mit dem Regex r2 in "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"},{\"name\": \"Sebastian\"},{\"name\": \"Florian\"}]" mit "Hendrik" ersetzt) auf eine Zeile.
-Free r2.
+
+Befreie r2.
 
 Der Regex r3 ist ein Regex mit dem Muster "([^\\w+]|name)+".
 Schreibe (den Text "[{\"name\": \"Leon\"},{\"name\": \"Arthur\"},{\"name\": \"Sebastian\"},{\"name\": \"Florian\"}]" am Regex r3 gespalten) auf eine Zeile.
-Free r3.
+
+Befreie r3.
