@@ -16,7 +16,7 @@ ddpint Zufalls_Zahl(ddpint a, ddpint b) {
 
 ddpbool Zufalls_Wahrheitswert(ddpfloat p) {
 	if (p < 0) {
-		return 0; // for 0% or below it is always false
+		return 0;	 // for 0% or below it is always false
 	} else if (p > 100) {
 		return true; // for 100% or above it is always true
 	}

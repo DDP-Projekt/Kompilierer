@@ -19,7 +19,7 @@
 #define _CRT_INTERNAL_NONSTDC_NAMES 1
 #include <sys/stat.h>
 #if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef DDPOS_WINDOWS
@@ -38,7 +38,7 @@
 
 #define PATH_SEPERATOR "/" // set of possible seperators
 #define mkdir(arg) mkdir(arg, 0700)
-#endif // DDPOS_WINDOWS
+#endif					   // DDPOS_WINDOWS
 
 ddpbool Existiert_Pfad(ddpstring *Pfad) {
 	if (ddp_string_empty(Pfad)) {
