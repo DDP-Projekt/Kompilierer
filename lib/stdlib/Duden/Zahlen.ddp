@@ -304,7 +304,7 @@ Die öffentliche Funktion Zahl_Zu_Hex mit dem Parameter zahl vom Typ Zahl, gibt 
 
 	Der Text ergebnis ist "".
 	Solange zahl ungleich 0 ist, mache:
-		Speichere hexZiffern an der Stelle (zahl modulo 16) verkettet mit ergebnis in ergebnis.
+		Speichere hexZiffern an der Stelle (zahl modulo 16 plus 1) verkettet mit ergebnis in ergebnis.
 		Speichere (zahl durch 16) als Zahl in zahl.
 
 	Gib ergebnis zurück.

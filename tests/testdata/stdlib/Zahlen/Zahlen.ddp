@@ -28,6 +28,7 @@ Schreibe tausend auf eine Zeile.
 Schreibe zehntausend auf eine Zeile.
 Schreibe einhunderttausend auf eine Zeile.
 Schreibe Million auf eine Zeile.
+Schreibe (2 Million) auf eine Zeile.
 Schreibe anderthalb auf eine Zeile.
 Schreibe halb auf eine Zeile.
 Schreibe (zwei Halbe) auf eine Zeile.
@@ -42,6 +43,9 @@ Schreibe (zwei Zehntel) auf eine Zeile.
 Schreibe (zwei Elftel) auf eine Zeile.
 Schreibe (zwei Zwölftel) auf eine Zeile.
 Schreibe (zwei Dutzend) auf eine Zeile.
+
 Schreibe (die Hexadezimalzahl "00") auf eine Zeile.
 Schreibe (die Hexadezimalzahl "ff") auf eine Zeile.
 Schreibe (die Hexadezimalzahl "FF") auf eine Zeile.
+
+Schreibe (75 in Hexadezimal) auf eine Zeile.
