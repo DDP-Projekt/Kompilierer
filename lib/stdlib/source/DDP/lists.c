@@ -85,7 +85,7 @@ void efficient_list_prepend_any(ddpanylistref list, ddpanyref elem, ddpint elem_
 	*elem = DDP_EMPTY_ANY;
 }
 
-#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len) - 1 : (index)))
+#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len)-1 : (index)))
 
 // the range is inclusive [start, end]
 // the indices are 0-based (like in C, not like in DDP)

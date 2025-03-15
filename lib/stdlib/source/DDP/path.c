@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-
 // TODO: Use PathCchCanonicalize
 void Windows_Saeubern(ddpstring *ret, ddpstring *path) {
 	DDP_MIGHT_ERROR;

@@ -18,7 +18,7 @@
 		(y)[0] = (uint8_t)(((x) >> 24) & 255); \
 		(y)[1] = (uint8_t)(((x) >> 16) & 255); \
 		(y)[2] = (uint8_t)(((x) >> 8) & 255);  \
-		(y)[3] = (uint8_t)((x) & 255);         \
+		(y)[3] = (uint8_t)((x)&255);           \
 	}
 
 #define LOAD32H(x, y)                        \
@@ -36,7 +36,7 @@
 		(y)[4] = (uint8_t)(((x) >> 24) & 255); \
 		(y)[5] = (uint8_t)(((x) >> 16) & 255); \
 		(y)[6] = (uint8_t)(((x) >> 8) & 255);  \
-		(y)[7] = (uint8_t)((x) & 255);         \
+		(y)[7] = (uint8_t)((x)&255);           \
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ static const uint32_t K256[64] = {
 #define Ch(x, y, z) (z ^ (x & (y ^ z)))
 #define Maj(x, y, z) (((x | y) & z) | (x & y))
 #define S256(x, n) ror((x), (n))
-#define R256(x, n) (((x) & 0xFFFFFFFFUL) >> (n))
+#define R256(x, n) (((x)&0xFFFFFFFFUL) >> (n))
 #define Sigma0_256(x) (S256(x, 2) ^ S256(x, 13) ^ S256(x, 22))
 #define Sigma1_256(x) (S256(x, 6) ^ S256(x, 11) ^ S256(x, 25))
 #define Gamma0_256(x) (S256(x, 7) ^ S256(x, 18) ^ R256(x, 3))
@@ -265,7 +265,7 @@ void Sha256Calculate(void const *Buffer, uint32_t BufferSize, SHA256_HASH *Diges
 		(y)[4] = (uint8_t)(((x) >> 24) & 255); \
 		(y)[5] = (uint8_t)(((x) >> 16) & 255); \
 		(y)[6] = (uint8_t)(((x) >> 8) & 255);  \
-		(y)[7] = (uint8_t)((x) & 255);         \
+		(y)[7] = (uint8_t)((x)&255);           \
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -305,7 +305,7 @@ static const uint64_t K512[80] = {
 #define Ch(x, y, z) (z ^ (x & (y ^ z)))
 #define Maj(x, y, z) (((x | y) & z) | (x & y))
 #define S512(x, n) ROR64(x, n)
-#define R512(x, n) (((x) & 0xFFFFFFFFFFFFFFFFULL) >> ((uint64_t)n))
+#define R512(x, n) (((x)&0xFFFFFFFFFFFFFFFFULL) >> ((uint64_t)n))
 #define Sigma0_512(x) (S512(x, 28) ^ S512(x, 34) ^ S512(x, 39))
 #define Sigma1_512(x) (S512(x, 14) ^ S512(x, 18) ^ S512(x, 41))
 #define Gamma0_512(x) (S512(x, 1) ^ S512(x, 8) ^ R512(x, 7))

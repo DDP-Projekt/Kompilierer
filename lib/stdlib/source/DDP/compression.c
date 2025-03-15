@@ -232,7 +232,9 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 	}
 
 	struct archive *a = openArchive(arPfad->str);
-	if (!a) return;
+	if (!a) {
+		return;
+	}
 
 	int flags = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS;
 
@@ -284,14 +286,14 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		int64_t offset;
 		while ((r = archive_read_data_block(a, &buff, &size, &offset)) != ARCHIVE_EOF) {
 			if (r != ARCHIVE_OK) {
-				ddp_error("Komprimierungsfehler bei archive_read_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
+				ddp_error("Komprimierungsfehler bei archive_read_data_block(): " DDP_STRING_FMT, false, archive_error_string(disk));
 				archive_read_free(a);
 				archive_write_free(disk);
 				return;
 			}
 
 			if (archive_write_data_block(disk, buff, size, offset) != ARCHIVE_OK) {
-				ddp_error("Komprimierungsfehler bei archive_write_data_block(): "DDP_STRING_FMT, false, archive_error_string(disk));
+				ddp_error("Komprimierungsfehler bei archive_write_data_block(): " DDP_STRING_FMT, false, archive_error_string(disk));
 				archive_read_free(a);
 				archive_write_free(disk);
 				return;
@@ -332,7 +334,7 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 	}
 
 	if (r == ARCHIVE_EOF) {
-		ddp_error("Die Datei '"DDP_STRING_FMT"' konnte nicht im Archiv '"DDP_STRING_FMT"' nicht gefunden werden.", false, dateiPfad->str, arPfad->str);
+		ddp_error("Die Datei '" DDP_STRING_FMT "' konnte nicht im Archiv '" DDP_STRING_FMT "' nicht gefunden werden.", false, dateiPfad->str, arPfad->str);
 		return -1;
 	}
 

@@ -83,7 +83,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations help
+.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir format-stdlib format-runtime format checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations help
 
 all: kddp runtime stdlib ddp-setup $(OUT_DIR)LICENSE $(OUT_DIR)README.md ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
@@ -159,6 +159,14 @@ clean-outdir: ## deletes build/DDP/
 
 clean-all: clean
 	'$(MAKE)' -C $(EXT_DIR) clean
+
+format-stdlib:
+	'$(MAKE)' -C $(STD_DIR) format
+
+format-runtime:
+	'$(MAKE)' -C $(STD_DIR) format
+
+format: format-stdlib format-runtime
 
 checkout-llvm: ## clones the llvm-project submodule
 # clone the submodule

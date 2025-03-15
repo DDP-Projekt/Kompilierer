@@ -1,7 +1,7 @@
 OUT_FILE_NAME = libddpruntime.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 
-.PHONY: all clean debug
+.PHONY: all clean debug format
 .DEFAULT_GOAL = all
 
 CC = gcc
@@ -11,6 +11,9 @@ INC = -I./include/
 
 AR = ar rcs
 RM = rm -f
+
+CLANG_FORMAT_FILE= ../../.clang-format
+CLANG_FORMAT= clang-format -i -style='file:$(CLANG_FORMAT_FILE)'
 
 # these wildcards work only to depth 1
 # so include/utf8/utf8.c is matched but include/utf8/test_dir/test.c would NOT be matched
@@ -50,6 +53,9 @@ compile_commands.json: $(SRCS) $(HEADERS)
 
 clean:
 	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+
+format:
+	$(CLANG_FORMAT) $(SRCS)  $(HEADERS)
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend

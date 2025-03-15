@@ -15,8 +15,15 @@ eine Uri,
 und erstellen sie so:
     "eine leere Uri"
 
-Der Text uri_regex ist "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?".
-Der Text authority_regex ist "^((.+)@)?((\\[[:0-9A-Fa-f.]+\\])|([a-zA-Z0-9\\-\\._~!$&'\\(\\)\\*\\+,;=])*)(:(\\d+))?".
+[
+TODO:
+	Der Speicher dieser beiden regexe wird niemals freigegeben.
+	Die memory tests schlagen nicht fehl, da der Speicher von pcre2 und nicht von ddp_reallocate allokiert wird.
+	Wenn wir das feature "defer" am Ende des Programms haben sollten diese beiden regexe damit freigegeben werden.
+]
+Der Regex uri_regex ist ein Regex mit dem Muster "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?".
+Der Regex authority_regex ist ein Regex mit dem Muster "^((.+)@)?((\\[[:0-9A-Fa-f.]+\\])|([a-zA-Z0-9\\-\\._~!$&'\\(\\)\\*\\+,;=])*)(:(\\d+))?".
+
 Die öffentliche Funktion Parse_Uri mit dem Parameter uri vom Typ Text, gibt eine Uri zurück, macht:
     Diese Funktion könnte einen Fehler melden.
 	Wenn uri leer ist, gib eine leere Uri zurück.
