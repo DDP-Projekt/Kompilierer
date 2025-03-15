@@ -32,7 +32,7 @@ LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME) source/main.o
+all: $(OUT_FILE_NAME) source/main.o compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
