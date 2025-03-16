@@ -29,9 +29,9 @@ Schreibe (y von y von vec2_vec2) auf eine Zeile.
 Schreibe '\n'.
 
 Wir nennen die generische Kombination aus
-	dem T x mit Standardwert 0,
-	dem T y mit Standardwert 0,
-	dem T z mit Standardwert 0,
+	dem T x mit Standardwert 1,
+	dem T y mit Standardwert 2,
+	dem T z mit Standardwert 3,
 einen Vektor3, und erstellen sie so:
 	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
 	"Vektor3(<x>, <y>, <z>)" [ argumente des Konstruktors überschreiben standardwerte ]
