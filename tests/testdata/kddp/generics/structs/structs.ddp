@@ -7,19 +7,59 @@ einen Vektor2, und erstellen sie so:
 	[ "der Nullvektor2" ] [ nicht erlaubt, da ohne Standardwert T nicht abgeleitet werden kann ]
 	"Vektor2(<x>, <y>)"
 
+
+Der Zahl-Vektor2 vec2_zahl ist Vektor2(1, 2).
+Der Text-Vektor2 vec2_text ist Vektor2("x", "y").
+
+Schreibe (x von vec2_zahl) auf eine Zeile.
+Schreibe (y von vec2_zahl) auf eine Zeile.
+
+Schreibe (x von vec2_text) auf eine Zeile.
+Schreibe (y von vec2_text) auf eine Zeile.
+
+Schreibe '\n'.
+
+Der (Zahl-Vektor2)-Vektor2 vec2_vec2 ist Vektor2(Vektor2(1, 2), Vektor2(3, 4)).
+
+Schreibe (x von x von vec2_vec2) auf eine Zeile.
+Schreibe (y von x von vec2_vec2) auf eine Zeile.
+Schreibe (x von y von vec2_vec2) auf eine Zeile.
+Schreibe (y von y von vec2_vec2) auf eine Zeile.
+
+Schreibe '\n'.
+
 Wir nennen die generische Kombination aus
 	dem T x mit Standardwert 0,
 	dem T y mit Standardwert 0,
 	dem T z mit Standardwert 0,
 einen Vektor3, und erstellen sie so:
 	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
+	"Vektor3(<x>, <y>, <z>)" [ argumente des Konstruktors überschreiben standardwerte ]
+
+
+Der Zahl-Vektor3 vec3_zahl ist der Nullvektor3.
+Der Text-Vektor3 vec3_text ist Vektor3("x", "y", "z").
+
+Schreibe (x von vec3_zahl) auf eine Zeile.
+Schreibe (y von vec3_zahl) auf eine Zeile.
+Schreibe (z von vec3_zahl) auf eine Zeile.
+Schreibe (x von vec3_text) auf eine Zeile.
+Schreibe (y von vec3_text) auf eine Zeile.
+Schreibe (z von vec3_text) auf eine Zeile.
+
+Schreibe '\n'.
 
 Wir nennen die generische Kombination aus
 	dem T a,
 	dem R b,
 	der T Liste l,
 	der Z Liste l2,
-eine Struktur, und erstellen sie so:
-	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
+eine Struktur.
+[ ohne aliase werden die Standardwerte der Typen verwendet ]
 
+Die Zahl-Text-Kommazahl-Struktur struktur ist der Standardwert von einer Zahl-Text-Kommazahl-Struktur.
 
+Schreibe (a von struktur) auf eine Zeile.
+Schreibe (b von struktur) auf eine Zeile.
+Schreibe (l von struktur) auf eine Zeile.
+Schreibe (l2 von struktur) auf eine Zeile.
