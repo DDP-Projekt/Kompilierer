@@ -196,7 +196,7 @@ func (p *parser) declaration() ast.Statement {
 		case token.KONSTANTE:
 			return &ast.DeclStmt{Decl: p.constDeclaration(decl_start_depth + 1)}
 		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(decl_start_depth+1, false)}
+			return &ast.DeclStmt{Decl: p.varDeclaration(decl_start_depth+1, false, false)}
 		}
 	}
 

@@ -63,10 +63,10 @@ type (
 
 	// holds information about a generic function declaration
 	GenericFuncInfo struct {
-		Types          map[string]*ddptypes.GenericType // all declared generic types
-		Tokens         []token.Token                    // tokens of the body that need to be parsed
-		Context        GenericContext                   // context up to the point where the function was declared
-		Instantiations map[*Module][]*FuncDecl          // all existing instantiations for a given module
+		Types          map[string]ddptypes.GenericType // all declared generic types
+		Tokens         []token.Token                   // tokens of the body that need to be parsed
+		Context        GenericContext                  // context up to the point where the function was declared
+		Instantiations map[*Module][]*FuncDecl         // all existing instantiations for a given module
 	}
 
 	// the context captured by a generic function declaration
@@ -95,9 +95,10 @@ type (
 		Mod        *Module      // the module in which the struct was declared
 		// Field declarations of the struct in order of declaration
 		// only contains *VarDecl and *BadDecl s
-		Fields  []Declaration
-		Type    *ddptypes.StructType // the type resulting from this decl
-		Aliases []*StructAlias       // the constructors of the struct
+		Fields       []Declaration
+		Type         *ddptypes.StructType   // the type resulting from this decl
+		Aliases      []*StructAlias         // the constructors of the struct
+		GenericTypes []ddptypes.GenericType // only present if the struct decl is generic
 	}
 
 	TypeAliasDecl struct {

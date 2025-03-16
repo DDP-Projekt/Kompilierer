@@ -26,6 +26,10 @@ func IsGeneric(fun *FuncDecl) bool {
 	return fun != nil && fun.Generic != nil
 }
 
+func IsGenericStruct(decl *StructDecl) bool {
+	return len(decl.GenericTypes) != 0
+}
+
 func IsGenericInstantiation(fun *FuncDecl) bool {
 	return fun != nil && fun.GenericDecl != nil
 }

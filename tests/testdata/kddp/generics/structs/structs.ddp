@@ -1,0 +1,25 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die generische Kombination aus
+	dem T x,
+	dem T y,
+einen Vektor2, und erstellen sie so:
+	[ "der Nullvektor2" ] [ nicht erlaubt, da ohne Standardwert T nicht abgeleitet werden kann ]
+	"Vektor2(<x>, <y>)"
+
+Wir nennen die generische Kombination aus
+	dem T x mit Standardwert 0,
+	dem T y mit Standardwert 0,
+	dem T z mit Standardwert 0,
+einen Vektor3, und erstellen sie so:
+	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
+
+Wir nennen die generische Kombination aus
+	dem T a,
+	dem R b,
+	der T Liste l,
+	der Z Liste l2,
+eine Struktur, und erstellen sie so:
+	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
+
+

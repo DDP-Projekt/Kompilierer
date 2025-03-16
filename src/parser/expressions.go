@@ -197,7 +197,7 @@ func (p *parser) equality() ast.Expression {
 				Rhs:      rhs,
 			}
 		case token.EIN, token.EINE, token.KEIN, token.KEINE:
-			checkType := p.parseType()
+			checkType := p.parseType(false)
 			expr = &ast.TypeCheck{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -432,7 +432,7 @@ func (p *parser) unary() ast.Expression {
 			}
 		case token.GRÖßE, token.STANDARDWERT:
 			article := p.previous()
-			_type := p.parseType()
+			_type := p.parseType(false)
 			operator := ast.TYPE_SIZE
 			if tok.Type == token.STANDARDWERT {
 				operator = ast.TYPE_DEFAULT
@@ -666,7 +666,7 @@ func (p *parser) field_access(lhs ast.Expression) ast.Expression {
 func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
 	lhs = p.primary(lhs)
 	for p.matchAny(token.ALS) {
-		Type := p.parseType()
+		Type := p.parseType(false)
 		lhs = &ast.CastExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,

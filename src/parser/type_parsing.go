@@ -36,7 +36,8 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // parses tokens into a DDPType
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found
-func (p *parser) parseType() ddptypes.Type {
+// if generic is true, unknown identifiers are treated as generic types
+func (p *parser) parseType(generic bool) ddptypes.Type {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
@@ -67,16 +68,20 @@ func (p *parser) parseType() ddptypes.Type {
 		p.consumeSeq(token.LISTE)
 		return ddptypes.ListType{Underlying: ddptypes.VARIABLE}
 	case token.IDENTIFIER:
-		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
+		if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
+			if generic && !exists {
+				Type = ddptypes.GenericType{Name: p.previous().Literal}
+			}
+
 			if p.matchAny(token.LISTE) {
 				return ddptypes.ListType{Underlying: Type}
 			}
 			return Type
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
+		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
 	}
 
-	return nil // unreachable
+	return nil
 }
 
 // parses tokens into a DDPType which must be a list type
@@ -179,7 +184,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	case token.IDENTIFIER:
 		if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
 			if generic && !exists {
-				Type = &ddptypes.GenericType{Name: p.previous().Literal}
+				Type = ddptypes.GenericType{Name: p.previous().Literal}
 			}
 
 			if p.matchAny(token.LISTE) {
@@ -206,7 +211,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 // parses tokens into a DDPType
 // unlike parseType it may return void
 // the error return is ILLEGAL
-func (p *parser) parseReturnType(genericTypes map[string]*ddptypes.GenericType) ddptypes.Type {
+func (p *parser) parseReturnType(genericTypes map[string]ddptypes.GenericType) ddptypes.Type {
 	getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
 		switch gender {
 		case ddptypes.MASKULIN:
@@ -240,7 +245,7 @@ func (p *parser) parseReturnType(genericTypes map[string]*ddptypes.GenericType) 
 	if len(genericTypes) > 0 && p.peek().Type == token.IDENTIFIER {
 		var ok bool
 		if typ, ok = genericTypes[p.peek().Literal]; !ok {
-			typ = p.parseType()
+			typ = p.parseType(false)
 		} else {
 			p.advance()
 			if p.matchAny(token.LISTE) {
@@ -248,7 +253,7 @@ func (p *parser) parseReturnType(genericTypes map[string]*ddptypes.GenericType) 
 			}
 		}
 	} else {
-		typ = p.parseType()
+		typ = p.parseType(false)
 	}
 
 	if typ == nil {

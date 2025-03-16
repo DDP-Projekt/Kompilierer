@@ -29,7 +29,7 @@ type Type interface {
 // checks wether t matches any of the provided genders
 func MatchesGender(t Type, genders ...GrammaticalGender) bool {
 	// generic types match every gender
-	if _, ok := t.(*GenericType); ok {
+	if _, ok := t.(GenericType); ok {
 		return true
 	}
 
@@ -148,8 +148,8 @@ func IsGeneric(t Type) bool {
 	return ok
 }
 
-func CastGeneric(t Type) (*GenericType, bool) {
+func CastGeneric(t Type) (GenericType, bool) {
 	t = GetUnderlying(t)
-	generic, ok := t.(*GenericType)
+	generic, ok := t.(GenericType)
 	return generic, ok
 }

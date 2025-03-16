@@ -5,20 +5,20 @@ type GenericType struct {
 	Name string
 }
 
-func (*GenericType) ddpType() {}
+func (GenericType) ddpType() {}
 
-func (*GenericType) Gender() GrammaticalGender {
+func (GenericType) Gender() GrammaticalGender {
 	// TODO: generisches Maskulinum or INVALID_GENDER or extra gender?
 	return MASKULIN
 }
 
-func (t *GenericType) String() string {
+func (t GenericType) String() string {
 	return t.Name
 }
 
-func CastDeeplyNestedGeneric(t Type) (*GenericType, bool) {
+func CastDeeplyNestedGeneric(t Type) (GenericType, bool) {
 	t = GetNestedListUnderlying(t)
-	generic, ok := t.(*GenericType)
+	generic, ok := t.(GenericType)
 	return generic, ok
 }
 

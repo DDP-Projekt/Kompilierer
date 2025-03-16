@@ -47,15 +47,15 @@ func TestInsertOperatorOverload(t *testing.T) {
 	assert.Equal([]*ast.FuncDecl{op_ref_ref, op_text_ref, op_ref_zahl, op_text_text, op_zahl_zahl}, given.Operators[ast.BIN_PLUS])
 	assert.False(errorCollector.DidError())
 
-	op_generic_generic := op(&ddptypes.GenericType{Name: "T"}, &ddptypes.GenericType{Name: "R"}, false, false)
+	op_generic_generic := op(ddptypes.GenericType{Name: "T"}, ddptypes.GenericType{Name: "R"}, false, false)
 
 	given.insertOperatorOverload(op_generic_generic)
 
 	assert.Equal([]*ast.FuncDecl{op_ref_ref, op_text_ref, op_ref_zahl, op_text_text, op_zahl_zahl, op_generic_generic}, given.Operators[ast.BIN_PLUS])
 	assert.False(errorCollector.DidError())
 
-	op_generic_ref := op(&ddptypes.GenericType{Name: "T"}, &ddptypes.GenericType{Name: "R"}, false, true)
-	op_ref_ref_gen := op(&ddptypes.GenericType{Name: "T"}, &ddptypes.GenericType{Name: "R"}, true, true)
+	op_generic_ref := op(ddptypes.GenericType{Name: "T"}, ddptypes.GenericType{Name: "R"}, false, true)
+	op_ref_ref_gen := op(ddptypes.GenericType{Name: "T"}, ddptypes.GenericType{Name: "R"}, true, true)
 
 	given.insertOperatorOverload(op_generic_ref)
 	given.insertOperatorOverload(op_ref_ref_gen)
@@ -63,7 +63,7 @@ func TestInsertOperatorOverload(t *testing.T) {
 	assert.Equal([]*ast.FuncDecl{op_ref_ref, op_text_ref, op_ref_zahl, op_text_text, op_zahl_zahl, op_ref_ref_gen, op_generic_ref, op_generic_generic}, given.Operators[ast.BIN_PLUS])
 	assert.False(errorCollector.DidError())
 
-	op_generic_generic2 := op(&ddptypes.GenericType{Name: "T"}, &ddptypes.GenericType{Name: "R"}, false, false)
+	op_generic_generic2 := op(ddptypes.GenericType{Name: "T"}, ddptypes.GenericType{Name: "R"}, false, false)
 
 	given.insertOperatorOverload(op_generic_generic2)
 

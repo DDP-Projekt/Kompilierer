@@ -42,14 +42,14 @@ func TestStructurallyEqual(t *testing.T) {
 func TestCastDeeplyNestedGeneric(t *testing.T) {
 	assert := assert.New(t)
 
-	generic := &GenericType{}
+	generic := GenericType{Name: "generic"}
 	ty, ok := CastDeeplyNestedGeneric(generic)
 	assert.True(ok)
 	assert.Equal(generic, ty)
 
 	ty, ok = CastDeeplyNestedGeneric(ZAHL)
 	assert.False(ok)
-	assert.Nil(ty)
+	assert.Equal(GenericType{}, ty)
 
 	ty, ok = CastDeeplyNestedGeneric(ListType{Underlying: generic})
 	assert.True(ok)
@@ -69,9 +69,53 @@ func TestGetInstantiatedType(t *testing.T) {
 	instantiated = GetInstantiatedType(ListType{Underlying: ZAHL}, nil)
 	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
 
-	instantiated = GetInstantiatedType(&GenericType{Name: "T"}, map[string]Type{"T": ZAHL})
+	instantiated = GetInstantiatedType(GenericType{Name: "T"}, map[string]Type{"T": ZAHL})
 	assert.Equal(ZAHL, instantiated)
 
-	instantiated = GetInstantiatedType(ListType{Underlying: &GenericType{Name: "T"}}, map[string]Type{"T": ZAHL})
+	instantiated = GetInstantiatedType(ListType{Underlying: GenericType{Name: "T"}}, map[string]Type{"T": ZAHL})
 	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
+}
+
+func TestUnifyGenericType(t *testing.T) {
+	assert := assert.New(t)
+
+	typ := UnifyGenericType(ZAHL, ParameterType{Type: ZAHL}, nil)
+	assert.Equal(ZAHL, typ)
+
+	genericTypes := map[string]Type{}
+	typ = UnifyGenericType(ZAHL, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ZAHL, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
+	genericTypes = map[string]Type{"T": ZAHL}
+	typ = UnifyGenericType(ZAHL, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ZAHL, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
+	genericTypes = map[string]Type{"T": TEXT}
+	typ = UnifyGenericType(ZAHL, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(TEXT, typ)
+	assert.Equal(map[string]Type{"T": TEXT}, genericTypes)
+
+	// with lists
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ListType{Underlying: ZAHL}, ParameterType{Type: ListType{Underlying: GenericType{Name: "T"}}}, genericTypes)
+	assert.Equal(ListType{Underlying: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ListType{Underlying: ZAHL}, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ListType{Underlying: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ListType{Underlying: ZAHL}}, genericTypes)
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ZAHL, ParameterType{Type: ListType{Underlying: GenericType{Name: "T"}}}, genericTypes)
+	assert.Equal(nil, typ)
+	assert.NotContains(genericTypes, "T")
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ListType{Underlying: ListType{Underlying: ZAHL}}, ParameterType{Type: ListType{Underlying: ListType{Underlying: GenericType{Name: "T"}}}}, genericTypes)
+	assert.Equal(ListType{Underlying: ListType{Underlying: ZAHL}}, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 }

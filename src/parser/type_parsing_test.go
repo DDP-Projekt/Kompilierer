@@ -30,7 +30,7 @@ func TestParseReferenceType(t *testing.T) {
 
 	runTest(`T`, false, true, false, nil)
 
-	runTest(`T`, true, false, false, &ddptypes.GenericType{Name: "T"})
-	runTest(`T Liste`, true, false, false, ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}})
-	runTest(`T Referenz`, true, false, true, &ddptypes.GenericType{Name: "T"})
+	runTest(`T`, true, false, false, ddptypes.GenericType{Name: "T"})
+	runTest(`T Liste`, true, false, false, ddptypes.ListType{Underlying: ddptypes.GenericType{Name: "T"}})
+	runTest(`T Referenz`, true, false, true, ddptypes.GenericType{Name: "T"})
 }

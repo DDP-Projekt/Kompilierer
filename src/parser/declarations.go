@@ -169,7 +169,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 // parses a variable declaration
 // startDepth is the int passed to p.peekN(n) to get to the DER/DIE token of the declaration
 // isField indicates that this declaration should be parsed as a struct field
-func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
+func (p *parser) varDeclaration(startDepth int, isField, isGeneric bool) ast.Declaration {
 	begin := p.peekN(startDepth) // Der/Die/Das
 	comment := p.parseDeclComment(begin.Range)
 
@@ -177,7 +177,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	isExternVisible := p.matchExternSichtbar(isPublic)
 
 	type_start := p.peek()
-	typ := p.parseType()
+	typ := p.parseType(isGeneric)
 	type_end := p.previous()
 	if typ == nil {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
@@ -541,7 +541,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 	// parse the parameter declaration
 	params := p.parseFunctionParameters(perr, validate, isGeneric)
-	genericTypes := make(map[string]*ddptypes.GenericType, 4)
+	genericTypes := make(map[string]ddptypes.GenericType, 4)
 	for _, param := range params {
 		if generic, isGeneric := ddptypes.CastDeeplyNestedGeneric(param.Type.Type); isGeneric {
 			genericTypes[generic.String()] = generic
@@ -958,11 +958,19 @@ func (p *parser) structDeclaration() ast.Declaration {
 	begin := p.peekN(-3) // token.WIR
 	comment := p.parseDeclComment(begin.Range)
 
-	isPublic := p.matchAny(token.OEFFENTLICHE)
+	isPublic := p.peek().Type == token.OEFFENTLICHE || p.peekN(1).Type == token.OEFFENTLICHE
+	isGeneric := p.peek().Type == token.GENERISCHE || p.peekN(1).Type == token.GENERISCHE
+	if isPublic {
+		p.advance()
+	}
+	if isGeneric {
+		p.advance()
+	}
 	p.consumeSeq(token.KOMBINATION, token.AUS)
 
 	// parse the fields
 	var fields []ast.Declaration
+	var genericTypes []ddptypes.GenericType
 	indent := begin.Indent + 1
 	for p.peek().Indent >= indent && !p.atEnd() {
 		p.consumeAny(token.DER, token.DEM)
@@ -970,7 +978,17 @@ func (p *parser) structDeclaration() ast.Declaration {
 		if p.matchAny(token.OEFFENTLICHEN) {
 			n = -2
 		}
-		fields = append(fields, p.varDeclaration(n, true))
+		field := p.varDeclaration(n, true, isGeneric)
+		fields = append(fields, field)
+
+		if fieldVar, isVar := field.(*ast.VarDecl); isVar {
+			if generic, isGeneric := ddptypes.CastDeeplyNestedGeneric(fieldVar.Type); isGeneric {
+				if !slices.ContainsFunc(genericTypes, func(t ddptypes.GenericType) bool { return t.String() == generic.String() }) {
+					genericTypes = append(genericTypes, generic)
+				}
+			}
+		}
+
 		if !p.consumeSeq(token.COMMA) {
 			p.advance()
 		}
@@ -997,7 +1015,53 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
 	}
 
-	p.consumeSeq(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
+	// report this error here because now we have the name token
+	if isGeneric && len(genericTypes) == 0 {
+		p.err(ddperror.SEM_GENERIC_STRUCT_WITHOUT_TYPEPARAM, name.Range, "Eine generische Kombination braucht mindestens einen Typparameter")
+	}
+
+	fieldsForValidation := toInterfaceSlice[ast.Declaration, *ast.VarDecl](
+		filterSlice(fields, func(decl ast.Declaration) bool { _, ok := decl.(*ast.VarDecl); return ok }),
+	)
+	var (
+		structAliases     []*ast.StructAlias
+		structAliasTokens [][]*token.Token
+	)
+	if p.matchAny(token.COMMA) {
+		structAliases, structAliasTokens = p.parseStructAliases(fields, fieldsForValidation)
+	} else {
+		p.consumeAny(token.DOT)
+	}
+
+	structType := &ddptypes.StructType{
+		Name:       name.Literal,
+		GramGender: gender,
+		Fields:     varDeclsToFields(fieldsForValidation),
+	}
+
+	decl := &ast.StructDecl{
+		Range:        token.NewRange(begin, p.previous()),
+		CommentTok:   comment,
+		Tok:          *begin,
+		NameTok:      *name,
+		IsPublic:     isPublic,
+		Mod:          p.module,
+		Fields:       fields,
+		Type:         structType,
+		Aliases:      structAliases,
+		GenericTypes: genericTypes,
+	}
+
+	for i := range structAliases {
+		structAliases[i].Struct = decl
+		p.aliases.Insert(structAliasTokens[i], structAliases[i])
+	}
+
+	return decl
+}
+
+func (p *parser) parseStructAliases(fields []ast.Declaration, fieldsForValidation []*ast.VarDecl) (structAliases []*ast.StructAlias, structAliasTokens [][]*token.Token) {
+	p.consumeSeq(token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
 	var rawAliases []*token.Token
 	if p.previous().Type == token.STRING {
 		rawAliases = append(rawAliases, p.previous())
@@ -1008,11 +1072,6 @@ func (p *parser) structDeclaration() ast.Declaration {
 		}
 	}
 
-	var structAliases []*ast.StructAlias
-	var structAliasTokens [][]*token.Token
-	fieldsForValidation := toInterfaceSlice[ast.Declaration, *ast.VarDecl](
-		filterSlice(fields, func(decl ast.Declaration) bool { _, ok := decl.(*ast.VarDecl); return ok }),
-	)
 	for _, rawAlias := range rawAliases {
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
@@ -1031,31 +1090,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 			}
 		}
 	}
-
-	structType := &ddptypes.StructType{
-		Name:       name.Literal,
-		GramGender: gender,
-		Fields:     varDeclsToFields(fieldsForValidation),
-	}
-
-	decl := &ast.StructDecl{
-		Range:      token.NewRange(begin, p.previous()),
-		CommentTok: comment,
-		Tok:        *begin,
-		NameTok:    *name,
-		IsPublic:   isPublic,
-		Mod:        p.module,
-		Fields:     fields,
-		Type:       structType,
-		Aliases:    structAliases,
-	}
-
-	for i := range structAliases {
-		structAliases[i].Struct = decl
-		p.aliases.Insert(structAliasTokens[i], structAliases[i])
-	}
-
-	return decl
+	return structAliases, structAliasTokens
 }
 
 func (p *parser) typeAliasDecl() ast.Declaration {
@@ -1065,7 +1100,7 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	p.consumeSeq(token.NENNEN)
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
-	underlying := p.parseType()
+	underlying := p.parseType(false)
 	underlyingEnd := p.previous()
 
 	isPublic := p.matchAny(token.OEFFENTLICH)
@@ -1109,7 +1144,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
-	underlying := p.parseType()
+	underlying := p.parseType(false)
 	underlyingEnd := p.previous()
 	underlyingRange := token.NewRange(underlyingStart, underlyingEnd)
 

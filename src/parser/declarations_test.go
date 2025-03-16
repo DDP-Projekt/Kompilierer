@@ -568,3 +568,26 @@ Und kann so benutzt werden:
 	assert.True(exists)
 	assert.Equal(decl, alias.Decl())
 }
+
+func TestGenericStructDecl(t *testing.T) {
+	assert := assert.New(t)
+	_ = assert
+
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `
+Wir nennen die generische Kombination aus
+	dem T x,
+	dem T y,
+	dem R z,
+	der R Liste l,
+eine Struktur, und erstellen sie so:
+	"Struktur"
+		`),
+	})
+
+	decl_stmt := given.declaration()
+	decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.StructDecl)
+
+	assert.True(ast.IsGenericStruct(decl))
+	assert.Equal([]ddptypes.GenericType{{Name: "T"}, {Name: "R"}}, decl.GenericTypes)
+}

@@ -54,22 +54,22 @@ func TestAliasSorter(t *testing.T) {
 		"b": {Type: ddptypes.ZAHL, IsReference: true},
 	})
 	g := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
+		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
 	})
 	h := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: true},
+		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: true},
 	})
 	i := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
+		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
 		"b": {Type: ddptypes.ZAHL, IsReference: false},
 	})
 	j := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
-		"b": {Type: &ddptypes.GenericType{Name: "R"}, IsReference: false},
+		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
+		"b": {Type: ddptypes.GenericType{Name: "R"}, IsReference: false},
 	})
 	k := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
-		"b": {Type: &ddptypes.GenericType{Name: "R"}, IsReference: true},
+		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
+		"b": {Type: ddptypes.GenericType{Name: "R"}, IsReference: true},
 	})
 
 	// longer aliase to the top
@@ -180,9 +180,9 @@ func TestGenerateGenericContext(t *testing.T) {
 	context := given.generateGenericContext(declContext, []ast.ParameterInfo{
 		{Name: token.Token{Literal: "a"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
 		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
-		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}, IsReference: false}},
-		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "R"}, IsReference: false}},
-		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}, IsReference: false}},
+		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "T"}, IsReference: false}},
+		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "R"}, IsReference: false}},
+		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: ddptypes.GenericType{Name: "T"}}, IsReference: false}},
 	}, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 		"R": structDecl.Type,
@@ -373,45 +373,6 @@ Und kann so benutzt werden:
 	assert.Same(decl, instantiation.GenericDecl)
 }
 
-func TestUnifyGenericType(t *testing.T) {
-	assert := assert.New(t)
-
-	typ := unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: ddptypes.ZAHL}, nil)
-	assert.Equal(ddptypes.ZAHL, typ)
-
-	genericTypes := map[string]ddptypes.Type{}
-	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
-	assert.Equal(ddptypes.ZAHL, typ)
-	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
-
-	genericTypes = map[string]ddptypes.Type{"T": ddptypes.ZAHL}
-	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
-	assert.Equal(ddptypes.ZAHL, typ)
-	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
-
-	genericTypes = map[string]ddptypes.Type{"T": ddptypes.TEXT}
-	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
-	assert.Equal(ddptypes.TEXT, typ)
-	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.TEXT}, genericTypes)
-
-	// with lists
-
-	genericTypes = map[string]ddptypes.Type{}
-	typ = unifyGenericType(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}}, genericTypes)
-	assert.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, typ)
-	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, genericTypes)
-
-	genericTypes = map[string]ddptypes.Type{}
-	typ = unifyGenericType(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ParameterType{Type: &ddptypes.GenericType{Name: "T"}}, genericTypes)
-	assert.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, typ)
-	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ListType{Underlying: ddptypes.ZAHL}}, genericTypes)
-
-	genericTypes = map[string]ddptypes.Type{}
-	typ = unifyGenericType(ddptypes.ZAHL, ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: &ddptypes.GenericType{Name: "T"}}}, genericTypes)
-	assert.Equal(nil, typ)
-	assert.NotContains(genericTypes, "T")
-}
-
 func TestCheckAlias(t *testing.T) {
 	assert := assert.New(t)
 
@@ -443,7 +404,7 @@ func TestCheckAlias(t *testing.T) {
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
-			Types: map[string]*ddptypes.GenericType{"T": {Name: "T"}},
+			Types: map[string]ddptypes.GenericType{"T": {Name: "T"}},
 			Tokens: scanTokens(t, `:
 Ende`),
 			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
@@ -454,7 +415,7 @@ Ende`),
 
 	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
 		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: &ddptypes.GenericType{Name: "T"}, IsReference: false},
+		"b": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -477,7 +438,7 @@ Ende`),
 		tokens: scanTokens(t, `foo 1 (eine Liste, die aus 1, 2, 3 besteht)`),
 	})
 
-	genericType := &ddptypes.GenericType{Name: "T"}
+	genericType := ddptypes.GenericType{Name: "T"}
 	genericFunc = &ast.FuncDecl{
 		NameTok:    token.Token{Literal: "bar"},
 		Mod:        given.module,
@@ -493,7 +454,7 @@ Ende`),
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
-			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Types: map[string]ddptypes.GenericType{"T": genericType},
 			Tokens: scanTokens(t, `:
 Ende`),
 			Context:        ast.GenericContext{Symbols: given.scope(), Aliases: given.aliases},
@@ -527,7 +488,7 @@ Ende`),
 		tokens: scanTokens(t, `foo 1 (eine Liste, die aus "a", "b", "c" besteht)`),
 	})
 
-	genericType = &ddptypes.GenericType{Name: "T"}
+	genericType = ddptypes.GenericType{Name: "T"}
 	genericFunc = &ast.FuncDecl{
 		NameTok:    token.Token{Literal: "bar"},
 		Mod:        given.module,
@@ -543,7 +504,7 @@ Ende`),
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
-			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Types: map[string]ddptypes.GenericType{"T": genericType},
 			Tokens: scanTokens(t, `:
 	Speichere a in b an der Stelle 1.
 Ende`),
@@ -568,7 +529,7 @@ Ende`),
 		tokens: scanTokens(t, `foo 1 (eine Liste, die aus "a", "b", "c" besteht)`),
 	})
 
-	genericType = &ddptypes.GenericType{Name: "T"}
+	genericType = ddptypes.GenericType{Name: "T"}
 	genericFunc = &ast.FuncDecl{
 		NameTok:    token.Token{Literal: "bar"},
 		Mod:        given.module,
@@ -584,7 +545,7 @@ Ende`),
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
-			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Types: map[string]ddptypes.GenericType{"T": genericType},
 			Tokens: scanTokens(t, `:
 	Speichere a in b an der Stelle 1.
 Ende`),
@@ -611,7 +572,7 @@ Ende`),
 	symbols := createSymbols("i", ddptypes.ListType{Underlying: ddptypes.ZAHL})
 	given.setScope(symbols)
 
-	genericType = &ddptypes.GenericType{Name: "T"}
+	genericType = ddptypes.GenericType{Name: "T"}
 	genericFunc = &ast.FuncDecl{
 		NameTok:    token.Token{Literal: "foo"},
 		Mod:        given.module,
@@ -627,7 +588,7 @@ Ende`),
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
-			Types: map[string]*ddptypes.GenericType{"T": genericType},
+			Types: map[string]ddptypes.GenericType{"T": genericType},
 			Tokens: scanTokens(t, `:
 	foo a b.
 Ende`),

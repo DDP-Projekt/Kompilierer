@@ -461,7 +461,7 @@ func (p *parser) forStatement() ast.Statement {
 	p.consumeAny(token.JEDE, token.JEDEN, token.JEDES)
 	pronoun_tok := p.previous()
 	TypeTok := p.peek()
-	Typ := p.parseType()
+	Typ := p.parseType(false)
 	if Typ != nil {
 		if !ddptypes.MatchesGender(Typ, genderFromForPronoun(pronoun_tok.Type)) {
 			p.err(ddperror.SYN_GENDER_MISMATCH, pronoun_tok.Range, fmt.Sprintf("Falsches Pronomen, meintest du %s?", forPronounFromGender(Typ.Gender())))
