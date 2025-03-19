@@ -543,8 +543,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	params := p.parseFunctionParameters(perr, validate, isGeneric)
 	genericTypes := make(map[string]ddptypes.GenericType, 4)
 	for _, param := range params {
-		if generic, isGeneric := ddptypes.CastDeeplyNestedGeneric(param.Type.Type); isGeneric {
-			genericTypes[generic.String()] = generic
+		if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+			for _, generic := range generics {
+				genericTypes[generic.String()] = generic
+			}
 		}
 	}
 
@@ -982,9 +984,11 @@ func (p *parser) structDeclaration() ast.Declaration {
 		fields = append(fields, field)
 
 		if fieldVar, isVar := field.(*ast.VarDecl); isVar {
-			if generic, isGeneric := ddptypes.CastDeeplyNestedGeneric(fieldVar.Type); isGeneric {
-				if !slices.ContainsFunc(genericTypes, func(t ddptypes.GenericType) bool { return t.String() == generic.String() }) {
-					genericTypes = append(genericTypes, generic)
+			if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(fieldVar.Type); isGeneric {
+				for _, generic := range generics {
+					if !slices.ContainsFunc(genericTypes, func(t ddptypes.GenericType) bool { return t.String() == generic.String() }) {
+						genericTypes = append(genericTypes, generic)
+					}
 				}
 			}
 		}
@@ -1033,23 +1037,30 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.consumeAny(token.DOT)
 	}
 
-	structType := &ddptypes.StructType{
+	var structType ddptypes.Type = &ddptypes.StructType{
 		Name:       name.Literal,
 		GramGender: gender,
 		Fields:     varDeclsToFields(fieldsForValidation),
 	}
 
+	if isGeneric {
+		structType = &ddptypes.GenericStructType{
+			StructType:     *(structType.(*ddptypes.StructType)),
+			GenericTypes:   genericTypes,
+			Instantiations: nil,
+		}
+	}
+
 	decl := &ast.StructDecl{
-		Range:        token.NewRange(begin, p.previous()),
-		CommentTok:   comment,
-		Tok:          *begin,
-		NameTok:      *name,
-		IsPublic:     isPublic,
-		Mod:          p.module,
-		Fields:       fields,
-		Type:         structType,
-		Aliases:      structAliases,
-		GenericTypes: genericTypes,
+		Range:      token.NewRange(begin, p.previous()),
+		CommentTok: comment,
+		Tok:        *begin,
+		NameTok:    *name,
+		IsPublic:   isPublic,
+		Mod:        p.module,
+		Fields:     fields,
+		Type:       structType,
+		Aliases:    structAliases,
 	}
 
 	for i := range structAliases {

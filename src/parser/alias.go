@@ -379,7 +379,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	// meaning types must contain the correct type for each parameter
 	for i, param := range genericFunc.Parameters {
 		parameters[i] = param
-		_, isGeneric := ddptypes.CastDeeplyNestedGeneric(param.Type.Type)
+		_, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type)
 		if !isGeneric {
 			continue
 		}

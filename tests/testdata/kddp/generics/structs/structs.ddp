@@ -33,7 +33,7 @@ Wir nennen die generische Kombination aus
 	dem T y mit Standardwert 2,
 	dem T z mit Standardwert 3,
 einen Vektor3, und erstellen sie so:
-	"der Nullvektor3" [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
+	"der Nullvektor3", [ erlaubt, da T durch die Standardwerte als Zahl abgeleitet werden kann ]
 	"Vektor3(<x>, <y>, <z>)" [ argumente des Konstruktors überschreiben standardwerte ]
 
 
@@ -63,3 +63,25 @@ Schreibe (a von struktur) auf eine Zeile.
 Schreibe (b von struktur) auf eine Zeile.
 Schreibe (l von struktur) auf eine Zeile.
 Schreibe (l2 von struktur) auf eine Zeile.
+
+Schreibe '\n'.
+
+Wir nennen die generische Kombination aus
+	dem T-Vektor2 vec,
+	der R-Vektor2 Liste vec_liste,
+	der Zahl-(T-Vektor2)-Z-Struktur struktur,
+eine Struktur2.
+[ ohne aliase werden die Standardwerte der Typen verwendet ]
+
+Die Zahl-Kommazahl-Text-Struktur2 struktur2 ist der Standardwert von einer Zahl-Kommazahl-Text-Struktur2.
+
+Schreibe (x von vec von struktur2) auf eine Zeile.
+Schreibe (y von vec von struktur2) auf eine Zeile.
+
+Schreibe (die Länge von vec_liste von struktur2) auf eine Zeile.
+
+Schreibe (a von struktur von struktur2) auf eine Zeile.
+Schreibe (x von b von struktur von struktur2) auf eine Zeile.
+Schreibe (y von b von struktur von struktur2) auf eine Zeile.
+Schreibe (l von struktur von struktur2) auf eine Zeile.
+Schreibe (l2 von struktur von struktur2) auf eine Zeile.

@@ -187,8 +187,8 @@ func isDefaultValue[T comparable](v T) bool {
 }
 
 func operatorReturnTypeEqual(a, b ddptypes.Type) bool {
-	_, isGen1 := ddptypes.CastDeeplyNestedGeneric(a)
-	_, isGen2 := ddptypes.CastDeeplyNestedGeneric(b)
+	_, isGen1 := ddptypes.CastDeeplyNestedGenerics(a)
+	_, isGen2 := ddptypes.CastDeeplyNestedGenerics(b)
 
 	if isGen1 || isGen2 {
 		return isGen1 && isGen2
@@ -199,8 +199,8 @@ func operatorReturnTypeEqual(a, b ddptypes.Type) bool {
 
 func operatorParameterTypesEqual(pi1, pi2 []ast.ParameterInfo) bool {
 	return slices.EqualFunc(pi1, pi2, func(pi1, pi2 ast.ParameterInfo) bool {
-		_, isGen1 := ddptypes.CastDeeplyNestedGeneric(pi1.Type.Type)
-		_, isGen2 := ddptypes.CastDeeplyNestedGeneric(pi2.Type.Type)
+		_, isGen1 := ddptypes.CastDeeplyNestedGenerics(pi1.Type.Type)
+		_, isGen2 := ddptypes.CastDeeplyNestedGenerics(pi2.Type.Type)
 
 		if isGen1 || isGen2 {
 			return isGen1 && isGen2 && pi1.Type.IsReference == pi2.Type.IsReference

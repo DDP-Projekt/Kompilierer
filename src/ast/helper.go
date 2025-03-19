@@ -27,7 +27,8 @@ func IsGeneric(fun *FuncDecl) bool {
 }
 
 func IsGenericStruct(decl *StructDecl) bool {
-	return len(decl.GenericTypes) != 0
+	_, ok := decl.Type.(*ddptypes.GenericStructType)
+	return ok
 }
 
 func IsGenericInstantiation(fun *FuncDecl) bool {

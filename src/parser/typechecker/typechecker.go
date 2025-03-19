@@ -639,7 +639,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		argType := t.Evaluate(arg)
 
 		var paramType ddptypes.Type
-		for _, field := range expr.Struct.Type.Fields {
+		for _, field := range expr.Struct.Type.(*ddptypes.StructType).Fields {
 			if field.Name == argName {
 				paramType = field.Type
 				break

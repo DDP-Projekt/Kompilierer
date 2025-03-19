@@ -95,10 +95,9 @@ type (
 		Mod        *Module      // the module in which the struct was declared
 		// Field declarations of the struct in order of declaration
 		// only contains *VarDecl and *BadDecl s
-		Fields       []Declaration
-		Type         *ddptypes.StructType   // the type resulting from this decl
-		Aliases      []*StructAlias         // the constructors of the struct
-		GenericTypes []ddptypes.GenericType // only present if the struct decl is generic
+		Fields  []Declaration
+		Type    ddptypes.Type  // the type resulting from this decl
+		Aliases []*StructAlias // the constructors of the struct
 	}
 
 	TypeAliasDecl struct {
