@@ -722,20 +722,17 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
 	case token.EINE, token.EINER: // list literals
 		begin := p.previous()
-		if begin.Type == token.EINER && p.matchAny(token.LEEREN) {
-			typ := p.parseListType()
-			lhs = &ast.ListLit{
-				Tok:    *begin,
-				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ,
-				Values: nil,
+		if (begin.Type == token.EINER && p.matchAny(token.LEEREN)) || p.matchAny(token.LEERE) {
+			typ := p.parseType(false)
+			listType, isList := ddptypes.CastList(typ)
+			if !isList {
+				p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
 			}
-		} else if p.matchAny(token.LEERE) {
-			typ := p.parseListType()
+
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ,
+				Type:   listType,
 				Values: nil,
 			}
 		} else {

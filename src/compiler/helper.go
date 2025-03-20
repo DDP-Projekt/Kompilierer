@@ -205,7 +205,15 @@ func (c *compiler) mangledNameType(t ddptypes.Type) string {
 		panic(fmt.Errorf("type %s not in typeMap", t))
 	}
 
-	mangledName := mangledNameBase(t.String(), module)
+	name := t.String()
+	if structType, isStruct := ddptypes.CastStruct(ddptypes.TrueUnderlying(t)); isStruct {
+		parent, types := ddptypes.InstantiatedFrom(structType)
+		if parent != nil {
+			name = strings.Join(mapSlice(types, ddptypes.Type.String), "-") + "-" + structType.String()
+		}
+	}
+
+	mangledName := mangledNameBase(name, module)
 	mangledNamesCacheType.Store(t, mangledName)
 	return mangledName
 }

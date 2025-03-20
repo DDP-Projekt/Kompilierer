@@ -84,40 +84,6 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 	return nil
 }
 
-// parses tokens into a DDPType which must be a list type
-// expects the next token to be the start of the type
-// returns VoidList and errors if no typename was found
-// returns a ddptypes.ListType
-func (p *parser) parseListType() ddptypes.ListType {
-	if !p.matchAny(token.WAHRHEITSWERT, token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLEN) {
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Listen-Typname"))
-		return ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
-	}
-
-	result := ddptypes.ListType{Underlying: ddptypes.VoidType{}} // void indicates error
-	switch p.previous().Type {
-	case token.WAHRHEITSWERT, token.TEXT:
-		result = ddptypes.ListType{Underlying: p.tokenTypeToType(p.previous().Type)}
-	case token.ZAHLEN:
-		result = ddptypes.ListType{Underlying: ddptypes.ZAHL}
-	case token.KOMMAZAHLEN:
-		result = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
-	case token.BUCHSTABEN:
-		result = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
-	case token.VARIABLEN:
-		result = ddptypes.ListType{Underlying: ddptypes.VARIABLE}
-	case token.IDENTIFIER:
-		if Type, exists := p.scope().LookupType(p.previous().Literal); exists {
-			result = ddptypes.ListType{Underlying: Type}
-		} else {
-			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
-		}
-	}
-	p.consumeSeq(token.LISTE)
-
-	return result
-}
-
 // parses tokens into a DDPType and returns wether the type is a reference type
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found

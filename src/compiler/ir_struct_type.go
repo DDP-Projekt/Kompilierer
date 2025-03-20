@@ -3,8 +3,9 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -67,6 +68,19 @@ func (t *ddpIrStructType) DeepCopyFunc() *ir.Func {
 
 func (t *ddpIrStructType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
+}
+
+func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
+	switch typ := decl.Type.(type) {
+	case *ddptypes.StructType:
+		c.defineOrDeclareStructType(typ)
+	case *ddptypes.GenericStructType:
+		for _, instantiation := range typ.Instantiations {
+			c.defineOrDeclareStructType(instantiation.Type)
+		}
+	default:
+		c.err("unexpected type %s in StructDecl %s", typ, decl.Name())
+	}
 }
 
 // recursively defines (or declares, if not from this module) a struct type and all it's field types

@@ -61,6 +61,6 @@ func StructurallyEqual(t1, t2 *StructType) bool {
 }
 
 // returns the Generic Type this struct was instantiated from or nil if it is not generic
-func InstantiatedFrom(s *StructType) *GenericStructType {
-	return s.genericType
+func InstantiatedFrom(s *StructType) (*GenericStructType, []Type) {
+	return s.genericType, s.instantiatedWith
 }

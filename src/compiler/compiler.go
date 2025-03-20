@@ -651,7 +651,7 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
-	c.defineOrDeclareStructType(decl.Type)
+	c.defineOrDeclareAllDeclTypes(decl)
 	return ast.VisitRecurse
 }
 
@@ -2095,7 +2095,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.declareIfStruct(decl.Type)
 			c.addTypdefVTable(decl, true)
 		case *ast.StructDecl:
-			c.defineOrDeclareStructType(decl.Type)
+			c.defineOrDeclareAllDeclTypes(decl)
 		case *ast.BadDecl:
 			c.err("BadDecl in import")
 		default:
@@ -2587,7 +2587,7 @@ func (c *compiler) exitNestedScopes(targetScope *scope) {
 }
 
 func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
-	name := c.mangledNameDecl(d)
+	name := c.mangledNameType(d.Type)
 	if _, ok := c.typeDefVTables[name]; ok {
 		return
 	}
