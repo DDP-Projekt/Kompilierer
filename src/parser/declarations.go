@@ -865,7 +865,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
 func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
-	// validate that the alias contains as many parameters as the struct
+	// validate that the alias contains no more parameters than the struct
 	if count := countElements(aliasTokens, isAliasParam); count > len(fields) {
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
@@ -888,7 +888,6 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 	}
 
 	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
-	nameSet := make(map[string]struct{}, len(fields))                   // set that holds the parameter names contained in the alias
 	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
 	for _, v := range fields {
 		nameTypeMap[v.Name()] = ddptypes.ParameterType{
@@ -896,7 +895,6 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 			IsReference: false, // fields are never references
 		}
 		args[v.Name()] = v.Type
-		nameSet[v.Name()] = struct{}{}
 	}
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
@@ -906,7 +904,7 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		}
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-		if _, ok := nameSet[k]; !ok {
+		if _, ok := args[k]; !ok {
 			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
@@ -973,6 +971,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	// parse the fields
 	var fields []ast.Declaration
 	var genericTypes []ddptypes.GenericType
+	fieldGenericMap := make(map[string][]ddptypes.GenericType)
 	indent := begin.Indent + 1
 	for p.peek().Indent >= indent && !p.atEnd() {
 		p.consumeAny(token.DER, token.DEM)
@@ -985,6 +984,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 
 		if fieldVar, isVar := field.(*ast.VarDecl); isVar {
 			if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(fieldVar.Type); isGeneric {
+				fieldGenericMap[fieldVar.Name()] = generics
 				for _, generic := range generics {
 					if !slices.ContainsFunc(genericTypes, func(t ddptypes.GenericType) bool { return t.String() == generic.String() }) {
 						genericTypes = append(genericTypes, generic)
@@ -1032,7 +1032,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 		structAliasTokens [][]*token.Token
 	)
 	if p.matchAny(token.COMMA) {
-		structAliases, structAliasTokens = p.parseStructAliases(fields, fieldsForValidation)
+		structAliases, structAliasTokens = p.parseStructAliases(fieldsForValidation)
 	} else {
 		p.consumeAny(token.DOT)
 	}
@@ -1071,7 +1071,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 	return decl
 }
 
-func (p *parser) parseStructAliases(fields []ast.Declaration, fieldsForValidation []*ast.VarDecl) (structAliases []*ast.StructAlias, structAliasTokens [][]*token.Token) {
+func (p *parser) parseStructAliases(fieldsForValidation []*ast.VarDecl) (structAliases []*ast.StructAlias, structAliasTokens [][]*token.Token) {
 	p.consumeSeq(token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
 	var rawAliases []*token.Token
 	if p.previous().Type == token.STRING {

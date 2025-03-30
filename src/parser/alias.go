@@ -40,7 +40,7 @@ func (p *parser) alias() ast.Expression {
 			// we need to insert n more keys
 			n := node_index - len(start_indices) + 1
 			// placeholder -1 in every key
-			for i := 0; i < n; i++ {
+			for range n {
 				start_indices = append(start_indices, -1)
 			}
 			// assign the value to the new key
@@ -87,11 +87,11 @@ func (p *parser) alias() ast.Expression {
 	// Stable so equal aliases stay in the order they were defined
 	sortAliases(matchedAliases)
 
-	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression, instantiation ast.Declaration) ast.Expression {
+	callOrLiteralFromAlias := func(alias ast.Alias, args map[string]ast.Expression, funcInstantiation *ast.FuncDecl, structTypeInstantiation *ddptypes.StructType) ast.Expression {
 		if fnalias, isFuncAlias := alias.(*ast.FuncAlias); isFuncAlias {
 			fun := fnalias.Func
-			if genericFunInstantiation, isFun := instantiation.(*ast.FuncDecl); isFun {
-				fun = genericFunInstantiation
+			if funcInstantiation != nil {
+				fun = funcInstantiation
 			}
 
 			fnCall := &ast.FuncCall{
@@ -115,10 +115,17 @@ func (p *parser) alias() ast.Expression {
 		}
 
 		stralias := alias.(*ast.StructAlias)
+
+		structType := stralias.Struct.Type
+		if structTypeInstantiation != nil {
+			structType = structTypeInstantiation
+		}
+
 		return &ast.StructLiteral{
 			Range:  token.NewRange(&p.tokens[start], p.previous()),
 			Tok:    p.tokens[start],
 			Struct: stralias.Struct,
+			Type:   structType.(*ddptypes.StructType),
 			Args:   args,
 		}
 	}
@@ -136,10 +143,11 @@ func (p *parser) alias() ast.Expression {
 	}
 
 	type checkAliasResult struct {
-		alias         ast.Alias
-		errs          []ddperror.Error
-		instantiation ast.Declaration
-		args          map[string]ast.Expression
+		alias                   ast.Alias
+		errs                    []ddperror.Error
+		funcInstantiation       *ast.FuncDecl
+		structTypeInstantiation *ddptypes.StructType
+		args                    map[string]ast.Expression
 	}
 
 	var mostFitting *checkAliasResult
@@ -147,15 +155,15 @@ func (p *parser) alias() ast.Expression {
 
 	// search for the longest possible alias whose parameter types match
 	for i := range matchedAliases {
-		args, instantiation, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
+		args, funcInstantiation, structTypeInstantiation, errs := p.checkAlias(matchedAliases[i], true, start, cached_args)
 		if mostFitting == nil {
-			mostFitting = &checkAliasResult{matchedAliases[i], errs, instantiation, args}
+			mostFitting = &checkAliasResult{matchedAliases[i], errs, funcInstantiation, structTypeInstantiation, args}
 		}
 
 		if args != nil && len(errs) == 0 {
 			// log the errors that occured while parsing
 			apply(p.errorHandler, errs)
-			return callOrLiteralFromAlias(matchedAliases[i], args, instantiation)
+			return callOrLiteralFromAlias(matchedAliases[i], args, funcInstantiation, structTypeInstantiation)
 		}
 	}
 
@@ -166,17 +174,17 @@ func (p *parser) alias() ast.Expression {
 
 	// generic aliases may not be called with typeSensitive = false
 	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) {
-		p.errVal(createInstantiationError(mostFitting.instantiation.(*ast.FuncDecl), mostFitting.errs))
+		p.errVal(createInstantiationError(mostFitting.funcInstantiation, mostFitting.errs))
 		p.cur = start
 		return nil
 	}
 
-	args, instantiation, errs := p.checkAlias(mostFitting.alias, false, start, cached_args)
+	args, funcInstantiation, structTypeInstantiation, errs := p.checkAlias(mostFitting.alias, false, start, cached_args)
 
 	// log the errors that occured while parsing
 	apply(p.errorHandler, errs)
 
-	return callOrLiteralFromAlias(mostFitting.alias, args, instantiation)
+	return callOrLiteralFromAlias(mostFitting.alias, args, funcInstantiation, structTypeInstantiation)
 }
 
 // sorts aliases by
@@ -234,7 +242,7 @@ type cachedArgKey struct {
 // also unifies generic types and attempts to instantiate generic functions
 // returns nil if argument and parameter types don't match
 // it also returns all errors that might have occured while doing so
-func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cached_args map[cachedArgKey]*cachedArg) (map[string]ast.Expression, ast.Declaration, []ddperror.Error) {
+func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cached_args map[cachedArgKey]*cachedArg) (map[string]ast.Expression, *ast.FuncDecl, *ddptypes.StructType, []ddperror.Error) {
 	p.cur = start
 	args := make(map[string]ast.Expression, 4)
 	reported_errors := make([]ddperror.Error, 0)
@@ -253,7 +261,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 			pType := p.peek().Type
 			// early return if a non-identifier expression is passed as reference
 			if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
-				return nil, nil, reported_errors
+				return nil, nil, nil, reported_errors
 			}
 
 			// create the key for the argument
@@ -340,7 +348,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 				}
 
 				if !didMatch {
-					return nil, nil, reported_errors
+					return nil, nil, nil, reported_errors
 				}
 			}
 
@@ -359,10 +367,23 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 		instantiation, errs := p.InstantiateGenericFunction(funcDecl, genericTypes, returnType)
 		reported_errors = append(reported_errors, errs...)
-		return args, instantiation, reported_errors
+		return args, instantiation, nil, reported_errors
 	}
 
-	return args, nil, reported_errors
+	// TODO: validate that all field types can be instantiated and are initialized
+	structDecl, isStructDecl := mAlias.Decl().(*ast.StructDecl)
+	if isStructDecl && ast.IsGeneric(structDecl) {
+		genericStructType := structDecl.Type.(*ddptypes.GenericStructType)
+		typeParams := make([]ddptypes.Type, 0, len(genericStructType.GenericTypes))
+		for _, param := range genericStructType.GenericTypes {
+			typeParams = append(typeParams, genericTypes[param.Name])
+		}
+
+		instantiation := ddptypes.GetInstantiatedStructType(structDecl.Type.(*ddptypes.GenericStructType), typeParams)
+		return args, nil, instantiation, reported_errors
+	}
+
+	return args, nil, nil, reported_errors
 }
 
 // instantiates a generic function with the given types

@@ -57,6 +57,7 @@ const (
 	SEM_GENERIC_FUNCTION_EXTERN_VISIBLE                         // a generic function was marked as extern visible
 	SEM_GENERIC_FUNCTION_BODY_UNDEFINED                         // a generic function was declared without a definition
 	SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION                    // an error occured while instantiating a generic function
+	SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE                     // a non-generic type was given with type parameters
 )
 
 // type error codes
@@ -74,6 +75,7 @@ const (
 	TYP_BAD_FIELD_ACCESS                            // a non-struct type was accessed or similar
 	TYP_PRIVATE_FIELD_ACCESS                        // a non-public field was accessed from another module
 	TYP_BAD_OPERATOR_RETURN_TYPE                    // the return type of a operator overload is void
+	TYP_REFERENCE_TYPE_PARAM                        // a generic type param was a reference
 )
 
 func (code Code) IsMiscError() bool {

@@ -64,14 +64,43 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 		return nil
 	}
 
-	if generic, ok := CastGeneric(genericType); ok {
+	unifyType := func(generic GenericType, instantiatedType Type) Type {
 		unified := false
-		genericType, unified = genericTypes[generic.Name]
+		genericType, unified := genericTypes[generic.Name]
 
 		if !unified {
 			genericTypes[generic.Name] = instantiatedType
 			genericType = instantiatedType
 		}
+
+		return genericType
+	}
+
+	if generic, ok := CastGeneric(genericType); ok {
+		genericType = unifyType(generic, instantiatedType)
+	}
+
+	paramStructType, isParamStruct := CastStruct(genericType)
+	argStructType, isArgStruct := CastStruct(instantiatedType)
+
+	if isParamStruct && paramStructType.genericType != nil && (!isArgStruct || argStructType.genericType == nil) {
+		return nil
+	} else if isParamStruct && paramStructType.genericType != nil {
+		typeParams := make([]Type, 0, len(paramStructType.instantiatedWith))
+		for i, paramTypParam := range paramStructType.instantiatedWith {
+			argTypParam := argStructType.instantiatedWith[i]
+
+			if genericTypParam, isGenericTypParam := CastGeneric(paramTypParam); isGenericTypParam {
+				paramTypParam = unifyType(genericTypParam, argTypParam)
+			}
+
+			if !Equal(paramTypParam, argTypParam) {
+				return nil
+			}
+
+			typeParams = append(typeParams, argTypParam)
+		}
+		genericType = GetInstantiatedStructType(paramStructType.genericType, typeParams)
 	}
 
 	for range listDepth {
@@ -116,7 +145,6 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 		instantiatedType = genericTypes[generic.Name]
 	}
 
-	// TODO
 	if structType, isStruct := CastStruct(instantiatedType); isStruct && structType.genericType != nil {
 		instantiationTypes := make([]Type, len(structType.instantiatedWith))
 		for i, t := range structType.instantiatedWith {
@@ -138,14 +166,13 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 }
 
 type GenericStructInstantiation struct {
-	Type         *StructType
-	GenericTypes []Type
+	Type *StructType
 }
 
 type GenericStructType struct {
 	StructType     StructType
 	GenericTypes   []GenericType
-	Instantiations []GenericStructInstantiation
+	Instantiations []*StructType
 }
 
 func (*GenericStructType) ddpType() {}
@@ -161,8 +188,8 @@ func (t *GenericStructType) String() string {
 // returns a new struct type with the fields filled in correctly
 func GetInstantiatedStructType(s *GenericStructType, genericTypes []Type) *StructType {
 	for _, instantiation := range s.Instantiations {
-		if slices.EqualFunc(instantiation.GenericTypes, genericTypes, Equal) {
-			return instantiation.Type
+		if slices.EqualFunc(instantiation.instantiatedWith, genericTypes, Equal) {
+			return instantiation
 		}
 	}
 
@@ -184,10 +211,7 @@ func GetInstantiatedStructType(s *GenericStructType, genericTypes []Type) *Struc
 		result.Fields[i].Type = GetInstantiatedType(s.StructType.Fields[i].Type, genericTypesMap)
 	}
 
-	s.Instantiations = append(s.Instantiations, GenericStructInstantiation{
-		Type:         &result,
-		GenericTypes: genericTypes,
-	})
+	s.Instantiations = append(s.Instantiations, &result)
 
 	return &result
 }

@@ -76,7 +76,7 @@ func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
 		c.defineOrDeclareStructType(typ)
 	case *ddptypes.GenericStructType:
 		for _, instantiation := range typ.Instantiations {
-			c.defineOrDeclareStructType(instantiation.Type)
+			c.defineOrDeclareStructType(instantiation)
 		}
 	default:
 		c.err("unexpected type %s in StructDecl %s", typ, decl.Name())

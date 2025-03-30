@@ -39,49 +39,87 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // if generic is true, unknown identifiers are treated as generic types
 func (p *parser) parseType(generic bool) ddptypes.Type {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
+		token.VARIABLE, token.VARIABLEN, token.LPAREN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil
 	}
 
-	switch p.previous().Type {
-	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
-		return p.tokenTypeToType(p.previous().Type)
-	case token.WAHRHEITSWERT, token.TEXT:
-		if !p.matchAny(token.LISTE) {
-			return p.tokenTypeToType(p.previous().Type)
-		}
-		return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
-	case token.ZAHLEN:
-		p.consumeSeq(token.LISTE)
-		return ddptypes.ListType{Underlying: ddptypes.ZAHL}
-	case token.KOMMAZAHLEN:
-		p.consumeSeq(token.LISTE)
-		return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
-	case token.BUCHSTABEN:
-		if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
-			return ddptypes.BUCHSTABE
-		}
-		p.consumeSeq(token.LISTE)
-		return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
-	case token.VARIABLEN:
-		p.consumeSeq(token.LISTE)
-		return ddptypes.ListType{Underlying: ddptypes.VARIABLE}
-	case token.IDENTIFIER:
-		if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
-			if generic && !exists {
-				Type = ddptypes.GenericType{Name: p.previous().Literal}
-			}
+	types := make([]ddptypes.Type, 0, 4)
 
-			if p.matchAny(token.LISTE) {
-				return ddptypes.ListType{Underlying: Type}
-			}
-			return Type
+	for ok := true; ok; ok = p.matchAny(token.NEGATE) {
+		if p.previous().Type == token.NEGATE {
+			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+				token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
+				token.VARIABLE, token.VARIABLEN, token.LPAREN)
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
+
+		var typ ddptypes.Type
+		switch p.previous().Type {
+		case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
+			typ = p.tokenTypeToType(p.previous().Type)
+		case token.WAHRHEITSWERT, token.TEXT:
+			if !p.matchAny(token.LISTE) {
+				typ = p.tokenTypeToType(p.previous().Type)
+				break
+			}
+			typ = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
+		case token.ZAHLEN:
+			p.consumeSeq(token.LISTE)
+			typ = ddptypes.ListType{Underlying: ddptypes.ZAHL}
+		case token.KOMMAZAHLEN:
+			p.consumeSeq(token.LISTE)
+			typ = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
+		case token.BUCHSTABEN:
+			if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
+				typ = ddptypes.BUCHSTABE
+				break
+			}
+			p.consumeSeq(token.LISTE)
+			typ = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+		case token.VARIABLEN:
+			p.consumeSeq(token.LISTE)
+			typ = ddptypes.ListType{Underlying: ddptypes.VARIABLE}
+		case token.LPAREN:
+			typ = p.parseType(generic)
+			p.consumeAny(token.RPAREN)
+		case token.IDENTIFIER:
+			if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
+				if generic && !exists {
+					Type = ddptypes.GenericType{Name: p.previous().Literal}
+				}
+
+				if p.matchAny(token.LISTE) {
+					typ = ddptypes.ListType{Underlying: Type}
+				} else {
+					typ = Type
+				}
+				break
+			}
+			fallthrough
+		default:
+			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
+		}
+
+		if typ != nil {
+			types = append(types, typ)
+		}
 	}
 
-	return nil
+	if len(types) == 0 {
+		return nil
+	} else if len(types) == 1 {
+		return types[0]
+	}
+
+	mainType := types[len(types)-1]
+	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
+		return ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+	}
+
+	p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein nicht-generischer Typ kann keine Typparameter haben")
+
+	return mainType
 }
 
 // parses tokens into a DDPType and returns wether the type is a reference type
@@ -89,89 +127,135 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 // returns nil and errors if no typename was found
 func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
-		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER, token.VARIABLE, token.VARIABLEN) {
+		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
+		token.VARIABLE, token.VARIABLEN, token.LPAREN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
 		return nil, false // void indicates error
 	}
 
-	switch p.previous().Type {
-	case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
-		return p.tokenTypeToType(p.previous().Type), false
-	case token.WAHRHEITSWERT, token.TEXT:
-		if p.matchAny(token.LISTE) {
-			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
-		} else if p.matchAny(token.LISTEN) {
-			if !p.consumeSeq(token.REFERENZ) {
-				// report the error on the REFERENZ token, but still advance
-				// because there is a valid token afterwards
-				p.advance()
-			}
-			return ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-3).Type)}, true
-		} else if p.matchAny(token.REFERENZ) {
-			return p.tokenTypeToType(p.peekN(-2).Type), true
-		}
-		return p.tokenTypeToType(p.previous().Type), false
-	case token.ZAHLEN:
-		if p.matchAny(token.LISTE) {
-			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, false
-		} else if p.matchAny(token.LISTEN) {
-			p.consumeSeq(token.REFERENZ)
-			return ddptypes.ListType{Underlying: ddptypes.ZAHL}, true
-		}
-		p.consumeSeq(token.REFERENZ)
-		return ddptypes.ZAHL, true
-	case token.KOMMAZAHLEN:
-		if p.matchAny(token.LISTE) {
-			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, false
-		} else if p.matchAny(token.LISTEN) {
-			p.consumeSeq(token.REFERENZ)
-			return ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, true
-		}
-		p.consumeSeq(token.REFERENZ)
-		return ddptypes.KOMMAZAHL, true
-	case token.BUCHSTABEN:
-		if p.matchAny(token.LISTE) {
-			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, false
-		} else if p.matchAny(token.LISTEN) {
-			p.consumeSeq(token.REFERENZ)
-			return ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, true
-		}
-		p.consumeSeq(token.REFERENZ)
-		return ddptypes.BUCHSTABE, true
-	case token.VARIABLEN:
-		if p.matchAny(token.LISTE) {
-			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, false
-		} else if p.matchAny(token.LISTEN) {
-			p.consumeSeq(token.REFERENZ)
-			return ddptypes.ListType{Underlying: ddptypes.VARIABLE}, true
-		}
-		p.consumeSeq(token.REFERENZ)
-		return ddptypes.VARIABLE, true
-	case token.IDENTIFIER:
-		if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
-			if generic && !exists {
-				Type = ddptypes.GenericType{Name: p.previous().Literal}
-			}
+	types := make([]ddptypes.Type, 0, 4)
+	isRef := false
 
+	for ok := true; ok; ok = p.matchAny(token.NEGATE) {
+		if isRef {
+			p.decrease()
+			p.err(ddperror.TYP_REFERENCE_TYPE_PARAM, p.previous().Range, "Ein Typparameter darf keine Referenz sein")
+			break
+		}
+
+		if p.previous().Type == token.NEGATE {
+			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+				token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
+				token.VARIABLE, token.VARIABLEN, token.LPAREN)
+		}
+
+		var typ ddptypes.Type
+		switch p.previous().Type {
+		case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
+			typ, isRef = p.tokenTypeToType(p.previous().Type), false
+		case token.WAHRHEITSWERT, token.TEXT:
 			if p.matchAny(token.LISTE) {
-				return ddptypes.ListType{Underlying: Type}, false
+				typ, isRef = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
 			} else if p.matchAny(token.LISTEN) {
 				if !p.consumeSeq(token.REFERENZ) {
 					// report the error on the REFERENZ token, but still advance
 					// because there is a valid token afterwards
 					p.advance()
 				}
-				return ddptypes.ListType{Underlying: Type}, true
+				typ, isRef = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-3).Type)}, true
 			} else if p.matchAny(token.REFERENZ) {
-				return Type, true
+				typ, isRef = p.tokenTypeToType(p.peekN(-2).Type), true
+			} else {
+				typ, isRef = p.tokenTypeToType(p.previous().Type), false
 			}
+		case token.ZAHLEN:
+			if p.matchAny(token.LISTE) {
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.ZAHL}, false
+			} else if p.matchAny(token.LISTEN) {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.ZAHL}, true
+			} else {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.ZAHL, true
+			}
+		case token.KOMMAZAHLEN:
+			if p.matchAny(token.LISTE) {
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, false
+			} else if p.matchAny(token.LISTEN) {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, true
+			} else {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.KOMMAZAHL, true
+			}
+		case token.BUCHSTABEN:
+			if p.matchAny(token.LISTE) {
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, false
+			} else if p.matchAny(token.LISTEN) {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, true
+			} else {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.BUCHSTABE, true
+			}
+		case token.VARIABLEN:
+			if p.matchAny(token.LISTE) {
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.VARIABLE}, false
+			} else if p.matchAny(token.LISTEN) {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.ListType{Underlying: ddptypes.VARIABLE}, true
+			} else {
+				p.consumeSeq(token.REFERENZ)
+				typ, isRef = ddptypes.VARIABLE, true
+			}
+		case token.LPAREN:
+			typ = p.parseType(generic)
+			p.consumeAny(token.RPAREN)
+		case token.IDENTIFIER:
+			if Type, exists := p.scope().LookupType(p.previous().Literal); exists || generic {
+				if generic && !exists {
+					Type = ddptypes.GenericType{Name: p.previous().Literal}
+				}
 
-			return Type, false
+				if p.matchAny(token.LISTE) {
+					typ, isRef = ddptypes.ListType{Underlying: Type}, false
+				} else if p.matchAny(token.LISTEN) {
+					if !p.consumeSeq(token.REFERENZ) {
+						// report the error on the REFERENZ token, but still advance
+						// because there is a valid token afterwards
+						p.advance()
+					}
+					typ, isRef = ddptypes.ListType{Underlying: Type}, true
+				} else if p.matchAny(token.REFERENZ) {
+					typ, isRef = Type, true
+				} else {
+					typ, isRef = Type, false
+				}
+				break
+			}
+			fallthrough
+		default:
+			p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
 		}
-		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Typname"))
+		if typ != nil {
+			types = append(types, typ)
+		}
 	}
 
-	return nil, false // unreachable
+	if len(types) == 0 {
+		return nil, false
+	} else if len(types) == 1 {
+		return types[0], isRef
+	}
+
+	mainType := types[len(types)-1]
+	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
+		return ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]), isRef
+	}
+
+	p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein Typ, der keine generische Kombination ist kann keine Typparameter haben")
+
+	return mainType, isRef
 }
 
 // parses tokens into a DDPType

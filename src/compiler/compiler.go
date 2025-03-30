@@ -1983,7 +1983,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 }
 
 func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
-	result, resultType := c.evaluateStructLiteral(expr.Struct.Type.(*ddptypes.StructType), expr.Args)
+	result, resultType := c.evaluateStructLiteral(expr.Type, expr.Args)
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
 	c.latestIsTemp = true
 	return ast.VisitRecurse

@@ -22,13 +22,16 @@ func IsOperatorOverload(fun *FuncDecl) bool {
 	return fun != nil && fun.Operator != nil
 }
 
-func IsGeneric(fun *FuncDecl) bool {
-	return fun != nil && fun.Generic != nil
-}
+func IsGeneric(decl Declaration) bool {
+	switch decl := decl.(type) {
+	case *FuncDecl:
+		return decl != nil && decl.Generic != nil
+	case *StructDecl:
+		_, ok := decl.Type.(*ddptypes.GenericStructType)
+		return ok
 
-func IsGenericStruct(decl *StructDecl) bool {
-	_, ok := decl.Type.(*ddptypes.GenericStructType)
-	return ok
+	}
+	return false
 }
 
 func IsGenericInstantiation(fun *FuncDecl) bool {

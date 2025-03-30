@@ -191,6 +191,120 @@ func TestUnifyGenericType(t *testing.T) {
 	typ = UnifyGenericType(ListType{Underlying: ListType{Underlying: ZAHL}}, ParameterType{Type: ListType{Underlying: ListType{Underlying: GenericType{Name: "T"}}}}, genericTypes)
 	assert.Equal(ListType{Underlying: ListType{Underlying: ZAHL}}, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
+	// with structs
+
+	genericType := &GenericStructType{
+		StructType: StructType{
+			Name: "Generic",
+			Fields: []StructField{
+				{Type: GenericType{Name: "A"}},
+				{Type: GenericType{Name: "B"}},
+			},
+		},
+		GenericTypes: []GenericType{
+			{Name: "A"},
+			{Name: "B"},
+		},
+		Instantiations: []*StructType{nil, nil},
+	}
+
+	genericType.Instantiations[0] = &StructType{
+		Name: "Generic",
+		Fields: []StructField{
+			{Type: GenericType{Name: "T"}},
+			{Type: GenericType{Name: "R"}},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			GenericType{Name: "T"},
+			GenericType{Name: "R"},
+		},
+	}
+
+	genericType.Instantiations[1] = &StructType{
+		Fields: []StructField{
+			{Type: ZAHL},
+			{Type: TEXT},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			ZAHL,
+			TEXT,
+		},
+	}
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(
+		genericType.Instantiations[1],
+		ParameterType{
+			Type: genericType.Instantiations[0],
+		},
+		genericTypes,
+	)
+	if assert.NotNil(typ) {
+		assert.Equal([]StructField{{Type: ZAHL}, {Type: TEXT}}, typ.(*StructType).Fields)
+		assert.Equal(map[string]Type{"T": ZAHL, "R": TEXT}, genericTypes)
+		assert.Len(genericType.Instantiations, 2)
+		assert.Contains(genericType.Instantiations, typ)
+		assert.Same(genericType.Instantiations[1], typ)
+	}
+
+	genericType = &GenericStructType{
+		StructType: StructType{
+			Name: "Generic",
+			Fields: []StructField{
+				{Type: GenericType{Name: "A"}},
+				{Type: GenericType{Name: "B"}},
+				{Type: GenericType{Name: "C"}},
+			},
+		},
+		GenericTypes: []GenericType{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C"},
+		},
+		Instantiations: []*StructType{nil, nil},
+	}
+
+	genericType.Instantiations[0] = &StructType{
+		Name: "Generic",
+		Fields: []StructField{
+			{Type: GenericType{Name: "T"}},
+			{Type: GenericType{Name: "R"}},
+			{Type: TEXT},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			GenericType{Name: "T"},
+			GenericType{Name: "R"},
+			TEXT,
+		},
+	}
+
+	genericType.Instantiations[1] = &StructType{
+		Fields: []StructField{
+			{Type: ZAHL},
+			{Type: TEXT},
+			{Type: KOMMAZAHL},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			ZAHL,
+			TEXT,
+			KOMMAZAHL,
+		},
+	}
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(
+		genericType.Instantiations[1],
+		ParameterType{
+			Type: genericType.Instantiations[0],
+		},
+		genericTypes,
+	)
+	assert.Nil(typ)
 }
 
 func TestGetInstantiatedStructType(t *testing.T) {

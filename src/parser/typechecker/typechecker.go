@@ -175,8 +175,13 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 			if varDecl.InitVal == nil {
 				continue
 			}
+
+			if !ddptypes.IsGeneric(varDecl.Type) {
+				t.visit(field)
+			}
+		} else {
+			t.visit(field) // BadDecl
 		}
-		t.visit(field)
 	}
 	return ast.VisitRecurse
 }
@@ -639,7 +644,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		argType := t.Evaluate(arg)
 
 		var paramType ddptypes.Type
-		for _, field := range expr.Struct.Type.(*ddptypes.StructType).Fields {
+		for _, field := range expr.Type.Fields {
 			if field.Name == argName {
 				paramType = field.Type
 				break
@@ -657,7 +662,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		}
 	}
 
-	t.latestReturnedType = expr.Struct.Type
+	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
 }
 

@@ -159,6 +159,9 @@ type (
 		// the struct declaration this literal refers to
 		// is set by the parser, or nil if the name was not found
 		Struct *StructDecl
+		// the actual struct type which may be instantiated from a generic
+		// and therefore different than Struct.Type
+		Type *ddptypes.StructType
 		// the arguments passed to the literal
 		// this does not include all struct fields,
 		// only the ones needed by the alias used

@@ -385,8 +385,9 @@ func TestCheckAlias(t *testing.T) {
 		"b": {Type: ddptypes.ZAHL, IsReference: false},
 	})
 	cached_args := make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs := given.checkAlias(f, true, 0, cached_args)
-	assert.Nil(instantiation)
+	args, funcInstantiation, structTypeInstantiation, errs := given.checkAlias(f, true, 0, cached_args)
+	assert.Nil(structTypeInstantiation)
+	assert.Nil(funcInstantiation)
 	assert.Empty(errs)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.IntLit{}, args["b"])
@@ -420,17 +421,18 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Nil(structTypeInstantiation)
 	assert.Empty(errs)
 	assert.NotEmpty(args)
-	assert.NotNil(instantiation)
+	assert.NotNil(funcInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.IntLit{}, args["b"])
-	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericDecl)
 
-	_, second_instantiation, _ := given.checkAlias(g, true, 0, cached_args)
-	assert.Same(instantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
+	_, second_instantiation, _, _ := given.checkAlias(g, true, 0, cached_args)
+	assert.Same(funcInstantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.GenericDecl)
 
 	// generic test with list types
 
@@ -469,18 +471,19 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.Empty(errs)
 	assert.NotEmpty(args)
-	assert.NotNil(instantiation)
+	assert.Nil(structTypeInstantiation)
+	assert.NotNil(funcInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Grouping{}, args["b"])
 	assert.IsType(&ast.ListLit{}, args["b"].(*ast.Grouping).Expr)
-	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericDecl)
 
-	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
-	assert.Same(instantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
+	_, second_instantiation, _, _ = given.checkAlias(g, true, 0, cached_args)
+	assert.Same(funcInstantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.GenericDecl)
 
 	// test it with not-working instantiation
 
@@ -520,7 +523,7 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, _, errs = given.checkAlias(g, true, 0, cached_args)
+	_, _, _, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.NotEmpty(errs)
 
 	// test it with not-working instantiation and recusive generic functions
@@ -561,7 +564,7 @@ Ende`),
 	g.(*ast.FuncAlias).Func = genericFunc
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, _, errs = given.checkAlias(g, true, 0, cached_args)
+	_, _, _, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.NotEmpty(errs)
 
 	// generic test with references and recursive generic functions
@@ -605,15 +608,16 @@ Ende`),
 	given.aliases.Insert(g.GetKey(), g)
 
 	cached_args = make(map[cachedArgKey]*cachedArg, 4)
-	args, instantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
 	assert.Empty(errs)
 	assert.NotEmpty(args)
-	assert.NotNil(instantiation)
+	assert.NotNil(funcInstantiation)
+	assert.Nil(structTypeInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Ident{}, args["b"])
-	assert.Same(genericFunc, instantiation.(*ast.FuncDecl).GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericDecl)
 
-	_, second_instantiation, _ = given.checkAlias(g, true, 0, cached_args)
-	assert.Same(instantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.(*ast.FuncDecl).GenericDecl)
+	_, second_instantiation, _, _ = given.checkAlias(g, true, 0, cached_args)
+	assert.Same(funcInstantiation, second_instantiation)
+	assert.Same(genericFunc, second_instantiation.GenericDecl)
 }

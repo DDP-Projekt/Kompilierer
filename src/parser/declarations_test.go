@@ -588,7 +588,7 @@ eine Struktur, und erstellen sie so:
 	decl_stmt := given.declaration()
 	decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.StructDecl)
 
-	assert.True(ast.IsGenericStruct(decl))
+	assert.True(ast.IsGeneric(decl))
 	assert.IsType(&ddptypes.GenericStructType{}, decl.Type)
 	assert.Equal([]ddptypes.GenericType{{Name: "T"}, {Name: "R"}}, decl.Type.(*ddptypes.GenericStructType).GenericTypes)
 }

@@ -28,8 +28,15 @@ func (f typeDeclVisitor) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult
 // returns a map of all struct types mapped to their origin module
 func createTypeMap(module *ast.Module) map[ddptypes.Type]*ast.Module {
 	result := make(map[ddptypes.Type]*ast.Module, 8)
-	ast.VisitModuleRec(module, typeDeclVisitor(func(t ddptypes.Type, m *ast.Module) {
+	var visitorFunc typeDeclVisitor
+	visitorFunc = func(t ddptypes.Type, m *ast.Module) {
+		if generic, isGeneric := ddptypes.CastGenericStructType(t); isGeneric {
+			for _, instantitation := range generic.Instantiations {
+				visitorFunc(instantitation, module)
+			}
+		}
 		result[t] = m
-	}))
+	}
+	ast.VisitModuleRec(module, typeDeclVisitor(visitorFunc))
 	return result
 }

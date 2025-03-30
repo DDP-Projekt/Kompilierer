@@ -153,3 +153,9 @@ func CastGeneric(t Type) (GenericType, bool) {
 	generic, ok := t.(GenericType)
 	return generic, ok
 }
+
+func CastGenericStructType(t Type) (*GenericStructType, bool) {
+	t = GetUnderlying(t)
+	generic, ok := t.(*GenericStructType)
+	return generic, ok
+}

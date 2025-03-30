@@ -19,7 +19,7 @@ Schreibe (y von vec2_text) auf eine Zeile.
 
 Schreibe '\n'.
 
-Der (Zahl-Vektor2)-Vektor2 vec2_vec2 ist Vektor2(Vektor2(1, 2), Vektor2(3, 4)).
+Der (Zahl-Vektor2)-Vektor2 vec2_vec2 ist Vektor2((Vektor2(1, 2)), (Vektor2(3, 4))).
 
 Schreibe (x von x von vec2_vec2) auf eine Zeile.
 Schreibe (y von x von vec2_vec2) auf eine Zeile.
@@ -85,3 +85,29 @@ Schreibe (x von b von struktur von struktur2) auf eine Zeile.
 Schreibe (y von b von struktur von struktur2) auf eine Zeile.
 Schreibe (l von struktur von struktur2) auf eine Zeile.
 Schreibe (l2 von struktur von struktur2) auf eine Zeile.
+
+Schreibe '\n'.
+
+Speichere 1 in x von vec von struktur2.
+Speichere 2 in y von vec von struktur2.
+
+Speichere 3 in a von struktur von struktur2.
+
+Speichere "4" in x von b von struktur von struktur2.
+Speichere "5" in y von b von struktur von struktur2.
+
+Die generische Funktion foo mit dem Parameter struktur2 vom Typ T-R-Z-Struktur2, gibt nichts zurück, macht:
+	Schreibe (x von vec von struktur2) auf eine Zeile.
+	Schreibe (y von vec von struktur2) auf eine Zeile.
+
+	Schreibe (die Länge von vec_liste von struktur2) auf eine Zeile.
+
+	Schreibe (a von struktur von struktur2) auf eine Zeile.
+	Schreibe (x von b von struktur von struktur2) auf eine Zeile.
+	Schreibe (y von b von struktur von struktur2) auf eine Zeile.
+	Schreibe (l von struktur von struktur2) auf eine Zeile.
+	Schreibe (l2 von struktur von struktur2) auf eine Zeile.
+Und kann so benutzt werden:
+	"foo <struktur2>"
+
+foo struktur2.

@@ -21,7 +21,7 @@ type printer struct {
 }
 
 func (pr *printer) printIndent() {
-	for i := 0; i < pr.currentIdent; i++ {
+	for range pr.currentIdent {
 		pr.print("   ")
 	}
 }
@@ -35,6 +35,10 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 	pr.currentIdent++
 
 	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+
 		pr.print("\n")
 		pr.printIndent()
 		node.Accept(pr)
@@ -89,6 +93,7 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 	if decl.CommentTok != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
+
 	pr.parenthesizeNode(msg, decl.InitVal)
 	return VisitRecurse
 }
