@@ -76,6 +76,7 @@ const (
 	TYP_PRIVATE_FIELD_ACCESS                        // a non-public field was accessed from another module
 	TYP_BAD_OPERATOR_RETURN_TYPE                    // the return type of a operator overload is void
 	TYP_REFERENCE_TYPE_PARAM                        // a generic type param was a reference
+	TYP_GENERIC_TYPE_NOT_UNIFIED                    // a generic field type could not be unified
 )
 
 func (code Code) IsMiscError() bool {

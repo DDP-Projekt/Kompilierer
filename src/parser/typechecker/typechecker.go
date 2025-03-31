@@ -123,9 +123,12 @@ func (t *Typechecker) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
-	initialType := t.Evaluate(decl.InitVal)
+	var initialType ddptypes.Type = ddptypes.VoidType{}
+	if decl.InitVal != nil {
+		initialType = t.Evaluate(decl.InitVal)
+	}
 	decl.InitType = initialType
-	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
+	if !ddptypes.IsGeneric(decl.Type) && !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
@@ -176,12 +179,8 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 				continue
 			}
 
-			if !ddptypes.IsGeneric(varDecl.Type) {
-				t.visit(field)
-			}
-		} else {
-			t.visit(field) // BadDecl
 		}
+		t.visit(field)
 	}
 	return ast.VisitRecurse
 }

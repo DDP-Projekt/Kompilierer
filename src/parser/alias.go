@@ -373,10 +373,10 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 	// TODO: validate that all field types can be instantiated and are initialized
 	structDecl, isStructDecl := mAlias.Decl().(*ast.StructDecl)
 	if isStructDecl && ast.IsGeneric(structDecl) {
-		genericStructType := structDecl.Type.(*ddptypes.GenericStructType)
-		typeParams := make([]ddptypes.Type, 0, len(genericStructType.GenericTypes))
-		for _, param := range genericStructType.GenericTypes {
-			typeParams = append(typeParams, genericTypes[param.Name])
+		typeParams, err := p.fillAndVerifyGenericStructInstantiationParams(structDecl, genericTypes)
+		if err != nil {
+			p.errVal(*err)
+			return args, nil, nil, append(reported_errors, *err)
 		}
 
 		instantiation := ddptypes.GetInstantiatedStructType(structDecl.Type.(*ddptypes.GenericStructType), typeParams)
@@ -496,4 +496,37 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 		Aliases:   aliases,
 		Operators: operators,
 	}
+}
+
+// TODO: unit test this
+func (p *parser) fillAndVerifyGenericStructInstantiationParams(structDecl *ast.StructDecl, genericTypes map[string]ddptypes.Type) ([]ddptypes.Type, *ddperror.Error) {
+	genericStructType := structDecl.Type.(*ddptypes.GenericStructType)
+
+	for _, field := range structDecl.Fields {
+		field, ok := field.(*ast.VarDecl)
+		if !ok || !ddptypes.IsGeneric(field.Type) {
+			continue
+		}
+
+		if _, wasUnified := genericTypes[field.Type.String()]; !wasUnified {
+			genericTypes[field.Type.String()] = field.InitType
+		}
+	}
+
+	for _, field := range genericStructType.StructType.Fields {
+		if _, wasUnified := genericTypes[field.Type.String()]; ddptypes.IsGeneric(field.Type) && !wasUnified {
+			// TODO: better error range
+			err := ddperror.New(ddperror.TYP_GENERIC_TYPE_NOT_UNIFIED, ddperror.LEVEL_ERROR, p.previous().Range,
+				fmt.Sprintf("Der generische Typ %s des Feldes %s konnte nicht unifiziert werden", field.Type, field.Name),
+				p.module.FileName)
+			return nil, &err
+		}
+	}
+
+	typeParams := make([]ddptypes.Type, 0, len(genericStructType.GenericTypes))
+	for _, param := range genericStructType.GenericTypes {
+		typeParams = append(typeParams, genericTypes[param.Name])
+	}
+
+	return typeParams, nil
 }

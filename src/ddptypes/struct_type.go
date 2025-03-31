@@ -1,5 +1,7 @@
 package ddptypes
 
+import "fmt"
+
 // represents a single field of a struct
 type StructField struct {
 	// name of the field
@@ -31,6 +33,20 @@ func (t *StructType) Gender() GrammaticalGender {
 
 func (t *StructType) String() string {
 	return t.Name
+}
+
+func (t *StructType) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 's':
+		if t.genericType != nil {
+			for _, typParam := range t.instantiatedWith {
+				fmt.Fprintf(f, "%s-", typParam)
+			}
+		}
+		fmt.Fprintf(f, "%s", t.String())
+	default:
+		fmt.Fprintf(f, fmt.FormatString(f, verb), t)
+	}
 }
 
 // checks wether two structs are structurally equal, that is
