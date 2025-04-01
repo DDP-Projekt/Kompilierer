@@ -39,5 +39,9 @@ func (paramType ParameterType) String() string {
 		return paramType.Type.String() + " Referenz"
 	}
 
+	if IsAny(paramType.Type) {
+		return paramType.Type.String() + "n Referenz"
+	}
+
 	return paramType.Type.String() + " Referenz"
 }

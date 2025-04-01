@@ -34,7 +34,7 @@ OBJS_DEBUG = $(OBJS:.o=_debug.o)
 %_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
-all: $(OUT_FILE_NAME)
+all: $(OUT_FILE_NAME) compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG)
 
