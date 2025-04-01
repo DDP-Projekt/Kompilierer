@@ -56,13 +56,13 @@ func TestParseTypeGeneric(t *testing.T) {
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}, {Type: ddptypes.GenericType{Name: "R"}}},
 		[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}}},
+		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}}},
 	)
 	runTest(`Zahl-(Kommazahlen Liste)-Vektor`,
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}, {Type: ddptypes.GenericType{Name: "R"}}},
 		[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}}},
+		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}}},
 	)
 
 	// lists
@@ -90,7 +90,7 @@ func TestParseTypeGeneric(t *testing.T) {
 	if assert.False(mockHandler.DidError()) {
 		assert.NotNil(typ)
 		assert.True(ddptypes.IsList(typ))
-		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).Underlying.(*ddptypes.StructType).Fields)
+		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).ElementType.(*ddptypes.StructType).Fields)
 	}
 }
 
@@ -111,13 +111,13 @@ func TestParseReferenceType(t *testing.T) {
 	}
 
 	runTest(`Zahl`, false, false, false, ddptypes.ZAHL)
-	runTest(`Zahlen Liste`, false, false, false, ddptypes.ListType{Underlying: ddptypes.ZAHL})
+	runTest(`Zahlen Liste`, false, false, false, ddptypes.ListType{ElementType: ddptypes.ZAHL})
 	runTest(`Zahlen Referenz`, false, false, true, ddptypes.ZAHL)
 
 	runTest(`T`, false, true, false, nil)
 
 	runTest(`T`, true, false, false, ddptypes.GenericType{Name: "T"})
-	runTest(`T Liste`, true, false, false, ddptypes.ListType{Underlying: ddptypes.GenericType{Name: "T"}})
+	runTest(`T Liste`, true, false, false, ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "T"}})
 	runTest(`T Referenz`, true, false, true, ddptypes.GenericType{Name: "T"})
 
 	runGenericTest := func(src, declName string, genericFields []ddptypes.StructField, genericTypes []ddptypes.GenericType, resultFields []ddptypes.StructField, isRef, success bool) {
@@ -181,7 +181,7 @@ func TestParseReferenceType(t *testing.T) {
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}, {Type: ddptypes.GenericType{Name: "R"}}},
 		[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}}},
+		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}}},
 		true,
 		true,
 	)
@@ -189,7 +189,7 @@ func TestParseReferenceType(t *testing.T) {
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}, {Type: ddptypes.GenericType{Name: "R"}}},
 		[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}}},
+		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}}},
 		true,
 		true,
 	)
@@ -236,6 +236,6 @@ func TestParseReferenceType(t *testing.T) {
 		assert.False(isReference)
 		assert.NotNil(typ)
 		assert.True(ddptypes.IsList(typ))
-		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).Underlying.(*ddptypes.StructType).Fields)
+		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).ElementType.(*ddptypes.StructType).Fields)
 	}
 }

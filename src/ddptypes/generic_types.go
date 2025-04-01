@@ -21,7 +21,7 @@ func (t GenericType) String() string {
 }
 
 func CastDeeplyNestedGenerics(t Type) ([]GenericType, bool) {
-	t = GetNestedListUnderlying(t)
+	t = GetNestedListElementType(t)
 	generic, ok := t.(GenericType)
 	if ok {
 		return []GenericType{generic}, ok
@@ -50,7 +50,7 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 	listDepth := 0
 	for isArgList && isParamList {
 		listDepth++
-		instantiatedType, genericType = argListType.Underlying, paramListType.Underlying
+		instantiatedType, genericType = argListType.ElementType, paramListType.ElementType
 
 		if IsGeneric(genericType) {
 			break
@@ -104,7 +104,7 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 	}
 
 	for range listDepth {
-		genericType = ListType{Underlying: genericType}
+		genericType = ListType{ElementType: genericType}
 	}
 	return genericType
 }
@@ -132,7 +132,7 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 	listDepth := 0
 	for isList {
 		listDepth++
-		instantiatedType = listType.Underlying
+		instantiatedType = listType.ElementType
 
 		if IsGeneric(instantiatedType) {
 			break
@@ -159,7 +159,7 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 	}
 
 	for range listDepth {
-		instantiatedType = ListType{Underlying: instantiatedType}
+		instantiatedType = ListType{ElementType: instantiatedType}
 	}
 
 	return instantiatedType

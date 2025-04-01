@@ -63,23 +63,23 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 				typ = p.tokenTypeToType(p.previous().Type)
 				break
 			}
-			typ = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}
+			typ = ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-2).Type)}
 		case token.ZAHLEN:
 			p.consumeSeq(token.LISTE)
-			typ = ddptypes.ListType{Underlying: ddptypes.ZAHL}
+			typ = ddptypes.ListType{ElementType: ddptypes.ZAHL}
 		case token.KOMMAZAHLEN:
 			p.consumeSeq(token.LISTE)
-			typ = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}
+			typ = ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}
 		case token.BUCHSTABEN:
 			if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
 				typ = ddptypes.BUCHSTABE
 				break
 			}
 			p.consumeSeq(token.LISTE)
-			typ = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}
+			typ = ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}
 		case token.VARIABLEN:
 			p.consumeSeq(token.LISTE)
-			typ = ddptypes.ListType{Underlying: ddptypes.VARIABLE}
+			typ = ddptypes.ListType{ElementType: ddptypes.VARIABLE}
 		case token.LPAREN:
 			typ = p.parseType(generic)
 			p.consumeAny(token.RPAREN)
@@ -90,7 +90,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 				}
 
 				if p.matchAny(token.LISTE) {
-					typ = ddptypes.ListType{Underlying: Type}
+					typ = ddptypes.ListType{ElementType: Type}
 				} else {
 					typ = Type
 				}
@@ -118,7 +118,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 	mainListType, isMainList := ddptypes.CastList(mainType)
 	for isMainList {
 		listDepth++
-		mainType = mainListType.Underlying
+		mainType = mainListType.ElementType
 
 		mainListType, isMainList = ddptypes.CastList(mainType)
 	}
@@ -127,7 +127,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
 
 		for range listDepth {
-			mainType = ddptypes.ListType{Underlying: mainType}
+			mainType = ddptypes.ListType{ElementType: mainType}
 		}
 
 		return mainType
@@ -171,14 +171,14 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 			typ, isRef = p.tokenTypeToType(p.previous().Type), false
 		case token.WAHRHEITSWERT, token.TEXT:
 			if p.matchAny(token.LISTE) {
-				typ, isRef = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-2).Type)}, false
+				typ, isRef = ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-2).Type)}, false
 			} else if p.matchAny(token.LISTEN) {
 				if !p.consumeSeq(token.REFERENZ) {
 					// report the error on the REFERENZ token, but still advance
 					// because there is a valid token afterwards
 					p.advance()
 				}
-				typ, isRef = ddptypes.ListType{Underlying: p.tokenTypeToType(p.peekN(-3).Type)}, true
+				typ, isRef = ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-3).Type)}, true
 			} else if p.matchAny(token.REFERENZ) {
 				typ, isRef = p.tokenTypeToType(p.peekN(-2).Type), true
 			} else {
@@ -186,40 +186,40 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 			}
 		case token.ZAHLEN:
 			if p.matchAny(token.LISTE) {
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.ZAHL}, false
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.ZAHL}, false
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.ZAHL}, true
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.ZAHL}, true
 			} else {
 				p.consumeSeq(token.REFERENZ)
 				typ, isRef = ddptypes.ZAHL, true
 			}
 		case token.KOMMAZAHLEN:
 			if p.matchAny(token.LISTE) {
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, false
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}, false
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}, true
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}, true
 			} else {
 				p.consumeSeq(token.REFERENZ)
 				typ, isRef = ddptypes.KOMMAZAHL, true
 			}
 		case token.BUCHSTABEN:
 			if p.matchAny(token.LISTE) {
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, false
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}, false
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.BUCHSTABE}, true
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}, true
 			} else {
 				p.consumeSeq(token.REFERENZ)
 				typ, isRef = ddptypes.BUCHSTABE, true
 			}
 		case token.VARIABLEN:
 			if p.matchAny(token.LISTE) {
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.VARIABLE}, false
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.VARIABLE}, false
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ, isRef = ddptypes.ListType{Underlying: ddptypes.VARIABLE}, true
+				typ, isRef = ddptypes.ListType{ElementType: ddptypes.VARIABLE}, true
 			} else {
 				p.consumeSeq(token.REFERENZ)
 				typ, isRef = ddptypes.VARIABLE, true
@@ -234,14 +234,14 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 				}
 
 				if p.matchAny(token.LISTE) {
-					typ, isRef = ddptypes.ListType{Underlying: Type}, false
+					typ, isRef = ddptypes.ListType{ElementType: Type}, false
 				} else if p.matchAny(token.LISTEN) {
 					if !p.consumeSeq(token.REFERENZ) {
 						// report the error on the REFERENZ token, but still advance
 						// because there is a valid token afterwards
 						p.advance()
 					}
-					typ, isRef = ddptypes.ListType{Underlying: Type}, true
+					typ, isRef = ddptypes.ListType{ElementType: Type}, true
 				} else if p.matchAny(token.REFERENZ) {
 					typ, isRef = Type, true
 				} else {
@@ -270,7 +270,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	mainListType, isMainList := ddptypes.CastList(mainType)
 	for isMainList {
 		listDepth++
-		mainType = mainListType.Underlying
+		mainType = mainListType.ElementType
 
 		mainListType, isMainList = ddptypes.CastList(mainType)
 	}
@@ -279,7 +279,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
 
 		for range listDepth {
-			mainType = ddptypes.ListType{Underlying: mainType}
+			mainType = ddptypes.ListType{ElementType: mainType}
 		}
 
 		return mainType, isRef
@@ -331,7 +331,7 @@ func (p *parser) parseReturnType(genericTypes map[string]ddptypes.GenericType) d
 		} else {
 			p.advance()
 			if p.matchAny(token.LISTE) {
-				typ = ddptypes.ListType{Underlying: typ}
+				typ = ddptypes.ListType{ElementType: typ}
 			}
 		}
 	} else {

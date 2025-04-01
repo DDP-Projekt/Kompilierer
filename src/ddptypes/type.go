@@ -60,7 +60,7 @@ func GetUnderlying(t Type) Type {
 	case *TypeAlias:
 		return GetUnderlying(typ.Underlying)
 	case ListType:
-		return ListType{Underlying: GetUnderlying(typ.Underlying)}
+		return ListType{ElementType: GetUnderlying(typ.ElementType)}
 	case *InstantiatedGenericType:
 		return GetUnderlying(typ.Actual)
 	default:

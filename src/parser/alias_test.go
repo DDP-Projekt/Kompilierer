@@ -182,7 +182,7 @@ func TestGenerateGenericContext(t *testing.T) {
 		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
 		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "T"}, IsReference: false}},
 		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "R"}, IsReference: false}},
-		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: ddptypes.GenericType{Name: "T"}}, IsReference: false}},
+		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "T"}}, IsReference: false}},
 	}, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 		"R": structDecl.Type,
@@ -243,11 +243,11 @@ func TestGenerateGenericContext(t *testing.T) {
 	// parameter types should be correctly instantiated
 	c_decl_context, _, _ := context.Symbols.LookupDecl("c")
 	assert.True(ddptypes.Equal(ddptypes.ZAHL, c_decl_context.(*ast.VarDecl).Type))
-	assert.True(ddptypes.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, ddptypes.ListType{Underlying: TType}))
+	assert.True(ddptypes.Equal(ddptypes.ListType{ElementType: ddptypes.ZAHL}, ddptypes.ListType{ElementType: TType}))
 	e_decl_context, e_exists, e_isVar := context.Symbols.LookupDecl("e")
 	assert.True(e_exists)
 	assert.True(e_isVar)
-	assert.True(ddptypes.Equal(ddptypes.ListType{Underlying: ddptypes.ZAHL}, e_decl_context.(*ast.VarDecl).Type))
+	assert.True(ddptypes.Equal(ddptypes.ListType{ElementType: ddptypes.ZAHL}, e_decl_context.(*ast.VarDecl).Type))
 
 	assert.Equal("Zahl", TType.String())
 	assert.Equal("Bar", RType.String())
@@ -452,7 +452,7 @@ Ende`),
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -466,7 +466,7 @@ Ende`),
 
 	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
 		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -503,7 +503,7 @@ Ende`),
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -518,7 +518,7 @@ Ende`),
 
 	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
 		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -544,7 +544,7 @@ Ende`),
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -559,7 +559,7 @@ Ende`),
 
 	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
 		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: false},
+		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -572,7 +572,7 @@ Ende`),
 	given = createParser(t, parser{
 		tokens: scanTokens(t, `foo 1 i`),
 	})
-	symbols := createSymbols("i", ddptypes.ListType{Underlying: ddptypes.ZAHL})
+	symbols := createSymbols("i", ddptypes.ListType{ElementType: ddptypes.ZAHL})
 	given.setScope(symbols)
 
 	genericType = ddptypes.GenericType{Name: "T"}
@@ -587,7 +587,7 @@ Ende`),
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{Underlying: genericType}, IsReference: true},
+				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: true},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -602,7 +602,7 @@ Ende`),
 
 	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
 		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{Underlying: genericType}, IsReference: true},
+		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: true},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 	given.aliases.Insert(g.GetKey(), g)

@@ -57,7 +57,7 @@ func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
 	if listType, isList := ddptypes.CastList(ddpType); isList {
-		underlying := ddptypes.TrueUnderlying(listType.Underlying)
+		underlying := ddptypes.TrueUnderlying(listType.ElementType)
 		switch underlying {
 		case ddptypes.ZAHL:
 			return c.ddpintlist

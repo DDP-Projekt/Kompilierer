@@ -51,11 +51,11 @@ func TestCastDeeplyNestedGeneric(t *testing.T) {
 	assert.False(ok)
 	assert.Equal(0, len(types))
 
-	types, ok = CastDeeplyNestedGenerics(ListType{Underlying: generic})
+	types, ok = CastDeeplyNestedGenerics(ListType{ElementType: generic})
 	assert.True(ok)
 	assert.Equal([]GenericType{generic}, types)
 
-	types, ok = CastDeeplyNestedGenerics(ListType{Underlying: ListType{Underlying: generic}})
+	types, ok = CastDeeplyNestedGenerics(ListType{ElementType: ListType{ElementType: generic}})
 	assert.True(ok)
 	assert.Equal([]GenericType{generic}, types)
 
@@ -66,8 +66,8 @@ func TestCastDeeplyNestedGeneric(t *testing.T) {
 				{Type: GenericType{Name: "T"}},
 				{Type: GenericType{Name: "R"}},
 				{Type: GenericType{Name: "R"}},
-				{Type: ListType{Underlying: GenericType{Name: "R"}}},
-				{Type: ListType{Underlying: GenericType{Name: "Z"}}},
+				{Type: ListType{ElementType: GenericType{Name: "R"}}},
+				{Type: ListType{ElementType: GenericType{Name: "Z"}}},
 			},
 		},
 	)
@@ -81,14 +81,14 @@ func TestGetInstantiatedType(t *testing.T) {
 	instantiated := GetInstantiatedType(ZAHL, nil)
 	assert.Equal(ZAHL, instantiated)
 
-	instantiated = GetInstantiatedType(ListType{Underlying: ZAHL}, nil)
-	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
+	instantiated = GetInstantiatedType(ListType{ElementType: ZAHL}, nil)
+	assert.Equal(ListType{ElementType: ZAHL}, instantiated)
 
 	instantiated = GetInstantiatedType(GenericType{Name: "T"}, map[string]Type{"T": ZAHL})
 	assert.Equal(ZAHL, instantiated)
 
-	instantiated = GetInstantiatedType(ListType{Underlying: GenericType{Name: "T"}}, map[string]Type{"T": ZAHL})
-	assert.Equal(ListType{Underlying: ZAHL}, instantiated)
+	instantiated = GetInstantiatedType(ListType{ElementType: GenericType{Name: "T"}}, map[string]Type{"T": ZAHL})
+	assert.Equal(ListType{ElementType: ZAHL}, instantiated)
 
 	genericType := &GenericStructType{
 		StructType: StructType{
@@ -123,7 +123,7 @@ func TestGetInstantiatedType(t *testing.T) {
 		StructType: StructType{
 			Fields: []StructField{
 				{Type: GenericType{Name: "T"}},
-				{Type: ListType{Underlying: GenericType{Name: "R"}}},
+				{Type: ListType{ElementType: GenericType{Name: "R"}}},
 			},
 		},
 		GenericTypes: []GenericType{{Name: "T"}, {Name: "R"}},
@@ -133,7 +133,7 @@ func TestGetInstantiatedType(t *testing.T) {
 		&StructType{
 			Fields: []StructField{
 				{Type: ZAHL},
-				{Type: ListType{Underlying: GenericType{Name: "T"}}},
+				{Type: ListType{ElementType: GenericType{Name: "T"}}},
 			},
 			genericType:      genericType,
 			instantiatedWith: []Type{ZAHL, GenericType{Name: "T"}},
@@ -143,7 +143,7 @@ func TestGetInstantiatedType(t *testing.T) {
 	assert.Equal(
 		[]StructField{
 			{Type: ZAHL},
-			{Type: ListType{Underlying: ZAHL}},
+			{Type: ListType{ElementType: ZAHL}},
 		},
 		instantiated.(*StructType).Fields,
 	)
@@ -173,23 +173,23 @@ func TestUnifyGenericType(t *testing.T) {
 	// with lists
 
 	genericTypes = map[string]Type{}
-	typ = UnifyGenericType(ListType{Underlying: ZAHL}, ParameterType{Type: ListType{Underlying: GenericType{Name: "T"}}}, genericTypes)
-	assert.Equal(ListType{Underlying: ZAHL}, typ)
+	typ = UnifyGenericType(ListType{ElementType: ZAHL}, ParameterType{Type: ListType{ElementType: GenericType{Name: "T"}}}, genericTypes)
+	assert.Equal(ListType{ElementType: ZAHL}, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
 	genericTypes = map[string]Type{}
-	typ = UnifyGenericType(ListType{Underlying: ZAHL}, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
-	assert.Equal(ListType{Underlying: ZAHL}, typ)
-	assert.Equal(map[string]Type{"T": ListType{Underlying: ZAHL}}, genericTypes)
+	typ = UnifyGenericType(ListType{ElementType: ZAHL}, ParameterType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ListType{ElementType: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ListType{ElementType: ZAHL}}, genericTypes)
 
 	genericTypes = map[string]Type{}
-	typ = UnifyGenericType(ZAHL, ParameterType{Type: ListType{Underlying: GenericType{Name: "T"}}}, genericTypes)
+	typ = UnifyGenericType(ZAHL, ParameterType{Type: ListType{ElementType: GenericType{Name: "T"}}}, genericTypes)
 	assert.Equal(nil, typ)
 	assert.NotContains(genericTypes, "T")
 
 	genericTypes = map[string]Type{}
-	typ = UnifyGenericType(ListType{Underlying: ListType{Underlying: ZAHL}}, ParameterType{Type: ListType{Underlying: ListType{Underlying: GenericType{Name: "T"}}}}, genericTypes)
-	assert.Equal(ListType{Underlying: ListType{Underlying: ZAHL}}, typ)
+	typ = UnifyGenericType(ListType{ElementType: ListType{ElementType: ZAHL}}, ParameterType{Type: ListType{ElementType: ListType{ElementType: GenericType{Name: "T"}}}}, genericTypes)
+	assert.Equal(ListType{ElementType: ListType{ElementType: ZAHL}}, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
 	// with structs
@@ -336,7 +336,7 @@ func TestGetInstantiatedStructType(t *testing.T) {
 			Name: "Generic",
 			Fields: []StructField{
 				{Type: ZAHL},
-				{Type: ListType{Underlying: GenericType{Name: "R"}}},
+				{Type: ListType{ElementType: GenericType{Name: "R"}}},
 			},
 		},
 		GenericTypes: []GenericType{
@@ -344,7 +344,7 @@ func TestGetInstantiatedStructType(t *testing.T) {
 		},
 	}, []Type{KOMMAZAHL})
 
-	assert.Equal([]StructField{{Type: ZAHL}, {Type: ListType{Underlying: KOMMAZAHL}}}, instantiated.Fields)
+	assert.Equal([]StructField{{Type: ZAHL}, {Type: ListType{ElementType: KOMMAZAHL}}}, instantiated.Fields)
 
 	instantiatedGeneric := GetInstantiatedStructType(genericStruct, []Type{ZAHL, GenericType{Name: "R"}})
 

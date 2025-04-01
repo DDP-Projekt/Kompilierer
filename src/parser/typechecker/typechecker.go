@@ -233,7 +233,7 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	}
 
 	if ddptypes.IsList(lhs) {
-		t.latestReturnedType = ddptypes.GetListUnderlying(lhs)
+		t.latestReturnedType = ddptypes.GetListElementType(lhs)
 	} else {
 		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
@@ -284,13 +284,13 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
-		expr.Type = ddptypes.ListType{Underlying: elementType}
+		expr.Type = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
 		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
 
-		expr.Type = ddptypes.ListType{Underlying: t.Evaluate(expr.Value)}
+		expr.Type = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
@@ -361,10 +361,10 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 			validate(ddptypes.TEXT, ddptypes.BUCHSTABE)
 			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
-			if !ddptypes.Equal(ddptypes.GetListUnderlying(lhs), ddptypes.GetListUnderlying(rhs)) {
+			if !ddptypes.Equal(ddptypes.GetListElementType(lhs), ddptypes.GetListElementType(rhs)) {
 				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
 			}
-			t.latestReturnedType = ddptypes.ListType{Underlying: ddptypes.GetListUnderlying(lhs)}
+			t.latestReturnedType = ddptypes.ListType{ElementType: ddptypes.GetListElementType(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
@@ -383,7 +383,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		}
 
 		if listType, isList := ddptypes.CastList(lhs); isList {
-			t.latestReturnedType = listType.Underlying
+			t.latestReturnedType = listType.ElementType
 		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
@@ -529,7 +529,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 			castErr()
 		}
 	} else if ddptypes.IsList(expr.TargetType) { // non-list types can be converted to their list-type with a single element
-		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.TargetType))
+		underlying := ddptypes.GetUnderlying(ddptypes.GetListElementType(expr.TargetType))
 		if !isOneOf(lhs, underlying) {
 			castErr()
 		}
@@ -780,7 +780,7 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
 	}
 
-	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.Underlying) {
+	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.ElementType) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
 				elementType, inTypeList),
@@ -888,7 +888,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 // and with the SymbolTable that was in use when the type was declared
 func IsPublicType(typ ddptypes.Type, table ast.SymbolTable) bool {
 	// a list-type is public if its underlying type is public
-	typ = ddptypes.GetNestedListUnderlying(typ)
+	typ = ddptypes.GetNestedListElementType(typ)
 
 	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
 	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
@@ -913,7 +913,7 @@ func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *
 	}
 
 	containsUserDefinedType := slices.ContainsFunc(operands, func(o operand) bool {
-		return ddptypes.IsStruct(ddptypes.GetNestedListUnderlying(o.typ))
+		return ddptypes.IsStruct(ddptypes.GetNestedListElementType(o.typ))
 	})
 
 	genericTypes := make(map[string]ddptypes.Type, len(operands))
@@ -981,7 +981,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 		return nil
 	}
 
-	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedListUnderlying(operand.typ))
+	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedListElementType(operand.typ))
 
 	genericTypes := make(map[string]ddptypes.Type, 1)
 
