@@ -1,16 +1,16 @@
 [
 	Tauscht die Werte von a und b.
 ]
-Die Funktion tausche_zahl mit den Parametern a und b vom Typ Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
-	Die Zahl temp ist a.
+Die oeffentliche generische Funktion Tausche mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Das T temp ist a.
 	Speichere b in a.
 	Speichere temp in b.
 Und kann so benutzt werden:
-	"tausche <a> und <b>" oder
-	"Tausche <a> und <b>"
+	"Tausche <a> und <b>" oder
+	"tausche <a> und <b>"
 
 [sortiert a, b und c unter der Annahme, dass es listen elemente in der entsprechenden Reihenfolge sind]
-Die Funktion drei_zahlen_sortieren mit den Parametern a, b und c vom Typ Zahlen Referenz, Zahlen Referenz und Zahlen Referenz, gibt nichts zurück, macht:
+Die generische Funktion drei_werte_sortieren mit den Parametern a, b und c vom Typ T Referenz, T Referenz und T Referenz, gibt nichts zurück, macht:
 	Wenn a größer als c ist, tausche a und c.
 	Wenn a größer als b ist, tausche a und b.
 	Wenn b größer als c ist, tausche b und c.
@@ -39,7 +39,7 @@ Und kann so benutzt werden:
 	"Lege <_links> und <_rechts> auf den Stack" oder
 	"lege <_links> und <_rechts> auf den Stack"
 
-Die Funktion quicksort_iter_impl mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt eine Zahl zurück, macht:
+Die generische Funktion quicksort_iter_impl mit den Parametern liste, li und re vom Typ T Listen Referenz, Zahl und Zahl, gibt eine Zahl zurück, macht:
 	Wenn re kleiner als, oder li ist, gib li zurück.
 
 	Die Zahl list_len ist re minus li plus 1.
@@ -53,7 +53,7 @@ Die Funktion quicksort_iter_impl mit den Parametern liste, li und re vom Typ Zah
 	Wenn list_len gleich 3 ist, gib mi zurück.
 	Tausche (liste an der Stelle mi) und (liste an der Stelle re).
 
-	Die Zahl pivot ist liste an der Stelle re.
+	Das T pivot ist liste an der Stelle re.
 	Die Zahl i ist li minus 1.
 	Die Zahl j ist re.
 
@@ -74,7 +74,7 @@ Die Funktion quicksort_iter_impl mit den Parametern liste, li und re vom Typ Zah
 Und kann so benutzt werden:
 	"quicksort-iter-impl <liste> <li> <re>"
 
-Die Funktion quicksort_iter mit den Parametern liste, li und re vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+Die generische Funktion quicksort_iter mit den Parametern liste, li und re vom Typ T Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Lege li und re auf den Stack.
 	Solange stack_top größer als 0 ist, mache:
 		Nimm li und re vom Stack.
@@ -89,7 +89,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert.
 	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
 ]
-Die öffentliche Funktion Quicksort_Ref mit dem Parameter liste vom Typ Zahlen Listen Referenz, gibt nichts zurück, macht:
+Die öffentliche generische Funktion Quicksort_Ref mit dem Parameter liste vom Typ T Listen Referenz, gibt nichts zurück, macht:
 	quicksort-iter liste 1 (die Länge von liste).
 Und kann so benutzt werden:
 	"Sortiere <liste>" oder
@@ -99,7 +99,7 @@ Und kann so benutzt werden:
 	Eine Funktion, die die Zahlen Liste <liste> mit dem Quick-Sort Algorithmus sortiert und die sortierte Liste zurück gibt.
 	Der Algorithmus ist Iterativ (anstatt Rekursiv) implementiert, wodurch gesichert wird, dass es zu keinem Stackoverflow kommt.
 ]
-Die öffentliche Funktion Quicksort mit dem Parameter liste vom Typ Zahlen Liste, gibt eine Zahlen Liste zurück, macht:
+Die öffentliche generische Funktion Quicksort mit dem Parameter liste vom Typ T Liste, gibt eine T Liste zurück, macht:
 	Sortiere liste mit quick-sort.
 	Gib liste zurück.
 Und kann so benutzt werden:

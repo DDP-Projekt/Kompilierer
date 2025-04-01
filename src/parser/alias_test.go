@@ -316,7 +316,7 @@ Und kann so benutzt werden:
 
 	instantiation, errors := given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
-	}, ddptypes.ZAHL)
+	})
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
@@ -325,7 +325,7 @@ Und kann so benutzt werden:
 
 	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.KOMMAZAHL,
-	}, ddptypes.KOMMAZAHL)
+	})
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
@@ -334,7 +334,7 @@ Und kann so benutzt werden:
 
 	second_instantiation, errors := given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.KOMMAZAHL,
-	}, ddptypes.KOMMAZAHL)
+	})
 
 	assert.Empty(errors)
 	assert.NotNil(second_instantiation)
@@ -344,7 +344,7 @@ Und kann so benutzt werden:
 
 	_, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.BUCHSTABE,
-	}, ddptypes.BUCHSTABE)
+	})
 
 	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
 	assert.Equal(2, len(decl.Generic.Instantiations[given.module]))
@@ -364,13 +364,36 @@ Und kann so benutzt werden:
 
 	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
-	}, ddptypes.VoidType{})
+	})
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 	assert.Same(decl, instantiation.GenericDecl)
+
+	// list return type
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion foo mit den Parametern a und b vom Typ T und T, gibt eine T Liste zurück, macht:
+	Gib a verkettet mit b zurück.
+Und kann so benutzt werden:
+	"foo <a> <b>"`),
+	})
+
+	decl_stmt = given.declaration()
+	decl = decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+
+	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	})
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
+	assert.True(ddptypes.Equal(instantiation.ReturnType, ddptypes.ListType{ElementType: ddptypes.ZAHL}))
 }
 
 func TestCheckAlias(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 )
 
 type GenericInstantiator interface {
-	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type, ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
+	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
 }
 
 // holds state to check if the types of an AST are valid
@@ -959,12 +959,7 @@ overload_loop:
 		}
 
 		// instantiate generic overloads
-		returnType := overload.ReturnType
-		if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
-			returnType = genericTypes[generic.Name]
-		}
-
-		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes, returnType)
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes)
 		if len(errs) != 0 {
 			return nil
 		}
@@ -1026,7 +1021,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 			return operator_overload
 		}
 
-		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes, returnType)
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes)
 		if len(errs) != 0 {
 			return nil
 		}

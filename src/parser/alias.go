@@ -130,9 +130,9 @@ func (p *parser) alias() ast.Expression {
 		}
 	}
 
-	createInstantiationError := func(instantiation *ast.FuncDecl, errs []ddperror.Error) ddperror.Error {
+	createInstantiationError := func(decl *ast.FuncDecl, errs []ddperror.Error) ddperror.Error {
 		msg := strings.Builder{}
-		msg.WriteString(fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s':", instantiation.Name()))
+		msg.WriteString(fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s':", decl.Name()))
 
 		for _, err := range errs {
 			msg.WriteString("\n\t")
@@ -174,7 +174,7 @@ func (p *parser) alias() ast.Expression {
 
 	// generic aliases may not be called with typeSensitive = false
 	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) {
-		p.errVal(createInstantiationError(mostFitting.funcInstantiation, mostFitting.errs))
+		p.errVal(createInstantiationError(funcAlias.Func, mostFitting.errs))
 		p.cur = start
 		return nil
 	}
@@ -308,6 +308,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					aliases:     p.aliases,
 					resolver:    p.resolver,
 					typechecker: p.typechecker,
+					Operators:   p.Operators,
 				}
 
 				if paramType.IsReference {
@@ -360,12 +361,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 	funcDecl, isFuncDecl := mAlias.Decl().(*ast.FuncDecl)
 	if isFuncDecl && ast.IsGeneric(funcDecl) {
-		returnType := funcDecl.ReturnType
-		if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
-			returnType = genericTypes[generic.Name]
-		}
-
-		instantiation, errs := p.InstantiateGenericFunction(funcDecl, genericTypes, returnType)
+		instantiation, errs := p.InstantiateGenericFunction(funcDecl, genericTypes)
 		reported_errors = append(reported_errors, errs...)
 		return args, instantiation, nil, reported_errors
 	}
@@ -389,7 +385,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 // instantiates a generic function with the given types
 // genericTypes maps GenericTypeName -> Type
 // returns the new instantiation and any errors that occured during instatiation
-func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTypes map[string]ddptypes.Type, returnType ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
+func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTypes map[string]ddptypes.Type) (*ast.FuncDecl, []ddperror.Error) {
 	if !ast.IsGeneric(genericFunc) {
 		panic("tried to instantiate non-generic function")
 	}
@@ -419,7 +415,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 
 	decl := *genericFunc
 	decl.Parameters = parameters
-	decl.ReturnType = returnType
+	decl.ReturnType = ddptypes.GetInstantiatedType(genericFunc.ReturnType, genericTypes)
 	decl.Generic = nil
 	decl.GenericDecl = genericFunc
 	decl.Mod = p.module
