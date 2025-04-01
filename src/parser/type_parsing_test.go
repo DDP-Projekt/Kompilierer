@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseType(t *testing.T) {
+func TestParseTypeGeneric(t *testing.T) {
 	assert := assert.New(t)
 
 	runTest := func(src, declName string, genericFields []ddptypes.StructField, genericTypes []ddptypes.GenericType, resultFields []ddptypes.StructField) {
@@ -64,12 +64,34 @@ func TestParseType(t *testing.T) {
 		[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
 		[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ListType{Underlying: ddptypes.KOMMAZAHL}}},
 	)
-	// runTest(`Zahl-(Zahl-Zahl-Vektor)-Vektor`,
-	// 	"Vektor",
-	// 	[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}, {Type: ddptypes.GenericType{Name: "R"}}},
-	// 	[]ddptypes.GenericType{{Name: "T"}, {Name: "R"}},
-	// 	[]ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: &ddptypes.StructType{Name: "Vektor", Fields: []ddptypes.StructField{{Type: ddptypes.ZAHL}, {Type: ddptypes.ZAHL}}}}},
-	// )
+
+	// lists
+
+	mockHandler := ddperror.Collector{}
+	symbols := ast.NewSymbolTable(nil)
+	decl := &ast.StructDecl{
+		NameTok: token.Token{Literal: "Vektor"},
+		Type: &ddptypes.GenericStructType{
+			StructType: ddptypes.StructType{
+				Name:   "Vektor",
+				Fields: []ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}},
+			},
+			GenericTypes: []ddptypes.GenericType{{Name: "T"}},
+		},
+	}
+	symbols.InsertDecl("Vektor", decl)
+	given := createParser(t, parser{
+		tokens:       scanTokens(t, `Zahl-Vektor Liste`),
+		errorHandler: mockHandler.GetHandler(),
+	})
+	given.setScope(symbols)
+
+	typ := given.parseType(false)
+	if assert.False(mockHandler.DidError()) {
+		assert.NotNil(typ)
+		assert.True(ddptypes.IsList(typ))
+		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).Underlying.(*ddptypes.StructType).Fields)
+	}
 }
 
 func TestParseReferenceType(t *testing.T) {
@@ -187,4 +209,33 @@ func TestParseReferenceType(t *testing.T) {
 		true,
 		false,
 	)
+
+	// lists
+
+	mockHandler := ddperror.Collector{}
+	symbols := ast.NewSymbolTable(nil)
+	decl := &ast.StructDecl{
+		NameTok: token.Token{Literal: "Vektor"},
+		Type: &ddptypes.GenericStructType{
+			StructType: ddptypes.StructType{
+				Name:   "Vektor",
+				Fields: []ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}},
+			},
+			GenericTypes: []ddptypes.GenericType{{Name: "T"}},
+		},
+	}
+	symbols.InsertDecl("Vektor", decl)
+	given := createParser(t, parser{
+		tokens:       scanTokens(t, `Zahl-Vektor Liste`),
+		errorHandler: mockHandler.GetHandler(),
+	})
+	given.setScope(symbols)
+
+	typ, isReference := given.parseReferenceType(false)
+	if assert.False(mockHandler.DidError()) {
+		assert.False(isReference)
+		assert.NotNil(typ)
+		assert.True(ddptypes.IsList(typ))
+		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).Underlying.(*ddptypes.StructType).Fields)
+	}
 }

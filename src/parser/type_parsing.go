@@ -113,8 +113,24 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 	}
 
 	mainType := types[len(types)-1]
+
+	listDepth := 0
+	mainListType, isMainList := ddptypes.CastList(mainType)
+	for isMainList {
+		listDepth++
+		mainType = mainListType.Underlying
+
+		mainListType, isMainList = ddptypes.CastList(mainType)
+	}
+
 	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
-		return ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+
+		for range listDepth {
+			mainType = ddptypes.ListType{Underlying: mainType}
+		}
+
+		return mainType
 	}
 
 	p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein nicht-generischer Typ kann keine Typparameter haben")
@@ -249,8 +265,24 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	}
 
 	mainType := types[len(types)-1]
+
+	listDepth := 0
+	mainListType, isMainList := ddptypes.CastList(mainType)
+	for isMainList {
+		listDepth++
+		mainType = mainListType.Underlying
+
+		mainListType, isMainList = ddptypes.CastList(mainType)
+	}
+
 	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
-		return ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]), isRef
+		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+
+		for range listDepth {
+			mainType = ddptypes.ListType{Underlying: mainType}
+		}
+
+		return mainType, isRef
 	}
 
 	p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein Typ, der keine generische Kombination ist kann keine Typparameter haben")
