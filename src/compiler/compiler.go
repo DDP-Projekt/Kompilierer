@@ -1962,7 +1962,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 
 		// if no default value was given
 		if argExpr == nil {
-			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: fieldDecl.Type}
+			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Range: c.currentNode.GetRange()}
 		}
 
 		argVal, argType, isTempArg := c.evaluate(argExpr)

@@ -87,14 +87,15 @@ Schreibe (l von struktur von struktur2) auf eine Zeile.
 Schreibe (l2 von struktur von struktur2) auf eine Zeile.
 
 Schreibe '\n'.
+Schreibe "foo start" auf eine Zeile.
 
 Speichere 1 in x von vec von struktur2.
 Speichere 2 in y von vec von struktur2.
 
 Speichere 3 in a von struktur von struktur2.
 
-Speichere "4" in x von b von struktur von struktur2.
-Speichere "5" in y von b von struktur von struktur2.
+Speichere 4 in x von b von struktur von struktur2.
+Speichere 5 in y von b von struktur von struktur2.
 
 Die generische Funktion foo mit dem Parameter struktur2 vom Typ T-R-Z-Struktur2, gibt nichts zurück, macht:
 	Schreibe (x von vec von struktur2) auf eine Zeile.

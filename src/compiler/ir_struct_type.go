@@ -84,10 +84,16 @@ func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
 }
 
 // recursively defines (or declares, if not from this module) a struct type and all it's field types
-func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStructType {
+func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	// if the struct type is already defined, don't define/declare it again
-	if structType, exists := c.structTypes[typ]; exists {
-		return structType
+	if _, exists := c.structTypes[typ]; exists {
+		return
+	}
+
+	// not fully instantiated types (i.e. from generic function decls) are not needed
+	if _, hasGenericTypes := ddptypes.CastDeeplyNestedGenerics(typ); hasGenericTypes {
+		c.structTypes[typ] = nil
+		return
 	}
 
 	name := c.mangledNameType(typ)
@@ -146,7 +152,6 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 	structType.vtable = vtable
 
 	c.structTypes[typ] = structType
-	return structType
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) *ir.Func {
