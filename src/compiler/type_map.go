@@ -32,7 +32,7 @@ func createTypeMap(module *ast.Module) map[ddptypes.Type]*ast.Module {
 	visitorFunc = func(t ddptypes.Type, m *ast.Module) {
 		if generic, isGeneric := ddptypes.CastGenericStructType(t); isGeneric {
 			for _, instantitation := range generic.Instantiations {
-				visitorFunc(instantitation, module)
+				visitorFunc(instantitation, m)
 			}
 		}
 		result[t] = m
