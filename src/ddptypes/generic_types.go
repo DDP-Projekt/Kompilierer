@@ -100,7 +100,11 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 
 			typeParams = append(typeParams, argTypParam)
 		}
-		genericType = GetInstantiatedStructType(paramStructType.genericType, typeParams)
+		if instantiation := GetInstantiatedStructType(paramStructType.genericType, typeParams); instantiation == nil {
+			return nil
+		} else {
+			genericType = instantiation
+		}
 	}
 
 	for range listDepth {
@@ -155,7 +159,11 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 			}
 		}
 
-		instantiatedType = GetInstantiatedStructType(structType.genericType, instantiationTypes)
+		if instantiation := GetInstantiatedStructType(structType.genericType, instantiationTypes); instantiation == nil {
+			return nil
+		} else {
+			instantiatedType = instantiation
+		}
 	}
 
 	for range listDepth {
@@ -191,6 +199,10 @@ func GetInstantiatedStructType(s *GenericStructType, genericTypes []Type) *Struc
 		if slices.EqualFunc(instantiation.instantiatedWith, genericTypes, Equal) {
 			return instantiation
 		}
+	}
+
+	if len(genericTypes) != len(s.GenericTypes) {
+		return nil
 	}
 
 	result := StructType{

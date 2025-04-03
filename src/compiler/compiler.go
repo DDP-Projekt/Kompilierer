@@ -1863,8 +1863,8 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	mangledName := c.mangledNameDecl(e.Func)
-	_, ok := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
-	needsInstantiation := !ok && ast.IsGenericInstantiation(e.Func)
+	_, alreadyPresent := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
+	needsInstantiation := !alreadyPresent && ast.IsGenericInstantiation(e.Func)
 
 	if needsInstantiation {
 		c.VisitFuncDecl(e.Func)
@@ -2015,6 +2015,10 @@ func (c *compiler) declareIfStruct(t ddptypes.Type) {
 
 func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	if ast.IsGeneric(decl) {
+		// instantiations := decl.Generic.Instantiations[c.ddpModule]
+		// for _, instinstantiation := range instantiations {
+		// 	c.declareImportedFuncDecl(instinstantiation)
+		// }
 		return
 	}
 

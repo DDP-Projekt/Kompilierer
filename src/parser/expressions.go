@@ -431,7 +431,7 @@ func (p *parser) unary() ast.Expression {
 				operator = ast.UN_NOT
 			}
 		case token.GRÖßE, token.STANDARDWERT:
-			article := p.previous()
+			article := p.previous().Type
 			_type := p.parseType(false)
 			operator := ast.TYPE_SIZE
 			if tok.Type == token.STANDARDWERT {
@@ -440,15 +440,8 @@ func (p *parser) unary() ast.Expression {
 
 			// report grammar errors
 			if _type != nil {
-				switch _type.Gender() {
-				case ddptypes.FEMININ:
-					if article.Type != token.EINER {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einer"))
-					}
-				default:
-					if article.Type != token.EINEM {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einem"))
-					}
+				if !ddptypes.MatchesGender(_type, genderFromArticle2Dativ(article)...) {
+					p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", articleFromGender2Dativ(_type.Gender())))
 				}
 			}
 

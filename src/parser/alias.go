@@ -376,6 +376,16 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 		}
 
 		instantiation := ddptypes.GetInstantiatedStructType(structDecl.Type.(*ddptypes.GenericStructType), typeParams)
+		if instantiation == nil {
+			reported_errors = append(reported_errors, ddperror.New(
+				ddperror.TYP_COULD_NOT_INSTANTIATE_GENERIC,
+				ddperror.LEVEL_ERROR,
+				token.NewRange(&p.tokens[start],
+					p.previous()),
+				fmt.Sprintf("Der generische Typ %s konnte nicht mit den Typparametern %s instanziiert werden", structDecl.Type.String(), typeParams),
+				p.module.GetIncludeFilename(),
+			))
+		}
 		return args, nil, instantiation, reported_errors
 	}
 
@@ -404,7 +414,12 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		parameters[i].Type.Type = ddptypes.GetInstantiatedType(parameters[i].Type.Type, genericTypes)
 	}
 
-	instantiations := genericFunc.Generic.Instantiations[p.module]
+	genericModule := p.genericModule
+	if genericModule == nil {
+		genericModule = p.module
+	}
+
+	instantiations := genericFunc.Generic.Instantiations[genericModule]
 	for _, instantiation := range instantiations {
 		if slices.EqualFunc(instantiation.Parameters, parameters, func(a, b ast.ParameterInfo) bool {
 			return ddptypes.ParamTypesEqual(a.Type, b.Type)
@@ -418,18 +433,20 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	decl.ReturnType = ddptypes.GetInstantiatedType(genericFunc.ReturnType, genericTypes)
 	decl.Generic = nil
 	decl.GenericDecl = genericFunc
-	decl.Mod = p.module
+	decl.Mod = genericModule
 
 	context := p.generateGenericContext(genericFunc.Generic.Context, parameters, genericTypes)
 
 	errorCollector := ddperror.Collector{}
 	declParser := &parser{
-		tokens:          genericFunc.Generic.Tokens,
-		errorHandler:    errorCollector.GetHandler(),
-		module:          genericFunc.Mod,
-		aliases:         context.Aliases,
-		currentFunction: &decl,
-		Operators:       context.Operators,
+		tokens:                genericFunc.Generic.Tokens,
+		errorHandler:          errorCollector.GetHandler(),
+		module:                genericFunc.Mod,
+		genericModule:         genericModule,
+		aliases:               context.Aliases,
+		currentFunction:       &decl,
+		isCurrentFunctionBool: ddptypes.Equal(decl.ReturnType, ddptypes.WAHRHEITSWERT),
+		Operators:             context.Operators,
 	}
 	// prepare the resolver and typechecker with the inbuild symbols and types
 	declParser.resolver = resolver.New(declParser.module, declParser.Operators, declParser.errorHandler, &declParser.panicMode)

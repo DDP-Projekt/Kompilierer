@@ -7,13 +7,13 @@ Binde "Duden/TextBauer" ein.
 Binde Hex_Zu_Zahl aus "Duden/Zahlen" ein.
 
 Wir nennen eine Variable öffentlich auch einen JsonWert.
-Wir nennen eine HashTabelle öffentlich auch ein JsonObjekt.
+Wir nennen eine Text-Variable-HashTabelle öffentlich auch ein JsonObjekt.
 Wir nennen eine JsonWert Liste öffentlich auch eine JsonListe.
 
 Der öffentliche JsonWert JSON_NULL ist der Standardwert von einer Variable.
 
 Die öffentliche Funktion Neues_JsonObjekt gibt ein JsonObjekt zurück, macht:
-	Gib eine leere HashTabelle zurück.
+	Gib den Standardwert von einem JsonObjekt zurück.
 Und kann so benutzt werden:
 	"ein neues JsonObjekt" oder
 	"ein leeres JsonObjekt"
@@ -200,9 +200,9 @@ Die Funktion Parse_Json_Objekt mit den Parametern json und lauf_index vom Typ Bu
 	Wenn das nächste Zeichen in json ab lauf_index mit Länge l gleich '}' ist, dann:
 		Erhöhe lauf_index um 1.
 		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
-		Gib eine leere HashTabelle zurück.
+		Gib den Standardwert von einem JsonObjekt  zurück.
 
-	Das JsonObjekt ergebnis_objekt ist eine leere HashTabelle.
+	Das JsonObjekt ergebnis_objekt ist der Standardwert von einem JsonObjekt.
 	Der Wahrheitswert hatte_komma ist wahr.
 	Solange hatte_komma, mache:
 		Speichere den nächsten Index in json ab lauf_index nach dem Überspringen von Leerzeichen in lauf_index.
@@ -357,8 +357,8 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 		Füge '{' an bauer an.
 		Der Wahrheitswert hatte_eintrag ist falsch.
 		Das JsonObjekt objekt ist json als JsonObjekt.
-		Die Eintrag Liste einträge ist die Einträge von objekt.
-		Für jeden Eintrag e in einträge, mache:
+		Die Text-Variable-Eintrag Liste einträge ist die Einträge von objekt.
+		Für jeden Text-Variable-Eintrag e in einträge, mache:
 			Wenn hatte_eintrag, dann:
 				Füge ',' an bauer an.
 			Füge '"' an bauer an.

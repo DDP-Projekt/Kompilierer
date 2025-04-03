@@ -26,11 +26,13 @@ Die Funktion Option_Als_Text mit dem Parameter f vom Typ Option, gibt einen Text
     Gib kurz von f verkettet mit "/" verkettet mit lang von f zurück.
 Und überlädt den "als" Operator.
 
+Wir nennen eine Text-Variable-HashTabelle auch eine Tabelle.
+
 Wir nennen die öffentliche Kombination aus
     [ der Name des Befehls ]
     dem Text name mit Standardwert "",
     [ Ein Set aus Befehlen ]
-    der HashTabelle unterBefehle mit Standardwert eine leere HashTabelle,
+    der Tabelle unterBefehle mit Standardwert der Standardwert von einer Tabelle,
     [
         Mapped die Text Werte von Optionn auf die Optionn selbst
         und kurz/lang Schreibweisen auf den Schlüssel der Option.
@@ -44,7 +46,7 @@ Wir nennen die öffentliche Kombination aus
             "limit" -> " /limit"
             " /limit" -> Option{...}
     ]
-    der HashTabelle optionen mit Standardwert eine leere HashTabelle,
+    der Tabelle optionen mit Standardwert der Standardwert von einer Tabelle,
 einen Befehl, und erstellen sie so:
     "ein Befehl mit Namen <name>",
     "einen Befehl mit dem Namen <name>",
@@ -120,9 +122,9 @@ Und kann so benutzt werden:
 ]
 Wir nennen die öffentliche Kombination aus
     [ Kurzschreibweise (Text) -> OptionsIndex ]
-    der HashTabelle kurzschreibweisen mit Standardwert eine leere HashTabelle,
+    der Tabelle kurzschreibweisen mit Standardwert der Standardwert von einer Tabelle,
     [ Parametername (Text) -> OptionsIndex ]
-    der HashTabelle langschreibweisen mit Standardwert eine leere HashTabelle,
+    der Tabelle langschreibweisen mit Standardwert der Standardwert von einer Tabelle,
     [ Werte der Optionn ]
     der Variablen Liste optionWerte mit Standardwert  eine leere Variablen Liste,
     [ Positions Argumente ]
@@ -232,7 +234,7 @@ Die Funktion Analysiere_Optionn_Wert mit den Parametern wert und standardwert vo
 Und kann so benutzt werden:
     "den Wert <wert> als Optionn Wert mit Standardwert <standardwert>"
 
-Die Funktion Analysiere_Lange_Option mit den Parametern optionen, argumente, i und optionsName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Text Referenz, gibt eine Variable zurück, macht:
+Die Funktion Analysiere_Lange_Option mit den Parametern optionen, argumente, i und optionsName vom Typ Tabelle Referenz, Text Listen Referenz, Zahlen Referenz und Text Referenz, gibt eine Variable zurück, macht:
     Der Text lang ist argumente an der Stelle i ab dem 3. Element.
     Der Text wert ist "".
     Der Wahrheitswert hat_istgleich ist wahr, wenn lang '=' enthält.
@@ -263,7 +265,7 @@ Die Funktion Analysiere_Lange_Option mit den Parametern optionen, argumente, i u
 Und kann so benutzt werden:
     "der Wert der nächsten langen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
 
-Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i und optionsName vom Typ HashTabelle Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
+Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i und optionsName vom Typ Tabelle Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
     Wenn die Länge von argumente an der Stelle i ungleich 2 ist, dann:
         Melde den Fehler ("Kurze Optionn müssen genau 1 Buchstaben lang sein").
         Gib den Standardwert von einer Variable zurück.
@@ -291,7 +293,7 @@ Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i u
 Und kann so benutzt werden:
     "der Wert der nächsten kurzen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
 
-Die Funktion Optionn_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kurz und wert vom Typ HashTabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
+Die Funktion Optionn_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kurz und wert vom Typ Tabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
     Die Option o ist eine Option mit der Kurzschreibweise ' '.
 	Der OptionsIndex optionsIndex ist der OptionsIndex -1.
 
@@ -330,13 +332,13 @@ Die öffentliche Funktion Analysiere_Befehlszeile mit den Parametern argumente u
 	Der Befehl momentanerUnterbefehl ist befehl.
 	Für jeden Text unterBefehl in unterBefehle von ergebnis, mache:
 		Speichere (unterBefehle von momentanerUnterbefehl an der Stelle unterBefehl) als Befehl in momentanerUnterbefehl. 
-		Für jeden Eintrag e in alle Einträge von (optionen von momentanerUnterbefehl), mache:
+		Für jeden Text-Variable-Eintrag e in alle Einträge von (optionen von momentanerUnterbefehl), mache:
 		 	Die Variable wert ist Wert von e.
 			Wenn wert eine Option ist, dann:
 				Füge finalerBefehl (wert als Option) hinzu.
 
 	[ Standardwerte für Optionn einfügen ]
-    Für jeden Eintrag e in alle Einträge von (optionen von finalerBefehl), mache:
+    Für jeden Text-Variable-Eintrag e in alle Einträge von (optionen von finalerBefehl), mache:
         Wenn Wert von e eine Option ist, dann:
             Die Option o ist (Wert von e) als Option.
             Füge (standardwert von o) an (optionWerte von ergebnis) an.

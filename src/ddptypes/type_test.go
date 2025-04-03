@@ -363,4 +363,23 @@ func TestGetInstantiatedStructType(t *testing.T) {
 
 	assert.True(Equal(instantiated_original, instantiated.Fields[1].Type))
 	assert.Equal(instantiated_original, instantiated.Fields[1].Type)
+
+	genericStruct = &GenericStructType{
+		StructType: StructType{
+			Name: "Generic",
+			Fields: []StructField{
+				{Type: ZAHL},
+				{Type: GenericType{Name: "T"}},
+				{Type: GenericType{Name: "R"}},
+			},
+		},
+		GenericTypes: []GenericType{
+			{Name: "T"},
+			{Name: "R"},
+		},
+	}
+
+	instantiated = GetInstantiatedStructType(genericStruct, []Type{ZAHL})
+	assert.Nil(instantiated)
+	assert.Len(genericStruct.Instantiations, 0)
 }

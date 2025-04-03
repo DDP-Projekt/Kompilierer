@@ -124,7 +124,12 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 	}
 
 	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
-		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+		if instantiation := ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]); instantiation == nil {
+			p.err(ddperror.TYP_COULD_NOT_INSTANTIATE_GENERIC, p.previous().Range,
+				fmt.Sprintf("Der generische Typ %s konnte nicht mit den Typparametern %s instanziiert werden", genericStruct.String(), types[:len(types)-1]))
+		} else {
+			mainType = instantiation
+		}
 
 		for range listDepth {
 			mainType = ddptypes.ListType{ElementType: mainType}
@@ -276,7 +281,12 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 	}
 
 	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
-		mainType = ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1])
+		if instantiation := ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]); instantiation == nil {
+			p.err(ddperror.TYP_COULD_NOT_INSTANTIATE_GENERIC, p.previous().Range,
+				fmt.Sprintf("Der generische Typ %s konnte nicht mit den Typparametern %s instanziiert werden", genericStruct.String(), types[:len(types)-1]))
+		} else {
+			mainType = instantiation
+		}
 
 		for range listDepth {
 			mainType = ddptypes.ListType{ElementType: mainType}
@@ -294,55 +304,26 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 // unlike parseType it may return void
 // the error return is ILLEGAL
 func (p *parser) parseReturnType(genericTypes map[string]ddptypes.GenericType) ddptypes.Type {
-	getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
-		switch gender {
-		case ddptypes.MASKULIN:
-			return token.EINEN
-		case ddptypes.FEMININ:
-			return token.EINE
-		case ddptypes.NEUTRUM:
-			return token.EIN
-		}
-		return token.ILLEGAL // unreachable
-	}
-	expectedGender := func(tok token.TokenType) ddptypes.GrammaticalGender {
-		switch tok {
-		case token.EINEN:
-			return ddptypes.MASKULIN
-		case token.EINE:
-			return ddptypes.FEMININ
-		case token.EIN:
-			return ddptypes.NEUTRUM
-		}
-		return ddptypes.INVALID_GENDER // unreachable
-	}
-
 	if p.matchAny(token.NICHTS) {
 		return ddptypes.VoidType{}
 	}
 	p.consumeAny(token.EINEN, token.EINE, token.EIN)
 	tok := p.previous()
 
-	var typ ddptypes.Type
-	if len(genericTypes) > 0 && p.peek().Type == token.IDENTIFIER {
-		var ok bool
-		if typ, ok = genericTypes[p.peek().Literal]; !ok {
-			typ = p.parseType(false)
-		} else {
-			p.advance()
-			if p.matchAny(token.LISTE) {
-				typ = ddptypes.ListType{ElementType: typ}
-			}
+	typ := p.parseType(true)
+	generics, _ := ddptypes.CastDeeplyNestedGenerics(typ)
+	for _, generic := range generics {
+		if _, ok := genericTypes[generic.String()]; !ok {
+			p.err(ddperror.TYP_WRONG_RETURN_TYPE, p.previous().Range, fmt.Sprintf("Der Typ %s ist kein Typparameter der Funktion", generic.String()))
+			return nil
 		}
-	} else {
-		typ = p.parseType(false)
 	}
 
 	if typ == nil {
 		return typ // prevent the crash from the if below
 	}
-	if !ddptypes.MatchesGender(typ, expectedGender(tok.Type)) {
-		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", getArticle(typ.Gender())))
+	if !ddptypes.MatchesGender(typ, genderFromArticle2Akkusativ(tok.Type)) {
+		p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", articleFromGender2Akkusativ(typ.Gender())))
 	}
 	return typ
 }

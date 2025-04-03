@@ -68,6 +68,7 @@ func tokenLess(t1, t2 *token.Token) bool {
 	return false
 }
 
+// returns gender for DER, DIE, DAS, DEM
 func genderFromArticle(t token.TokenType, isField bool) ddptypes.GrammaticalGender {
 	if isField {
 		switch t {
@@ -90,6 +91,7 @@ func genderFromArticle(t token.TokenType, isField bool) ddptypes.GrammaticalGend
 	return ddptypes.INVALID_GENDER
 }
 
+// returns articles DEM, DER, DIE, DAS
 func articleFromGender(g ddptypes.GrammaticalGender, isField bool) token.TokenType {
 	switch g {
 	case ddptypes.MASKULIN:
@@ -133,6 +135,54 @@ func forPronounFromGender(gender ddptypes.GrammaticalGender) token.TokenType {
 		return token.JEDES
 	}
 	return token.ILLEGAL // unreachable
+}
+
+// returns articles einen, einem, ein
+func articleFromGender2Akkusativ(gender ddptypes.GrammaticalGender) token.TokenType {
+	switch gender {
+	case ddptypes.MASKULIN:
+		return token.EINEN
+	case ddptypes.FEMININ:
+		return token.EINE
+	case ddptypes.NEUTRUM:
+		return token.EIN
+	}
+	return token.ILLEGAL // unreachable
+}
+
+// returns gender for einen, eine, ein
+func genderFromArticle2Akkusativ(tok token.TokenType) ddptypes.GrammaticalGender {
+	switch tok {
+	case token.EINEN:
+		return ddptypes.MASKULIN
+	case token.EINE:
+		return ddptypes.FEMININ
+	case token.EIN:
+		return ddptypes.NEUTRUM
+	}
+	return ddptypes.INVALID_GENDER // unreachable
+}
+
+// returns articles einen, einem, ein
+func articleFromGender2Dativ(gender ddptypes.GrammaticalGender) token.TokenType {
+	switch gender {
+	case ddptypes.MASKULIN, ddptypes.NEUTRUM:
+		return token.EINEM
+	case ddptypes.FEMININ:
+		return token.EINER
+	}
+	return token.ILLEGAL // unreachable
+}
+
+// returns gender for einen, eine, ein
+func genderFromArticle2Dativ(tok token.TokenType) []ddptypes.GrammaticalGender {
+	switch tok {
+	case token.EINEM:
+		return []ddptypes.GrammaticalGender{ddptypes.MASKULIN, ddptypes.NEUTRUM}
+	case token.EINER:
+		return []ddptypes.GrammaticalGender{ddptypes.FEMININ}
+	}
+	return []ddptypes.GrammaticalGender{ddptypes.INVALID_GENDER} // unreachable
 }
 
 // counts all elements in the slice which fulfill the provided predicate function

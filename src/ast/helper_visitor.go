@@ -39,6 +39,10 @@ func VisitModule(module *Module, visitor Visitor) {
 
 // helper method to visit all nodes in a module
 func visitSingleModule(module *Module, v *helperVisitor) {
+	if modVis, ok := v.actualVisitor.(VisitorSetter); ok {
+		modVis.SetVisitor(v)
+	}
+
 	if modVis, ok := v.actualVisitor.(ModuleSetter); ok {
 		modVis.SetModule(module)
 	}

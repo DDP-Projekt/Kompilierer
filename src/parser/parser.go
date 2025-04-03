@@ -33,7 +33,10 @@ type parser struct {
 	// latest reported error
 	lastError ddperror.Error
 
+	// module being parsed
 	module *ast.Module
+	// module of the toplevel generic instantiation currently being parsed or nil
+	genericModule *ast.Module
 	// modules that were passed as environment, might not all be used
 	predefinedModules map[string]*ast.Module
 	// all found aliases (+ inbuild aliases)
@@ -109,6 +112,7 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 			PublicDecls: make(map[string]ast.Declaration, 8),
 			Operators:   nil,
 		},
+		genericModule:         nil,
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
 		currentFunction:       nil,

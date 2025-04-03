@@ -1,5 +1,12 @@
 package ast
 
+// when using Visit* utility functions, this interface
+// can be implemented to retreive the actual visitor
+type VisitorSetter interface {
+	Visitor
+	SetVisitor(FullVisitor)
+}
+
 // when using the Visit* utility functions, this interface
 // can be implemented to retreive the current module
 type ModuleSetter interface {
