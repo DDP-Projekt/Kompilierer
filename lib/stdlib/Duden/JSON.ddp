@@ -7,7 +7,7 @@ Binde "Duden/TextBauer" ein.
 Binde Hex_Zu_Zahl aus "Duden/Zahlen" ein.
 
 Wir nennen eine Variable öffentlich auch einen JsonWert.
-Wir nennen eine Text-Variable-HashTabelle öffentlich auch ein JsonObjekt.
+Wir nennen eine Text-JsonWert-HashTabelle öffentlich auch ein JsonObjekt.
 Wir nennen eine JsonWert Liste öffentlich auch eine JsonListe.
 
 Der öffentliche JsonWert JSON_NULL ist der Standardwert von einer Variable.

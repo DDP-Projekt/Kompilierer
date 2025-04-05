@@ -12,8 +12,9 @@ func TestIsExternFunc(t *testing.T) {
 
 	assert.False(IsExternFunc(nil))
 	assert.True(IsExternFunc(&FuncDecl{
-		Body: nil,
-		Def:  nil,
+		ExternFile: token.Token{Type: token.STRING},
+		Body:       nil,
+		Def:        nil,
 	}))
 	assert.False(IsExternFunc(&FuncDecl{
 		Body: &BlockStmt{},

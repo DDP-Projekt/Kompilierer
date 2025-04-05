@@ -419,7 +419,12 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 		genericModule = p.module
 	}
 
+	if ast.IsExternFunc(genericFunc) {
+		genericModule = genericFunc.Module()
+	}
+
 	instantiations := genericFunc.Generic.Instantiations[genericModule]
+
 	for _, instantiation := range instantiations {
 		if slices.EqualFunc(instantiation.Parameters, parameters, func(a, b ast.ParameterInfo) bool {
 			return ddptypes.ParamTypesEqual(a.Type, b.Type)
@@ -434,6 +439,12 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	decl.Generic = nil
 	decl.GenericDecl = genericFunc
 	decl.Mod = genericModule
+
+	if ast.IsExternFunc(genericFunc) {
+		// add the instantiation to prevent recursion
+		genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
+		return &decl, nil
+	}
 
 	context := p.generateGenericContext(genericFunc.Generic.Context, parameters, genericTypes)
 

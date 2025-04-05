@@ -320,6 +320,7 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
+	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
@@ -329,6 +330,7 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
+	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 
@@ -338,6 +340,7 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(second_instantiation)
+	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], second_instantiation)
 	assert.Same(instantiation, second_instantiation)
@@ -348,6 +351,18 @@ Und kann so benutzt werden:
 
 	assert.Equal(ddperror.TYP_TYPE_MISMATCH, errors[0].Code)
 	assert.Equal(2, len(decl.Generic.Instantiations[given.module]))
+
+	given2 := createParser(t, parser{})
+	instantiation, errors = given2.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	})
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.NotNil(instantiation.Body)
+	assert.Contains(decl.Generic.Instantiations, given2.module)
+	assert.Len(decl.Generic.Instantiations, 2)
+	assert.Contains(decl.Generic.Instantiations[given2.module], instantiation)
 
 	given = createParser(t, parser{
 		tokens: scanTokens(t, `
@@ -368,6 +383,7 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
+	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 	assert.Same(decl, instantiation.GenericDecl)
@@ -391,9 +407,49 @@ Und kann so benutzt werden:
 
 	assert.Empty(errors)
 	assert.NotNil(instantiation)
+	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 	assert.True(ddptypes.Equal(instantiation.ReturnType, ddptypes.ListType{ElementType: ddptypes.ZAHL}))
+
+	// extern generic
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion foo mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt eine T Liste zurück,
+ist in "test.c" definiert
+und kann so benutzt werden:
+	"foo <a> <b>"`),
+	})
+
+	decl_stmt = given.declaration()
+	decl = decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+
+	instantiation, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	})
+
+	assert.Empty(errors)
+	assert.NotNil(instantiation)
+	assert.Nil(instantiation.Body)
+	assert.True(ast.IsExternFunc(instantiation))
+	assert.Contains(decl.Generic.Instantiations, given.module)
+	assert.Len(decl.Generic.Instantiations, 1)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
+	assert.True(ddptypes.Equal(instantiation.ReturnType, ddptypes.ListType{ElementType: ddptypes.ZAHL}))
+
+	given2 = createParser(t, parser{})
+	instantiation2, errors2 := given2.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	})
+
+	assert.Same(instantiation, instantiation2)
+	assert.Empty(errors2)
+	assert.NotNil(instantiation2)
+	assert.Nil(instantiation2.Body)
+	assert.NotContains(decl.Generic.Instantiations, given2.module)
+	assert.Len(decl.Generic.Instantiations, 1)
+	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
 }
 
 func TestCheckAlias(t *testing.T) {

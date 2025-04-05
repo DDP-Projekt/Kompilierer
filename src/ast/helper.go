@@ -10,7 +10,7 @@ import (
 
 // check if the function is defined externally
 func IsExternFunc(fun *FuncDecl) bool {
-	return fun != nil && fun.Body == nil && fun.Def == nil && fun.Generic == nil
+	return fun != nil && fun.ExternFile.Type == token.STRING
 }
 
 // check if the declaration is only a forward decl

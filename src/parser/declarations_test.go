@@ -472,7 +472,11 @@ func TestGenericFuncDeclBodyTokens(t *testing.T) {
 
 		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
 		assert.NotNil(func_decl.Generic)
-		assert.Equal(tokens[from:to], func_decl.Generic.Tokens)
+		if !ast.IsExternFunc(func_decl) {
+			assert.Equal(tokens[from:to], func_decl.Generic.Tokens)
+		} else {
+			assert.Nil(func_decl.Generic.Tokens)
+		}
 	}
 	runTest(`
 Die generische Funktion foo mit dem Parameter a vom Typ T, gibt nichts zurück, macht:
@@ -486,10 +490,28 @@ Und kann so benutzt werden:
 	"foo <a> <b>"`, 21, 26, true, 0,
 	)
 	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T Referenz und R Referenz, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, true, 0,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T Referenz und R Referenz, gibt eine T Liste zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, true, 0,
+	)
+	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"foo <a> <b>"`, 0, 0, false, ddperror.SEM_GENERIC_FUNCTION_EXTERN,
+	"foo <a> <b>"`, 0, 0, false, ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN,
+	)
+	runTest(`
+Die generische Funktion foo mit den Parametern a und b vom Typ T Referenz und R Referenz, gibt ein T zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"foo <a> <b>"`, 0, 0, false, ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN,
 	)
 	runTest(`
 Die generische Funktion foo mit den Parametern a und b vom Typ T und R, gibt nichts zurück,

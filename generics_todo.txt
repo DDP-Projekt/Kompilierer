@@ -1,2 +1,2 @@
 - generic types must be present in struct initializers
-- öffentliche/generische order crash
+- extern generic functions

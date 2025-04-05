@@ -53,7 +53,6 @@ const (
 	SEM_DEFINITION_ALREADY_DEFINED                              // a forward decl was already defined
 	SEM_GENERIC_FUNCTION_WITHOUT_TYPEPARAM                      // a generic function without any generic parameters
 	SEM_GENERIC_STRUCT_WITHOUT_TYPEPARAM                        // a generic struct without any generic parameters
-	SEM_GENERIC_FUNCTION_EXTERN                                 // a generic function was defined as extern
 	SEM_GENERIC_FUNCTION_EXTERN_VISIBLE                         // a generic function was marked as extern visible
 	SEM_GENERIC_FUNCTION_BODY_UNDEFINED                         // a generic function was declared without a definition
 	SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION                    // an error occured while instantiating a generic function
@@ -62,22 +61,23 @@ const (
 
 // type error codes
 const (
-	TYP_TYPE_MISMATCH                 Code = iota + 3000 // simple type mismatch in an operator
-	TYP_BAD_ASSIGNEMENT                                  // invalid variable assignement
-	TYP_BAD_INDEXING                                     // type error in index expression
-	TYP_BAD_LIST_LITERAL                                 // wrong type in list literal
-	TYP_BAD_CAST                                         // invalid type conversion
-	TYP_EXPECTED_REFERENCE                               // a variable (reference parameter) was expected
-	TYP_INVALID_REFERENCE                                // a char in a string was tried to be passed as refernce
-	TYP_BAD_CONDITION                                    // condition value was not of type boolean
-	TYP_BAD_FOR                                          // one of the expressions in a for loop was not of type int
-	TYP_WRONG_RETURN_TYPE                                // the return type did not match the function signature
-	TYP_BAD_FIELD_ACCESS                                 // a non-struct type was accessed or similar
-	TYP_PRIVATE_FIELD_ACCESS                             // a non-public field was accessed from another module
-	TYP_BAD_OPERATOR_RETURN_TYPE                         // the return type of a operator overload is void
-	TYP_REFERENCE_TYPE_PARAM                             // a generic type param was a reference
-	TYP_GENERIC_TYPE_NOT_UNIFIED                         // a generic field type could not be unified
-	TYP_COULD_NOT_INSTANTIATE_GENERIC                    // a generic type could not be instantiated with the given parameters
+	TYP_TYPE_MISMATCH                               Code = iota + 3000 // simple type mismatch in an operator
+	TYP_BAD_ASSIGNEMENT                                                // invalid variable assignement
+	TYP_BAD_INDEXING                                                   // type error in index expression
+	TYP_BAD_LIST_LITERAL                                               // wrong type in list literal
+	TYP_BAD_CAST                                                       // invalid type conversion
+	TYP_EXPECTED_REFERENCE                                             // a variable (reference parameter) was expected
+	TYP_INVALID_REFERENCE                                              // a char in a string was tried to be passed as refernce
+	TYP_BAD_CONDITION                                                  // condition value was not of type boolean
+	TYP_BAD_FOR                                                        // one of the expressions in a for loop was not of type int
+	TYP_WRONG_RETURN_TYPE                                              // the return type did not match the function signature
+	TYP_BAD_FIELD_ACCESS                                               // a non-struct type was accessed or similar
+	TYP_PRIVATE_FIELD_ACCESS                                           // a non-public field was accessed from another module
+	TYP_BAD_OPERATOR_RETURN_TYPE                                       // the return type of a operator overload is void
+	TYP_REFERENCE_TYPE_PARAM                                           // a generic type param was a reference
+	TYP_GENERIC_TYPE_NOT_UNIFIED                                       // a generic field type could not be unified
+	TYP_COULD_NOT_INSTANTIATE_GENERIC                                  // a generic type could not be instantiated with the given parameters
+	TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN                    // a generic extern functions parameter was not a list or reference
 )
 
 func (code Code) IsMiscError() bool {

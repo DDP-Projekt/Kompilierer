@@ -558,7 +558,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	validate(p.consumeSeq(token.GIBT))
 	returnTypeStart := p.previous()
 	returnType := p.parseReturnType(genericTypes)
-	returnTypeEnd := p.previous()
+	returnTypeRange := token.NewRange(returnTypeStart, p.previous())
 	if returnType == nil {
 		valid = false
 	}
@@ -578,7 +578,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 	isForwardDecl := false
 	bodyStart := -1
-	definedIn := &token.Token{Type: token.ILLEGAL}
+	definedIn := token.Token{Type: token.ILLEGAL}
 	if p.matchAny(token.MACHT) {
 		validate(p.consumeSeq(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
@@ -594,15 +594,30 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	} else {
 		validate(p.consumeSeq(token.IST, token.IN, token.STRING, token.DEFINIERT))
-		definedIn = p.peekN(-2)
-		switch filepath.Ext(ast.TrimStringLit(definedIn)) {
+		definedIn = *p.peekN(-2)
+		switch filepath.Ext(ast.TrimStringLit(&definedIn)) {
 		case ".c", ".lib", ".a", ".o":
 		default:
 			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
 		}
+
 		if isGeneric {
-			perr(ddperror.SEM_GENERIC_FUNCTION_EXTERN, definedIn.Range, "Eine generische Funktion kann nicht extern definiert werden")
-		} else if isExternVisible {
+			for _, param := range params {
+				if !ddptypes.IsList(param.Type.Type) && !param.Type.IsReference {
+					if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+						perr(ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN, param.TypeRange, "Generische Parameter einer externen Funktion müssen Listen oder Referenzen sein")
+					}
+				}
+			}
+
+			if !ddptypes.IsList(returnType) {
+				if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(returnType); isGeneric {
+					perr(ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN, returnTypeRange, "Der Rückgabetyp einer externen Funktion muss eine Liste sein oder darf nicht generisch sein")
+				}
+			}
+		}
+
+		if isExternVisible {
 			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}
@@ -638,9 +653,13 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 	var genericInfo *ast.GenericFuncInfo
 	if isGeneric {
+		var tokens []token.Token
+		if definedIn.Type == token.ILLEGAL {
+			tokens = p.tokens[bodyStart-1 : bodyEnd] // -1 to include the colon
+		}
 		genericInfo = &ast.GenericFuncInfo{
 			Types:  genericTypes,
-			Tokens: p.tokens[bodyStart-1 : bodyEnd], // -1 to include the colon
+			Tokens: tokens, // -1 to include the colon
 			Context: ast.GenericContext{
 				Symbols: p.scope(),
 				Aliases: p.aliases,
@@ -659,10 +678,10 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		Mod:             p.module,
 		Parameters:      params,
 		ReturnType:      returnType,
-		ReturnTypeRange: token.NewRange(returnTypeStart, returnTypeEnd),
+		ReturnTypeRange: returnTypeRange,
 		Body:            nil,
 		Def:             nil,
-		ExternFile:      *definedIn,
+		ExternFile:      definedIn,
 		Operator:        operator,
 		Aliases:         funcAliases,
 		Generic:         genericInfo,
@@ -783,7 +802,7 @@ func (p *parser) getDeclForDefinition(nameTok *token.Token) *ast.FuncDecl {
 		p.err(ddperror.SEM_BAD_NAME_CONTEXT, nameTok.Range, fmt.Sprintf("Der Name '%s' steht für eine Variable oder Struktur und nicht für eine Funktion", nameTok.Literal))
 	} else if funcDecl.Mod != p.module {
 		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, "Es können nur Funktionen aus demselben Modul definiert werden")
-	} else if funcDecl.Body != nil || funcDecl.ExternFile.Type != token.ILLEGAL || funcDecl.Def != nil {
+	} else if funcDecl.Body != nil || ast.IsExternFunc(funcDecl) || funcDecl.Def != nil {
 		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert", nameTok.Literal))
 	} else {
 		return funcDecl

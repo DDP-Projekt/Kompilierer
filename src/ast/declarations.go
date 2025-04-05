@@ -64,7 +64,7 @@ type (
 	// holds information about a generic function declaration
 	GenericFuncInfo struct {
 		Types          map[string]ddptypes.GenericType // all declared generic types
-		Tokens         []token.Token                   // tokens of the body that need to be parsed
+		Tokens         []token.Token                   // tokens of the body that need to be parsed, nil if the function is extern
 		Context        GenericContext                  // context up to the point where the function was declared
 		Instantiations map[*Module][]*FuncDecl         // all existing instantiations for a given module
 	}
