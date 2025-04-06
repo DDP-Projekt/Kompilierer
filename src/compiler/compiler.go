@@ -533,18 +533,36 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
+	// if the return type is generic it can only be a list
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(decl.ReturnType); isGeneric {
+		return c.ddpgenericlist
+	} else {
+		return c.toIrType(decl.ReturnType) // get the llvm type
+	}
+}
+
+func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) types.Type {
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+		return i8ptr
+	} else if isGeneric {
+		return c.ddpgenericlist.PtrType()
+	} else {
+		return c.toIrParamType(param.Type) // convert the type of the parameter
+	}
+}
+
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	if ast.IsGeneric(decl) && !ast.IsExternFunc(decl) {
 		return ast.VisitRecurse
 	}
 
-	var retType ddpIrType
-	// if the return type is generic it can only be a list
-	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(decl.ReturnType); isGeneric {
-		retType = c.ddpgenericlist
-	} else {
-		retType = c.toIrType(decl.ReturnType) // get the llvm type
+	// extern functions are instantiated once
+	if ast.IsGenericInstantiation(decl) && ast.IsExternFunc(decl) {
+		decl = decl.GenericDecl
 	}
+
+	retType := c.getPossiblyGenericReturnType(decl)
 
 	retTypeIr := retType.IrType()
 	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
@@ -558,14 +576,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		var paramIrType types.Type
-		if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
-			paramIrType = i8ptr
-		} else if isGeneric {
-			paramIrType = c.ddpgenericlist.PtrType()
-		} else {
-			paramIrType = c.toIrParamType(param.Type) // convert the type of the parameter
-		}
+		paramIrType := c.getPossiblyGenericParamType(&param)
 
 		params = append(params, ir.NewParam(param.Name.Literal, paramIrType)) // add it to the list
 	}
@@ -1903,13 +1914,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	var irReturnType ddpIrType
-	// if the return type is generic it can only be a list
-	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(fun.funcDecl.ReturnType); isGeneric {
-		irReturnType = c.ddpgenericlist
-	} else {
-		irReturnType = c.toIrType(fun.funcDecl.ReturnType)
-	}
+	irReturnType := c.getPossiblyGenericReturnType(fun.funcDecl)
 
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
@@ -2057,7 +2062,7 @@ func (c *compiler) declareIfStruct(t ddptypes.Type) {
 }
 
 func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
-	if ast.IsGeneric(decl) {
+	if ast.IsGeneric(decl) && !ast.IsExternFunc(decl) {
 		return
 	}
 
@@ -2072,9 +2077,10 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	for _, param := range decl.Parameters {
 		c.declareIfStruct(param.Type.Type)
 	}
-	retType := c.toIrType(decl.ReturnType) // get the llvm type
+
+	retType := c.getPossiblyGenericReturnType(decl) // get the llvm type
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -2085,7 +2091,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
+		ty := c.getPossiblyGenericParamType(&param)                  // convert the type of the parameter
 		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 

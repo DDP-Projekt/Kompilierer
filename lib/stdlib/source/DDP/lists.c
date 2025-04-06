@@ -89,7 +89,7 @@ void efficient_list_prepend_any(ddpanylistref list, ddpanyref elem, ddpint elem_
 
 // the range is inclusive [start, end]
 // the indices are 0-based (like in C, not like in DDP)
-static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddpint end, ddpint elem_size) {
+void efficient_list_delete_range(generic_list_ref list, ddpint start, ddpint end, ddpint elem_size, ddpanyref any) {
 	if (list->len <= 0) {
 		return;
 	}
@@ -97,66 +97,24 @@ static void efficient_list_delete_range(generic_list_ref list, ddpint start, ddp
 	if (start > end) {
 		ddp_runtime_error(1, "start index ist größer als end index (" DDP_INT_FMT ", " DDP_INT_FMT ")", start, end);
 	}
+
 	start = CLAMP(start, list->len);
 	end = CLAMP(end, list->len);
+
+	if (any->vtable_ptr == NULL || any->vtable_ptr->free_func != NULL) {
+		// free the old non-primitives before shallow-copying them
+		for (ddpint i = start; i <= end; i++) {
+			if (any->vtable_ptr == NULL) {
+				ddp_free_any(&((ddpany *)list->arr)[i]);
+			} else {
+				any->vtable_ptr->free_func(&(((uint8_t *)list->arr)[i * elem_size]));
+			}
+		}
+	}
 
 	ddpint new_len = list->len - (end - start + 1);
 	memmove(&((uint8_t *)list->arr)[start * elem_size], &((uint8_t *)list->arr)[(end + 1) * elem_size], (list->len - end - 1) * elem_size);
 	list->len = new_len;
-}
-
-void efficient_list_delete_range_int(ddpintlistref list, ddpint start, ddpint end, ddpint elem_size) {
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
-}
-
-void efficient_list_delete_range_float(ddpfloatlistref list, ddpint start, ddpint end, ddpint elem_size) {
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
-}
-
-void efficient_list_delete_range_bool(ddpboollistref list, ddpint start, ddpint end, ddpint elem_size) {
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
-}
-
-void efficient_list_delete_range_char(ddpcharlistref list, ddpint start, ddpint end, ddpint elem_size) {
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
-}
-
-void efficient_list_delete_range_string(ddpstringlistref list, ddpint start, ddpint end, ddpint elem_size) {
-	// duplicate logic, but better safe than sorry
-	if (list->len <= 0) {
-		return;
-	}
-
-	if (start > end) {
-		ddp_runtime_error(1, "start index ist größer als end index (" DDP_INT_FMT ", " DDP_INT_FMT ")", start, end);
-	}
-
-	// free the old strings before shallow-copying them
-	ddpint free_end = CLAMP(end, list->len);
-	for (ddpint i = CLAMP(start, list->len); i <= free_end; i++) {
-		ddp_free_string(&list->arr[i]);
-	}
-
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
-}
-
-void efficient_list_delete_range_any(ddpanylistref list, ddpint start, ddpint end, ddpint elem_size) {
-	// duplicate logic, but better safe than sorry
-	if (list->len <= 0) {
-		return;
-	}
-
-	if (start > end) {
-		ddp_runtime_error(1, "start index ist größer als end index (" DDP_INT_FMT ", " DDP_INT_FMT ")", start, end);
-	}
-
-	// free the old strings before shallow-copying them
-	ddpint free_end = CLAMP(end, list->len);
-	for (ddpint i = CLAMP(start, list->len); i <= free_end; i++) {
-		ddp_free_any(&list->arr[i]);
-	}
-
-	efficient_list_delete_range((generic_list_ref)list, start, end, elem_size);
 }
 
 // the index is 0-based (like in C, not like in DDP)

@@ -67,25 +67,27 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 [Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_int mit den Parametern list, start, end und elem_size vom Typ Zahlen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
+Die generische Funktion efficient_list_delete_range mit den Parametern list, start, end, elem_size und v vom Typ T Listen Referenz, Zahl, Zahl, Zahl und Variablen Referenz, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"efficient_list_delete_range_int <list> <start> <end> <elem_size>"
+	"efficient_list_delete_range <list> <start> <end> <elem_size> <v>"
 
 [
 	Entfernt die Zahl an dem gegeben Index aus der gegeben Zahlen Liste.
 ]
-Die öffentliche Funktion Lösche_Element_Zahl mit den Parametern liste und index vom Typ Zahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
+Die  öffentliche generische Funktion Lösche_Element mit den Parametern liste und index vom Typ T Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
-	efficient_list_delete_range_int liste index index (die Größe von einer Zahl).
+	Die Variable v ist der Standardwert von einem T als Variable.
+	efficient_list_delete_range liste index index (die Größe von einem T) v.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
 [
 	Entfernt alle Zahlen aus der Liste im Bereich [start, end] (inklusiv)
 ]
-Die öffentliche Funktion Lösche_Bereich_Zahl mit den Parametern liste, start und end vom Typ Zahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_int liste (start minus 1) (end minus 1) (die Größe von einer Zahl).
+Die öffentliche generische Funktion Lösche_Bereich mit den Parametern liste, start und end vom Typ T Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
+	Die Variable v ist der Standardwert von einem T als Variable.
+	efficient_list_delete_range liste (start minus 1) (end minus 1) (die Größe von einem T) v.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
@@ -335,29 +337,6 @@ Die öffentliche Funktion Voranstellen_Kommazahl mit den Parametern liste und el
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_float mit den Parametern list, start, end und elem_size vom Typ Kommazahlen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,	
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"efficient_list_delete_range_float <list> <start> <end> <elem_size>"
-
-[
-	Entfernt die Kommazahl an dem gegeben Index aus der gegeben Kommazahlen Liste.
-]
-Die öffentliche Funktion Lösche_Element_Kommazahl mit den Parametern liste und index vom Typ Kommazahlen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere index minus 1 in index.
-	efficient_list_delete_range_float liste index index (die Größe von einer Kommazahl).
-Und kann so benutzt werden:
-	"Lösche das Element an der Stelle <index> aus <liste>"
-
-[
-	Entfernt alle Kommazahlen aus der Liste im Bereich [start, end] (inklusiv)
-]
-Die öffentliche Funktion Lösche_Bereich_Kommazahl mit den Parametern liste, start und end vom Typ Kommazahlen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_float liste (start minus 1) (end minus 1) (die Größe von einer Kommazahl).
-Und kann so benutzt werden:
-	"Lösche alle Elemente von <start> bis <end> aus <liste>"
-
 [
 	Füllt die gegebene Kommazahlen Liste mit der gegebenen Kommazahl.
 ]
@@ -602,29 +581,6 @@ Die öffentliche Funktion Voranstellen_Wahrheitswert mit den Parametern liste un
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
-[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_bool mit den Parametern list, start, end und elem_size vom Typ Wahrheitswert Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,		
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"efficient_list_delete_range_bool <list> <start> <end> <elem_size>"
-
-[
-	Entfernt den Wahrheitswert an dem gegeben Index aus der gegeben Wahrheitswert Liste.
-]
-Die öffentliche Funktion Lösche_Element_Wahrheitswert mit den Parametern liste und index vom Typ Wahrheitswert Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere index minus 1 in index.
-	efficient_list_delete_range_bool liste index index (die Größe von einem Wahrheitswert).
-Und kann so benutzt werden:
-	"Lösche das Element an der Stelle <index> aus <liste>"
-
-[
-	Entfernt alle Wahrheitswerts aus der Liste im Bereich [start, end] (inklusiv)
-]
-Die öffentliche Funktion Lösche_Bereich_Wahrheitswert mit den Parametern liste, start und end vom Typ Wahrheitswert Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_bool liste (start minus 1) (end minus 1) (die Größe von einem Wahrheitswert).
-Und kann so benutzt werden:
-	"Lösche alle Elemente von <start> bis <end> aus <liste>"
-
 [
 	Füllt die gegebene Kommazahlen Liste mit der gegebenen Kommazahl.
 ]
@@ -799,29 +755,6 @@ Die öffentliche Funktion Voranstellen_Buchstabe mit den Parametern liste und el
 	efficient_list_prepend_char liste elm (die Größe von einem Buchstabe).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
-
-[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_char mit den Parametern list, start, end und elem_size vom Typ Buchstaben Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"efficient_list_delete_range_char <list> <start> <end> <elem_size>"
-
-[
-	Entfernt den Buchstaben an dem gegeben Index aus der gegeben Buchstaben Liste.
-]
-Die öffentliche Funktion Lösche_Element_Buchstabe mit den Parametern liste und index vom Typ Buchstaben Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere index minus 1 in index.
-	efficient_list_delete_range_char liste index index (die Größe von einem Buchstabe).
-Und kann so benutzt werden:
-	"Lösche das Element an der Stelle <index> aus <liste>"
-
-[
-	Entfernt alle Buchstaben aus der Liste im Bereich [start, end] (inklusiv)
-]
-Die öffentliche Funktion Lösche_Bereich_Buchstabe mit den Parametern liste, start und end vom Typ Buchstaben Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_char liste (start minus 1) (end minus 1) (die Größe von einem Buchstabe).
-Und kann so benutzt werden:
-	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
 [
 	Füllt die gegebene Buchstaben Liste mit dem gegebenen Buchstaben.
@@ -1014,29 +947,6 @@ Die öffentliche Funktion Voranstellen_Text mit den Parametern liste und elm vom
 	efficient_list_prepend_string liste elm (die Größe von einem Text).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
-
-[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_string mit den Parametern list, start, end und elem_size vom Typ Text Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,	
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"efficient_list_delete_range_string <list> <start> <end> <elem_size>"
-
-[
-	Entfernt den Text an dem gegeben Index aus der gegeben Text Liste.
-]
-Die öffentliche Funktion Lösche_Element_Text mit den Parametern liste und index vom Typ Text Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere index minus 1 in index.
-	efficient_list_delete_range_string liste index index (die Größe von einem Text).
-Und kann so benutzt werden:
-	"Lösche das Element an der Stelle <index> aus <liste>"
-
-[
-	Entfernt alle Texte aus der Liste im Bereich [start, end] (inklusiv)
-]
-Die öffentliche Funktion Lösche_Bereich_Text mit den Parametern liste, start und end vom Typ Text Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_string liste (start minus 1) (end minus 1) (die Größe von einem Text).
-Und kann so benutzt werden:
-	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
 [
 	Füllt die gegebene Text Liste mit dem gegebenen Text.
@@ -1311,29 +1221,6 @@ Die öffentliche Funktion Voranstellen_Variable mit den Parametern liste und elm
 	efficient_list_prepend_any liste elm (die Größe von einer Variable).
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
-
-[Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die Funktion efficient_list_delete_range_any mit den Parametern list, start, end und elem_size vom Typ Variablen Listen Referenz, Zahl, Zahl und Zahl, gibt nichts zurück,
-ist in "libddpstdlib.a" definiert
-Und kann so benutzt werden:
-	"efficient_list_delete_range_any <list> <start> <end> <elem_size>"
-
-[
-	Entfernt die Variable an dem gegeben Index aus der gegeben Variablen Liste.
-]
-Die öffentliche Funktion Lösche_Element_Variable mit den Parametern liste und index vom Typ Variablen Listen Referenz und Zahl, gibt nichts zurück, macht:
-	Speichere index minus 1 in index.
-	efficient_list_delete_range_any liste index index (die Größe von einer Variable).
-Und kann so benutzt werden:
-	"Lösche das Element an der Stelle <index> aus <liste>"
-
-[
-	Entfernt alle Variablen aus der Liste im Bereich [start, end] (inklusiv)
-]
-Die öffentliche Funktion Lösche_Bereich_Variable mit den Parametern liste, start und end vom Typ Variablen Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
-	efficient_list_delete_range_any liste (start minus 1) (end minus 1) (die Größe von einer Variable).
-Und kann so benutzt werden:
-	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
 [
 	Füllt die gegebene Variablen Liste mit der gegebenen Variable.

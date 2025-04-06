@@ -1,0 +1,6 @@
+3
+2
+1
+wahr
+wahr
+falsch

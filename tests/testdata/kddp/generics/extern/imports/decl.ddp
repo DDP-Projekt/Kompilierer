@@ -1,0 +1,15 @@
+Die öffentliche generische Funktion bar mit dem Parameter l vom Typ T Liste, gibt eine Zahl zurück,
+ist in "extern.c" definiert
+und kann so benutzt werden:
+	"bar <l>"
+
+Die generische Funktion baz mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt einen Wahrheitswert zurück,
+ist in "extern.c" definiert
+und kann so benutzt werden:
+	"baz_impl <a> <b>"
+
+Die öffentliche generische Funktion baz2 mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib baz_impl a b zurück.
+Und kann so benutzt werden:
+	"baz <a> <b>"
+

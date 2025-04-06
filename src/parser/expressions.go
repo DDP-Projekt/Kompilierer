@@ -445,12 +445,12 @@ func (p *parser) unary() ast.Expression {
 				}
 			}
 
-			return &ast.TypeOpExpr{
+			return p.power(&ast.TypeOpExpr{
 				Range:    token.NewRange(start, p.previous()),
 				Tok:      *start,
 				Operator: operator,
 				Rhs:      _type,
-			}
+			})
 		case token.LÄNGE:
 			operator = ast.UN_LEN
 		}
