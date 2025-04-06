@@ -128,6 +128,7 @@ type compiler struct {
 	ddpstring                                                                     *ddpIrStringType
 	ddpany                                                                        *ddpIrAnyType
 	ddpintlist, ddpfloatlist, ddpboollist, ddpcharlist, ddpstringlist, ddpanylist *ddpIrListType
+	ddpgenericlist                                                                *ddpIrGenericListType
 }
 
 // create a new Compiler to compile the passed AST
@@ -352,6 +353,7 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 	c.ddpcharlist = c.createListType("ddpcharlist", c.ddpchartyp, declarationOnly)
 	c.ddpstringlist = c.createListType("ddpstringlist", c.ddpstring, declarationOnly)
 	c.ddpanylist = c.createListType("ddpanylist", c.ddpany, declarationOnly)
+	c.ddpgenericlist = c.createGenericListType()
 }
 
 // used in setup()
@@ -532,13 +534,20 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
-	if ast.IsGeneric(decl) {
+	if ast.IsGeneric(decl) && !ast.IsExternFunc(decl) {
 		return ast.VisitRecurse
 	}
 
-	retType := c.toIrType(decl.ReturnType) // get the llvm type
+	var retType ddpIrType
+	// if the return type is generic it can only be a list
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(decl.ReturnType); isGeneric {
+		retType = c.ddpgenericlist
+	} else {
+		retType = c.toIrType(decl.ReturnType) // get the llvm type
+	}
+
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -549,8 +558,16 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
-		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
+		var paramIrType types.Type
+		if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+			paramIrType = i8ptr
+		} else if isGeneric {
+			paramIrType = c.ddpgenericlist.PtrType()
+		} else {
+			paramIrType = c.toIrParamType(param.Type) // convert the type of the parameter
+		}
+
+		params = append(params, ir.NewParam(param.Name.Literal, paramIrType)) // add it to the list
 	}
 
 	irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
@@ -1886,7 +1903,14 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	irReturnType := c.toIrType(fun.funcDecl.ReturnType)
+	var irReturnType ddpIrType
+	// if the return type is generic it can only be a list
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(fun.funcDecl.ReturnType); isGeneric {
+		irReturnType = c.ddpgenericlist
+	} else {
+		irReturnType = c.toIrType(fun.funcDecl.ReturnType)
+	}
+
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
 		ret = c.NewAlloca(irReturnType.IrType())
@@ -1915,6 +1939,14 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
+		// adjust argument types for generic extern functions
+		if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+			val = c.cbb.NewBitCast(val, i8ptr)
+		} else if isGeneric {
+			// if the param type is generic and not a reference it can only be a list
+			val = c.cbb.NewBitCast(val, c.ddpgenericlist.PtrType())
+		}
+
 		args = append(args, val) // add the value to the arguments
 	}
 
@@ -1931,15 +1963,26 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	// the arguments of external functions must be freed by the caller
 	// normal functions free their parameters in their body
-	if ast.IsExternFunc(fun.funcDecl) {
-		for i, param := range fun.funcDecl.Parameters {
-			if !param.Type.IsReference {
-				if irReturnType.IsPrimitive() {
-					c.freeNonPrimitive(args[i], c.toIrType(param.Type.Type))
-				} else {
-					c.freeNonPrimitive(args[i+1], c.toIrType(param.Type.Type))
+	if !ast.IsExternFunc(e.Func) {
+		return ast.VisitRecurse
+	}
+
+	for i, param := range e.Func.Parameters {
+		if !param.Type.IsReference {
+			paramIrType := c.toIrType(param.Type.Type)
+			arg := args[i]
+			if !irReturnType.IsPrimitive() {
+				arg = args[i+1]
+			}
+
+			// adjust argument types for generic extern functions
+			if ddptypes.IsList(param.Type.Type) {
+				if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(fun.funcDecl.Parameters[i].Type.Type); isGeneric {
+					arg = c.cbb.NewBitCast(arg, paramIrType.PtrType())
 				}
 			}
+
+			c.freeNonPrimitive(arg, paramIrType)
 		}
 	}
 	return ast.VisitRecurse
@@ -2015,10 +2058,6 @@ func (c *compiler) declareIfStruct(t ddptypes.Type) {
 
 func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	if ast.IsGeneric(decl) {
-		// instantiations := decl.Generic.Instantiations[c.ddpModule]
-		// for _, instinstantiation := range instantiations {
-		// 	c.declareImportedFuncDecl(instinstantiation)
-		// }
 		return
 	}
 

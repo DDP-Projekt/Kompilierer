@@ -576,7 +576,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	}
 
-	isForwardDecl := false
 	bodyStart := -1
 	definedIn := token.Token{Type: token.ILLEGAL}
 	if p.matchAny(token.MACHT) {
@@ -588,7 +587,6 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	} else if p.matchAny(token.WIRD) {
 		validate(p.consumeSeq(token.SPÄTER, token.DEFINIERT))
-		isForwardDecl = true
 		if isGeneric {
 			perr(ddperror.SEM_GENERIC_FUNCTION_BODY_UNDEFINED, p.previous().Range, "Eine generische Funktion muss sofort definiert werden")
 		}
@@ -702,7 +700,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 
-		if !isForwardDecl && !isGeneric {
+		if ast.IsExternFunc(decl) {
 			// add the extern declaration
 			p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{}
 		}

@@ -18,8 +18,8 @@ und kann so benutzt werden:
 	"baz <a> <b>"
 
 Die Zahl a ist 1.
-Schreibe (baz a a).
+Schreibe (baz a a) auf eine Zeile.
 Der Text b ist "hi".
-Schreibe (baz b b).
+Schreibe (baz b b) auf eine Zeile.
 Der Text c ist "hi".
-Schreibe (baz b c).
+Schreibe (baz b c) auf eine Zeile.
