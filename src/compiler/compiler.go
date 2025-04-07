@@ -29,16 +29,16 @@ import (
 //   - a set of all external dependendcies
 //   - an error
 func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
-	errHndl ddperror.Handler, optimizationLevel uint,
+	errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	compiledMods := map[string]*ast.Module{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
+	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, llTarget, optimizationLevel)
 }
 
 func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
 	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -64,14 +64,14 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	}
 
 	// compile this module
-	if _, err := newCompiler(mod, errHndl, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
+	if _, err := newCompiler(mod, errHndl, llTarget, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
 		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
 	}
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, llTarget, optimizationLevel); err != nil {
 				return nil, err
 			}
 		}
@@ -93,7 +93,7 @@ type compiler struct {
 	errorHandler      ddperror.Handler // errors are passed to this function
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
-	llTarget          llvmTarget       // information about the target machine
+	llTarget          *llvmTarget      // information about the target machine
 
 	cbb              *ir.Block                                 // current basic block in the ir
 	cf               *ir.Func                                  // current function
@@ -132,7 +132,7 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) *compiler {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint) *compiler {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -144,6 +144,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 		},
+		llTarget:         llTarget,
 		cbb:              nil,
 		cf:               nil,
 		scp:              newScope(nil), // global scope
@@ -168,12 +169,6 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 // if isMainModule is false, no ddp_main function will be generated
 func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
 	defer compiler_panic_wrapper(c)
-
-	llTarget, err := newllvmTarget()
-	if err != nil {
-		return nil, err
-	}
-	c.llTarget = *llTarget
 
 	c.mod.SourceFilename = c.ddpModule.FileName // set the module filename (optional metadata)
 	c.addExternalDependencies()
@@ -219,7 +214,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 
 	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
 
-	_, err = c.mod.WriteTo(w)
+	_, err := c.mod.WriteTo(w)
 	return c.result, err
 }
 

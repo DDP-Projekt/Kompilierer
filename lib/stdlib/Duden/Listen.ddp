@@ -67,10 +67,10 @@ Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
 
 [Hilfsfunktion für Lösche_X und Lösche_Bereich_X]
-Die generische Funktion efficient_list_delete_range mit den Parametern list, start, end, elem_size und v vom Typ T Listen Referenz, Zahl, Zahl, Zahl und Variablen Referenz, gibt nichts zurück,
+Die generische Funktion efficient_list_delete_range mit den Parametern list, start, end und v vom Typ T Listen Referenz, Zahl, Zahl und Variablen Referenz, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"efficient_list_delete_range <list> <start> <end> <elem_size> <v>"
+	"efficient_list_delete_range <list> <start> <end> <v>"
 
 [
 	Entfernt die Zahl an dem gegeben Index aus der gegeben Zahlen Liste.
@@ -78,7 +78,7 @@ Und kann so benutzt werden:
 Die  öffentliche generische Funktion Lösche_Element mit den Parametern liste und index vom Typ T Listen Referenz und Zahl, gibt nichts zurück, macht:
 	Speichere index minus 1 in index.
 	Die Variable v ist der Standardwert von einem T als Variable.
-	efficient_list_delete_range liste index index (die Größe von einem T) v.
+	efficient_list_delete_range liste index index v.
 Und kann so benutzt werden:
 	"Lösche das Element an der Stelle <index> aus <liste>"
 
@@ -87,7 +87,7 @@ Und kann so benutzt werden:
 ]
 Die öffentliche generische Funktion Lösche_Bereich mit den Parametern liste, start und end vom Typ T Listen Referenz, Zahl und Zahl, gibt nichts zurück, macht:
 	Die Variable v ist der Standardwert von einem T als Variable.
-	efficient_list_delete_range liste (start minus 1) (end minus 1) (die Größe von einem T) v.
+	efficient_list_delete_range liste (start minus 1) (end minus 1) v.
 Und kann so benutzt werden:
 	"Lösche alle Elemente von <start> bis <end> aus <liste>"
 
