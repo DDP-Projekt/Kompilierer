@@ -1,5 +1,4 @@
 Binde "Duden/Ausgabe" ein.
-Binde "Duden/Texte" ein.
 
 Wiederhole:
 	Schreibe den Text "hier,".
@@ -10,7 +9,7 @@ Schreibe den Text "hier," 5 Mal.
 Schreibe den Buchstaben '\n'.
 
 Der Text t ist "".
-Stelle 't' vor t 5 Mal.
+Speichere 't' verkettet mit t in t 5 Mal.
 Schreibe t auf eine Zeile.
 
 Die Zahl i ist 3.

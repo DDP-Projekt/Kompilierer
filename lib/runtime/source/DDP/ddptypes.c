@@ -32,9 +32,11 @@ void ddp_free_string(ddpstring *str) {
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
 	DDP_DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
-	if (ret == str) {
+	*ret = DDP_EMPTY_STRING;
+	if (ret == str || str->str == NULL) {
 		return;
 	}
+
 	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap);		  // copy the chars
 	// set the fields of the copy
@@ -85,6 +87,7 @@ void ddp_free_any(ddpany *any) {
 // places a copy of any in ret
 void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 	DDP_DBGLOG("deep_copy_any: %p", any);
+	*ret = DDP_EMPTY_ANY;
 	// copy metadata
 	ret->vtable_ptr = any->vtable_ptr;
 

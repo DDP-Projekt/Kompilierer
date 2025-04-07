@@ -11,69 +11,31 @@ static void grow_if_needed(ddpgenericlistref list, ddpint elem_size) {
 	}
 }
 
-static void efficient_list_append(ddpgenericlistref list, ddpgenericref elem, ddpint elem_size) {
-	grow_if_needed(list, elem_size);
-	memcpy(&((uint8_t *)list->arr)[list->len * elem_size], elem, elem_size);
+static void claim_non_primitive(const ddpvtable *vtable, ddpgenericref elem, ddpanyref any) {
+	if (vtable->deep_copy_func != NULL) {
+		vtable->deep_copy_func(elem, any->vtable_ptr != NULL ? DDP_ANY_VALUE_PTR(any) : any);
+	}
+}
+
+void efficient_list_append(ddpgenericlistref list, ddpgenericref elem, ddpanyref any) {
+	const ddpvtable *vtable = ddp_get_generic_vtable(any);
+
+	grow_if_needed(list, vtable->type_size);
+	memcpy(&((uint8_t *)list->arr)[list->len * vtable->type_size], elem, vtable->type_size);
 	list->len++;
+
+	claim_non_primitive(vtable, elem, any);
 }
 
-void efficient_list_append_int(ddpintlistref list, ddpintref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
+void efficient_list_prepend(ddpgenericlistref list, ddpgenericref elem, ddpanyref any) {
+	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-void efficient_list_append_float(ddpfloatlistref list, ddpfloatref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_append_bool(ddpboollistref list, ddpboolref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_append_char(ddpcharlistref list, ddpcharref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_append_string(ddpstringlistref list, ddpstringref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_STRING;
-}
-
-void efficient_list_append_any(ddpanylistref list, ddpanyref elem, ddpint elem_size) {
-	efficient_list_append((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_ANY;
-}
-
-static void efficient_list_prepend(ddpgenericlistref list, ddpgenericref elem, ddpint elem_size) {
-	grow_if_needed(list, elem_size);
-	memmove(&((uint8_t *)list->arr)[elem_size], list->arr, list->len * elem_size);
-	memcpy(list->arr, elem, elem_size);
+	grow_if_needed(list, vtable->type_size);
+	memmove(&((uint8_t *)list->arr)[vtable->type_size], list->arr, list->len * vtable->type_size);
+	memcpy(list->arr, elem, vtable->type_size);
 	list->len++;
-}
 
-void efficient_list_prepend_int(ddpintlistref list, ddpintref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_prepend_float(ddpfloatlistref list, ddpfloatref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_prepend_bool(ddpboollistref list, ddpboolref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_prepend_char(ddpcharlistref list, ddpcharref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_prepend_string(ddpstringlistref list, ddpstringref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_STRING;
-}
-
-void efficient_list_prepend_any(ddpanylistref list, ddpanyref elem, ddpint elem_size) {
-	efficient_list_prepend((ddpgenericlistref)list, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_ANY;
+	claim_non_primitive(vtable, elem, any);
 }
 
 #define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len)-1 : (index)))
@@ -107,88 +69,45 @@ void efficient_list_delete_range(ddpgenericlistref list, ddpint start, ddpint en
 }
 
 // the index is 0-based (like in C, not like in DDP)
-void efficient_list_insert(ddpgenericlistref list, ddpint index, ddpgenericref elem, ddpint elem_size) {
+void efficient_list_insert(ddpgenericlistref list, ddpint index, ddpgenericref elem, ddpanyref any) {
 	if (index < 0 || index > list->len) {
 		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war " DDP_INT_FMT ", Listen Länge war " DDP_INT_FMT ")", index, list->len);
 	}
 
-	grow_if_needed(list, elem_size);
-	memmove(&((uint8_t *)list->arr)[(index + 1) * elem_size], &((uint8_t *)list->arr)[index * elem_size], (list->len - index) * elem_size);
-	memcpy(&((uint8_t *)list->arr)[index * elem_size], elem, elem_size);
+	const ddpvtable *vtable = ddp_get_generic_vtable(any);
+
+	grow_if_needed(list, vtable->type_size);
+	memmove(&((uint8_t *)list->arr)[(index + 1) * vtable->type_size], &((uint8_t *)list->arr)[index * vtable->type_size], (list->len - index) * vtable->type_size);
+	memcpy(&((uint8_t *)list->arr)[index * vtable->type_size], elem, vtable->type_size);
 	list->len++;
-}
 
-void efficient_list_insert_int(ddpintlistref list, ddpint index, ddpintref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_insert_float(ddpfloatlistref list, ddpint index, ddpfloatref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_insert_bool(ddpboollistref list, ddpint index, ddpboolref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_insert_char(ddpcharlistref list, ddpint index, ddpcharref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-}
-
-void efficient_list_insert_string(ddpstringlistref list, ddpint index, ddpstringref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_STRING;
-}
-
-void efficient_list_insert_any(ddpanylistref list, ddpint index, ddpanyref elem, ddpint elem_size) {
-	efficient_list_insert((ddpgenericlistref)list, index, (ddpgenericref)elem, elem_size);
-	*elem = DDP_EMPTY_ANY;
+	claim_non_primitive(vtable, elem, any);
 }
 
 // the index is 0-based (like in C, not like in DDP)
-void efficient_list_insert_range(ddpgenericlistref list, ddpint index, ddpgenericlistref other, ddpint elem_size) {
+void efficient_list_insert_range(ddpgenericlistref list, ddpint index, ddpgenericlistref other, ddpanyref any) {
 	if (index < 0 || index > list->len) {
 		ddp_runtime_error(1, "Index außerhalb der Listen Länge (Index war " DDP_INT_FMT ", Listen Länge war " DDP_INT_FMT ")", index, list->len);
 	}
+
+	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
 	ddpint new_len = list->len + other->len;
 	if (new_len > list->cap) {
 		ddpint old_cap = list->cap;
 		list->cap = DDP_GROW_CAPACITY(new_len);
-		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
+		list->arr = ddp_reallocate(list->arr, old_cap * vtable->type_size, list->cap * vtable->type_size);
 	}
 
-	memmove(&((uint8_t *)list->arr)[(index + other->len) * elem_size], &((uint8_t *)list->arr)[index * elem_size], (list->len - index) * elem_size);
-	memcpy(&((uint8_t *)list->arr)[index * elem_size], other->arr, other->len * elem_size);
+	memmove(&((uint8_t *)list->arr)[(index + other->len) * vtable->type_size], &((uint8_t *)list->arr)[index * vtable->type_size], (list->len - index) * vtable->type_size);
+	memcpy(&((uint8_t *)list->arr)[index * vtable->type_size], other->arr, other->len * vtable->type_size);
 	list->len = new_len;
-}
 
-void efficient_list_insert_range_int(ddpintlistref list, ddpint index, ddpintlistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-}
-
-void efficient_list_insert_range_float(ddpfloatlistref list, ddpint index, ddpfloatlistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-}
-
-void efficient_list_insert_range_bool(ddpboollistref list, ddpint index, ddpboollistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-}
-
-void efficient_list_insert_range_char(ddpcharlistref list, ddpint index, ddpcharlistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-}
-
-void efficient_list_insert_range_string(ddpstringlistref list, ddpint index, ddpstringlistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-	for (ddpint i = 0; i < other->len; i++) {
-		other->arr[i] = DDP_EMPTY_STRING;
-	}
-}
-
-void efficient_list_insert_range_any(ddpanylistref list, ddpint index, ddpanylistref other, ddpint elem_size) {
-	efficient_list_insert_range((ddpgenericlistref)list, index, (ddpgenericlistref)other, elem_size);
-	for (ddpint i = 0; i < other->len; i++) {
-		other->arr[i] = DDP_EMPTY_ANY;
+	if (vtable->deep_copy_func != NULL) {
+		// free the old non-primitives before shallow-copying them
+		for (ddpint i = 0; i < other->len; i++) {
+			claim_non_primitive(vtable, &(((uint8_t *)other->arr)[i * vtable->type_size]), any);
+		}
 	}
 }
 

@@ -450,6 +450,28 @@ und kann so benutzt werden:
 	assert.NotContains(decl.Generic.Instantiations, given2.module)
 	assert.Len(decl.Generic.Instantiations, 1)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
+
+	// errors
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion foo mit den Parametern a und b vom Typ T und T, gibt ein T zurück, macht:
+	Der Text t ist 1.
+	Gib a plus b zurück
+Und kann so benutzt werden:
+	"foo <a> <b>"`),
+	})
+
+	decl_stmt = given.declaration()
+	decl = decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
+
+	_, errors = given.InstantiateGenericFunction(decl, map[string]ddptypes.Type{
+		"T": ddptypes.ZAHL,
+	})
+
+	assert.NotEmpty(errors)
+	assert.Empty(decl.Generic.Instantiations[given.module])
+	assert.False(given.errored)
 }
 
 func TestCheckAlias(t *testing.T) {
