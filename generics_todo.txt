@@ -1,2 +1,0 @@
-- generic types must be present in struct initializers
-- extern generic functions

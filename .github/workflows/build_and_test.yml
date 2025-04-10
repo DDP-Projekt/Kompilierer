@@ -71,12 +71,11 @@ jobs:
 
     - name: Build
       run:  |
-        make -j4 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} | tee build.log
+        make -j$($(nproc) + 2) ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} | tee build.log
 
     - name: Run tests
       run: |
-        make test | tee test.log
-        make coverage
+        make test -j$($(nproc) + 2) | tee test.log
     
     - name: Upload Coverage Artifact
       uses: actions/upload-artifact@v4

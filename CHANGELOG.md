@@ -11,6 +11,13 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
+- [Fix] Bug in Duden/Listen -> Elementweise_Quotient_Kommazahl wurde in der generischen Implementation behoben
+- [Anders] Duden/Sortierung, Duden/HashTabelle und Duden/Listen verwenden nun generische Funktionen und Kombinationen
+- [Neu] Externe generische Funktionen können in C mit generischen Listen und generischen Referenz Parametern arbeiten
+- [Neu] Generische Kombinationen, die Felder beliebigen Typs besitzen können
+- [Neu] Generische Funktionen, die mit Parametern beliebigen Typs arbeiten können
+
 ## v0.6.0
 
 - [Neu] Konstante hinzugefügt
