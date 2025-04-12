@@ -202,7 +202,7 @@ test-memory: debug ## runs the tests checking for memory leaks
 test-normal-memory: ## runs test-normal and test-memory in the correct order
 	'$(MAKE)' test-normal 
 	'$(MAKE)' test-memory
-	'$(MAKE)' all
+	'$(MAKE)' runtime stdlib # build them again without debug flags
 
 test-sumtypes: ## validates that sumtypes in the source tree are correctly used
 	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor )
