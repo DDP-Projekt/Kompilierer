@@ -10,9 +10,11 @@ import (
 func TestIsExternFunc(t *testing.T) {
 	assert := assert.New(t)
 
+	assert.False(IsExternFunc(nil))
 	assert.True(IsExternFunc(&FuncDecl{
-		Body: nil,
-		Def:  nil,
+		ExternFile: token.Token{Type: token.STRING},
+		Body:       nil,
+		Def:        nil,
 	}))
 	assert.False(IsExternFunc(&FuncDecl{
 		Body: &BlockStmt{},
@@ -31,6 +33,7 @@ func TestIsExternFunc(t *testing.T) {
 func TestIsForwardDecl(t *testing.T) {
 	assert := assert.New(t)
 
+	assert.False(IsForwardDecl(nil))
 	assert.True(IsForwardDecl(&FuncDecl{
 		Body: nil,
 		Def:  &FuncDef{},
@@ -48,11 +51,24 @@ func TestIsForwardDecl(t *testing.T) {
 func TestIsOperatorOverload(t *testing.T) {
 	assert := assert.New(t)
 
+	assert.False(IsOperatorOverload(nil))
 	assert.True(IsOperatorOverload(&FuncDecl{
 		Operator: BIN_OR,
 	}))
 	assert.False(IsOperatorOverload(&FuncDecl{
 		Operator: nil,
+	}))
+}
+
+func TestIsGeneric(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.False(IsGeneric(nil))
+	assert.True(IsGeneric(&FuncDecl{
+		Generic: &GenericFuncInfo{},
+	}))
+	assert.False(IsGeneric(&FuncDecl{
+		Generic: nil,
 	}))
 }
 
@@ -68,6 +84,7 @@ func TestTrimStringLit(t *testing.T) {
 func TestIsGlobalScope(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.True(IsGlobalScope(&SymbolTable{Enclosing: nil}))
-	assert.False(IsGlobalScope(&SymbolTable{Enclosing: &SymbolTable{}}))
+	assert.False(IsGlobalScope(nil))
+	assert.True(IsGlobalScope(&BasicSymbolTable{EnclosingTable: nil}))
+	assert.False(IsGlobalScope(&BasicSymbolTable{EnclosingTable: &BasicSymbolTable{}}))
 }

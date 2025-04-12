@@ -150,7 +150,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 		vtable.Visibility = enum.VisibilityDefault
 	} else {
 		vtable = c.mod.NewGlobalDef(ddpstring.Name()+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-			newInt(16),
+			newInt(int64(c.getTypeSize(ddpstring))),
 			ddpstring.freeIrFun,
 			ddpstring.deepCopyIrFun,
 			ddpstring.equalsIrFun,

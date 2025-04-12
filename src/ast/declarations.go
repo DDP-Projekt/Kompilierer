@@ -3,8 +3,11 @@ package ast
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	at "github.com/DDP-Projekt/Kompilierer/src/parser/alias_trie"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
+
+type AliasTrie = *at.Trie[*token.Token, Alias]
 
 type (
 	// an invalid Declaration
@@ -30,8 +33,9 @@ type (
 		Type            ddptypes.Type // type of the variable
 		NameTok         token.Token   // identifier name
 		TypeRange       token.Range   // range of the type (mainly used by the LSP)
-		IsPublic        bool          // wether the function is marked with öffentliche
-		IsExternVisible bool          // wether the variable is marked as extern visible
+		IsPublic        bool          // whether the function is marked with öffentliche
+		IsExternVisible bool          // whether the variable is marked as extern visible
+		IsGlobal        bool          // whether this is a global variable
 		Mod             *Module       // the module in which the variable was declared
 		InitVal         Expression    // initial value
 		InitType        ddptypes.Type // type of InitVal, filled in by the typechecker, used to keep information about typedefs
@@ -39,22 +43,42 @@ type (
 
 	FuncDecl struct {
 		Range           token.Range
-		CommentTok      *token.Token    // optional comment (also contained in ast.Comments)
-		Tok             token.Token     // Die
-		NameTok         token.Token     // token of the name
-		IsPublic        bool            // wether the function is marked with öffentliche
-		IsExternVisible bool            // wether the function is marked as extern visible
-		Mod             *Module         // the module in which the function was declared
-		Parameters      []ParameterInfo // name, type and comments of parameters
-		ReturnType      ddptypes.Type   // return Type, Zahl Kommazahl nichts ...
-		ReturnTypeRange token.Range     // range of the return type (mainly used by the LSP)
-		Body            *BlockStmt      // nil for extern functions or forward declarations
-		Def             *FuncDef        // non-nil for forward declarations
-		ExternFile      token.Token     // string literal with filepath (only pesent if Body is nil)
-		Operator        Operator        // the operator this function overloads, or nil if it does not overload an operator
+		CommentTok      *token.Token     // optional comment (also contained in ast.Comments)
+		Tok             token.Token      // Die
+		NameTok         token.Token      // token of the name
+		IsPublic        bool             // wether the function is marked with öffentliche
+		IsExternVisible bool             // wether the function is marked as extern visible
+		Mod             *Module          // the module in which the function was declared
+		Parameters      []ParameterInfo  // name, type and comments of parameters
+		ReturnType      ddptypes.Type    // return Type, Zahl Kommazahl nichts ...
+		ReturnTypeRange token.Range      // range of the return type (mainly used by the LSP)
+		Body            *BlockStmt       // nil for extern functions or forward declarations
+		Def             *FuncDef         // non-nil for forward declarations
+		ExternFile      token.Token      // string literal with filepath (only pesent if Body is nil)
+		Operator        Operator         // the operator this function overloads, or nil if it does not overload an operator
+		Generic         *GenericFuncInfo // only filled if the function was declared as generic
+		GenericDecl     *FuncDecl        // non-nil if this decl is a instantiation of a generic function
 		Aliases         []*FuncAlias
 	}
 
+	// holds information about a generic function declaration
+	GenericFuncInfo struct {
+		Types          map[string]ddptypes.GenericType // all declared generic types
+		Tokens         []token.Token                   // tokens of the body that need to be parsed, nil if the function is extern
+		Context        GenericContext                  // context up to the point where the function was declared
+		Instantiations map[*Module][]*FuncDecl         // all existing instantiations for a given module
+	}
+
+	// the context captured by a generic function declaration
+	// to parse an instantiation it has to be merged with the symbols and aliases at
+	// the point of instantiation
+	GenericContext struct {
+		Symbols   SymbolTable
+		Aliases   AliasTrie
+		Operators map[Operator][]*FuncDecl
+	}
+
+	// is a statement and not a declaration but grouped in this File with FuncDecl for readability
 	FuncDef struct {
 		Range token.Range
 		Tok   token.Token // Die
@@ -72,8 +96,8 @@ type (
 		// Field declarations of the struct in order of declaration
 		// only contains *VarDecl and *BadDecl s
 		Fields  []Declaration
-		Type    *ddptypes.StructType // the type resulting from this decl
-		Aliases []*StructAlias       // the constructors of the struct
+		Type    ddptypes.Type  // the type resulting from this decl
+		Aliases []*StructAlias // the constructors of the struct
 	}
 
 	TypeAliasDecl struct {

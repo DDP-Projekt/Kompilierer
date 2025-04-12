@@ -158,6 +158,7 @@ const (
 	ALLE
 	MODULE
 	INDEX
+	GENERISCHE
 	KONSTANTE
 
 	DOT     // .
@@ -326,6 +327,7 @@ var tokenStrings = [...]string{
 	ALLE:          "alle",
 	MODULE:        "Module",
 	INDEX:         "Index",
+	GENERISCHE:    "generische",
 	KONSTANTE:     "Konstante",
 
 	DOT:     ".",
@@ -499,6 +501,7 @@ var KeywordMap = map[string]TokenType{
 	"alle":           ALLE,
 	"Module":         MODULE,
 	"Index":          INDEX,
+	"generische":     GENERISCHE,
 	"Konstante":      KONSTANTE,
 }
 

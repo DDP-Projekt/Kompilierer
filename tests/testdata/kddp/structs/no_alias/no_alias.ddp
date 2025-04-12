@@ -1,0 +1,21 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl x mit Standardwert 1,
+	der Zahl y mit Standardwert 2,
+einen Vektor2.
+
+Wir nennen die Kombination aus
+	dem Vektor2 vec,
+	dem Text name mit Standardwert "test",
+einen BenanntenVektor2.
+
+Der Vektor2 vec ist der Standardwert von einem Vektor2.
+Schreibe (x von vec) auf eine Zeile.
+Schreibe (y von vec) auf eine Zeile.
+
+Der BenanntenVektor2 vec2 ist der Standardwert von einem BenanntenVektor2.
+
+Schreibe (x von vec von vec2) auf eine Zeile.
+Schreibe (y von vec von vec2) auf eine Zeile.
+Schreibe (name von vec2) auf eine Zeile.

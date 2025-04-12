@@ -29,16 +29,16 @@ import (
 //   - a set of all external dependendcies
 //   - an error
 func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
-	errHndl ddperror.Handler, optimizationLevel uint,
+	errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	compiledMods := map[string]*ast.Module{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
+	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, llTarget, optimizationLevel)
 }
 
 func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
 	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -64,14 +64,14 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	}
 
 	// compile this module
-	if _, err := newCompiler(mod, errHndl, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
+	if _, err := newCompiler(mod, errHndl, llTarget, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
 		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
 	}
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, llTarget, optimizationLevel); err != nil {
 				return nil, err
 			}
 		}
@@ -93,7 +93,7 @@ type compiler struct {
 	errorHandler      ddperror.Handler // errors are passed to this function
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
-	llTarget          llvmTarget       // information about the target machine
+	llTarget          *llvmTarget      // information about the target machine
 
 	cbb              *ir.Block                                 // current basic block in the ir
 	cf               *ir.Func                                  // current function
@@ -128,10 +128,11 @@ type compiler struct {
 	ddpstring                                                                     *ddpIrStringType
 	ddpany                                                                        *ddpIrAnyType
 	ddpintlist, ddpfloatlist, ddpboollist, ddpcharlist, ddpstringlist, ddpanylist *ddpIrListType
+	ddpgenericlist                                                                *ddpIrGenericListType
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) *compiler {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint) *compiler {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -143,6 +144,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 		},
+		llTarget:         llTarget,
 		cbb:              nil,
 		cf:               nil,
 		scp:              newScope(nil), // global scope
@@ -167,12 +169,6 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 // if isMainModule is false, no ddp_main function will be generated
 func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
 	defer compiler_panic_wrapper(c)
-
-	llTarget, err := newllvmTarget()
-	if err != nil {
-		return nil, err
-	}
-	c.llTarget = *llTarget
 
 	c.mod.SourceFilename = c.ddpModule.FileName // set the module filename (optional metadata)
 	c.addExternalDependencies()
@@ -218,7 +214,7 @@ func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr
 
 	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
 
-	_, err = c.mod.WriteTo(w)
+	_, err := c.mod.WriteTo(w)
 	return c.result, err
 }
 
@@ -352,6 +348,7 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 	c.ddpcharlist = c.createListType("ddpcharlist", c.ddpchartyp, declarationOnly)
 	c.ddpstringlist = c.createListType("ddpstringlist", c.ddpstring, declarationOnly)
 	c.ddpanylist = c.createListType("ddpanylist", c.ddpany, declarationOnly)
+	c.ddpgenericlist = c.createGenericListType()
 }
 
 // used in setup()
@@ -439,8 +436,8 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	for paramName, v := range c.cfscp.variables {
-		if !v.isRef && (!meta.IsConst[paramName] || c.optimizationLevel < 2) {
+	for paramDecl, v := range c.cfscp.variables {
+		if !v.isRef && (!meta.IsConst[paramDecl.Name()] || c.optimizationLevel < 2) {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
@@ -467,16 +464,18 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 
 	Typ := c.toIrType(d.Type) // get the llvm type
 	var varLocation value.Value
-	if c.scp.enclosing == nil { // global scope
+	if c.scp.isGlobalScope() { // global scope
 		// globals are first assigned in ddp_main or module_init
 		// so we assign them a default value here
 		//
 		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
 		globalDef := c.mod.NewGlobalDef(c.mangledNameDecl(d), Typ.DefaultValue())
 		// make private variables static like in C
-		if !d.IsPublic && !d.IsExternVisible {
-			globalDef.Linkage = enum.LinkageInternal
-		}
+		// commented out because of generics where private variables might be used
+		// from a different module
+		// if !d.IsPublic && !d.IsExternVisible {
+		// 	globalDef.Linkage = enum.LinkageInternal
+		// }
 		globalDef.Visibility = enum.VisibilityDefault
 		varLocation = globalDef
 	} else {
@@ -495,13 +494,13 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 			}
 
-			initVal, initTyp, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
+			initVal, _, isTemp = c.castNonAnyToAny(initVal, initTyp, isTemp, vtable)
 		}
 
 		c.claimOrCopy(varLocation, initVal, Typ, isTemp)
 	}
 
-	if c.scp.enclosing == nil { // module_init
+	if c.scp.isGlobalScope() { // module_init
 		cf, cbb := c.cf, c.cbb
 		c.cf, c.cbb = c.moduleInitFunc, c.moduleInitCbb
 		current_temporaries_end := len(c.scp.temporaries)
@@ -525,14 +524,43 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		addInitializer()
 	}
 
-	c.scp.addVar(d.Name(), varLocation, Typ, false)
+	c.scp.addVar(d, varLocation, Typ, false)
 	return ast.VisitRecurse
 }
 
+func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
+	// if the return type is generic it can only be a list
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(decl.ReturnType); isGeneric {
+		return c.ddpgenericlist
+	} else {
+		return c.toIrType(decl.ReturnType) // get the llvm type
+	}
+}
+
+func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) types.Type {
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+		return i8ptr
+	} else if isGeneric {
+		return c.ddpgenericlist.PtrType()
+	} else {
+		return c.toIrParamType(param.Type) // convert the type of the parameter
+	}
+}
+
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
-	retType := c.toIrType(decl.ReturnType) // get the llvm type
+	if ast.IsGeneric(decl) && !ast.IsExternFunc(decl) {
+		return ast.VisitRecurse
+	}
+
+	// extern functions are instantiated once
+	if ast.IsGenericInstantiation(decl) && ast.IsExternFunc(decl) {
+		decl = decl.GenericDecl
+	}
+
+	retType := c.getPossiblyGenericReturnType(decl)
+
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -543,17 +571,20 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
-		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
+		paramIrType := c.getPossiblyGenericParamType(&param)
+
+		params = append(params, ir.NewParam(param.Name.Literal, paramIrType)) // add it to the list
 	}
 
 	irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
 	irFunc.CallingConv = enum.CallingConvC                                 // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	// make private functions static like in C
-	if !decl.IsPublic && !decl.IsExternVisible {
-		irFunc.Linkage = enum.LinkageInternal
-		irFunc.Visibility = enum.VisibilityDefault
-	}
+	// commented out because of generics where private functions might be called
+	// from a different module
+	// if !decl.IsPublic && !decl.IsExternVisible {
+	// 	irFunc.Linkage = enum.LinkageInternal
+	// 	irFunc.Visibility = enum.VisibilityDefault
+	// }
 
 	c.insertFunction(irFunc.Name(), decl, irFunc)
 
@@ -576,7 +607,7 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 
 // helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
 func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params []*ir.Param, decl *ast.FuncDecl) {
-	fun, block := c.cf, c.cbb // safe the state before the function body
+	fun, block, cfscp := c.cf, c.cbb, c.cfscp // safe the state before the function body
 	c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
 	c.cfscp = c.scp
 
@@ -584,21 +615,29 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	if hasReturnParam {
 		params = params[1:]
 	}
+
+	body := decl.Body
+	if ast.IsForwardDecl(decl) {
+		body = decl.Def.Body
+	}
+
 	// passed arguments are immutable (llvm uses ssa registers) so we declare them as local variables
 	// the caller has to take care of possible deep-copies
 	for i := range params {
 		irType := c.toIrType(decl.Parameters[i].Type.Type)
+		varDecl, _, _ := body.Symbols.LookupDecl(params[i].Name())
+		paramDecl := varDecl.(*ast.VarDecl)
 		if decl.Parameters[i].Type.IsReference {
 			// references are implemented similar to name-shadowing
 			// they basically just get another name in the function scope, which
 			// refers to the same variable allocation
-			c.scp.addVar(params[i].Name(), params[i], irType, true)
+			c.scp.addVar(paramDecl, params[i], irType, true)
 		} else if !irType.IsPrimitive() { // strings and lists need special handling
 			// add the local variable for the parameter
-			v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
 			c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
 		} else { // primitive types don't need any special handling
-			v := c.scp.addVar(params[i].Name(), c.NewAlloca(irType.IrType()), irType, false)
+			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
 			c.cbb.NewStore(params[i], v)
 		}
 	}
@@ -606,10 +645,6 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	// modified VisitBlockStmt
 	c.scp = newScope(c.scp) // a block gets its own scope
 	toplevelReturn := false
-	body := decl.Body
-	if ast.IsForwardDecl(decl) {
-		body = decl.Def.Body
-	}
 	for _, stmt := range body.Statements {
 		c.visitNode(stmt)
 		// on toplevel return statements, ignore anything that follows
@@ -635,11 +670,11 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	} else {
 		c.scp = c.exitFuncScope(decl)
 	}
-	c.cf, c.cbb, c.cfscp = fun, block, nil // restore state before the function (to main)
+	c.cf, c.cbb, c.cfscp = fun, block, cfscp // restore state before the function (to main)
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
-	c.defineOrDeclareStructType(decl.Type)
+	c.defineOrDeclareAllDeclTypes(decl)
 	return ast.VisitRecurse
 }
 
@@ -664,7 +699,11 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	Var := c.scp.lookupVar(e.Declaration.Name()) // get the alloca in the ir
+	if e.Declaration.(*ast.VarDecl).IsGlobal && e.Declaration.Module() != c.ddpModule {
+		c.declareImportedVarDecl(e.Declaration.(*ast.VarDecl))
+	}
+
+	Var := c.scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 	c.commentNode(c.cbb, e, e.Literal.Literal)
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
@@ -1807,7 +1846,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Declaration.Name())
+		Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -1846,14 +1885,23 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
+	mangledName := c.mangledNameDecl(e.Func)
+	_, alreadyPresent := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
+	needsInstantiation := !alreadyPresent && ast.IsGenericInstantiation(e.Func)
+
+	if needsInstantiation {
+		c.VisitFuncDecl(e.Func)
+	}
+
 	// declare the function if it is imported
 	// this is needed so that plain expressions from other modules
 	// (i.e. struct literals) work
-	if e.Func.Module() != c.ddpModule {
+	if !needsInstantiation && e.Func.Module() != c.ddpModule {
 		c.declareImportedFuncDecl(e.Func)
 	}
 
-	fun := c.functions[c.mangledNameDecl(e.Func)] // retreive the function (the resolver took care that it is present)
+	fun := c.functions[mangledName]
+
 	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
 
 	meta := annotators.ConstFuncParamMeta{}
@@ -1861,7 +1909,8 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	irReturnType := c.toIrType(fun.funcDecl.ReturnType)
+	irReturnType := c.getPossiblyGenericReturnType(fun.funcDecl)
+
 	var ret value.Value
 	if !irReturnType.IsPrimitive() {
 		ret = c.NewAlloca(irReturnType.IrType())
@@ -1890,6 +1939,14 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
+		// adjust argument types for generic extern functions
+		if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+			val = c.cbb.NewBitCast(val, i8ptr)
+		} else if isGeneric {
+			// if the param type is generic and not a reference it can only be a list
+			val = c.cbb.NewBitCast(val, c.ddpgenericlist.PtrType())
+		}
+
 		args = append(args, val) // add the value to the arguments
 	}
 
@@ -1906,15 +1963,26 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	// the arguments of external functions must be freed by the caller
 	// normal functions free their parameters in their body
-	if ast.IsExternFunc(fun.funcDecl) {
-		for i, param := range fun.funcDecl.Parameters {
-			if !param.Type.IsReference {
-				if irReturnType.IsPrimitive() {
-					c.freeNonPrimitive(args[i], c.toIrType(param.Type.Type))
-				} else {
-					c.freeNonPrimitive(args[i+1], c.toIrType(param.Type.Type))
+	if !ast.IsExternFunc(e.Func) {
+		return ast.VisitRecurse
+	}
+
+	for i, param := range e.Func.Parameters {
+		if !param.Type.IsReference {
+			paramIrType := c.toIrType(param.Type.Type)
+			arg := args[i]
+			if !irReturnType.IsPrimitive() {
+				arg = args[i+1]
+			}
+
+			// adjust argument types for generic extern functions
+			if ddptypes.IsList(param.Type.Type) {
+				if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(fun.funcDecl.Parameters[i].Type.Type); isGeneric {
+					arg = c.cbb.NewBitCast(arg, paramIrType.PtrType())
 				}
 			}
+
+			c.freeNonPrimitive(arg, paramIrType)
 		}
 	}
 	return ast.VisitRecurse
@@ -1922,15 +1990,22 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args map[string]ast.Expression) (value.Value, ddpIrType) {
 	// search in the types module for the decl, as it might not be present in this module due to transitive dependencies
-	structDecl := c.typeMap[structType].Ast.Symbols.Declarations[structType.Name].(*ast.StructDecl)
+	structDeclInterface, _, _ := c.typeMap[structType].Ast.Symbols.LookupDecl(structType.Name)
+	structDecl := structDeclInterface.(*ast.StructDecl)
 	resultType := c.toIrType(structType)
 	result := c.NewAlloca(resultType.IrType())
 	for i, field := range structType.Fields {
-		initType := structDecl.Fields[i].(*ast.VarDecl).InitType
-		argExpr := structDecl.Fields[i].(*ast.VarDecl).InitVal
+		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
+		initType := fieldDecl.InitType
+		argExpr := fieldDecl.InitVal
 		if fieldArg, hasArg := args[field.Name]; hasArg {
 			// the arg was passed so use that instead
 			argExpr = fieldArg
+		}
+
+		// if no default value was given
+		if argExpr == nil {
+			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Range: c.currentNode.GetRange()}
 		}
 
 		argVal, argType, isTempArg := c.evaluate(argExpr)
@@ -1951,7 +2026,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 }
 
 func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
-	result, resultType := c.evaluateStructLiteral(expr.Struct.Type, expr.Args)
+	result, resultType := c.evaluateStructLiteral(expr.Type, expr.Args)
 	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
 	c.latestIsTemp = true
 	return ast.VisitRecurse
@@ -1982,6 +2057,10 @@ func (c *compiler) declareIfStruct(t ddptypes.Type) {
 }
 
 func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
+	if ast.IsGeneric(decl) && !ast.IsExternFunc(decl) {
+		return
+	}
+
 	mangledName := c.mangledNameDecl(decl)
 	// already declared
 	if _, ok := c.functions[mangledName]; ok {
@@ -1993,9 +2072,10 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	for _, param := range decl.Parameters {
 		c.declareIfStruct(param.Type.Type)
 	}
-	retType := c.toIrType(decl.ReturnType) // get the llvm type
+
+	retType := c.getPossiblyGenericReturnType(decl) // get the llvm type
 	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)) // list of the ir parameters
+	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
@@ -2006,7 +2086,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.toIrParamType(param.Type)                            // convert the type of the parameter
+		ty := c.getPossiblyGenericParamType(&param)                  // convert the type of the parameter
 		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
 	}
 
@@ -2019,6 +2099,27 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	c.insertFunction(irFunc.Name(), decl, irFunc)
 }
 
+func (c *compiler) declareImportedVarDecl(decl *ast.VarDecl) {
+	// imported decls are always in the global scope
+	// even in generic instantiations
+	scp := c.scp
+	for !scp.isGlobalScope() {
+		scp = scp.enclosing
+	}
+
+	if scp.lookupVar(decl).val != nil {
+		return
+	}
+
+	c.declareIfStruct(decl.Type)
+	Typ := c.toIrType(decl.Type)
+	globalDecl := c.mod.NewGlobal(c.mangledNameDecl(decl), Typ.IrType())
+	globalDecl.Linkage = enum.LinkageExternal
+	globalDecl.Visibility = enum.VisibilityDefault
+
+	scp.addProtected(decl, globalDecl, Typ, false) // freed by module_dispose
+}
+
 func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 	if len(s.Modules) == 0 {
 		c.err("importStmt.Module == nil")
@@ -2029,12 +2130,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 		case *ast.ConstDecl:
 			c.declareIfStruct(decl.Type) // not needed yet
 		case *ast.VarDecl: // declare the variable as external
-			c.declareIfStruct(decl.Type)
-			Typ := c.toIrType(decl.Type)
-			globalDecl := c.mod.NewGlobal(c.mangledNameDecl(decl), Typ.IrType())
-			globalDecl.Linkage = enum.LinkageExternal
-			globalDecl.Visibility = enum.VisibilityDefault
-			c.scp.addProtected(decl.Name(), globalDecl, Typ, false) // freed by module_dispose
+			c.declareImportedVarDecl(decl)
 		case *ast.FuncDecl:
 			c.declareImportedFuncDecl(decl)
 		case *ast.TypeAliasDecl:
@@ -2043,7 +2139,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.declareIfStruct(decl.Type)
 			c.addTypdefVTable(decl, true)
 		case *ast.StructDecl:
-			c.defineOrDeclareStructType(decl.Type)
+			c.defineOrDeclareAllDeclTypes(decl)
 		case *ast.BadDecl:
 			c.err("BadDecl in import")
 		default:
@@ -2271,7 +2367,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// compile the incrementBlock
 	c.cbb = incrementBlock
-	Var := c.scp.lookupVar(s.Initializer.Name())
+	Var := c.scp.lookupVar(s.Initializer)
 	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
 
 	// add the incrementer to the counter variable
@@ -2281,7 +2377,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)
 	}
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer.Name()).val)
+	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer).val)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -2362,9 +2458,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	c.cbb = loopStart
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addProtected(s.Initializer.Name(), c.NewAlloca(irType.IrType()), irType, false)
+	c.scp.addProtected(s.Initializer, c.NewAlloca(irType.IrType()), irType, false)
 	if s.Index != nil {
-		c.scp.addVar(s.Index.Name(), index, c.ddpinttyp, false)
+		c.scp.addVar(s.Index, index, c.ddpinttyp, false)
 		c.cbb.NewStore(newInt(1), index)
 	}
 	c.cbb.NewBr(condBlock)
@@ -2372,7 +2468,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.cbb = condBlock
 	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredNE, c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint), c.cbb.NewPtrToInt(end_ptr, ddpint)), bodyBlock, leaveBlock)
 
-	loopVar := c.scp.lookupVar(s.Initializer.Name())
+	loopVar := c.scp.lookupVar(s.Initializer)
 
 	continueBlock := c.cf.NewBlock("")
 	c.cbb = continueBlock
@@ -2535,7 +2631,7 @@ func (c *compiler) exitNestedScopes(targetScope *scope) {
 }
 
 func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
-	name := c.mangledNameDecl(d)
+	name := c.mangledNameType(d.Type)
 	if _, ok := c.typeDefVTables[name]; ok {
 		return
 	}

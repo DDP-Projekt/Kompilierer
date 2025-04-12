@@ -113,7 +113,7 @@ jobs:
     - if: matrix.build-mode == 'manual'
       run: |
         sudo locale-gen de_DE.UTF-8
-        make -j$(nproc)
+        make -j5
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

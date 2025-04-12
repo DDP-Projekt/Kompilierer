@@ -14,64 +14,61 @@ und kann so benutzt werden:
 [
 	Representiert einen Eintrag in einer HashTabelle.
 ]
-Wir nennen die öffentliche Kombination aus
+Wir nennen die generische öffentliche Kombination aus
 	der Zahl art mit Standardwert 2, [ 0 == Leerer Wert, 1 == Grabstein, x == Wert]
-	dem öffentlichen Text Schlüssel mit Standardwert "",
-	der öffentlichen Variable Wert mit Standardwert dem Standardwert von einer Variable,
+	dem öffentlichen S Schlüssel,
+	der öffentlichen W Wert,
 einen Eintrag,
 und erstellen sie so:
 	"ein Eintrag für <Schlüssel> mit Wert <Wert>" oder
 	"einem Eintrag für <Schlüssel> mit Wert <Wert>" oder
 	"einen Eintrag für <Schlüssel> mit Wert <Wert>"
 
-Die öffentliche Funktion LeererEintrag gibt einen Eintrag zurück, macht:
-	Der Eintrag e ist der Standardwert von einem Eintrag.
+Die generische Funktion LeererEintrag mit den Parametern s und w vom Typ S und W, gibt einen S-W-Eintrag zurück, macht:
+	Der S-W-Eintrag e ist der Standardwert von einem S-W-Eintrag.
 	Speichere 0 in art von e.
 	Gib e zurück.
 Und kann so benutzt werden:
-	"ein leerer Eintrag" oder
-	"einem leerer Eintrag"
+	"ein leerer Eintrag (<s>, <w>)" oder
+	"einem leerer Eintrag (<s>, <w>)"
 
 [ Gibt einen Grabstein zurück. ]
-Die Funktion Grabstein gibt einen Eintrag zurück, macht:
-	Der Eintrag e ist der Standardwert von einem Eintrag.
+Die generische Funktion Grabstein mit den Parametern s und w vom Typ S und W, gibt einen S-W-Eintrag zurück, macht:
+	Der S-W-Eintrag e ist der Standardwert von einem S-W-Eintrag.
 	Speichere 1 in art von e.
 	Gib e zurück.
 Und kann so benutzt werden:
-	"ein Grabstein" oder
-	"einen Grabstein" oder
-	"einem Grabstein"
+	"ein Grabstein (<s>, <w>)" oder
+	"einen Grabstein (<s>, <w>)" oder
+	"einem Grabstein (<s>, <w>)"
 
-Die Funktion Ist_Leerer_Eintrag mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
+Die generische Funktion Ist_Leerer_Eintrag mit dem Parameter e vom Typ S-W-Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn art von e gleich 0 ist, zurück.
 Und kann so benutzt werden:
 	"<e> ein leerer Eintrag ist"
 
-Die Funktion Ist_Grabstein mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
+Die generische Funktion Ist_Grabstein mit dem Parameter e vom Typ S-W-Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn art von e gleich 1 ist, zurück.
 Und kann so benutzt werden:
 	"<e> ein Grabstein ist"
 
-Die Funktion Ist_Leer_Oder_Grabstein mit dem Parameter e vom Typ Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
+Die generische Funktion Ist_Leer_Oder_Grabstein mit dem Parameter e vom Typ S-W-Eintrag Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn art von e gleich 0 ist oder art von e gleich 1 ist, zurück.
 Und kann so benutzt werden:
 	"<e> <!nicht> leer oder ein Grabstein ist"
 
-Wir nennen die öffentliche Kombination aus
-	der Eintrag Liste einträge mit Standardwert 16 Mal ein leerer Eintrag,
+Wir nennen die generische öffentliche Kombination aus
+	der S-W-Eintrag Liste einträge,
 	der Zahl länge mit Standardwert 0,
-eine HashTabelle,
-und erstellen sie so:
-	"eine leere HashTabelle" oder
-	"eine neue HashTabelle"
+eine HashTabelle.
 
-Die Funktion Tabellen_Kapazität mit dem Parameter tabelle vom Typ HashTabelle Referenz, gibt eine Zahl zurück, macht:
+Die generische Funktion Tabellen_Kapazität mit dem Parameter tabelle vom Typ S-W-HashTabelle Referenz, gibt eine Zahl zurück, macht:
 	Gib die Länge von einträge von tabelle zurück.
 Und kann so benutzt werden:
 	"die Kapazität von <tabelle>",
 	"der Kapazität von <tabelle>"
 
-Die öffentliche Funktion Tabelle_Zu_Text mit dem Parameter tabelle vom Typ HashTabelle Referenz, gibt einen Text zurück, macht:
+Die öffentliche generische Funktion Tabelle_Zu_Text mit dem Parameter tabelle vom Typ S-W-HashTabelle Referenz, gibt einen Text zurück, macht:
 	Der TextBauer b ist ein neuer TextBauer.
 
 	Für jede Zahl i von 1 bis die Länge von einträge von tabelle, mache:
@@ -102,7 +99,7 @@ Die öffentliche Funktion Tabelle_Zu_Text mit dem Parameter tabelle vom Typ Hash
 	Gib b als Text zurück.
 Und überlädt den "als" Operator.
 
-Die Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text Referenz, gibt eine Zahl zurück, macht:
+Die generische Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und Text Referenz, gibt eine Zahl zurück, macht:
 	Die Zahl index ist der Hash von schlüssel modulo der Kapazität von tabelle plus 1.
 	Die Zahl grabstein_index ist -1.
 
@@ -121,10 +118,11 @@ Die Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ Has
 Und kann so benutzt werden:
 	"der Index für <schlüssel> in <tabelle>"
 
-Die Funktion Kapazität_Anpassen mit den Parametern tabelle und neue_kapazität vom Typ HashTabelle Referenz und Zahl, gibt nichts zurück, macht:
-	Die HashTabelle neue_tabelle ist eine leere HashTabelle.
+Die generische Funktion Kapazität_Anpassen mit den Parametern tabelle und neue_kapazität vom Typ S-W-HashTabelle Referenz und Zahl, gibt nichts zurück, macht:
+	Die S-W-HashTabelle neue_tabelle ist der Standardwert von einer S-W-HashTabelle.
 	:
-		Die Eintrag Liste neue_einträge ist neue_kapazität Mal ein leerer Eintrag.
+		Der S-W-Eintrag leerer_eintrag ist ein leerer Eintrag ((der Standardwert von einem S), (der Standardwert von einem W)).
+		Die S-W-Eintrag Liste neue_einträge ist neue_kapazität Mal leerer_eintrag.
 		Speichere neue_einträge in einträge von neue_tabelle.
 
 	Für jede Zahl i von 1 bis die Kapazität von tabelle, mache:
@@ -139,16 +137,16 @@ Die Funktion Kapazität_Anpassen mit den Parametern tabelle und neue_kapazität 
 Und kann so benutzt werden:
 	"Passe die Kapazität von <tabelle> auf <neue_kapazität> an"
 
-Die Funktion Ist_Neuer_Schlüssel_Index mit den Parametern index und tabelle vom Typ Zahl und HashTabelle Referenz, gibt einen Wahrheitswert zurück, macht:
+Die generische Funktion Ist_Neuer_Schlüssel_Index mit den Parametern index und tabelle vom Typ Zahl und S-W-HashTabelle Referenz, gibt einen Wahrheitswert zurück, macht:
 	Gib wahr, wenn (einträge von tabelle an der Stelle index) ein leerer Eintrag ist, zurück.
 Und kann so benutzt werden:
 	"<index> für einen neuen Schlüssel in <tabelle> steht"
 
 Die Kommazahl MAXIMALER_LADUNGS_FAKTOR ist 0,75.
 
-Die öffentliche Funktion Tabellen_Wert_Setzen mit den Parametern tabelle, schlüssel und wert vom Typ HashTabelle Referenz, Text und Variable, gibt einen Wahrheitswert zurück, macht:
+Die öffentliche generische Funktion Tabellen_Wert_Setzen mit den Parametern tabelle, schlüssel und wert vom Typ S-W-HashTabelle Referenz, S und W, gibt einen Wahrheitswert zurück, macht:
 	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
-		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle ungleich 0 ist, ansonsten 16.
+		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
 		Passe die Kapazität von tabelle auf neue_kapazität an.
 
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
@@ -164,38 +162,52 @@ Und kann so benutzt werden:
 	"setze den Wert von <schlüssel> in <tabelle> auf <wert>" oder
 	"das Speichern von <schlüssel> mit Wert <wert> in <tabelle> einen neuen Schlüssel hinzugefügt hat"
 
-Die öffentliche Funktion Tabellen_Wert_Lesen mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text, gibt eine Variable zurück, macht:
+Die öffentliche generische Funktion Tabellen_Wert_Lesen mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen W zurück, macht:
+	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
+		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
+		Passe die Kapazität von tabelle auf neue_kapazität an.
+
+
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
-		Gib der Standardwert von einer Variable zurück.
+		Gib den Standardwert von einem W zurück.
 	Gib Wert von (einträge von tabelle an der Stelle eintrag_index) zurück.
 Und überlädt den "an der Stelle" Operator.
 
-Die öffentliche Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text, gibt einen Wahrheitswert zurück, macht:
+Die öffentliche generische Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen Wahrheitswert zurück, macht:
+	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
+		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
+		Passe die Kapazität von tabelle auf neue_kapazität an.
+
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Gib falsch, wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, zurück.
 Und kann so benutzt werden:
 	"<schlüssel> <!nicht> in <tabelle> enthalten ist",
 	"<tabelle> <schlüssel> <!nicht> enthält"
 
-Die öffentliche Funktion Tabellen_Wert_Löschen mit den Parametern tabelle und schlüssel vom Typ HashTabelle Referenz und Text, gibt eine Variable zurück, macht:
+Die öffentliche generische Funktion Tabellen_Wert_Löschen mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen W zurück, macht:
+	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
+		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
+		Passe die Kapazität von tabelle auf neue_kapazität an.
+
+
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
 		Gib der Standardwert von einer Variable zurück.
 
 	Die Variable wert ist Wert von (einträge von tabelle an der Stelle eintrag_index).
-	Speichere einen Grabstein in (einträge von tabelle an der Stelle eintrag_index).
+	Speichere einen Grabstein ((der Standardwert von einem S), (der Standardwert von einem W)) in (einträge von tabelle an der Stelle eintrag_index).
 	Gib wert zurück.
 Und kann so benutzt werden:
 	"Lösche den Wert für <schlüssel> aus <tabelle>" oder
 	"der gelöschte Wert für <schlüssel> in <tabelle>" oder
 	"den gelöschten Wert für <schlüssel> in <tabelle>"
 
-Die öffentliche Funktion Tabellen_Einträge mit dem Parameter tabelle vom Typ HashTabelle Referenz, gibt eine Eintrag Liste zurück, macht:
-	Wenn länge von tabelle gleich 0 ist, gib eine leere Eintrag Liste zurück.
+Die öffentliche generische Funktion Tabellen_Einträge mit dem Parameter tabelle vom Typ S-W-HashTabelle Referenz, gibt eine S-W-Eintrag Liste zurück, macht:
+	Wenn länge von tabelle gleich 0 ist, gib eine leere S-W-Eintrag Liste zurück.
 
-	Die Eintrag Liste einträge ist die Kapazität von tabelle Mal ein leerer Eintrag.
+	Die S-W-Eintrag Liste einträge ist die Kapazität von tabelle Mal ein leerer Eintrag ((der Standardwert von einem S), (der Standardwert von einem W)).
 	Die Zahl j ist 1.
 	Für jede Zahl i von 1 bis die Länge von einträge von tabelle, mache:
 		Wenn (einträge von tabelle an der Stelle i) nicht leer oder ein Grabstein ist, dann:

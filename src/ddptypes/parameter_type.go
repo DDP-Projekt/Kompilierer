@@ -43,5 +43,5 @@ func (paramType ParameterType) String() string {
 		return paramType.Type.String() + "n Referenz"
 	}
 
-	panic("unknown type")
+	return paramType.Type.String() + " Referenz"
 }

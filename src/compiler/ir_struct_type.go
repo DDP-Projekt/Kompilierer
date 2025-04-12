@@ -3,8 +3,9 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -69,11 +70,30 @@ func (t *ddpIrStructType) EqualsFunc() *ir.Func {
 	return t.equalsIrFun
 }
 
+func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
+	switch typ := decl.Type.(type) {
+	case *ddptypes.StructType:
+		c.defineOrDeclareStructType(typ)
+	case *ddptypes.GenericStructType:
+		for _, instantiation := range typ.Instantiations {
+			c.defineOrDeclareStructType(instantiation)
+		}
+	default:
+		c.err("unexpected type %s in StructDecl %s", typ, decl.Name())
+	}
+}
+
 // recursively defines (or declares, if not from this module) a struct type and all it's field types
-func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStructType {
+func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	// if the struct type is already defined, don't define/declare it again
-	if structType, exists := c.structTypes[typ]; exists {
-		return structType
+	if _, exists := c.structTypes[typ]; exists {
+		return
+	}
+
+	// not fully instantiated types (i.e. from generic function decls) are not needed
+	if _, hasGenericTypes := ddptypes.CastDeeplyNestedGenerics(typ); hasGenericTypes {
+		c.structTypes[typ] = nil
+		return
 	}
 
 	name := c.mangledNameType(typ)
@@ -132,7 +152,6 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) *ddpIrStr
 	structType.vtable = vtable
 
 	c.structTypes[typ] = structType
-	return structType
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) *ir.Func {

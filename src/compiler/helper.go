@@ -57,7 +57,7 @@ func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
 	if listType, isList := ddptypes.CastList(ddpType); isList {
-		underlying := ddptypes.TrueUnderlying(listType.Underlying)
+		underlying := ddptypes.TrueUnderlying(listType.ElementType)
 		switch underlying {
 		case ddptypes.ZAHL:
 			return c.ddpintlist
@@ -166,11 +166,18 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		return mangledName.(string)
 	}
 
+	declName := decl.Name()
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		// extern functions may not be name-mangled
 		if ast.IsExternFunc(decl) || decl.IsExternVisible {
 			return decl.Name()
+		}
+		if ast.IsGenericInstantiation(decl) {
+			declName += "_generic_"
+			for _, p := range decl.Parameters {
+				declName += strings.ReplaceAll(p.Type.Type.String(), " ", "_")
+			}
 		}
 	case *ast.VarDecl:
 		if decl.IsExternVisible {
@@ -180,7 +187,7 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		// do nothing
 	}
 
-	mangledName := mangledNameBase(decl.Name(), decl.Module())
+	mangledName := mangledNameBase(declName, decl.Module())
 	mangledNamesCacheDecl.Store(decl, mangledName)
 	return mangledName
 }
@@ -198,7 +205,15 @@ func (c *compiler) mangledNameType(t ddptypes.Type) string {
 		panic(fmt.Errorf("type %s not in typeMap", t))
 	}
 
-	mangledName := mangledNameBase(t.String(), module)
+	name := t.String()
+	if structType, isStruct := ddptypes.CastStruct(ddptypes.TrueUnderlying(t)); isStruct {
+		parent, types := ddptypes.InstantiatedFrom(structType)
+		if parent != nil {
+			name = strings.Join(mapSlice(types, ddptypes.Type.String), "-") + "-" + structType.String()
+		}
+	}
+
+	mangledName := mangledNameBase(name, module)
 	mangledNamesCacheType.Store(t, mangledName)
 	return mangledName
 }

@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
 func init() {

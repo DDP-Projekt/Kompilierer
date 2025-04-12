@@ -1,5 +1,12 @@
 package ast
 
+// when using Visit* utility functions, this interface
+// can be implemented to retreive the actual visitor
+type VisitorSetter interface {
+	Visitor
+	SetVisitor(FullVisitor)
+}
+
 // when using the Visit* utility functions, this interface
 // can be implemented to retreive the current module
 type ModuleSetter interface {
@@ -13,7 +20,7 @@ type ModuleSetter interface {
 type ScopeSetter interface {
 	Visitor
 	// called before entering a scope in the AST
-	SetScope(*SymbolTable)
+	SetScope(SymbolTable)
 }
 
 // when using the Visit* utility functions, this interface
@@ -31,7 +38,7 @@ type BaseVisitor struct {
 	// the current module being visited
 	CurrentModule *Module
 	// the current scope
-	CurrentScope *SymbolTable
+	CurrentScope SymbolTable
 	// Condition to check if a node should be visited
 	// if nil, all nodes are visited
 	VisitCondition func(Node) bool
@@ -50,7 +57,7 @@ func (v *BaseVisitor) SetModule(m *Module) {
 	v.CurrentModule = m
 }
 
-func (v *BaseVisitor) SetScope(s *SymbolTable) {
+func (v *BaseVisitor) SetScope(s SymbolTable) {
 	v.CurrentScope = s
 }
 

@@ -1,0 +1,25 @@
+Binde "Duden/Ausgabe" ein.
+
+Die generische Funktion bar mit dem Parameter l vom Typ T Liste, gibt eine Zahl zurück,
+ist in "extern.c" definiert
+und kann so benutzt werden:
+	"bar <l>"
+
+Die Zahlen Liste zl ist eine Liste, die aus 1, 2, 3 besteht.
+Schreibe (bar zl) auf eine Zeile.
+Die Kommazahlen Liste kzl ist eine Liste, die aus 1,0, 2,5 besteht.
+Schreibe (bar kzl) auf eine Zeile.
+Die Text Liste tl ist eine Liste, die aus "1" besteht.
+Schreibe (bar tl) auf eine Zeile.
+
+Die generische Funktion baz mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt einen Wahrheitswert zurück,
+ist in "extern.c" definiert
+und kann so benutzt werden:
+	"baz <a> <b>"
+
+Die Zahl a ist 1.
+Schreibe (baz a a) auf eine Zeile.
+Der Text b ist "hi".
+Schreibe (baz b b) auf eine Zeile.
+Der Text c ist "hi".
+Schreibe (baz b c) auf eine Zeile.

@@ -33,11 +33,14 @@ type parser struct {
 	// latest reported error
 	lastError ddperror.Error
 
+	// module being parsed
 	module *ast.Module
+	// module of the toplevel generic instantiation currently being parsed or nil
+	genericModule *ast.Module
 	// modules that were passed as environment, might not all be used
 	predefinedModules map[string]*ast.Module
 	// all found aliases (+ inbuild aliases)
-	aliases *at.Trie[*token.Token, ast.Alias]
+	aliases ast.AliasTrie
 	// function which is currently being parsed
 	currentFunction *ast.FuncDecl
 	// wether the current function returns a boolean
@@ -50,6 +53,8 @@ type parser struct {
 	resolver *resolver.Resolver
 	// used to typecheck every node directly after it has been parsed
 	typechecker *typechecker.Typechecker
+	// map of all overloads for all operators
+	Operators ast.OperatorOverloadMap
 }
 
 // returns a new parser, ready to parse the provided tokens
@@ -105,16 +110,18 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 				Faulty:     false,
 			},
 			PublicDecls: make(map[string]ast.Declaration, 8),
-			Operators:   make(map[ast.Operator][]*ast.FuncDecl, 8),
+			Operators:   nil,
 		},
+		genericModule:         nil,
 		predefinedModules:     modules,
 		aliases:               at.New[*token.Token, ast.Alias](tokenEqual, tokenLess),
 		currentFunction:       nil,
 		isCurrentFunctionBool: false,
 		panicMode:             false,
 		errored:               false,
-		resolver:              &resolver.Resolver{},
-		typechecker:           &typechecker.Typechecker{},
+		resolver:              nil,
+		typechecker:           nil,
+		Operators:             make(map[ast.Operator][]*ast.FuncDecl, 8),
 	}
 
 	// wrap the errorHandler to set the parsers Errored variable
@@ -127,8 +134,8 @@ func newParser(name string, tokens []token.Token, modules map[string]*ast.Module
 	}
 
 	// prepare the resolver and typechecker with the inbuild symbols and types
-	parser.resolver = resolver.New(parser.module, parser.errorHandler, name, &parser.panicMode)
-	parser.typechecker = typechecker.New(parser.module, parser.errorHandler, name, &parser.panicMode)
+	parser.resolver = resolver.New(parser.module, parser.Operators, parser.errorHandler, &parser.panicMode)
+	parser.typechecker = typechecker.New(parser.module, parser.Operators, parser.errorHandler, parser, &parser.panicMode)
 
 	return parser
 }
@@ -146,6 +153,7 @@ func (p *parser) parse() *ast.Module {
 
 	p.validateForwardDecls()
 
+	p.module.Operators = p.Operators
 	p.module.Ast.Faulty = p.errored
 	return p.module
 }
@@ -173,22 +181,26 @@ func (p *parser) declaration() ast.Statement {
 			return &ast.DeclStmt{Decl: p.typeAliasDecl()}
 		}
 
-		n := -1
+		decl_start_depth := -2
 		if p.matchAny(token.OEFFENTLICHE) {
-			n = -2
+			decl_start_depth -= 1
 		}
 
 		switch t := p.peek().Type; t {
 		case token.ALIAS:
 			p.advance()
 			return p.aliasDecl()
+		case token.GENERISCHE:
+			decl_start_depth -= 1
+			p.advance() // skip generische
+			fallthrough
 		case token.FUNKTION:
-			p.advance()
-			return p.funcDeclaration(n - 1)
+			p.consumeAny(token.FUNKTION)
+			return p.funcDeclaration(decl_start_depth)
 		case token.KONSTANTE:
-			return &ast.DeclStmt{Decl: p.constDeclaration(n)}
+			return &ast.DeclStmt{Decl: p.constDeclaration(decl_start_depth + 1)}
 		default:
-			return &ast.DeclStmt{Decl: p.varDeclaration(n, false)}
+			return &ast.DeclStmt{Decl: p.varDeclaration(decl_start_depth+1, false, false)}
 		}
 	}
 
@@ -330,7 +342,7 @@ func (p *parser) resolveModuleImport(importStmt *ast.ImportStmt) {
 
 func (p *parser) validateForwardDecls() {
 	ast.VisitModule(p.module, ast.FuncDeclVisitorFunc(func(decl *ast.FuncDecl) ast.VisitResult {
-		if decl.Body == nil && decl.ExternFile.Type == token.ILLEGAL && decl.Def == nil {
+		if decl.Body == nil && !ast.IsGeneric(decl) && !ast.IsExternFunc(decl) && decl.Def == nil {
 			p.err(ddperror.SEM_FORWARD_DECL_WITHOUT_DEF,
 				decl.NameTok.Range,
 				fmt.Sprintf("Die Funktion '%s' wurde nur deklariert aber nie definiert", decl.Name()))
@@ -377,24 +389,24 @@ func (p *parser) synchronize() {
 }
 
 // returns the current scope of the parser, resolver and typechecker
-func (p *parser) scope() *ast.SymbolTable {
+func (p *parser) scope() ast.SymbolTable {
 	// same pointer as the one of the typechecker
 	return p.resolver.CurrentTable
 }
 
 // create a sub-scope of the current scope
-func (p *parser) newScope() *ast.SymbolTable {
+func (p *parser) newScope() ast.SymbolTable {
 	return ast.NewSymbolTable(p.resolver.CurrentTable)
 }
 
 // set the current scope for the resolver and typechecker
-func (p *parser) setScope(symbols *ast.SymbolTable) {
+func (p *parser) setScope(symbols ast.SymbolTable) {
 	p.resolver.CurrentTable, p.typechecker.CurrentTable = symbols, symbols
 }
 
 // exit the current scope of the resolver and typechecker
 func (p *parser) exitScope() {
-	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing, p.typechecker.CurrentTable.Enclosing
+	p.resolver.CurrentTable, p.typechecker.CurrentTable = p.resolver.CurrentTable.Enclosing(), p.typechecker.CurrentTable.Enclosing()
 }
 
 func (p *parser) errVal(err ddperror.Error) {
@@ -418,7 +430,7 @@ func (p *parser) warn(code ddperror.Code, Range token.Range, msg string) {
 // checks wether the alias already exists AND has a value attached to it
 // returns (aliasExists, isFuncAlias, alias, pTokens)
 func (p *parser) aliasExists(alias []token.Token) (bool, bool, ast.Alias, []*token.Token) {
-	pTokens := toPointerSlice(alias[:len(alias)-1])
+	pTokens := toPointerSlice(alias[:len(alias)-1]) // -1 to remove EOF
 	if ok, alias := p.aliases.Contains(pTokens); ok {
 		_, isFun := alias.(*ast.FuncAlias)
 		return alias != nil, isFun, alias, pTokens
@@ -446,38 +458,44 @@ func (p *parser) addAliases(aliases []ast.Alias, errRange token.Range) {
 }
 
 func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
-	overloads := p.module.Operators[decl.Operator]
+	overloads := p.Operators[decl.Operator]
 
-	valid := true
 	for _, overload := range overloads {
 		if operatorParameterTypesEqual(overload.Parameters, decl.Parameters) {
 			// the als Operator is also differentiated by it's return type
-			if decl.Operator == ast.CAST_OP && !ddptypes.Equal(decl.ReturnType, overload.ReturnType) {
+			if decl.Operator == ast.CAST_OP && !operatorReturnTypeEqual(overload.ReturnType, decl.ReturnType) {
 				continue
 			}
 
 			p.err(ddperror.SEM_OVERLOAD_ALREADY_DEFINED, decl.NameTok.Range, fmt.Sprintf("Der Operator '%s' ist für diese Parametertypen bereits überladen", decl.Operator))
-			valid = false
+			return
 		}
 	}
 
-	if valid {
-		// keep the slice sorted in descending order, so that references are prioritized
-		i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
-			countRefArgs := func(params []ast.ParameterInfo) int {
-				result := 0
-				for i := range params {
-					if params[i].Type.IsReference {
-						result++
-					}
+	// keep the slice sorted in descending order, so that references are prioritized
+	i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
+		countRefAndGenericArgs := func(params []ast.ParameterInfo) (refs, gen int) {
+			for i := range params {
+				if params[i].Type.IsReference {
+					refs++
 				}
-				return result
+				if ddptypes.IsGeneric(params[i].Type.Type) {
+					gen++
+				}
 			}
+			return refs, gen
+		}
 
-			return countRefArgs(t.Parameters) - countRefArgs(a.Parameters)
-		})
+		refsA, genA := countRefAndGenericArgs(a.Parameters)
+		refsT, genT := countRefAndGenericArgs(t.Parameters)
 
-		overloads = slices.Insert(overloads, i, decl)
-		p.module.Operators[decl.Operator] = overloads
-	}
+		if genA != genT {
+			return genA - genT // the more generics the "greater"
+		}
+
+		return refsT - refsA // the more refs the "smaller"
+	})
+
+	overloads = slices.Insert(overloads, i, decl)
+	p.Operators[decl.Operator] = overloads
 }

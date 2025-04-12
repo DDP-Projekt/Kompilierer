@@ -1,0 +1,10 @@
+Wir nennen die generische öffentliche Kombination aus
+	dem öffentlichen T x,
+	dem öffentlichen T y,
+einen Vektor2, und erstellen sie so:
+	[ "der Nullvektor2" ] [ nicht erlaubt, da ohne Standardwert T nicht abgeleitet werden kann ]
+	"Vektor2(<x>, <y>)"
+
+
+Der öffentliche Zahl-Vektor2 vec2_zahl ist Vektor2(1, 2).
+Der öffentliche Text-Vektor2 vec2_text ist Vektor2("x", "y").

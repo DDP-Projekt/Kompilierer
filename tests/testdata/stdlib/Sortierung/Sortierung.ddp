@@ -5,4 +5,31 @@ Die Zahlen Liste l ist eine Liste, die aus 5, 2, 30, 4, 5, 3, 9, 10, 33 besteht.
 [ Quicksort tests ]
 Schreibe (l sortiert) auf eine Zeile. [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
 Sortiere l.
-Schreibe l.
+Schreibe l auf eine Zeile.
+Schreibe '\n'.
+
+Die Funktion Text_Größer_Kleiner mit den Parametern a und b vom Typ Text Referenz und Text Referenz, gibt eine Zahl zurück, macht:
+	Die Zahl b_len ist die Länge von b.
+	Für jeden Buchstaben b_a mit Index i in a, mache:
+		Wenn b_len kleiner als i ist, gib 1 zurück.
+		Die Zahl b_b ist (b an der Stelle i) als Zahl.
+		Wenn b_b größer als b_a als Zahl ist, gib -1 zurück.
+		Wenn b_b kleiner als b_a als Zahl ist, gib 1 zurück.
+
+	Gib 0 zurück.
+Und kann so benutzt werden:
+	"<a> kleiner_größer <b>"
+
+Die oeffentliche Funktion Text_Größer mit den Parametern a und b vom Typ Text Referenz und Text Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib (a kleiner_größer b) größer als 0 ist zurück.
+Und überlädt den "größer als" Operator.
+
+Die oeffentliche Funktion Text_Kleiner mit den Parametern a und b vom Typ Text Referenz und Text Referenz, gibt einen Wahrheitswert zurück, macht:
+	Gib (a kleiner_größer b) kleiner als 0 ist zurück.
+Und überlädt den "kleiner als" Operator.
+
+Die Text Liste t ist eine Liste, die aus "5", "2", "30", "4", "5", "3", "9", "10", "33" besteht.
+[ Quicksort tests ]
+Schreibe (t sortiert) auf eine Zeile. [ 2, 3, 4, 5, 5, 9, 10, 30, 33 ]
+Sortiere t.
+Schreibe t auf eine Zeile.

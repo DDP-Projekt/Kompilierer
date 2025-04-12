@@ -18,9 +18,19 @@ einen Vektor3, und erstellen sie so:
 	"ein Vektor3 mit z gleich <z>" oder [1 parameter]
 	"ein Vektor3 mit basis gleich <basis> und z gleich <z>" [all parameters]
 
+[no explicit default values]
+
+Wir nennen die öffentliche Kombination aus
+	dem Vektor2 basis,
+	dem Vektor3 basis2,
+	der Zahl zz,
+einen Vektor5, und erstellen sie so:
+	"der Nullvektor5" oder [0 parameters]
+
 Der Vektor2 vec2 ist der Nullvektor2. [0 parameter constructor]
 Der öffentliche Vektor3 vec3 ist der Nullvektor3. [0 parameter constructor + public decl]
 Der Vektor3 vec3_2 ist ein Vektor3 mit basis gleich (Nullvektor2) und z gleich 13. [all parameter constructor]
+Der Vektor5 vec5 ist der Nullvektor5.
 
 [
 	No output expected, this is test is just for correct parsing

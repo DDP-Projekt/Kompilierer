@@ -197,7 +197,7 @@ func (p *parser) equality() ast.Expression {
 				Rhs:      rhs,
 			}
 		case token.EIN, token.EINE, token.KEIN, token.KEINE:
-			checkType := p.parseType()
+			checkType := p.parseType(false)
 			expr = &ast.TypeCheck{
 				Range: token.Range{
 					Start: expr.GetRange().Start,
@@ -431,8 +431,8 @@ func (p *parser) unary() ast.Expression {
 				operator = ast.UN_NOT
 			}
 		case token.GRÖßE, token.STANDARDWERT:
-			article := p.previous()
-			_type := p.parseType()
+			article := p.previous().Type
+			_type := p.parseType(false)
 			operator := ast.TYPE_SIZE
 			if tok.Type == token.STANDARDWERT {
 				operator = ast.TYPE_DEFAULT
@@ -440,24 +440,17 @@ func (p *parser) unary() ast.Expression {
 
 			// report grammar errors
 			if _type != nil {
-				switch _type.Gender() {
-				case ddptypes.FEMININ:
-					if article.Type != token.EINER {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einer"))
-					}
-				default:
-					if article.Type != token.EINEM {
-						p.err(ddperror.SYN_GENDER_MISMATCH, article.Range, ddperror.MsgGotExpected(article.Literal, "einem"))
-					}
+				if !ddptypes.MatchesGender(_type, genderFromArticle2Dativ(article)...) {
+					p.err(ddperror.SYN_GENDER_MISMATCH, tok.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", articleFromGender2Dativ(_type.Gender())))
 				}
 			}
 
-			return &ast.TypeOpExpr{
+			return p.power(&ast.TypeOpExpr{
 				Range:    token.NewRange(start, p.previous()),
 				Tok:      *start,
 				Operator: operator,
 				Rhs:      _type,
-			}
+			})
 		case token.LÄNGE:
 			operator = ast.UN_LEN
 		}
@@ -666,7 +659,7 @@ func (p *parser) field_access(lhs ast.Expression) ast.Expression {
 func (p *parser) type_cast(lhs ast.Expression) ast.Expression {
 	lhs = p.primary(lhs)
 	for p.matchAny(token.ALS) {
-		Type := p.parseType()
+		Type := p.parseType(false)
 		lhs = &ast.CastExpr{
 			Range: token.Range{
 				Start: lhs.GetRange().Start,
@@ -722,20 +715,17 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
 	case token.EINE, token.EINER: // list literals
 		begin := p.previous()
-		if begin.Type == token.EINER && p.matchAny(token.LEEREN) {
-			typ := p.parseListType()
-			lhs = &ast.ListLit{
-				Tok:    *begin,
-				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ,
-				Values: nil,
+		if (begin.Type == token.EINER && p.matchAny(token.LEEREN)) || p.matchAny(token.LEERE) {
+			typ := p.parseType(false)
+			listType, isList := ddptypes.CastList(typ)
+			if !isList {
+				p.err(ddperror.SYN_EXPECTED_TYPENAME, p.previous().Range, ddperror.MsgGotExpected(p.previous().Literal, "ein Listen-Typname"))
 			}
-		} else if p.matchAny(token.LEERE) {
-			typ := p.parseListType()
+
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
-				Type:   typ,
+				Type:   listType,
 				Values: nil,
 			}
 		} else {

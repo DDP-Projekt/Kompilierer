@@ -11,6 +11,7 @@
 #include <assert.h>
 
 static_assert(sizeof(void *) == 8, "sizeof(void*) != 8, unexpected errors could occur");
+static_assert(sizeof(void *) == sizeof(uint8_t *), "sizeof(void*) != sizeof(uint8_t*), unexpected errors could occur");
 
 // typedefs of primitive ddp types
 typedef int64_t ddpint;
@@ -48,12 +49,12 @@ typedef struct {
 	free_func_ptr free_func;
 	deep_copy_func_ptr deep_copy_func;
 	equal_func_ptr equal_func;
-} vtable;
+} ddpvtable;
 
 #define DDP_SMALL_ANY_BUFF_SIZE 16
 
 typedef struct {
-	vtable *vtable_ptr;
+	ddpvtable *vtable_ptr;
 	union {
 		void *value_ptr;
 		uint8_t value[DDP_SMALL_ANY_BUFF_SIZE];
@@ -152,6 +153,16 @@ extern void ddp_free_ddpanylist(ddpanylist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpanylist(ddpanylist *ret, ddpanylist *list);
 
+// generic list for generic extern functions
+typedef struct {
+	void *arr;	// the element array
+	ddpint len; // the length of the array
+	ddpint cap; // the capacity of the array
+} ddpgenericlist;
+
+// helper function for generic extern functions which may pass ddpany as a way to pass type information
+const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
+
 // useful macros to work with ddp types
 
 #define DDP_GROWTH_FACTOR (1.5)
@@ -186,12 +197,16 @@ typedef ddpchar *ddpcharref;
 typedef ddpstring *ddpstringref;
 typedef ddpany *ddpanyref;
 
+// helper typedef for generic extern functions
+typedef void *ddpgenericref;
+
 typedef ddpintlist *ddpintlistref;
 typedef ddpfloatlist *ddpfloatlistref;
 typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
 typedef ddpanylist *ddpanylistref;
+typedef ddpgenericlist *ddpgenericlistref;
 
 #define DDP_INT_FMT "%lld"
 #define DDP_FLOAT_FMT "%.16g"

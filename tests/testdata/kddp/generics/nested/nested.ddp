@@ -1,0 +1,30 @@
+Binde "Duden/Ausgabe" ein.
+
+Die generische Funktion Setze_Auf_1 mit dem Parameter a vom Typ T Referenz, gibt nichts zurück, macht:
+	Speichere 1 als T in a.
+Und kann so benutzt werden:
+	"Setze <a> auf 1"
+
+Die generische Funktion Tausche_Und_Setze mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Speichere a in b.
+	Setze a auf 1.
+Und kann so benutzt werden:
+	"Tausche <a> und <b>"
+
+Die Zahl z ist 2.
+Die Zahl z2 ist 5.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+Tausche z und z2.
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+
+Die Kommazahl kz ist 2,0.
+Die Kommazahl kz2 ist 5,0.
+
+Schreibe kz auf eine Zeile.
+Schreibe kz2 auf eine Zeile.
+Tausche kz und kz2.
+Schreibe kz auf eine Zeile.
+Schreibe kz2 auf eine Zeile.

@@ -6,6 +6,8 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+type OperatorOverloadMap = map[Operator][]*FuncDecl
+
 // represents a single DDP Module (source file),
 // it's dependencies and public interface
 type Module struct {
@@ -27,7 +29,7 @@ type Module struct {
 	// map of references to all public functions, variables and structs
 	PublicDecls map[string]Declaration
 	// map of all overloads for all operators
-	Operators map[Operator][]*FuncDecl
+	Operators OperatorOverloadMap
 }
 
 // returns the string-literal content by which this module was first imported

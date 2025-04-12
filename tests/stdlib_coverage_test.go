@@ -93,7 +93,7 @@ var (
 	wd, _         = os.Getwd()
 )
 
-func init() {
+func init_duden() {
 	err := filepath.WalkDir(ddppath.Duden, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || filepath.Ext(path) != ".ddp" {
 			return nil
@@ -137,6 +137,7 @@ type moduleFuncInfo struct {
 }
 
 func TestStdlibCoverage(t *testing.T) {
+	init_duden()
 	file, err := os.OpenFile("coverage.md", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		t.Fatalf("Error opening coverage file: %s", err)

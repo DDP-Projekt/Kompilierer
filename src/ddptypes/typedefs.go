@@ -35,6 +35,13 @@ func (d *TypeDef) Gender() GrammaticalGender {
 }
 
 // returns the underlying type for nested TypeAliases and TypeDefs
+// does not recurse through list element types
+// examples:
+// - int 				-> int
+// - typealias(int)		-> int
+// - typedef(int)		-> int
+// - list(int)			-> list(int)
+// - typedef(list(int)) -> list(int)
 func TrueUnderlying(t Type) Type {
 	if typedef, ok := t.(*TypeDef); ok {
 		t = typedef.Underlying

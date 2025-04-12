@@ -128,8 +128,16 @@ func Compile(options Options) (result *Result, err error) {
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 
 	if !options.LinkInModules {
+		options.Log("Erstelle llvm Context")
+		llctx, err := newllvmContext()
+		if err != nil {
+			return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
+		}
+		defer options.Log("Entsorge llvm Context")
+		defer llctx.Dispose()
+
 		irBuff := &bytes.Buffer{}
-		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler, options.OptimizationLevel).compile(irBuff, true)
+		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler, &llctx.llvmTarget, options.OptimizationLevel).compile(irBuff, true)
 		if err != nil {
 			return nil, err
 		}
@@ -139,15 +147,6 @@ func Compile(options Options) (result *Result, err error) {
 			options.To.Write(irBuff.Bytes())
 			return comp_result, nil
 		}
-
-		// if we did not return, we need it as a llvm.Module
-		options.Log("Erstelle llvm Context")
-		llctx, err := newllvmContext()
-		if err != nil {
-			return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
-		}
-		defer options.Log("Entsorge llvm Context")
-		defer llctx.Dispose()
 
 		options.Log("Parse llvm-ir zu llvm-Module")
 		mod, err := llctx.parseIR(irBuff.Bytes())
@@ -211,7 +210,7 @@ func Compile(options Options) (result *Result, err error) {
 	dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) io.Writer {
 		ll_modules_ir[m.FileName] = &bytes.Buffer{}
 		return ll_modules_ir[m.FileName]
-	}, options.ErrorHandler, options.OptimizationLevel)
+	}, options.ErrorHandler, &llctx.llvmTarget, options.OptimizationLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -279,16 +278,16 @@ func Compile(options Options) (result *Result, err error) {
 func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) (err error) {
 	defer panic_wrapper(&err)
 
-	irBuff := bytes.Buffer{}
-	if err := newCompiler(nil, errorHandler, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
-		return err
-	}
-
 	llctx, err := newllvmContext()
 	if err != nil {
 		return fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 	}
 	defer llctx.Dispose()
+
+	irBuff := bytes.Buffer{}
+	if err := newCompiler(nil, errorHandler, &llctx.llvmTarget, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
+		return err
+	}
 
 	list_mod, err := llctx.parseIR(irBuff.Bytes())
 	if err != nil {

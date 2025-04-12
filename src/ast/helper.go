@@ -4,21 +4,65 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
 // check if the function is defined externally
 func IsExternFunc(fun *FuncDecl) bool {
-	return fun.Body == nil && fun.Def == nil
+	return fun != nil && fun.ExternFile.Type == token.STRING
 }
 
 // check if the declaration is only a forward decl
 func IsForwardDecl(fun *FuncDecl) bool {
-	return fun.Def != nil
+	return fun != nil && fun.Def != nil
 }
 
 func IsOperatorOverload(fun *FuncDecl) bool {
-	return fun.Operator != nil
+	return fun != nil && fun.Operator != nil
+}
+
+func IsGeneric(decl Declaration) bool {
+	switch decl := decl.(type) {
+	case *FuncDecl:
+		return decl != nil && decl.Generic != nil
+	case *StructDecl:
+		_, ok := decl.Type.(*ddptypes.GenericStructType)
+		return ok
+
+	}
+	return false
+}
+
+func IsGenericInstantiation(fun *FuncDecl) bool {
+	return fun != nil && fun.GenericDecl != nil
+}
+
+func IsVarConstDecl(decl Declaration) bool {
+	if decl == nil {
+		return false
+	}
+
+	_, isVar := decl.(*VarDecl)
+	_, isConst := decl.(*ConstDecl)
+	return isVar || isConst
+}
+
+func IsTypeDecl(decl Declaration) (ddptypes.Type, bool) {
+	if decl == nil {
+		return nil, false
+	}
+
+	switch decl := decl.(type) {
+	case *StructDecl:
+		return decl.Type, true
+	case *TypeAliasDecl:
+		return decl.Type, true
+	case *TypeDefDecl:
+		return decl.Type, true
+	default:
+		return nil, false
+	}
 }
 
 // trims the "" from the literal
@@ -31,8 +75,8 @@ func TrimStringLit(lit *token.Token) string {
 
 // returns wether table is the global scope
 // table.Enclosing == nil
-func IsGlobalScope(table *SymbolTable) bool {
-	return table.Enclosing == nil
+func IsGlobalScope(table SymbolTable) bool {
+	return table != nil && table.Enclosing() == nil
 }
 
 // applies fun to all declarations imported by imprt
@@ -84,4 +128,12 @@ func IterateImportedDecls(imprt *ImportStmt, fun func(name string, decl Declarat
 			break
 		}
 	}
+}
+
+func toPointerSlice[T any](slice []T) []*T {
+	result := make([]*T, len(slice))
+	for i := range slice {
+		result[i] = &slice[i]
+	}
+	return result
 }

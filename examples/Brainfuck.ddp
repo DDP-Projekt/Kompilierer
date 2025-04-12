@@ -2,7 +2,7 @@ Binde "Duden/Ausgabe" ein.
 Binde "Duden/Laufzeit" ein.
 Binde Lies_Buchstabe_Gepuffert aus "Duden/Eingabe" ein.
 Binde "Duden/Dateisystem" ein.
-Binde Enthält_Buchstabe und Hinzufügen_Buchstabe aus "Duden/Listen" ein.
+Binde Enthält_Wert und Hinzufügen_Liste aus "Duden/Listen" ein.
 
 [unsere Zellen]
 Die Zahlen Liste Zellen ist 100 Mal 0.

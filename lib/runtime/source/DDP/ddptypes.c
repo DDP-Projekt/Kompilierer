@@ -35,6 +35,12 @@ void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
 	if (ret == str) {
 		return;
 	}
+
+	if (str->str == NULL) {
+		*ret = DDP_EMPTY_STRING;
+		return;
+	}
+
 	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
 	memcpy(cpy, str->str, str->cap);		  // copy the chars
 	// set the fields of the copy
@@ -54,12 +60,12 @@ ddpint ddp_strlen(ddpstring *str) {
 	return strlen(str->str);
 }
 
-extern vtable ddpint_vtable;
-extern vtable ddpfloat_vtable;
-extern vtable ddpbool_vtable;
-extern vtable ddpchar_vtable;
+extern ddpvtable ddpint_vtable;
+extern ddpvtable ddpfloat_vtable;
+extern ddpvtable ddpbool_vtable;
+extern ddpvtable ddpchar_vtable;
 
-static bool is_primitive_vtable(vtable *table) {
+static bool is_primitive_vtable(ddpvtable *table) {
 	return table != NULL && table->free_func == NULL;
 }
 
@@ -85,6 +91,7 @@ void ddp_free_any(ddpany *any) {
 // places a copy of any in ret
 void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 	DDP_DBGLOG("deep_copy_any: %p", any);
+	*ret = DDP_EMPTY_ANY;
 	// copy metadata
 	ret->vtable_ptr = any->vtable_ptr;
 
@@ -131,4 +138,37 @@ ddpbool ddp_any_equal(ddpany *any1, ddpany *any2) {
 	}
 
 	return any1->vtable_ptr->equal_func(DDP_ANY_VALUE_PTR(any1), DDP_ANY_VALUE_PTR(any2));
+}
+
+static ddpvtable any_vtable;
+
+/*
+ * Branch prediction tuning.
+ * The expression is expected to be true (=likely) or false (=unlikely).
+ */
+#if defined(__GNUC__)
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
+// helper function for generic extern functions which may pass ddpany as a way to pass type information
+const ddpvtable *ddp_get_generic_vtable(const ddpany *any) {
+	if (unlikely(any_vtable.free_func == NULL)) {
+		any_vtable = (ddpvtable){
+			.type_size = sizeof(ddpany),
+			.free_func = (free_func_ptr)ddp_free_any,
+			.deep_copy_func = (deep_copy_func_ptr)ddp_deep_copy_any,
+			.equal_func = (equal_func_ptr)ddp_any_equal,
+		};
+	}
+
+	// the any is empty and therefore T itself is any
+	if (any->vtable_ptr == NULL) {
+		return &any_vtable;
+	}
+
+	return any->vtable_ptr;
 }

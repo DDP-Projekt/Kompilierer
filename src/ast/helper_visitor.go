@@ -39,6 +39,10 @@ func VisitModule(module *Module, visitor Visitor) {
 
 // helper method to visit all nodes in a module
 func visitSingleModule(module *Module, v *helperVisitor) {
+	if modVis, ok := v.actualVisitor.(VisitorSetter); ok {
+		modVis.SetVisitor(v)
+	}
+
 	if modVis, ok := v.actualVisitor.(ModuleSetter); ok {
 		modVis.SetModule(module)
 	}
@@ -118,7 +122,7 @@ func visitModuleRec(module *Module, visitor *helperVisitor, visited map[*Module]
 //
 // if the given Visitor implements the ScopeSetter interface,
 // the SetScope method is called when the scope changes
-func VisitNode(visitor Visitor, node Node, currentScope *SymbolTable) {
+func VisitNode(visitor Visitor, node Node, currentScope SymbolTable) {
 	if node == nil {
 		return
 	}
@@ -193,7 +197,10 @@ func (h *helperVisitor) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	if vis, ok := h.actualVisitor.(FuncDeclVisitor); ok {
 		result = vis.VisitFuncDecl(decl)
 	}
-	return h.visitChildren(result, decl.Body)
+	if decl.Body != nil {
+		return h.visitChildren(result, decl.Body)
+	}
+	return result
 }
 
 func (h *helperVisitor) VisitFuncDef(decl *FuncDef) VisitResult {
@@ -439,7 +446,7 @@ func (h *helperVisitor) VisitBlockStmt(stmt *BlockStmt) VisitResult {
 	result = h.visitChildren(result, toInterfaceSlice[Statement, Node](stmt.Statements)...)
 
 	if scpVis, ok := h.actualVisitor.(ScopeSetter); ok && stmt.Symbols != nil {
-		scpVis.SetScope(stmt.Symbols.Enclosing)
+		scpVis.SetScope(stmt.Symbols.Enclosing())
 	}
 	return result
 }

@@ -24,14 +24,15 @@ import (
 // TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Resolver struct {
 	ErrorHandler ddperror.Handler // function to which errors are passed
-	CurrentTable *ast.SymbolTable // needed state, public for the parser
-	Module       *ast.Module      // the module that is being resolved
-	LoopDepth    uint             // for break and continue statements
-	panicMode    *bool            // panic mode synchronized with the parser and resolver
+	CurrentTable ast.SymbolTable  // needed state, public for the parser
+	Operators    ast.OperatorOverloadMap
+	Module       *ast.Module // the module that is being resolved
+	LoopDepth    uint        // for break and continue statements
+	panicMode    *bool       // panic mode synchronized with the parser and resolver
 }
 
 // create a new resolver to resolve the passed AST
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Resolver {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, panicMode *bool) *Resolver {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -41,6 +42,7 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 	return &Resolver{
 		ErrorHandler: errorHandler,
 		CurrentTable: Mod.Ast.Symbols,
+		Operators:    operators,
 		Module:       Mod,
 		panicMode:    panicMode,
 	}
@@ -56,12 +58,12 @@ func (r *Resolver) visit(node ast.Node) {
 	node.Accept(r)
 }
 
-func (r *Resolver) setScope(symbols *ast.SymbolTable) {
+func (r *Resolver) setScope(symbols ast.SymbolTable) {
 	r.CurrentTable = symbols
 }
 
 func (r *Resolver) exitScope() {
-	r.CurrentTable = r.CurrentTable.Enclosing
+	r.CurrentTable = r.CurrentTable.Enclosing()
 }
 
 // helper for errors
@@ -145,7 +147,9 @@ func (r *Resolver) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 
 	for _, field := range decl.Fields {
 		if varDecl, isVar := field.(*ast.VarDecl); isVar {
-			r.visit(varDecl.InitVal)
+			if varDecl.InitVal != nil {
+				r.visit(varDecl.InitVal)
+			}
 		} else { // BadDecl
 			r.visit(field)
 		}
@@ -418,12 +422,8 @@ func (r *Resolver) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 }
 
 func (r *Resolver) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult {
-	r.setScope(stmt.Body.Symbols)
-	// only visit the InitVal because the variable is already in the scope
-	r.visit(stmt.Initializer.InitVal)
 	r.visit(stmt.In)
-	// r.visit(stmt.Body) // created by calling checkedDeclration in the parser so already resolved
-	r.exitScope()
+	// no need to visit anything else, because the body was already visited and In is outside the body scope
 	return ast.VisitRecurse
 }
 

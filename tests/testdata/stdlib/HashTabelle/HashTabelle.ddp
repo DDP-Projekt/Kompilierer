@@ -8,7 +8,7 @@ Binde "Duden/Zahlen" ein.
 [Simple test case]
 Schreibe "simple" auf eine Zeile.
 
-Die HashTabelle t ist eine neue HashTabelle.
+Die Text-Variable-HashTabelle t ist der Standardwert von einer Text-Variable-HashTabelle.
 Setze den Wert von "" in t auf ("leer" als Variable).
 Schreibe ("" in t enthalten ist) auf eine Zeile.
 Schreibe ((t an der Stelle "") als Text) auf eine Zeile.
@@ -17,7 +17,7 @@ Schreibe ((den gelöschten Wert für "" in t) als Text) auf eine Zeile.
 [ "Fuzz" testing (not really :( ) ]
 Schreibe "fuzz" auf eine Zeile.
 
-Die HashTabelle tabelle ist eine leere HashTabelle.
+Die Text-Variable-HashTabelle tabelle ist der Standardwert von einer Text-Variable-HashTabelle.
 Die Zahl N ist 100.
 
 Die Variablen Liste test_werte ist N Mal der Standardwert von einer Variable.

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -20,7 +21,7 @@ type printer struct {
 }
 
 func (pr *printer) printIndent() {
-	for i := 0; i < pr.currentIdent; i++ {
+	for range pr.currentIdent {
 		pr.print("   ")
 	}
 }
@@ -34,6 +35,10 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 	pr.currentIdent++
 
 	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+
 		pr.print("\n")
 		pr.printIndent()
 		node.Accept(pr)
@@ -88,12 +93,16 @@ func (pr *printer) VisitVarDecl(decl *VarDecl) VisitResult {
 	if decl.CommentTok != nil {
 		msg += fmt.Sprintf(commentFmt, strings.Trim(decl.CommentTok.Literal, commentCutset), pr.currentIdent, " ")
 	}
+
 	pr.parenthesizeNode(msg, decl.InitVal)
 	return VisitRecurse
 }
 
 func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	msg := fmt.Sprintf("FuncDecl[%s: %v, %s]", decl.Name(), decl.Parameters, decl.ReturnType)
+	if IsGeneric(decl) {
+		msg += " [generisch]"
+	}
 	if IsExternFunc(decl) {
 		msg += " [Extern]"
 	}
@@ -108,6 +117,13 @@ func (pr *printer) VisitFuncDecl(decl *FuncDecl) VisitResult {
 	}
 	if IsExternFunc(decl) || IsForwardDecl(decl) {
 		pr.parenthesizeNode(msg)
+	} else if IsGeneric(decl) {
+		var instantiations []Node
+		for inst := range maps.Values(decl.Generic.Instantiations) {
+			instantiations = append(instantiations, toInterfaceSlice[*FuncDecl, Node](inst)...)
+		}
+
+		pr.parenthesizeNode(msg, instantiations...)
 	} else {
 		pr.parenthesizeNode(msg, decl.Body)
 	}
@@ -147,12 +163,7 @@ func (pr *printer) VisitBadExpr(expr *BadExpr) VisitResult {
 }
 
 func (pr *printer) VisitIdent(expr *Ident) VisitResult {
-	// in FieldAccess the Declaration is nil
-	if expr.Declaration == nil {
-		pr.parenthesizeNode(fmt.Sprintf("Ident[%s, nil]", expr.Literal.Literal))
-		return VisitRecurse
-	}
-	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration.String()))
+	pr.parenthesizeNode(fmt.Sprintf("Ident[%s, %s]", expr.Literal.Literal, expr.Declaration))
 	return VisitRecurse
 }
 

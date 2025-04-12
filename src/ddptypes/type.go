@@ -1,5 +1,7 @@
 package ddptypes
 
+import "slices"
+
 // enum Type for the grammatical gender of a type
 type GrammaticalGender int
 
@@ -24,6 +26,20 @@ type Type interface {
 
 // helper functions
 
+// checks wether t matches any of the provided genders
+func MatchesGender(t Type, genders ...GrammaticalGender) bool {
+	// generic types match every gender
+	if _, ok := t.(GenericType); ok {
+		return true
+	}
+
+	if _, ok := t.(*InstantiatedGenericType); ok {
+		return true
+	}
+
+	return slices.Contains(genders, t.Gender())
+}
+
 // checks wether t1 equals t2,
 // that is, wether t1 and t2 refer to the same type
 // throughout TypeAliases but not TypeDefs
@@ -40,12 +56,16 @@ func DeepEqual(t1, t2 Type) bool {
 
 // returns the underlying type for nested TypeAliases
 func GetUnderlying(t Type) Type {
-	if alias, ok := t.(*TypeAlias); ok {
-		return GetUnderlying(alias.Underlying)
-	} else if list, ok := t.(ListType); ok {
-		return ListType{Underlying: GetUnderlying(list.Underlying)}
+	switch typ := t.(type) {
+	case *TypeAlias:
+		return GetUnderlying(typ.Underlying)
+	case ListType:
+		return ListType{ElementType: GetUnderlying(typ.ElementType)}
+	case *InstantiatedGenericType:
+		return GetUnderlying(typ.Actual)
+	default:
+		return t
 	}
-	return t
 }
 
 func IsPrimitive(t Type) bool {
@@ -121,4 +141,21 @@ func CastTypeDef(t Type) (*TypeDef, bool) {
 func IsAny(t Type) bool {
 	_, ok := GetUnderlying(t).(Variable)
 	return ok
+}
+
+func IsGeneric(t Type) bool {
+	_, ok := CastGeneric(t)
+	return ok
+}
+
+func CastGeneric(t Type) (GenericType, bool) {
+	t = GetUnderlying(t)
+	generic, ok := t.(GenericType)
+	return generic, ok
+}
+
+func CastGenericStructType(t Type) (*GenericStructType, bool) {
+	t = GetUnderlying(t)
+	generic, ok := t.(*GenericStructType)
+	return generic, ok
 }

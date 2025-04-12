@@ -1,0 +1,20 @@
+Binde "Duden/Ausgabe" ein.
+
+Wir nennen die Kombination aus
+	der Zahl z,
+	dem Text t,
+eine Struktur, und erstellen sie so:
+	"eine Struktur"
+
+Wir nennen die Kombination aus
+	der Struktur s,
+eine Struktur2, und erstellen sie so:
+	"eine Struktur2"
+
+Die Struktur s ist eine Struktur.
+Schreibe (z von s) auf eine Zeile.
+Schreibe (t von s) auf eine Zeile.
+
+Die Struktur2 s2 ist eine Struktur2.
+Schreibe (z von s von s2) auf eine Zeile.
+Schreibe (t von s von s2) auf eine Zeile.

@@ -194,7 +194,7 @@ test-unit:
 	go test $(shell go list ./src/... | grep -v compiler)
 
 test-normal: all ## runs the tests
-	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples|TestStdlibCoverage)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory: debug ## runs the tests checking for memory leaks
 	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
@@ -202,15 +202,16 @@ test-memory: debug ## runs the tests checking for memory leaks
 test-normal-memory: ## runs test-normal and test-memory in the correct order
 	'$(MAKE)' test-normal 
 	'$(MAKE)' test-memory
-	'$(MAKE)' all
+	'$(MAKE)' runtime stdlib # build them again without debug flags
 
 test-sumtypes: ## validates that sumtypes in the source tree are correctly used
-	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor)
+	go run github.com/BurntSushi/go-sumtype@latest $(shell go list ./... | grep -v vendor )
 
-coverage: all ## creates a coverage report for tests/testdata/stdlib
+coverage: ## creates a coverage report for tests/testdata/stdlib
 	go test -v ./tests '-run=TestStdlibCoverage' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-test: test-unit test-normal-memory coverage ## runs all the tests
+test: test-unit test-normal-memory ## runs all the tests
+	'$(MAKE)' coverage
 
 test-with-optimizations: ## runs all tests with full optimizations enabled
 	'$(MAKE)' KDDP_ARGS="-O 2" test

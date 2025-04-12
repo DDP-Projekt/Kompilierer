@@ -2,12 +2,17 @@ package typechecker
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
+
+type GenericInstantiator interface {
+	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
+}
 
 // holds state to check if the types of an AST are valid
 //
@@ -17,13 +22,15 @@ import (
 // TODO: add a snychronize method like in the parser to prevent unnessecary errors
 type Typechecker struct {
 	ErrorHandler       ddperror.Handler // function to which errors are passed
-	CurrentTable       *ast.SymbolTable // SymbolTable of the current scope (needed for name type-checking)
-	latestReturnedType ddptypes.Type    // type of the last visited expression
-	Module             *ast.Module      // the module that is being typechecked
-	panicMode          *bool            // panic mode synchronized with the parser and resolver
+	CurrentTable       ast.SymbolTable  // SymbolTable of the current scope (needed for name type-checking)
+	Operators          ast.OperatorOverloadMap
+	latestReturnedType ddptypes.Type       // type of the last visited expression
+	Module             *ast.Module         // the module that is being typechecked
+	panicMode          *bool               // panic mode synchronized with the parser and resolver
+	instantiator       GenericInstantiator // used to instantiate generic operator overloads
 }
 
-func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode *bool) *Typechecker {
+func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperror.Handler, instantiator GenericInstantiator, panicMode *bool) *Typechecker {
 	if errorHandler == nil {
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -33,9 +40,11 @@ func New(Mod *ast.Module, errorHandler ddperror.Handler, file string, panicMode 
 	return &Typechecker{
 		ErrorHandler:       errorHandler,
 		CurrentTable:       Mod.Ast.Symbols,
+		Operators:          operators,
 		latestReturnedType: ddptypes.VoidType{}, // void signals invalid
 		Module:             Mod,
 		panicMode:          panicMode,
+		instantiator:       instantiator,
 	}
 }
 
@@ -114,13 +123,15 @@ func (t *Typechecker) VisitConstDecl(decl *ast.ConstDecl) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
-	initialType := t.Evaluate(decl.InitVal)
+	var initialType ddptypes.Type = ddptypes.VoidType{}
+	if decl.InitVal != nil {
+		initialType = t.Evaluate(decl.InitVal)
+	}
 	decl.InitType = initialType
-	if !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
-		msg := fmt.Sprintf("Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type)
+	if !ddptypes.IsGeneric(decl.Type) && !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
-			msg,
+			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
 		)
 	}
 
@@ -162,6 +173,12 @@ func (t *Typechecker) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
 			if decl.IsPublic && varDecl.IsPublic && !IsPublicType(varDecl.Type, t.CurrentTable) {
 				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, varDecl.NameTok.Range, "Wenn eine Struktur öffentlich ist, müssen alle ihre öffentlichen Felder von öffentlichem Typ sein")
 			}
+
+			// don't visit implicit default values
+			if varDecl.InitVal == nil {
+				continue
+			}
+
 		}
 		t.visit(field)
 	}
@@ -216,7 +233,7 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 	}
 
 	if ddptypes.IsList(lhs) {
-		t.latestReturnedType = ddptypes.GetListUnderlying(lhs)
+		t.latestReturnedType = ddptypes.GetListElementType(lhs)
 	} else {
 		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
@@ -264,17 +281,16 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
 			if ty := t.Evaluate(v); !ddptypes.Equal(elementType, ty) {
-				msg := fmt.Sprintf("Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
-				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, msg)
+				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
-		expr.Type = ddptypes.ListType{Underlying: elementType}
+		expr.Type = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
 		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
 		}
 
-		expr.Type = ddptypes.ListType{Underlying: t.Evaluate(expr.Value)}
+		expr.Type = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
 	}
 	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
@@ -345,10 +361,10 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 			validate(ddptypes.TEXT, ddptypes.BUCHSTABE)
 			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
-			if !ddptypes.Equal(ddptypes.GetListUnderlying(lhs), ddptypes.GetListUnderlying(rhs)) {
+			if !ddptypes.Equal(ddptypes.GetListElementType(lhs), ddptypes.GetListElementType(rhs)) {
 				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
 			}
-			t.latestReturnedType = ddptypes.ListType{Underlying: ddptypes.GetListUnderlying(lhs)}
+			t.latestReturnedType = ddptypes.ListType{ElementType: ddptypes.GetListElementType(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
@@ -367,7 +383,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		}
 
 		if listType, isList := ddptypes.CastList(lhs); isList {
-			t.latestReturnedType = listType.Underlying
+			t.latestReturnedType = listType.ElementType
 		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
@@ -484,29 +500,10 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
 
-	overloads := t.Module.Operators[ast.CAST_OP]
-	if len(overloads) > 0 {
-		// copy of findOverload adjusted to also check the return type
-		for _, overload := range overloads {
-			if !ddptypes.Equal(overload.Parameters[0].Type.Type, lhs) || !ddptypes.Equal(overload.ReturnType, expr.TargetType) {
-				continue
-			}
-			operator_overload := &ast.OperatorOverload{
-				Decl: overload,
-				Args: make(map[string]ast.Expression, 1),
-			}
-			operator_overload.Args[overload.Parameters[0].Name.Literal] = expr.Lhs
-			if overload.Parameters[0].Type.IsReference {
-				if ass, isAssignable := isAssignable(expr.Lhs); isAssignable {
-					operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
-				} else {
-					continue
-				}
-			}
-			expr.OverloadedBy = operator_overload
-			t.latestReturnedType = expr.TargetType
-			return ast.VisitRecurse
-		}
+	if overload := t.findOverloadCast(expr, operand{lhs, expr.Lhs}); overload != nil {
+		expr.OverloadedBy = overload
+		t.latestReturnedType = overload.Decl.ReturnType
+		return ast.VisitRecurse
 	}
 
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
@@ -532,7 +529,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 			castErr()
 		}
 	} else if ddptypes.IsList(expr.TargetType) { // non-list types can be converted to their list-type with a single element
-		underlying := ddptypes.GetUnderlying(ddptypes.GetListUnderlying(expr.TargetType))
+		underlying := ddptypes.GetUnderlying(ddptypes.GetListElementType(expr.TargetType))
 		if !isOneOf(lhs, underlying) {
 			castErr()
 		}
@@ -604,8 +601,7 @@ func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
-	symbol, _, _ := t.CurrentTable.LookupDecl(callExpr.Name)
-	decl := symbol.(*ast.FuncDecl)
+	decl := callExpr.Func
 
 	for k, expr := range callExpr.Args {
 		argType := t.Evaluate(expr)
@@ -647,7 +643,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		argType := t.Evaluate(arg)
 
 		var paramType ddptypes.Type
-		for _, field := range expr.Struct.Type.Fields {
+		for _, field := range expr.Type.Fields {
 			if field.Name == argName {
 				paramType = field.Type
 				break
@@ -665,7 +661,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		}
 	}
 
-	t.latestReturnedType = expr.Struct.Type
+	t.latestReturnedType = expr.Type
 	return ast.VisitRecurse
 }
 
@@ -708,7 +704,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 	for _, stmt := range stmt.Statements {
 		t.visit(stmt)
 	}
-	t.CurrentTable = t.CurrentTable.Enclosing
+	t.CurrentTable = t.CurrentTable.Enclosing()
 	return ast.VisitRecurse
 }
 
@@ -784,7 +780,7 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
 	}
 
-	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.Underlying) {
+	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.ElementType) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
 				elementType, inTypeList),
@@ -890,9 +886,9 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 // reports wether the given type from this module of the given table is public
 // should only be called from the global scope
 // and with the SymbolTable that was in use when the type was declared
-func IsPublicType(typ ddptypes.Type, table *ast.SymbolTable) bool {
+func IsPublicType(typ ddptypes.Type, table ast.SymbolTable) bool {
 	// a list-type is public if its underlying type is public
-	typ = ddptypes.GetNestedListUnderlying(typ)
+	typ = ddptypes.GetNestedListElementType(typ)
 
 	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
 	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
@@ -911,32 +907,127 @@ type operand struct {
 }
 
 func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
-	overloads := t.Module.Operators[operator]
-	if len(overloads) > 0 {
-	overload_loop:
-		for _, overload := range overloads {
-			operator_overload := &ast.OperatorOverload{
-				Decl: overload,
-				Args: make(map[string]ast.Expression, len(overload.Parameters)),
+	overloads := t.Operators[operator]
+	if len(overloads) == 0 {
+		return nil
+	}
+
+	containsUserDefinedType := slices.ContainsFunc(operands, func(o operand) bool {
+		return ddptypes.IsStruct(ddptypes.GetNestedListElementType(o.typ))
+	})
+
+	genericTypes := make(map[string]ddptypes.Type, len(operands))
+
+overload_loop:
+	for _, overload := range overloads {
+		// generics can only overload operators for user defined types
+		if !containsUserDefinedType && ast.IsGeneric(overload) {
+			// we can return because all following overloads will be generic as well
+			return nil
+		}
+		clear(genericTypes)
+
+		operator_overload := &ast.OperatorOverload{
+			Decl: overload,
+			Args: make(map[string]ast.Expression, len(overload.Parameters)),
+		}
+
+		for i, operand := range operands {
+			actualParamType := overload.Parameters[i].Type
+			if ast.IsGeneric(overload) {
+				actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			}
 
-			for i, operand := range operands {
-				if !ddptypes.Equal(overload.Parameters[i].Type.Type, operand.typ) {
+			if !ddptypes.Equal(actualParamType.Type, operand.typ) {
+				continue overload_loop
+			}
+
+			// turn arguments for reference parameters into assigneables
+			operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
+			if actualParamType.IsReference {
+				if ass, isAssignable := isAssignable(operand.expr); isAssignable {
+					operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
+				} else {
 					continue overload_loop
 				}
-
-				// turn arguments for reference parameters into assigneables
-				operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
-				if overload.Parameters[i].Type.IsReference {
-					if ass, isAssignable := isAssignable(operand.expr); isAssignable {
-						operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
-					} else {
-						continue overload_loop
-					}
-				}
 			}
+		}
+
+		// early return for normal overloads
+		if !ast.IsGeneric(overload) {
 			return operator_overload
 		}
+
+		// instantiate generic overloads
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes)
+		if len(errs) != 0 {
+			return nil
+		}
+
+		operator_overload.Decl = instantiation
+		return operator_overload
+	}
+	return nil
+}
+
+func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast.OperatorOverload {
+	overloads := t.Operators[ast.CAST_OP]
+	if len(overloads) == 0 {
+		return nil
+	}
+
+	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedListElementType(operand.typ))
+
+	genericTypes := make(map[string]ddptypes.Type, 1)
+
+	for _, overload := range overloads {
+		// generics can only overload operators for user defined types
+		if !containsUserDefinedType && ast.IsGeneric(overload) {
+			// we can return because all following overloads will be generic as well
+			return nil
+		}
+		clear(genericTypes)
+
+		operator_overload := &ast.OperatorOverload{
+			Decl: overload,
+			Args: make(map[string]ast.Expression, 1),
+		}
+
+		actualParamType := overload.Parameters[0].Type
+		returnType := overload.ReturnType
+		if ast.IsGeneric(overload) {
+			actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
+			if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
+				returnType = genericTypes[generic.Name]
+			}
+		}
+
+		if !ddptypes.Equal(actualParamType.Type, operand.typ) || !ddptypes.Equal(returnType, expr.TargetType) {
+			continue
+		}
+
+		// turn arguments for reference parameters into assigneables
+		operator_overload.Args[overload.Parameters[0].Name.Literal] = operand.expr
+		if actualParamType.IsReference {
+			if ass, isAssignable := isAssignable(operand.expr); isAssignable {
+				operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
+			} else {
+				continue
+			}
+		}
+
+		// early return for normal overloads
+		if !ast.IsGeneric(overload) {
+			return operator_overload
+		}
+
+		instantiation, errs := t.instantiator.InstantiateGenericFunction(overload, genericTypes)
+		if len(errs) != 0 {
+			return nil
+		}
+
+		operator_overload.Decl = instantiation
+		return operator_overload
 	}
 	return nil
 }

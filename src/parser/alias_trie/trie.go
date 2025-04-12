@@ -7,7 +7,7 @@ import (
 	orderedmap "github.com/DDP-Projekt/Kompilierer/src/parser/ordered_map"
 )
 
-const defaultCapacity = 4
+const defaultCapacity = 8
 
 // a single node of the trie
 type trieNode[K, V any] struct {
@@ -15,6 +15,21 @@ type trieNode[K, V any] struct {
 	key      K                                          // the key by which the node can be found in it's parent's children map
 	hasValue bool                                       // wether value is valid
 	value    V                                          // value of the node or the default value if hasValue is false
+}
+
+func copyNode[K, V any](n *trieNode[K, V], key_eq, key_less orderedmap.CompFunc[K]) *trieNode[K, V] {
+	children := orderedmap.New[K, *trieNode[K, V]](key_eq, key_less, orderedmap.Len(n.children))
+	n.children.IterateValues(func(tn *trieNode[K, V]) bool {
+		children.Set(tn.key, copyNode(tn, key_eq, key_less))
+		return true
+	})
+
+	return &trieNode[K, V]{
+		children: children,
+		key:      n.key,
+		hasValue: n.hasValue,
+		value:    n.value,
+	}
 }
 
 // though generic it is only meant to be used with
@@ -39,6 +54,14 @@ func New[K, V any](key_eq, key_less orderedmap.CompFunc[K]) *Trie[K, V] {
 		},
 		key_eq:   key_eq,
 		key_less: key_less,
+	}
+}
+
+func Copy[K, V any](t *Trie[K, V]) *Trie[K, V] {
+	return &Trie[K, V]{
+		root:     copyNode(t.root, t.key_eq, t.key_less),
+		key_eq:   t.key_eq,
+		key_less: t.key_less,
 	}
 }
 

@@ -132,3 +132,21 @@ func makeErrorHeader(err Error, file string) string {
 		err.Range.Start.Column,
 	)
 }
+
+// a handler that captures it's errores
+// used for testing
+type Collector struct {
+	Errors []Error
+}
+
+// wether the handler was called
+func (m *Collector) DidError() bool {
+	return len(m.Errors) != 0
+}
+
+// creates a Handler for the given MockHandler
+func (m *Collector) GetHandler() Handler {
+	return func(err Error) {
+		m.Errors = append(m.Errors, err)
+	}
+}

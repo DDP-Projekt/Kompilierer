@@ -1,0 +1,17 @@
+Binde "Duden/Ausgabe" ein.
+Binde "decl" ein.
+
+Die Zahlen Liste zl ist eine Liste, die aus 1, 2, 3 besteht.
+Schreibe (bar zl) auf eine Zeile.
+Die Kommazahlen Liste kzl ist eine Liste, die aus 1,0, 2,5 besteht.
+Schreibe (bar kzl) auf eine Zeile.
+Die Text Liste tl ist eine Liste, die aus "1" besteht.
+Schreibe (bar tl) auf eine Zeile.
+
+Die Zahl a ist 1.
+Schreibe (baz a a) auf eine Zeile.
+Der Text b ist "hi".
+Schreibe (baz b b) auf eine Zeile.
+Der Text c ist "hi".
+Schreibe (baz b c) auf eine Zeile.
+

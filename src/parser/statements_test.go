@@ -11,7 +11,7 @@ import (
 func TestForRangeWithoutIndex(t *testing.T) {
 	assert := assert.New(t)
 
-	symbols := createSymbols("l", ddptypes.ListType{Underlying: ddptypes.ZAHL})
+	symbols := createSymbols("l", ddptypes.ListType{ElementType: ddptypes.ZAHL})
 
 	given := createParser(t, parser{
 		module: &ast.Module{
@@ -40,7 +40,7 @@ func TestForRangeWithoutIndex(t *testing.T) {
 func TestForRangeWithIndex(t *testing.T) {
 	assert := assert.New(t)
 
-	symbols := createSymbols("l", ddptypes.ListType{Underlying: ddptypes.ZAHL})
+	symbols := createSymbols("l", ddptypes.ListType{ElementType: ddptypes.ZAHL})
 
 	given := createParser(t, parser{
 		module: &ast.Module{

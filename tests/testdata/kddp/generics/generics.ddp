@@ -1,0 +1,42 @@
+Binde "Duden/Ausgabe" ein.
+
+Die generische Funktion Tausche mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Das T temp ist a.
+	Speichere b in a.
+	Speichere temp in b.
+Und kann so benutzt werden:
+	"Tausche <a> und <b>"
+
+Die Zahl z ist 1.
+Die Zahl z2 ist 2.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+
+Tausche z und z2.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+
+Tausche z und z2.
+
+Schreibe z auf eine Zeile.
+Schreibe z2 auf eine Zeile.
+
+Die generische Funktion Plus1 mit dem Parameter a vom Typ T, gibt ein T zurück, macht:
+	Gib a plus 1 zurück.
+Und kann so benutzt werden:
+	"<a> + 1"
+
+Schreibe (1 + 1) auf eine Zeile.
+Schreibe (1,5 + 1) auf eine Zeile.
+
+Die generische Funktion Anhängen mit den Parametern a und b vom Typ T Liste und T, gibt eine T Liste zurück, macht:
+	Gib a verkettet mit b zurück.
+Und kann so benutzt werden:
+	"<a> + <b>"
+
+Die Zahlen Liste l ist eine Liste, die aus 1, 2, 3 besteht.
+Schreibe (l + 4) auf eine Zeile.
+Die Text Liste t ist eine Liste, die aus "a", "b", "c" besteht.
+Schreibe (t + "d") auf eine Zeile.

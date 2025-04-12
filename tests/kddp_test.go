@@ -20,7 +20,7 @@ var (
 	kddp_args_flag = flag.String("kddp_args", "", "")
 	test_dirs      []string
 	kddp_args      []string
-	timeout        = 10
+	timeout        = time.Second * 10
 	diff_cmd       = ""
 )
 
@@ -61,7 +61,7 @@ func TestStdlib(t *testing.T) {
 }
 
 func TestMemory(t *testing.T) {
-	timeout = 20
+	timeout = time.Second * 20
 	t.Run("KDDP", func(t *testing.T) {
 		root := "testdata/kddp"
 		if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -158,7 +158,7 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		ddp_path := filepath.Join(path, filepath.Base(path)) + ".ddp"
 
 		// build dpp file
-		ctx, cf := context.WithTimeout(context.Background(), time.Second*10)
+		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(ddp_path, ".ddp"), "-o", changeExtension(ddp_path, ".exe"), "--wortreich")
 		// get build output

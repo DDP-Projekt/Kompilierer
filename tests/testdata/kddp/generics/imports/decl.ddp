@@ -1,0 +1,11 @@
+Die Zahl global ist 22.
+
+Die generische Funktion bar mit dem Parameter a vom Typ T, gibt ein T zurück, macht:
+	Gib a plus global zurück.
+Und kann so benutzt werden:
+	"bar <a>"
+
+Die öffentliche generische Funktion foo mit dem Parameter a vom Typ T, gibt ein T zurück, macht:
+	Gib bar a zurück.
+Und kann so benutzt werden:
+	"foo <a>"

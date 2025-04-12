@@ -71,10 +71,10 @@ func getParserErrorMsg(err any) string {
 	switch err := err.(type) {
 	case string:
 		return err
-	case error:
-		return err.Error()
 	case fmt.Stringer:
 		return err.String()
+	case error:
+		return err.Error()
 	default:
 		return "unknown parser panic"
 	}

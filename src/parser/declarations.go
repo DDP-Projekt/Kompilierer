@@ -169,7 +169,7 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 // parses a variable declaration
 // startDepth is the int passed to p.peekN(n) to get to the DER/DIE token of the declaration
 // isField indicates that this declaration should be parsed as a struct field
-func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
+func (p *parser) varDeclaration(startDepth int, isField, isGeneric bool) ast.Declaration {
 	begin := p.peekN(startDepth) // Der/Die/Das
 	comment := p.parseDeclComment(begin.Range)
 
@@ -177,34 +177,13 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	isExternVisible := p.matchExternSichtbar(isPublic)
 
 	type_start := p.peek()
-	typ := p.parseType()
+	typ := p.parseType(isGeneric)
 	type_end := p.previous()
 	if typ == nil {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, token.NewRange(type_start, p.previous()), fmt.Sprintf("Invalider Typname %s", p.previous()))
 	} else {
-		getArticle := func(gender ddptypes.GrammaticalGender) token.TokenType {
-			switch gender {
-			case ddptypes.MASKULIN:
-				if isField {
-					return token.DEM
-				}
-				return token.DER
-			case ddptypes.FEMININ:
-				if isField {
-					return token.DER
-				}
-				return token.DIE
-			case ddptypes.NEUTRUM:
-				if isField {
-					return token.DEM
-				}
-				return token.DAS
-			}
-			return token.ILLEGAL // unreachable
-		}
-
-		if article := getArticle(typ.Gender()); begin.Type != article {
-			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", article))
+		if !ddptypes.MatchesGender(typ, genderFromArticle(begin.Type, isField)) {
+			p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", articleFromGender(typ.Gender(), isField)))
 		}
 	}
 
@@ -222,14 +201,18 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 	}
 
 	name := p.previous()
+	has_init_value := true
 	if isField {
-		p.consumeSeq(token.MIT, token.STANDARDWERT)
+		has_init_value = p.matchAny(token.MIT)
+		if has_init_value {
+			p.consumeAny(token.STANDARDWERT)
+		}
 	} else {
 		p.consumeSeq(token.IST)
 	}
 	var expr ast.Expression
 
-	if !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
+	if has_init_value && !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) && ddptypes.IsList(typ) { // TODO: fix this with function calls and groupings
 		expr = p.expression()
 		if p.matchAny(token.COUNT_MAL) {
 			value := p.expression()
@@ -243,7 +226,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 				Value:  value,
 			}
 		}
-	} else {
+	} else if has_init_value {
 		expr = p.assignRhs(false)
 	}
 
@@ -264,6 +247,7 @@ func (p *parser) varDeclaration(startDepth int, isField bool) ast.Declaration {
 		TypeRange:       token.NewRange(type_start, type_end),
 		IsPublic:        isPublic,
 		IsExternVisible: isExternVisible,
+		IsGlobal:        ast.IsGlobalScope(p.scope()),
 		Mod:             p.module,
 		InitVal:         expr,
 	}
@@ -279,7 +263,7 @@ func (p *parser) paramNameAllowed(name *token.Token) bool {
 
 // helper for funcDeclaration
 // parses the parameters of a function declaration
-func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool)) (params []ast.ParameterInfo) {
+func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, string), validate func(bool), isGeneric bool) (params []ast.ParameterInfo) {
 	if !p.matchAny(token.MIT) {
 		return params
 	}
@@ -341,7 +325,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	// parse the types of the parameters
 	validate(p.consumeSeq(token.VOM, token.TYP))
 	firstTypeStart := p.previous()
-	firstType, ref := p.parseReferenceType()
+	firstType, ref := p.parseReferenceType(isGeneric)
 	firstTypeEnd := p.previous()
 	validate(firstType != nil)
 	params[0].Type = ddptypes.ParameterType{Type: firstType, IsReference: ref}
@@ -353,7 +337,7 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 		addType := func() {
 			// validate the parameter type and append it
 			typeStart := p.peek()
-			typ, ref := p.parseReferenceType()
+			typ, ref := p.parseReferenceType(isGeneric)
 			typeEnd := p.previous()
 			validate(typ != nil)
 			if i < len(params) {
@@ -447,7 +431,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		negMarkerStart := strings.Index(v.Literal, "<!")
 		if negMarkerStart != -1 {
 			if !p.isCurrentFunctionBool {
-				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die kein Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
+				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Eine Funktion die keinen Wahrheitswert zurück gibt, darf auch keine Negationsmarkierungen haben")
 				continue
 			}
 
@@ -530,7 +514,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	begin := p.peekN(startDepth) // token.DIE
 	comment := p.parseDeclComment(begin.Range)
 
-	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE
+	isPublic := p.peekN(startDepth+1).Type == token.OEFFENTLICHE || p.peekN(startDepth+2).Type == token.OEFFENTLICHE
+	isGeneric := p.peekN(startDepth+1).Type == token.GENERISCHE || p.peekN(startDepth+2).Type == token.GENERISCHE
 
 	// we need a name, so bailout if none is provided
 	if !p.consumeSeq(token.IDENTIFIER) {
@@ -555,13 +540,25 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 
 	// parse the parameter declaration
-	params := p.parseFunctionParameters(perr, validate)
+	params := p.parseFunctionParameters(perr, validate, isGeneric)
+	genericTypes := make(map[string]ddptypes.GenericType, 4)
+	for _, param := range params {
+		if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+			for _, generic := range generics {
+				genericTypes[generic.String()] = generic
+			}
+		}
+	}
+
+	if isGeneric && len(genericTypes) == 0 {
+		perr(ddperror.SEM_GENERIC_FUNCTION_WITHOUT_TYPEPARAM, funcName.Range, "Eine generische Funktion braucht mindestens einen Typparameter")
+	}
 
 	// parse the return type declaration
 	validate(p.consumeSeq(token.GIBT))
 	returnTypeStart := p.previous()
-	returnType := p.parseReturnType()
-	returnTypeEnd := p.previous()
+	returnType := p.parseReturnType(genericTypes)
+	returnTypeRange := token.NewRange(returnTypeStart, p.previous())
 	if returnType == nil {
 		valid = false
 	}
@@ -574,11 +571,13 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	if p.matchSeq(token.IST, token.EXTERN, token.SICHTBAR, token.COMMA) {
 		isExternVisible = true
 		externVisibleRange = token.NewRange(p.peekN(-4), p.previous())
+		if isGeneric {
+			perr(ddperror.SEM_GENERIC_FUNCTION_EXTERN_VISIBLE, externVisibleRange, "Eine generische Funktion kann nicht extern sichtbar sein")
+		}
 	}
 
-	isForwardDecl := false
 	bodyStart := -1
-	definedIn := &token.Token{Type: token.ILLEGAL}
+	definedIn := token.Token{Type: token.ILLEGAL}
 	if p.matchAny(token.MACHT) {
 		validate(p.consumeSeq(token.COLON))
 		bodyStart = p.cur                             // save the body start-position for later, we first need to parse aliases to enable recursion
@@ -588,19 +587,39 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	} else if p.matchAny(token.WIRD) {
 		validate(p.consumeSeq(token.SPÄTER, token.DEFINIERT))
-		isForwardDecl = true
+		if isGeneric {
+			perr(ddperror.SEM_GENERIC_FUNCTION_BODY_UNDEFINED, p.previous().Range, "Eine generische Funktion muss sofort definiert werden")
+		}
 	} else {
 		validate(p.consumeSeq(token.IST, token.IN, token.STRING, token.DEFINIERT))
-		definedIn = p.peekN(-2)
-		switch filepath.Ext(ast.TrimStringLit(definedIn)) {
+		definedIn = *p.peekN(-2)
+		switch filepath.Ext(ast.TrimStringLit(&definedIn)) {
 		case ".c", ".lib", ".a", ".o":
 		default:
 			perr(ddperror.SEM_EXPECTED_LINKABLE_FILEPATH, definedIn.Range, fmt.Sprintf("Es wurde ein Pfad zu einer .c, .lib, .a oder .o Datei erwartet aber '%s' gefunden", definedIn.Literal))
 		}
+
+		if isGeneric {
+			for _, param := range params {
+				if !ddptypes.IsList(param.Type.Type) && !param.Type.IsReference {
+					if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+						perr(ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN, param.TypeRange, "Generische Parameter einer externen Funktion müssen Listen oder Referenzen sein")
+					}
+				}
+			}
+
+			if !ddptypes.IsList(returnType) {
+				if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(returnType); isGeneric {
+					perr(ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN, returnTypeRange, "Der Rückgabetyp einer externen Funktion muss eine Liste sein oder darf nicht generisch sein")
+				}
+			}
+		}
+
 		if isExternVisible {
 			perr(ddperror.SEM_UNNECESSARY_EXTERN_VISIBLE, externVisibleRange, "Es ist unnötig eine externe Funktion auch als extern sichtbar zu deklarieren")
 		}
 	}
+	bodyEnd := p.cur
 
 	var (
 		funcAliases     []*ast.FuncAlias
@@ -630,6 +649,23 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		}
 	}
 
+	var genericInfo *ast.GenericFuncInfo
+	if isGeneric {
+		var tokens []token.Token
+		if definedIn.Type == token.ILLEGAL {
+			tokens = p.tokens[bodyStart-1 : bodyEnd] // -1 to include the colon
+		}
+		genericInfo = &ast.GenericFuncInfo{
+			Types:  genericTypes,
+			Tokens: tokens, // -1 to include the colon
+			Context: ast.GenericContext{
+				Symbols: p.scope(),
+				Aliases: p.aliases,
+			},
+			Instantiations: make(map[*ast.Module][]*ast.FuncDecl, 8),
+		}
+	}
+
 	decl := &ast.FuncDecl{
 		Range:           token.NewRange(begin, p.previous()),
 		CommentTok:      comment,
@@ -640,12 +676,13 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 		Mod:             p.module,
 		Parameters:      params,
 		ReturnType:      returnType,
-		ReturnTypeRange: token.NewRange(returnTypeStart, returnTypeEnd),
+		ReturnTypeRange: returnTypeRange,
 		Body:            nil,
 		Def:             nil,
-		ExternFile:      *definedIn,
+		ExternFile:      definedIn,
 		Operator:        operator,
 		Aliases:         funcAliases,
+		Generic:         genericInfo,
 	}
 
 	for i := range funcAliases {
@@ -654,7 +691,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	}
 
 	// parse the body after the aliases to enable recursion
-	if bodyStart != -1 {
+	if bodyStart != -1 && !isGeneric {
 		p.cur = bodyStart // go back to the body
 		decl.Body = p.parseFunctionBody(decl)
 	} else { // the function is defined in an extern file
@@ -663,7 +700,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 			p.module.PublicDecls[decl.Name()] = decl
 		}
 
-		if !isForwardDecl {
+		if ast.IsExternFunc(decl) {
 			// add the extern declaration
 			p.module.ExternalDependencies[ast.TrimStringLit(&decl.ExternFile)] = struct{}{}
 		}
@@ -682,7 +719,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 	p.currentFunction = decl
 	bodyTable := p.newScope() // temporary symbolTable for the function parameters
-	globalScope := bodyTable.Enclosing
+	globalScope := bodyTable.Enclosing()
 	// insert the name of the current function
 	if existed := globalScope.InsertDecl(decl.Name(), decl); !existed && decl.IsPublic {
 		p.module.PublicDecls[decl.Name()] = decl
@@ -707,6 +744,14 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 	}
 	body := p.blockStatement(bodyTable).(*ast.BlockStmt) // parse the body with the parameters in the current table
 
+	p.ensureReturnStatementPresent(decl, body)
+
+	p.currentFunction = nil
+	return body
+}
+
+// check that the function has a return statement if it needs one
+func (p *parser) ensureReturnStatementPresent(decl *ast.FuncDecl, body *ast.BlockStmt) {
 	// check that the function has a return statement if it needs one
 	if !ddptypes.IsVoid(decl.ReturnType) { // only if the function does not return void
 		if len(body.Statements) < 1 { // at least the return statement is needed
@@ -721,9 +766,6 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 			}
 		}
 	}
-
-	p.currentFunction = nil
-	return body
 }
 
 func (p *parser) funcDefinition(begin, nameTok *token.Token) ast.Statement {
@@ -758,7 +800,7 @@ func (p *parser) getDeclForDefinition(nameTok *token.Token) *ast.FuncDecl {
 		p.err(ddperror.SEM_BAD_NAME_CONTEXT, nameTok.Range, fmt.Sprintf("Der Name '%s' steht für eine Variable oder Struktur und nicht für eine Funktion", nameTok.Literal))
 	} else if funcDecl.Mod != p.module {
 		p.err(ddperror.SEM_WRONG_DECL_MODULE, nameTok.Range, "Es können nur Funktionen aus demselben Modul definiert werden")
-	} else if funcDecl.Body != nil || funcDecl.ExternFile.Type != token.ILLEGAL || funcDecl.Def != nil {
+	} else if funcDecl.Body != nil || ast.IsExternFunc(funcDecl) || funcDecl.Def != nil {
 		p.err(ddperror.SEM_DEFINITION_ALREADY_DEFINED, nameTok.Range, fmt.Sprintf("Die Funktion '%s' wurde bereits definiert", nameTok.Literal))
 	} else {
 		return funcDecl
@@ -840,7 +882,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 // fields should not contain bad decls
 // returns wether the alias is valid and its arguments
 func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
-	// validate that the alias contains as many parameters as the struct
+	// validate that the alias contains no more parameters than the struct
 	if count := countElements(aliasTokens, isAliasParam); count > len(fields) {
 		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
@@ -863,7 +905,6 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 	}
 
 	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
-	nameSet := make(map[string]struct{}, len(fields))                   // set that holds the parameter names contained in the alias
 	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
 	for _, v := range fields {
 		nameTypeMap[v.Name()] = ddptypes.ParameterType{
@@ -871,7 +912,6 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 			IsReference: false, // fields are never references
 		}
 		args[v.Name()] = v.Type
-		nameSet[v.Name()] = struct{}{}
 	}
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
@@ -881,7 +921,7 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		}
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
-		if _, ok := nameSet[k]; !ok {
+		if _, ok := args[k]; !ok {
 			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
@@ -935,11 +975,20 @@ func (p *parser) structDeclaration() ast.Declaration {
 	begin := p.peekN(-3) // token.WIR
 	comment := p.parseDeclComment(begin.Range)
 
-	isPublic := p.matchAny(token.OEFFENTLICHE)
+	isPublic := p.peek().Type == token.OEFFENTLICHE || p.peekN(1).Type == token.OEFFENTLICHE
+	isGeneric := p.peek().Type == token.GENERISCHE || p.peekN(1).Type == token.GENERISCHE
+	if isPublic {
+		p.advance()
+	}
+	if isGeneric {
+		p.advance()
+	}
 	p.consumeSeq(token.KOMBINATION, token.AUS)
 
 	// parse the fields
 	var fields []ast.Declaration
+	var genericTypes []ddptypes.GenericType
+	fieldGenericMap := make(map[string][]ddptypes.GenericType)
 	indent := begin.Indent + 1
 	for p.peek().Indent >= indent && !p.atEnd() {
 		p.consumeAny(token.DER, token.DEM)
@@ -947,7 +996,20 @@ func (p *parser) structDeclaration() ast.Declaration {
 		if p.matchAny(token.OEFFENTLICHEN) {
 			n = -2
 		}
-		fields = append(fields, p.varDeclaration(n, true))
+		field := p.varDeclaration(n, true, isGeneric)
+		fields = append(fields, field)
+
+		if fieldVar, isVar := field.(*ast.VarDecl); isVar {
+			if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(fieldVar.Type); isGeneric {
+				fieldGenericMap[fieldVar.Name()] = generics
+				for _, generic := range generics {
+					if !slices.ContainsFunc(genericTypes, func(t ddptypes.GenericType) bool { return t.String() == generic.String() }) {
+						genericTypes = append(genericTypes, generic)
+					}
+				}
+			}
+		}
+
 		if !p.consumeSeq(token.COMMA) {
 			p.advance()
 		}
@@ -974,45 +1036,36 @@ func (p *parser) structDeclaration() ast.Declaration {
 		p.err(ddperror.SEM_NAME_ALREADY_DEFINED, name.Range, fmt.Sprintf("Ein Typ mit dem Namen '%s' existiert bereits", name.Literal))
 	}
 
-	p.consumeSeq(token.COMMA, token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
-	var rawAliases []*token.Token
-	if p.previous().Type == token.STRING {
-		rawAliases = append(rawAliases, p.previous())
-	}
-	for p.matchAny(token.COMMA) || p.matchAny(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
-		if p.consumeSeq(token.STRING) {
-			rawAliases = append(rawAliases, p.previous())
-		}
+	// report this error here because now we have the name token
+	if isGeneric && len(genericTypes) == 0 {
+		p.err(ddperror.SEM_GENERIC_STRUCT_WITHOUT_TYPEPARAM, name.Range, "Eine generische Kombination braucht mindestens einen Typparameter")
 	}
 
-	var structAliases []*ast.StructAlias
-	var structAliasTokens [][]*token.Token
 	fieldsForValidation := toInterfaceSlice[ast.Declaration, *ast.VarDecl](
 		filterSlice(fields, func(decl ast.Declaration) bool { _, ok := decl.(*ast.VarDecl); return ok }),
 	)
-	for _, rawAlias := range rawAliases {
-		didError := false
-		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
-		if aliasTokens, err := scanner.ScanAlias(*rawAlias, errHandleWrapper); err == nil && !didError {
-			if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
-				p.err(ddperror.SEM_MALFORMED_ALIAS, rawAlias.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
-			} else if err, args := p.validateStructAlias(aliasTokens, fieldsForValidation); err == nil {
-				if ok, isFunc, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
-					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, rawAlias.Range, ddperror.MsgAliasAlreadyExists(rawAlias.Literal, existingAlias.Decl().Name(), isFunc))
-				} else {
-					structAliases = append(structAliases, &ast.StructAlias{Tokens: aliasTokens, Original: *rawAlias, Struct: nil, Args: args})
-					structAliasTokens = append(structAliasTokens, pTokens)
-				}
-			} else {
-				p.errVal(*err)
-			}
-		}
+	var (
+		structAliases     []*ast.StructAlias
+		structAliasTokens [][]*token.Token
+	)
+	if p.matchAny(token.COMMA) {
+		structAliases, structAliasTokens = p.parseStructAliases(fieldsForValidation)
+	} else {
+		p.consumeAny(token.DOT)
 	}
 
-	structType := &ddptypes.StructType{
+	var structType ddptypes.Type = &ddptypes.StructType{
 		Name:       name.Literal,
 		GramGender: gender,
 		Fields:     varDeclsToFields(fieldsForValidation),
+	}
+
+	if isGeneric {
+		structType = &ddptypes.GenericStructType{
+			StructType:     *(structType.(*ddptypes.StructType)),
+			GenericTypes:   genericTypes,
+			Instantiations: nil,
+		}
 	}
 
 	decl := &ast.StructDecl{
@@ -1035,6 +1088,39 @@ func (p *parser) structDeclaration() ast.Declaration {
 	return decl
 }
 
+func (p *parser) parseStructAliases(fieldsForValidation []*ast.VarDecl) (structAliases []*ast.StructAlias, structAliasTokens [][]*token.Token) {
+	p.consumeSeq(token.UND, token.ERSTELLEN, token.SIE, token.SO, token.COLON, token.STRING)
+	var rawAliases []*token.Token
+	if p.previous().Type == token.STRING {
+		rawAliases = append(rawAliases, p.previous())
+	}
+	for p.matchAny(token.COMMA) || p.matchAny(token.ODER) && p.peek().Indent > 0 && !p.atEnd() {
+		if p.consumeSeq(token.STRING) {
+			rawAliases = append(rawAliases, p.previous())
+		}
+	}
+
+	for _, rawAlias := range rawAliases {
+		didError := false
+		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
+		if aliasTokens, err := scanner.ScanAlias(*rawAlias, errHandleWrapper); err == nil && !didError {
+			if len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+				p.err(ddperror.SEM_MALFORMED_ALIAS, rawAlias.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
+			} else if err, args := p.validateStructAlias(aliasTokens, fieldsForValidation); err == nil {
+				if ok, isFunc, existingAlias, pTokens := p.aliasExists(aliasTokens); ok {
+					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, rawAlias.Range, ddperror.MsgAliasAlreadyExists(rawAlias.Literal, existingAlias.Decl().Name(), isFunc))
+				} else {
+					structAliases = append(structAliases, &ast.StructAlias{Tokens: aliasTokens, Original: *rawAlias, Struct: nil, Args: args})
+					structAliasTokens = append(structAliasTokens, pTokens)
+				}
+			} else {
+				p.errVal(*err)
+			}
+		}
+	}
+	return structAliases, structAliasTokens
+}
+
 func (p *parser) typeAliasDecl() ast.Declaration {
 	begin := p.previous() // Wir
 	comment := p.parseDeclComment(begin.Range)
@@ -1042,7 +1128,7 @@ func (p *parser) typeAliasDecl() ast.Declaration {
 	p.consumeSeq(token.NENNEN)
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
-	underlying := p.parseType()
+	underlying := p.parseType(false)
 	underlyingEnd := p.previous()
 
 	isPublic := p.matchAny(token.OEFFENTLICH)
@@ -1086,7 +1172,7 @@ func (p *parser) typeDefDecl() ast.Declaration {
 
 	p.consumeAny(token.EIN, token.EINE, token.EINEN)
 	underlyingStart := p.peek()
-	underlying := p.parseType()
+	underlying := p.parseType(false)
 	underlyingEnd := p.previous()
 	underlyingRange := token.NewRange(underlyingStart, underlyingEnd)
 

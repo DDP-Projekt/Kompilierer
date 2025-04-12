@@ -1,5 +1,7 @@
 package ddptypes
 
+import "fmt"
+
 // represents a single field of a struct
 type StructField struct {
 	// name of the field
@@ -17,6 +19,10 @@ type StructType struct {
 	// fields of the struct
 	// in order of declaration
 	Fields []StructField
+	// the genericStructType that instantiated this type
+	// nil if this is not an instantiated generic
+	genericType      *GenericStructType
+	instantiatedWith []Type // the GenericTypes of the parent that this struct was instantiated with
 }
 
 func (*StructType) ddpType() {}
@@ -27,6 +33,20 @@ func (t *StructType) Gender() GrammaticalGender {
 
 func (t *StructType) String() string {
 	return t.Name
+}
+
+func (t *StructType) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 's':
+		if t.genericType != nil {
+			for _, typParam := range t.instantiatedWith {
+				fmt.Fprintf(f, "%s-", typParam)
+			}
+		}
+		fmt.Fprintf(f, "%s", t.String())
+	default:
+		fmt.Fprintf(f, fmt.FormatString(f, verb), t)
+	}
 }
 
 // checks wether two structs are structurally equal, that is
@@ -54,4 +74,9 @@ func StructurallyEqual(t1, t2 *StructType) bool {
 	}
 
 	return true
+}
+
+// returns the Generic Type this struct was instantiated from or nil if it is not generic
+func InstantiatedFrom(s *StructType) (*GenericStructType, []Type) {
+	return s.genericType, s.instantiatedWith
 }
