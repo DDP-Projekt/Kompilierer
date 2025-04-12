@@ -38,7 +38,7 @@ jobs:
         rm ./llvm_build.tar.gz
 
     - name: Build
-      run: make -j4
+      run: make -j5
 
     - name: Extract Version
       id: extract_version

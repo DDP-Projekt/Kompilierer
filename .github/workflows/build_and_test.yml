@@ -69,13 +69,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-external
 
-    - name: Build
-      run:  |
-        make -j$(( $(nproc)+2 )) ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} | tee build.log
-
     - name: Run tests
       run: |
-        make test -j$(( $(nproc)+2 )) | tee test.log
+       make -j5 ${{ steps.cache-external.outputs.cache-hit == 'true' && '--old-file=lib/external/*.a' || '' }} test | tee test.log 
     
     - name: Upload Coverage Artifact
       uses: actions/upload-artifact@v4
@@ -83,6 +79,5 @@ jobs:
         name: coverage-report-${{ runner.os }}
         path: |
           tests/coverage.md
-          build.log
           test.log
         retention-days: 30
