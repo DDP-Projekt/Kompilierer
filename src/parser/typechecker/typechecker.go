@@ -894,7 +894,11 @@ func IsPublicType(typ ddptypes.Type, table ast.SymbolTable) bool {
 	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
 		// get the corresponding decl from the current scope
 		// because it contains imported types as well
-		decl, _, _ := table.LookupDecl(typ.String())
+		lookupName := typ.String()
+		if structType, ok := typ.(*ddptypes.StructType); ok {
+			lookupName = structType.Name
+		}
+		decl, _, _ := table.LookupDecl(lookupName)
 		return decl.Public()
 	}
 

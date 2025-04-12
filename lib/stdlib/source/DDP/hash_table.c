@@ -17,3 +17,13 @@ ddpint FNV_Hash(ddpstringref str) {
 
 	return (ddpint)hash;
 }
+
+ddpint Kommazahl_Hash(ddpfloat k) {
+	static_assert(sizeof(ddpint) == sizeof(ddpfloat), "sizeof(ddpint) == sizeof(ddpfloat) must hold true for hashing ddpfloat");
+	union {
+		ddpint i;
+		ddpfloat f;
+	} u = {.f = k};
+
+	return u.i;
+}

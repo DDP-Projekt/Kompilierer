@@ -7,9 +7,39 @@ Binde "Duden/TextBauer" ein.
 Die öffentliche Funktion FNV_Hash mit dem Parameter t vom Typ Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"der Hash von <t>" oder
-	"dem Hash von <t>" oder
-	"den Hash von <t>"
+	"der Hash von <t>"
+
+[
+	Gibt den Hash für die Zahl z zurück.
+]
+Die öffentliche Funktion Zahl_Hash mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
+	Gib z zurück.
+Und kann so benutzt werden:
+	"der Hash von <z>"
+
+[
+	Gibt den Hash für die Kommazahl z zurück.
+]
+Die öffentliche Funktion Kommazahl_Hash mit dem Parameter z vom Typ Kommazahl, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"der Hash von <z>"
+
+[
+	Gibt den Hash für den Buchstaben b zurück.
+]
+Die öffentliche Funktion Buchstaben_Hash mit dem Parameter b vom Typ Buchstabe, gibt eine Zahl zurück, macht:
+	Gib b als Zahl zurück.
+Und kann so benutzt werden:
+	"der Hash von <b>"
+
+[
+	Gibt den Hash für den Buchstaben b zurück.
+]
+Die öffentliche Funktion Wahrheitswert_Hash mit dem Parameter w vom Typ Wahrheitswert, gibt eine Zahl zurück, macht:
+	Gib w als Zahl zurück.
+Und kann so benutzt werden:
+	"der Hash von <w>"
 
 [
 	Representiert einen Eintrag in einer HashTabelle.
@@ -85,21 +115,15 @@ Die öffentliche generische Funktion Tabelle_Zu_Text mit dem Parameter tabelle v
 
 		Füge (Schlüssel von (einträge von tabelle an der Stelle i)) an b an.
 	 	Füge ": " an b an.
-		Die Variable v ist Wert von (einträge von tabelle an der Stelle i).
-
-		Wenn v eine Zahl ist, füge (v als Zahl als Text) an b an.
-		Wenn aber v ein Text ist, füge (v als Text) an b an.
-		Wenn aber v eine Kommazahl ist, füge (v als Kommazahl als Text) an b an.
-		Wenn aber v ein Wahrheitswert ist, füge (v als Wahrheitswert als Text) an b an.
-		Wenn aber v ein Buchstabe ist, füge (v als Buchstabe) an b an.
-		Sonst füge "<Unbekannt>" an b an.
+		Der W w ist Wert von (einträge von tabelle an der Stelle i).
+		Füge (w als Text) an b an.
 
 		Wenn i ungleich die Länge von einträge von tabelle ist, füge ", " an b an.
 
 	Gib b als Text zurück.
 Und überlädt den "als" Operator.
 
-Die generische Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und Text Referenz, gibt eine Zahl zurück, macht:
+Die generische Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S Referenz, gibt eine Zahl zurück, macht:
 	Die Zahl index ist der Hash von schlüssel modulo der Kapazität von tabelle plus 1.
 	Die Zahl grabstein_index ist -1.
 
@@ -194,9 +218,9 @@ Die öffentliche generische Funktion Tabellen_Wert_Löschen mit den Parametern t
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
-		Gib der Standardwert von einer Variable zurück.
+		Gib der Standardwert von einem W zurück.
 
-	Die Variable wert ist Wert von (einträge von tabelle an der Stelle eintrag_index).
+	Der W wert ist Wert von (einträge von tabelle an der Stelle eintrag_index).
 	Speichere einen Grabstein ((der Standardwert von einem S), (der Standardwert von einem W)) in (einträge von tabelle an der Stelle eintrag_index).
 	Gib wert zurück.
 Und kann so benutzt werden:

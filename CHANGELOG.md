@@ -17,6 +17,7 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Neu] Externe generische Funktionen können in C mit generischen Listen und generischen Referenz Parametern arbeiten
 - [Neu] Generische Kombinationen, die Felder beliebigen Typs besitzen können
 - [Neu] Generische Funktionen, die mit Parametern beliebigen Typs arbeiten können
+- [Neu] Die Aliase für Kombinationen sind jetzt optional
 - [Neu] Bei Feldern von Kombinationen kann der explizite Standardwert jetzt weggelassen werden
 
 ## v0.6.0

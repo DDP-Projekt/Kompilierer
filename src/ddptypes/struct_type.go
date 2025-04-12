@@ -1,6 +1,8 @@
 package ddptypes
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // represents a single field of a struct
 type StructField struct {
@@ -13,7 +15,8 @@ type StructField struct {
 // represents the type of a ddp struct
 type StructType struct {
 	// name of the struct
-	Name string
+	Name       string
+	cachedName *string
 	// grammatical gender of the struct name
 	GramGender GrammaticalGender
 	// fields of the struct
@@ -32,21 +35,26 @@ func (t *StructType) Gender() GrammaticalGender {
 }
 
 func (t *StructType) String() string {
-	return t.Name
-}
+	if t.cachedName != nil {
+		return *t.cachedName
+	}
 
-func (t *StructType) Format(f fmt.State, verb rune) {
-	switch verb {
-	case 's':
-		if t.genericType != nil {
-			for _, typParam := range t.instantiatedWith {
-				fmt.Fprintf(f, "%s-", typParam)
+	name := ""
+	if t.genericType != nil {
+		for _, typParam := range t.instantiatedWith {
+			typParamString := typParam.String()
+			if _, ok := typParam.(*StructType); ok {
+				name += fmt.Sprintf("(%s)-", typParamString)
+			} else {
+				name += fmt.Sprintf("%s-", typParamString)
 			}
 		}
-		fmt.Fprintf(f, "%s", t.String())
-	default:
-		fmt.Fprintf(f, fmt.FormatString(f, verb), t)
 	}
+	name += t.Name
+
+	t.cachedName = &name
+
+	return *t.cachedName
 }
 
 // checks wether two structs are structurally equal, that is

@@ -14,6 +14,18 @@ Schreibe ("" in t enthalten ist) auf eine Zeile.
 Schreibe ((t an der Stelle "") als Text) auf eine Zeile.
 Schreibe ((den gelöschten Wert für "" in t) als Text) auf eine Zeile.
 
+Die Zahl-Text-HashTabelle zt ist der Standardwert von einer Zahl-Text-HashTabelle.
+Setze den Wert von 0 in zt auf "0".
+Schreibe (0 in zt enthalten ist) auf eine Zeile.
+Schreibe (zt an der Stelle 0) auf eine Zeile.
+Schreibe (den gelöschten Wert für 0 in zt) auf eine Zeile.
+
+Die Kommazahl-Text-HashTabelle kzt ist der Standardwert von einer Kommazahl-Text-HashTabelle.
+Setze den Wert von 1,5 in kzt auf "1,5".
+Schreibe (1,5 in kzt enthalten ist) auf eine Zeile.
+Schreibe (kzt an der Stelle 1,5) auf eine Zeile.
+Schreibe (den gelöschten Wert für 1,5 in kzt) auf eine Zeile.
+
 [ "Fuzz" testing (not really :( ) ]
 Schreibe "fuzz" auf eine Zeile.
 

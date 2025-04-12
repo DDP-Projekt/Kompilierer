@@ -2,5 +2,11 @@ simple
 wahr
 leer
 leer
+wahr
+0
+0
+wahr
+1,5
+1,5
 fuzz
 Erfolg
