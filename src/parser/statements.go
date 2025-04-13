@@ -154,7 +154,7 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 	if p.peek().Type == token.COUNT_MAL {
 		p.checkStatement(stmt)
 		if err != nil {
-			p.err(err.Code, err.Range, err.Msg)
+			p.errVal(*err)
 		}
 	} else {
 		p.cur = cur

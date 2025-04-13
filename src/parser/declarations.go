@@ -1233,7 +1233,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	// scan the raw alias withouth the ""
 	var alias *ast.FuncAlias
 	var pTokens []*token.Token
-	if aliasTokens, err := scanner.ScanAlias(*aliasTok, func(err ddperror.Error) { p.err(err.Code, err.Range, err.Msg) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
+	if aliasTokens, err := scanner.ScanAlias(*aliasTok, func(err ddperror.Error) { p.errVal(err) }); err == nil && len(aliasTokens) < 2 { // empty strings are not allowed (we need at leas 1 token + EOF)
 		p.err(ddperror.SEM_MALFORMED_ALIAS, aliasTok.Range, "Ein Alias muss mindestens 1 Symbol enthalten")
 	} else if err := p.validateFunctionAlias(aliasTokens, funDecl.Parameters); err == nil { // check that the alias fits the function
 		if ok, isFun, existingAlias, toks := p.aliasExists(aliasTokens); ok {

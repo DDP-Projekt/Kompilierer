@@ -16,7 +16,7 @@ func EmptyHandler(Error) {}
 // creates a basic handler that prints the formatted error on a line
 func MakeBasicHandler(w io.Writer) Handler {
 	return func(err Error) {
-		fmt.Fprintf(w, "%s: %s\n", makeErrorHeader(err, ""), err.Msg)
+		fmt.Fprintf(w, "%s: %s\n", makeErrorHeader(err, ""), err)
 	}
 }
 
@@ -34,13 +34,6 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 		if filepath.Clean(err.File) != file {
 			basicHandler(err)
 			return
-		}
-
-		// helper function to print s n-times
-		printN := func(n int, s string) {
-			for i := 0; i < n; i++ {
-				fmt.Fprint(w, s)
-			}
 		}
 
 		// helper to find the maximum of two uints
@@ -75,29 +68,29 @@ func MakeAdvancedHandler(file string, src []byte, w io.Writer) Handler {
 
 			if lineIndex == rnge.Start.Line-1 {
 				startLen := replaceAndCount(line[:rnge.Start.Column-1])
-				printN(startLen, " ")
+				printN(w, startLen, " ")
 				restLen := replaceAndCount(line[rnge.Start.Column-1:])
 				if rnge.Start.Line == rnge.End.Line {
 					restLen = replaceAndCount(line[rnge.Start.Column-1 : rnge.End.Column-1])
 				}
-				printN(restLen, "^")
+				printN(w, restLen, "^")
 			} else if lineIndex < rnge.End.Line-1 {
-				printN(lineStart, " ")
-				printN(lineLen-lineStart, "^")
+				printN(w, lineStart, " ")
+				printN(w, lineLen-lineStart, "^")
 			} else {
 				restLen := replaceAndCount(line[:rnge.End.Column-1])
 				if lineStart < restLen {
-					printN(lineStart, " ")
-					printN(lineLen-lineStart, "^")
+					printN(w, lineStart, " ")
+					printN(w, lineLen-lineStart, "^")
 				} else {
-					printN(restLen, "^")
+					printN(w, restLen, "^")
 				}
 			}
 			fmt.Fprint(w, "\n")
 		}
 
-		fmt.Fprintf(w, "\n%s.\n\n", err.Msg)
-		printN(maxLineCount, "-")
+		fmt.Fprintf(w, "\n%s.\n\n", err)
+		printN(w, maxLineCount, "-")
 		fmt.Fprint(w, "\n\n")
 	}
 }
@@ -148,5 +141,12 @@ func (m *Collector) DidError() bool {
 func (m *Collector) GetHandler() Handler {
 	return func(err Error) {
 		m.Errors = append(m.Errors, err)
+	}
+}
+
+// helper function to print s n-times
+func printN(w io.Writer, n int, s string) {
+	for i := 0; i < n; i++ {
+		fmt.Fprint(w, s)
 	}
 }

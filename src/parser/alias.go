@@ -130,18 +130,6 @@ func (p *parser) alias() ast.Expression {
 		}
 	}
 
-	createInstantiationError := func(decl *ast.FuncDecl, errs []ddperror.Error) ddperror.Error {
-		msg := strings.Builder{}
-		msg.WriteString(fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s':", decl.Name()))
-
-		for _, err := range errs {
-			msg.WriteString("\n\t")
-			msg.WriteString(err.String())
-		}
-
-		return ddperror.New(ddperror.SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION, ddperror.LEVEL_ERROR, p.previous().Range, msg.String(), p.module.FileName)
-	}
-
 	type checkAliasResult struct {
 		alias                   ast.Alias
 		errs                    []ddperror.Error
@@ -174,7 +162,14 @@ func (p *parser) alias() ast.Expression {
 
 	// generic aliases may not be called with typeSensitive = false
 	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) {
-		p.errVal(createInstantiationError(funcAlias.Func, mostFitting.errs))
+		p.errVal(ddperror.Error{
+			Code:                 ddperror.SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION,
+			Level:                ddperror.LEVEL_ERROR,
+			Range:                p.previous().Range,
+			Msg:                  fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s'", funcAlias.Func.Name()),
+			File:                 p.module.FileName,
+			WrappedGenericErrors: mostFitting.errs,
+		})
 		p.cur = start
 		return nil
 	}
