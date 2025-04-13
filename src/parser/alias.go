@@ -437,7 +437,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 
 	if ast.IsExternFunc(genericFunc) {
 		// add the instantiation to prevent recursion
-		genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
+		genericFunc.Generic.Instantiations[genericModule] = append(genericFunc.Generic.Instantiations[p.module], &decl)
 		return &decl, nil
 	}
 
@@ -461,7 +461,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	declParser.setScope(context.Symbols)
 
 	// add the instantiation to prevent recursion
-	genericFunc.Generic.Instantiations[p.module] = append(genericFunc.Generic.Instantiations[p.module], &decl)
+	genericFunc.Generic.Instantiations[genericModule] = append(genericFunc.Generic.Instantiations[genericModule], &decl)
 
 	declParser.advance() // skip the colon for blockStatement()
 	decl.Body = declParser.blockStatement(declParser.scope()).(*ast.BlockStmt)
@@ -469,8 +469,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 
 	if errorCollector.DidError() {
 		// remove the instantiation as we errored
-		genericFunc.Generic.Instantiations[p.module] = slices.DeleteFunc(genericFunc.Generic.Instantiations[p.module], func(f *ast.FuncDecl) bool { return f == &decl })
-		return &decl, errorCollector.Errors
+		genericFunc.Generic.Instantiations[genericModule] = slices.DeleteFunc(genericFunc.Generic.Instantiations[genericModule], func(f *ast.FuncDecl) bool { return f == &decl })
 	}
 
 	return &decl, errorCollector.Errors
