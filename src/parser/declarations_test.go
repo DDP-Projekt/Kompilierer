@@ -602,8 +602,7 @@ Wir nennen die generische Kombination aus
 	dem T y,
 	dem R z,
 	der R Liste l,
-eine Struktur, und erstellen sie so:
-	"Struktur"
+eine Struktur."
 		`),
 	})
 
