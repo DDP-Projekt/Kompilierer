@@ -659,4 +659,14 @@ func TestValidateStructAlias(t *testing.T) {
 	})
 	assert.NotNil(err)
 	assert.Equal(ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, err.Code)
+
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.GenericType{Name: "T"}},
+		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	})
+	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.GenericType{Name: "R"}, InitVal: &ast.IntLit{}},
+	})
+	assert.Nil(err)
 }

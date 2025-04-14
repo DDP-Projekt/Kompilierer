@@ -915,7 +915,9 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		args[v.Name()] = v.Type
 		genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(v.Type)
 		for _, typ := range genericTypes {
-			genericUnifiedMap[typ.Name] = false
+			if _, ok := genericUnifiedMap[typ.Name]; !ok {
+				genericUnifiedMap[typ.Name] = v.InitVal != nil
+			}
 		}
 	}
 	// validate that each parameter is contained in the alias once at max
