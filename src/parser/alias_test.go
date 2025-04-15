@@ -386,7 +386,8 @@ Und kann so benutzt werden:
 	assert.NotNil(instantiation.Body)
 	assert.Contains(decl.Generic.Instantiations, given.module)
 	assert.Contains(decl.Generic.Instantiations[given.module], instantiation)
-	assert.Same(decl, instantiation.GenericDecl)
+	assert.Same(decl, instantiation.GenericInstantiation.GenericDecl)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, instantiation.GenericInstantiation.Types)
 
 	// list return type
 
@@ -529,11 +530,12 @@ Ende`),
 	assert.NotNil(funcInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.IntLit{}, args["b"])
-	assert.Same(genericFunc, funcInstantiation.GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericInstantiation.GenericDecl)
+	assert.Equal(map[string]ddptypes.Type{"T": ddptypes.ZAHL}, funcInstantiation.GenericInstantiation.Types)
 
 	_, second_instantiation, _, _ := given.checkAlias(g, true, 0, cached_args)
 	assert.Same(funcInstantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.GenericDecl)
+	assert.Same(genericFunc, second_instantiation.GenericInstantiation.GenericDecl)
 
 	// generic test with list types
 
@@ -580,11 +582,11 @@ Ende`),
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Grouping{}, args["b"])
 	assert.IsType(&ast.ListLit{}, args["b"].(*ast.Grouping).Expr)
-	assert.Same(genericFunc, funcInstantiation.GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericInstantiation.GenericDecl)
 
 	_, second_instantiation, _, _ = given.checkAlias(g, true, 0, cached_args)
 	assert.Same(funcInstantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.GenericDecl)
+	assert.Same(genericFunc, second_instantiation.GenericInstantiation.GenericDecl)
 
 	// test it with not-working instantiation
 
@@ -716,9 +718,9 @@ Ende`),
 	assert.Nil(structTypeInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
 	assert.IsType(&ast.Ident{}, args["b"])
-	assert.Same(genericFunc, funcInstantiation.GenericDecl)
+	assert.Same(genericFunc, funcInstantiation.GenericInstantiation.GenericDecl)
 
 	_, second_instantiation, _, _ = given.checkAlias(g, true, 0, cached_args)
 	assert.Same(funcInstantiation, second_instantiation)
-	assert.Same(genericFunc, second_instantiation.GenericDecl)
+	assert.Same(genericFunc, second_instantiation.GenericInstantiation.GenericDecl)
 }

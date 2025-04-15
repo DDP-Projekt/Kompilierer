@@ -554,7 +554,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// extern functions are instantiated once
 	if ast.IsGenericInstantiation(decl) && ast.IsExternFunc(decl) {
-		decl = decl.GenericDecl
+		decl = decl.GenericInstantiation.GenericDecl
 	}
 
 	retType := c.getPossiblyGenericReturnType(decl)

@@ -42,23 +42,23 @@ type (
 	}
 
 	FuncDecl struct {
-		Range           token.Range
-		CommentTok      *token.Token     // optional comment (also contained in ast.Comments)
-		Tok             token.Token      // Die
-		NameTok         token.Token      // token of the name
-		IsPublic        bool             // wether the function is marked with öffentliche
-		IsExternVisible bool             // wether the function is marked as extern visible
-		Mod             *Module          // the module in which the function was declared
-		Parameters      []ParameterInfo  // name, type and comments of parameters
-		ReturnType      ddptypes.Type    // return Type, Zahl Kommazahl nichts ...
-		ReturnTypeRange token.Range      // range of the return type (mainly used by the LSP)
-		Body            *BlockStmt       // nil for extern functions or forward declarations
-		Def             *FuncDef         // non-nil for forward declarations
-		ExternFile      token.Token      // string literal with filepath (only pesent if Body is nil)
-		Operator        Operator         // the operator this function overloads, or nil if it does not overload an operator
-		Generic         *GenericFuncInfo // only filled if the function was declared as generic
-		GenericDecl     *FuncDecl        // non-nil if this decl is a instantiation of a generic function
-		Aliases         []*FuncAlias
+		Range                token.Range
+		CommentTok           *token.Token              // optional comment (also contained in ast.Comments)
+		Tok                  token.Token               // Die
+		NameTok              token.Token               // token of the name
+		IsPublic             bool                      // wether the function is marked with öffentliche
+		IsExternVisible      bool                      // wether the function is marked as extern visible
+		Mod                  *Module                   // the module in which the function was declared
+		Parameters           []ParameterInfo           // name, type and comments of parameters
+		ReturnType           ddptypes.Type             // return Type, Zahl Kommazahl nichts ...
+		ReturnTypeRange      token.Range               // range of the return type (mainly used by the LSP)
+		Body                 *BlockStmt                // nil for extern functions or forward declarations
+		Def                  *FuncDef                  // non-nil for forward declarations
+		ExternFile           token.Token               // string literal with filepath (only pesent if Body is nil)
+		Operator             Operator                  // the operator this function overloads, or nil if it does not overload an operator
+		Generic              *GenericFuncInfo          // only filled if the function was declared as generic
+		GenericInstantiation *GenericInstantiationInfo // non-nil if this decl is a instantiation of a generic function
+		Aliases              []*FuncAlias
 	}
 
 	// holds information about a generic function declaration
@@ -67,6 +67,11 @@ type (
 		Tokens         []token.Token                   // tokens of the body that need to be parsed, nil if the function is extern
 		Context        GenericContext                  // context up to the point where the function was declared
 		Instantiations map[*Module][]*FuncDecl         // all existing instantiations for a given module
+	}
+
+	GenericInstantiationInfo struct {
+		GenericDecl *FuncDecl                // the parent decl
+		Types       map[string]ddptypes.Type // the unified instantiated types
 	}
 
 	// the context captured by a generic function declaration

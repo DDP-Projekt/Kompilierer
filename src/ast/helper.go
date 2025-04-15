@@ -35,7 +35,7 @@ func IsGeneric(decl Declaration) bool {
 }
 
 func IsGenericInstantiation(fun *FuncDecl) bool {
-	return fun != nil && fun.GenericDecl != nil
+	return fun != nil && fun.GenericInstantiation != nil
 }
 
 func IsVarConstDecl(decl Declaration) bool {

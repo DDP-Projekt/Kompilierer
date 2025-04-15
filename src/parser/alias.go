@@ -432,7 +432,10 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	decl.Parameters = parameters
 	decl.ReturnType = ddptypes.GetInstantiatedType(genericFunc.ReturnType, genericTypes)
 	decl.Generic = nil
-	decl.GenericDecl = genericFunc
+	decl.GenericInstantiation = &ast.GenericInstantiationInfo{
+		GenericDecl: genericFunc,
+		Types:       genericTypes,
+	}
 	decl.Mod = genericModule
 
 	if ast.IsExternFunc(genericFunc) {
