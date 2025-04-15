@@ -57,6 +57,7 @@ const (
 	SEM_GENERIC_FUNCTION_BODY_UNDEFINED                         // a generic function was declared without a definition
 	SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION                    // an error occured while instantiating a generic function
 	SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE                     // a non-generic type was given with type parameters
+	SEM_UNABLE_TO_UNIFY_FIELD_TYPES                             // for a generic struct alias not all typeparamters could be unified
 )
 
 // type error codes

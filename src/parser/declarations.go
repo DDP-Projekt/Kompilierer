@@ -906,12 +906,19 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
 	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
+	genericUnifiedMap := make(map[string]bool, len(fields)*2)           // holds wether a generic type is unified
 	for _, v := range fields {
 		nameTypeMap[v.Name()] = ddptypes.ParameterType{
 			Type:        v.Type,
 			IsReference: false, // fields are never references
 		}
 		args[v.Name()] = v.Type
+		genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(v.Type)
+		for _, typ := range genericTypes {
+			if _, ok := genericUnifiedMap[typ.Name]; !ok {
+				genericUnifiedMap[typ.Name] = v.InitVal != nil
+			}
+		}
 	}
 	// validate that each parameter is contained in the alias once at max
 	// and fill in the AliasInfo
@@ -932,11 +939,28 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 		if argTyp, ok := nameTypeMap[k]; ok {
 			aliasTokens[i].AliasInfo = &argTyp
+
+			genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(argTyp.Type)
+			for _, typ := range genericTypes {
+				genericUnifiedMap[typ.Name] = true
+			}
+
 			delete(nameTypeMap, k)
 		} else {
 			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
+				p.module.FileName,
+			)
+			return &err, nil
+		}
+	}
+
+	for typ, wasUnified := range genericUnifiedMap {
+		if !wasUnified {
+			err := ddperror.New(ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, ddperror.LEVEL_ERROR,
+				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
+				fmt.Sprintf("Der generische Typ %s konnte nicht unifiziert werden", typ),
 				p.module.FileName,
 			)
 			return &err, nil

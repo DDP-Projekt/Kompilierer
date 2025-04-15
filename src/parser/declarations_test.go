@@ -602,8 +602,7 @@ Wir nennen die generische Kombination aus
 	dem T y,
 	dem R z,
 	der R Liste l,
-eine Struktur, und erstellen sie so:
-	"Struktur"
+eine Struktur."
 		`),
 	})
 
@@ -613,4 +612,61 @@ eine Struktur, und erstellen sie so:
 	assert.True(ast.IsGeneric(decl))
 	assert.IsType(&ddptypes.GenericStructType{}, decl.Type)
 	assert.Equal([]ddptypes.GenericType{{Name: "T"}, {Name: "R"}}, decl.Type.(*ddptypes.GenericStructType).GenericTypes)
+}
+
+func TestValidateStructAlias(t *testing.T) {
+	assert := assert.New(t)
+
+	given := createParser(t, parser{})
+
+	alias := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL},
+		"b": {Type: ddptypes.ZAHL},
+	})
+	err, _ := given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.ZAHL},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.ZAHL},
+	})
+	assert.Nil(err)
+
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.ZAHL},
+		"b": {Type: ddptypes.ZAHL},
+	})
+	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.ZAHL},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.ZAHL},
+	})
+	assert.Nil(err)
+
+	alias = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.GenericType{Name: "T"}},
+		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	})
+	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.GenericType{Name: "R"}},
+	})
+	assert.Nil(err)
+
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.GenericType{Name: "T"}},
+		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	})
+	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.GenericType{Name: "R"}},
+	})
+	assert.NotNil(err)
+	assert.Equal(ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, err.Code)
+
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
+		"a": {Type: ddptypes.GenericType{Name: "T"}},
+		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	})
+	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
+		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
+		{NameTok: token.Token{Literal: "b"}, Type: ddptypes.GenericType{Name: "R"}, InitVal: &ast.IntLit{}},
+	})
+	assert.Nil(err)
 }
