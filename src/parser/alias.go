@@ -165,7 +165,7 @@ func (p *parser) alias() ast.Expression {
 		p.errVal(ddperror.Error{
 			Code:                 ddperror.SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION,
 			Level:                ddperror.LEVEL_ERROR,
-			Range:                p.previous().Range,
+			Range:                token.NewRange(&p.tokens[start], p.previous()),
 			Msg:                  fmt.Sprintf("Es gab Fehler beim Instanziieren der generischen Funktion '%s'", funcAlias.Func.Name()),
 			File:                 p.module.FileName,
 			WrappedGenericErrors: mostFitting.errs,
