@@ -142,9 +142,9 @@ und kann so benutzt werden:
     "Sende <daten> über <verbindung>" oder
     "wie viele Bytes von <daten> über <verbindung> gesendet wurden"
 
-Die oeffentliche Funktion Socket_Senden_Wert mit den Parametern verbindung und daten vom Typ Socket und Text, gibt eine Zahl zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die oeffentliche Funktion Socket_Senden_Wert mit den Parametern verbindung und daten vom Typ Socket und Text, gibt eine Zahl zurück, macht:
+	Gib wie viele Bytes von daten über verbindung gesendet wurden zurück.
+Und kann so benutzt werden:
     "Sende <daten> über <verbindung>" oder
     "wie viele Bytes von <daten> über <verbindung> gesendet wurden"
 

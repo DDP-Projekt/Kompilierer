@@ -17,6 +17,7 @@ Und kann so benutzt werden:
     "Schreibe <uri>"
 
 Schreibe ("" als Uri).
+Schreibe ("/index.html?a=hi&b=bye#anchor" als Uri).
 Schreibe ("https://user:password@example.com:8080/index.html?a=hi&b=bye#anchor" als Uri).
 Schreibe ("https://de.wikipedia.org/wiki/Uniform_Resource_Identifier" als Uri).
 Schreibe ("https://ddp.bafto.dev/Spielplatz/?nolines&readonly" als Uri).
