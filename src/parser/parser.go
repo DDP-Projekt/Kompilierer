@@ -479,7 +479,8 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 				if params[i].Type.IsReference {
 					refs++
 				}
-				if ddptypes.IsGeneric(params[i].Type.Type) {
+				_, isGeneric := ddptypes.CastDeeplyNestedGenerics(params[i].Type.Type)
+				if isGeneric {
 					gen++
 				}
 			}

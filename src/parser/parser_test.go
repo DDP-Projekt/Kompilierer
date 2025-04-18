@@ -26,6 +26,16 @@ func TestInsertOperatorOverload(t *testing.T) {
 			},
 		}
 	}
+	op3 := func(a, b, c ddptypes.Type, aref, bref, cref bool) *ast.FuncDecl {
+		return &ast.FuncDecl{
+			Operator: ast.BIN_PLUS,
+			Parameters: []ast.ParameterInfo{
+				{Type: ddptypes.ParameterType{Type: a, IsReference: aref}},
+				{Type: ddptypes.ParameterType{Type: b, IsReference: bref}},
+				{Type: ddptypes.ParameterType{Type: c, IsReference: cref}},
+			},
+		}
+	}
 
 	op_zahl_zahl := op(ddptypes.ZAHL, ddptypes.ZAHL, false, false)
 	op_ref_zahl := op(ddptypes.ZAHL, ddptypes.ZAHL, true, false)
@@ -68,5 +78,12 @@ func TestInsertOperatorOverload(t *testing.T) {
 	given.insertOperatorOverload(op_generic_generic2)
 
 	assert.Equal([]*ast.FuncDecl{op_ref_ref, op_text_ref, op_ref_zahl, op_text_text, op_zahl_zahl, op_ref_ref_gen, op_generic_ref, op_generic_generic}, given.Operators[ast.BIN_PLUS])
+	assert.True(errorCollector.DidError())
+
+	op_generic_generic3 := op3(ddptypes.ListType{ElementType: ddptypes.GenericType{}}, ddptypes.ListType{ElementType: ddptypes.GenericType{}}, ddptypes.ListType{ElementType: ddptypes.GenericType{}}, false, false, false)
+
+	given.insertOperatorOverload(op_generic_generic3)
+
+	assert.Equal([]*ast.FuncDecl{op_ref_ref, op_text_ref, op_ref_zahl, op_text_text, op_zahl_zahl, op_ref_ref_gen, op_generic_ref, op_generic_generic, op_generic_generic3}, given.Operators[ast.BIN_PLUS])
 	assert.True(errorCollector.DidError())
 }
