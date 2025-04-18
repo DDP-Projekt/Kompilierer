@@ -1,0 +1,181 @@
+[
+	Duden/Netzwerk stellt low-level Funktionen zum Arbeiten mit Sockets zur Verfügung.
+]
+
+Binde "Duden/C" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+
+Wir definieren eine AddressInfo oeffentlich als einen Zeiger.
+
+Wir nennen die oeffentliche Kombination aus
+    der Zahl padding1,
+    der Zahl padding2,
+    der Zahl padding3,
+    der Zahl padding4,
+    der Zahl padding5,
+    der Zahl padding6,
+    der Zahl padding7,
+    der Zahl padding8,
+    der Zahl padding9,
+    der Zahl padding10,
+    der Zahl padding11,
+    der Zahl padding12,
+    der Zahl padding13,
+    der Zahl padding14,
+    der Zahl padding15,
+    der Zahl padding16,
+    dem C_int size,
+eine KlientenAddresse,
+und erstellen sie so:
+    "eine leere KlientenAddresse",
+    "eine ungefüllte KlientenAddresse"
+
+Wir nennen die oeffentliche Kombination aus
+    dem C_int fd,
+    dem C_int familie,
+    dem C_int typ,
+einen Socket.
+
+[ AF_UNSPEC ]
+Der oeffentliche C_int IPV4_ODER_IPV6 ist 0 als Buchstabe als C_int.
+[ AF_INET ]
+Der oeffentliche C_int IPV4 ist 2 als Buchstabe als C_int.
+[ AF_INET6 ]
+Der oeffentliche C_int IPV6 ist 10 als Buchstabe als C_int.
+[ SOCK_STREAM ]
+Der oeffentliche C_int TCP ist 1 als Buchstabe als C_int.
+[ SOCK_DGRAM ]
+Der oeffentliche C_int UDP ist 2 als Buchstabe als C_int.
+
+Die oeffentliche Funktion Lade_AddressInfo mit den Parametern familie, typ, name und service vom Typ C_int, C_int, Text und Text, gibt eine AddressInfo zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "die AddressInfo der Familie <familie> vom Typ <typ> für den Namen <name> und den Service <service>" oder
+    "die <familie> <typ> AddressInfo für den Namen <name> und den Service <service>" oder
+    "eine AddressInfo der Familie <familie> vom Typ <typ> für den Namen <name> und den Service <service>" oder
+    "eine <familie> <typ> AddressInfo für den Namen <name> und den Service <service>"
+
+Die oeffentliche Funktion freeaddrinfo mit dem Parameter info vom Typ AddressInfo, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Befreie <info>"
+
+[
+    Wandelt die ERSTE addresse in AddrInfo zu einem Text um.
+]
+Die oeffentliche Funktion AddressInfo_zu_Text mit dem Parameter info vom Typ AddressInfo, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und überlädt den "als" Operator.
+
+Die oeffentliche Funktion Socket_Erstellen mit den Parametern familie und typ vom Typ C_int und C_int, gibt einen Socket zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "ein Socket der Familie <familie> vom Typ <typ>",
+    "einen Socket der Familie <familie> vom Typ <typ>"
+
+Die oeffentliche Funktion Socket_Erstellen_Typ mit dem Parameter typ vom Typ C_int, gibt einen Socket zurück, macht:
+	Gib einen Socket der Familie IPV4 vom Typ typ zurück.
+Und kann so benutzt werden:
+    "ein <typ> Socket",
+    "einen <typ> Socket"
+
+Die oeffentliche Funktion Schließe_Socket mit dem Parameter sock vom Typ Socket, gibt nichts zurück, macht:
+    Schließe (fd von sock).
+Und kann so benutzt werden:
+    "Schließe <sock>"
+
+Die oeffentliche Funktion Socket_Binden mit den Parametern sock und info vom Typ Socket und AddressInfo, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Setze <sock> auf <info>"
+
+Die oeffentliche Funktion Socket_Binden_Name_Service mit den Parametern sock, name und service vom Typ Socket, Text und Text, gibt nichts zurück, macht:
+    Die AddressInfo info ist die AddressInfo der Familie (familie von sock) vom Typ (typ von sock) für den Namen name und den Service service.
+    Setze sock auf info.
+    Befreie info.
+Und kann so benutzt werden:
+    "Setze <sock> auf <name> <service>"
+
+Die oeffentliche Funktion Socket_Binden_Name_Port mit den Parametern sock, name und service vom Typ Socket, Text und Zahl, gibt nichts zurück, macht:
+    Setze sock auf name (service als Text).
+Und kann so benutzt werden:
+    "Setze <sock> auf <name> <service>"
+
+Die oeffentliche Funktion Socket_Verbinden mit den Parametern sock und info vom Typ Socket und AddressInfo, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Verbinde <sock> mit <info>"
+
+Die oeffentliche Funktion Socket_Verbinden_Name_Service mit den Parametern sock, name und service vom Typ Socket, Text und Text, gibt nichts zurück, macht:
+    Die AddressInfo info ist die AddressInfo der Familie (familie von sock) vom Typ (typ von sock) für den Namen name und den Service service.
+    Verbinde sock mit info.
+    Befreie info.
+Und kann so benutzt werden:
+    "Verbinde <sock> mit <name> <service>"
+
+Die oeffentliche Funktion Socket_Verbinden_Name_Port mit den Parametern sock, name und port vom Typ Socket, Text und Zahl, gibt nichts zurück, macht:
+    Verbinde sock mit name (port als Text).
+Und kann so benutzt werden:
+    "Verbinde <sock> mit <name> <port>"
+
+Die oeffentliche Funktion Socket_Zuhoeren mit den Parametern sock und backlog vom Typ Socket und Zahl, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Lass <sock> auf maximal <backlog> Verbindungen warten" oder
+    "Lass <sock> auf maximal <backlog> Verbindung warten"
+
+Die oeffentliche Funktion Socket_Verbindung_Annehmen mit den Parametern sock und client vom Typ Socket und KlientenAddresse Referenz, gibt einen Socket zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "die nächste Verbindung von <client> auf <sock>"
+
+Die oeffentliche Funktion Socket_Verbindung_Annehmen_Ohne_Klient mit dem Parameter sock vom Typ Socket, gibt einen Socket zurück, macht:
+    Die KlientenAddresse client ist eine leere KlientenAddresse.
+    Der Socket verbindung ist die nächste Verbindung von client auf sock.
+    Gib verbindung zurück.
+Und kann so benutzt werden:
+    "die nächste Verbindung auf <sock>"
+
+Die oeffentliche Funktion Socket_Senden mit den Parametern verbindung und daten vom Typ Socket und Text Referenz, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Sende <daten> über <verbindung>" oder
+    "wie viele Bytes von <daten> über <verbindung> gesendet wurden"
+
+Die oeffentliche Funktion Socket_Senden_Wert mit den Parametern verbindung und daten vom Typ Socket und Text, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Sende <daten> über <verbindung>" oder
+    "wie viele Bytes von <daten> über <verbindung> gesendet wurden"
+
+Die oeffentliche Funktion Socket_Empfangen mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "maximal <max> Bytes aus <verbindung>",
+    "maximal die nächsten <max> Bytes aus <verbindung>",
+    "maximal den nächsten <max> Bytes aus <verbindung>"
+
+Die oeffentliche Funktion Socket_Senden_An_Klient mit den Parametern verbindung, daten und client vom Typ Socket, Text und KlientenAddresse, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Sende <daten> über <verbindung> an <client>" oder
+    "wie viele Bytes von <daten> über <verbindung> an <client> gesendet wurden"
+
+Die oeffentliche Funktion Socket_Senden_An mit den Parametern verbindung, daten und info vom Typ Socket, Text und AddressInfo, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Sende <daten> über <verbindung> an <info>" oder
+    "wie viele Bytes von <daten> über <verbindung> an <info> gesendet wurden"
+
+Die oeffentliche Funktion Socket_Empfangen_Von mit den Parametern verbindung, max und client vom Typ Socket, Zahl und KlientenAddresse Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "das nächste maximal <max> Bytes große Packet aus <verbindung> von <client>",
+    "dem nächsten maximal <max> Bytes großen Packet aus <verbindung> von <client>"
+
+Die oeffentliche Funktion Socket_Empfangen_Von_Ohne_Klient mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt einen Text zurück, macht:
+    Die KlientenAddresse client ist eine leere KlientenAddresse.
+    Gib das nächste maximal max Bytes große Packet aus verbindung zurück.
+Und kann so benutzt werden:
+    "das nächste maximal <max> Bytes große Packet aus <verbindung>",
+    "dem nächsten maximal <max> Bytes großen Packet aus <verbindung>"
