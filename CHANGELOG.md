@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] Duden/Netzwerk stellt Typen und Funktionen für (low-level) TCP und UDP Kommunikation zur Verfügung.
+- [Fix] Konstanten können nun nicht mehr in Zuweisungen oder als Referenzen verwendet werden
 - [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
 - [Fix] Bug in Duden/Listen -> Elementweise_Quotient_Kommazahl wurde in der generischen Implementation behoben
 - [Breaking] Duden/Sortierung, Duden/HashTabelle und Duden/Listen verwenden nun generische Funktionen und Kombinationen
