@@ -20,7 +20,11 @@ static_assert(sizeof(ddpchar) == sizeof(int), "sizeof(ddpchar) == sizeof(int)");
 
 static_assert(AF_UNSPEC == 0, "AF_UNSPEC == 0");
 static_assert(AF_INET == 2, "AF_INET == 2");
+#ifdef DDPOS_WINDOWS
+static_assert(AF_INET6 == 23, "AF_INET6 == 23");
+#else
 static_assert(AF_INET6 == 10, "AF_INET6 == 10");
+#endif // DDPOS_WINDOWS
 
 static_assert(SOCK_STREAM == 1, "SOCK_STREAM == 1");
 static_assert(SOCK_DGRAM == 2, "SOCK_DGRAM == 2");

@@ -4,6 +4,7 @@
 
 Binde "Duden/C" ein.
 Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Laufzeit" ein.
 
 Wir definieren eine AddressInfo öffentlich als einen Zeiger.
 
@@ -40,12 +41,16 @@ einen Socket.
 Der öffentliche C_int IPV4_ODER_IPV6 ist 0 als Buchstabe als C_int.
 [ AF_INET ]
 Der öffentliche C_int IPV4 ist 2 als Buchstabe als C_int.
-[ AF_INET6 ]
-Der öffentliche C_int IPV6 ist 10 als Buchstabe als C_int.
 [ SOCK_STREAM ]
 Der öffentliche C_int TCP ist 1 als Buchstabe als C_int.
 [ SOCK_DGRAM ]
 Der öffentliche C_int UDP ist 2 als Buchstabe als C_int.
+
+[ AF_INET6 ]
+Die öffentliche Funktion AF_IPV6 gibt einen C_int zurück, macht:
+	Gib (26, falls das Betriebssystem gleich "Windows" ist, ansonsten 10) als Buchstabe als C_int zurück.
+Und kann so benutzt werden:
+	"IPV6"
 
 Die öffentliche Funktion Lade_AddressInfo mit den Parametern familie, typ, name und service vom Typ C_int, C_int, Text und Text, gibt eine AddressInfo zurück,
 ist in "libddpstdlib.a" definiert

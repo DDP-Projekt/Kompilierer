@@ -1,0 +1,44 @@
+Binde "Duden/Netzwerk" ein.
+Binde "Duden/Fehlerbehandlung" ein.
+Binde "Duden/Texte" ein.
+Binde "Duden/Ausgabe" ein.
+Binde "Duden/Zeit" ein.
+
+Warte 1,5 Sekunden.
+
+Schreibe ab jetzt alle Fehler.
+
+Der Socket sock ist ein TCP Socket.
+
+Verbinde sock mit "localhost" 8080.
+
+Sende "hallo" über sock.
+Sende "nochmal hallo" über sock.
+
+Der Text daten ist maximal 1024 Bytes aus sock.
+
+Schreibe daten.
+
+Schließe sock.
+
+Schreibe '\n'.
+
+[ UDP ]
+
+Speichere einen UDP Socket in sock.
+Setze sock auf "localhost" 8081.
+
+Die AddressInfo info ist die AddressInfo der Familie IPV4 vom Typ UDP für den Namen "localhost" und den Service "8080".
+
+Sende "hallo" über sock an info.
+Sende "hallo udp" über sock an info.
+
+Der Text nachricht ist das nächste maximal 1024 Bytes große Packet aus sock.
+Schreibe nachricht.
+Sende nachricht über sock an info.
+
+Der Text nachricht2 ist das nächste maximal 1024 Bytes große Packet aus sock.
+Schreibe nachricht2.
+Sende nachricht2 über sock an info.
+
+Schließe sock.
