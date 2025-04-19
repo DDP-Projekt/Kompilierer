@@ -23,6 +23,7 @@ Schließe sock.
 
 Schreibe '\n'.
 
+Warte 1,5 Sekunden.
 [ UDP ]
 
 Speichere einen UDP Socket in sock.
