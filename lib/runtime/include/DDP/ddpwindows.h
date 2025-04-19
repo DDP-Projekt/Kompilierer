@@ -10,8 +10,14 @@
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
+
+#ifndef WINVER
 #define WINVER 0x0A00
+#endif // WINVER
+
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0A00
+#endif // _WIN32_WINNT
 
 #include <Windows.h>
 
