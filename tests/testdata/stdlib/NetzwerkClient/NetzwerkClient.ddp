@@ -10,7 +10,7 @@ Schreibe ab jetzt alle Fehler.
 
 Der Socket sock ist ein TCP Socket.
 
-Verbinde sock mit "localhost" 8080.
+Verbinde sock mit "localhost" 1904.
 
 Sende "hallo" über sock.
 Sende "nochmal hallo" über sock.
@@ -26,9 +26,9 @@ Schreibe '\n'.
 [ UDP ]
 
 Speichere einen UDP Socket in sock.
-Setze sock auf "localhost" 8081.
+Setze sock auf "localhost" 1905.
 
-Die AddressInfo info ist die AddressInfo der Familie IPV4 vom Typ UDP für den Namen "localhost" und den Service "8080".
+Die AddressInfo info ist die AddressInfo der Familie IPV4 vom Typ UDP für den Namen "localhost" und den Service "1904".
 
 Sende "hallo" über sock an info.
 Sende "hallo udp" über sock an info.

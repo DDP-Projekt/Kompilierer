@@ -7,7 +7,7 @@ Schreibe ab jetzt alle Fehler.
 
 Der Socket sock ist ein TCP Socket.
 
-Setze sock auf "localhost" 8080.
+Setze sock auf "localhost" 1904.
 Lass sock auf maximal 1 Verbindung warten.
 
 Der Socket verbindung ist die nächste Verbindung auf sock.
@@ -30,9 +30,9 @@ Schreibe '\n'.
 [ UDP ]
 
 Speichere einen UDP Socket in sock.
-Setze sock auf "localhost" 8080.
+Setze sock auf "localhost" 1904.
 
-Die AddressInfo info ist die AddressInfo der Familie IPV4 vom Typ UDP für den Namen "localhost" und den Service "8081".
+Die AddressInfo info ist die AddressInfo der Familie IPV4 vom Typ UDP für den Namen "localhost" und den Service "1905".
 
 Der Text nachricht ist das nächste maximal 1024 Bytes große Packet aus sock.
 Schreibe nachricht.
