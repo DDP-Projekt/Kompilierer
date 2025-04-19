@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Fix] Duden/Uri parset nun absolute Uris der Form /pfad?query korrekt
 - [Neu] Duden/Netzwerk stellt Typen und Funktionen für (low-level) TCP und UDP Kommunikation zur Verfügung.
 - [Fix] Konstanten können nun nicht mehr in Zuweisungen oder als Referenzen verwendet werden
 - [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
