@@ -126,7 +126,7 @@ void Socket_Binden(const ddpsocket *sock, struct addrinfo *info) {
 
 void Socket_Verbinden(const ddpsocket *sock, struct addrinfo *info) {
 	for (struct addrinfo *p = info; p != NULL; p = p->ai_next) {
-		if (bind(sock->fd, info->ai_addr, info->ai_addrlen) < 0) {
+		if (connect(sock->fd, info->ai_addr, info->ai_addrlen) < 0) {
 			ddp_error("connect Fehler: ", true);
 		} else {
 			break;
@@ -136,7 +136,7 @@ void Socket_Verbinden(const ddpsocket *sock, struct addrinfo *info) {
 
 void Socket_Zuhoeren(const ddpsocket *sock, ddpint backlog) {
 	if (listen(sock->fd, (int)backlog) < 0) {
-		ddp_error("connect Fehler: ", true);
+		ddp_error("listen Fehler: ", true);
 	}
 }
 

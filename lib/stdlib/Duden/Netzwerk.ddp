@@ -180,7 +180,7 @@ und kann so benutzt werden:
 
 Die öffentliche Funktion Socket_Empfangen_Von_Ohne_Klient mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt einen Text zurück, macht:
     Die KlientenAddresse client ist eine leere KlientenAddresse.
-    Gib das nächste maximal max Bytes große Packet aus verbindung zurück.
+    Gib das nächste maximal max Bytes große Packet aus verbindung von client zurück.
 Und kann so benutzt werden:
     "das nächste maximal <max> Bytes große Packet aus <verbindung>",
     "dem nächsten maximal <max> Bytes großen Packet aus <verbindung>"
