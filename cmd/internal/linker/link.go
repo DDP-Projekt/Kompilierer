@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/cmd/internal/gcc"
@@ -138,6 +139,9 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	args = append(args, "-llzma")
 	args = append(args, "-lbz2")
 	args = append(args, "-llz4")
+	if runtime.GOOS == "windows" {
+		args = append(args, "-lws2_32")
+	}
 
 	// add additional gcc-flags such as other needed libraries
 	if options.GCCFlags != "" {
