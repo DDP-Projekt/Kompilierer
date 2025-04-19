@@ -1,13 +1,19 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
+#include "DDP/ddpwindows.h"
 #include "DDP/error.h"
-#include <arpa/inet.h>
 #include <assert.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#ifdef DDPOS_WINDOWS
+#include <WS2tcpip.h>
+#else
+#include <arpa/inet.h>
+#endif // DDPOS_WINDOWS
 
 static_assert(sizeof(ddpchar) == sizeof(int), "sizeof(ddpchar) == sizeof(int)");
 
