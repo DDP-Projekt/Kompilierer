@@ -96,6 +96,10 @@ void Schließe_Socket_Windows(ddpsocket *sock) {
 
 void Schließe_Socket_Windows(ddpsocket *sock) {}
 
+ddpbool Init_Windows(void) {
+	return true;
+}
+
 #endif // DDPOS_WINDOWS
 
 struct addrinfo *Lade_AddressInfo(int family, int type, const ddpstring *name, const ddpstring *service) {
