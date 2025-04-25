@@ -6,6 +6,13 @@ Binde "Duden/C" ein.
 Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Laufzeit" ein.
 
+Die Funktion Init_Windows gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"windows sockets initialisiert wurden"
+
+Der Wahrheitswert windows_initialisiert ist wahr, wenn windows sockets initialisiert wurden.
+
 Wir definieren eine AddressInfo öffentlich als einen Zeiger.
 
 Wir nennen die öffentliche Kombination aus
@@ -84,8 +91,14 @@ Und kann so benutzt werden:
     "ein <typ> Socket",
     "einen <typ> Socket"
 
+Die Funktion Schließe_Socket_Windows mit dem Parameter sock vom Typ Socket, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"schließe <sock> unter Windows"
+
 Die öffentliche Funktion Schließe_Socket mit dem Parameter sock vom Typ Socket, gibt nichts zurück, macht:
-    Schließe (fd von sock).
+	Wenn das Betriebssystem gleich "Windows" ist, schließe sock unter Windows.
+	Sonst schließe (fd von sock).
 Und kann so benutzt werden:
     "Schließe <sock>"
 

@@ -62,6 +62,42 @@ typedef struct ddpsocket {
 	int type;
 } ddpsocket;
 
+#ifdef DDPOS_WINDOWS
+
+static void cleanup_winsock(void) {
+	WSACleanup();
+}
+
+ddpbool Init_Windows(void) {
+	WSADATA wsaData;
+
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		ddp_error("WSAStartup failed", false);
+		return false;
+	}
+
+	if (LOBYTE(wsaData.wVersion) != 2 ||
+		HIBYTE(wsaData.wVersion) != 2) {
+		ddp_error("Version 2.2 of Winsock not available", false);
+		WSACleanup();
+		return false;
+	}
+
+	atexit(cleanup_winsock);
+
+	return true;
+}
+
+void Schließe_Socket_Windows(ddpsocket *sock) {
+	closesocket(sock->fd);
+}
+
+#else
+
+void Schließe_Socket_Windows(ddpsocket) {}
+
+#endif // DDPOS_WINDOWS
+
 struct addrinfo *Lade_AddressInfo(int family, int type, const ddpstring *name, const ddpstring *service) {
 	int status;
 	struct addrinfo hints;
