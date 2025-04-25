@@ -94,7 +94,7 @@ void Schließe_Socket_Windows(ddpsocket *sock) {
 
 #else
 
-void Schließe_Socket_Windows(ddpsocket) {}
+void Schließe_Socket_Windows(ddpsocket *sock) {}
 
 #endif // DDPOS_WINDOWS
 
