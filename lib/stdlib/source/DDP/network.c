@@ -229,7 +229,7 @@ void Socket_Empfangen(ddpstring *ret, ddpsocket *sock, const ddpint max) {
 ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpstring *data, const ddpsockaddr_storage *client) {
 	ddpint sent = 0;
 	if ((sent = (ddpint)sendto(sock->fd, data->str, data->cap - 1, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
-		ddp_error("send Fehler: ", true);
+		ddp_error("sendto Fehler: ", true);
 	}
 
 	return sent;
@@ -249,7 +249,7 @@ void Socket_Empfangen_Von(ddpstring *ret, ddpsocket *sock, ddpint max, ddpsockad
 	if (got < 0) {
 		*ret = DDP_EMPTY_STRING;
 		DDP_FREE_ARRAY(char, buf, max + 1);
-		ddp_error("recv Fehler: ", true);
+		ddp_error("recvfrom Fehler: ", true);
 		return;
 	}
 	ret->str = buf;
