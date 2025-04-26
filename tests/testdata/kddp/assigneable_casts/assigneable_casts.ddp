@@ -1,0 +1,57 @@
+Binde "Duden/Ausgabe" ein.
+
+Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurück, macht:
+	Speichere 42 in z.
+Und kann so benutzt werden:
+	"foo <z>"
+
+Die Zahl z ist 1.
+foo (z als Zahl).
+Schreibe z auf eine Zeile.
+
+Wir definieren eine Hausnummer als eine Zahl.
+
+Die Hausnummer h ist 1 als Hausnummer.
+foo (h als Zahl).
+Schreibe (h als Zahl) auf eine Zeile.
+
+Die Funktion bar mit den Parametern z und w vom Typ Zahlen Referenz und Zahl, gibt eine Zahl zurück, macht:
+	Speichere w in z.
+	Gib z zurück.
+Und überlädt den "an der Stelle" Operator.
+
+Schreibe (z an der Stelle 5) auf eine Zeile.
+Schreibe z auf eine Zeile.
+
+Schreibe (h als Zahl an der Stelle 5) auf eine Zeile.
+Schreibe (h als Zahl) auf eine Zeile.
+
+
+[ selber test aber mit einem heap-allokierten Typ ]
+
+
+Wir definieren eine Buchstabenfolge als einen Text.
+
+Die Funktion foo2 mit dem Parameter z vom Typ Text Referenz, gibt nichts zurück, macht:
+	Speichere "tschüss" in z.
+Und kann so benutzt werden:
+	"foo2 <z>"
+
+Der Text t ist "hallo".
+foo2 (t als Text).
+Schreibe t auf eine Zeile.
+
+Die Buchstabenfolge b ist "hallo" als Buchstabenfolge.
+foo2 (b als Text).
+Schreibe (b als Text) auf eine Zeile.
+
+Die Funktion bar2 mit den Parametern z und w vom Typ Text Referenz und Text, gibt einen Text zurück, macht:
+	Speichere w in z.
+	Gib z zurück.
+Und überlädt den "an der Stelle" Operator.
+
+Schreibe (t an der Stelle "test") auf eine Zeile.
+Schreibe t auf eine Zeile.
+
+Schreibe (b als Text an der Stelle "test") auf eine Zeile.
+Schreibe (b als Text) auf eine Zeile.

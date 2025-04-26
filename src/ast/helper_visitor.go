@@ -352,6 +352,14 @@ func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	return h.visitChildren(result, expr.Lhs)
 }
 
+func (h *helperVisitor) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
+	result := VisitRecurse
+	if vis, ok := h.actualVisitor.(CastAssigneableVisitor); ok {
+		result = vis.VisitCastAssigneable(expr)
+	}
+	return h.visitChildren(result, expr.Lhs)
+}
+
 func (h *helperVisitor) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(TypeOpExprVisitor); ok {
