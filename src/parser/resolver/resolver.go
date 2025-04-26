@@ -377,6 +377,8 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 		r.visit(assign.Index)
 	case *ast.FieldAccess:
 		r.visit(assign.Rhs)
+	case *ast.CastAssigneable:
+		r.visit(assign.Lhs)
 	}
 	r.visit(stmt.Rhs)
 	return ast.VisitRecurse

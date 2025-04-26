@@ -148,6 +148,8 @@ func doesReferenceVarMutable(expr ast.Expression, decls []*ast.VarDecl) []*ast.V
 		return doesReferenceVarMutable(ass.Lhs, decls)
 	case *ast.FieldAccess:
 		return doesReferenceVarMutable(ass.Rhs, decls)
+	case *ast.CastAssigneable:
+		return doesReferenceVarMutable(ass.Lhs, decls)
 	default:
 		return decls // better safe than sorry
 	}

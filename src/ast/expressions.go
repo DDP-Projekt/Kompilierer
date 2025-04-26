@@ -177,26 +177,26 @@ type (
 	}
 )
 
-func (expr *BadExpr) node()       {}
-func (expr *Ident) node()         {}
-func (expr *Indexing) node()      {}
-func (expr *FieldAccess) node()   {}
-func (expr *IntLit) node()        {}
-func (expr *FloatLit) node()      {}
-func (expr *BoolLit) node()       {}
-func (expr *CharLit) node()       {}
-func (expr *StringLit) node()     {}
-func (expr *ListLit) node()       {}
-func (expr *UnaryExpr) node()     {}
-func (expr *BinaryExpr) node()    {}
-func (expr *TernaryExpr) node()   {}
-func (expr *CastExpr) node()      {}
-func (expr *CastAssigneable) node()      {}
-func (expr *TypeOpExpr) node()    {}
-func (expr *TypeCheck) node()     {}
-func (expr *Grouping) node()      {}
-func (expr *FuncCall) node()      {}
-func (expr *StructLiteral) node() {}
+func (expr *BadExpr) node()         {}
+func (expr *Ident) node()           {}
+func (expr *Indexing) node()        {}
+func (expr *FieldAccess) node()     {}
+func (expr *IntLit) node()          {}
+func (expr *FloatLit) node()        {}
+func (expr *BoolLit) node()         {}
+func (expr *CharLit) node()         {}
+func (expr *StringLit) node()       {}
+func (expr *ListLit) node()         {}
+func (expr *UnaryExpr) node()       {}
+func (expr *BinaryExpr) node()      {}
+func (expr *TernaryExpr) node()     {}
+func (expr *CastExpr) node()        {}
+func (expr *CastAssigneable) node() {}
+func (expr *TypeOpExpr) node()      {}
+func (expr *TypeCheck) node()       {}
+func (expr *Grouping) node()        {}
+func (expr *FuncCall) node()        {}
+func (expr *StructLiteral) node()   {}
 
 func (expr *BadExpr) String() string         { return "BadExpr" }
 func (expr *Ident) String() string           { return "Ident" }

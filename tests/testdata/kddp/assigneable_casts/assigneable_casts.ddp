@@ -1,5 +1,21 @@
 Binde "Duden/Ausgabe" ein.
 
+Wir definieren eine Hausnummer als eine Zahl.
+Wir definieren eine Buchstabenfolge als einen Text.
+
+Die Zahl zahl1 ist 1.
+Speichere 2 in zahl1 als Zahl.
+Schreibe zahl1 auf eine Zeile.
+
+Die Hausnummer hausnummer1 ist 1 als Hausnummer.
+[ 
+Sollte eigentlich
+	Speichere 2 als Hausnummer in hausnummer1.
+sein, aber für diesen Test nun mal so.
+]
+Speichere 2 in hausnummer1 als Zahl.
+Schreibe (hausnummer1 als Zahl) auf eine Zeile.
+
 Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurück, macht:
 	Speichere 42 in z.
 Und kann so benutzt werden:
@@ -9,7 +25,6 @@ Die Zahl z ist 1.
 foo (z als Zahl).
 Schreibe z auf eine Zeile.
 
-Wir definieren eine Hausnummer als eine Zahl.
 
 Die Hausnummer h ist 1 als Hausnummer.
 foo (h als Zahl).
@@ -28,9 +43,6 @@ Schreibe (h als Zahl) auf eine Zeile.
 
 
 [ selber test aber mit einem heap-allokierten Typ ]
-
-
-Wir definieren eine Buchstabenfolge als einen Text.
 
 Die Funktion foo2 mit dem Parameter z vom Typ Text Referenz, gibt nichts zurück, macht:
 	Speichere "tschüss" in z.
