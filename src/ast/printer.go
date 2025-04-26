@@ -235,6 +235,11 @@ func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
 	return VisitRecurse
 }
 
+func (pr *printer) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
+	pr.parenthesizeNode(fmt.Sprintf("CastAssigneable[%s]", expr.TargetType), expr.Lhs)
+	return VisitRecurse
+}
+
 func (pr *printer) VisitTypeOpExpr(expr *TypeOpExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("TypeOpExpr[%s]: %s", expr.Operator, expr.Rhs))
 	return VisitRecurse

@@ -16,12 +16,24 @@ func isAssignable(expr ast.Expression) (ast.Assigneable, bool) {
 		return isAssignable(ass.Expr)
 	case *ast.BinaryExpr:
 		return isBinaryExprAssignable(ass)
+	case *ast.CastExpr:
+		// overloaded expressions cannot be assignables
+		if ass.OverloadedBy != nil {
+			return nil, false
+		}
+
+		return isAssignable(ass.Lhs)
 	default:
 		return nil, false
 	}
 }
 
 func isBinaryExprAssignable(expr *ast.BinaryExpr) (ast.Assigneable, bool) {
+	// overloaded expressions cannot be assignables
+	if expr.OverloadedBy != nil {
+		return nil, false
+	}
+
 	switch expr.Operator {
 	case ast.BIN_FIELD_ACCESS:
 		ident, isIdent := expr.Lhs.(*ast.Ident)
@@ -44,8 +56,6 @@ func isBinaryExprAssignable(expr *ast.BinaryExpr) (ast.Assigneable, bool) {
 				Index: expr.Rhs,
 			}, true
 		}
-	default:
-		return nil, false
 	}
 	return nil, false
 }

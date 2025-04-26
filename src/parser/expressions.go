@@ -786,6 +786,17 @@ func (p *parser) assigneable() ast.Assigneable {
 
 		var ass ast.Assigneable = ident
 
+		for p.matchAny(token.ALS) {
+			ass = &ast.CastAssigneable{
+				Range: token.Range{
+					Start: ass.GetRange().Start,
+					End:   token.NewEndPos(p.previous()),
+				},
+				TargetType: p.parseType(false),
+				Lhs:        ass,
+			}
+		}
+
 		for p.matchAny(token.VON) {
 			if p.matchAny(token.IDENTIFIER) {
 				rhs := assigneable_impl(true)
@@ -806,7 +817,7 @@ func (p *parser) assigneable() ast.Assigneable {
 		if !isInFieldAcess {
 			for p.matchAny(token.AN) {
 				p.consumeSeq(token.DER, token.STELLE)
-				index := p.unary() // TODO: check if this can stay p.expression or if p.unary is better
+				index := p.unary()
 				ass = &ast.Indexing{
 					Lhs:   ass,
 					Index: index,

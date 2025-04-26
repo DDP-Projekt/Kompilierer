@@ -1795,6 +1795,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) VisitCastAssigneable(e *ast.CastAssigneable) ast.VisitResult {
+	c.evaluate(&ast.CastExpr{Lhs: e.Lhs, TargetType: e.TargetType, Range: e.Range})
+	return ast.VisitRecurse
+}
+
 func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 	switch e.Operator {
 	case ast.TYPE_SIZE:
@@ -1879,6 +1884,8 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		} else {
 			c.err("non-struct type passed to FieldAccess")
 		}
+	case *ast.CastAssigneable:
+		return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
 	}
 	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
 	return nil, nil, nil

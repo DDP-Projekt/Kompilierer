@@ -566,6 +566,15 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (t *Typechecker) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
+	lhs := t.Evaluate(expr.Lhs)
+	if !ddptypes.Equal(ddptypes.TrueUnderlying(lhs), ddptypes.TrueUnderlying(expr.TargetType)) {
+		t.err(ddperror.TYP_BAD_CAST, expr.GetRange(), "Falsche Nutzung einer Typumwandlung in einem Referenz Kontext")
+	}
+	t.latestReturnedType = expr.TargetType
+	return ast.VisitRecurse
+}
+
 func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	switch expr.Operator {
 	case ast.TYPE_SIZE:
