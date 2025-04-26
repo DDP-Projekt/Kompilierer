@@ -51,6 +51,7 @@ type FullVisitor interface {
 	BinaryExprVisitor
 	TernaryExprVisitor
 	CastExprVisitor
+	CastAssigneableVisitor
 	TypeOpExprVisitor
 	TypeCheckVisitor
 	GroupingVisitor
@@ -165,6 +166,10 @@ type (
 	CastExprVisitor interface {
 		Visitor
 		VisitCastExpr(*CastExpr) VisitResult
+	}
+	CastAssigneableVisitor interface {
+		Visitor
+		VisitCastAssigneable(*CastAssigneable) VisitResult
 	}
 	TypeOpExprVisitor interface {
 		Visitor
@@ -439,6 +444,15 @@ var _ CastExprVisitor = (CastExprVisitorFunc)(nil)
 
 func (CastExprVisitorFunc) Visitor() {}
 func (f CastExprVisitorFunc) VisitCastExpr(expr *CastExpr) VisitResult {
+	return f(expr)
+}
+
+type CastAssigneableVisitorFunc func(*CastAssigneable) VisitResult
+
+var _ CastAssigneableVisitor = (CastAssigneableVisitorFunc)(nil)
+
+func (CastAssigneableVisitorFunc) Visitor() {}
+func (f CastAssigneableVisitorFunc) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
 	return f(expr)
 }
 

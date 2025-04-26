@@ -26,4 +26,33 @@ func TestIsAssignable(t *testing.T) {
 		Rhs:      &ast.Ident{},
 	}})
 	assert.True(ok)
+
+	_, ok = isAssignable(&ast.Grouping{Expr: &ast.BinaryExpr{
+		Lhs:      &ast.Ident{},
+		Operator: ast.BIN_FIELD_ACCESS,
+		Rhs:      &ast.CastExpr{Lhs: &ast.Ident{}},
+	}})
+	assert.True(ok)
+
+	_, ok = isAssignable(&ast.Grouping{Expr: &ast.BinaryExpr{
+		Lhs:      &ast.Ident{},
+		Operator: ast.BIN_FIELD_ACCESS,
+		Rhs:      &ast.CastExpr{Lhs: &ast.IntLit{}},
+	}})
+	assert.False(ok)
+
+	_, ok = isAssignable(&ast.BinaryExpr{
+		Lhs:          &ast.Ident{},
+		Operator:     ast.BIN_FIELD_ACCESS,
+		Rhs:          &ast.Ident{},
+		OverloadedBy: &ast.OperatorOverload{},
+	})
+	assert.False(ok)
+
+	_, ok = isAssignable(&ast.Grouping{Expr: &ast.BinaryExpr{
+		Lhs:      &ast.Ident{},
+		Operator: ast.BIN_FIELD_ACCESS,
+		Rhs:      &ast.CastExpr{Lhs: &ast.Ident{}, OverloadedBy: &ast.OperatorOverload{}},
+	}})
+	assert.False(ok)
 }

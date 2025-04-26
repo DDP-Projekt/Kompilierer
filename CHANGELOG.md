@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] Typanpassende Ausdrücke können nun als Referenzen übergeben werden, solange sie nur Typaliase bzw. Typdefinitionen behandeln
 - [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
 - [Fix] Bug in Duden/Listen -> Elementweise_Quotient_Kommazahl wurde in der generischen Implementation behoben
 - [Breaking] Duden/Sortierung, Duden/HashTabelle und Duden/Listen verwenden nun generische Funktionen und Kombinationen
