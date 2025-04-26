@@ -440,7 +440,13 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 			}
 
 			original := v.Literal
-			negMarkerEnd := (negMarkerStart + 2) + strings.IndexRune(v.Literal[negMarkerStart+2:], '>') + 1
+			negMarkerEndIndex := strings.IndexRune(v.Literal[negMarkerStart+2:], '>')
+			if negMarkerEndIndex < 0 {
+				p.err(ddperror.SEM_ALIAS_BAD_ARGS, v.Range, "Fehlendes Ende einer Aliasnegationsmarkierung")
+				continue
+			}
+
+			negMarkerEnd := (negMarkerStart + 2) + negMarkerEndIndex + 1
 
 			negatedV := *v
 			negatedV.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
