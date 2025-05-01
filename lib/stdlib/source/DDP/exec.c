@@ -168,20 +168,16 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 // then closes the pipe
 // returns the new size of out
 static void read_pipe(int fd, ddpstringref out) {
+	// TODO
 	ddp_free_string(out);
 
 	*out = DDP_EMPTY_STRING;
 	char buff[BUFF_SIZE];
 	int nread;
 	while ((nread = read(fd, buff, sizeof(buff))) > 0) {
-		out->str = ddp_reallocate(out->str, out->cap, out->cap + nread);
-		memcpy(&out->str[out->cap], buff, nread);
-		out->cap += nread;
+		ddp_strncat(out, buff, nread);
 	}
 	close(fd);
-	out->cap += 1;
-	out->str = ddp_reallocate(out->str, out->cap - 1, out->cap);
-	out->str[out->cap - 1] = '\0';
 }
 
 // executes path with the given args
@@ -224,11 +220,11 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 	const size_t argc = args->len + 1;
 	char **process_args = DDP_ALLOCATE(char *, argc + 1); // + 1 for the terminating NULL
 
-	process_args[0] = DDP_ALLOCATE(char, ddp_strlen(path) + 1);
-	strcpy(process_args[0], path->str);
+	process_args[0] = DDP_ALLOCATE(char, path->len + 1);
+	strcpy(process_args[0], DDP_STRING_DATA(path));
 	for (int i = 1; i < argc; i++) {
-		process_args[i] = DDP_ALLOCATE(char, strlen(args->arr[i - 1].str) + 1);
-		strcpy(process_args[i], args->arr[i - 1].str);
+		process_args[i] = DDP_ALLOCATE(char, args->arr[i - 1].len + 1);
+		strcpy(process_args[i], DDP_STRING_DATA(&args->arr[i - 1]));
 	}
 	process_args[argc] = NULL;
 
@@ -246,7 +242,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 		dup2(stdout_fd[WRITE_END], STDOUT_FILENO);
 		dup2(need_stderr ? stderr_fd[WRITE_END] : stdout_fd[WRITE_END], STDERR_FILENO);
 		dup2(stdin_fd[READ_END], STDIN_FILENO);
-		execvp(path->str, process_args);
+		execvp(DDP_STRING_DATA(path), process_args);
 		fprintf(stderr, "Fehler beim Starten des Unter Prozesses: %s", strerror(errno));
 		exit(COMMAND_NOT_FOUND);
 		return -1;
@@ -264,7 +260,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 		}
 		close(stdin_fd[READ_END]);
 
-		if (write(stdin_fd[WRITE_END], input->str, input->cap) < 0) {
+		if (write(stdin_fd[WRITE_END], DDP_STRING_DATA(input), input->len) < 0) {
 			ddp_error("Fehler beim schreiben der Eingabe: ", true);
 			return -1;
 		}
@@ -278,7 +274,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 		if (WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == COMMAND_NOT_FOUND) {
 			read_pipe((need_stderr ? stderr_fd : stdout_fd)[READ_END], erroutput);
-			ddp_error("Fehler beim Starten des Unter Prozesses: %s", false, erroutput->str);
+			ddp_error("Fehler beim Starten des Unter Prozesses: %s", false, DDP_STRING_DATA(erroutput));
 			ddp_free_string(erroutput);
 			*erroutput = (ddpstring){0};
 			return -1;

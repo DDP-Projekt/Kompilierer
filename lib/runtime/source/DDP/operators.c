@@ -9,34 +9,36 @@
 #include <stdlib.h>
 #include <string.h>
 
-ddpint ddp_string_length(ddpstring *str) {
+ddpint ddp_string_length(const ddpstring *str) {
 	if (ddp_string_empty(str)) {
 		return 0;
 	}
-	return (ddpint)utf8_strlen(str->str);
+	return (ddpint)utf8_strlen(DDP_STRING_DATA(str));
 }
 
-ddpchar ddp_string_index(ddpstring *str, ddpint index) {
+ddpchar ddp_string_index(const ddpstring *str, ddpint index) {
 	if (index < 1) {
 		ddp_runtime_error(1, "Texte fangen bei Index 1 an. Es wurde wurde versucht " DDP_INT_FMT " zu indizieren\n", index);
 	}
 
-	if (index > str->cap || str->cap <= 1) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(str->str));
+	const char *data = DDP_STRING_DATA(str);
+
+	if (index > str->len || str->len < 1) {
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(data));
 	}
 
 	size_t i = 0, len = index;
-	while (str->str[i] != 0 && len > 1) {
-		i += utf8_num_bytes(str->str + i);
+	while (data[i] != 0 && len > 1) {
+		i += utf8_num_bytes(data + i);
 		len--;
 	}
 
-	if (str->str[i] == 0) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(str->str));
+	if (&data[i] >= &data[str->len]) {
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(data));
 	}
 
 	uint32_t result;
-	utf8_string_to_char(str->str + i, &result);
+	utf8_string_to_char(&data[i], &result);
 	return (ddpchar)result;
 }
 
@@ -45,39 +47,67 @@ void ddp_replace_char_in_string(ddpstring *str, ddpchar ch, ddpint index) {
 		ddp_runtime_error(1, "Texte fangen bei Index 1 an. Es wurde wurde versucht " DDP_INT_FMT " zu indizieren\n", index);
 	}
 
-	if (index > str->cap || str->cap <= 1) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(str->str));
+	char *data = DDP_STRING_DATA(str);
+
+	if (index > str->len || str->len < 1) {
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(data));
 	}
 
 	size_t i = 0, len = index;
-	while (str->str[i] != 0 && len > 1) {
-		i += utf8_num_bytes(str->str + i);
+	while (data != 0 && len > 1) {
+		i += utf8_num_bytes(&data[i]);
 		len--;
 	}
 
-	if (str->str[i] == 0) {
-		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(str->str));
+	if (&data[i] >= &data[str->len]) {
+		ddp_runtime_error(1, "Index außerhalb der Text Länge (Index war " DDP_INT_FMT ", Text Länge war " DDP_INT_FMT ")\n", index, utf8_strlen(data));
 	}
 
-	size_t oldCharLen = utf8_num_bytes(str->str + i);
+	const size_t oldCharLen = utf8_num_bytes(&data[i]);
 	char newChar[5];
-	size_t newCharLen = utf8_char_to_string(newChar, ch);
+	const size_t newCharLen = utf8_char_to_string(newChar, ch);
 
-	if (oldCharLen == newCharLen) { // no need for allocations
-		memcpy(str->str + i, newChar, newCharLen);
+	if (oldCharLen == newCharLen) { // no length/cap changes
+		memcpy(&data[i], newChar, newCharLen);
 		return;
-	} else if (oldCharLen > newCharLen) { // no need for allocations
-		memcpy(str->str + i, newChar, newCharLen);
-		memmove(str->str + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
+	} else if (oldCharLen > newCharLen) { // only changes to length
+		memcpy(&data[i], newChar, newCharLen);
+		memmove(&data[i + newCharLen], &data[i + oldCharLen], str->len + 1 - i - oldCharLen);
+		str->len = str->len - oldCharLen + newCharLen;
+		return;
 	} else {
-		size_t newStrCap = str->cap - oldCharLen + newCharLen;
-		char *newStr = DDP_ALLOCATE(char, newStrCap);
-		memcpy(newStr, str->str, i); // copy everything before the new char
-		memcpy(newStr + i, newChar, newCharLen);
-		memcpy(newStr + i + newCharLen, str->str + i + oldCharLen, str->cap - i - oldCharLen);
-		DDP_FREE_ARRAY(char, str->str, str->cap);
-		str->cap = newStrCap;
-		str->str = newStr;
+		const size_t oldCap = DDP_STRING_CAP(str);
+		size_t newStrCap = str->len + 1 - oldCharLen + newCharLen;
+
+		// capacity is sufficient
+		if (newStrCap <= oldCap) {
+			memmove(&data[i + newCharLen], &data[i + oldCharLen], str->len + 1 - i - oldCharLen); // move old data after new char
+			memcpy(&data[i], newChar, newCharLen);												  // copy new char
+			str->len = newStrCap - 1;
+			return;
+		}
+
+		// we need to allocate
+
+		// small becomes large
+		if (newStrCap > DDP_SMALL_STRING_BUFF_SIZE) {
+			newStrCap = DDP_MAX(newStrCap, DDP_SMALL_ALLOCATION_SIZE);
+			char *newStr = DDP_ALLOCATE(char, newStrCap);
+			memcpy(newStr, data, i); // copy everything before the new char
+			memcpy(&newStr[i], newChar, newCharLen);
+			memcpy(&newStr[+i + newCharLen], &data[i + oldCharLen], str->len + 1 - i - oldCharLen);
+			str->len = str->len - oldCharLen + newCharLen;
+			return;
+		}
+
+		// large stays large
+		data = ddp_reallocate(data, oldCap, newStrCap);
+
+		memmove(&data[i + newCharLen], &data[i + oldCharLen], str->len + 1 - i - oldCharLen); // move old data after new char
+		memcpy(&data[i], newChar, newCharLen);												  // copy new char
+		str->len = newStrCap - 1;
+		str->large.cap = newStrCap;
+		str->large.str = data;
 	}
 }
 
@@ -94,7 +124,9 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 		return; // empty string can stay the same
 	}
 
-	size_t start_length = utf8_strlen(str->str);
+	char *data = DDP_STRING_DATA(str);
+
+	size_t start_length = utf8_strlen(data);
 	index1 = clamp(index1, 1, start_length);
 	index2 = clamp(index2, 1, start_length);
 	if (index2 < index1) {
@@ -104,22 +136,24 @@ void ddp_string_slice(ddpstring *ret, ddpstring *str, ddpint index1, ddpint inde
 	index1--, index2--; // ddp indices start at 1, c indices at 0
 
 	ddpint i1 = 0, len = 0;
-	while (str->str[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
+	while (data[i1] != 0 && len != index1) { // while not at null terminator && not at index 1
 		++len;
-		i1 += utf8_indicated_num_bytes(str->str[i1]);
+		i1 += utf8_indicated_num_bytes(data[i1]);
 	}
 
 	ddpint i2 = i1;
-	while (str->str[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
+	while (data[i2] != 0 && len != index2) { // while not at null terminator && not at index 2
 		++len;
-		i2 += utf8_indicated_num_bytes(str->str[i2]);
+		i2 += utf8_indicated_num_bytes(data[i2]);
 	}
 
-	ret->cap = (i2 - i1) + 1;				   // + 1 because null-terminator
-	ret->cap += utf8_num_bytes(str->str + i2); // + 1 because indices are inclusive
-	ret->str = ddp_reallocate(ret->str, 0, ret->cap);
-	memcpy(ret->str, str->str + i1, ret->cap - 1);
-	ret->str[ret->cap - 1] = '\0';
+	const size_t newCap = (i2 - i1) + 1 + utf8_num_bytes(&data[i2]); // + 1 because of the null-terminator, + i2 because indices are inclusive
+
+	const size_t oldTerminatorIndex = i1 + newCap - 1;
+	const char oldTerminator = data[oldTerminatorIndex];
+	data[oldTerminatorIndex] = '\0';
+	ddp_string_from_constant(ret, &data[i1]);
+	data[oldTerminatorIndex] = oldTerminator;
 }
 
 // concatenate two strings
@@ -140,10 +174,8 @@ void ddp_string_string_verkettet(ddpstring *ret, ddpstring *str1, ddpstring *str
 		return;
 	}
 
-	ret->cap = str1->cap - 1 + str2->cap;					   // remove 1 null-terminator
-	ret->str = ddp_reallocate(str1->str, str1->cap, ret->cap); // reallocate str1
-	memcpy(&ret->str[str1->cap - 1], str2->str, str2->cap);	   // append str2 and overwrite str1's null-terminator
-
+	ddp_strncat(str1, DDP_STRING_DATA(str2), str2->len);
+	*ret = *str1;
 	*str1 = DDP_EMPTY_STRING;
 }
 
@@ -164,11 +196,29 @@ void ddp_char_string_verkettet(ddpstring *ret, ddpchar c, ddpstring *str) {
 		return;
 	}
 
-	ret->cap = str->cap + num_bytes;
-	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
-	memmove(&ret->str[num_bytes], ret->str, str->cap);
-	memcpy(ret->str, temp, num_bytes);
+	const ddpint oldCap = DDP_STRING_CAP(str);
+	const ddpint newLen = num_bytes + str->len;
+	if (oldCap >= newLen + 1) {
+		char *data = DDP_STRING_DATA(str);
+		memmove(&data[num_bytes], data, str->len + 1);
+		memcpy(data, temp, num_bytes);
+		DDP_DBGLOG("verkettet: %s", data);
+		str->len = newLen;
+		*ret = *str;
+		*str = DDP_EMPTY_STRING;
+		return;
+	}
 
+	const ddpint newCap = newLen + 1;
+	// not enough capacity, so reallocate large string
+	str->large.str = ddp_reallocate(str->large.str, str->large.cap, newCap);
+	str->large.cap = newCap;
+
+	char *data = DDP_STRING_DATA(str);
+	memmove(&data[num_bytes], data, str->len + 1);
+	memcpy(data, temp, num_bytes);
+	str->len = newLen;
+	*ret = *str;
 	*str = DDP_EMPTY_STRING;
 }
 
@@ -189,11 +239,8 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 		return;
 	}
 
-	ret->cap = str->cap + num_bytes;
-	ret->str = ddp_reallocate(str->str, str->cap, ret->cap);
-	memcpy(&ret->str[str->cap - 1], temp, num_bytes);
-	ret->str[ret->cap - 1] = '\0';
-
+	ddp_strncat(str, temp, num_bytes);
+	*ret = *str;
 	*str = DDP_EMPTY_STRING;
 }
 
@@ -202,7 +249,7 @@ ddpint ddp_string_to_int(ddpstring *str) {
 		return 0; // empty string
 	}
 
-	return strtoll(str->str, NULL, 10); // cast the copy to int
+	return strtoll(DDP_STRING_DATA(str), NULL, 10); // cast the copy to int
 }
 
 ddpfloat ddp_string_to_float(ddpstring *str) {
@@ -210,79 +257,56 @@ ddpfloat ddp_string_to_float(ddpstring *str) {
 		return 0; // empty string
 	}
 
-	return strtod(str->str, NULL); // maybe works with comma seperator? We'll see
+	return strtod(DDP_STRING_DATA(str), NULL); // maybe works with comma seperator? We'll see
 }
 
 void ddp_int_to_string(ddpstring *ret, ddpint i) {
 	DDP_DBGLOG("_ddp_int_to_string: %p", ret);
 
-	char buffer[21];
-	int len = sprintf(buffer, DDP_INT_FMT, i);
+	char buffer[22];
+	sprintf(buffer, DDP_INT_FMT, i);
 
-	char *string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
-	memcpy(string, buffer, len);
-	string[len] = '\0';
-
-	// set the string fields
-	ret->str = string;
-	ret->cap = len + 1;
+	ddp_string_from_constant(ret, buffer);
 }
 
 void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
 	DDP_DBGLOG("_ddp_float_to_string: %p", ret);
 
-	char buffer[50];
-	int len = sprintf(buffer, DDP_FLOAT_FMT, f);
+	char buffer[51];
+	sprintf(buffer, DDP_FLOAT_FMT, f);
 
-	char *string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
-	memcpy(string, buffer, len);
-	string[len] = '\0';
-
-	// set the string fields
-	ret->str = string;
-	ret->cap = len + 1;
+	ddp_string_from_constant(ret, buffer);
 }
 
 void ddp_bool_to_string(ddpstring *ret, ddpbool b) {
 	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 
-	char *string;
-
 	if (b) {
-		ret->cap = 5;
-		string = DDP_ALLOCATE(char, 5);
-		memcpy(string, "wahr", 5);
+		ret->len = 4;
+		memcpy(ret->small.str, "wahr", 5);
 	} else {
-		ret->cap = 7;
-		string = DDP_ALLOCATE(char, 7);
-		memcpy(string, "falsch", 7);
+		ret->len = 6;
+		memcpy(ret->small.str, "falsch", 7);
 	}
-	ret->str = string;
 }
 
 void ddp_char_to_string(ddpstring *ret, ddpchar c) {
 	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 
-	char temp[5];
-	size_t num_bytes = utf8_char_to_string(temp, c);
+	size_t num_bytes = utf8_char_to_string(ret->small.str, c);
 	if (num_bytes == (size_t)-1) { // invalid utf8, string will be empty
 		num_bytes = 0;
 	}
-
-	char *string = DDP_ALLOCATE(char, num_bytes + 1);
-	memcpy(string, temp, num_bytes);
-	string[num_bytes] = '\0';
-
-	ret->cap = num_bytes + 1;
-	ret->str = string;
+	ret->len = num_bytes;
+	ret->small.str[num_bytes] = '\0';
 }
 
 ddpbool ddp_string_equal(ddpstring *str1, ddpstring *str2) {
 	if (str1 == str2) {
 		return true;
 	}
-	if (ddp_strlen(str1) != ddp_strlen(str2)) {
+	if (str1->len != str2->len) {
 		return false; // if the length is different, it's a quick false return
 	}
-	return memcmp(str1->str, str2->str, str1->cap) == 0;
+	return memcmp(DDP_STRING_DATA(str1), DDP_STRING_DATA(str2), str1->len) == 0;
 }

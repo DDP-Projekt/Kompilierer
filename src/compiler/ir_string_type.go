@@ -10,6 +10,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // implementation of ddpIrType for a ddpstring
@@ -58,8 +59,14 @@ func (*ddpIrStringType) IsPrimitive() bool {
 
 func (t *ddpIrStringType) DefaultValue() constant.Constant {
 	return constant.NewStruct(t.typ.(*types.StructType),
-		constant.NewNull(i8ptr),
 		zero,
+		// constant.NewArray(types.NewArray(ddp_small_string_buff_size, i8),
+		// 	i8_zero, i8_zero, i8_zero, i8_zero,
+		// 	i8_zero, i8_zero, i8_zero, i8_zero,
+		// 	i8_zero, i8_zero, i8_zero, i8_zero,
+		// 	i8_zero, i8_zero, i8_zero, i8_zero,
+		// ),
+		constant.NewZeroInitializer(types.NewArray(ddp_small_string_buff_size, i8)),
 	)
 }
 
@@ -84,21 +91,26 @@ func (t *ddpIrStringType) EqualsFunc() *ir.Func {
 }
 
 const (
-	string_str_field_index = 0
-	string_cap_field_index = 1
+	ddp_string_struct_size     = 24
+	ddp_small_string_buff_size = 16
+
+	string_len_field_index       = 0
+	string_small_str_field_index = 1
+	string_large_str_field_index = 1
+	string_large_cap_field_index = 2
 )
 
 func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 	ddpstring.typ = c.mod.NewTypeDef("ddpstring", types.NewStruct(
-		i8ptr,  // char* str
-		ddpint, // ddpint cap;
+		ddpint, // ddpint len;
+		types.NewArray(ddp_small_string_buff_size, i8),
 	))
 	ddpstring.ptr = ptr(ddpstring.typ)
 
 	ddpstring.llType = llvm.StructType([]llvm.Type{
-		llvm.PointerType(llvm.Int8Type(), 0),
 		llvm.Int64Type(),
+		llvm.ArrayType(llvm.Int8Type(), ddp_small_string_buff_size),
 	}, false)
 
 	// declare all the external functions to work with strings
@@ -160,4 +172,16 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.vtable = vtable
 
 	return ddpstring
+}
+
+func (c *compiler) string_data_ptr(str value.Value) value.Value {
+	len := c.loadStructField(str, string_len_field_index)
+	str_ptr := c.cbb.NewBitCast(c.indexStruct(str, string_small_str_field_index), i8ptr)
+	return c.createTernary(c.cbb.NewICmp(enum.IPredSLT, len, constant.NewInt(i8, ddp_small_string_buff_size)),
+		func() value.Value {
+			return str_ptr
+		},
+		func() value.Value {
+			return c.cbb.NewLoad(i8ptr, c.cbb.NewBitCast(str_ptr, ptr(i8ptr)))
+		})
 }

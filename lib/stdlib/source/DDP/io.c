@@ -13,7 +13,6 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 
 #ifdef DDPOS_WINDOWS
 #include <io.h>
@@ -49,11 +48,11 @@ void Schreibe_Buchstabe(ddpchar p1) {
 
 void Schreibe_Text(ddpstring *p1) {
 	// {NULL, 0} is a valid string, so we need to check for NULL
-	printf(DDP_STRING_FMT, p1->str ? p1->str : "");
+	printf(DDP_STRING_FMT, DDP_STRING_DATA(p1));
 }
 
 void Schreibe_Fehler(ddpstring *fehler) {
-	fprintf(stderr, DDP_STRING_FMT, fehler->str);
+	fprintf(stderr, DDP_STRING_FMT, DDP_STRING_DATA(fehler));
 }
 
 #ifdef DDPOS_WINDOWS

@@ -1,4 +1,3 @@
-#include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
 #include "DDP/sha-256-512.h"
 #include <stdio.h>
@@ -10,15 +9,15 @@ void SHA_256(ddpstring *ret, ddpstring *text) {
 	}
 
 	SHA256_HASH digest;
-	Sha256Calculate((char *)text->str, text->cap - 1, &digest);
+	Sha256Calculate(DDP_STRING_DATA(text), text->len, &digest);
 
+	char buff[SHA256_HASH_SIZE * 2 + 1];
 	// convert hash in buf to hex string and store in ret
-	ret->cap = SHA256_HASH_SIZE * 2 + 1;
-	ret->str = DDP_ALLOCATE(char, ret->cap);
 	for (int i = 0; i < SHA256_HASH_SIZE; i++) {
-		sprintf(ret->str + (i * 2), "%02x", digest.bytes[i]);
+		sprintf(buff + (i * 2), "%02x", digest.bytes[i]);
 	}
-	ret->str[ret->cap - 1] = '\0';
+	buff[sizeof(buff) - 1] = '\0';
+	ddp_string_from_constant(ret, buff);
 }
 
 void SHA_512(ddpstring *ret, ddpstring *text) {
@@ -28,13 +27,14 @@ void SHA_512(ddpstring *ret, ddpstring *text) {
 	}
 
 	SHA512_HASH digest;
-	Sha512Calculate((char *)text->str, text->cap - 1, &digest);
+	Sha512Calculate(DDP_STRING_DATA(text), text->len, &digest);
 
 	// convert hash in buf to hex string and store in ret
-	ret->cap = SHA512_HASH_SIZE * 2 + 1;
-	ret->str = DDP_ALLOCATE(char, ret->cap);
+	char buff[SHA512_HASH_SIZE * 2 + 1];
+	// convert hash in buf to hex string and store in ret
 	for (int i = 0; i < SHA512_HASH_SIZE; i++) {
-		sprintf(ret->str + (i * 2), "%02x", digest.bytes[i]);
+		sprintf(buff + (i * 2), "%02x", digest.bytes[i]);
 	}
-	ret->str[ret->cap - 1] = '\0';
+	buff[sizeof(buff) - 1] = '\0';
+	ddp_string_from_constant(ret, buff);
 }

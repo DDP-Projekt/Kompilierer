@@ -2447,10 +2447,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	if inTyp == c.ddpstring {
 		iter_ptr_type = i8ptr
 		iter_ptr = c.NewAlloca(iter_ptr_type)
-		iter_ptr_val := c.loadStructField(in, string_str_field_index)
+		iter_ptr_val := c.string_data_ptr(in)
 		c.cbb.NewStore(iter_ptr_val, iter_ptr)
-		length = c.loadStructField(in, string_cap_field_index)
-		end_ptr = c.indexArray(iter_ptr_val, c.cbb.NewSub(length, newInt(1)))
+		length = c.loadStructField(in, string_len_field_index)
+		end_ptr = c.indexArray(iter_ptr_val, length)
 	} else {
 		iter_ptr_type = inTyp.(*ddpIrListType).elementType.PtrType()
 		iter_ptr = c.NewAlloca(iter_ptr_type)

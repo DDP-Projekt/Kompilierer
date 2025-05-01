@@ -53,11 +53,11 @@ void ddp_init_runtime(int argc, char **argv) {
 	SetConsoleOutputCP(CP_UTF8);
 #else
 	setlocale(LC_ALL, "de_DE.UTF-8");
-#endif // DDPOS_WINDOWS
+#endif								// DDPOS_WINDOWS
 
 	signal(SIGSEGV, SignalHandler); // "catch" segfaults
 
-	handle_args(argc, argv); // turn the commandline args into a ddpstringlist
+	handle_args(argc, argv);		// turn the commandline args into a ddpstringlist
 }
 
 // end the runtime

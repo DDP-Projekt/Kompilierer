@@ -24,14 +24,10 @@ void Zeit_Lokal(ddpstring *ret) {
 
 	// format string
 	char buff[30];
-	int size = sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+	sprintf(buff, "%02d:%02d:%02d %02d.%02d.%02d", tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
 
 	// move buffer to dstr
-	size += 1;														// make room for null terminator
-	ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap + size); // add the read size to the string buffer
-	memcpy(ret->str + ret->cap, buff, size);						// copy the read data into the string
-	ret->cap += size;
-	ret->str[ret->cap - 1] = '\0';									// null terminator hinzufügen
+	ddp_string_from_constant(ret, buff);
 }
 
 // crossplatform sleep function

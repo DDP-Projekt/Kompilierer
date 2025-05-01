@@ -6,58 +6,104 @@
 
 // allocate and create a ddpstring from a constant char array
 // str must be null-terminated
-void ddp_string_from_constant(ddpstring *ret, char *str) {
+void ddp_string_from_constant(ddpstring *ret, const char *str) {
 	DDP_DBGLOG("_ddp_string_from_constant: ret: %p, str: %s", ret, str);
-	size_t size = strlen(str) + 1;
+	const size_t size = strlen(str) + 1;
 	if (size == 1) {
 		*ret = DDP_EMPTY_STRING;
 		return;
 	}
 
-	char *string = DDP_ALLOCATE(char, size); // the char array of the string (plus null terminator)
+	ret->len = size - 1;
+
+	if (size <= DDP_SMALL_STRING_BUFF_SIZE) {
+		memcpy(ret->small.str, str, size);
+		return;
+	}
+
+	// allocate some more to prevent future allocations
+	const size_t cap = DDP_MAX(size, DDP_SMALL_ALLOCATION_SIZE);
+	char *string = DDP_ALLOCATE(char, cap); // the char array of the string (plus null terminator)
 	// copy the passed char array
 	memcpy(string, str, size);
 
 	// set the string fields
-	ret->str = string;
-	ret->cap = size;
+	ret->large.str = string;
+	ret->large.cap = cap;
 }
 
 // free a ddpstring
-void ddp_free_string(ddpstring *str) {
+void ddp_free_string(const ddpstring *str) {
 	DDP_DBGLOG("free_string: %p", str);
-	DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
+	if (DDP_IS_LARGE_STRING(str)) {
+		DDP_DBGLOG("freeing large string: %p", str->large.str);
+		DDP_FREE_ARRAY(char, str->large.str, str->large.cap);
+	}
+	DDP_DBGLOG("freed small string: %p", str);
 }
 
 // allocate a new ddpstring as copy of str
-void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
+void ddp_deep_copy_string(ddpstring *ret, const ddpstring *str) {
 	DDP_DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
 	if (ret == str) {
 		return;
 	}
 
-	if (str->str == NULL) {
-		*ret = DDP_EMPTY_STRING;
+	if (DDP_IS_SMALL_STRING(str)) {
+		*ret = *str;
 		return;
 	}
 
-	char *cpy = DDP_ALLOCATE(char, str->cap); // allocate the char array for the copy
-	memcpy(cpy, str->str, str->cap);		  // copy the chars
+	// allocate some more to prevent future allocations
+	const size_t cap = DDP_MAX(str->len + 1, DDP_SMALL_ALLOCATION_SIZE);
+	char *cpy = DDP_ALLOCATE(char, cap);	   // allocate the char array for the copy
+	memcpy(cpy, str->large.str, str->len + 1); // copy the chars + null-terminator
 	// set the fields of the copy
-	ret->str = cpy;
-	ret->cap = str->cap;
+	ret->len = str->len;
+	ret->large.str = cpy;
+	ret->large.cap = cap;
 }
 
-// returns wether the length of str is 0
-ddpbool ddp_string_empty(ddpstring *str) {
-	return str->str == NULL || str->cap <= 0 || (str->str[0] == '\0');
+// returns wether the character length of str is 0
+ddpbool ddp_string_empty(const ddpstring *str) {
+	return str->len == 0;
 }
 
-ddpint ddp_strlen(ddpstring *str) {
-	if (str == NULL || str->str == NULL) {
-		return 0;
+// appends data to the given string and takes care of small vs large strings
+void ddp_strncat(ddpstring *str, const char *data, size_t n) {
+	const ddpint oldCap = DDP_STRING_CAP(str);
+	const ddpint newLen = str->len + n;
+
+	char *oldData = DDP_STRING_DATA(str);
+
+	// no need to allocate
+	if (newLen < oldCap) {
+		memcpy(&oldData[str->len], data, n);
+		str->len = newLen;
+		oldData[str->len] = '\0';
+		return;
 	}
-	return strlen(str->str);
+
+	const size_t newCap = DDP_MAX(newLen + 1, DDP_SMALL_ALLOCATION_SIZE);
+
+	// small becomes large
+	if (DDP_IS_SMALL_STRING(str)) {
+		char *newData = DDP_ALLOCATE(char, newCap); // allocate the char array for the copy
+		memcpy(newData, oldData, str->len);
+		memcpy(&newData[str->len], data, n);
+		str->len = newLen;
+		newData[str->len] = '\0';
+		str->large.str = newData;
+		str->large.cap = newCap;
+		return;
+	}
+
+	// large stays large
+	str->large.str = ddp_reallocate(str->large.str, str->large.cap, newCap);
+	str->large.cap = newCap;
+	memcpy(&str->large.str[str->len], data, n);
+	str->len = newLen;
+	str->large.str[str->len] = '\0';
 }
 
 extern ddpvtable ddpint_vtable;

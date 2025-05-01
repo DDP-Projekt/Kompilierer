@@ -124,19 +124,19 @@ void Archiv_Aus_Dateien(ddpint typ, ddpstringlist *dateiPfade, ddpstring *arPfad
 		return;
 	}
 
-	struct archive *a = createArchive(arPfad->str, (int)typ);
+	struct archive *a = createArchive(DDP_STRING_DATA(arPfad), (int)typ);
 	if (!a) {
 		return;
 	}
 
 	for (int i = 0; i < dateiPfade->len; i++) {
-		if (dateiPfade->arr[i].str == NULL) {
+		if (ddp_string_empty(&dateiPfade->arr[i])) {
 			ddp_error("Fehler: Leerer Dateipfad", false);
 			archive_write_free(a);
 			return;
 		}
 
-		if (!createEntry(a, dateiPfade->arr[i].str)) {
+		if (!createEntry(a, DDP_STRING_DATA(&dateiPfade->arr[i]))) {
 			return;
 		}
 	}
@@ -159,7 +159,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 		return;
 	}
 
-	struct archive *a = createArchive(arPfad->str, (int)typ);
+	struct archive *a = createArchive(DDP_STRING_DATA(arPfad), (int)typ);
 	if (!a) {
 		return;
 	}
@@ -173,7 +173,7 @@ void Archiv_Aus_Ordner(ddpint typ, ddpstring *ordnerPfad, ddpstring *arPfad) {
 
 	archive_read_disk_set_standard_lookup(disk);
 
-	if (archive_read_disk_open(disk, ordnerPfad->str) != ARCHIVE_OK) {
+	if (archive_read_disk_open(disk, DDP_STRING_DATA(ordnerPfad)) != ARCHIVE_OK) {
 		ddp_error("Komprimierungsfehler bei archive_read_disk_open(): " DDP_STRING_FMT, false, archive_error_string(disk));
 		archive_read_free(disk);
 		archive_write_free(a);
@@ -231,7 +231,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		return;
 	}
 
-	struct archive *a = openArchive(arPfad->str);
+	struct archive *a = openArchive(DDP_STRING_DATA(arPfad));
 	if (!a) {
 		return;
 	}
@@ -256,7 +256,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		if (dateiPfade->len != 0) {
 			bool found = false;
 			for (int i = 0; i < dateiPfade->len; i++) {
-				if (!ddp_string_empty(&dateiPfade->arr[i]) && !strcmp(archive_entry_pathname(entry), dateiPfade->arr[i].str)) {
+				if (!ddp_string_empty(&dateiPfade->arr[i]) && !strcmp(archive_entry_pathname(entry), DDP_STRING_DATA(&dateiPfade->arr[i]))) {
 					found = true;
 					break;
 				}
@@ -270,7 +270,7 @@ void Archiv_Entpacken_Dateien_Pfad(ddpstringlist *dateiPfade, ddpstring *arPfad,
 		if (!ddp_string_empty(ordnerPfad)) {
 			const char *original_path = archive_entry_pathname(entry);
 			char full_path[MAX_PATH];
-			snprintf(full_path, sizeof(full_path), "%s/%s", ordnerPfad->str, original_path);
+			snprintf(full_path, sizeof(full_path), "%s/%s", DDP_STRING_DATA(ordnerPfad), original_path);
 			archive_entry_set_pathname(entry, full_path);
 		}
 
@@ -319,7 +319,7 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 		return -1;
 	}
 
-	struct archive *a = openArchive(arPfad->str);
+	struct archive *a = openArchive(DDP_STRING_DATA(arPfad));
 	if (!a) {
 		return -1;
 	}
@@ -328,13 +328,13 @@ ddpint Archiv_Datei_Groesse(ddpstring *dateiPfad, ddpstring *arPfad) {
 	struct archive_entry *e;
 	int r;
 	while ((r = archive_read_next_header(a, &e)) == ARCHIVE_OK) {
-		if (!strcmp(dateiPfad->str, archive_entry_pathname(e))) {
+		if (!strcmp(DDP_STRING_DATA(dateiPfad), archive_entry_pathname(e))) {
 			break;
 		}
 	}
 
 	if (r == ARCHIVE_EOF) {
-		ddp_error("Die Datei '" DDP_STRING_FMT "' konnte nicht im Archiv '" DDP_STRING_FMT "' nicht gefunden werden.", false, dateiPfad->str, arPfad->str);
+		ddp_error("Die Datei '" DDP_STRING_FMT "' konnte nicht im Archiv '" DDP_STRING_FMT "' nicht gefunden werden.", false, DDP_STRING_DATA(dateiPfad), DDP_STRING_DATA(arPfad));
 		return -1;
 	}
 
@@ -356,7 +356,7 @@ ddpint Archiv_Anzahl_Dateien(ddpstring *arPfad) {
 		return 0;
 	}
 
-	struct archive *a = openArchive(arPfad->str);
+	struct archive *a = openArchive(DDP_STRING_DATA(arPfad));
 	if (!a) {
 		return -1;
 	}

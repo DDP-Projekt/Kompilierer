@@ -38,7 +38,7 @@ void efficient_list_prepend(ddpgenericlistref list, ddpgenericref elem, ddpanyre
 	claim_non_primitive(vtable, elem, any);
 }
 
-#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len)-1 : (index)))
+#define CLAMP(index, len) ((index) < 0 ? 0 : ((index) >= (len) ? (len) - 1 : (index)))
 
 // the range is inclusive [start, end]
 // the indices are 0-based (like in C, not like in DDP)
@@ -118,13 +118,13 @@ void Aneinandergehaengt_Buchstabe_Ref(ddpstring *ret, ddpcharlistref liste) {
 		num_bytes += utf8_num_bytes_char(*it);
 	}
 
-	ret->str = DDP_ALLOCATE(char, num_bytes + 1);
-	ret->cap = num_bytes + 1;
+	char *buff = DDP_ALLOCATE(char, num_bytes + 1);
 
-	char *str_it = ret->str;
+	char *str_it = buff;
 	for (ddpchar *it = liste->arr; it != end; it++) {
 		str_it += utf8_char_to_string(str_it, *it);
 	}
 
-	ret->str[num_bytes] = '\0';
+	buff[num_bytes] = '\0';
+	ddp_string_from_constant(ret, buff);
 }

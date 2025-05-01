@@ -28,7 +28,7 @@ void Programm_Beenden(ddpint code) {
 }
 
 void Laufzeitfehler(ddpstring *Nachricht, ddpint code) {
-	ddp_runtime_error(code, Nachricht->str);
+	ddp_runtime_error(code, DDP_STRING_DATA(Nachricht));
 }
 
 ddpbool Ist_Befehlszeile(void) {
@@ -45,21 +45,14 @@ void Betriebssystem(ddpstring *ret) {
 #else
 #define OS "Linux"
 #endif
-	ret->cap = sizeof(OS);
-	ret->str = DDP_ALLOCATE(char, sizeof(OS));
-	memcpy(ret->str, OS, sizeof(OS));
+	ddp_string_from_constant(ret, OS);
 #undef OS
 }
 
 void Arbeitsverzeichnis(ddpstring *ret) {
 	char buffer[DDP_MAX_PATH];
 	if (getcwd(buffer, sizeof(buffer)) != NULL) {
-		int len = strlen(buffer) + 1;
-		char *string = DDP_ALLOCATE(char, len);
-		memcpy(string, buffer, len);
-
-		ret->str = string;
-		ret->cap = len;
+		ddp_string_from_constant(ret, buffer);
 		return;
 	}
 

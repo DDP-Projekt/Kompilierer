@@ -1,6 +1,7 @@
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/TextIterator" ein.
+Binde "Duden/Fehlerbehandlung" ein.
 
 [
 	Gibt "" zurück.
@@ -350,18 +351,18 @@ Und kann so benutzt werden:
 	Fügt zwei Texte aneinander.
 	f("ha", "lo") -> "halo"
 ]
-Die öffentliche Funktion Text_An_Text_Fügen mit den Parametern text und elm vom Typ Text Referenz und Text, gibt nichts zurück, macht:
-	Speichere text verkettet mit elm in text.
-Und kann so benutzt werden:
+Die öffentliche Funktion Text_An_Text_Fügen mit den Parametern text und elm vom Typ Text Referenz und Text, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
 [
 	Fügt einen Buchstaben an einen Text.
 	f("may", 'o') -> "mayo"
 ]
-Die öffentliche Funktion Buchstabe_An_Text_Fügen mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück, macht:
-	Speichere text verkettet mit elm in text.
-Und kann so benutzt werden:
+Die öffentliche Funktion Buchstabe_An_Text_Fügen mit den Parametern text und elm vom Typ Text Referenz und Buchstabe, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
 	"Füge <elm> an <text> an"
 
 [

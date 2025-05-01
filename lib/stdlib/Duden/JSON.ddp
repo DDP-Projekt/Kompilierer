@@ -3,7 +3,6 @@ Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Zeichen" ein.
 Binde "Duden/Listen" ein.
-Binde "Duden/TextBauer" ein.
 Binde Hex_Zu_Zahl aus "Duden/Zahlen" ein.
 
 Wir nennen eine Variable öffentlich auch einen JsonWert.
@@ -334,7 +333,7 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 	Wenn json gleich JSON_NULL ist, dann:
 		Gib "null" zurück.
 	Wenn json ein Text ist, dann:
-		Der TextBauer bauer ist ein neuer TextBauer.
+		Der Text bauer ist "".
 		Der Text t ist json als Text.
 		Füge '"' an bauer an.
 		Für jeden Buchstaben b in t, mache:
@@ -353,7 +352,7 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 	Wenn json ein Wahrheitswert ist, dann:
 		Gib "true", falls json als Wahrheitswert, ansonsten "false" zurück.
 	Wenn json ein JsonObjekt ist, dann:
-		Der TextBauer bauer ist ein neuer TextBauer.
+		Der Text bauer ist "".
 		Füge '{' an bauer an.
 		Der Wahrheitswert hatte_eintrag ist falsch.
 		Das JsonObjekt objekt ist json als JsonObjekt.
@@ -370,7 +369,7 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 		Füge '}' an bauer an.
 		Gib bauer als Text zurück.
 	Wenn json eine JsonListe ist, dann:
-		Der TextBauer bauer ist ein neuer TextBauer.
+		Der Text bauer ist "".
 		Füge '[' an bauer an.
 		Der Wahrheitswert hatte_eintrag ist falsch.
 		Für jeden JsonWert element in json als JsonListe, mache:

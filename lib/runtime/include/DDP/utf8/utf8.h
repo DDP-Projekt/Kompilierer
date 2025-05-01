@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 bool utf8_is_continuation(char c);
 
 // checks if this byte is part of a multibyte sequence
@@ -21,20 +20,20 @@ int utf8_indicated_num_bytes(char c);
 
 // returns the number of unicode characters in s
 // s must be null-terminated
-size_t utf8_strlen(char *s);
+size_t utf8_strlen(const char *s);
 
 // check if the first unicode character in c is a single-byte character
-bool utf8_is_single_byte(char *c);
+bool utf8_is_single_byte(const char *c);
 // check if the first unicode character in c is a double-byte character
-bool utf8_is_double_byte(char *c);
+bool utf8_is_double_byte(const char *c);
 // check if the first unicode character in c is a triple-byte character
-bool utf8_is_triple_byte(char *c);
+bool utf8_is_triple_byte(const char *c);
 // check if the first unicode character in c is a quadruple-byte character
-bool utf8_is_quadruple_byte(char *c);
+bool utf8_is_quadruple_byte(const char *c);
 
 // returns the number of bytes of the first unicode character in s
 // s must be null-terminated
-size_t utf8_num_bytes(char *s);
+size_t utf8_num_bytes(const char *s);
 
 // returns the number of bytes needed to encode this character in utf8
 size_t utf8_num_bytes_char(uint32_t c);
@@ -48,6 +47,6 @@ size_t utf8_char_to_string(char *s, int32_t c);
 // decode the first codepoint in str into out
 // str must be null-terminated
 // returns the number of bytes encoded into out or -1 if str was invalid utf8
-size_t utf8_string_to_char(char *str, uint32_t *out);
+size_t utf8_string_to_char(const char *str, uint32_t *out);
 
 #endif // DDP_UTF8_H

@@ -4,7 +4,6 @@
 */
 #include "DDP/ddptypes.h"
 #include "DDP/mt19937-64.h"
-#include <math.h>
 
 ddpfloat Zufalls_Kommazahl(ddpfloat a, ddpfloat b) {
 	return (b - a) * genrand64_real1() + a;

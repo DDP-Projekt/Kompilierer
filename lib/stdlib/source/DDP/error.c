@@ -1,13 +1,14 @@
 #include "DDP/error.h"
 #include "DDP/ddpmemory.h"
 #include "DDP/ddpos.h"
+#include "DDP/ddptypes.h"
 #include "DDP/ddpwindows.h"
 #include "DDP/debug.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-#define ERROR_BUFFER_SIZE 1024
+#define ERROR_BUFFER_SIZE 2048
 
 void ddp_error(const char *prefix, bool use_errno, ...) {
 	char error_buffer[ERROR_BUFFER_SIZE];
@@ -16,20 +17,14 @@ void ddp_error(const char *prefix, bool use_errno, ...) {
 	vsnprintf(error_buffer, ERROR_BUFFER_SIZE, prefix, args);
 	va_end(args);
 
-	ddpstring error = {0};
-	error.cap = strlen(error_buffer) + 1;
-	error.str = DDP_ALLOCATE(char, error.cap);
-	memcpy(error.str, error_buffer, error.cap);
-
 	if (use_errno) {
 		char *error_message = strerror(errno);
-		size_t msg_len = strlen(error_message);
-		error.str = DDP_GROW_ARRAY(char, error.str, error.cap, error.cap + msg_len);
-		error.cap += msg_len;
-		strcat(error.str, error_message);
+		strncat(error_buffer, error_message, ERROR_BUFFER_SIZE - strlen(error_buffer) - 1);
 	}
 
-	DDP_DBGLOG("Setze_Fehler: " DDP_STRING_FMT, error.str);
+	ddpstring error;
+	ddp_string_from_constant(&error, error_buffer);
+	DDP_DBGLOG("Setze_Fehler: " DDP_STRING_FMT, DDP_STRING_DATA(&error));
 	// will free error.str
 	Setze_Fehler(&error);
 }
