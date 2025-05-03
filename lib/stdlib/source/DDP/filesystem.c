@@ -815,32 +815,16 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 		// search for the next newline
 		char *newline = memchr(read_buff_start_ptr(file), '\n', read_buff_len(file));
 		if (newline) {
-			const size_t copy_amount = newline - read_buff_start_ptr(file) + 1;
+			const size_t line_length = newline - read_buff_start_ptr(file) + 1;
+			const size_t copy_amount =
+#ifdef DDPOS_WINDOWS
+				*(newline - 1) == '\r' ? line_length - 2 :
+#endif // DDPOS_WINDOWS
+										 line_length - 1;
 
 			// copy the string and the newline
 			ddp_strncat(ret, read_buff_start_ptr(file), copy_amount);
-
-			DDP_DBGLOG("newline found: " DDP_INT_FMT ", %llu", DDP_STRING_CAP(ret), copy_amount);
-#ifdef DDPOS_WINDOWS
-			// check windows line endings
-			if (DDP_STRING_DATA(ret)[ret->len - 2] == '\r') {
-				DDP_DBGLOG("carriage return found: " DDP_INT_FMT, DDP_STRING_CAP(ret));
-				// the carriage return becomes the null terminator
-				ret->len -= 2;
-				DDP_STRING_DATA(ret)
-				[ret->len] = '\0';
-			} else {
-#endif
-				// TODO:
-				// the newline becomes the null terminator
-				ret->len--;
-				DDP_STRING_DATA(ret)
-				[ret->len] = '\0';
-#ifdef DDPOS_WINDOWS
-			}
-#endif
-
-			file->read_buffer_start += copy_amount; // consume the newline
+			file->read_buffer_start += line_length; // consume the newline
 			return;
 		} else {
 			// no newline found, copy the whole buffer
@@ -929,6 +913,7 @@ ddpbool Datei_Zuende(DateiRef datei) {
 	if (!file) {
 		return true;
 	}
+	DDP_DBGLOG("Datei_Zuende: %d", file->eof);
 	return file->eof;
 }
 
