@@ -370,20 +370,20 @@ ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 	}
 
 	size_t string_size = stat.st_size + 1;
-	ddp_reserve_string_capacity(ref, string_size);
+	char *buff = DDP_ALLOCATE(char, string_size);
 
-	int r = read(fd, DDP_STRING_DATA(ref), string_size - 1);
+	int r = read(fd, buff, string_size - 1);
 	if (r < 0) {
 		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, DDP_STRING_DATA(Pfad));
-		ref->len = 0;
-		DDP_STRING_DATA(ref)
-		[ref->len] = '\0';
+		DDP_FREE_ARRAY(char, buff, string_size);
 		return 0;
 	}
 	close(fd);
-	ref->len = r;
-	DDP_STRING_DATA(ref)
-	[ref->len] = '\0';
+	// TODO: claim the buffer
+	ddp_free_string(ref);
+	buff[r] = '\0';
+	ddp_string_from_constant(ref, buff);
+	DDP_FREE_ARRAY(char, buff, string_size);
 
 	return (ddpint)r;
 }
