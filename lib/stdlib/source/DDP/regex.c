@@ -94,7 +94,7 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 	}
 }
 
-void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) {
+static void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) {
 	if (re == NULL) {
 		ret->text = DDP_EMPTY_STRING;
 		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
@@ -137,7 +137,7 @@ void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) 
 	pcre2_match_data_free(match_data);
 }
 
-void regex_n_match(TrefferList *ret, pcre2_code *re, char *pattern, char *text, ddpint n) {
+static void regex_n_match(TrefferList *ret, pcre2_code *re, char *pattern, char *text, ddpint n) {
 	// Initialize an empty list into ret
 	*ret = DDP_EMPTY_LIST(TrefferList);
 
@@ -239,7 +239,7 @@ static void substitute(ddpstring *ret, pcre2_code *re, char *pattern, char *text
 	ddp_string_from_constant(ret, (char *)result);
 }
 
-void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) {
+static void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text, size_t text_len) {
 	// Initialize an empty list into ret
 	ddp_ddpstringlist_from_constants(ret, 0);
 
@@ -276,8 +276,10 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 			break;
 		}
 
-		ddpstring r;
-		ddp_string_from_constant(&r, &text[start_offset]);
+		int start = pcre2_get_ovector_pointer(match_data)[0];
+
+		ddpstring r = DDP_EMPTY_STRING;
+		ddp_strncat(&r, &text[start_offset], start - start_offset);
 
 		// increase list size if needed
 		if (ret->len == ret->cap) {
@@ -300,8 +302,8 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 		ret->arr = DDP_GROW_ARRAY(ddpstring, ret->arr, old_cap, ret->cap);
 	}
 
-	ddpstring r;
-	ddp_string_from_constant(&r, &text[start_offset]);
+	ddpstring r = DDP_EMPTY_STRING;
+	ddp_strncat(&r, &text[start_offset], text_len - start_offset);
 
 	// append new element
 	ret->arr[ret->len] = r;
@@ -361,7 +363,7 @@ void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	DDP_MIGHT_ERROR;
 
 	pcre2_code *re = compile_regex((PCRE2_SPTR)DDP_STRING_DATA(muster));
-	regex_split(ret, re, DDP_STRING_DATA(muster), DDP_STRING_DATA(text));
+	regex_split(ret, re, DDP_STRING_DATA(muster), DDP_STRING_DATA(text), text->len);
 	pcre2_code_free(re);
 }
 
@@ -400,5 +402,5 @@ void Regex_Kompiliert_Alle_Treffer_Ersetzen(ddpstring *ret, Regex *regex, ddpstr
 
 void Regex_Kompiliert_Spalten(ddpstringlist *ret, Regex *regex, ddpstring *text) {
 	DDP_MIGHT_ERROR;
-	regex_split(ret, regex->obj, DDP_STRING_DATA(&regex->ausdruck), DDP_STRING_DATA(text));
+	regex_split(ret, regex->obj, DDP_STRING_DATA(&regex->ausdruck), DDP_STRING_DATA(text), text->len);
 }

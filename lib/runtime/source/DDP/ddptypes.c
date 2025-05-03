@@ -106,6 +106,26 @@ void ddp_strncat(ddpstring *str, const char *data, size_t n) {
 	str->large.str[str->len] = '\0';
 }
 
+// ensures that the large string str has a capacity of at least newCap or more
+void ddp_reserve_string_capacity(ddpstring *str, ddpint n) {
+	if (n <= DDP_STRING_CAP(str) || DDP_IS_SMALL_STRING(str)) {
+		return;
+	}
+
+	n = DDP_MAX(n, DDP_SMALL_ALLOCATION_SIZE);
+
+	if (DDP_IS_SMALL_STRING(str)) {
+		char *newStr = DDP_ALLOCATE(char, n);
+		memcpy(newStr, str->small.str, str->len + 1);
+		str->large.str = newStr;
+		str->large.cap = n;
+		return;
+	}
+
+	str->large.str = ddp_reallocate(str->large.str, str->large.cap, n);
+	str->large.cap = n;
+}
+
 extern ddpvtable ddpint_vtable;
 extern ddpvtable ddpfloat_vtable;
 extern ddpvtable ddpbool_vtable;

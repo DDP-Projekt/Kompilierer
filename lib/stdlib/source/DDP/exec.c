@@ -40,17 +40,11 @@ static void read_pipe(HANDLE handle, ddpstringref out) {
 	ddp_free_string(out);
 
 	char buff[BUFF_SIZE];
-	out->cap = 0;
 	DWORD nread = 0;
 	while (ReadFile(handle, buff, BUFF_SIZE, &nread, 0)) {
-		out->str = ddp_reallocate(out->str, out->cap, out->cap + nread);
-		memcpy(&out->str[out->cap], buff, nread);
-		out->cap += nread;
+		ddp_strncat(out, buff, nread);
 	}
 	CloseHandle(handle);
-	out->cap += 1;
-	out->str = ddp_reallocate(out->str, out->cap - 1, out->cap);
-	out->str[out->cap - 1] = '\0';
 }
 
 // TODO: use err
@@ -84,16 +78,16 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 	// prepare the arguments
 	char *argv;
-	size_t argv_size = ddp_strlen(path) + 1;
+	size_t argv_size = path->len + 1;
 	for (ddpint i = 0; i < args->len; i++) {
-		argv_size += args->arr[i].cap; // the nullterminator is used for the trailing space
+		argv_size += args->arr[i].len + 1; // the nullterminator is used for the trailing space
 	}
 	argv = DDP_ALLOCATE(char, argv_size);
 	argv[0] = '\0'; // make sure strcat works
-	strcat(argv, path->str);
+	strcat(argv, DDP_STRING_DATA(path));
 	strcat(argv, " ");
 	for (ddpint i = 0; i < args->len; i++) {
-		strcat(argv, args->arr[i].str);
+		strcat(argv, DDP_STRING_DATA(&args->arr[i]));
 		if (i < args->len - 1) {
 			strcat(argv, " ");
 		}
@@ -109,7 +103,7 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 	// start the actual child process
 	PROCESS_INFORMATION pi;
-	if (!CreateProcessA(path->str, argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
+	if (!CreateProcessA(DDP_STRING_DATA(path), argv, NULL, NULL, true, 0, NULL, NULL, &si, &pi)) {
 		ddp_error_win("Fehler beim Erstellen des Unter Prozesses: ");
 		close_pipe(stdout_pipe);
 		if (need_stderr) {
@@ -131,8 +125,8 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 
 	// write stdin
 	DWORD len_written = 0;
-	DWORD len_to_write = ddp_strlen(input);
-	if (!WriteFile(stdin_pipe[WRITE_END], input->str, len_to_write, &len_written, NULL) || len_written != len_to_write) {
+	DWORD len_to_write = input->len;
+	if (!WriteFile(stdin_pipe[WRITE_END], DDP_STRING_DATA(input), len_to_write, &len_written, NULL) || len_written != len_to_write) {
 		ddp_error_win("Fehler beim schreiben der Eingabe: ");
 		// terminate the running process
 		TerminateProcess(pi.hProcess, 1);
@@ -168,7 +162,6 @@ static ddpint execute_process(ddpstring *path, ddpstringlist *args,
 // then closes the pipe
 // returns the new size of out
 static void read_pipe(int fd, ddpstringref out) {
-	// TODO
 	ddp_free_string(out);
 
 	*out = DDP_EMPTY_STRING;

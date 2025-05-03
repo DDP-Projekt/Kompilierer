@@ -245,6 +245,7 @@ void ddp_string_char_verkettet(ddpstring *ret, ddpstring *str, ddpchar c) {
 }
 
 ddpint ddp_string_to_int(ddpstring *str) {
+	DDP_DBGLOG("ddp_string_to_int: %s", DDP_STRING_DATA(str));
 	if (ddp_string_empty(str)) {
 		return 0; // empty string
 	}
@@ -253,6 +254,7 @@ ddpint ddp_string_to_int(ddpstring *str) {
 }
 
 ddpfloat ddp_string_to_float(ddpstring *str) {
+	DDP_DBGLOG("ddp_string_to_float: %s", DDP_STRING_DATA(str));
 	if (ddp_string_empty(str)) {
 		return 0; // empty string
 	}

@@ -19,7 +19,7 @@
 #define _CRT_INTERNAL_NONSTDC_NAMES 1
 #include <sys/stat.h>
 #if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef DDPOS_WINDOWS
@@ -300,7 +300,7 @@ ddpbool Datei_Kopieren(ddpstring *Pfad, ddpstring *Kopiepfad) {
 	}
 
 #ifdef DDPOS_WINDOWS
-	return (ddpbool)CopyFile(Pfad->str, Kopiepfad->str, false);
+	return (ddpbool)CopyFile(DDP_STRING_DATA(Pfad), DDP_STRING_DATA(Kopiepfad), false);
 #else  // DDPOW_LINUX
 
 	int fd_to, fd_from;
@@ -370,33 +370,21 @@ ddpint Lies_Text_Datei(ddpstring *Pfad, ddpstringref ref) {
 	}
 
 	size_t string_size = stat.st_size + 1;
-	char *buff = DDP_ALLOCATE(char, string_size);
+	ddp_reserve_string_capacity(ref, string_size);
 
-	int r = read(fd, buff, string_size - 1);
+	int r = read(fd, DDP_STRING_DATA(ref), string_size - 1);
 	if (r < 0) {
-		DDP_FREE_ARRAY(char, buff, string_size);
 		ddp_error("Fehler beim Lesen der Datei '" DDP_STRING_FMT "': ", true, DDP_STRING_DATA(Pfad));
+		ref->len = 0;
+		DDP_STRING_DATA(ref)
+		[ref->len] = '\0';
 		return 0;
 	}
 	close(fd);
+	ref->len = r;
+	DDP_STRING_DATA(ref)
+	[ref->len] = '\0';
 
-	if (DDP_IS_LARGE_STRING(ref)) {
-		ddp_free_string(ref);
-		ref->len = string_size - 1;
-		ref->large.str = buff;
-		ref->large.cap = string_size;
-		return (ddpint)r;
-	}
-
-	if (string_size <= DDP_SMALL_STRING_BUFF_SIZE) {
-		ddp_string_from_constant(ref, buff);
-		DDP_FREE_ARRAY(char, buff, string_size);
-		return (ddpint)r;
-	}
-
-	ref->len = string_size - 1;
-	ref->large.str = buff;
-	ref->large.cap = string_size;
 	return (ddpint)r;
 }
 
@@ -835,12 +823,12 @@ void Datei_Lies_Zeile(ddpstring *ret, DateiRef datei) {
 			DDP_DBGLOG("newline found: " DDP_INT_FMT ", %llu", DDP_STRING_CAP(ret), copy_amount);
 #ifdef DDPOS_WINDOWS
 			// check windows line endings
-			if (ret->str[ret->cap - 2] == '\r') {
-				DDP_DBGLOG("carriage return found: " DDP_INT_FMT, ret->cap);
+			if (DDP_STRING_DATA(ret)[ret->len - 2] == '\r') {
+				DDP_DBGLOG("carriage return found: " DDP_INT_FMT, DDP_STRING_CAP(ret));
 				// the carriage return becomes the null terminator
-				ret->str[ret->cap - 2] = '\0';
-				ret->str = ddp_reallocate(ret->str, ret->cap, ret->cap - 1);
-				ret->cap--;
+				ret->len -= 2;
+				DDP_STRING_DATA(ret)
+				[ret->len] = '\0';
 			} else {
 #endif
 				// TODO:

@@ -64,6 +64,8 @@ void ddp_deep_copy_string(ddpstring *ret, const ddpstring *str);
 ddpbool ddp_string_empty(const ddpstring *str);
 // appends data to the given string and takes care of small vs large strings
 void ddp_strncat(ddpstring *str, const char *data, size_t n);
+// ensures that the large string str has a capacity of at least newCap or more
+void ddp_reserve_string_capacity(ddpstring *str, ddpint n);
 
 typedef void (*free_func_ptr)(void *);
 typedef void (*deep_copy_func_ptr)(void *, void *);

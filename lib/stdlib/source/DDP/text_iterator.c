@@ -60,12 +60,12 @@ void TextIterator_Rest(ddpstring *ret, TextIterator *it) {
 	ddp_string_from_constant(ret, it->ptr);
 }
 
-void TextIterator_Bisher(ddpstring *ret, TextIterator *it) {
+void TextIterator_Bisher(ddpstring *ret, const TextIterator *it) {
 	*ret = DDP_EMPTY_STRING;
 
-	if (it->ptr <= it->end_ptr) {
+	if (it->ptr <= DDP_STRING_DATA(it->text)) {
 		return;
 	}
 
-	ddp_strncat(ret, it->ptr, it->ptr - DDP_STRING_DATA(it->text) + 1);
+	ddp_strncat(ret, DDP_STRING_DATA(it->text), it->ptr - DDP_STRING_DATA(it->text));
 }
