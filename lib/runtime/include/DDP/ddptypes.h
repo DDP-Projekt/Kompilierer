@@ -16,6 +16,7 @@ static_assert(sizeof(void *) == sizeof(uint8_t *), "sizeof(void*) != sizeof(uint
 // typedefs of primitive ddp types
 typedef int64_t ddpint;
 typedef double ddpfloat;
+typedef uint8_t ddpbyte;
 typedef bool ddpbool;
 typedef int32_t ddpchar; // needs to be 32 bit to hold every possible unicode character
 
@@ -100,6 +101,19 @@ extern void ddp_ddpfloatlist_from_constants(ddpfloatlist *ret, ddpint count);
 extern void ddp_free_ddpfloatlist(ddpfloatlist *list);
 // deep copies list into ret
 extern void ddp_deep_copy_ddpfloatlist(ddpfloatlist *ret, ddpfloatlist *list);
+
+typedef struct {
+	ddpbyte *arr; // the element array
+	ddpint len;	  // the length of the array
+	ddpint cap;	  // the capacity of the array
+} ddpbytelist;
+
+// allocates a ddpbytelist with count elements
+extern void ddp_ddpbytelist_from_constants(ddpbytelist *ret, ddpint count);
+// free a ddpbytelist
+extern void ddp_free_ddpbytelist(ddpbytelist *list);
+// deep copies list into ret
+extern void ddp_deep_copy_ddpbytelist(ddpbytelist *ret, ddpbytelist *list);
 
 typedef struct {
 	ddpbool *arr; // the element array
@@ -192,6 +206,7 @@ const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 
 typedef ddpint *ddpintref;
 typedef ddpfloat *ddpfloatref;
+typedef ddpbyte *ddpbyteref;
 typedef ddpbool *ddpboolref;
 typedef ddpchar *ddpcharref;
 typedef ddpstring *ddpstringref;
@@ -202,6 +217,7 @@ typedef void *ddpgenericref;
 
 typedef ddpintlist *ddpintlistref;
 typedef ddpfloatlist *ddpfloatlistref;
+typedef ddpbytelist *ddpbytelistref;
 typedef ddpboollist *ddpboollistref;
 typedef ddpcharlist *ddpcharlistref;
 typedef ddpstringlist *ddpstringlistref;
@@ -209,6 +225,7 @@ typedef ddpanylist *ddpanylistref;
 typedef ddpgenericlist *ddpgenericlistref;
 
 #define DDP_INT_FMT "%lld"
+#define DDP_BYTE_FMT "%hhu"
 #define DDP_FLOAT_FMT "%.16g"
 #define DDP_BOOL_FMT "%d"
 #define DDP_CHAR_FMT "%d"

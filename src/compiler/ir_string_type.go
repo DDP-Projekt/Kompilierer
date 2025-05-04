@@ -34,6 +34,7 @@ type ddpIrStringType struct {
 	char_str_concat_IrFunc *ir.Func // the char_str_verkettet ir func
 	int_to_string_IrFun    *ir.Func // the int_to_string ir func
 	float_to_string_IrFun  *ir.Func // the float_to_string ir func
+	byte_to_string_IrFun   *ir.Func // the byte_to_string ir func
 	bool_to_string_IrFun   *ir.Func // the bool_to_string ir func
 	char_to_string_IrFun   *ir.Func // the char_to_string ir func
 }
@@ -132,6 +133,7 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 
 	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("i", ddpint))
 	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("f", ddpfloat))
+	ddpstring.byte_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_byte_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbyte))
 	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
 	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", c.void.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
 

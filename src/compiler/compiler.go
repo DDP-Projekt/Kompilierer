@@ -123,12 +123,12 @@ type compiler struct {
 	curLoopScope     *scope    // scope of the current loop for break/continue to free to
 
 	// all the type definitions of inbuilt types used by the compiler
-	void                                                                          *ddpIrVoidType
-	ddpinttyp, ddpfloattyp, ddpbooltyp, ddpchartyp                                *ddpIrPrimitiveType
-	ddpstring                                                                     *ddpIrStringType
-	ddpany                                                                        *ddpIrAnyType
-	ddpintlist, ddpfloatlist, ddpboollist, ddpcharlist, ddpstringlist, ddpanylist *ddpIrListType
-	ddpgenericlist                                                                *ddpIrGenericListType
+	void                                                                                       *ddpIrVoidType
+	ddpinttyp, ddpfloattyp, ddpbytetyp, ddpbooltyp, ddpchartyp                                 *ddpIrPrimitiveType
+	ddpstring                                                                                  *ddpIrStringType
+	ddpany                                                                                     *ddpIrAnyType
+	ddpintlist, ddpfloatlist, ddpbytelist, ddpboollist, ddpcharlist, ddpstringlist, ddpanylist *ddpIrListType
+	ddpgenericlist                                                                             *ddpIrGenericListType
 }
 
 // create a new Compiler to compile the passed AST
@@ -336,6 +336,7 @@ func (c *compiler) setupErrorStrings() {
 func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
 	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, llvm.Int64Type(), "ddpint", declarationOnly)
 	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, llvm.DoubleType(), "ddpfloat", declarationOnly)
+	c.ddpbytetyp = c.definePrimitiveType(ddpbyte, zero8, llvm.Int8Type(), "ddpbyte", declarationOnly)
 	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, llvm.Int1Type(), "ddpbool", declarationOnly)
 	c.ddpchartyp = c.definePrimitiveType(ddpchar, newIntT(ddpchar, 0), llvm.Int32Type(), "ddpchar", declarationOnly)
 }
@@ -344,6 +345,7 @@ func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
 func (c *compiler) setupListTypes(declarationOnly bool) {
 	c.ddpintlist = c.createListType("ddpintlist", c.ddpinttyp, declarationOnly)
 	c.ddpfloatlist = c.createListType("ddpfloatlist", c.ddpfloattyp, declarationOnly)
+	c.ddpbytelist = c.createListType("ddpbytelist", c.ddpbytetyp, declarationOnly)
 	c.ddpboollist = c.createListType("ddpboollist", c.ddpbooltyp, declarationOnly)
 	c.ddpcharlist = c.createListType("ddpcharlist", c.ddpchartyp, declarationOnly)
 	c.ddpstringlist = c.createListType("ddpstringlist", c.ddpstring, declarationOnly)
@@ -720,8 +722,9 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
 
 	if stringIndexing != nil {
-		lhs, _, _ := c.evaluate(stringIndexing.Lhs)
+		lhs, lhsTyp, _ := c.evaluate(stringIndexing.Lhs)
 		index, _, _ := c.evaluate(stringIndexing.Index)
+		lhs = c.floatOrByteAsInt(lhs, lhsTyp)
 		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, index)
 		c.latestReturnType = c.ddpchartyp
 		// c.latestIsTemp = false // it is a primitive typ, so we don't care
@@ -808,7 +811,9 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	if e.Values != nil {
 		listLen = newInt(int64(len(e.Values)))
 	} else if e.Count != nil && e.Value != nil {
-		listLen, _, _ = c.evaluate(e.Count)
+		var lenType ddpIrType
+		listLen, lenType, _ = c.evaluate(e.Count)
+		listLen = c.floatOrByteAsInt(listLen, lenType)
 	} else { // empty list
 		c.cbb.NewStore(listType.DefaultValue(), list)
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
@@ -877,6 +882,8 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 				func() value.Value { return rhs },
 			)
 			c.latestReturnType = c.ddpinttyp
+		case c.ddpbytetyp:
+			// a byte is unsigned and therefore does not need to be changed
 		default:
 			c.err("invalid Parameter Type for BETRAG: %s", typ.Name())
 		}
@@ -888,6 +895,9 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			c.latestReturn = c.cbb.NewSub(zero, rhs)
 			c.latestReturnType = c.ddpinttyp
+		case c.ddpinttyp:
+			c.latestReturn = c.cbb.NewSub(zero, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
+			c.latestReturnType = c.ddpinttyp
 		default:
 			c.err("invalid Parameter Type for NEGATE: %s", typ.Name())
 		}
@@ -895,8 +905,14 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
 		c.latestReturnType = c.ddpbooltyp
 	case ast.UN_LOGIC_NOT:
-		c.latestReturn = c.cbb.NewXor(rhs, all_ones)
-		c.latestReturnType = c.ddpinttyp
+		switch typ {
+		case c.ddpinttyp:
+			c.latestReturn = c.cbb.NewXor(rhs, all_ones)
+			c.latestReturnType = c.ddpinttyp
+		case c.ddpbytetyp:
+			c.latestReturn = c.cbb.NewXor(rhs, all_ones8)
+			c.latestReturnType = c.ddpbytetyp
+		}
 	case ast.UN_LEN:
 		switch typ {
 		case c.ddpstring:
@@ -1088,6 +1104,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewAdd(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
+				c.latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1098,10 +1117,27 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFAdd(lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFAdd(lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFAdd(lhs, fp)
 			default:
 				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewAdd(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
+				c.latestReturnType = c.ddpinttyp
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewAdd(lhs, rhs)
+				c.latestReturnType = c.ddpbytetyp
+			default:
+				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		default:
 			c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
@@ -1116,6 +1152,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFSub(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewSub(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
+				c.latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1126,10 +1165,28 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFSub(lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFSub(lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFSub(lhs, fp)
 			default:
 				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewSub(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
+				c.latestReturnType = c.ddpinttyp
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFSub(fp, rhs)
+				c.latestReturnType = c.ddpfloattyp
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewSub(lhs, rhs)
+				c.latestReturnType = c.ddpbytetyp
+			default:
+				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		default:
 			c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
@@ -1139,11 +1196,13 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			switch rhsTyp {
 			case c.ddpinttyp:
 				c.latestReturn = c.cbb.NewMul(lhs, rhs)
-				c.latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFMul(fp, rhs)
 				c.latestReturnType = c.ddpfloattyp
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewMul(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
+				c.latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1154,10 +1213,27 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFMul(lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFMul(lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFMul(lhs, fp)
 			default:
 				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 			c.latestReturnType = c.ddpfloattyp
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewMul(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
+				c.latestReturnType = c.ddpinttyp
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFMul(fp, rhs)
+				c.latestReturnType = c.ddpfloattyp
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewMul(lhs, rhs)
+			default:
+				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		default:
 			c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
@@ -1172,6 +1248,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
+			case c.ddpbytetyp:
+				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+				rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
 			default:
 				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1181,6 +1261,25 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFDiv(lhs, fp)
 			case c.ddpfloattyp:
+				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFDiv(lhs, fp)
+			default:
+				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
+				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+			case c.ddpfloattyp:
+				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
+			case c.ddpbytetyp:
+				lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
+				rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
 			default:
 				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
@@ -1192,12 +1291,12 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_INDEX:
 		switch lhsTyp {
 		case c.ddpstring:
-			c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, rhs)
+			c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			c.latestReturnType = c.ddpchartyp
 		default:
 			if listType, isList := lhsTyp.(*ddpIrListType); isList {
 				listLen := c.loadStructField(lhs, list_len_field_index)
-				index := c.cbb.NewSub(rhs, newInt(1)) // ddp indices start at 1, so subtract 1
+				index := c.cbb.NewSub(c.floatOrByteAsInt(rhs, rhsTyp), newInt(1)) // ddp indices start at 1, so subtract 1
 				// index bounds check
 				cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
 				c.createIfElse(cond, func() {
@@ -1234,6 +1333,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
 		dest := c.NewAlloca(lhsTyp.IrType())
+		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
 
 		switch lhsTyp {
 		case c.ddpstring:
@@ -1260,44 +1360,42 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-			case c.ddpfloattyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-			default:
-				c.err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
-			}
+			lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+		case c.ddpbytetyp:
+			lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
 		case c.ddpfloattyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-			}
 		default:
-			c.err("invalid Parameter Types for HOCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for HOCH (Lhs: %s)", lhsTyp.Name())
+		}
+		switch rhsTyp {
+		case c.ddpinttyp:
+			rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+		case c.ddpbytetyp:
+			rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
+		case c.ddpfloattyp:
+		default:
+			c.err("invalid Parameter Types for HOCH (Rhs: %s)", lhsTyp.Name())
 		}
 		c.latestReturn = c.cbb.NewCall(c.functions["pow"].irFunc, lhs, rhs)
 		c.latestReturnType = c.ddpfloattyp
 	case ast.BIN_LOG:
 		switch lhsTyp {
 		case c.ddpinttyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-			case c.ddpfloattyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-			default:
-				c.err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
-			}
+			lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+		case c.ddpbytetyp:
+			lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
 		case c.ddpfloattyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-			}
 		default:
-			c.err("invalid Parameter Types for LOGARITHMUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			c.err("invalid Parameter Types for Logarithmus (Lhs: %s)", lhsTyp.Name())
+		}
+		switch rhsTyp {
+		case c.ddpinttyp:
+			rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+		case c.ddpbytetyp:
+			rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
+		case c.ddpfloattyp:
+		default:
+			c.err("invalid Parameter Types for Logarithmus (Rhs: %s)", lhsTyp.Name())
 		}
 		log10_num := c.cbb.NewCall(c.functions["log10"].irFunc, lhs)
 		log10_base := c.cbb.NewCall(c.functions["log10"].irFunc, rhs)
@@ -1313,8 +1411,13 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		c.latestReturn = c.cbb.NewXor(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
 	case ast.BIN_MOD:
-		c.latestReturn = c.cbb.NewSRem(lhs, rhs)
-		c.latestReturnType = c.ddpinttyp
+		if lhsTyp == c.ddpbytetyp && rhsTyp == c.ddpbytetyp {
+			c.latestReturn = c.cbb.NewURem(lhs, rhs)
+			c.latestReturnType = c.ddpbytetyp
+		} else {
+			c.latestReturn = c.cbb.NewSRem(c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp))
+			c.latestReturnType = c.ddpinttyp
+		}
 	case ast.BIN_LEFT_SHIFT:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
@@ -1330,8 +1433,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)
+			case c.ddpinttyp, c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSLT, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
@@ -1345,6 +1448,21 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, fp)
+			default:
+				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSLT, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredULT, lhs, rhs)
 			default:
 				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1354,13 +1472,13 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLE, lhs, rhs)
+			case c.ddpinttyp, c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSLE, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
 			default:
-				c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -1369,19 +1487,32 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, fp)
 			default:
-				c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-		default:
-			c.err("invalid Parameter Types for KLEINERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSLE, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredULE, lhs, rhs)
+			default:
+				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		}
 		c.latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGT, lhs, rhs)
+			case c.ddpinttyp, c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSGT, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
@@ -1395,24 +1526,37 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, fp)
 			default:
 				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-		default:
-			c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSGT, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredUGT, lhs, rhs)
+			default:
+				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		}
 		c.latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGE, lhs, rhs)
+			case c.ddpinttyp, c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSGE, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			case c.ddpfloattyp:
 				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
 			default:
-				c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
@@ -1421,11 +1565,24 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, fp)
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, rhs)
+			case c.ddpbytetyp:
+				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, fp)
 			default:
-				c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-		default:
-			c.err("invalid Parameter Types for GRÖßERODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+		case c.ddpbytetyp:
+			switch rhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredSGE, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+			case c.ddpfloattyp:
+				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
+				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredUGE, lhs, rhs)
+			default:
+				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+			}
 		}
 		c.latestReturnType = c.ddpbooltyp
 	}
@@ -1517,6 +1674,8 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	switch e.Operator {
 	case ast.TER_SLICE:
 		dest := c.NewAlloca(lhsTyp.IrType())
+		mid = c.floatOrByteAsInt(mid, midTyp)
+		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
 		switch lhsTyp {
 		case c.ddpstring:
 			c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
@@ -1530,90 +1689,27 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
 		c.latestIsTemp = true
 	case ast.TER_BETWEEN:
-		switch lhsTyp {
-		case c.ddpinttyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				switch midTyp {
-				case c.ddpinttyp:
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, rhs), c.cbb.NewICmp(enum.IPredSLT, lhs, mid)),
-						c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)),
-					)
-				case c.ddpfloattyp:
-					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
-					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
-					)
-				default:
-					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-				}
-			case c.ddpfloattyp:
-				switch midTyp {
-				case c.ddpinttyp:
-					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
-					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fMid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, rhs)),
-					)
-				case c.ddpfloattyp:
-					fLhs := c.cbb.NewSIToFP(lhs, ddpfloat)
-					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, fLhs, mid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, fLhs, mid), c.cbb.NewFCmp(enum.FPredOLT, fLhs, fRhs)),
-					)
-				default:
-					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-				}
-			default:
-				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-			}
-		case c.ddpfloattyp:
-			switch rhsTyp {
-			case c.ddpinttyp:
-				switch midTyp {
-				case c.ddpinttyp:
-					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
-					)
-				case c.ddpfloattyp:
-					fRhs := c.cbb.NewSIToFP(rhs, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fRhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, fRhs)),
-					)
-				default:
-					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-				}
-			case c.ddpfloattyp:
-				switch midTyp {
-				case c.ddpinttyp:
-					fMid := c.cbb.NewSIToFP(mid, ddpfloat)
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, fMid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, fMid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
-					)
-				case c.ddpfloattyp:
-					c.latestReturn = c.cbb.NewOr(
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
-						c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
-					)
-				default:
-					c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-				}
-			default:
-				c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
-			}
-		default:
-			c.err("invalid Parameter Types for ZWISCHEN (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
+		// lhs zwischen mid und rhs
+		// = (lhs > rhs && lhs < mid) || (lhs > mid && lhs < rhs)
+		if lhsTyp == c.ddpfloattyp || rhsTyp == c.ddpfloattyp || midTyp == c.ddpfloattyp {
+			lhs, mid, rhs = c.intOrByteAsFloat(lhs, lhsTyp), c.intOrByteAsFloat(mid, midTyp), c.intOrByteAsFloat(rhs, rhsTyp)
+			c.latestReturn = c.cbb.NewOr(
+				c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
+				c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+			)
+		} else if lhsTyp == c.ddpbytetyp && rhsTyp == c.ddpbytetyp && midTyp == c.ddpbytetyp {
+			c.latestReturn = c.cbb.NewOr(
+				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredUGT, lhs, rhs), c.cbb.NewICmp(enum.IPredULT, lhs, mid)),
+				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredUGT, lhs, mid), c.cbb.NewICmp(enum.IPredULT, lhs, rhs)),
+			)
+		} else {
+			lhs, mid, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(mid, midTyp), c.floatOrByteAsInt(rhs, rhsTyp)
+			c.latestReturn = c.cbb.NewOr(
+				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, rhs), c.cbb.NewICmp(enum.IPredSLT, lhs, mid)),
+				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)),
+			)
 		}
+
 		c.latestReturnType = c.ddpbooltyp
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
@@ -1699,6 +1795,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = lhs
 			case c.ddpfloattyp:
 				c.latestReturn = c.cbb.NewFPToSI(lhs, ddpint)
+			case c.ddpbytetyp:
+				c.latestReturn = c.floatOrByteAsInt(lhs, c.ddpbytetyp)
 			case c.ddpbooltyp:
 				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 				c.latestReturn = c.cbb.NewZExt(cond, ddpint)
@@ -1717,6 +1815,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.latestReturn = c.cbb.NewSIToFP(lhs, ddpfloat)
 			case c.ddpfloattyp:
 				c.latestReturn = lhs
+			case c.ddpbytetyp:
+				c.latestReturn = c.intOrByteAsFloat(lhs, c.ddpbytetyp)
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			case c.ddpany:
@@ -1724,10 +1824,33 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			default:
 				c.err("invalid Parameter Type for KOMMAZAHL: %s", lhsTyp.Name())
 			}
+		case ddptypes.BYTE:
+			switch lhsTyp {
+			case c.ddpinttyp:
+				c.latestReturn = c.cbb.NewTrunc(lhs, ddpbyte)
+			case c.ddpfloattyp:
+				c.latestReturn = c.cbb.NewFPToUI(lhs, ddpbyte)
+			case c.ddpbytetyp:
+				c.latestReturn = lhs
+			case c.ddpbooltyp:
+				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
+				c.latestReturn = c.cbb.NewZExt(cond, ddpbyte)
+			case c.ddpchartyp:
+				c.latestReturn = c.cbb.NewTrunc(lhs, ddpbyte)
+			case c.ddpstring:
+				intVal := c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
+				c.latestReturn = c.cbb.NewTrunc(intVal, ddpbyte)
+			case c.ddpany:
+				primitiveAnyCast(c.ddpinttyp)
+			default:
+				c.err("invalid Parameter Type for ZAHL: %s", lhsTyp.Name())
+			}
 		case ddptypes.WAHRHEITSWERT:
 			switch lhsTyp {
 			case c.ddpinttyp:
 				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero8)
 			case c.ddpbooltyp:
 				c.latestReturn = lhs
 			case c.ddpany:
@@ -1739,6 +1862,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			switch lhsTyp {
 			case c.ddpinttyp:
 				c.latestReturn = c.cbb.NewTrunc(lhs, ddpchar)
+			case c.ddpbytetyp:
+				c.latestReturn = c.cbb.NewZExt(lhs, ddpchar)
 			case c.ddpchartyp:
 				c.latestReturn = lhs
 			case c.ddpany:
@@ -1765,6 +1890,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				to_string_func = c.ddpstring.int_to_string_IrFun
 			case c.ddpfloattyp:
 				to_string_func = c.ddpstring.float_to_string_IrFun
+			case c.ddpbytetyp:
+				to_string_func = c.ddpstring.byte_to_string_IrFun
 			case c.ddpbooltyp:
 				to_string_func = c.ddpstring.bool_to_string_IrFun
 			case c.ddpchartyp:
@@ -1856,8 +1983,8 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-			index, _, _ := c.evaluate(assign.Index)
-			index = c.cbb.NewSub(index, newInt(1)) // ddpindices start at 1
+			index, indexTyp, _ := c.evaluate(assign.Index)
+			index = c.cbb.NewSub(c.floatOrByteAsInt(index, indexTyp), newInt(1)) // ddpindices start at 1
 			listLen := c.loadStructField(lhs, list_len_field_index)
 			var elementPtr value.Value
 
@@ -2188,7 +2315,8 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
 	if lhsStringIndexing != nil {
-		index, _, _ := c.evaluate(lhsStringIndexing.Index)
+		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
+		index = c.floatOrByteAsInt(index, indexTyp)
 		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
@@ -2331,9 +2459,11 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
-	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
+	new_IorF_comp := func(ipred enum.IPred, upred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
 		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
 			return c.cbb.NewICmp(ipred, x, yi)
+		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
+			return c.cbb.NewICmp(upred, x, yi)
 		} else {
 			return c.cbb.NewFCmp(fpred, x, yf)
 		}
@@ -2348,6 +2478,8 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	if s.StepSize == nil {
 		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
 			incrementer = newInt(1)
+		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
+			incrementer = newIntT(ddpbyte, 1)
 		} else {
 			incrementer = constant.NewFloat(ddpfloat, 1.0)
 		}
@@ -2379,7 +2511,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) || ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
 		add = c.cbb.NewAdd(indexVar, incrementer)
 	} else {
 		add = c.cbb.NewFAdd(indexVar, incrementer)
@@ -2395,21 +2527,21 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := new_IorF_comp(enum.IPredSLT, enum.FPredOLT, incrementer, newInt(0), constant.NewFloat(ddpfloat, 0.0))
+	cond := new_IorF_comp(enum.IPredSLT, enum.IPredULT, enum.FPredOLT, incrementer, newInt(0), constant.NewFloat(ddpfloat, 0.0))
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, loopDown, loopUp)
 
 	c.cbb = loopUp
 	// we are counting up, so compare less-or-equal
 	to, _, _ := c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSLE, enum.FPredOLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	cond = new_IorF_comp(enum.IPredSLE, enum.IPredULE, enum.FPredOLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb = loopDown
 	// we are counting down, so compare greater-or-equal
 	to, _, _ = c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSGE, enum.FPredOGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	cond = new_IorF_comp(enum.IPredSGE, enum.IPredUGE, enum.FPredOGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 

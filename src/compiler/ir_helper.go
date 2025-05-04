@@ -30,6 +30,32 @@ func (c *compiler) sizeof(typ types.Type) value.Value {
 	return size_i
 }
 
+func (c *compiler) floatOrByteAsInt(src value.Value, from ddpIrType) value.Value {
+	switch from {
+	case c.ddpinttyp:
+		return src
+	case c.ddpfloattyp:
+		return c.cbb.NewFPToSI(src, ddpint)
+	case c.ddpbytetyp:
+		return c.cbb.NewZExt(src, ddpint)
+	default:
+		panic("non numeric type passed to floatOrByteAsInt")
+	}
+}
+
+func (c *compiler) intOrByteAsFloat(src value.Value, from ddpIrType) value.Value {
+	switch from {
+	case c.ddpinttyp:
+		return c.cbb.NewSIToFP(src, ddpfloat)
+	case c.ddpfloattyp:
+		return src
+	case c.ddpbytetyp:
+		return c.cbb.NewUIToFP(src, ddpfloat)
+	default:
+		panic("non numeric type passed to intOrByteAsFloat")
+	}
+}
+
 // the GROW_CAPACITY macro from the runtime
 func (c *compiler) growCapacity(cap value.Value) value.Value {
 	trueBlock, falseBlock, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
