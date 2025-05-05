@@ -1,13 +1,13 @@
 Binde "Duden/Ausgabe" ein.
 
-Der Byte byte ist 5 als Byte.
-Erhöhe byte um 2 als Byte.
+Der Byte byte ist 5.
+Erhöhe byte um 2.
 Schreibe byte auf eine Zeile.
 
-Verringere byte um 1 als Byte.
+Verringere byte um 1.
 Schreibe byte auf eine Zeile.
 
-Vervielfache byte um 3 als Byte.
+Vervielfache byte um 3.
 Schreibe byte auf eine Zeile.
 
 Verschiebe byte um 2 Bit nach Links.

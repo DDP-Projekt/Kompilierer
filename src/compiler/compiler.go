@@ -489,6 +489,11 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	addInitializer := func() {
 		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
 
+		// implicit numeric casts
+		if ddptypes.IsNumeric(d.Type) && ddptypes.IsNumeric(d.InitType) {
+			initVal, initTyp = c.numericCast(initVal, initTyp, Typ), Typ
+		}
+
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
 			vtable := initTyp.VTable()
@@ -1421,9 +1426,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_LEFT_SHIFT:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestReturnType = lhsTyp
 	case ast.BIN_RIGHT_SHIFT:
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
-		c.latestReturnType = c.ddpinttyp
+		c.latestReturnType = lhsTyp
 	case ast.BIN_EQUAL:
 		c.compare_values(lhs, rhs, lhsTyp)
 	case ast.BIN_UNEQUAL:
@@ -1791,12 +1797,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		switch targetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = lhs
-			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFPToSI(lhs, ddpint)
-			case c.ddpbytetyp:
-				c.latestReturn = c.floatOrByteAsInt(lhs, c.ddpbytetyp)
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
 				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 				c.latestReturn = c.cbb.NewZExt(cond, ddpint)
@@ -1811,12 +1813,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewSIToFP(lhs, ddpfloat)
-			case c.ddpfloattyp:
-				c.latestReturn = lhs
-			case c.ddpbytetyp:
-				c.latestReturn = c.intOrByteAsFloat(lhs, c.ddpbytetyp)
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			case c.ddpany:
@@ -1826,12 +1824,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 		case ddptypes.BYTE:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewTrunc(lhs, ddpbyte)
-			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFPToUI(lhs, ddpbyte)
-			case c.ddpbytetyp:
-				c.latestReturn = lhs
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
 				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 				c.latestReturn = c.cbb.NewZExt(cond, ddpbyte)
@@ -2313,6 +2307,11 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
 
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
+
+	// implicit numeric casts
+	if ddptypes.IsNumeric(s.VarType) && ddptypes.IsNumeric(s.RhsType) {
+		rhs, rhsTyp = c.numericCast(rhs, rhsTyp, lhsTyp), lhsTyp
+	}
 
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
