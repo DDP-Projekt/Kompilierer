@@ -17,6 +17,15 @@ und kann so benutzt werden:
 	"Schreibe <p1>"
 
 [
+	Die Funktion Schreibe_Byte schreibt einen gegebenen Byte (p1) in den Standart Output Stream.
+]
+Die öffentliche Funktion Schreibe_Byte mit dem Parameter p1 vom Typ Byte, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Schreibe den Byte <p1>" oder
+	"Schreibe <p1>"
+
+[
 	Die Funktion Schreibe_Wahrheitswert schreibt einen gegebenen Wahrheitswert (p1) in den Standart Output Stream.
 ]
 Die öffentliche Funktion Schreibe_Wahrheitswert mit dem Parameter p1 vom Typ Wahrheitswert, gibt nichts zurück,
@@ -69,6 +78,16 @@ Die öffentliche Funktion Schreibe_Zeile_Kommazahl mit dem Parameter p1 vom Typ 
 	Schreibe '\n'.
 Und kann so benutzt werden:
 	"Schreibe die Kommazahl <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+[
+	Die Funktion SchreibeZeile_Byte schreibt einen gegebenen Byte (p1) gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
+Die öffentliche Funktion Schreibe_Zeile_Byte mit dem Parameter p1 vom Typ Byte, gibt nichts zurück, macht:
+	Schreibe p1.
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe den Byte <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
 [
@@ -127,6 +146,20 @@ Die öffentliche Funktion Schreibe_Kommazahlen_Liste_Getrennt mit den Parametern
 		Schreibe (liste an der Stelle (die Länge von liste)).
 Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <liste> mit dem Seperator <seperator>" oder
+	"Schreibe <liste> mit dem Seperator <seperator>"
+
+[
+	Die Funktion Schreibe_Byte_Liste_Getrennt schreibt alle Elemente einer gegebenen Byte Liste (liste) getrennt mit einem Text (seperator) in den Standart Output Stream.
+]
+Die öffentliche Funktion Schreibe_Byte_Liste_Getrennt mit den Parametern liste und seperator vom Typ Byte Liste und Text, gibt nichts zurück, macht:
+	Wenn die Länge von liste größer als 0 ist, dann:
+		Wenn die Länge von liste größer als 1 ist, dann:
+			Für jede Zahl i von 1 bis die Länge von liste minus 1, mache:
+				Schreibe (liste an der Stelle i).
+				Schreibe seperator.
+		Schreibe (liste an der Stelle (die Länge von liste)).
+Und kann so benutzt werden:
+	"Schreibe die Byte Liste <liste> mit dem Seperator <seperator>" oder
 	"Schreibe <liste> mit dem Seperator <seperator>"
 
 [
@@ -190,6 +223,15 @@ Und kann so benutzt werden:
 	"Schreibe <p1>"
 
 [
+	Die Funktion Schreibe_Byte_Liste schreibt alle Elemente einer Byte Liste getrennt mit einem Komma in den Standart Output Stream.
+]
+Die öffentliche Funktion Schreibe_Byte_Liste mit dem Parameter p1 vom Typ Byte Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+Und kann so benutzt werden:
+	"Schreibe die Byte Liste <p1>" oder
+	"Schreibe <p1>"
+
+[
 	Die Funktion Schreibe_Wahrheitswert_Liste schreibt alle Elemente einer Wahrheitswert Liste getrennt mit einem Komma in den Standart Output Stream.
 ]
 Die öffentliche Funktion Schreibe_Wahrheitswert_Liste mit dem Parameter p1 vom Typ Wahrheitswert Liste, gibt nichts zurück, macht:
@@ -234,6 +276,16 @@ Die öffentliche Funktion Schreibe_Kommazahlen_Liste_Zeile mit dem Parameter p1 
 	Schreibe '\n'.
 Und kann so benutzt werden:
 	"Schreibe die Kommazahlen Liste <p1> auf eine Zeile" oder
+	"Schreibe <p1> auf eine Zeile"
+
+[
+	Die Funktion Schreibe_Byte_Liste schreibt alle Elemente einer Byte Liste getrennt mit einem Komma und gefolgt von einer neuen Zeile in den Standart Output Stream.
+]
+Die öffentliche Funktion Schreibe_Byte_Liste_Zeile mit dem Parameter p1 vom Typ Byte Liste, gibt nichts zurück, macht:
+	Schreibe p1 mit dem Seperator ", ".
+	Schreibe '\n'.
+Und kann so benutzt werden:
+	"Schreibe die Byte Liste <p1> auf eine Zeile" oder
 	"Schreibe <p1> auf eine Zeile"
 
 [

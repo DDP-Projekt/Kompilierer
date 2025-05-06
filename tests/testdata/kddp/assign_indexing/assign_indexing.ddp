@@ -4,6 +4,8 @@ Der Text t ist "Hallo\n".
 Schreibe den Text t.
 t an der Stelle 1 ist 'Ü'.
 Schreibe den Text t.
+t an der Stelle (1 als Byte) ist 'Ö'.
+Schreibe den Text t.
 t an der Stelle 5 ist 'Ü'.
 t an der Stelle 6 ist '.'.
 Schreibe den Text t.
@@ -13,6 +15,9 @@ Die Zahlen Liste z ist eine Liste, die aus 1, 2, 3, 4, 5, 6 besteht.
 Schreibe z.
 Schreibe '\n'.
 z an der Stelle 1 ist 69.
+Schreibe z.
+Schreibe '\n'.
+z an der Stelle (2 als Byte) ist 22.
 Schreibe z.
 Schreibe '\n'.
 z an der Stelle 5 ist 3.

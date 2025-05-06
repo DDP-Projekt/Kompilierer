@@ -15,6 +15,10 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (2 größer als 1,0 ist).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (2,3 größer als 2 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (2 als Byte größer als 1,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (2 größer als 2 als Byte ist).
 Schreibe den Buchstaben '\n'.
 
 Schreibe den Wahrheitswert (2 kleiner als 1 ist).
@@ -32,6 +36,10 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (2 kleiner als 1,0 ist).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (2,3 kleiner als 2 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (2 als Byte kleiner als 1,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (2 als Byte kleiner als 2 ist).
 Schreibe den Buchstaben '\n'.
 
 Schreibe den Wahrheitswert (2 größer als, oder 1 ist).
@@ -85,6 +93,8 @@ Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (0,0 zwischen -1,0 und 0,0 ist).
 Schreibe den Buchstaben ','.
 Schreibe den Wahrheitswert (0,2 zwischen -1,0 und 0,0 ist).
+Schreibe den Buchstaben ','.
+Schreibe den Wahrheitswert (0 als Byte zwischen -1 und 2 ist).
 
 Schreibe '\n'.
 

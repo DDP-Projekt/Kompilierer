@@ -20,6 +20,8 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 		return ddptypes.ZAHL
 	case token.KOMMAZAHL:
 		return ddptypes.KOMMAZAHL
+	case token.BYTE:
+		return ddptypes.BYTE
 	case token.WAHRHEITSWERT:
 		return ddptypes.WAHRHEITSWERT
 	case token.BUCHSTABE:
@@ -38,7 +40,7 @@ func (p *parser) tokenTypeToType(t token.TokenType) ddptypes.Type {
 // returns nil and errors if no typename was found
 // if generic is true, unknown identifiers are treated as generic types
 func (p *parser) parseType(generic bool) ddptypes.Type {
-	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.BYTE, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
 		token.VARIABLE, token.VARIABLEN, token.LPAREN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
@@ -49,7 +51,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 
 	for ok := true; ok; ok = p.matchAny(token.NEGATE) {
 		if p.previous().Type == token.NEGATE {
-			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BYTE, token.WAHRHEITSWERT, token.BUCHSTABE,
 				token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
 				token.VARIABLE, token.VARIABLEN, token.LPAREN)
 		}
@@ -58,7 +60,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 		switch p.previous().Type {
 		case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
 			typ = p.tokenTypeToType(p.previous().Type)
-		case token.WAHRHEITSWERT, token.TEXT:
+		case token.BYTE, token.WAHRHEITSWERT, token.TEXT:
 			if !p.matchAny(token.LISTE) {
 				typ = p.tokenTypeToType(p.previous().Type)
 				break
@@ -147,7 +149,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 // expects the next token to be the start of the type
 // returns nil and errors if no typename was found
 func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
-	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+	if !p.matchAny(token.ZAHL, token.KOMMAZAHL, token.BYTE, token.WAHRHEITSWERT, token.BUCHSTABE,
 		token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
 		token.VARIABLE, token.VARIABLEN, token.LPAREN) {
 		p.err(ddperror.SYN_EXPECTED_TYPENAME, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "ein Typname"))
@@ -165,7 +167,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 		}
 
 		if p.previous().Type == token.NEGATE {
-			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.WAHRHEITSWERT, token.BUCHSTABE,
+			p.consumeAny(token.ZAHL, token.KOMMAZAHL, token.BYTE, token.WAHRHEITSWERT, token.BUCHSTABE,
 				token.TEXT, token.ZAHLEN, token.KOMMAZAHLEN, token.BUCHSTABEN, token.IDENTIFIER,
 				token.VARIABLE, token.VARIABLEN, token.LPAREN)
 		}
@@ -174,7 +176,7 @@ func (p *parser) parseReferenceType(generic bool) (ddptypes.Type, bool) {
 		switch p.previous().Type {
 		case token.ZAHL, token.KOMMAZAHL, token.BUCHSTABE, token.VARIABLE:
 			typ, isRef = p.tokenTypeToType(p.previous().Type), false
-		case token.WAHRHEITSWERT, token.TEXT:
+		case token.BYTE, token.WAHRHEITSWERT, token.TEXT:
 			if p.matchAny(token.LISTE) {
 				typ, isRef = ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-2).Type)}, false
 			} else if p.matchAny(token.LISTEN) {

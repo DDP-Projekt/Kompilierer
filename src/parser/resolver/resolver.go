@@ -285,6 +285,11 @@ func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (r *Resolver) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
+	r.visit(expr.Lhs) // visit the actual expressions
+	return ast.VisitRecurse
+}
+
 func (r *Resolver) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
@@ -372,6 +377,8 @@ func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 		r.visit(assign.Index)
 	case *ast.FieldAccess:
 		r.visit(assign.Rhs)
+	case *ast.CastAssigneable:
+		r.visit(assign.Lhs)
 	}
 	r.visit(stmt.Rhs)
 	return ast.VisitRecurse

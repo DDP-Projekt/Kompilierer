@@ -243,6 +243,21 @@ void ddp_float_to_string(ddpstring *ret, ddpfloat f) {
 	ret->cap = len + 1;
 }
 
+void ddp_byte_to_string(ddpstring *ret, ddpbyte i) {
+	DDP_DBGLOG("_ddp_byte_to_string: %p", ret);
+
+	char buffer[5];
+	int len = sprintf(buffer, DDP_BYTE_FMT, i);
+
+	char *string = DDP_ALLOCATE(char, len + 1); // the char array of the string + null-terminator
+	memcpy(string, buffer, len);
+	string[len] = '\0';
+
+	// set the string fields
+	ret->str = string;
+	ret->cap = len + 1;
+}
+
 void ddp_bool_to_string(ddpstring *ret, ddpbool b) {
 	DDP_DBGLOG("_ddp_bool_to_string: %p", ret);
 

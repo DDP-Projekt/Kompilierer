@@ -27,6 +27,7 @@ var (
 	// convenience declarations for often used types
 	ddpint   = i64
 	ddpfloat = types.Double
+	ddpbyte  = types.I8
 	ddpbool  = types.I1
 	ddpchar  = i32
 
@@ -34,9 +35,11 @@ var (
 
 	i8ptr = ptr(i8)
 
-	zero     = newInt(0) // 0: i64
-	zerof    = constant.NewFloat(ddpfloat, 0)
-	all_ones = newInt(^0) // int with all bits set to 1
+	zero      = newInt(0) // 0: i64
+	zerof     = constant.NewFloat(ddpfloat, 0)
+	zero8     = newIntT(ddpbyte, 0)
+	all_ones  = newInt(^0) // int with all bits set to 1
+	all_ones8 = newIntT(ddpbyte, ^0)
 )
 
 func newInt(value int64) *constant.Int {
@@ -63,6 +66,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpintlist
 		case ddptypes.KOMMAZAHL:
 			return c.ddpfloatlist
+		case ddptypes.BYTE:
+			return c.ddpbytelist
 		case ddptypes.WAHRHEITSWERT:
 			return c.ddpboollist
 		case ddptypes.BUCHSTABE:
@@ -80,6 +85,8 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 			return c.ddpinttyp
 		case ddptypes.KOMMAZAHL:
 			return c.ddpfloattyp
+		case ddptypes.BYTE:
+			return c.ddpbytetyp
 		case ddptypes.WAHRHEITSWERT:
 			return c.ddpbooltyp
 		case ddptypes.BUCHSTABE:
@@ -113,6 +120,8 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 		return c.ddpintlist
 	case c.ddpfloattyp:
 		return c.ddpfloatlist
+	case c.ddpbytetyp:
+		return c.ddpbytelist
 	case c.ddpbooltyp:
 		return c.ddpboollist
 	case c.ddpchartyp:
@@ -230,7 +239,7 @@ func mangledNameBase(name string, module *ast.Module) string {
 // compares two values of same type for equality
 func (c *compiler) compare_values(lhs, rhs value.Value, typ ddpIrType) value.Value {
 	switch typ {
-	case c.ddpinttyp, c.ddpbooltyp, c.ddpchartyp:
+	case c.ddpinttyp, c.ddpbytetyp, c.ddpbooltyp, c.ddpchartyp:
 		c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
 	case c.ddpfloattyp:
 		c.latestReturn = c.cbb.NewFCmp(enum.FPredOEQ, lhs, rhs)
