@@ -2458,32 +2458,42 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
-	new_IorF_comp := func(ipred enum.IPred, upred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
-		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
-			return c.cbb.NewICmp(ipred, x, yi)
-		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-			return c.cbb.NewICmp(upred, x, yi)
-		} else {
+	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, xType ddpIrType, yi value.Value, yiType ddpIrType, yf value.Value) value.Value {
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
+			x, yi = c.floatOrByteAsInt(x, xType), c.floatOrByteAsInt(yi, yiType)
+		}
+
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
 			return c.cbb.NewFCmp(fpred, x, yf)
+		} else {
+			return c.cbb.NewICmp(ipred, x, yi)
 		}
 	}
 
 	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 
-	c.scp = newScope(c.scp)     // scope for the for body
-	c.visitNode(s.Initializer)  // compile the counter variable declaration
+	c.scp = newScope(c.scp)    // scope for the for body
+	c.visitNode(s.Initializer) // compile the counter variable declaration
+	Var := c.scp.lookupVar(s.Initializer)
+	// this is the actual index used
+	var indexVar *ir.InstAlloca
+	var indexTyp ddpIrType
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+		indexVar, indexTyp = c.NewAlloca(ddpfloat), c.ddpfloattyp
+	} else {
+		indexVar, indexTyp = c.NewAlloca(ddpint), c.ddpinttyp
+	}
 	var incrementer value.Value // Schrittgröße
+	var incrementerType ddpIrType
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
-			incrementer = newInt(1)
-		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-			incrementer = newIntT(ddpbyte, 1)
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+			incrementer, incrementerType = constant.NewFloat(ddpfloat, 1.0), c.ddpfloattyp
 		} else {
-			incrementer = constant.NewFloat(ddpfloat, 1.0)
+			incrementer, incrementerType = newInt(1), c.ddpinttyp
 		}
 	} else { // stepsize was present, so compile it
-		incrementer, _, _ = c.evaluate(s.StepSize)
+		incrementer, incrementerType, _ = c.evaluate(s.StepSize)
 	}
 
 	condBlock := c.cf.NewBlock("")
@@ -2492,6 +2502,8 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	breakLeave := c.cf.NewBlock("")
 	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, incrementBlock
+
+	c.cbb.NewStore(c.numericCast(c.cbb.NewLoad(Var.typ.IrType(), Var.val), Var.typ, indexTyp), indexVar)
 
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
@@ -2505,17 +2517,18 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// compile the incrementBlock
 	c.cbb = incrementBlock
-	Var := c.scp.lookupVar(s.Initializer)
-	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
+	indexVal := c.cbb.NewLoad(indexTyp.IrType(), indexVar)
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) || ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-		add = c.cbb.NewAdd(indexVar, incrementer)
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+		add = c.cbb.NewFAdd(indexVal, c.intOrByteAsFloat(incrementer, incrementerType))
+		c.cbb.NewStore(add, Var.val)
 	} else {
-		add = c.cbb.NewFAdd(indexVar, incrementer)
+		add = c.cbb.NewAdd(indexVal, c.floatOrByteAsInt(incrementer, incrementerType))
+		c.cbb.NewStore(c.numericCast(add, c.ddpinttyp, Var.typ), Var.val)
 	}
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer).val)
+	c.cbb.NewStore(add, indexVar)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -2526,21 +2539,21 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := new_IorF_comp(enum.IPredSLT, enum.IPredULT, enum.FPredOLT, incrementer, newInt(0), constant.NewFloat(ddpfloat, 0.0))
+	cond := new_IorF_comp(enum.IPredSLT, enum.FPredOLT, incrementer, incrementerType, newInt(0), c.ddpinttyp, constant.NewFloat(ddpfloat, 0.0))
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, loopDown, loopUp)
 
 	c.cbb = loopUp
 	// we are counting up, so compare less-or-equal
-	to, _, _ := c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSLE, enum.IPredULE, enum.FPredOLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	to, toType, _ := c.evaluate(s.To)
+	cond = new_IorF_comp(enum.IPredSLE, enum.FPredOLE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb = loopDown
 	// we are counting down, so compare greater-or-equal
-	to, _, _ = c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSGE, enum.IPredUGE, enum.FPredOGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	to, toType, _ = c.evaluate(s.To)
+	cond = new_IorF_comp(enum.IPredSGE, enum.FPredOGE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 

@@ -785,18 +785,16 @@ func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	if !ddptypes.Equal(iter_type, ddptypes.ZAHL) && !ddptypes.Equal(iter_type, ddptypes.KOMMAZAHL) && !ddptypes.Equal(iter_type, ddptypes.BYTE) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl, eine Kommazahl oder ein Byte sein")
 	}
-	if toType := t.Evaluate(stmt.To); !ddptypes.Equal(toType, iter_type) {
+	if toType := t.Evaluate(stmt.To); !ddptypes.IsNumeric(toType) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
-			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-			iter_type,
+			"Der Endwert in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.Equal(stepType, iter_type) {
+		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.IsNumeric(stepType) {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
-				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-				iter_type,
+				"Die Schrittgröße in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 				stepType,
 			)
 		}
