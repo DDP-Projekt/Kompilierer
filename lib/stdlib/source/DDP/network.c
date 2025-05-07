@@ -62,6 +62,46 @@ typedef struct ddpsocket {
 	int type;
 } ddpsocket;
 
+#ifdef DDPOS_WINDOWS
+
+static void cleanup_winsock(void) {
+	WSACleanup();
+}
+
+ddpbool Init_Windows(void) {
+	WSADATA wsaData;
+
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		ddp_error("WSAStartup failed", false);
+		return false;
+	}
+
+	if (LOBYTE(wsaData.wVersion) != 2 ||
+		HIBYTE(wsaData.wVersion) != 2) {
+		ddp_error("Version 2.2 of Winsock not available", false);
+		WSACleanup();
+		return false;
+	}
+
+	atexit(cleanup_winsock);
+
+	return true;
+}
+
+void Schließe_Socket_Windows(ddpsocket *sock) {
+	closesocket(sock->fd);
+}
+
+#else
+
+void Schließe_Socket_Windows(ddpsocket *sock) {}
+
+ddpbool Init_Windows(void) {
+	return true;
+}
+
+#endif // DDPOS_WINDOWS
+
 struct addrinfo *Lade_AddressInfo(int family, int type, const ddpstring *name, const ddpstring *service) {
 	int status;
 	struct addrinfo hints;
@@ -188,7 +228,7 @@ void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
 ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpbytelistref data, const ddpsockaddr_storage *client) {
 	ddpint sent = 0;
 	if ((sent = (ddpint)sendto(sock->fd, (const char *)data->arr, data->len, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
-		ddp_error("send Fehler: ", true);
+		ddp_error("sendto Fehler: ", true);
 	}
 
 	return sent;
@@ -208,7 +248,7 @@ void Socket_Empfangen_Von(ddpbytelist *ret, ddpsocket *sock, ddpint max, ddpsock
 	if (got < 0) {
 		*ret = DDP_EMPTY_LIST(ddpbytelist);
 		DDP_FREE_ARRAY(char, buf, max);
-		ddp_error("recv Fehler: ", true);
+		ddp_error("recvfrom Fehler: ", true);
 		return;
 	}
 	ret->cap = got;

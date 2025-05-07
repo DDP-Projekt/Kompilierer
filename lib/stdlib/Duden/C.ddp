@@ -53,4 +53,5 @@ Und kann so benutzt werden:
 Die oeffentliche Funktion close mit dem Parameter fd vom Typ C_int, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-    "Schließe <fd>"
+    "Schließe <fd>",
+    "schließe <fd>"
