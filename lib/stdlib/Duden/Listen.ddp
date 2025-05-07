@@ -14,6 +14,12 @@ ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_append <list> <elem> <v>"
 
+[Hilfsfunktion für Hinzufügen_X]
+Die generische Funktion efficient_list_append_list mit den Parametern list, other und v vom Typ T Listen Referenz, T Listen Referenz und Variablen Referenz, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_append_list <list> <other> <v>"
+
 [
 	Fügt ein Element ans Ende der gegeben Liste an.
 ]
@@ -23,6 +29,16 @@ Die öffentliche generische Funktion Hinzufügen_Liste mit den Parametern liste 
 Und kann so benutzt werden:
 	"Füge <elm> an <liste> an",
 	"füge <elm> an <liste> an"
+
+[
+	Fügt eine Liste ans Ende der gegeben Liste an.
+]
+Die öffentliche generische Funktion Hinzufügen_Liste_Liste mit den Parametern liste und other vom Typ T Listen Referenz und T Liste, gibt nichts zurück, macht:
+	Die Variable v ist der Standardwert von einem T.
+	efficient_list_append_list liste other v.
+Und kann so benutzt werden:
+	"Füge <other> an <liste> an",
+	"füge <other> an <liste> an"
 
 Die generische Funktion efficient_list_insert mit den Parametern list, index, elem und v vom Typ T Listen Referenz, Zahl, T Referenz und Variablen Referenz, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
@@ -59,6 +75,11 @@ ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"efficient_list_prepend <liste> <elem> <v>"
 
+Die generische Funktion efficient_list_prepend_list mit den Parametern liste, other und v vom Typ T Listen Referenz, T Listen Referenz und Variablen Referenz, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+Und kann so benutzt werden:
+	"efficient_list_prepend_list <liste> <other> <v>"
+
 [
 	Fügt ein Element an Anfang der gegeben Liste an.
 	Ist der Index invalide wird ein Laufzeitfehler ausgelöst
@@ -69,6 +90,17 @@ Die öffentliche generische Funktion Voranstellen_Liste mit den Parametern liste
 	efficient_list_prepend liste elm v.
 Und kann so benutzt werden:
 	"Stelle <elm> vor <liste>"
+
+[
+	Fügt eine Liste an Anfang der gegeben Liste an.
+	Ist der Index invalide wird ein Laufzeitfehler ausgelöst
+]
+Die öffentliche generische Funktion Voranstellen_Liste_Liste mit den Parametern liste und other vom Typ T Listen Referenz und T Liste, gibt nichts zurück, macht:
+	[Speichere elm verkettet mit liste in liste.]
+	Die Variable v ist der Standardwert von einem T.
+	efficient_list_prepend_list liste other v.
+Und kann so benutzt werden:
+	"Stelle <other> vor <liste>"
 
 Die generische Funktion efficient_list_delete_range mit den Parametern list, start, end und v vom Typ T Listen Referenz, Zahl, Zahl und Variablen Referenz, gibt nichts zurück,
 ist in "libddpstdlib.a" definiert
