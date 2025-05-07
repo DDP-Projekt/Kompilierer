@@ -199,33 +199,33 @@ Und kann so benutzt werden:
     "wie viele Bytes von <daten> über <verbindung> gesendet wurden"
 
 Die öffentliche Funktion Socket_Empfangen_Text mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt einen Text zurück, macht:
-    
-und kann so benutzt werden:
-    "maximal <max> Bytes aus <verbindung>",
-    "maximal die nächsten <max> Bytes aus <verbindung>",
-    "maximal den nächsten <max> Bytes aus <verbindung>"
+    Gib die Bytes (maximal max Bytes aus verbindung) als Text zurück.
+Und kann so benutzt werden:
+    "der maximal <max> Bytes lange Text aus <verbindung>",
+    "der nächste maximal <max> Bytes lange Text aus <verbindung>",
+    "dem nächste maximal <max> Bytes lange Text aus <verbindung>"
 
-Die öffentliche Funktion Socket_Senden_An_Klient mit den Parametern verbindung, daten und client vom Typ Socket, Byte Listen Referenz und KlientenAddresse, gibt eine Zahl zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die öffentliche Funktion Socket_Senden_An_Klient_Text mit den Parametern verbindung, daten und client vom Typ Socket, Text Referenz und KlientenAddresse, gibt eine Zahl zurück, macht:
+	Gib wie viele Bytes von (den Bytes von daten) über verbindung gesendet wurden zurück.
+Und kann so benutzt werden:
     "Sende <daten> über <verbindung> an <client>" oder
     "wie viele Bytes von <daten> über <verbindung> an <client> gesendet wurden"
 
-Die öffentliche Funktion Socket_Senden_An mit den Parametern verbindung, daten und info vom Typ Socket, Byte Listen Referenz und AddressInfo, gibt eine Zahl zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
+Die öffentliche Funktion Socket_Senden_An_Text mit den Parametern verbindung, daten und info vom Typ Socket, Text Referenz und AddressInfo, gibt eine Zahl zurück, macht:
+	Gib wie viele Bytes von daten über verbindung an info gesendet wurden zurück.
+Und kann so benutzt werden:
     "Sende <daten> über <verbindung> an <info>" oder
     "wie viele Bytes von <daten> über <verbindung> an <info> gesendet wurden"
 
-Die öffentliche Funktion Socket_Empfangen_Von mit den Parametern verbindung, max und client vom Typ Socket, Zahl und KlientenAddresse Referenz, gibt eine Byte Liste zurück,
-ist in "libddpstdlib.a" definiert
-und kann so benutzt werden:
-    "das nächste maximal <max> Bytes große Packet aus <verbindung> von <client>",
-    "dem nächsten maximal <max> Bytes großen Packet aus <verbindung> von <client>"
-
-Die öffentliche Funktion Socket_Empfangen_Von_Ohne_Klient mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt eine Byte Liste zurück, macht:
-    Die KlientenAddresse client ist eine leere KlientenAddresse.
-    Gib das nächste maximal max Bytes große Packet aus verbindung von client zurück.
+Die öffentliche Funktion Socket_Empfangen_Von_Text mit den Parametern verbindung, max und client vom Typ Socket, Zahl und KlientenAddresse Referenz, gibt einen Text zurück, macht:
+	Gib die Bytes (das nächste maximal max Bytes große Packet aus verbindung von client) als Text zurück.
 Und kann so benutzt werden:
-    "das nächste maximal <max> Bytes große Packet aus <verbindung>",
-    "dem nächsten maximal <max> Bytes großen Packet aus <verbindung>"
+    "der nächste maximal <max> Bytes große Text aus <verbindung> von <client>",
+    "dem nächsten maximal <max> Bytes großen Text aus <verbindung> von <client>"
+
+Die öffentliche Funktion Socket_Empfangen_Von_Ohne_Klient_Text mit den Parametern verbindung und max vom Typ Socket und Zahl, gibt einen Text zurück, macht:
+    Die KlientenAddresse client ist eine leere KlientenAddresse.
+    Gib die Bytes (das nächste maximal max Bytes große Packet aus verbindung von client) als Text zurück.
+Und kann so benutzt werden:
+    "der nächste maximal <max> Bytes große Text aus <verbindung>",
+    "dem nächsten maximal <max> Bytes großen Text aus <verbindung>"

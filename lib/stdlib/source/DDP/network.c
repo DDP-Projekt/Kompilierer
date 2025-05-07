@@ -155,7 +155,7 @@ ddpint Socket_Senden(const ddpsocket *sock, const ddpbytelistref data) {
 	ddpint result = 0;
 	while (result < data->len) {
 		int sent;
-		if ((sent = send(sock->fd, &data->arr[result], data->len - result, 0)) < 0) {
+		if ((sent = send(sock->fd, (const char *)&data->arr[result], data->len - result, 0)) < 0) {
 			ddp_error("send Fehler: ", true);
 			return result;
 		}
@@ -166,7 +166,7 @@ ddpint Socket_Senden(const ddpsocket *sock, const ddpbytelistref data) {
 
 void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
 	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
-	ddpint got = (ddpint)recv(sock->fd, buf, max, 0);
+	ddpint got = (ddpint)recv(sock->fd, (char *)buf, max, 0);
 	if (got < 0) {
 		*ret = DDP_EMPTY_LIST(ddpbytelist);
 		DDP_FREE_ARRAY(ddpbyte, buf, max);
@@ -187,7 +187,7 @@ void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
 
 ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpbytelistref data, const ddpsockaddr_storage *client) {
 	ddpint sent = 0;
-	if ((sent = (ddpint)sendto(sock->fd, data->arr, data->len, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
+	if ((sent = (ddpint)sendto(sock->fd, (const char *)data->arr, data->len, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
 		ddp_error("send Fehler: ", true);
 	}
 
@@ -204,7 +204,7 @@ ddpint Socket_Senden_An(const ddpsocket *sock, const ddpbytelistref data, const 
 void Socket_Empfangen_Von(ddpbytelist *ret, ddpsocket *sock, ddpint max, ddpsockaddr_storage *client_addr) {
 	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
 	client_addr->size = sizeof(client_addr->storage);
-	ddpint got = (ddpint)recvfrom(sock->fd, buf, max, 0, (struct sockaddr *)&client_addr->storage, &client_addr->size);
+	ddpint got = (ddpint)recvfrom(sock->fd, (char *)buf, max, 0, (struct sockaddr *)&client_addr->storage, &client_addr->size);
 	if (got < 0) {
 		*ret = DDP_EMPTY_LIST(ddpbytelist);
 		DDP_FREE_ARRAY(char, buf, max);
