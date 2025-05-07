@@ -296,3 +296,9 @@ Schreibe '\n'.
 
 [Text_Worte]
 Schreibe (alle Worte in " Hallo du schöne Welt!") auf eine Zeile.
+
+Schreibe '\n'.
+
+[ Text <-> Byte Liste ]
+Schreibe (die Bytes von "Hallo") auf eine Zeile.
+Schreibe (die Bytes (eine Liste, die aus 72 als Byte, 97 als Byte, 108 als Byte, 108 als Byte, 111 als Byte besteht) als Text) auf eine Zeile.

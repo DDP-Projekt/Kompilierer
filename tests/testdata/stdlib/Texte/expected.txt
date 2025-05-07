@@ -172,3 +172,6 @@ Hallo, Welt
 Hallo, Welt
 
 Hallo, du, schöne, Welt!
+
+72, 97, 108, 108, 111
+Hallo

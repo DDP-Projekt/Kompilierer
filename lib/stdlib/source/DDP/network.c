@@ -151,11 +151,11 @@ void Socket_Verbindung_Annehmen(ddpsocket *ret, const ddpsocket *sock, ddpsockad
 	ret->type = sock->type;
 }
 
-ddpint Socket_Senden(const ddpsocket *sock, const ddpstringref data) {
+ddpint Socket_Senden(const ddpsocket *sock, const ddpbytelistref data) {
 	ddpint result = 0;
-	while (result < data->cap - 1) {
+	while (result < data->len) {
 		int sent;
-		if ((sent = send(sock->fd, &data->str[result], data->cap - 1 - result, 0)) < 0) {
+		if ((sent = send(sock->fd, &data->arr[result], data->len - result, 0)) < 0) {
 			ddp_error("send Fehler: ", true);
 			return result;
 		}
@@ -164,56 +164,54 @@ ddpint Socket_Senden(const ddpsocket *sock, const ddpstringref data) {
 	return result;
 }
 
-void Socket_Empfangen(ddpstring *ret, ddpsocket *sock, const ddpint max) {
-	char *buf = DDP_ALLOCATE(char, max + 1);
+void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
+	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
 	ddpint got = (ddpint)recv(sock->fd, buf, max, 0);
 	if (got < 0) {
-		*ret = DDP_EMPTY_STRING;
-		DDP_FREE_ARRAY(char, buf, max + 1);
+		*ret = DDP_EMPTY_LIST(ddpbytelist);
+		DDP_FREE_ARRAY(ddpbyte, buf, max);
 		ddp_error("recv Fehler: ", true);
 		return;
 	}
 
 	if (got == 0) {
-		*ret = DDP_EMPTY_STRING;
-		DDP_FREE_ARRAY(char, buf, max + 1);
+		*ret = DDP_EMPTY_LIST(ddpbytelist);
+		DDP_FREE_ARRAY(ddpbyte, buf, max);
 		return;
 	}
 
-	ret->str = buf;
-	ret->cap = got + 1;
-	ddp_reallocate(buf, max + 1, ret->cap);
-	ret->str[got] = '\0';
+	ret->cap = got;
+	ret->len = got;
+	ret->arr = ddp_reallocate(buf, max, ret->len);
 }
 
-ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpstring *data, const ddpsockaddr_storage *client) {
+ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpbytelistref data, const ddpsockaddr_storage *client) {
 	ddpint sent = 0;
-	if ((sent = (ddpint)sendto(sock->fd, data->str, data->cap - 1, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
+	if ((sent = (ddpint)sendto(sock->fd, data->arr, data->len, 0, (struct sockaddr *)&client->storage, client->size)) < 0) {
 		ddp_error("send Fehler: ", true);
 	}
 
 	return sent;
 }
 
-ddpint Socket_Senden_An(const ddpsocket *sock, const ddpstring *data, const struct addrinfo *info) {
+ddpint Socket_Senden_An(const ddpsocket *sock, const ddpbytelistref data, const struct addrinfo *info) {
 	ddpsockaddr_storage client;
 	client.size = info->ai_addrlen;
 	memcpy(&client.storage, info->ai_addr, info->ai_addrlen);
 	return Socket_Senden_An_Klient(sock, data, &client);
 }
 
-void Socket_Empfangen_Von(ddpstring *ret, ddpsocket *sock, ddpint max, ddpsockaddr_storage *client_addr) {
-	char *buf = DDP_ALLOCATE(char, max + 1);
+void Socket_Empfangen_Von(ddpbytelist *ret, ddpsocket *sock, ddpint max, ddpsockaddr_storage *client_addr) {
+	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
 	client_addr->size = sizeof(client_addr->storage);
 	ddpint got = (ddpint)recvfrom(sock->fd, buf, max, 0, (struct sockaddr *)&client_addr->storage, &client_addr->size);
 	if (got < 0) {
-		*ret = DDP_EMPTY_STRING;
-		DDP_FREE_ARRAY(char, buf, max + 1);
+		*ret = DDP_EMPTY_LIST(ddpbytelist);
+		DDP_FREE_ARRAY(char, buf, max);
 		ddp_error("recv Fehler: ", true);
 		return;
 	}
-	ret->str = buf;
-	ret->cap = got + 1;
-	ddp_reallocate(buf, max + 1, ret->cap);
-	ret->str[got] = '\0';
+	ret->cap = got;
+	ret->len = got;
+	ret->arr = ddp_reallocate(buf, max, ret->len);
 }
