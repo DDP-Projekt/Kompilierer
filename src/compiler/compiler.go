@@ -489,6 +489,11 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	addInitializer := func() {
 		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
 
+		// implicit numeric casts
+		if ddptypes.IsNumeric(d.Type) && ddptypes.IsNumeric(d.InitType) {
+			initVal, initTyp = c.numericCast(initVal, initTyp, Typ), Typ
+		}
+
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
 			vtable := initTyp.VTable()
@@ -1421,9 +1426,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_LEFT_SHIFT:
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
 		c.latestReturnType = c.ddpinttyp
+		c.latestReturnType = lhsTyp
 	case ast.BIN_RIGHT_SHIFT:
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
-		c.latestReturnType = c.ddpinttyp
+		c.latestReturnType = lhsTyp
 	case ast.BIN_EQUAL:
 		c.compare_values(lhs, rhs, lhsTyp)
 	case ast.BIN_UNEQUAL:
@@ -1791,12 +1797,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		switch targetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = lhs
-			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFPToSI(lhs, ddpint)
-			case c.ddpbytetyp:
-				c.latestReturn = c.floatOrByteAsInt(lhs, c.ddpbytetyp)
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
 				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 				c.latestReturn = c.cbb.NewZExt(cond, ddpint)
@@ -1811,12 +1813,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewSIToFP(lhs, ddpfloat)
-			case c.ddpfloattyp:
-				c.latestReturn = lhs
-			case c.ddpbytetyp:
-				c.latestReturn = c.intOrByteAsFloat(lhs, c.ddpbytetyp)
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpstring:
 				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			case c.ddpany:
@@ -1826,12 +1824,8 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 		case ddptypes.BYTE:
 			switch lhsTyp {
-			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewTrunc(lhs, ddpbyte)
-			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFPToUI(lhs, ddpbyte)
-			case c.ddpbytetyp:
-				c.latestReturn = lhs
+			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
+				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
 				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
 				c.latestReturn = c.cbb.NewZExt(cond, ddpbyte)
@@ -2314,6 +2308,11 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
+	// implicit numeric casts
+	if ddptypes.IsNumeric(s.VarType) && ddptypes.IsNumeric(s.RhsType) {
+		rhs, rhsTyp = c.numericCast(rhs, rhsTyp, lhsTyp), lhsTyp
+	}
+
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
 		index = c.floatOrByteAsInt(index, indexTyp)
@@ -2459,32 +2458,42 @@ func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
-	new_IorF_comp := func(ipred enum.IPred, upred enum.IPred, fpred enum.FPred, x value.Value, yi, yf value.Value) value.Value {
-		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
-			return c.cbb.NewICmp(ipred, x, yi)
-		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-			return c.cbb.NewICmp(upred, x, yi)
-		} else {
+	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, xType ddpIrType, yi value.Value, yiType ddpIrType, yf value.Value) value.Value {
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
+			x, yi = c.floatOrByteAsInt(x, xType), c.floatOrByteAsInt(yi, yiType)
+		}
+
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
 			return c.cbb.NewFCmp(fpred, x, yf)
+		} else {
+			return c.cbb.NewICmp(ipred, x, yi)
 		}
 	}
 
 	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
 
-	c.scp = newScope(c.scp)     // scope for the for body
-	c.visitNode(s.Initializer)  // compile the counter variable declaration
+	c.scp = newScope(c.scp)    // scope for the for body
+	c.visitNode(s.Initializer) // compile the counter variable declaration
+	Var := c.scp.lookupVar(s.Initializer)
+	// this is the actual index used
+	var indexVar *ir.InstAlloca
+	var indexTyp ddpIrType
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+		indexVar, indexTyp = c.NewAlloca(ddpfloat), c.ddpfloattyp
+	} else {
+		indexVar, indexTyp = c.NewAlloca(ddpint), c.ddpinttyp
+	}
 	var incrementer value.Value // Schrittgröße
+	var incrementerType ddpIrType
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
-		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) {
-			incrementer = newInt(1)
-		} else if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-			incrementer = newIntT(ddpbyte, 1)
+		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+			incrementer, incrementerType = constant.NewFloat(ddpfloat, 1.0), c.ddpfloattyp
 		} else {
-			incrementer = constant.NewFloat(ddpfloat, 1.0)
+			incrementer, incrementerType = newInt(1), c.ddpinttyp
 		}
 	} else { // stepsize was present, so compile it
-		incrementer, _, _ = c.evaluate(s.StepSize)
+		incrementer, incrementerType, _ = c.evaluate(s.StepSize)
 	}
 
 	condBlock := c.cf.NewBlock("")
@@ -2493,6 +2502,8 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	breakLeave := c.cf.NewBlock("")
 	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, incrementBlock
+
+	c.cbb.NewStore(c.numericCast(c.cbb.NewLoad(Var.typ.IrType(), Var.val), Var.typ, indexTyp), indexVar)
 
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
@@ -2506,17 +2517,18 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	// compile the incrementBlock
 	c.cbb = incrementBlock
-	Var := c.scp.lookupVar(s.Initializer)
-	indexVar := c.cbb.NewLoad(Var.typ.IrType(), Var.val)
+	indexVal := c.cbb.NewLoad(indexTyp.IrType(), indexVar)
 
 	// add the incrementer to the counter variable
 	var add value.Value
-	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.ZAHL) || ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
-		add = c.cbb.NewAdd(indexVar, incrementer)
+	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
+		add = c.cbb.NewFAdd(indexVal, c.intOrByteAsFloat(incrementer, incrementerType))
+		c.cbb.NewStore(add, Var.val)
 	} else {
-		add = c.cbb.NewFAdd(indexVar, incrementer)
+		add = c.cbb.NewAdd(indexVal, c.floatOrByteAsInt(incrementer, incrementerType))
+		c.cbb.NewStore(c.numericCast(add, c.ddpinttyp, Var.typ), Var.val)
 	}
-	c.cbb.NewStore(add, c.scp.lookupVar(s.Initializer).val)
+	c.cbb.NewStore(add, indexVar)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewBr(condBlock) // check the condition (loop)
 
@@ -2527,21 +2539,21 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 
 	c.cbb = condBlock
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := new_IorF_comp(enum.IPredSLT, enum.IPredULT, enum.FPredOLT, incrementer, newInt(0), constant.NewFloat(ddpfloat, 0.0))
+	cond := new_IorF_comp(enum.IPredSLT, enum.FPredOLT, incrementer, incrementerType, newInt(0), c.ddpinttyp, constant.NewFloat(ddpfloat, 0.0))
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, loopDown, loopUp)
 
 	c.cbb = loopUp
 	// we are counting up, so compare less-or-equal
-	to, _, _ := c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSLE, enum.IPredULE, enum.FPredOLE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	to, toType, _ := c.evaluate(s.To)
+	cond = new_IorF_comp(enum.IPredSLE, enum.FPredOLE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
 	c.cbb = loopDown
 	// we are counting down, so compare greater-or-equal
-	to, _, _ = c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSGE, enum.IPredUGE, enum.FPredOGE, c.cbb.NewLoad(Var.typ.IrType(), Var.val), to, to)
+	to, toType, _ = c.evaluate(s.To)
+	cond = new_IorF_comp(enum.IPredSGE, enum.FPredOGE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
 	c.commentNode(c.cbb, s, "")
 	c.cbb.NewCondBr(cond, forBody, leaveBlock)
 
