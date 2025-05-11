@@ -11,6 +11,8 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] Numerische Datentypen werden in Zuweisungen jetzt automatisch in einander umgewandelt
+- [Neu] Es gibt jetzt den Byte Datentyp, der eine natürliche Zahl im Bereich 0 bis einschließlich 255 darstellt
 - [Neu] Typanpassende Ausdrücke können nun als Referenzen übergeben werden, solange sie nur Typaliase bzw. Typdefinitionen behandeln
 - [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
 - [Fix] Bug in Duden/Listen -> Elementweise_Quotient_Kommazahl wurde in der generischen Implementation behoben

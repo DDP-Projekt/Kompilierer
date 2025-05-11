@@ -37,6 +37,10 @@ void Schreibe_Kommazahl(ddpfloat p1) {
 	}
 }
 
+void Schreibe_Byte(ddpbyte p1) {
+	printf(DDP_BYTE_FMT, p1);
+}
+
 void Schreibe_Wahrheitswert(ddpbool p1) {
 	printf(p1 ? "wahr" : "falsch");
 }

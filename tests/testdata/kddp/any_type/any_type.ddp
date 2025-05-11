@@ -130,6 +130,7 @@ Schreibe '\n'.
 Die Variable v ist der Standardwert von einer Variable.
 Schreibe (v eine Zahl ist) auf eine Zeile.
 Schreibe (v eine Kommazahl ist) auf eine Zeile.
+Schreibe (v ein Byte ist) auf eine Zeile.
 Schreibe (v ein Wahrheitswert ist) auf eine Zeile.
 Schreibe (v ein Buchstabe ist) auf eine Zeile.
 Schreibe (v ein Text ist) auf eine Zeile.

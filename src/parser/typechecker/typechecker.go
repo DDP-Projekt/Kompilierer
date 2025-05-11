@@ -128,7 +128,11 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 		initialType = t.Evaluate(decl.InitVal)
 	}
 	decl.InitType = initialType
-	if !ddptypes.IsGeneric(decl.Type) && !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{})) {
+
+	typesDontMatch := !ddptypes.IsGeneric(decl.Type) && !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{}))
+	numericCastPossible := ddptypes.IsNumeric(decl.Type) && ddptypes.IsNumeric(initialType)
+
+	if typesDontMatch && !numericCastPossible {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
@@ -223,8 +227,8 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
-	if typ := t.Evaluate(expr.Index); !ddptypes.Equal(typ, ddptypes.ZAHL) {
-		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", typ)
+	if typ := t.Evaluate(expr.Index); !ddptypes.Equal(typ, ddptypes.ZAHL) && !ddptypes.Equal(typ, ddptypes.BYTE) {
+		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl oder einen Byte als zweiten Operanden, nicht %s", typ)
 	}
 
 	lhs := t.Evaluate(expr.Lhs)
@@ -286,8 +290,8 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 		}
 		expr.Type = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
-		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) {
-			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl angegeben werden, nicht als %s", count)
+		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) && !ddptypes.Equal(count, ddptypes.BYTE) {
+			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl oder Byte angegeben werden, nicht als %s", count)
 		}
 
 		expr.Type = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
@@ -309,7 +313,11 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	switch expr.Operator {
 	case ast.UN_ABS, ast.UN_NEGATE:
 		if !ddptypes.IsNumeric(rhs) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
+		}
+		// unsigned to signed cast
+		if ddptypes.Equal(rhs, ddptypes.BYTE) {
+			t.latestReturnedType = ddptypes.ZAHL
 		}
 	case ast.UN_NOT:
 		if !isOneOf(rhs, ddptypes.WAHRHEITSWERT) {
@@ -318,11 +326,9 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.UN_LOGIC_NOT:
-		if !isOneOf(rhs, ddptypes.ZAHL) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
+		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
-
-		t.latestReturnedType = ddptypes.ZAHL
 	case ast.UN_LEN:
 		if !ddptypes.IsList(rhs) && !ddptypes.Equal(rhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
@@ -367,19 +373,23 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 			t.latestReturnedType = ddptypes.ListType{ElementType: ddptypes.GetListElementType(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
-		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 
 		if ddptypes.Equal(lhs, ddptypes.ZAHL) && ddptypes.Equal(rhs, ddptypes.ZAHL) {
 			t.latestReturnedType = ddptypes.ZAHL
-		} else {
+		} else if ddptypes.Equal(lhs, ddptypes.BYTE) && ddptypes.Equal(rhs, ddptypes.BYTE) {
+			t.latestReturnedType = ddptypes.BYTE
+		} else if ddptypes.Equal(lhs, ddptypes.KOMMAZAHL) || ddptypes.Equal(rhs, ddptypes.KOMMAZAHL) {
 			t.latestReturnedType = ddptypes.KOMMAZAHL
+		} else {
+			t.latestReturnedType = ddptypes.BYTE
 		}
 	case ast.BIN_INDEX:
 		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
-		if !ddptypes.Equal(rhs, ddptypes.ZAHL) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl als zweiten Operanden, nicht %s", rhs)
+		if !ddptypes.Equal(rhs, ddptypes.ZAHL) && !ddptypes.Equal(rhs, ddptypes.BYTE) {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl oder einen Byte als zweiten Operanden, nicht %s", rhs)
 		}
 
 		if listType, isList := ddptypes.CastList(lhs); isList {
@@ -391,8 +401,8 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der '%s' Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
-		if !isOneOf(rhs, ddptypes.ZAHL) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
+		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
 
 		if ddptypes.IsList(lhs) {
@@ -412,28 +422,34 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 			t.latestReturnedType = ddptypes.VoidType{}
 		}
 	case ast.BIN_DIV, ast.BIN_POW, ast.BIN_LOG:
-		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		t.latestReturnedType = ddptypes.KOMMAZAHL
 	case ast.BIN_MOD:
-		validate(ddptypes.ZAHL)
-		t.latestReturnedType = ddptypes.ZAHL
+		validate(ddptypes.ZAHL, ddptypes.BYTE)
+		t.latestReturnedType = ddptypes.BYTE
+		if isOneOf(ddptypes.ZAHL, lhs, rhs) {
+			t.latestReturnedType = ddptypes.ZAHL
+		}
 	case ast.BIN_AND, ast.BIN_OR, ast.BIN_XOR:
 		validate(ddptypes.WAHRHEITSWERT)
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_LEFT_SHIFT, ast.BIN_RIGHT_SHIFT:
-		validate(ddptypes.ZAHL)
-		t.latestReturnedType = ddptypes.ZAHL
+		validate(ddptypes.ZAHL, ddptypes.BYTE)
+		t.latestReturnedType = lhs
 	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
 		if !ddptypes.Equal(lhs, rhs) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_GREATER, ast.BIN_LESS, ast.BIN_GREATER_EQ, ast.BIN_LESS_EQ:
-		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.BIN_LOGIC_AND, ast.BIN_LOGIC_OR, ast.BIN_LOGIC_XOR:
-		validate(ddptypes.ZAHL)
-		t.latestReturnedType = ddptypes.ZAHL
+		validate(ddptypes.ZAHL, ddptypes.BYTE)
+		t.latestReturnedType = ddptypes.BYTE
+		if isOneOf(ddptypes.ZAHL, lhs, rhs) {
+			t.latestReturnedType = ddptypes.ZAHL
+		}
 	default:
 		panic(fmt.Errorf("unbekannter binärer Operator '%s'", expr.Operator))
 	}
@@ -457,11 +473,11 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
 
-		if !isOneOf(mid, ddptypes.ZAHL) {
-			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL)
+		if !isOneOf(mid, ddptypes.ZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.BYTE)
 		}
-		if !isOneOf(rhs, ddptypes.ZAHL) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL)
+		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
 
 		if ddptypes.IsList(lhs) {
@@ -470,14 +486,14 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 			t.latestReturnedType = ddptypes.TEXT
 		}
 	case ast.TER_BETWEEN:
-		if !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
-			t.errExpected(expr.Operator, expr.Lhs, lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		if !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Lhs, lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		}
-		if !isOneOf(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
-			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		if !isOneOf(mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Mid, mid, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		}
-		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
-			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL)
+		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.TER_FALLS:
@@ -541,15 +557,19 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 				castErr()
 			}
 		case ddptypes.KOMMAZAHL:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+				castErr()
+			}
+		case ddptypes.BYTE:
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.WAHRHEITSWERT:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.BUCHSTABE:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE) {
+			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.TEXT:
@@ -697,8 +717,12 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	rhs := t.Evaluate(stmt.Rhs)
 	stmt.RhsType = rhs
 	target := t.Evaluate(stmt.Var)
+	stmt.VarType = target
 
-	if !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{})) {
+	typesDontMatch := !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{}))
+	numericCastPossible := ddptypes.IsNumeric(target) && ddptypes.IsNumeric(rhs)
+
+	if typesDontMatch && !numericCastPossible {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,
@@ -744,7 +768,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 			)
 		}
 	case token.WIEDERHOLE:
-		if !ddptypes.Equal(conditionType, ddptypes.ZAHL) {
+		if !ddptypes.Equal(conditionType, ddptypes.ZAHL) && !ddptypes.Equal(conditionType, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, stmt.Condition,
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
@@ -758,21 +782,19 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	t.visit(stmt.Initializer)
 	iter_type := stmt.Initializer.Type
-	if !ddptypes.IsNumeric(iter_type) {
-		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl oder Kommazahl sein")
+	if !ddptypes.Equal(iter_type, ddptypes.ZAHL) && !ddptypes.Equal(iter_type, ddptypes.KOMMAZAHL) && !ddptypes.Equal(iter_type, ddptypes.BYTE) {
+		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl, eine Kommazahl oder ein Byte sein")
 	}
-	if toType := t.Evaluate(stmt.To); !ddptypes.Equal(toType, iter_type) {
+	if toType := t.Evaluate(stmt.To); !ddptypes.IsNumeric(toType) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
-			"Der Endwert in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-			iter_type,
+			"Der Endwert in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.Equal(stepType, iter_type) {
+		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.IsNumeric(stepType) {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
-				"Die Schrittgröße in einer Zählenden-Schleife muss vom selben Typ wie der Zähler (%s) sein, aber war %s",
-				iter_type,
+				"Die Schrittgröße in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 				stepType,
 			)
 		}

@@ -82,7 +82,7 @@ func CastPrimitive(t Type) (PrimitiveType, bool) {
 
 func IsNumeric(t Type) bool {
 	t = GetUnderlying(t)
-	return t == ZAHL || t == KOMMAZAHL
+	return t == ZAHL || t == KOMMAZAHL || t == BYTE
 }
 
 func IsList(t Type) bool {

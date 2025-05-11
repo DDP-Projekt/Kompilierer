@@ -44,6 +44,7 @@ type (
 		Range   token.Range
 		Tok     token.Token
 		Var     Assigneable   // the variable to assign to
+		VarType ddptypes.Type // filled in by the typechecker, to keep information about typedefs
 		Rhs     Expression    // literal assign value
 		RhsType ddptypes.Type // filled in by the typechecker, to keep information about typedefs
 	}

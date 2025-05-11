@@ -27,8 +27,23 @@ Schreibe den Buchstaben '\n'.
 Für jede Kommazahl i von 0,0 bis 10,0 mit Schrittgröße 0,75, mache:
 	Schreibe die Kommazahl i.
 	Schreibe ' '.
-
 Schreibe den Buchstaben '\n'.
+
+Für jeden Byte i von 0 bis 10, mache:
+	Schreibe den Byte i.
+Schreibe den Buchstaben '\n'.
+Für jeden Byte i von 10 als Byte bis 0 als Byte mit Schrittgröße -1, mache:
+	Schreibe den Byte i.
+Schreibe den Buchstaben '\n'.
+Für jeden Byte i von 0 bis 10 mit Schrittgröße 2 als Byte, mache:
+	Schreibe den Byte i.
+Schreibe den Buchstaben '\n'.
+Der Byte b ist 0.
+Für jeden Byte i von 0 bis 255 mit Schrittgröße 1, mache:
+	Speichere i in b.
+Schreibe den Byte b.
+Schreibe den Buchstaben '\n'.
+
 Für jede Zahl a von 1 bis 3, mache:
 	Für jede Zahl b von 1 bis 3, mache:
 		Schreibe die Zahl a.
