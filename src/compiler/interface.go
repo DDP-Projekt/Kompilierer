@@ -9,10 +9,10 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 type OutputType int
@@ -78,6 +78,8 @@ func (options *Options) ToParserOptions() parser.Options {
 
 // the result of a compilation
 type Result struct {
+	// the context containing the resulting module
+	llContext llvmModuleContext
 	// a set which contains all files needed
 	// to link the final executable
 	// contains .c, .lib, .a and .o files
@@ -129,7 +131,7 @@ func Compile(options Options) (result *Result, err error) {
 
 	if !options.LinkInModules {
 		options.Log("Erstelle llvm Context")
-		llctx, err := newllvmContext()
+		llctx, err := newllvmModuleContext()
 		if err != nil {
 			return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 		}
@@ -137,7 +139,7 @@ func Compile(options Options) (result *Result, err error) {
 		defer llctx.Dispose()
 
 		irBuff := &bytes.Buffer{}
-		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler, &llctx.llvmTarget, options.OptimizationLevel).compile(irBuff, true)
+		comp_result, err := newCompiler(ddp_main_module, options.ErrorHandler, &llctx.llTarget, options.OptimizationLevel).compile(irBuff, true)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +185,9 @@ func Compile(options Options) (result *Result, err error) {
 			}
 
 			if options.OptimizationLevel >= 1 {
-				llctx.optimizeModule(mod)
+				if err := llctx.optimizeModule(mod); err != nil {
+					return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+				}
 			}
 
 			if _, err := llctx.compileModule(mod, file_type, options.To); err != nil {
@@ -198,7 +202,7 @@ func Compile(options Options) (result *Result, err error) {
 	// options.LinkInModules == true
 
 	options.Log("Erstelle llvm Context")
-	llctx, err := newllvmContext()
+	llctx, err := newllvmModuleContext()
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 	}
@@ -210,7 +214,7 @@ func Compile(options Options) (result *Result, err error) {
 	dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) io.Writer {
 		ll_modules_ir[m.FileName] = &bytes.Buffer{}
 		return ll_modules_ir[m.FileName]
-	}, options.ErrorHandler, &llctx.llvmTarget, options.OptimizationLevel)
+	}, options.ErrorHandler, &llctx.llTarget, options.OptimizationLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +260,9 @@ func Compile(options Options) (result *Result, err error) {
 		return &Result{Dependencies: dependencies}, nil
 	}
 
-	llctx.optimizeModule(ll_main_module)
+	if err := llctx.optimizeModule(ll_main_module); err != nil {
+		return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+	}
 
 	file_type := llvm.AssemblyFile
 	if options.OutputType == OutputObj {
@@ -278,14 +284,14 @@ func Compile(options Options) (result *Result, err error) {
 func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) (err error) {
 	defer panic_wrapper(&err)
 
-	llctx, err := newllvmContext()
+	llctx, err := newllvmModuleContext()
 	if err != nil {
 		return fmt.Errorf("Fehler beim Erstellen des llvm Context: %w", err)
 	}
 	defer llctx.Dispose()
 
 	irBuff := bytes.Buffer{}
-	if err := newCompiler(nil, errorHandler, &llctx.llvmTarget, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
+	if err := newCompiler(nil, errorHandler, &llctx.llTarget, optimizationLevel).dumpListDefinitions(&irBuff); err != nil {
 		return err
 	}
 
@@ -296,7 +302,9 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 	defer list_mod.Dispose()
 
 	if optimizationLevel >= 1 {
-		llctx.optimizeModule(list_mod)
+		if err := llctx.optimizeModule(list_mod); err != nil {
+			return fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+		}
 	}
 
 	switch outputType {

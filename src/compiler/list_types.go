@@ -15,12 +15,12 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 // holds the ir-definitions of a ddp-list-type
@@ -132,8 +132,8 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	// see equivalent in runtime/include/ddptypes.h
 	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
 		ddpint, // ddpint type_size
-		ptr(types.NewFunc(c.void.IrType(), list.ptr)),                 // free_func_ptr free_func
-		ptr(types.NewFunc(c.void.IrType(), list.ptr, list.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.voidtyp.IrType(), list.ptr)),                 // free_func_ptr free_func
+		ptr(types.NewFunc(c.voidtyp.IrType(), list.ptr, list.ptr)),       // deep_copy_func_ptr deep_copy_func
 		ptr(types.NewFunc(c.ddpbooltyp.IrType(), list.ptr, list.ptr)), // equal_func_ptr equal_func
 	))
 
@@ -178,7 +178,7 @@ func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationO
 	// declare the function
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_%s_from_constants", listType.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		ret,
 		count,
 	)
@@ -235,7 +235,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_free_%s", listType.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		list,
 	)
 	irFunc.CallingConv = enum.CallingConvC
@@ -291,7 +291,7 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_deep_copy_%s", listType.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		ret,
 		list,
 	)
@@ -451,7 +451,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	)
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_%s_slice", listType.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		ret,
 		list,
 		index1.(*ir.Param),
@@ -636,7 +636,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		ret, list1, list2 := ir.NewParam("ret", listType.ptr), ir.NewParam("list1", listType.ptr), ir.NewParam("list2", listType.ptr)
 		concListList := c.mod.NewFunc(
 			fmt.Sprintf("ddp_%s_%s_verkettet", listType.typ.Name(), listType.typ.Name()),
-			c.void.IrType(),
+			c.voidtyp.IrType(),
 			ret, list1, list2,
 		)
 		concListList.CallingConv = enum.CallingConvC
@@ -686,7 +686,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		ret, list, scal := ir.NewParam("ret", listType.ptr), ir.NewParam("list", listType.ptr), ir.NewParam("scal", scal_param_type)
 		concListScal := c.mod.NewFunc(
 			fmt.Sprintf("ddp_%s_%s_verkettet", listType.typ.Name(), listType.elementType.Name()),
-			c.void.IrType(),
+			c.voidtyp.IrType(),
 			ret, list, scal,
 		)
 		concListScal.CallingConv = enum.CallingConvC
@@ -731,7 +731,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		ret, scal1, scal2 := ir.NewParam("ret", listType.ptr), ir.NewParam("scal1", scal_param_type), ir.NewParam("scal2", scal_param_type)
 		concScalScal := c.mod.NewFunc(
 			fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()),
-			c.void.IrType(),
+			c.voidtyp.IrType(),
 			ret, scal1, scal2,
 		)
 		concScalScal.CallingConv = enum.CallingConvC
@@ -772,7 +772,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		ret, scal, list := ir.NewParam("ret", listType.ptr), ir.NewParam("scal", scal_param_type), ir.NewParam("list", listType.ptr)
 		concScalList := c.mod.NewFunc(
 			fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.typ.Name()),
-			c.void.IrType(),
+			c.voidtyp.IrType(),
 			ret, scal, list,
 		)
 		concScalList.CallingConv = enum.CallingConvC

@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
@@ -130,8 +130,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	// see equivalent in runtime/include/ddptypes.h
 	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
 		ddpint, // ddpint size
-		ptr(types.NewFunc(c.void.IrType(), structType.ptr)),                       // free_func_ptr free_func
-		ptr(types.NewFunc(c.void.IrType(), structType.ptr, structType.ptr)),       // deep_copy_func_ptr deep_copy_func
+		ptr(types.NewFunc(c.voidtyp.IrType(), structType.ptr)),                       // free_func_ptr free_func
+		ptr(types.NewFunc(c.voidtyp.IrType(), structType.ptr, structType.ptr)),       // deep_copy_func_ptr deep_copy_func
 		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)), // equal_func_ptr equal_func
 	))
 
@@ -159,7 +159,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_free_%s", structTyp.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		structParam,
 	)
 	irFunc.CallingConv = enum.CallingConvC
@@ -192,7 +192,7 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 
 	irFunc := c.mod.NewFunc(
 		fmt.Sprintf("ddp_deep_copy_%s", structTyp.typ.Name()),
-		c.void.IrType(),
+		c.voidtyp.IrType(),
 		ret,
 		structParam,
 	)

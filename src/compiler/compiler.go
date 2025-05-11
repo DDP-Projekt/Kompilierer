@@ -29,7 +29,7 @@ import (
 //   - a set of all external dependendcies
 //   - an error
 func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
-	errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
+	errHndl ddperror.Handler, llTarget *llTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	compiledMods := map[string]*ast.Module{}
 	dependencies := map[string]struct{}{}
@@ -38,7 +38,7 @@ func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer
 
 func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
 	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, llTarget *llTarget, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -82,48 +82,82 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 
 // small wrapper for a ast.FuncDecl and the corresponding ir function
 type funcWrapper struct {
-	irFunc   *ir.Func      // the function in the llvm ir
+	irFunc   llvm.Value    // the function in the llvm ir
 	funcDecl *ast.FuncDecl // the ast.FuncDecl
+}
+
+type llTypes struct {
+	void, i8, i8ptr, i32, i64                   llvm.Type
+	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
+}
+
+func (*llTypes) ptr(elementType llvm.Type) llvm.Type {
+	return llvm.PointerType(elementType, 0)
+}
+
+func newLLTypes(llctx llvm.Context) llTypes {
+	i8 := llctx.Int8Type()
+	i32 := llctx.Int32Type()
+	i64 := llctx.Int64Type()
+	return llTypes{
+		void:     llctx.VoidType(),
+		i8:       i8,
+		i8ptr:    llvm.PointerType(i8, 0),
+		i32:      i32,
+		i64:      i64,
+		ddpint:   i64,
+		ddpfloat: llctx.DoubleType(),
+		ddpbyte:  llctx.Int8Type(),
+		ddpbool:  llctx.Int1Type(),
+		ddpchar:  llctx.Int32Type(),
+	}
+}
+
+type llConstants struct {
+	zero, zerof, zero8, all_ones, all_ones8, False, True llvm.Value
+}
+
+func newLLConstants(types llTypes) llConstants {
+	return llConstants{
+		zero:      llvm.ConstInt(types.i64, 0, false),
+		zerof:     llvm.ConstFloat(types.ddpfloat, 0),
+		zero8:     llvm.ConstInt(types.i8, 0, false),
+		all_ones:  llvm.ConstAllOnes(types.i64),
+		all_ones8: llvm.ConstAllOnes(types.i8),
+		False:     llvm.ConstInt(types.ddpbool, 0, false),
+		True:      llvm.ConstInt(types.ddpbool, 1, false),
+	}
 }
 
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
+	llvmModuleContext
 	ddpModule         *ast.Module      // the module to be compiled
-	mod               *ir.Module       // the ir module (basically the ir file)
 	errorHandler      ddperror.Handler // errors are passed to this function
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
-	llTarget          *llvmTarget      // information about the target machine
 
-	cbb              *ir.Block                                 // current basic block in the ir
-	cf               *ir.Func                                  // current function
-	scp              *scope                                    // current scope in the ast (not in the ir)
-	cfscp            *scope                                    // out-most scope of the current function
-	functions        map[string]*funcWrapper                   // all the global functions
-	typeMap          map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
-	structTypes      map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
-	latestReturn     value.Value                               // return of the latest evaluated expression (in the ir)
-	latestReturnType ddpIrType                                 // the type of latestReturn
-	latestIsTemp     bool                                      // ewther the latestReturn is a temporary or not
-	importedModules  map[*ast.Module]struct{}                  // all the modules that have already been imported
-	currentNode      ast.Node                                  // used for error reporting
-	typeDefVTables   map[string]constant.Constant
+	builder         *llBuilder
+	functions       map[string]*funcWrapper                   // all the global functions
+	typeMap         map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
+	structTypes     map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
+	importedModules map[*ast.Module]struct{}                  // all the modules that have already been imported
+	typeDefVTables  map[string]constant.Constant
 
-	moduleInitFunc             *ir.Func  // the module_init func of this module
-	moduleInitCbb              *ir.Block // cbb but for module_init
-	moduleDisposeFunc          *ir.Func
-	out_of_bounds_error_string *ir.Global
-	slice_error_string         *ir.Global
-	todo_error_string          *ir.Global
-	bad_cast_error_string      *ir.Global
-	invalid_utf8_error_string  *ir.Global
+	moduleInitFunc             llvm.Value      // the module_init func of this module
+	moduleInitCbb              llvm.BasicBlock // cbb but for module_init
+	moduleDisposeFunc          llvm.Value
+	out_of_bounds_error_string llvm.Value
+	slice_error_string         llvm.Value
+	todo_error_string          llvm.Value
+	bad_cast_error_string      llvm.Value
+	invalid_utf8_error_string  llvm.Value
 
-	curLeaveBlock    *ir.Block // leave block of the current loop
-	curContinueBlock *ir.Block // block where a continue should jump to
-	curLoopScope     *scope    // scope of the current loop for break/continue to free to
-
+	// raw llvm types and constants
+	llTypes
+	llConstants
 	// all the type definitions of inbuilt types used by the compiler
-	void                                                                                       *ddpIrVoidType
+	voidtyp                                                                                    *ddpIrVoidType
 	ddpinttyp, ddpfloattyp, ddpbytetyp, ddpbooltyp, ddpchartyp                                 *ddpIrPrimitiveType
 	ddpstring                                                                                  *ddpIrStringType
 	ddpany                                                                                     *ddpIrAnyType
@@ -132,58 +166,68 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *llvmTarget, optimizationLevel uint) *compiler {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *llTarget, optimizationLevel uint) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
+
+	context, err := newllvmModuleContext(module.FileName)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating llvmModuleContext: %w", context)
+	}
+
+	types := newLLTypes(context.llctx)
+	constants := newLLConstants(types)
+
 	return &compiler{
+		llvmModuleContext: context,
 		ddpModule:         module,
-		mod:               ir.NewModule(),
 		errorHandler:      errorHandler,
 		optimizationLevel: optimizationLevel,
 		result: &Result{
 			Dependencies: make(map[string]struct{}),
 		},
-		llTarget:         llTarget,
-		cbb:              nil,
-		cf:               nil,
-		scp:              newScope(nil), // global scope
-		cfscp:            nil,
-		functions:        make(map[string]*funcWrapper),
-		typeMap:          createTypeMap(module),
-		structTypes:      make(map[*ddptypes.StructType]*ddpIrStructType),
-		latestReturn:     nil,
-		latestReturnType: nil,
-		latestIsTemp:     false,
-		importedModules:  make(map[*ast.Module]struct{}),
-		typeDefVTables:   make(map[string]constant.Constant),
-		curLeaveBlock:    nil,
-		curContinueBlock: nil,
-		curLoopScope:     nil,
-	}
+
+		builder:         nil,
+		functions:       make(map[string]*funcWrapper),
+		typeMap:         createTypeMap(module),
+		structTypes:     make(map[*ddptypes.StructType]*ddpIrStructType),
+		importedModules: make(map[*ast.Module]struct{}),
+		typeDefVTables:  make(map[string]constant.Constant),
+
+		llTypes:     types,
+		llConstants: constants,
+	}, nil
 }
 
 // compile the AST contained in c
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 // if isMainModule is false, no ddp_main function will be generated
-func (c *compiler) compile(w io.Writer, isMainModule bool) (result *Result, rerr error) {
+func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 	defer compiler_panic_wrapper(c)
 
-	c.mod.SourceFilename = c.ddpModule.FileName // set the module filename (optional metadata)
 	c.addExternalDependencies()
+
+	c.builder = &llBuilder{
+		compiler: c,
+		Builder:  c.llctx.NewBuilder(),
+		scp:      newScope(nil),
+	}
 
 	c.setup()
 
 	if isMainModule {
+		c.builder.llFnType = llvm.FunctionType(c.llctx.Int64Type(), nil, false)
+		c.builder.llFn = llvm.AddFunction(c.llmod, "ddp_ddpmain", c.builder.llFnType)
 		// called from the ddp-c-runtime after initialization
-		ddpmain := c.insertFunction(
+		c.insertFunction(
 			"ddp_ddpmain",
 			nil,
-			c.mod.NewFunc("ddp_ddpmain", ddpint),
+			c.builder.llFn,
 		)
-		c.cf = ddpmain               // first function is ddpmain
-		c.cbb = ddpmain.NewBlock("") // first block
+		c.builder.cb = c.llctx.AddBasicBlock(c.builder.llFn, "")
+		c.builder.SetInsertPointAtEnd(c.builder.cb)
 	}
 
 	// visit every statement in the modules AST and compile it
@@ -229,7 +273,7 @@ func (c *compiler) dumpListDefinitions(w io.Writer) error {
 	// because the primitive types need to be setup
 	// before the list types
 	// and the void type before everything else
-	c.void = &ddpIrVoidType{}
+	c.voidtyp = &ddpIrVoidType{}
 	c.initRuntimeFunctions()
 	c.setupPrimitiveTypes(false)
 	c.ddpstring = c.defineStringType(false)
@@ -289,12 +333,12 @@ func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType, bool) 
 
 // helper to insert a function into the global function map
 // returns the ir function
-func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, irFunc *ir.Func) *ir.Func {
+func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, llFunc llvm.Value) llvm.Value {
 	c.functions[name] = &funcWrapper{
 		funcDecl: funcDecl,
-		irFunc:   irFunc,
+		irFunc:   llFunc,
 	}
-	return irFunc
+	return llFunc
 }
 
 func (c *compiler) setup() {
@@ -303,7 +347,7 @@ func (c *compiler) setup() {
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
-	c.void = &ddpIrVoidType{}
+	c.voidtyp = c.defineVoidType()
 	c.initRuntimeFunctions()
 	c.setupPrimitiveTypes(true)
 	c.ddpstring = c.defineStringType(true)
@@ -317,11 +361,11 @@ func (c *compiler) setup() {
 
 // used in setup()
 func (c *compiler) setupErrorStrings() {
-	createErrorString := func(msg string) *ir.Global {
-		error_string := c.mod.NewGlobalDef("", constant.NewCharArrayFromString(msg))
-		error_string.Linkage = enum.LinkageInternal
-		error_string.Visibility = enum.VisibilityDefault
-		error_string.Immutable = true
+	createErrorString := func(msg string) llvm.Value {
+		error_string := c.builder.CreateGlobalString(msg, "")
+		error_string.SetLinkage(llvm.InternalLinkage)
+		error_string.SetVisibility(llvm.DefaultVisibility)
+		error_string.SetGlobalConstant(true)
 		return error_string
 	}
 
@@ -334,11 +378,11 @@ func (c *compiler) setupErrorStrings() {
 
 // used in setup()
 func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
-	c.ddpinttyp = c.definePrimitiveType(ddpint, zero, llvm.Int64Type(), "ddpint", declarationOnly)
-	c.ddpfloattyp = c.definePrimitiveType(ddpfloat, zerof, llvm.DoubleType(), "ddpfloat", declarationOnly)
-	c.ddpbytetyp = c.definePrimitiveType(ddpbyte, zero8, llvm.Int8Type(), "ddpbyte", declarationOnly)
-	c.ddpbooltyp = c.definePrimitiveType(ddpbool, constant.False, llvm.Int1Type(), "ddpbool", declarationOnly)
-	c.ddpchartyp = c.definePrimitiveType(ddpchar, newIntT(ddpchar, 0), llvm.Int32Type(), "ddpchar", declarationOnly)
+	c.ddpinttyp = c.definePrimitiveType(c.ddpint, c.zero, "ddpint", declarationOnly)
+	c.ddpfloattyp = c.definePrimitiveType(c.ddpfloat, c.zerof, "ddpfloat", declarationOnly)
+	c.ddpbytetyp = c.definePrimitiveType(c.ddpbyte, c.zero8, "ddpbyte", declarationOnly)
+	c.ddpbooltyp = c.definePrimitiveType(c.ddpbool, c.False, "ddpbool", declarationOnly)
+	c.ddpchartyp = c.definePrimitiveType(c.ddpchar, llvm.ConstInt(c.ddpchar, 0, false), "ddpchar", declarationOnly)
 }
 
 // used in setup()
@@ -357,12 +401,12 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitFunc = c.mod.NewFunc(init_name, c.void.IrType())
+	c.moduleInitFunc = c.mod.NewFunc(init_name, c.voidtyp.IrType())
 	c.moduleInitFunc.Visibility = enum.VisibilityDefault
 	c.moduleInitCbb = c.moduleInitFunc.NewBlock("")
 	c.insertFunction(init_name, nil, c.moduleInitFunc)
 
-	c.moduleDisposeFunc = c.mod.NewFunc(dispose_name, c.void.IrType())
+	c.moduleDisposeFunc = c.mod.NewFunc(dispose_name, c.voidtyp.IrType())
 	c.moduleDisposeFunc.Visibility = enum.VisibilityDefault
 	c.moduleDisposeFunc.NewBlock("").NewRet(nil)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeFunc)
@@ -573,7 +617,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, ir.NewParam("", retType.PtrType()))
-		retTypeIr = c.void.IrType()
+		retTypeIr = c.voidtyp.IrType()
 	}
 
 	// append all the other parameters
@@ -2209,7 +2253,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, ir.NewParam("", retType.PtrType()))
-		retTypeIr = c.void.IrType()
+		retTypeIr = c.voidtyp.IrType()
 	}
 
 	// append all the other parameters
@@ -2284,7 +2328,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			}
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
-			module_init := c.mod.NewFunc(init_name, c.void.IrType())
+			module_init := c.mod.NewFunc(init_name, c.voidtyp.IrType())
 			module_init.Linkage = enum.LinkageExternal
 			module_init.Visibility = enum.VisibilityDefault
 			c.insertFunction(init_name, nil, module_init)
@@ -2292,7 +2336,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				c.cbb.NewCall(module_init) // only call this in main modules
 			}
 
-			module_dispose := c.mod.NewFunc(dispose_name, c.void.IrType())
+			module_dispose := c.mod.NewFunc(dispose_name, c.voidtyp.IrType())
 			module_dispose.Linkage = enum.LinkageExternal
 			module_dispose.Visibility = enum.VisibilityDefault
 			c.insertFunction(dispose_name, nil, module_dispose)
@@ -2766,6 +2810,11 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	exitScopeReturn()
 	c.commentNode(c.cbb, s, "")
 	return ast.VisitRecurse
+}
+
+func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
+	line, column := int64(stmt.Token().Range.Start.Line), int64(stmt.Token().Range.Start.Column)
+	c.runtime_error(1, c.todo_error_string, newInt(line), newInt(column))
 }
 
 func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {

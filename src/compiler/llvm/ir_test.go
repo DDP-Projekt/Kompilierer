@@ -13,15 +13,17 @@
 package llvm
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
 
 func testAttribute(t *testing.T, name string) {
-	mod := NewModule("")
+	ctx := NewContext()
+	mod := ctx.NewModule("")
 	defer mod.Dispose()
 
-	ftyp := FunctionType(VoidType(), nil, false)
+	ftyp := FunctionType(ctx.VoidType(), nil, false)
 	fn := AddFunction(mod, "foo", ftyp)
 
 	kind := AttributeKindID(name)
@@ -69,7 +71,6 @@ func TestAttributes(t *testing.T) {
 		"noredzone",
 		"noreturn",
 		"nounwind",
-		"nosanitize_coverage",
 		"optnone",
 		"optsize",
 		"readnone",
@@ -90,15 +91,23 @@ func TestAttributes(t *testing.T) {
 	}
 
 	for _, name := range attrTests {
+		majorVersion, err := strconv.Atoi(strings.SplitN(Version, ".", 2)[0])
+		if err != nil {
+			// sanity check, should be unreachable
+			t.Errorf("could not parse LLVM version: %v", err)
+		}
+		if majorVersion >= 15 && name == "uwtable" {
+			// This changed from an EnumAttr to an IntAttr in LLVM 15, and testAttribute doesn't work on such attributes.
+			continue
+		}
 		testAttribute(t, name)
 	}
 }
 
 func TestDebugLoc(t *testing.T) {
-	mod := NewModule("")
+	ctx := NewContext()
+	mod := ctx.NewModule("")
 	defer mod.Dispose()
-
-	ctx := mod.Context()
 
 	b := ctx.NewBuilder()
 	defer b.Dispose()
@@ -141,19 +150,10 @@ func TestSubtypes(t *testing.T) {
 	cont := NewContext()
 	defer cont.Dispose()
 
-	int_pointer := PointerType(cont.Int32Type(), 0)
-	int_inner := int_pointer.Subtypes()
-	if len(int_inner) != 1 {
-		t.Errorf("Got size %d, though wanted 1", len(int_inner))
-	}
-	if int_inner[0] != cont.Int32Type() {
-		t.Errorf("Expected int32 type")
-	}
-
 	st_pointer := cont.StructType([]Type{cont.Int32Type(), cont.Int8Type()}, false)
 	st_inner := st_pointer.Subtypes()
 	if len(st_inner) != 2 {
-		t.Errorf("Got size %d, though wanted 2", len(int_inner))
+		t.Errorf("Got size %d, though wanted 2", len(st_inner))
 	}
 	if st_inner[0] != cont.Int32Type() {
 		t.Errorf("Expected first struct field to be int32")

@@ -1,10 +1,10 @@
 package compiler
 
 import (
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 type ddpIrGenericListType struct {

@@ -5,79 +5,85 @@ that interacts with the ddp-runtime
 package compiler
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 // declares an external function on c.mod using
 // the specified parameters, returnType and the C Calling Convention
-func (c *compiler) declareExternalRuntimeFunction(name string, returnType types.Type, params ...*ir.Param) *ir.Func {
-	fun := c.mod.NewFunc(name, returnType, params...)
-	fun.CallingConv = enum.CallingConvC
-	fun.Linkage = enum.LinkageExternal
-	c.insertFunction(name, nil, fun)
-	return fun
+func (c *compiler) declareExternalRuntimeFunction(name string, variadic bool, returnType llvm.Type, params ...llvm.Type) llvm.Value {
+	fnType := llvm.FunctionType(returnType, params, variadic)
+	llFn := llvm.AddFunction(c.llmod, name, fnType)
+	llFn.SetFunctionCallConv(llvm.CCallConv)
+	llFn.SetLinkage(llvm.ExternalLinkage)
+
+	return c.insertFunction(name, nil, llFn)
 }
 
 var (
-	ddp_reallocate_irfun      *ir.Func
-	ddp_runtime_error_irfun   *ir.Func
-	utf8_string_to_char_irfun *ir.Func
-	_libc_memcpy_irfun        *ir.Func
-	_libc_memcmp_irfun        *ir.Func
-	_libc_memmove_irfun       *ir.Func
+	ddp_reallocate_irfun      llvm.Value
+	ddp_runtime_error_irfun   llvm.Value
+	utf8_string_to_char_irfun llvm.Value
+	_libc_memcpy_irfun        llvm.Value
+	_libc_memcmp_irfun        llvm.Value
+	_libc_memmove_irfun       llvm.Value
 )
 
 // initializes external functions defined in the ddp-runtime
 func (c *compiler) initRuntimeFunctions() {
 	ddp_reallocate_irfun = c.declareExternalRuntimeFunction(
 		"ddp_reallocate",
-		i8ptr,
-		ir.NewParam("pointer", i8ptr),
-		ir.NewParam("oldSize", i64),
-		ir.NewParam("newSize", i64),
+		false,
+		c.i8ptr,
+		c.i8ptr,
+		c.i64,
+		c.i64,
 	)
 
 	ddp_runtime_error_irfun = c.declareExternalRuntimeFunction(
 		"ddp_runtime_error",
-		c.void.IrType(),
-		ir.NewParam("exit_code", ddpint),
-		ir.NewParam("fmt", i8ptr),
+		true,
+		c.void,
+		c.ddpint,
+		c.i8ptr,
 	)
-	ddp_runtime_error_irfun.Sig.Variadic = true
 
 	utf8_string_to_char_irfun = c.declareExternalRuntimeFunction(
 		"utf8_string_to_char",
-		i64,
-		ir.NewParam("str", i8ptr),
-		ir.NewParam("out", ptr(i32)),
+		false,
+		c.i64,
+		c.i8ptr,
+		c.ptr(c.i32),
 	)
 
 	_libc_memcpy_irfun = c.declareExternalRuntimeFunction(
 		"memcpy",
-		i8ptr,
-		ir.NewParam("dest", i8ptr),
-		ir.NewParam("src", i8ptr),
-		ir.NewParam("n", i64),
+		false,
+		c.i8ptr,
+		c.i8ptr,
+		c.i8ptr,
+		c.i64,
 	)
 
 	_libc_memcmp_irfun = c.declareExternalRuntimeFunction(
 		"memcmp",
-		ddpbool,
-		ir.NewParam("buf1", i8ptr),
-		ir.NewParam("buf2", i8ptr),
-		ir.NewParam("size", i64),
+		false,
+		c.ddpbool,
+		c.i8ptr,
+		c.i8ptr,
+		c.i64,
 	)
 
 	_libc_memmove_irfun = c.declareExternalRuntimeFunction(
 		"memmove",
-		i8ptr,
-		ir.NewParam("dest", i8ptr),
-		ir.NewParam("src", i8ptr),
-		ir.NewParam("n", i64),
+		false,
+		c.i8ptr,
+		c.i8ptr,
+		c.i8ptr,
+		c.i64,
 	)
 }
 

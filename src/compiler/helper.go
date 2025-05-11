@@ -20,21 +20,6 @@ import (
 
 // often used types declared here to shorten their names
 var (
-	i8  = types.I8
-	i32 = types.I32
-	i64 = types.I64
-
-	// convenience declarations for often used types
-	ddpint   = i64
-	ddpfloat = types.Double
-	ddpbyte  = types.I8
-	ddpbool  = types.I1
-	ddpchar  = i32
-
-	ptr = types.NewPointer
-
-	i8ptr = ptr(i8)
-
 	zero      = newInt(0) // 0: i64
 	zerof     = constant.NewFloat(ddpfloat, 0)
 	zero8     = newIntT(ddpbyte, 0)
@@ -96,7 +81,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VARIABLE:
 			return c.ddpany
 		case ddptypes.VoidType{}:
-			return c.void
+			return c.voidtyp
 		default: // struct types
 			return c.structTypes[ddpType.(*ddptypes.StructType)]
 		}
@@ -137,7 +122,7 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 
 // returns the aligned size of a type
 func (c *compiler) getTypeSize(ty ddpIrType) uint64 {
-	return c.llTarget.targetData.TypeAllocSize(ty.LLVMType())
+	return c.llTargetData.TypeAllocSize(ty.LLType())
 }
 
 func getHashableModuleName(mod *ast.Module) string {

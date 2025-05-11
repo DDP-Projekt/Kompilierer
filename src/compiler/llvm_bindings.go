@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 func init() {
@@ -17,18 +17,18 @@ func init() {
 	llvm.InitializeAllAsmPrinters()
 }
 
-type llvmTarget struct {
-	targetMachine llvm.TargetMachine
-	targetData    llvm.TargetData
+type llTarget struct {
+	llTargetMachine llvm.TargetMachine
+	llTargetData    llvm.TargetData
 }
 
-func newllvmTarget() (*llvmTarget, error) {
-	target, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
+func newllvmTarget() (*llTarget, error) {
+	newTarget, err := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
 	if err != nil {
 		return nil, fmt.Errorf("could not create llvm target: %w", err)
 	}
 
-	targetMachine := target.CreateTargetMachine(
+	targetMachine := newTarget.CreateTargetMachine(
 		llvm.DefaultTargetTriple(),
 		"generic",
 		"",
@@ -39,99 +39,89 @@ func newllvmTarget() (*llvmTarget, error) {
 
 	targetData := targetMachine.CreateTargetData()
 
-	return &llvmTarget{
-		targetMachine: targetMachine,
-		targetData:    targetData,
+	return &llTarget{
+		llTargetMachine: targetMachine,
+		llTargetData:    targetData,
 	}, nil
 }
 
-func (target *llvmTarget) Dispose() {
-	target.targetMachine.Dispose()
-	target.targetData.Dispose()
+func (target *llTarget) Dispose() {
+	target.llTargetMachine.Dispose()
+	target.llTargetData.Dispose()
 }
 
 // context which contains
 // all variables needed
 // to use llvm
 // needs to be disposed after use
-type llvmContext struct {
-	llvmTarget
-	passManager llvm.PassManager
-	context     llvm.Context
+type llvmModuleContext struct {
+	llTarget
+	llctx llvm.Context
+	llmod llvm.Module
 }
 
-func newllvmContext() (llctx *llvmContext, err error) {
-	llctx = &llvmContext{}
-
-	llctx.context = llvm.NewContext()
-
+func newllvmModuleContext(moduleName string) (llctx llvmModuleContext, err error) {
 	target, err := newllvmTarget()
 	if err != nil {
-		return nil, err
+		return llvmModuleContext{}, err
 	}
-	llctx.llvmTarget = *target
 
-	llctx.passManager = llvm.NewPassManager()
-	llctx.passManager.AddInstructionCombiningPass()
-	llctx.passManager.AddLoopDeletionPass()
-	llctx.passManager.AddLoopUnrollPass()
-	llctx.passManager.AddStripDeadPrototypesPass()
-	llctx.passManager.AddPromoteMemoryToRegisterPass()
-	llctx.passManager.AddAggressiveDCEPass()
-	llctx.passManager.AddArgumentPromotionPass()
-	llctx.passManager.AddCFGSimplificationPass()
-	llctx.passManager.AddConstantMergePass()
-	llctx.passManager.AddDeadArgEliminationPass()
-	llctx.passManager.AddDeadStoreEliminationPass()
-	llctx.passManager.AddFunctionInliningPass()
-	llctx.passManager.AddFunctionAttrsPass()
-	llctx.passManager.AddGlobalDCEPass()
-	llctx.passManager.AddGlobalOptimizerPass()
-	llctx.passManager.AddIndVarSimplifyPass()
+	llctx = llvmModuleContext{}
+	llctx.llTarget = *target
 
-	llctx.targetMachine.AddAnalysisPasses(llctx.passManager)
+	llctx.llctx = llvm.NewContext()
+	llctx.llmod = llctx.llctx.NewModule(moduleName)
+	llctx.llmod.SetDataLayout(llctx.llTargetData.String())
+	llctx.llmod.SetTarget(llctx.llTargetMachine.Triple())
 
 	return llctx, nil
 }
 
-func (llctx *llvmContext) Dispose() {
-	llctx.context.Dispose()
-	llctx.llvmTarget.Dispose()
-	llctx.passManager.Dispose()
-}
+func newllvmModuleContextFromIR(name string, llvm_ir []byte) (llvmModuleContext, error) {
+	target, err := newllvmTarget()
+	if err != nil {
+		return llvmModuleContext{}, err
+	}
 
-// parses a the given llvm ir (textual) and returns the module in with llctx.Context as c ontext
-// the module needs to be disposed
-func (llctx *llvmContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
+	llctx := llvmModuleContext{}
+	llctx.llTarget = *target
+
+	llctx.llctx = llvm.NewContext()
+
 	buf := llvm.NewMemoryBufferFromRangeCopy(llvm_ir)
 
-	mod, err := llvm.ParseIRFromMemoryBuffer(buf, llctx.context)
-	if err != nil {
-		return llvm.Module{}, fmt.Errorf("could not parse llvm ir: %w", err)
+	if llctx.llmod, err = llctx.llctx.ParseIR(buf); err != nil {
+		return llctx, fmt.Errorf("could not parse llvm ir: %w", err)
 	}
 
-	mod.SetDataLayout(llctx.targetData.String())
-	mod.SetTarget(llctx.targetMachine.Triple())
+	llctx.llmod.SetDataLayout(llctx.llTargetData.String())
+	llctx.llmod.SetTarget(llctx.llTargetMachine.Triple())
 
-	return mod, nil
+	return llctx, nil
 }
 
-func (llctx *llvmContext) parseListDefs() (llvm.Module, error) {
+func (llctx *llvmModuleContext) Dispose() {
+	llctx.llTarget.Dispose()
+	llctx.llmod.Dispose()
+	llctx.llctx.Dispose()
+}
+
+func newllvmModuleContextFromListDefs() (llvmModuleContext, error) {
 	list_defs_ir, err := os.ReadFile(ddppath.DDP_List_Types_Defs_LL)
 	if err != nil {
-		return llvm.Module{}, fmt.Errorf("could not read list_defs: %w", err)
+		return llvmModuleContext{}, fmt.Errorf("could not read list_defs: %w", err)
 	}
-	return llctx.parseIR(list_defs_ir)
+	return newllvmModuleContextFromIR(ddppath.DDP_List_Types_Defs_LL, list_defs_ir)
 }
 
-// optimizes the given module and returns wether it was modified
-func (llctx *llvmContext) optimizeModule(mod llvm.Module) bool {
-	return llctx.passManager.Run(mod)
+// optimizes the given module and returns any error
+func (llctx *llvmModuleContext) optimizeModule(mod llvm.Module) error {
+	return llctx.llmod.RunPasses("default<O2>", llctx.llTargetMachine, llvm.NewPassBuilderOptions())
 }
 
 // compiles the module to w and returns w.Write
-func (llctx *llvmContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
-	memBuffer, err := llctx.targetMachine.EmitToMemoryBuffer(mod, fileType)
+func (llctx *llvmModuleContext) compileModule(fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
+	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(llctx.llmod, fileType)
 	if err != nil {
 		return 0, fmt.Errorf("could not compile module to memory buffer: %w", err)
 	}

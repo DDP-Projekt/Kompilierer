@@ -1,12 +1,12 @@
 package compiler
 
 import (
-	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 // implementation of ddpIrType for a ddpany
@@ -90,10 +90,10 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	}, false)
 
 	// frees the given any and it's value
-	ddpany.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_any", c.void.IrType(), ir.NewParam("any", ddpany.ptr))
+	ddpany.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_any", c.voidtyp.IrType(), ir.NewParam("any", ddpany.ptr))
 
 	// places a copy of any in ret
-	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", c.void.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
+	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", c.voidtyp.IrType(), ir.NewParam("ret", ddpany.ptr), ir.NewParam("any", ddpany.ptr))
 
 	// compares two any
 	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", ddpbool, ir.NewParam("any1", ddpany.ptr), ir.NewParam("any2", ddpany.ptr))
