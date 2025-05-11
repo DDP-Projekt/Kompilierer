@@ -5,6 +5,8 @@
 
 [ Repräsentiert einen C-Zeiger (void*) ]
 Wir definieren einen Zeiger öffentlich als eine Zahl.
+[ Repräsentiert einen int ]
+Wir definieren einen C_int oeffentlich als einen Buchstaben.
 
 Die öffentliche Funktion C_Null gibt einen Zeiger zurück, macht:
 	Gib 0 als Zeiger zurück.
@@ -46,3 +48,10 @@ Die öffentliche Funktion Erstelle_Byte_Puffer mit dem Parameter n vom Typ Zahl,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"ein neuer Puffer der Länge <n>"
+
+[ close(int fd) ]
+Die oeffentliche Funktion close mit dem Parameter fd vom Typ C_int, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+    "Schließe <fd>",
+    "schließe <fd>"

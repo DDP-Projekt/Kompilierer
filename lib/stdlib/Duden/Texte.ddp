@@ -956,3 +956,31 @@ Und kann so benutzt werden:
 	"alle Worte in <text>",
 	"allen Worten in <text>",
 	"<text> in Worte unterteilt"
+
+Die öffentliche Funktion Text_Zu_ByteListe mit dem Parameter t vom Typ Text Referenz, gibt eine Byte Liste zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Bytes von <t>" oder
+	"den Bytes von <t>" oder
+	"der Bytes von <t>"
+
+Die öffentliche Funktion Text_Zu_ByteListe_Wert mit dem Parameter t vom Typ Text, gibt eine Byte Liste zurück, macht:
+	Gib die Bytes von t zurück.
+Und kann so benutzt werden:
+	"die Bytes von <t>" oder
+	"den Bytes von <t>" oder
+	"der Bytes von <t>"
+
+Die öffentliche Funktion ByteListe_Zu_Text mit dem Parameter b vom Typ Byte Listen Referenz, gibt einen Text zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Bytes <b> als Text" oder
+	"den Bytes <b> als Text" oder
+	"der Bytes <b> als Text"
+
+Die öffentliche Funktion ByteListe_Zu_Text_Wert mit dem Parameter b vom Typ Byte Liste, gibt einen Text zurück, macht:
+	Gib die Bytes b als Text zurück.
+Und kann so benutzt werden:
+	"die Bytes <b> als Text" oder
+	"den Bytes <b> als Text" oder
+	"der Bytes <b> als Text"

@@ -60,7 +60,7 @@ Die öffentliche Funktion Uri_Zu_Text mit dem Parameter uri vom Typ Uri, gibt ei
         Füge ':' an t an.
 
 	[URN edge case]
-	Wenn (Host von uri) nicht leer ist oder '/' am Anfang von (Pfad von uri) steht, dann:
+	Wenn ((Host von uri) nicht leer ist oder '/' am Anfang von (Pfad von uri) steht) und (Schema von uri) nicht leer ist, dann:
 		Füge "//" an t an.
 
     Wenn (Host von uri) nicht leer ist, dann:

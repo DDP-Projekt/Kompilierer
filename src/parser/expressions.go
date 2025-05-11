@@ -779,6 +779,11 @@ func (p *parser) assigneable() ast.Assigneable {
 		ident := &ast.Ident{
 			Literal: *p.previous(),
 		}
+		decl, ok, _ := p.scope().LookupDecl(ident.Literal.Literal)
+		if _, isVar := decl.(*ast.VarDecl); ok && !isVar {
+			p.err(ddperror.SEM_CONSTANT_IS_NOT_ASSIGNABLE, p.previous().Range, "Eine konstante kann nicht in als Referenz verwendet werden")
+		}
+
 		var ass ast.Assigneable = ident
 
 		for p.matchAny(token.ALS) {

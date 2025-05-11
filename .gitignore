@@ -1,5 +1,5 @@
 /build
-/llvm_build
+/llvm_build*
 .idea
 *.exe
 /.vscode/*.log
