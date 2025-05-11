@@ -14,6 +14,8 @@ Der Changelog von DDP. Sortiert nach Release.
 - [Fix] Duden/Uri parset nun absolute Uris der Form /pfad?query korrekt
 - [Neu] Duden/Netzwerk stellt Typen und Funktionen für (low-level) TCP und UDP Kommunikation zur Verfügung.
 - [Fix] Konstanten können nun nicht mehr in Zuweisungen oder als Referenzen verwendet werden
+- [Neu] Numerische Datentypen werden in Zuweisungen jetzt automatisch in einander umgewandelt
+- [Neu] Es gibt jetzt den Byte Datentyp, der eine natürliche Zahl im Bereich 0 bis einschließlich 255 darstellt
 - [Neu] Typanpassende Ausdrücke können nun als Referenzen übergeben werden, solange sie nur Typaliase bzw. Typdefinitionen behandeln
 - [Fix] Bug im Kompilierer, bei dem VTables für primitive Typen falsch generiert wurden
 - [Fix] Bug in Duden/Listen -> Elementweise_Quotient_Kommazahl wurde in der generischen Implementation behoben
