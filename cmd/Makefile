@@ -28,7 +28,7 @@ endif
 
 .DEFAULT_GOAL := all
 
-DDPVERSION := v0.6.0
+DDPVERSION := v1.0.0
 LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
 GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
