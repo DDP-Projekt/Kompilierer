@@ -3,11 +3,7 @@
 #include "DDP/ddpwindows.h"
 #include "DDP/error.h"
 #include <assert.h>
-#include <errhandlingapi.h>
-#include <math.h>
-#include <minwindef.h>
 #include <string.h>
-#include <winerror.h>
 
 #ifdef DDPOS_WINDOWS
 #include <sys/unistd.h>
@@ -19,6 +15,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif // DDPOS_WINDOWS
@@ -389,7 +386,7 @@ void Socket_Timeout_Setzen(ddpsocket *sock, ddpint timeout, ddpbool send) {
 #else
 	struct timeval timeout_val;
 	timeout_val.tv_sec = timeout / 1000;
-	timeout_val.tv_usec = (timeout - timeout.tv_sec) * 1000;
+	timeout_val.tv_usec = (timeout - timeout_val.tv_sec) * 1000;
 	int optlen = sizeof(struct timeval);
 #endif // DDPOS_WINDOWS
 
@@ -491,7 +488,6 @@ static ddpint poll_linux(PollFd *fds, ddpint nfds, ddpint timeout) {
 		}
 		if (fds[i].events & POLL_EVENT_HUP) {
 			pfds[i].events |= POLLHUP;
-			pfds[i].events |= POLLRDHUP;
 		}
 		if (fds[i].events & POLL_EVENT_NVAL) {
 			pfds[i].events |= POLLNVAL;
@@ -501,7 +497,7 @@ static ddpint poll_linux(PollFd *fds, ddpint nfds, ddpint timeout) {
 
 	int ret;
 	while (1) {
-		ret = poll(fds, nfds, timeout);
+		ret = poll(pfds, nfds, timeout);
 		if (ret < 0 && errno == EINTR) { // interrupted by signal, retry
 			continue;
 		} else if (ret < 0) {
@@ -528,7 +524,7 @@ static ddpint poll_linux(PollFd *fds, ddpint nfds, ddpint timeout) {
 			if (pfds[i].revents & POLLERR) {
 				fds[i].events |= POLL_EVENT_ERR;
 			}
-			if (pfds[i].revents & POLLHUP || pfds[i].revents & POLLRDHUP) {
+			if (pfds[i].revents & POLLHUP) {
 				fds[i].events |= POLL_EVENT_HUP;
 			}
 			if (pfds[i].revents & POLLNVAL) {
