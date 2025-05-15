@@ -1439,12 +1439,21 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.latestReturnType = c.ddpinttyp
 		}
 	case ast.BIN_LEFT_SHIFT:
+		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
+			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
+			c.latestReturnType = c.ddpinttyp
+		} else {
+			c.latestReturnType = c.ddpbytetyp
+		}
 		c.latestReturn = c.cbb.NewShl(lhs, rhs)
-		c.latestReturnType = c.ddpinttyp
-		c.latestReturnType = lhsTyp
 	case ast.BIN_RIGHT_SHIFT:
+		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
+			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
+			c.latestReturnType = c.ddpinttyp
+		} else {
+			c.latestReturnType = c.ddpbytetyp
+		}
 		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
-		c.latestReturnType = lhsTyp
 	case ast.BIN_EQUAL:
 		c.compare_values(lhs, rhs, lhsTyp)
 	case ast.BIN_UNEQUAL:
