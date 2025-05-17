@@ -9,7 +9,7 @@ Binde "Duden/Texte" ein.
 
 Der extern sichtbare Wahrheitswert ddp_netzwerk_timout ist falsch.
 
-Die öffentliche Funktion Gab_Timeout gibt einen Wahrheitswert zurück, macht:
+Die öffentliche Funktion Gab_Zeitüberschreitung gibt einen Wahrheitswert zurück, macht:
 	Gib ddp_netzwerk_timout zurück.
 Und kann so benutzt werden:
 	"es dabei <!k>eine Zeitüberschreitung gab" oder
@@ -293,7 +293,7 @@ Die oeffentliche Konstante POLL_EVENT_NVAL ist 16. [ socket war nicht offen ]
 
 [
 	Wartet maximal timout Millisekunden darauf, dass einer der Sockets auf ein Event reagiert.
-	Gib zurück wie viele Sockets reagiert haben, oder 0 falls es zu einem Timeout oder einer Unterbrechung kam.
+	Gib zurück wie viele Sockets reagiert haben, oder 0 falls es zu einer Zeitüberschreitung oder einer Unterbrechung kam.
 	Diese Funktion setzt die entsprechenden Bitflags als Rückgabe.
 ]
 Die öffentliche Funktion Socket_Poll mit den Parametern fds und timeout vom Typ PollFd Listen Referenz und Zahl, gibt eine Zahl zurück,

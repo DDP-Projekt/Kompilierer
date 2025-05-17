@@ -11,6 +11,12 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] in Duden/Netzwerk:
+    - Gab_Zeitüberschreitung
+    - Socket_Timeout_Setzen_Senden/Empfangen
+    - Socket_Poll
+- [Fix] Bitweise Operatoren mit dem Byte Datentyp funktionieren jetzt korrekt
+
 ## v1.0.0
 
 - [Fix] Duden/Uri parset nun absolute Uris der Form /pfad?query korrekt
