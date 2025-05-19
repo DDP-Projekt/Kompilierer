@@ -386,15 +386,15 @@ void Socket_Timeout_Setzen(ddpsocket *sock, ddpint timeout, ddpbool send) {
 #else
 	struct timeval timeout_val;
 	timeout_val.tv_sec = timeout / 1000;
-	timeout_val.tv_usec = (timeout - timeout_val.tv_sec) * 1000;
+	timeout_val.tv_usec = (timeout - timeout_val.tv_sec * 1000) * 1000;
 	int optlen = sizeof(struct timeval);
 #endif // DDPOS_WINDOWS
 
 	if (setsockopt(sock->fd, SOL_SOCKET, opt, (const char *)&timeout_val, optlen) < 0) {
 #ifdef DDPOS_WINDOWS
-		ddp_error_win("recvfrom Fehler: ");
+		ddp_error_win("setsockopt Fehler: ");
 #else
-		ddp_error("recvfrom Fehler: ", true);
+		ddp_error("setsockopt Fehler: ", true);
 #endif
 	}
 }
