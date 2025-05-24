@@ -57,7 +57,7 @@ void Schreibe_Text(ddpstring *p1) {
 }
 
 void Schreibe_Fehler(ddpstring *fehler) {
-	fprintf(stderr, DDP_STRING_FMT, fehler->str);
+	fprintf(stderr, DDP_STRING_FMT "\n", fehler->str);
 }
 
 #ifdef DDPOS_WINDOWS

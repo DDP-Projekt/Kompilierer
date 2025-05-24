@@ -7,6 +7,14 @@ Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Laufzeit" ein.
 Binde "Duden/Texte" ein.
 
+Der extern sichtbare Wahrheitswert ddp_netzwerk_timout ist falsch.
+
+Die öffentliche Funktion Gab_Zeitüberschreitung gibt einen Wahrheitswert zurück, macht:
+	Gib ddp_netzwerk_timout zurück.
+Und kann so benutzt werden:
+	"es dabei <!k>eine Zeitüberschreitung gab" oder
+	"es dabei <!k>eine Zeitueberschreitung gab"
+
 Die Funktion Init_Windows gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
@@ -53,6 +61,10 @@ Der öffentliche C_int IPV4 ist 2 als Buchstabe als C_int.
 Der öffentliche C_int TCP ist 1 als Buchstabe als C_int.
 [ SOCK_DGRAM ]
 Der öffentliche C_int UDP ist 2 als Buchstabe als C_int.
+
+Die oeffentliche Funktion Socket_Als_Zahl mit dem Parameter s vom Typ Socket, gibt eine Zahl zurück, macht:
+	Gib (fd von s) als Buchstabe als Zahl zurück.
+Und überlädt den "als" Operator.
 
 [ AF_INET6 ]
 Die öffentliche Funktion AF_IPV6 gibt einen C_int zurück, macht:
@@ -242,3 +254,59 @@ Die öffentliche Funktion Socket_Empfangen_Von_Ohne_Klient_Text mit den Paramete
 Und kann so benutzt werden:
     "der nächste maximal <max> Bytes große Text aus <verbindung>",
     "dem nächsten maximal <max> Bytes großen Text aus <verbindung>"
+
+Die Funktion Socket_Timeout_Setzen mit den Parametern socket, timeout und senden vom Typ Socket, Zahl und Wahrheitswert, gibt nichts zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"Setze das Zeitüberschreitungslimit von <socket> auf <timeout>ms (Senden ist <senden>)"
+
+Die öffentliche Funktion Socket_Timeout_Setzen_Senden mit den Parametern socket und timeout vom Typ Socket und Zahl, gibt nichts zurück, macht:
+	Setze das Zeitüberschreitungslimit von socket auf timeout ms (Senden ist wahr).
+Und kann so benutzt werden:
+	"Setze das Zeitüberschreitungslimit von <socket> fürs Senden auf <timeout>ms" oder
+	"Setze das Zeitüberschreitungslimit von <socket> fürs Senden auf <timeout> Millisekunden"
+
+Die öffentliche Funktion Socket_Timeout_Setzen_Empfangen mit den Parametern socket und timeout vom Typ Socket und Zahl, gibt nichts zurück, macht:
+	Setze das Zeitüberschreitungslimit von socket auf timeout ms (Senden ist falsch).
+Und kann so benutzt werden:
+	"Setze das Zeitüberschreitungslimit von <socket> fürs Empfangen auf <timeout>ms" oder
+	"Setze das Zeitüberschreitungslimit von <socket> fürs Empfangen auf <timeout> Millisekunden"
+
+[ Polling ]
+
+[
+	Kombination aus einem Socket und einem events Byte, der eine Kombination der POLL_EVENT_* Bitflags ist.
+]
+Wir nennen die öffentliche Kombination aus
+	dem öffentlichen Socket sock, [ Der Socket auf den gepollt wird ]
+	dem öffentlichen Byte events, [ die Ein und Ausgabe Bitflags ]
+einen PollFd,
+und erstellen sie so:
+	"einen PollFd für <sock> mit <events>"
+
+
+Die oeffentliche Konstante POLL_EVENT_IN ist 1. [ read/accept bereit ]
+Die oeffentliche Konstante POLL_EVENT_OUT ist 2. [ write bereit ]
+Die oeffentliche Konstante POLL_EVENT_ERR ist 4. [ socket ist in Fehlerzustand ]
+Die oeffentliche Konstante POLL_EVENT_HUP ist 8. [ hung-up bzw. die Verbindung wurde geschlossen ]
+Die oeffentliche Konstante POLL_EVENT_NVAL ist 16. [ socket war nicht offen ]
+
+[
+	Wartet maximal timout Millisekunden darauf, dass einer der Sockets auf ein Event reagiert.
+	Gib zurück wie viele Sockets reagiert haben, oder 0 falls es zu einer Zeitüberschreitung oder einer Unterbrechung kam.
+	Diese Funktion setzt die entsprechenden Bitflags als Rückgabe.
+]
+Die öffentliche Funktion Socket_Poll mit den Parametern fds und timeout vom Typ PollFd Listen Referenz und Zahl, gibt eine Zahl zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Anzahl der Sockets in <fds>, die nach maximal <timeout>ms reagiert haben"
+
+[
+	Wandelt eine Liste von Sockets in eine Liste von PollFd um, die alle das gleiche Event haben
+]
+Die öffentliche Funktion Socket_Liste_Zu_PollFd mit den Parametern sockets und events vom Typ Socket Listen Referenz und Byte, gibt eine PollFd Liste zurück, macht:
+	Die PollFd Liste fds ist die Länge von sockets Mal der Standardwert von einem PollFd.
+	Für jeden Socket socket mit Index i in sockets, speichere einen PollFd für socket mit events in fds an der Stelle i.
+	Gib fds zurück.
+Und kann so benutzt werden:
+	"eine PollFd Liste aus <sockets> für <events>"

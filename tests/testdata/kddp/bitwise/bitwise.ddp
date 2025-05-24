@@ -25,3 +25,17 @@ Schreibe den Buchstaben '\n'.
 Schreibe den Byte ((7 als Byte) um (3 als Byte) Bit nach links verschoben).
 Schreibe den Buchstaben '\n'.
 Schreibe den Byte ((70 als Byte) um (2 als Byte) Bit nach rechts verschoben).
+Schreibe den Buchstaben '\n'.
+Schreibe den Buchstaben '\n'.
+
+Schreibe (logisch nicht (1 als Byte)).
+Schreibe den Buchstaben '\n'.
+Schreibe (5 logisch und (2 als Byte)).
+Schreibe den Buchstaben '\n'.
+Schreibe (5 logisch oder (2 als Byte)).
+Schreibe den Buchstaben '\n'.
+Schreibe (8 logisch kontra (5 als Byte)).
+Schreibe den Buchstaben '\n'.
+Schreibe (7 um (3 als Byte) Bit nach links verschoben).
+Schreibe den Buchstaben '\n'.
+Schreibe (70 um (2 als Byte) Bit nach rechts verschoben).
