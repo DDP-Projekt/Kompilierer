@@ -1,41 +1,29 @@
 package compiler
 
 import (
-	"fmt"
-
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
 type ddpIrStructType struct {
-	typ           *types.StructType
-	ptr           *types.PointerType
+	typ           llvm.Type
 	fieldIrTypes  []ddpIrType
 	fieldDDPTypes []ddptypes.StructField
 	name          string
-	vtable        *ir.Global
-	llType        llvm.Type
-	freeIrFun     *ir.Func // the free ir func
-	deepCopyIrFun *ir.Func // the deepCopy ir func
-	equalsIrFun   *ir.Func // the equals ir func
+	vtable        llvm.Value
+	defaultValue  llvm.Value
+	freeIrFun     llvm.Value // the free ir func
+	deepCopyIrFun llvm.Value // the deepCopy ir func
+	equalsIrFun   llvm.Value // the equals ir func
 	listType      *ddpIrListType
 }
 
 var _ ddpIrType = (*ddpIrStructType)(nil)
 
-func (t *ddpIrStructType) IrType() types.Type {
+func (t *ddpIrStructType) LLType() llvm.Type {
 	return t.typ
-}
-
-func (t *ddpIrStructType) PtrType() *types.PointerType {
-	return t.ptr
 }
 
 func (t *ddpIrStructType) Name() string {
@@ -46,27 +34,23 @@ func (*ddpIrStructType) IsPrimitive() bool {
 	return false
 }
 
-func (t *ddpIrStructType) DefaultValue() constant.Constant {
-	return constant.NewZeroInitializer(t.typ)
+func (t *ddpIrStructType) DefaultValue() llvm.Value {
+	return t.defaultValue
 }
 
-func (t *ddpIrStructType) VTable() constant.Constant {
+func (t *ddpIrStructType) VTable() llvm.Value {
 	return t.vtable
 }
 
-func (t *ddpIrStructType) LLVMType() llvm.Type {
-	return t.llType
-}
-
-func (t *ddpIrStructType) FreeFunc() *ir.Func {
+func (t *ddpIrStructType) FreeFunc() llvm.Value {
 	return t.freeIrFun
 }
 
-func (t *ddpIrStructType) DeepCopyFunc() *ir.Func {
+func (t *ddpIrStructType) DeepCopyFunc() llvm.Value {
 	return t.deepCopyIrFun
 }
 
-func (t *ddpIrStructType) EqualsFunc() *ir.Func {
+func (t *ddpIrStructType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
@@ -112,14 +96,10 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 		return c.toIrType(field.Type)
 	})
 	structType.fieldDDPTypes = typ.Fields
-	structType.typ = c.mod.NewTypeDef(structType.name, types.NewStruct(
-		mapSlice(structType.fieldIrTypes, func(t ddpIrType) types.Type { return t.IrType() })...,
-	)).(*types.StructType)
-	structType.ptr = ptr(structType.typ)
 
-	structType.llType = llvm.StructType(mapSlice(structType.fieldIrTypes, func(irType ddpIrType) llvm.Type {
-		return irType.LLVMType()
-	}), false)
+	structType.typ = c.llctx.StructType(
+		mapSlice(structType.fieldIrTypes, func(t ddpIrType) llvm.Type { return t.LLType() }),
+		false)
 
 	structType.freeIrFun = c.createStructFree(structType, declarationOnly)
 	structType.deepCopyIrFun = c.createStructDeepCopy(structType, declarationOnly)
@@ -127,155 +107,113 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 
 	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
 
-	// see equivalent in runtime/include/ddptypes.h
-	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
-		ddpint, // ddpint size
-		ptr(types.NewFunc(c.voidtyp.IrType(), structType.ptr)),                       // free_func_ptr free_func
-		ptr(types.NewFunc(c.voidtyp.IrType(), structType.ptr, structType.ptr)),       // deep_copy_func_ptr deep_copy_func
-		ptr(types.NewFunc(c.ddpbooltyp.IrType(), structType.ptr, structType.ptr)), // equal_func_ptr equal_func
-	))
+	vtable := llvm.AddGlobal(c.llmod, c.ptr, name+"_vtable")
+	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	var vtable *ir.Global
-	if declarationOnly {
-		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
-		vtable.Linkage = enum.LinkageExternal
-		vtable.Visibility = enum.VisibilityDefault
-	} else {
-		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-			newInt(int64(c.getTypeSize(structType))),
-			structType.freeIrFun,
-			structType.deepCopyIrFun,
-			structType.equalsIrFun,
-		))
+	if !declarationOnly {
+		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+			llvm.ConstInt(c.ddpint, c.getTypeSize(structType), false),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
+		}, false))
 	}
 
 	structType.vtable = vtable
 
+	structType.defaultValue = llvm.ConstNull(structType.typ)
+
 	c.structTypes[typ] = structType
 }
 
-func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) *ir.Func {
-	structParam := ir.NewParam(structTyp.name+"_p", structTyp.ptr)
-
-	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("ddp_free_%s", structTyp.typ.Name()),
-		c.voidtyp.IrType(),
-		structParam,
-	)
-	irFunc.CallingConv = enum.CallingConvC
+func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
+	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false))
+	defer c.disposeAndPop()
 
 	if declarationOnly {
-		irFunc.Linkage = enum.LinkageExternal
-		return irFunc
+		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+		return llFuncBuilder.llFn
 	}
 
-	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
-
-	c.cf = irFunc
-	c.cbb = c.cf.NewBlock("")
+	structParam := llFuncBuilder.llFn.Param(0)
 
 	// free non-primitives
 	for i, field := range structTyp.fieldIrTypes {
-		c.freeNonPrimitive(c.indexStruct(structParam, int64(i)), field)
+		c.freeNonPrimitive(c.indexStruct(structTyp.typ, structParam, i), field)
 	}
 
-	c.cbb.NewRet(nil)
+	c.builder().CreateRet(llvm.Value{})
 
-	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
-
-	c.insertFunction(irFunc.Name(), nil, irFunc)
-	return irFunc
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	return llFuncBuilder.llFn
 }
 
-func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) *ir.Func {
-	ret, structParam := ir.NewParam("ret", structTyp.ptr), ir.NewParam(structTyp.name+"_p", structTyp.ptr)
+func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
+	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false))
+	defer c.disposeAndPop()
 
-	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("ddp_deep_copy_%s", structTyp.typ.Name()),
-		c.voidtyp.IrType(),
-		ret,
-		structParam,
-	)
-	irFunc.CallingConv = enum.CallingConvC
+	ret, structParam := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
 
 	if declarationOnly {
-		irFunc.Linkage = enum.LinkageExternal
-		return irFunc
+		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+		return llFuncBuilder.llFn
 	}
-	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
-
-	c.cf = irFunc
-	c.cbb = c.cf.NewBlock("")
 
 	// deep-copy non-primitives
 	for i, field := range structTyp.fieldIrTypes {
-		dstPtr := c.indexStruct(ret, int64(i))
+		dstPtr := c.indexStruct(structTyp.typ, ret, i)
 		if !field.IsPrimitive() {
-			srcPtr := c.indexStruct(structParam, int64(i))
+			srcPtr := c.indexStruct(structTyp.typ, structParam, i)
 			c.deepCopyInto(dstPtr, srcPtr, field)
 		} else {
-			c.cbb.NewStore(c.loadStructField(structParam, int64(i)), dstPtr)
+			llFuncBuilder.CreateStore(c.loadStructField(structTyp.typ, structParam, i), dstPtr)
 		}
 	}
 
-	c.cbb.NewRet(nil)
+	llFuncBuilder.CreateRet(llvm.Value{})
 
-	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
-
-	c.insertFunction(irFunc.Name(), nil, irFunc)
-	return irFunc
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	return llFuncBuilder.llFn
 }
 
-func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) *ir.Func {
-	struct1, struct2 := ir.NewParam(structTyp.name+"_1", structTyp.ptr), ir.NewParam(structTyp.name+"_2", structTyp.ptr)
+func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
+	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false))
+	defer c.disposeAndPop()
 
-	irFunc := c.mod.NewFunc(
-		fmt.Sprintf("ddp_%s_equal", structTyp.typ.Name()),
-		ddpbool,
-		struct1,
-		struct2,
-	)
-	irFunc.CallingConv = enum.CallingConvC
-
+	struct1, struct2 := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
 	if declarationOnly {
-		irFunc.Linkage = enum.LinkageExternal
-		return irFunc
+		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+		return llFuncBuilder.llFn
 	}
 
-	cbb, cf := c.cbb, c.cf // save the current basic block and ir function
-
-	c.cf = irFunc
-	c.cbb = c.cf.NewBlock("")
-
 	// if (struct1 == struct2) return true;
-	ptrs_equal := c.cbb.NewICmp(enum.IPredEQ, c.cbb.NewPtrToInt(struct1, i64), c.cbb.NewPtrToInt(struct2, i64))
+	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, struct1, struct2, "")
 	c.createIfElse(ptrs_equal, func() {
-		c.cbb.NewRet(constant.True)
+		c.builder().CreateRet(c.True)
 	},
 		nil,
 	)
 
 	// compare every single field and return if one is not equal
 	for i, field := range structTyp.fieldIrTypes {
-		var f1, f2 value.Value
+		var f1, f2 llvm.Value
 		if field.IsPrimitive() {
-			f1, f2 = c.loadStructField(struct1, int64(i)), c.loadStructField(struct2, int64(i))
+			f1, f2 = c.loadStructField(structTyp.typ, struct1, i), c.loadStructField(structTyp.typ, struct2, i)
 		} else {
-			f1, f2 = c.indexStruct(struct1, int64(i)), c.indexStruct(struct2, int64(i))
+			f1, f2 = c.indexStruct(structTyp.typ, struct1, i), c.indexStruct(structTyp.typ, struct2, i)
 		}
 		equal := c.compare_values(f1, f2, field)
-		is_not_equal := c.cbb.NewXor(equal, newInt(1))
+		is_not_equal := c.builder().CreateXor(equal, c.newInt(1), "")
 		c.createIfElse(is_not_equal, func() {
-			c.cbb.NewRet(constant.False)
+			c.builder().CreateRet(c.False)
 		}, nil)
 	}
 
-	c.cbb.NewRet(constant.True)
+	c.builder().CreateRet(c.True)
 
-	c.cbb, c.cf = cbb, cf // restore the basic block and ir function
-
-	c.insertFunction(irFunc.Name(), nil, irFunc)
-	return irFunc
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	return llFuncBuilder.llFn
 }
 
 func mapSlice[T, U any](s []T, mapper func(T) U) []U {

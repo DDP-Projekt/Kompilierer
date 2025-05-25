@@ -5,63 +5,48 @@ to generate ir
 package compiler
 
 import (
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
-
-// takes a value of pointerType and returns the type it points to
-func getPointeeType(ptr value.Value) types.Type {
-	return getPointeeTypeT(ptr.Type())
-}
-
-// assumes ptr is a types.PointerType and returns its ElementType
-func getPointeeTypeT(ptr types.Type) types.Type {
-	return ptr.(*types.PointerType).ElemType
-}
 
 // calculates the size of the given type
 // and returns it as i64
-func (c *compiler) sizeof(typ types.Type) value.Value {
-	size_ptr := c.cbb.NewGetElementPtr(typ, constant.NewNull(ptr(typ)), newIntT(i32, 1))
-	size_i := c.cbb.NewPtrToInt(size_ptr, i64)
-	return size_i
+func (c *compiler) sizeof(typ llvm.Type) llvm.Value {
+	size_ptr := c.builder().CreateGEP(typ, c.Null, []llvm.Value{c.newIntT(c.i32, 1)}, "")
+	return c.builder().CreatePtrToInt(size_ptr, c.i64, "")
 }
 
-func (c *compiler) floatOrByteAsInt(src value.Value, from ddpIrType) value.Value {
+func (c *compiler) floatOrByteAsInt(src llvm.Value, from ddpIrType) llvm.Value {
 	switch from {
 	case c.ddpinttyp:
 		return src
 	case c.ddpfloattyp:
-		return c.cbb.NewFPToSI(src, ddpint)
+		return c.builder().CreateFPToSI(src, c.ddpint, "")
 	case c.ddpbytetyp:
-		return c.cbb.NewZExt(src, ddpint)
+		return c.builder().CreateZExt(src, c.ddpint, "")
 	default:
 		panic("non numeric type passed to floatOrByteAsInt")
 	}
 }
 
-func (c *compiler) intOrByteAsFloat(src value.Value, from ddpIrType) value.Value {
+func (c *compiler) intOrByteAsFloat(src llvm.Value, from ddpIrType) llvm.Value {
 	switch from {
 	case c.ddpinttyp:
-		return c.cbb.NewSIToFP(src, ddpfloat)
+		return c.builder().CreateSIToFP(src, c.ddpfloat, "")
 	case c.ddpfloattyp:
 		return src
 	case c.ddpbytetyp:
-		return c.cbb.NewUIToFP(src, ddpfloat)
+		return c.builder().CreateUIToFP(src, c.ddpfloat, "")
 	default:
 		panic("non numeric type passed to intOrByteAsFloat")
 	}
 }
 
-func (c *compiler) intOrFloatAsByte(src value.Value, from ddpIrType) value.Value {
+func (c *compiler) intOrFloatAsByte(src llvm.Value, from ddpIrType) llvm.Value {
 	switch from {
 	case c.ddpinttyp:
-		return c.cbb.NewTrunc(src, ddpbyte)
+		return c.builder().CreateTrunc(src, c.ddpbyte, "")
 	case c.ddpfloattyp:
-		return c.cbb.NewFPToUI(src, ddpbyte)
+		return c.builder().CreateFPToUI(src, c.ddpbyte, "")
 	case c.ddpbytetyp:
 		return src
 	default:
@@ -69,7 +54,7 @@ func (c *compiler) intOrFloatAsByte(src value.Value, from ddpIrType) value.Value
 	}
 }
 
-func (c *compiler) numericCast(src value.Value, from, to ddpIrType) value.Value {
+func (c *compiler) numericCast(src llvm.Value, from, to ddpIrType) llvm.Value {
 	switch to {
 	case c.ddpinttyp:
 		return c.floatOrByteAsInt(src, from)
@@ -83,47 +68,47 @@ func (c *compiler) numericCast(src value.Value, from, to ddpIrType) value.Value 
 }
 
 // the GROW_CAPACITY macro from the runtime
-func (c *compiler) growCapacity(cap value.Value) value.Value {
-	trueBlock, falseBlock, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	cond := c.cbb.NewICmp(enum.IPredSLT, cap, newInt(8))
-	c.cbb.NewCondBr(cond, trueBlock, falseBlock)
+func (c *compiler) growCapacity(capa llvm.Value) llvm.Value {
+	trueBlock, falseBlock, endBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	cond := c.builder().CreateICmp(llvm.IntSLT, capa, c.newInt(8), "")
+	c.builder().CreateCondBr(cond, trueBlock, falseBlock)
 
-	c.cbb = trueBlock
-	c.cbb.NewBr(endBlock)
+	c.builder().setBlock(trueBlock)
+	c.builder().CreateBr(endBlock)
 
-	c.cbb = falseBlock
-	newCap := c.cbb.NewFPToSI(c.cbb.NewFMul(c.cbb.NewSIToFP(cap, ddpfloat), constant.NewFloat(ddpfloat, 1.5)), i64)
-	c.cbb.NewBr(endBlock)
+	c.builder().setBlock(falseBlock)
+	newCap := c.builder().CreateFPToSI(c.builder().CreateFMul(c.builder().CreateSIToFP(capa, c.ddpfloat, ""), c.newFloat(1.5), ""), c.i64, "")
+	c.builder().CreateBr(endBlock)
 
-	c.cbb = endBlock
-	return c.cbb.NewPhi(ir.NewIncoming(newInt(8), trueBlock), ir.NewIncoming(newCap, falseBlock))
+	c.builder().setBlock(endBlock)
+	result := c.builder().CreatePHI(c.ddpint, "")
+	result.AddIncoming([]llvm.Value{c.newInt(8), newCap}, []llvm.BasicBlock{trueBlock, falseBlock})
+	return result
 }
 
 // uses the GetElementPtr instruction to index a pointer
 // returns a pointer to the value
-func (c *compiler) indexArray(arr value.Value, index value.Value) value.Value {
-	gep := c.cbb.NewGetElementPtr(getPointeeType(arr), arr, index)
-	gep.InBounds = true
+func (c *compiler) indexArray(elementType llvm.Type, arr llvm.Value, index llvm.Value) llvm.Value {
+	gep := c.builder().CreateInBoundsGEP(elementType, arr, []llvm.Value{index}, "")
 	return gep
 }
 
-func (c *compiler) loadArrayElement(arr value.Value, index value.Value) value.Value {
-	elementPtr := c.indexArray(arr, index)
-	return c.cbb.NewLoad(getPointeeType(arr), elementPtr)
+func (c *compiler) loadArrayElement(elementType llvm.Type, arr llvm.Value, index llvm.Value) llvm.Value {
+	elementPtr := c.indexArray(elementType, arr, index)
+	return c.builder().CreateLoad(elementType, elementPtr, "")
 }
 
 // uses the GetElementPtr instruction to index struct fields
 // returns a pointer to the field
-func (c *compiler) indexStruct(structPtr value.Value, index int64) value.Value {
-	structType := getPointeeType(structPtr)
-	return c.cbb.NewGetElementPtr(structType, structPtr, newIntT(i32, 0), newIntT(i32, index))
+func (c *compiler) indexStruct(structType llvm.Type, structPtr llvm.Value, index int) llvm.Value {
+	return c.builder().CreateGEP(structType, structPtr, []llvm.Value{c.newIntT(c.i32, 0), c.newIntT(c.i32, int64(index))}, "")
 }
 
 // indexStruct followed by a load on the result
 // returns the value of the field
-func (c *compiler) loadStructField(structPtr value.Value, index int64) value.Value {
-	fieldPtr := c.indexStruct(structPtr, index)
-	return c.cbb.NewLoad(getPointeeType(fieldPtr), fieldPtr)
+func (c *compiler) loadStructField(structType llvm.Type, structPtr llvm.Value, index int) llvm.Value {
+	fieldPtr := c.indexStruct(structType, structPtr, index)
+	return c.builder().CreateLoad(structType.StructElementTypeAtIndex(index), fieldPtr, "")
 }
 
 // generates a new if-else statement
@@ -131,110 +116,112 @@ func (c *compiler) loadStructField(structPtr value.Value, index int64) value.Val
 // genTrueBody generates the then-body
 // genFalseBody may be nil if no else is required
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *compiler) createIfElse(cond value.Value, genTrueBody, genFalseBody func()) {
-	trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), (*ir.Block)(nil), c.cf.NewBlock("")
+func (c *compiler) createIfElse(cond llvm.Value, genTrueBody, genFalseBody func()) {
+	trueBlock, falseBlock, leaveBlock := c.builder().newBlock(), llvm.BasicBlock{}, c.builder().newBlock()
 	if genFalseBody == nil {
 		falseBlock = leaveBlock // no else, so we jump directly to leave
 	} else {
 		// to keep the order of blocks in the ir correct
 		falseBlock = leaveBlock
-		leaveBlock = c.cf.NewBlock("")
+		leaveBlock = c.builder().newBlock()
 	}
-	c.cbb.NewCondBr(cond, trueBlock, falseBlock)
+	c.builder().CreateCondBr(cond, trueBlock, falseBlock)
 
-	c.cbb = trueBlock
+	c.builder().setBlock(trueBlock)
 	genTrueBody()
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(leaveBlock)
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateBr(leaveBlock)
 	}
 
-	c.cbb = falseBlock
+	c.builder().setBlock(falseBlock)
 	if genFalseBody != nil {
 		genFalseBody()
-		if c.cbb.Term == nil {
-			c.cbb.NewBr(leaveBlock)
+		if c.builder().cb.Terminator().IsNil() {
+			c.builder().CreateBr(leaveBlock)
 		}
 	}
 
-	c.cbb = leaveBlock
+	c.builder().setBlock(leaveBlock)
 }
 
 // generates a new ternary-operator expression using phi-nodes
 // cond is the condition, true/falseVal should produce values of the same type
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *compiler) createTernary(cond value.Value, trueVal, falseVal func() value.Value) value.Value {
-	trueLabel, falseLabel, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewCondBr(cond, trueLabel, falseLabel)
+func (c *compiler) createTernary(resultType llvm.Type, cond llvm.Value, trueVal, falseVal func() llvm.Value) llvm.Value {
+	trueLabel, falseLabel, endBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	c.builder().CreateCondBr(cond, trueLabel, falseLabel)
 
 	// cond == true
-	c.cbb = trueLabel
+	c.builder().setBlock(trueLabel)
 	trVal := trueVal()
-	c.cbb.NewBr(endBlock)
+	c.builder().CreateBr(endBlock)
 
 	// cond == false
-	c.cbb = falseLabel
+	c.builder().setBlock(falseLabel)
 	falVal := falseVal()
-	c.cbb.NewBr(endBlock)
+	c.builder().CreateBr(endBlock)
 
 	// phi based on cond
-	c.cbb = endBlock
-	return c.cbb.NewPhi(ir.NewIncoming(trVal, trueLabel), ir.NewIncoming(falVal, falseLabel))
+	c.builder().setBlock(endBlock)
+	result := c.builder().CreatePHI(resultType, "")
+	result.AddIncoming([]llvm.Value{trVal, falVal}, []llvm.BasicBlock{trueLabel, falseLabel})
+	return result
 }
 
 // generates a new while-loop using cond as condition
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *compiler) createWhile(cond func() value.Value, genBody func()) {
-	condBlock, bodyBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewBr(condBlock)
+func (c *compiler) createWhile(cond func() llvm.Value, genBody func()) {
+	condBlock, bodyBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	c.builder().CreateBr(condBlock)
 
-	c.cbb = condBlock
-	c.cbb.NewCondBr(cond(), bodyBlock, leaveBlock)
+	c.builder().setBlock(condBlock)
+	c.builder().CreateCondBr(cond(), bodyBlock, leaveBlock)
 
-	c.cbb = bodyBlock
+	c.builder().setBlock(bodyBlock)
 	genBody()
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(condBlock)
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateBr(condBlock)
 	}
 
-	c.cbb = leaveBlock
+	c.builder().setBlock(leaveBlock)
 }
 
 // generates a new for-loop using iterStart/End to get the start and end value (should return i64)
 // and genBody to generate what should be done in the body-Block
 // c.cbb and c.cf must be set/restored correctly by the caller
-func (c *compiler) createFor(iterStart value.Value, genCond func(index value.Value) value.Value, genBody func(index value.Value)) {
+func (c *compiler) createFor(iterStart llvm.Value, genCond func(index llvm.Value) llvm.Value, genBody func(index llvm.Value)) {
 	// initialize counter to 0 (ddpint counter = 0)
-	counter := c.NewAlloca(i64)
-	c.cbb.NewStore(iterStart, counter)
+	counter := c.NewAlloca(c.i64)
+	c.builder().CreateStore(iterStart, counter)
 
 	// initialize the 4 blocks
-	condBlock, bodyBlock, incrBlock, endBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewBr(condBlock)
+	condBlock, bodyBlock, incrBlock, endBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	c.builder().CreateBr(condBlock)
 
-	c.cbb = condBlock
-	current_count := c.cbb.NewLoad(counter.ElemType, counter)
+	c.builder().setBlock(condBlock)
+	current_count := c.builder().CreateLoad(c.i64, counter, "")
 	cond := genCond(current_count) // check the condition (counter < list->len)
-	c.cbb.NewCondBr(cond, bodyBlock, endBlock)
+	c.builder().CreateCondBr(cond, bodyBlock, endBlock)
 
 	// arr[counter] = _ddp_deep_copy_x(list->arr[counter])
-	c.cbb = bodyBlock
-	genBody(c.cbb.NewLoad(i64, counter))
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(incrBlock)
+	c.builder().setBlock(bodyBlock)
+	genBody(c.builder().CreateLoad(c.i64, counter, ""))
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateBr(incrBlock)
 	}
 
 	// counter++
-	c.cbb = incrBlock
-	c.cbb.NewStore(c.cbb.NewAdd(newInt(1), c.cbb.NewLoad(i64, counter)), counter)
-	c.cbb.NewBr(condBlock)
+	c.builder().setBlock(incrBlock)
+	c.builder().CreateStore(c.builder().CreateAdd(c.newInt(1), c.builder().CreateLoad(c.i64, counter, ""), ""), counter)
+	c.builder().CreateBr(condBlock)
 
-	c.cbb = endBlock
+	c.builder().setBlock(endBlock)
 }
 
 // helper to be used together with createFor
 // creates a default condition to loop up to a certain value
-func (c *compiler) forDefaultCond(limit value.Value) func(value.Value) value.Value {
-	return func(index value.Value) value.Value {
-		return c.cbb.NewICmp(enum.IPredSLT, index, limit)
+func (c *compiler) forDefaultCond(limit llvm.Value) func(llvm.Value) llvm.Value {
+	return func(index llvm.Value) llvm.Value {
+		return c.builder().CreateICmp(llvm.IntSLT, index, limit, "")
 	}
 }

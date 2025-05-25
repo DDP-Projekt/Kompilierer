@@ -6,10 +6,6 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
 )
 
 // implementation of ddpIrType for a ddpstring
@@ -17,8 +13,7 @@ import (
 // exactly once as it declares all the runtime bindings needed
 // to work with strings
 type ddpIrStringType struct {
-	llType                 llvm.Type // the ir struct type
-	ptr                    llvm.Type // ptr(typ)
+	typ                    llvm.Type // the ir struct type
 	defaultValue           llvm.Value
 	vtable                 llvm.Value
 	fromConstantsIrFun     llvm.Value // the fromConstans ir func
@@ -42,11 +37,7 @@ type ddpIrStringType struct {
 var _ ddpIrType = (*ddpIrStringType)(nil)
 
 func (t *ddpIrStringType) LLType() llvm.Type {
-	return t.llType
-}
-
-func (t *ddpIrStringType) PtrType() llvm.Type {
-	return t.ptr
+	return t.typ
 }
 
 func (t *ddpIrStringType) Name() string {
@@ -85,67 +76,58 @@ const (
 func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 
-	ddpstring.llType = c.llctx.StructType([]llvm.Type{c.i8ptr, c.ddpint}, false)
-	ddpstring.ptr = c.ptr(ddpstring.llType)
+	ddpstring.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint}, false)
 
 	// declare all the external functions to work with strings
 
 	// allocates a buffer for ret and copies str into it
-	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", i8ptr))
+	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, c.voidtyp.LLType(), c.ptr, c.ptr)
 
 	// frees the given string
-	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", c.voidtyp.IrType(), ir.NewParam("str", ddpstring.ptr))
+	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", false, c.voidtyp.LLType(), c.ptr)
 
 	// places a copy of str in ret allocating new buffers
-	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr))
+	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", false, c.voidtyp.LLType(), c.ptr, c.ptr)
 
 	// checks wether the two strings are equal
-	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("ddp_string_equal", ddpbool, ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
+	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("ddp_string_equal", false, c.ddpbool, c.ptr, c.ptr)
 
 	// returns the number of utf8 runes in str
-	ddpstring.lengthIrFun = c.declareExternalRuntimeFunction("ddp_string_length", ddpint, ir.NewParam("str", ddpstring.ptr))
+	ddpstring.lengthIrFun = c.declareExternalRuntimeFunction("ddp_string_length", false, c.ddpint, c.ptr)
 
 	// returns the utf8-char at index
-	ddpstring.indexIrFun = c.declareExternalRuntimeFunction("ddp_string_index", ddpchar, ir.NewParam("str", ddpstring.ptr), ir.NewParam("index", ddpint))
+	ddpstring.indexIrFun = c.declareExternalRuntimeFunction("ddp_string_index", false, c.ddpchar, c.ptr, c.ddpint)
 
 	// replaces the utf8-char at the index with ch
-	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("ddp_replace_char_in_string", c.voidtyp.IrType(), ir.NewParam("str", ddpstring.ptr), ir.NewParam("ch", ddpchar), ir.NewParam("index", ddpint))
+	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("ddp_replace_char_in_string", false, c.voidtyp.LLType(), c.ptr, c.ddpchar, c.ddpint)
 
-	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("ddp_string_slice", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("index1", ddpint), ir.NewParam("index2", ddpint))
+	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("ddp_string_slice", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ddpint, c.ddpint)
 
-	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_string_verkettet", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str1", ddpstring.ptr), ir.NewParam("str2", ddpstring.ptr))
-	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_char_string_verkettet", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar), ir.NewParam("str", ddpstring.ptr))
-	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_char_verkettet", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("str", ddpstring.ptr), ir.NewParam("c", ddpchar))
+	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_string_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ptr)
+	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_char_string_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ddpchar, c.ptr)
+	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_char_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ddpchar)
 
-	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("i", ddpint))
-	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("f", ddpfloat))
-	ddpstring.byte_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_byte_to_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbyte))
-	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("b", ddpbool))
-	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", c.voidtyp.IrType(), ir.NewParam("ret", ddpstring.ptr), ir.NewParam("c", ddpchar))
+	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpint)
+	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpfloat)
+	ddpstring.byte_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_byte_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpbyte)
+	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpbool)
+	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpchar)
 
-	// see equivalent in runtime/include/ddptypes.h
-	vtable_type := c.mod.NewTypeDef(ddpstring.Name()+"_vtable_type", types.NewStruct(
-		ddpint, // ddpint type_size
-		ptr(types.NewFunc(c.voidtyp.IrType(), ddpstring.ptr)),                   // free_func_ptr free_func
-		ptr(types.NewFunc(c.voidtyp.IrType(), ddpstring.ptr, ddpstring.ptr)),    // deep_copy_func_ptr deep_copy_func
-		ptr(types.NewFunc(c.ddpbooltyp.IrType(), ddpstring.ptr, ddpstring.ptr)), // equal_func_ptr equal_func
-	))
+	vtable := llvm.AddGlobal(c.llmod, c.ptr, "ddpstring_vtable")
+	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	var vtable *ir.Global
-	if declarationOnly {
-		vtable = c.mod.NewGlobal(ddpstring.Name()+"_vtable", ptr(vtable_type))
-		vtable.Linkage = enum.LinkageExternal
-		vtable.Visibility = enum.VisibilityDefault
-	} else {
-		vtable = c.mod.NewGlobalDef(ddpstring.Name()+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-			newInt(int64(c.getTypeSize(ddpstring))),
-			ddpstring.freeIrFun,
-			ddpstring.deepCopyIrFun,
-			ddpstring.equalsIrFun,
-		))
+	if !declarationOnly {
+		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+			llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
+		}, false))
 	}
 
 	ddpstring.vtable = vtable
+	ddpstring.defaultValue = llvm.ConstNull(ddpstring.typ)
 
 	return ddpstring
 }

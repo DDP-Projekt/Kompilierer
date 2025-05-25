@@ -87,22 +87,20 @@ type funcWrapper struct {
 }
 
 type llTypes struct {
-	void, i8, i8ptr, i32, i64                   llvm.Type
+	ptr, void, i8, i32, i64                     llvm.Type
 	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
-}
-
-func (*llTypes) ptr(elementType llvm.Type) llvm.Type {
-	return llvm.PointerType(elementType, 0)
+	vtable_type                                 llvm.Type
 }
 
 func newLLTypes(llctx llvm.Context) llTypes {
+	ptr := llctx.PointerType(0)
 	i8 := llctx.Int8Type()
 	i32 := llctx.Int32Type()
 	i64 := llctx.Int64Type()
 	return llTypes{
+		ptr:      ptr,
 		void:     llctx.VoidType(),
 		i8:       i8,
-		i8ptr:    llvm.PointerType(i8, 0),
 		i32:      i32,
 		i64:      i64,
 		ddpint:   i64,
@@ -110,11 +108,18 @@ func newLLTypes(llctx llvm.Context) llTypes {
 		ddpbyte:  llctx.Int8Type(),
 		ddpbool:  llctx.Int1Type(),
 		ddpchar:  llctx.Int32Type(),
+		vtable_type: llctx.StructType([]llvm.Type{
+			i64,
+			ptr,
+			ptr,
+			ptr,
+		}, false,
+		),
 	}
 }
 
 type llConstants struct {
-	zero, zerof, zero8, all_ones, all_ones8, False, True llvm.Value
+	zero, zerof, zero8, all_ones, all_ones8, False, True, Null llvm.Value
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -126,6 +131,7 @@ func newLLConstants(types llTypes) llConstants {
 		all_ones8: llvm.ConstAllOnes(types.i8),
 		False:     llvm.ConstInt(types.ddpbool, 0, false),
 		True:      llvm.ConstInt(types.ddpbool, 1, false),
+		Null:      llvm.ConstNull(types.ptr),
 	}
 }
 
@@ -137,7 +143,7 @@ type compiler struct {
 	optimizationLevel uint             // level of optimization
 	result            *Result          // result of the compilation
 
-	builder         *llBuilder
+	builderStack    []*llBuilder
 	functions       map[string]*funcWrapper                   // all the global functions
 	typeMap         map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
 	structTypes     map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
@@ -188,7 +194,6 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *ll
 			Dependencies: make(map[string]struct{}),
 		},
 
-		builder:         nil,
 		functions:       make(map[string]*funcWrapper),
 		typeMap:         createTypeMap(module),
 		structTypes:     make(map[*ddptypes.StructType]*ddpIrStructType),
@@ -209,25 +214,22 @@ func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 
 	c.addExternalDependencies()
 
-	c.builder = &llBuilder{
-		compiler: c,
-		Builder:  c.llctx.NewBuilder(),
-		scp:      newScope(nil),
-	}
+	c.pushBuilder(&llBuilder{
+		c:       c,
+		Builder: c.llctx.NewBuilder(),
+		scp:     newScope(nil),
+	})
 
 	c.setup()
 
 	if isMainModule {
-		c.builder.llFnType = llvm.FunctionType(c.llctx.Int64Type(), nil, false)
-		c.builder.llFn = llvm.AddFunction(c.llmod, "ddp_ddpmain", c.builder.llFnType)
+		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.llctx.Int64Type(), nil, false))
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
 			nil,
-			c.builder.llFn,
+			c.builder().llFn,
 		)
-		c.builder.cb = c.llctx.AddBasicBlock(c.builder.llFn, "")
-		c.builder.SetInsertPointAtEnd(c.builder.cb)
 	}
 
 	// visit every statement in the modules AST and compile it
@@ -257,6 +259,10 @@ func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 	}
 
 	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
+
+	if c.builder != nil {
+		c.builder.Dispose()
+	}
 
 	_, err := c.mod.WriteTo(w)
 	return c.result, err
@@ -362,7 +368,7 @@ func (c *compiler) setup() {
 // used in setup()
 func (c *compiler) setupErrorStrings() {
 	createErrorString := func(msg string) llvm.Value {
-		error_string := c.builder.CreateGlobalString(msg, "")
+		error_string := c.builder().CreateGlobalString(msg, "")
 		error_string.SetLinkage(llvm.InternalLinkage)
 		error_string.SetVisibility(llvm.DefaultVisibility)
 		error_string.SetGlobalConstant(true)
@@ -427,24 +433,25 @@ func (c *compiler) setupOperators() {
 
 // deep copies the value pointed to by src into dest
 // and returns dest
-func (c *compiler) deepCopyInto(dest, src value.Value, typ ddpIrType) value.Value {
-	c.cbb.NewCall(typ.DeepCopyFunc(), dest, src)
+func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value {
+	dest = c.builder().CreateCall(c.void, *typ.DeepCopyFunc(), []llvm.Value{dest, src}, "")
 	return dest
 }
 
 // calls the corresponding free function on val
 // if typ.IsPrimitive() == false
-func (c *compiler) freeNonPrimitive(val value.Value, typ ddpIrType) {
+func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 	if !typ.IsPrimitive() {
-		c.cbb.NewCall(typ.FreeFunc(), val)
+		c.builder().CreateCall(c.void, *typ.FreeFunc(), []llvm.Value{val}, "")
 	}
 }
 
 // claims the given value if possible, copies it otherwise
 // dest should be a value that is definetly freed at some point (meaning a variable or list-element etc.)
-func (c *compiler) claimOrCopy(dest, val value.Value, valTyp ddpIrType, isTemp bool) {
+func (c *compiler) claimOrCopy(dest, val llvm.Value, valTyp ddpIrType, isTemp bool) {
 	if !valTyp.IsPrimitive() {
 		if isTemp { // temporaries can be claimed
+			c.builder().CreateLoad()
 			val = c.cbb.NewLoad(valTyp.IrType(), c.scp.claimTemporary(val))
 			c.cbb.NewStore(val, dest)
 		} else { // non-temporaries need to be copied

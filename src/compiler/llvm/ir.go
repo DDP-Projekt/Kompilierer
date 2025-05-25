@@ -665,6 +665,11 @@ func (t Type) StructElementTypes() []Type {
 	return out
 }
 
+func (t Type) StructElementTypeAtIndex(i int) (r Type) {
+	r.C = C.LLVMStructGetTypeAtIndex(t, C.unsigned(i))
+	return r
+}
+
 // Operations on array, pointer, and vector types (sequence types)
 func (t Type) Subtypes() (ret []Type) {
 	ret = make([]Type, C.LLVMGetNumContainedTypes(t.C))
@@ -696,6 +701,10 @@ func (t Type) VectorSize() int          { return int(C.LLVMGetVectorSize(t.C)) }
 func (c Context) VoidType() (t Type)  { t.C = C.LLVMVoidTypeInContext(c.C); return }
 func (c Context) LabelType() (t Type) { t.C = C.LLVMLabelTypeInContext(c.C); return }
 func (c Context) TokenType() (t Type) { t.C = C.LLVMTokenTypeInContext(c.C); return }
+func (c Context) PointerType(addressSpace int) (t Type) {
+	t.C = C.LLVMPointerTypeInContext(c.C, C.unsigned(addressSpace))
+	return
+}
 
 //-------------------------------------------------------------------------
 // llvm.Value
@@ -1208,6 +1217,11 @@ func (v Value) BasicBlocks() []BasicBlock {
 	out := make([]BasicBlock, v.BasicBlocksCount())
 	C.LLVMGetBasicBlocks(v.C, llvmBasicBlockRefPtr(&out[0]))
 	return out
+}
+
+func (bb BasicBlock) Terminator() (term BasicBlock) {
+	term.C = C.LLVMGetBasicBlockTerminator()
+	return term
 }
 
 func (v Value) FirstBasicBlock() (bb BasicBlock) {
