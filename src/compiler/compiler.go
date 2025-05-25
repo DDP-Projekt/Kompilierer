@@ -2,14 +2,12 @@ package compiler
 
 import (
 	"fmt"
-	"io"
 	"path/filepath"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 
@@ -28,17 +26,17 @@ import (
 // returns:
 //   - a set of all external dependendcies
 //   - an error
-func compileWithImports(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
-	errHndl ddperror.Handler, llTarget *llTarget, optimizationLevel uint,
+func compileWithImports(mod *ast.Module, resultConsumer func(*ast.Module, *Result),
+	errHndl ddperror.Handler, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	compiledMods := map[string]*ast.Module{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, destCreator, compiledMods, dependencies, true, errHndl, llTarget, optimizationLevel)
+	return compileWithImportsRec(mod, resultConsumer, compiledMods, dependencies, true, errHndl, optimizationLevel)
 }
 
-func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Writer,
+func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Result),
 	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, llTarget *llTarget, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
 ) (map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -64,14 +62,20 @@ func compileWithImportsRec(mod *ast.Module, destCreator func(*ast.Module) io.Wri
 	}
 
 	// compile this module
-	if _, err := newCompiler(mod, errHndl, llTarget, optimizationLevel).compile(destCreator(mod), isMainModule); err != nil {
+	compiler, err := newCompiler(mod, errHndl, optimizationLevel)
+	if err != nil {
+		return nil, err
+	}
+	result, err := compiler.compile(isMainModule)
+	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
 	}
+	resultConsumer(mod, result)
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if _, err := compileWithImportsRec(imprtMod, destCreator, compiledMods, dependencies, false, errHndl, llTarget, optimizationLevel); err != nil {
+			if _, err := compileWithImportsRec(imprtMod, resultConsumer, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
 				return nil, err
 			}
 		}
@@ -172,7 +176,7 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler, llTarget *llTarget, optimizationLevel uint) (*compiler, error) {
+func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -269,10 +273,8 @@ func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 }
 
 // dumps only the definitions for inbuilt list types to w
-func (c *compiler) dumpListDefinitions(w io.Writer) error {
+func (c *compiler) dumpListDefinitions() llvmModuleContext {
 	defer compiler_panic_wrapper(c)
-
-	c.mod.SourceFilename = ddppath.LIST_DEFS_NAME
 
 	c.setupErrorStrings()
 	// the order of these function calls is important
@@ -286,8 +288,7 @@ func (c *compiler) dumpListDefinitions(w io.Writer) error {
 	c.ddpany = c.defineAnyType()
 	c.setupListTypes(false) // we want definitions
 
-	_, err := c.mod.WriteTo(w)
-	return err
+	return c.llvmModuleContext
 }
 
 func (c *compiler) addExternalDependencies() {

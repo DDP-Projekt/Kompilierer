@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
 func init() {
@@ -102,7 +102,9 @@ func newllvmModuleContextFromIR(name string, llvm_ir []byte) (llvmModuleContext,
 
 func (llctx *llvmModuleContext) Dispose() {
 	llctx.llTarget.Dispose()
-	llctx.llmod.Dispose()
+	if !llctx.llmod.IsNil() {
+		llctx.llmod.Dispose()
+	}
 	llctx.llctx.Dispose()
 }
 
@@ -115,7 +117,7 @@ func newllvmModuleContextFromListDefs() (llvmModuleContext, error) {
 }
 
 // optimizes the given module and returns any error
-func (llctx *llvmModuleContext) optimizeModule(mod llvm.Module) error {
+func (llctx *llvmModuleContext) optimizeModule() error {
 	return llctx.llmod.RunPasses("default<O2>", llctx.llTargetMachine, llvm.NewPassBuilderOptions())
 }
 
@@ -133,14 +135,15 @@ func (llctx *llvmModuleContext) compileModule(fileType llvm.CodeGenFileType, w i
 // links all sources into dest, destroying them
 // in case of failure, all sources that were not used yet are disposed
 // and dest should not be used
-func llvmLinkAllModules(dest llvm.Module, sources []llvm.Module) error {
+func llvmLinkAllModules(dest llvmModuleContext, sources []*llvmModuleContext) error {
 	for i, src := range sources {
-		if err := llvm.LinkModules(dest, src); err != nil {
+		if err := llvm.LinkModules(dest.llmod, src.llmod); err != nil {
 			for _, mod := range sources[i+1:] {
 				mod.Dispose()
 			}
 			return err
 		}
+		src.llmod = llvm.Module{}
 	}
 	return nil
 }
