@@ -5,6 +5,12 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
+type funcParam struct {
+	name string
+	typ  llvm.Type
+	val  llvm.Value
+}
+
 // holds variables to build a single function
 type llBuilder struct {
 	llvm.Builder
@@ -16,6 +22,7 @@ type llBuilder struct {
 	cb       llvm.BasicBlock // current block
 	scp      *scope          // current scope in the ast (not in the ir)
 	fnScope  *scope
+	params   []funcParam
 
 	latestReturn     llvm.Value // return of the latest evaluated expression (in the ir)
 	latestReturnType ddpIrType  // the type of latestReturn
@@ -36,7 +43,18 @@ func (b *llBuilder) setBlock(bb llvm.BasicBlock) {
 	b.SetInsertPointAtEnd(bb)
 }
 
-func (c *compiler) newBuilder(funcName string, funcType llvm.Type) *llBuilder {
+func (b *llBuilder) isDDPMain() bool {
+	return !b.llFn.IsNil()
+}
+
+func (b *llBuilder) withBlock(block llvm.BasicBlock, do func()) {
+	cb := b.cb
+	b.setBlock(block)
+	do()
+	b.setBlock(cb)
+}
+
+func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames []string) *llBuilder {
 	builder := &llBuilder{
 		fnName:  funcName,
 		c:       c,
@@ -46,10 +64,18 @@ func (c *compiler) newBuilder(funcName string, funcType llvm.Type) *llBuilder {
 
 	builder.llFnType = funcType
 	builder.llFn = llvm.AddFunction(c.llmod, funcName, builder.llFnType)
-	builder.llFn.SetFunctionCallConv(llvm.CCallConv)
+	builder.llFn.SetFunctionCallConv(llvm.CCallConv) // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	builder.cb = builder.newBlock()
 	builder.SetInsertPointAtEnd(builder.cb)
+	for i, param := range builder.llFn.Params() {
+		builder.params = append(builder.params, funcParam{name: paramNames[i], typ: param.Type(), val: param})
+	}
 
+	return builder
+}
+
+func (c *compiler) newBuilder(funcName string, funcType llvm.Type, paramNames []string) *llBuilder {
+	builder := c.createBuilder(funcName, funcType, paramNames)
 	c.builderStack = append(c.builderStack, builder)
 	return builder
 }
@@ -60,8 +86,15 @@ func (c *compiler) pushBuilder(b *llBuilder) *llBuilder {
 }
 
 func (c *compiler) disposeAndPop() {
-	c.builderStack[len(c.builderStack)].Dispose()
-	c.builderStack = c.builderStack[:len(c.builderStack)-1]
+	c.popBuilder().Dispose()
+}
+
+func (c *compiler) popBuilder() (builder *llBuilder) {
+	if len(c.builderStack) > 0 {
+		builder = c.builder()
+		c.builderStack = c.builderStack[:len(c.builderStack)-1]
+	}
+	return
 }
 
 func (c *compiler) builder() *llBuilder {

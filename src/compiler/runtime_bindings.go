@@ -16,7 +16,7 @@ func (c *compiler) declareExternalRuntimeFunction(name string, variadic bool, re
 	llFn.SetFunctionCallConv(llvm.CCallConv)
 	llFn.SetLinkage(llvm.ExternalLinkage)
 
-	return c.insertFunction(name, nil, llFn)
+	return c.insertFunction(name, nil, llFn, nil)
 }
 
 var (

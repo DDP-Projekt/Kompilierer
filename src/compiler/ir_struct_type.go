@@ -128,7 +128,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), []string{"v"})
 	defer c.disposeAndPop()
 
 	if declarationOnly {
@@ -136,7 +136,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 		return llFuncBuilder.llFn
 	}
 
-	structParam := llFuncBuilder.llFn.Param(0)
+	structParam := llFuncBuilder.params[0].val
 
 	// free non-primitives
 	for i, field := range structTyp.fieldIrTypes {
@@ -145,15 +145,15 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 
 	c.builder().CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
 func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), []string{"ret", "v"})
 	defer c.disposeAndPop()
 
-	ret, structParam := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
+	ret, structParam := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -173,15 +173,15 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 
 	llFuncBuilder.CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
 func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), []string{"v1", "v2"})
 	defer c.disposeAndPop()
 
-	struct1, struct2 := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
+	struct1, struct2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 		return llFuncBuilder.llFn
@@ -212,7 +212,7 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 
 	c.builder().CreateRet(c.True)
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -224,10 +224,10 @@ func mapSlice[T, U any](s []T, mapper func(T) U) []U {
 	return result
 }
 
-func getFieldIndex(fieldName string, typ *ddpIrStructType) int64 {
+func getFieldIndex(fieldName string, typ *ddpIrStructType) int {
 	for i, field := range typ.fieldDDPTypes {
 		if field.Name == fieldName {
-			return int64(i)
+			return i
 		}
 	}
 	return -1

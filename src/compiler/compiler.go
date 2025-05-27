@@ -10,14 +10,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
-
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
-
-	"github.com/llir/irutil"
 )
 
 // compiles a mainModule and all it's imports
@@ -66,10 +58,7 @@ func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Re
 	if err != nil {
 		return nil, err
 	}
-	result, err := compiler.compile(isMainModule)
-	if err != nil {
-		return nil, fmt.Errorf("Fehler beim Kompilieren des Moduls '%s': %w", mod.GetIncludeFilename(), err)
-	}
+	result := compiler.compile(isMainModule)
 	resultConsumer(mod, result)
 
 	// recursively compile the other dependencies
@@ -86,8 +75,9 @@ func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Re
 
 // small wrapper for a ast.FuncDecl and the corresponding ir function
 type funcWrapper struct {
-	irFunc   llvm.Value    // the function in the llvm ir
-	funcDecl *ast.FuncDecl // the ast.FuncDecl
+	irFunc        llvm.Value    // the function in the llvm ir
+	llFuncBuilder *llBuilder    // nil for inbuilt or runtime functions
+	funcDecl      *ast.FuncDecl // the ast.FuncDecl
 }
 
 type llTypes struct {
@@ -152,11 +142,10 @@ type compiler struct {
 	typeMap         map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
 	structTypes     map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
 	importedModules map[*ast.Module]struct{}                  // all the modules that have already been imported
-	typeDefVTables  map[string]constant.Constant
+	typeDefVTables  map[string]llvm.Value
 
-	moduleInitFunc             llvm.Value      // the module_init func of this module
-	moduleInitCbb              llvm.BasicBlock // cbb but for module_init
-	moduleDisposeFunc          llvm.Value
+	moduleInitBuilder          *llBuilder // the module_init func of this module
+	moduleDisposeBuilder       *llBuilder
 	out_of_bounds_error_string llvm.Value
 	slice_error_string         llvm.Value
 	todo_error_string          llvm.Value
@@ -202,7 +191,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 		typeMap:         createTypeMap(module),
 		structTypes:     make(map[*ddptypes.StructType]*ddpIrStructType),
 		importedModules: make(map[*ast.Module]struct{}),
-		typeDefVTables:  make(map[string]constant.Constant),
+		typeDefVTables:  make(map[string]llvm.Value),
 
 		llTypes:     types,
 		llConstants: constants,
@@ -213,7 +202,7 @@ func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimization
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 // if isMainModule is false, no ddp_main function will be generated
-func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
+func (c *compiler) compile(isMainModule bool) (result *Result) {
 	defer compiler_panic_wrapper(c)
 
 	c.addExternalDependencies()
@@ -227,12 +216,14 @@ func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 	c.setup()
 
 	if isMainModule {
-		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.llctx.Int64Type(), nil, false))
+		c.disposeAndPop()
+		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.llctx.Int64Type(), nil, false), nil)
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
 			nil,
 			c.builder().llFn,
+			c.builder(),
 		)
 	}
 
@@ -251,25 +242,24 @@ func (c *compiler) compile(isMainModule bool) (result *Result, rerr error) {
 	}
 
 	if isMainModule {
-		c.scp = c.exitScope(c.scp) // exit the main scope
+		c.builder().scp = c.exitScope(c.builder().scp) // exit the main scope
 		// call all the module_dispose functions
 		for mod := range c.importedModules {
 			_, dispose_name := getModuleInitDisposeName(mod)
 			dispose_fun := c.functions[dispose_name]
-			c.cbb.NewCall(dispose_fun.irFunc)
+			c.builder().CreateCall(c.void, dispose_fun.irFunc, nil, "")
 		}
 		// on success ddpmain returns 0
-		c.cbb.NewRet(zero)
+		c.builder().CreateRet(c.zero)
 	}
 
-	c.moduleInitCbb.NewRet(nil) // terminate the module_init func
+	c.moduleInitBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
 
-	if c.builder != nil {
-		c.builder.Dispose()
+	for _, wrapper := range c.functions {
+		wrapper.llFuncBuilder.Dispose()
 	}
 
-	_, err := c.mod.WriteTo(w)
-	return c.result, err
+	return c.result
 }
 
 // dumps only the definitions for inbuilt list types to w
@@ -308,42 +298,27 @@ func (c *compiler) addExternalDependencies() {
 // increases the intermediate file size
 var Comments_Enabled = true
 
-func (c *compiler) commentNode(block *ir.Block, node ast.Node, details string) {
-	if Comments_Enabled {
-		comment := fmt.Sprintf("F %s, %d:%d: %s", c.ddpModule.FileName, node.Token().Range.Start.Line, node.Token().Range.Start.Column, node)
-		if details != "" {
-			comment += " (" + details + ")"
-		}
-		c.comment(comment, block)
-	}
-}
-
-func (c *compiler) comment(comment string, block *ir.Block) {
-	if Comments_Enabled {
-		block.Insts = append(block.Insts, irutil.NewComment(comment))
-	}
-}
-
 // helper to visit a single node
 func (c *compiler) visitNode(node ast.Node) {
-	c.currentNode = node
+	c.builder().currentNode = node
 	node.Accept(c)
 }
 
 // helper to evaluate an expression and return its ir value and type
 // the  bool signals wether the returned value is a temporary value that can be claimed
 // or if it is a 'reference' to a variable that must be copied
-func (c *compiler) evaluate(expr ast.Expression) (value.Value, ddpIrType, bool) {
+func (c *compiler) evaluate(expr ast.Expression) (llvm.Value, ddpIrType, bool) {
 	c.visitNode(expr)
-	return c.latestReturn, c.latestReturnType, c.latestIsTemp
+	return c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp
 }
 
 // helper to insert a function into the global function map
 // returns the ir function
-func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, llFunc llvm.Value) llvm.Value {
+func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, llFunc llvm.Value, builder *llBuilder) llvm.Value {
 	c.functions[name] = &funcWrapper{
-		funcDecl: funcDecl,
-		irFunc:   llFunc,
+		funcDecl:      funcDecl,
+		irFunc:        llFunc,
+		llFuncBuilder: builder,
 	}
 	return llFunc
 }
@@ -370,8 +345,8 @@ func (c *compiler) setup() {
 func (c *compiler) setupErrorStrings() {
 	createErrorString := func(msg string) llvm.Value {
 		error_string := c.builder().CreateGlobalString(msg, "")
-		error_string.SetLinkage(llvm.InternalLinkage)
-		error_string.SetVisibility(llvm.DefaultVisibility)
+		// error_string.SetLinkage(llvm.InternalLinkage)
+		// error_string.SetVisibility(llvm.DefaultVisibility)
 		error_string.SetGlobalConstant(true)
 		return error_string
 	}
@@ -408,34 +383,32 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitFunc = c.mod.NewFunc(init_name, c.voidtyp.IrType())
-	c.moduleInitFunc.Visibility = enum.VisibilityDefault
-	c.moduleInitCbb = c.moduleInitFunc.NewBlock("")
-	c.insertFunction(init_name, nil, c.moduleInitFunc)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil)
+	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
+	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeFunc = c.mod.NewFunc(dispose_name, c.voidtyp.IrType())
-	c.moduleDisposeFunc.Visibility = enum.VisibilityDefault
-	c.moduleDisposeFunc.NewBlock("").NewRet(nil)
-	c.insertFunction(dispose_name, nil, c.moduleDisposeFunc)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil)
+	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
+	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
 
 // used in setup()
 func (c *compiler) setupOperators() {
 	// hoch operator for different type combinations
-	c.declareExternalRuntimeFunction("pow", ddpfloat, ir.NewParam("f1", ddpfloat), ir.NewParam("f2", ddpfloat))
+	c.declareExternalRuntimeFunction("pow", false, c.ddpfloat, c.ddpfloat, c.ddpfloat)
 
 	// logarithm
-	c.declareExternalRuntimeFunction("log10", ddpfloat, ir.NewParam("f", ddpfloat))
+	c.declareExternalRuntimeFunction("log10", false, c.ddpfloat, c.ddpfloat)
 
 	// ddpstring to type cast
-	c.declareExternalRuntimeFunction("ddp_string_to_int", ddpint, ir.NewParam("str", c.ddpstring.ptr))
-	c.declareExternalRuntimeFunction("ddp_string_to_float", ddpfloat, ir.NewParam("str", c.ddpstring.ptr))
+	c.declareExternalRuntimeFunction("ddp_string_to_int", false, c.ddpint, c.ptr)
+	c.declareExternalRuntimeFunction("ddp_string_to_float", false, c.ddpfloat, c.ptr)
 }
 
 // deep copies the value pointed to by src into dest
 // and returns dest
 func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value {
-	dest = c.builder().CreateCall(c.void, *typ.DeepCopyFunc(), []llvm.Value{dest, src}, "")
+	dest = c.builder().CreateCall(c.void, typ.DeepCopyFunc(), []llvm.Value{dest, src}, "")
 	return dest
 }
 
@@ -443,7 +416,7 @@ func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value 
 // if typ.IsPrimitive() == false
 func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 	if !typ.IsPrimitive() {
-		c.builder().CreateCall(c.void, *typ.FreeFunc(), []llvm.Value{val}, "")
+		c.builder().CreateCall(c.void, typ.FreeFunc(), []llvm.Value{val}, "")
 	}
 }
 
@@ -452,14 +425,13 @@ func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 func (c *compiler) claimOrCopy(dest, val llvm.Value, valTyp ddpIrType, isTemp bool) {
 	if !valTyp.IsPrimitive() {
 		if isTemp { // temporaries can be claimed
-			c.builder().CreateLoad()
-			val = c.cbb.NewLoad(valTyp.IrType(), c.scp.claimTemporary(val))
-			c.cbb.NewStore(val, dest)
+			val = c.builder().CreateLoad(valTyp.LLType(), c.builder().scp.claimTemporary(val), "")
+			c.builder().CreateStore(val, dest)
 		} else { // non-temporaries need to be copied
 			c.deepCopyInto(dest, val, valTyp)
 		}
 	} else { // primitives are trivially copied
-		c.cbb.NewStore(val, dest) // store the value
+		c.builder().CreateStore(val, dest) // store the value
 	}
 }
 
@@ -490,13 +462,13 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 		meta = attachement.(annotators.ConstFuncParamMeta)
 	}
 
-	for paramDecl, v := range c.cfscp.variables {
+	for paramDecl, v := range c.builder().fnScope.variables {
 		if !v.isRef && (!meta.IsConst[paramDecl.Name()] || c.optimizationLevel < 2) {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
-	c.freeTemporaries(c.cfscp, true)
-	return c.cfscp.enclosing
+	c.freeTemporaries(c.builder().fnScope, true)
+	return c.builder().fnScope.enclosing
 }
 
 func (*compiler) Visitor() {}
@@ -517,24 +489,24 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// in the ir a local variable is a alloca instruction (a stack allocation)
 
 	Typ := c.toIrType(d.Type) // get the llvm type
-	var varLocation value.Value
-	if c.scp.isGlobalScope() { // global scope
+	var varLocation llvm.Value
+	if c.builder().scp.isGlobalScope() { // global scope
 		// globals are first assigned in ddp_main or module_init
 		// so we assign them a default value here
 		//
 		// names are mangled only in the actual ir-definitions, not in the compiler data-structures
-		globalDef := c.mod.NewGlobalDef(c.mangledNameDecl(d), Typ.DefaultValue())
+		globalDef := llvm.AddGlobal(c.llmod, Typ.LLType(), c.mangledNameDecl(d))
+		globalDef.SetInitializer(Typ.DefaultValue())
 		// make private variables static like in C
 		// commented out because of generics where private variables might be used
 		// from a different module
 		// if !d.IsPublic && !d.IsExternVisible {
 		// 	globalDef.Linkage = enum.LinkageInternal
 		// }
-		globalDef.Visibility = enum.VisibilityDefault
+		globalDef.SetVisibility(llvm.DefaultVisibility)
 		varLocation = globalDef
 	} else {
-		c.commentNode(c.cbb, d, d.Name())
-		varLocation = c.NewAlloca(Typ.IrType())
+		varLocation = c.NewAlloca(Typ.LLType())
 	}
 
 	// adds the variable initializer to the function fun
@@ -559,31 +531,29 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		c.claimOrCopy(varLocation, initVal, Typ, isTemp)
 	}
 
-	if c.scp.isGlobalScope() { // module_init
-		cf, cbb := c.cf, c.cbb
-		c.cf, c.cbb = c.moduleInitFunc, c.moduleInitCbb
-		current_temporaries_end := len(c.scp.temporaries)
+	if c.builder().scp.isGlobalScope() { // module_init
+		c.pushBuilder(c.moduleInitBuilder)
+		current_temporaries_end := len(c.builder().scp.temporaries)
 		addInitializer() // initialize the variable in module_init
 		// free all temporaries that were created in the initializer
-		for _, v := range c.scp.temporaries[current_temporaries_end:] {
+		for _, v := range c.builder().scp.temporaries[current_temporaries_end:] {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
-		c.scp.temporaries = c.scp.temporaries[:current_temporaries_end]
-		c.moduleInitFunc, c.moduleInitCbb = c.cf, c.cbb
+		c.builder().scp.temporaries = c.builder().scp.temporaries[:current_temporaries_end]
+		c.popBuilder()
 
-		c.cf, c.cbb = c.moduleDisposeFunc, c.moduleDisposeFunc.Blocks[0]
+		c.pushBuilder(c.moduleDisposeBuilder)
 		c.freeNonPrimitive(varLocation, Typ) // free the variable in module_dispose
-
-		c.cf, c.cbb = cf, cbb
+		c.popBuilder()
 	}
 
 	// if those are nil, we are at the global scope but there is no ddp_main func
 	// meaning this module is being compiled as a non-main module
-	if c.cf != nil && c.cbb != nil { // ddp_main
+	if c.builder().isDDPMain() {
 		addInitializer()
 	}
 
-	c.scp.addVar(d, varLocation, Typ, false)
+	c.builder().scp.addVar(d, varLocation, Typ, false)
 	return ast.VisitRecurse
 }
 
@@ -596,11 +566,11 @@ func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
 	}
 }
 
-func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) types.Type {
+func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) llvm.Type {
 	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
-		return i8ptr
+		return c.ptr
 	} else if isGeneric {
-		return c.ddpgenericlist.PtrType()
+		return c.ptr
 	} else {
 		return c.toIrParamType(param.Type) // convert the type of the parameter
 	}
@@ -618,25 +588,27 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	retType := c.getPossiblyGenericReturnType(decl)
 
-	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
+	retTypeIr := retType.LLType()
+	params := make([]llvm.Type, 0, len(decl.Parameters)+1) // list of the ir parameters
+	paramNames := make([]string, 0, len(decl.Parameters)+1)
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
-		params = append(params, ir.NewParam("", retType.PtrType()))
-		retTypeIr = c.voidtyp.IrType()
+		params = append(params, c.ptr)
+		paramNames = append(paramNames, "")
+		retTypeIr = c.voidtyp.LLType()
 	}
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
 		paramIrType := c.getPossiblyGenericParamType(&param)
 
-		params = append(params, ir.NewParam(param.Name.Literal, paramIrType)) // add it to the list
+		params = append(params, paramIrType) // add it to the list
+		paramNames = append(paramNames, param.Name.Literal)
 	}
 
-	irFunc := c.mod.NewFunc(c.mangledNameDecl(decl), retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                                 // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	llFuncBuilder := c.newBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames)
 	// make private functions static like in C
 	// commented out because of generics where private functions might be called
 	// from a different module
@@ -645,13 +617,13 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// 	irFunc.Visibility = enum.VisibilityDefault
 	// }
 
-	c.insertFunction(irFunc.Name(), decl, irFunc)
+	c.insertFunction(llFuncBuilder.fnName, decl, llFuncBuilder.llFn, llFuncBuilder)
 
 	// inbuilt or external functions are defined in c
 	if ast.IsExternFunc(decl) {
-		irFunc.Linkage = enum.LinkageExternal
+		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	} else if !ast.IsForwardDecl(decl) {
-		c.defineFuncBody(irFunc, hasReturnParam, params, decl)
+		c.defineFuncBody(llFuncBuilder, hasReturnParam, decl)
 	}
 	return ast.VisitRecurse
 }
@@ -660,16 +632,17 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 	fun := c.functions[c.mangledNameDecl(def.Func)] // retreive the function (the resolver took care that it is present)
 	retType := c.toIrType(def.Func.ReturnType)      // get the llvm type
 
-	c.defineFuncBody(fun.irFunc, !retType.IsPrimitive(), fun.irFunc.Params, def.Func)
+	c.defineFuncBody(fun.llFuncBuilder, !retType.IsPrimitive(), def.Func)
 	return ast.VisitRecurse
 }
 
 // helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
-func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params []*ir.Param, decl *ast.FuncDecl) {
-	fun, block, cfscp := c.cf, c.cbb, c.cfscp // safe the state before the function body
-	c.cf, c.cbb, c.scp = irFunc, irFunc.NewBlock(""), newScope(c.scp)
-	c.cfscp = c.scp
+func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool, decl *ast.FuncDecl) {
+	llFuncBuilder.scp = newScope(c.builder().scp)
+	c.pushBuilder(llFuncBuilder)
+	defer c.popBuilder()
 
+	params := llFuncBuilder.params
 	// we want to skip the possible return-parameter
 	if hasReturnParam {
 		params = params[1:]
@@ -684,25 +657,25 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	// the caller has to take care of possible deep-copies
 	for i := range params {
 		irType := c.toIrType(decl.Parameters[i].Type.Type)
-		varDecl, _, _ := body.Symbols.LookupDecl(params[i].Name())
+		varDecl, _, _ := body.Symbols.LookupDecl(params[i].name)
 		paramDecl := varDecl.(*ast.VarDecl)
 		if decl.Parameters[i].Type.IsReference {
 			// references are implemented similar to name-shadowing
 			// they basically just get another name in the function scope, which
 			// refers to the same variable allocation
-			c.scp.addVar(paramDecl, params[i], irType, true)
+			c.builder().scp.addVar(paramDecl, params[i].val, irType, true)
 		} else if !irType.IsPrimitive() { // strings and lists need special handling
 			// add the local variable for the parameter
-			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
-			c.cbb.NewStore(c.cbb.NewLoad(irType.IrType(), params[i]), v) // store the copy in the local variable
+			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType, false)
+			c.builder().CreateStore(c.builder().CreateLoad(irType.LLType(), params[i].val, ""), v) // store the copy in the local variable
 		} else { // primitive types don't need any special handling
-			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.IrType()), irType, false)
-			c.cbb.NewStore(params[i], v)
+			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType, false)
+			c.builder().CreateStore(params[i].val, v)
 		}
 	}
 
 	// modified VisitBlockStmt
-	c.scp = newScope(c.scp) // a block gets its own scope
+	c.builder().scp = newScope(c.builder().scp) // a block gets its own scope
 	toplevelReturn := false
 	for _, stmt := range body.Statements {
 		c.visitNode(stmt)
@@ -714,22 +687,22 @@ func (c *compiler) defineFuncBody(irFunc *ir.Func, hasReturnParam bool, params [
 	}
 	// free the local variables of the function
 	if toplevelReturn {
-		c.scp = c.scp.enclosing
+		c.builder().scp = c.builder().scp.enclosing
 	} else {
-		c.scp = c.exitScope(c.scp)
+		c.builder().scp = c.exitScope(c.builder().scp)
 	}
 
-	if c.cbb.Term == nil {
-		c.cbb.NewRet(nil) // every block needs a terminator, and every function a return
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateRet(llvm.Value{}) // every block needs a terminator, and every function a return
 	}
 
 	// free the parameters of the function
 	if toplevelReturn {
-		c.scp = c.scp.enclosing
+		c.builder().scp = c.builder().scp.enclosing
 	} else {
-		c.scp = c.exitFuncScope(decl)
+		c.builder().scp = c.exitFuncScope(decl)
 	}
-	c.cf, c.cbb, c.cfscp = fun, block, cfscp // restore state before the function (to main)
+	c.popBuilder()
 }
 
 func (c *compiler) VisitStructDecl(decl *ast.StructDecl) ast.VisitResult {
@@ -762,16 +735,15 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 		c.declareImportedVarDecl(e.Declaration.(*ast.VarDecl))
 	}
 
-	Var := c.scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
-	c.commentNode(c.cbb, e, e.Literal.Literal)
+	Var := c.builder().scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 
 	if Var.typ.IsPrimitive() { // primitives are simply loaded
-		c.latestReturn = c.cbb.NewLoad(Var.typ.IrType(), Var.val)
+		c.builder().latestReturn = c.builder().CreateLoad(Var.typ.LLType(), Var.val, "")
 	} else { // non-primitives are used by pointer
-		c.latestReturn = Var.val
+		c.builder().latestReturn = Var.val
 	}
-	c.latestReturnType = Var.typ
-	c.latestIsTemp = false
+	c.builder().latestReturnType = Var.typ
+	c.builder().latestIsTemp = false
 	return ast.VisitRecurse
 }
 
@@ -782,19 +754,19 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 		lhs, lhsTyp, _ := c.evaluate(stringIndexing.Lhs)
 		index, _, _ := c.evaluate(stringIndexing.Index)
 		lhs = c.floatOrByteAsInt(lhs, lhsTyp)
-		c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, index)
-		c.latestReturnType = c.ddpchartyp
-		// c.latestIsTemp = false // it is a primitive typ, so we don't care
+		c.builder().latestReturn = c.builder().CreateCall(c.ddpchar, c.ddpstring.indexIrFun, []llvm.Value{lhs, index}, "")
+		c.builder().latestReturnType = c.ddpchartyp
+		// c.builder().latestIsTemp = false // it is a primitive typ, so we don't care
 		return ast.VisitRecurse
 	} else {
 		if elementType.IsPrimitive() {
-			c.latestReturn = c.cbb.NewLoad(elementType.IrType(), elementPtr)
+			c.builder().latestReturn = c.builder().CreateLoad(elementType.LLType(), elementPtr, "")
 		} else {
-			c.latestReturn = elementPtr
-			c.latestIsTemp = false
+			c.builder().latestReturn = elementPtr
+			c.builder().latestIsTemp = false
 		}
 	}
-	c.latestReturnType = elementType
+	c.builder().latestReturnType = elementType
 	return ast.VisitRecurse
 }
 
@@ -802,108 +774,103 @@ func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
 
 	if fieldType.IsPrimitive() {
-		c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+		c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 	} else {
-		dest := c.NewAlloca(fieldType.IrType())
+		dest := c.NewAlloca(fieldType.LLType())
 		c.deepCopyInto(dest, fieldPtr, fieldType)
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
-		c.latestIsTemp = true
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, fieldType)
+		c.builder().latestIsTemp = true
 	}
-	c.latestReturnType = fieldType
+	c.builder().latestReturnType = fieldType
 	return ast.VisitRecurse
 }
 
 // literals are simple ir constants
 func (c *compiler) VisitIntLit(e *ast.IntLit) ast.VisitResult {
-	c.commentNode(c.cbb, e, "")
-	c.latestReturn = newInt(e.Value)
-	c.latestReturnType = c.ddpinttyp
+	c.builder().latestReturn = c.newInt(e.Value)
+	c.builder().latestReturnType = c.ddpinttyp
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
-	c.commentNode(c.cbb, e, "")
-	c.latestReturn = constant.NewFloat(ddpfloat, e.Value)
-	c.latestReturnType = c.ddpfloattyp
+	c.builder().latestReturn = llvm.ConstFloat(c.ddpfloat, e.Value)
+	c.builder().latestReturnType = c.ddpfloattyp
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitBoolLit(e *ast.BoolLit) ast.VisitResult {
-	c.commentNode(c.cbb, e, "")
-	c.latestReturn = constant.NewBool(e.Value)
-	c.latestReturnType = c.ddpbooltyp
+	c.builder().latestReturn = c.newIntT(c.ddpbool, int64(boolToInt(e.Value)))
+	c.builder().latestReturnType = c.ddpbooltyp
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitCharLit(e *ast.CharLit) ast.VisitResult {
-	c.commentNode(c.cbb, e, "")
-	c.latestReturn = newIntT(ddpchar, int64(e.Value))
-	c.latestReturnType = c.ddpchartyp
+	c.builder().latestReturn = c.newIntT(c.ddpchar, int64(e.Value))
+	c.builder().latestReturnType = c.ddpchartyp
 	return ast.VisitRecurse
 }
 
 // string literals are created by the runtime
 // so we need to do some work here
 func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
-	constStr := c.mod.NewGlobalDef("", irutil.NewCString(e.Value))
 	// call the ddp-runtime function to create the ddpstring
-	c.commentNode(c.cbb, e, constStr.Name())
 	dest := c.NewAlloca(c.ddpstring.typ)
 	if e.Value == "" {
-		c.cbb.NewStore(c.ddpstring.DefaultValue(), dest)
+		c.builder().CreateStore(c.ddpstring.DefaultValue(), dest)
 	} else {
-		c.cbb.NewCall(c.ddpstring.fromConstantsIrFun, dest, c.cbb.NewBitCast(constStr, i8ptr))
+		constStr := c.builder().CreateGlobalString(e.Value, "")
+		c.builder().CreateCall(c.void, c.ddpstring.fromConstantsIrFun, []llvm.Value{dest, constStr}, "")
 	}
-	c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring) // so that it is freed later
-	c.latestIsTemp = true
+	c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, c.ddpstring) // so that it is freed later
+	c.builder().latestIsTemp = true
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	listType := c.toIrType(e.Type).(*ddpIrListType)
-	list := c.NewAlloca(listType.IrType())
+	list := c.NewAlloca(listType.LLType())
 
 	// get the listLen as irValue
-	var listLen value.Value = zero
+	listLen := c.zero
 	if e.Values != nil {
-		listLen = newInt(int64(len(e.Values)))
+		listLen = c.newInt(int64(len(e.Values)))
 	} else if e.Count != nil && e.Value != nil {
 		var lenType ddpIrType
 		listLen, lenType, _ = c.evaluate(e.Count)
 		listLen = c.floatOrByteAsInt(listLen, lenType)
 	} else { // empty list
-		c.cbb.NewStore(listType.DefaultValue(), list)
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
-		c.latestIsTemp = true
+		c.builder().CreateStore(listType.DefaultValue(), list)
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(list, listType)
+		c.builder().latestIsTemp = true
 		return ast.VisitRecurse
 	}
 
 	// create a empty list of the correct length
-	c.cbb.NewCall(listType.fromConstantsIrFun, list, listLen)
+	c.builder().CreateCall(c.void, listType.fromConstantsIrFun, []llvm.Value{list, listLen}, "")
 
-	listArr := c.loadStructField(list, list_arr_field_index) // load the array
+	listArr := c.loadStructField(listType.typ, list, list_arr_field_index) // load the array
 
 	if e.Values != nil { // we got some values to copy
 		// evaluate every value and copy it into the array
 		for i, v := range e.Values {
 			val, valTyp, isTemp := c.evaluate(v)
-			elementPtr := c.indexArray(listArr, newInt(int64(i)))
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, c.newInt(int64(i)))
 			c.claimOrCopy(elementPtr, val, valTyp, isTemp)
 		}
 	} else if e.Count != nil && e.Value != nil { // single Value multiple times
 		val, _, _ := c.evaluate(e.Value) // if val is a temporary, it is freed automatically
 
-		c.createFor(zero, c.forDefaultCond(listLen), func(index value.Value) {
-			elementPtr := c.indexArray(listArr, index)
+		c.createFor(c.zero, c.forDefaultCond(listLen), func(index llvm.Value) {
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 			if listType.elementType.IsPrimitive() {
-				c.cbb.NewStore(val, elementPtr)
+				c.builder().CreateStore(val, elementPtr)
 			} else {
 				c.deepCopyInto(elementPtr, val, listType.elementType)
 			}
 		})
 	}
-	c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
-	c.latestIsTemp = true
+	c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(list, listType)
+	c.builder().latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -921,24 +888,23 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
 
 	// big switches for the different type combinations
-	c.commentNode(c.cbb, e, e.Operator.String())
 	switch e.Operator {
 	case ast.UN_ABS:
 		switch typ {
 		case c.ddpfloattyp:
-			// c.latestReturn = rhs < 0 ? 0 - rhs : rhs;
-			c.latestReturn = c.createTernary(c.cbb.NewFCmp(enum.FPredOLT, rhs, zerof),
-				func() value.Value { return c.cbb.NewFSub(zerof, rhs) },
-				func() value.Value { return rhs },
+			// c.builder().latestReturn = rhs < 0 ? 0 - rhs : rhs;
+			c.builder().latestReturn = c.createTernary(c.ddpfloat, c.builder().CreateFCmp(llvm.FloatOLT, rhs, c.zerof, ""),
+				func() llvm.Value { return c.builder().CreateFSub(c.zerof, rhs, "") },
+				func() llvm.Value { return rhs },
 			)
-			c.latestReturnType = c.ddpfloattyp
+			c.builder().latestReturnType = c.ddpfloattyp
 		case c.ddpinttyp:
-			// c.latestReturn = rhs < 0 ? 0 - rhs : rhs;
-			c.latestReturn = c.createTernary(c.cbb.NewICmp(enum.IPredSLT, rhs, zero),
-				func() value.Value { return c.cbb.NewSub(zero, rhs) },
-				func() value.Value { return rhs },
+			// c.builder().latestReturn = rhs < 0 ? 0 - rhs : rhs;
+			c.builder().latestReturn = c.createTernary(c.ddpint, c.builder().CreateICmp(llvm.IntSLT, rhs, c.zero, ""),
+				func() llvm.Value { return c.builder().CreateSub(c.zero, rhs, "") },
+				func() llvm.Value { return rhs },
 			)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		case c.ddpbytetyp:
 			// a byte is unsigned and therefore does not need to be changed
 		default:
@@ -947,41 +913,41 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	case ast.UN_NEGATE:
 		switch typ {
 		case c.ddpfloattyp:
-			c.latestReturn = c.cbb.NewFNeg(rhs)
-			c.latestReturnType = c.ddpfloattyp
+			c.builder().latestReturn = c.builder().CreateFNeg(rhs, "")
+			c.builder().latestReturnType = c.ddpfloattyp
 		case c.ddpinttyp:
-			c.latestReturn = c.cbb.NewSub(zero, rhs)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturn = c.builder().CreateSub(c.zero, rhs, "")
+			c.builder().latestReturnType = c.ddpinttyp
 		case c.ddpinttyp:
-			c.latestReturn = c.cbb.NewSub(zero, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturn = c.builder().CreateSub(c.zero, c.floatOrByteAsInt(rhs, c.ddpbytetyp), "")
+			c.builder().latestReturnType = c.ddpinttyp
 		default:
 			c.err("invalid Parameter Type for NEGATE: %s", typ.Name())
 		}
 	case ast.UN_NOT:
-		c.latestReturn = c.cbb.NewXor(rhs, newInt(1))
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturn = c.builder().CreateXor(rhs, c.newInt(1), "")
+		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.UN_LOGIC_NOT:
 		switch typ {
 		case c.ddpinttyp:
-			c.latestReturn = c.cbb.NewXor(rhs, all_ones)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturn = c.builder().CreateXor(rhs, c.all_ones, "")
+			c.builder().latestReturnType = c.ddpinttyp
 		case c.ddpbytetyp:
-			c.latestReturn = c.cbb.NewXor(rhs, all_ones8)
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturn = c.builder().CreateXor(rhs, c.all_ones8, "")
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
 	case ast.UN_LEN:
 		switch typ {
 		case c.ddpstring:
-			c.latestReturn = c.cbb.NewCall(c.ddpstring.lengthIrFun, rhs)
+			c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.ddpstring.lengthIrFun, []llvm.Value{rhs}, "")
 		default:
-			if _, isList := typ.(*ddpIrListType); isList {
-				c.latestReturn = c.loadStructField(rhs, list_len_field_index)
+			if listTyp, isList := typ.(*ddpIrListType); isList {
+				c.builder().latestReturn = c.loadStructField(listTyp.typ, rhs, list_len_field_index)
 			} else {
 				c.err("invalid Parameter Type for LÄNGE: %s", typ.Name())
 			}
 		}
-		c.latestReturnType = c.ddpinttyp
+		c.builder().latestReturnType = c.ddpinttyp
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
@@ -989,8 +955,6 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 }
 
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
-	c.commentNode(c.cbb, e, e.Operator.String())
-
 	if e.OverloadedBy != nil {
 		return c.VisitFuncCall(&ast.FuncCall{
 			Range: e.GetRange(),
@@ -1006,64 +970,62 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	switch e.Operator {
 	case ast.BIN_AND:
 		lhs, _, _ := c.evaluate(e.Lhs)
-		startBlock, trueBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewCondBr(lhs, trueBlock, leaveBlock)
+		startBlock, trueBlock, leaveBlock := c.builder().cb, c.builder().newBlock(), c.builder().newBlock()
+		c.builder().CreateCondBr(lhs, trueBlock, leaveBlock)
 
-		c.cbb = trueBlock
+		c.builder().setBlock(trueBlock)
 		// collect temporaries because of possible short-circuiting
-		c.scp = newScope(c.scp)
+		c.builder().scp = newScope(c.builder().scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
 		// free temporaries
-		c.scp = c.exitScope(c.scp)
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewBr(leaveBlock)
-		trueBlock = c.cbb
+		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().CreateBr(leaveBlock)
+		trueBlock = c.builder().cb
 
-		c.cbb = leaveBlock
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(rhs, trueBlock), ir.NewIncoming(lhs, startBlock))
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().setBlock(leaveBlock)
+		phi := c.builder().CreatePHI(c.ddpbool, "")
+		phi.AddIncoming([]llvm.Value{rhs, lhs}, []llvm.BasicBlock{trueBlock, startBlock})
+		c.builder().latestReturn = phi
+		c.builder().latestReturnType = c.ddpbooltyp
 		return ast.VisitRecurse
 	case ast.BIN_OR:
 		lhs, _, _ := c.evaluate(e.Lhs)
-		startBlock, falseBlock, leaveBlock := c.cbb, c.cf.NewBlock(""), c.cf.NewBlock("")
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewCondBr(lhs, leaveBlock, falseBlock)
+		startBlock, falseBlock, leaveBlock := c.builder().cb, c.builder().newBlock(), c.builder().newBlock()
+		c.builder().CreateCondBr(lhs, leaveBlock, falseBlock)
 
-		c.cbb = falseBlock
+		c.builder().setBlock(falseBlock)
 		// collect temporaries because of possible short-circuiting
-		c.scp = newScope(c.scp)
+		c.builder().scp = newScope(c.builder().scp)
 		rhs, _, _ := c.evaluate(e.Rhs)
 		// free temporaries
-		c.scp = c.exitScope(c.scp)
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewBr(leaveBlock)
-		falseBlock = c.cbb // in case c.evaluate has multiple blocks
+		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().CreateBr(leaveBlock)
+		falseBlock = c.builder().cb // in case c.evaluate has multiple blocks
 
-		c.cbb = leaveBlock
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, startBlock), ir.NewIncoming(rhs, falseBlock))
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().setBlock(leaveBlock)
+		phi := c.builder().CreatePHI(c.ddpbool, "")
+		phi.AddIncoming([]llvm.Value{lhs, rhs}, []llvm.BasicBlock{startBlock, falseBlock})
+		c.builder().latestReturn = phi
+		c.builder().latestReturnType = c.ddpbooltyp
 		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
 		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
 		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
 			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
 			fieldType := structType.fieldIrTypes[fieldIndex]
-			fieldPtr := c.indexStruct(rhs, fieldIndex)
+			fieldPtr := c.indexStruct(structType.typ, rhs, fieldIndex)
 			if fieldType.IsPrimitive() {
-				c.latestReturn = c.cbb.NewLoad(fieldType.IrType(), fieldPtr)
+				c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 			} else if !rhsIsTemp {
-				c.latestReturn, c.latestIsTemp = fieldPtr, false
+				c.builder().latestReturn, c.builder().latestIsTemp = fieldPtr, false
 			} else {
-				dest := c.NewAlloca(fieldType.IrType())
-				c.cbb.NewStore(c.cbb.NewLoad(fieldType.IrType(), fieldPtr), dest)
-				c.cbb.NewStore(fieldType.DefaultValue(), fieldPtr)
-				c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, fieldType)
-				c.latestIsTemp = true
+				dest := c.NewAlloca(fieldType.LLType())
+				c.builder().CreateStore(c.builder().CreateLoad(fieldType.LLType(), fieldPtr, ""), dest)
+				c.builder().CreateStore(fieldType.DefaultValue(), fieldPtr)
+				c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, fieldType)
+				c.builder().latestIsTemp = true
 			}
-			c.latestReturnType = fieldType
+			c.builder().latestReturnType = fieldType
 		} else {
 			c.err("invalid Parameter Types for VON (%s)", rhsTyp.Name())
 		}
@@ -1076,11 +1038,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	// big switches on the different type combinations
 	switch e.Operator {
 	case ast.BIN_XOR:
-		c.latestReturn = c.cbb.NewXor(lhs, rhs)
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturn = c.builder().CreateXor(lhs, rhs, "")
+		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.BIN_CONCAT:
 		var (
-			result    value.Value
+			result    llvm.Value
 			resultTyp ddpIrType
 			claimsLhs bool
 			claimsRhs bool
@@ -1101,10 +1063,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				resultTyp = c.getListType(lhsTyp)
 			}
 		}
-		result = c.NewAlloca(resultTyp.IrType())
+		result = c.NewAlloca(resultTyp.LLType())
 
 		// string concatenations
-		var concat_func *ir.Func = nil
+		var concat_func llvm.Value
 		if lhsTyp == c.ddpstring && rhsTyp == c.ddpstring {
 			concat_func = c.ddpstring.str_str_concat_IrFunc
 			claimsLhs, claimsRhs = true, false
@@ -1117,7 +1079,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		}
 
 		// list concatenations
-		if concat_func == nil {
+		if concat_func.IsNil() {
 			if lhsIsList && rhsIsList {
 				concat_func = lhsListTyp.list_list_concat_IrFunc
 				claimsLhs, claimsRhs = true, false
@@ -1139,59 +1101,59 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		// the concat function is also required to free the memory of the claimed
 		// arguments or claim their memory for the result, so we do not have to free them
 		if claimsLhs && !isTempLhs {
-			dest := c.NewAlloca(lhsTyp.IrType())
+			dest := c.NewAlloca(lhsTyp.LLType())
 			lhs = c.deepCopyInto(dest, lhs, lhsTyp)
 		}
 		if claimsRhs && !isTempRhs {
-			dest := c.NewAlloca(rhsTyp.IrType())
+			dest := c.NewAlloca(rhsTyp.LLType())
 			rhs = c.deepCopyInto(dest, rhs, rhsTyp)
 		}
 
-		c.cbb.NewCall(concat_func, result, lhs, rhs)
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultTyp)
-		c.latestIsTemp = true
+		c.builder().CreateCall(c.void, concat_func, []llvm.Value{result, lhs, rhs}, "")
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(result, resultTyp)
+		c.builder().latestIsTemp = true
 	case ast.BIN_PLUS:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewAdd(lhs, rhs)
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateAdd(lhs, rhs, "")
+				c.builder().latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
-				c.latestReturnType = c.ddpfloattyp
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFAdd(fp, rhs, "")
+				c.builder().latestReturnType = c.ddpfloattyp
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewAdd(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateAdd(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp), "")
+				c.builder().latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFAdd(lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFAdd(lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFAdd(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFAdd(lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFAdd(lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFAdd(lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-			c.latestReturnType = c.ddpfloattyp
+			c.builder().latestReturnType = c.ddpfloattyp
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewAdd(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateAdd(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs, "")
+				c.builder().latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFAdd(fp, rhs)
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFAdd(fp, rhs, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewAdd(lhs, rhs)
-				c.latestReturnType = c.ddpbytetyp
+				c.builder().latestReturn = c.builder().CreateAdd(lhs, rhs, "")
+				c.builder().latestReturnType = c.ddpbytetyp
 			default:
 				c.err("invalid Parameter Types for PLUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1203,44 +1165,44 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewSub(lhs, rhs)
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateSub(lhs, rhs, "")
+				c.builder().latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFSub(fp, rhs)
-				c.latestReturnType = c.ddpfloattyp
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFSub(fp, rhs, "")
+				c.builder().latestReturnType = c.ddpfloattyp
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewSub(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateSub(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp), "")
+				c.builder().latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFSub(lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFSub(lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFSub(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFSub(lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFSub(lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFSub(lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-			c.latestReturnType = c.ddpfloattyp
+			c.builder().latestReturnType = c.ddpfloattyp
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewSub(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateSub(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs, "")
+				c.builder().latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFSub(fp, rhs)
-				c.latestReturnType = c.ddpfloattyp
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFSub(fp, rhs, "")
+				c.builder().latestReturnType = c.ddpfloattyp
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewSub(lhs, rhs)
-				c.latestReturnType = c.ddpbytetyp
+				c.builder().latestReturn = c.builder().CreateSub(lhs, rhs, "")
+				c.builder().latestReturnType = c.ddpbytetyp
 			default:
 				c.err("invalid Parameter Types for MINUS (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1252,42 +1214,42 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewMul(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateMul(lhs, rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFMul(fp, rhs)
-				c.latestReturnType = c.ddpfloattyp
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFMul(fp, rhs, "")
+				c.builder().latestReturnType = c.ddpfloattyp
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewMul(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp))
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateMul(lhs, c.floatOrByteAsInt(rhs, c.ddpbytetyp), "")
+				c.builder().latestReturnType = c.ddpinttyp
 			default:
 				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFMul(lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFMul(lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFMul(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFMul(lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFMul(lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFMul(lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
-			c.latestReturnType = c.ddpfloattyp
+			c.builder().latestReturnType = c.ddpfloattyp
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewMul(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs)
-				c.latestReturnType = c.ddpinttyp
+				c.builder().latestReturn = c.builder().CreateMul(c.floatOrByteAsInt(lhs, c.ddpbytetyp), rhs, "")
+				c.builder().latestReturnType = c.ddpinttyp
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFMul(fp, rhs)
-				c.latestReturnType = c.ddpfloattyp
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFMul(fp, rhs, "")
+				c.builder().latestReturnType = c.ddpfloattyp
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewMul(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateMul(lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for MAL (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
@@ -1299,374 +1261,376 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+				lhs = c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				rhs = c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(fp, rhs, "")
 			case c.ddpbytetyp:
-				lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+				lhs = c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				rhs = c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+				lhs = c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				rhs = c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(fp, rhs, "")
 			case c.ddpbytetyp:
-				lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
-				rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFDiv(lhs, rhs)
+				lhs = c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				rhs = c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFDiv(lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		default:
 			c.err("invalid Parameter Types for DURCH (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 		}
-		c.latestReturnType = c.ddpfloattyp
+		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_INDEX:
 		switch lhsTyp {
 		case c.ddpstring:
-			c.latestReturn = c.cbb.NewCall(c.ddpstring.indexIrFun, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
-			c.latestReturnType = c.ddpchartyp
+			c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.ddpstring.indexIrFun, []llvm.Value{lhs, c.floatOrByteAsInt(rhs, rhsTyp)}, "")
+			c.builder().latestReturnType = c.ddpchartyp
 		default:
 			if listType, isList := lhsTyp.(*ddpIrListType); isList {
-				listLen := c.loadStructField(lhs, list_len_field_index)
-				index := c.cbb.NewSub(c.floatOrByteAsInt(rhs, rhsTyp), newInt(1)) // ddp indices start at 1, so subtract 1
+				listLen := c.loadStructField(listType.typ, lhs, list_len_field_index)
+				index := c.builder().CreateSub(c.floatOrByteAsInt(rhs, rhsTyp), c.newInt(1), "") // ddp indices start at 1, so subtract 1
 				// index bounds check
-				cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
+				cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
 				c.createIfElse(cond, func() {
-					listArr := c.loadStructField(lhs, list_arr_field_index)
-					elementPtr := c.indexArray(listArr, index)
+					listArr := c.loadStructField(listType.typ, lhs, list_arr_field_index)
+					elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 					// if the list is a temporary, we need to copy the element
 					if isTempLhs {
 						if listType.elementType.IsPrimitive() { // primitives are simply loaded
-							c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
 						} else {
-							dest := c.NewAlloca(listType.elementType.IrType())
-							c.latestReturn, c.latestReturnType = c.scp.addTemporary(
+							dest := c.NewAlloca(listType.elementType.LLType())
+							c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(
 								c.deepCopyInto(dest, elementPtr, listType.elementType),
 								listType.elementType,
 							)
-							c.latestIsTemp = true // the element is now also a temporary
+							c.builder().latestIsTemp = true // the element is now also a temporary
 						}
 					} else {
 						if listType.elementType.IsPrimitive() {
-							c.latestReturn = c.cbb.NewLoad(listType.elementType.IrType(), elementPtr)
+							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
 						} else { // the list is not temporary, so a reference to the element is enough
-							c.latestReturn = elementPtr
-							c.latestIsTemp = false
+							c.builder().latestReturn = elementPtr
+							c.builder().latestIsTemp = false
 						}
 					}
 				}, func() { // runtime error
 					line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-					c.out_of_bounds_error(newInt(line), newInt(column), rhs, listLen)
+					c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
 				})
-				c.latestReturnType = listType.elementType
+				c.builder().latestReturnType = listType.elementType
 			} else {
 				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
-		dest := c.NewAlloca(lhsTyp.IrType())
+		dest := c.NewAlloca(lhsTyp.LLType())
 		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
 
 		switch lhsTyp {
 		case c.ddpstring:
 			if e.Operator == ast.BIN_SLICE_FROM {
-				str_len := c.cbb.NewCall(c.ddpstring.lengthIrFun, lhs)
-				c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, rhs, str_len)
+				str_len := c.builder().CreateCall(c.ddpint, c.ddpstring.lengthIrFun, []llvm.Value{lhs}, "")
+				c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, rhs, str_len}, "")
 			} else {
-				c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, newInt(1), rhs)
+				c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, c.newInt(1), rhs}, "")
 			}
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 				if e.Operator == ast.BIN_SLICE_FROM {
-					lst_len := c.loadStructField(lhs, list_len_field_index)
-					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, rhs, lst_len)
+					lst_len := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
+					c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, rhs, lst_len}, "")
 				} else {
-					c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, newInt(1), rhs)
+					c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, c.newInt(1), rhs}, "")
 				}
 			} else {
 				c.err("invalid Parameter Types for %s (%s, %s)", e.Operator.String(), lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
-		c.latestIsTemp = true
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, lhsTyp)
+		c.builder().latestIsTemp = true
 	case ast.BIN_POW:
 		switch lhsTyp {
 		case c.ddpinttyp:
-			lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+			lhs = c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
 		case c.ddpbytetyp:
-			lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
+			lhs = c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
 		case c.ddpfloattyp:
 		default:
 			c.err("invalid Parameter Types for HOCH (Lhs: %s)", lhsTyp.Name())
 		}
 		switch rhsTyp {
 		case c.ddpinttyp:
-			rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			rhs = c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
 		case c.ddpbytetyp:
-			rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
+			rhs = c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
 		case c.ddpfloattyp:
 		default:
 			c.err("invalid Parameter Types for HOCH (Rhs: %s)", lhsTyp.Name())
 		}
-		c.latestReturn = c.cbb.NewCall(c.functions["pow"].irFunc, lhs, rhs)
-		c.latestReturnType = c.ddpfloattyp
+		llFuncBuilder := c.functions["pow"].llFuncBuilder
+		c.builder().latestReturn = c.builder().CreateCall(llFuncBuilder.llFnType.ReturnType(), llFuncBuilder.llFn, []llvm.Value{lhs, rhs}, "")
+		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_LOG:
 		switch lhsTyp {
 		case c.ddpinttyp:
-			lhs = c.cbb.NewSIToFP(lhs, ddpfloat)
+			lhs = c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
 		case c.ddpbytetyp:
-			lhs = c.cbb.NewUIToFP(lhs, ddpfloat)
+			lhs = c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
 		case c.ddpfloattyp:
 		default:
 			c.err("invalid Parameter Types for Logarithmus (Lhs: %s)", lhsTyp.Name())
 		}
 		switch rhsTyp {
 		case c.ddpinttyp:
-			rhs = c.cbb.NewSIToFP(rhs, ddpfloat)
+			rhs = c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
 		case c.ddpbytetyp:
-			rhs = c.cbb.NewUIToFP(rhs, ddpfloat)
+			rhs = c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
 		case c.ddpfloattyp:
 		default:
 			c.err("invalid Parameter Types for Logarithmus (Rhs: %s)", lhsTyp.Name())
 		}
-		log10_num := c.cbb.NewCall(c.functions["log10"].irFunc, lhs)
-		log10_base := c.cbb.NewCall(c.functions["log10"].irFunc, rhs)
-		c.latestReturn = c.cbb.NewFDiv(log10_num, log10_base)
-		c.latestReturnType = c.ddpfloattyp
+		log10FuncBuilder := c.functions["log10"].llFuncBuilder
+		log10_num := c.builder().CreateCall(log10FuncBuilder.llFnType.ReturnType(), log10FuncBuilder.llFn, []llvm.Value{lhs}, "")
+		log10_base := c.builder().CreateCall(log10FuncBuilder.llFnType.ReturnType(), log10FuncBuilder.llFn, []llvm.Value{rhs}, "")
+		c.builder().latestReturn = c.builder().CreateFDiv(log10_num, log10_base, "")
+		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_LOGIC_AND:
 		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
 			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		} else {
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
-		c.latestReturn = c.cbb.NewAnd(lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateAnd(lhs, rhs, "")
 	case ast.BIN_LOGIC_OR:
 		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
 			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		} else {
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
-		c.latestReturn = c.cbb.NewOr(lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateOr(lhs, rhs, "")
 	case ast.BIN_LOGIC_XOR:
 		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
 			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		} else {
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
-		c.latestReturn = c.cbb.NewXor(lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateXor(lhs, rhs, "")
 	case ast.BIN_MOD:
 		if lhsTyp == c.ddpbytetyp && rhsTyp == c.ddpbytetyp {
-			c.latestReturn = c.cbb.NewURem(lhs, rhs)
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturn = c.builder().CreateURem(lhs, rhs, "")
+			c.builder().latestReturnType = c.ddpbytetyp
 		} else {
-			c.latestReturn = c.cbb.NewSRem(c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp))
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturn = c.builder().CreateSRem(c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp), "")
+			c.builder().latestReturnType = c.ddpinttyp
 		}
 	case ast.BIN_LEFT_SHIFT:
 		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
 			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		} else {
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
-		c.latestReturn = c.cbb.NewShl(lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateShl(lhs, rhs, "")
 	case ast.BIN_RIGHT_SHIFT:
 		if lhsTyp == c.ddpinttyp || rhsTyp == c.ddpinttyp {
 			lhs, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturnType = c.ddpinttyp
+			c.builder().latestReturnType = c.ddpinttyp
 		} else {
-			c.latestReturnType = c.ddpbytetyp
+			c.builder().latestReturnType = c.ddpbytetyp
 		}
-		c.latestReturn = c.cbb.NewLShr(lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateLShr(lhs, rhs, "")
 	case ast.BIN_EQUAL:
 		c.compare_values(lhs, rhs, lhsTyp)
 	case ast.BIN_UNEQUAL:
 		equal := c.compare_values(lhs, rhs, lhsTyp)
-		c.latestReturn = c.cbb.NewXor(equal, newInt(1))
+		c.builder().latestReturn = c.builder().CreateXor(equal, c.newInt(1), "")
 	case ast.BIN_LESS:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp, c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLT, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSLT, lhs, c.floatOrByteAsInt(rhs, rhsTyp), "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLT, fp, rhs, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLT, lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLT, lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLT, lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLT, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSLT, c.floatOrByteAsInt(lhs, lhsTyp), rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLT, fp, rhs)
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLT, fp, rhs, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredULT, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntULT, lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.BIN_LESS_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp, c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLE, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSLE, lhs, c.floatOrByteAsInt(rhs, rhsTyp), "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLE, fp, rhs, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLE, lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLE, lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLE, lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSLE, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSLE, c.floatOrByteAsInt(lhs, lhsTyp), rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOLE, fp, rhs)
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOLE, fp, rhs, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredULE, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntULE, lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for KLEINER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp, c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGT, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSGT, lhs, c.floatOrByteAsInt(rhs, rhsTyp), "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGT, fp, rhs, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGT, lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGT, lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGT, lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGT, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSGT, c.floatOrByteAsInt(lhs, lhsTyp), rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGT, fp, rhs)
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGT, fp, rhs, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredUGT, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntUGT, lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.BIN_GREATER_EQ:
 		switch lhsTyp {
 		case c.ddpinttyp:
 			switch rhsTyp {
 			case c.ddpinttyp, c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGE, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSGE, lhs, c.floatOrByteAsInt(rhs, rhsTyp), "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewSIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
+				fp := c.builder().CreateSIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGE, fp, rhs, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpfloattyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				fp := c.cbb.NewSIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, fp)
+				fp := c.builder().CreateSIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGE, lhs, fp, "")
 			case c.ddpfloattyp:
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGE, lhs, rhs, "")
 			case c.ddpbytetyp:
-				fp := c.cbb.NewUIToFP(rhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, lhs, fp)
+				fp := c.builder().CreateUIToFP(rhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGE, lhs, fp, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		case c.ddpbytetyp:
 			switch rhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredSGE, c.floatOrByteAsInt(lhs, lhsTyp), rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntSGE, c.floatOrByteAsInt(lhs, lhsTyp), rhs, "")
 			case c.ddpfloattyp:
-				fp := c.cbb.NewUIToFP(lhs, ddpfloat)
-				c.latestReturn = c.cbb.NewFCmp(enum.FPredOGE, fp, rhs)
+				fp := c.builder().CreateUIToFP(lhs, c.ddpfloat, "")
+				c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOGE, fp, rhs, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredUGE, lhs, rhs)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntUGE, lhs, rhs, "")
 			default:
 				c.err("invalid Parameter Types for GRÖßER_ALS_ODER (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturnType = c.ddpbooltyp
 	}
 	return ast.VisitRecurse
 }
@@ -1685,53 +1649,50 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	// if due to short circuiting
 	if e.Operator == ast.TER_FALLS {
 		mid, _, _ := c.evaluate(e.Mid)
-		trueBlock, falseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewCondBr(mid, trueBlock, falseBlock)
+		trueBlock, falseBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+		c.builder().CreateCondBr(mid, trueBlock, falseBlock)
 
-		c.cbb = trueBlock
+		c.builder().setBlock(trueBlock)
 		// collect temporaries because of possible short-circuiting
-		c.scp = newScope(c.scp)
+		c.builder().scp = newScope(c.builder().scp)
 		lhs, lhsTyp, lhsIsTemp := c.evaluate(e.Lhs)
 		// claim the temporary, as the phi instruction will become the actual temporary
 		if lhsIsTemp && !lhsTyp.IsPrimitive() {
-			lhs = c.scp.claimTemporary(lhs)
+			lhs = c.builder().scp.claimTemporary(lhs)
 		}
 		// free temporaries
-		c.scp = c.exitScope(c.scp)
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewBr(leaveBlock)
-		trueBlock = c.cbb
+		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().CreateBr(leaveBlock)
+		trueBlock = c.builder().cb
 
-		c.cbb = falseBlock
+		c.builder().setBlock(falseBlock)
 		// collect temporaries because of possible short-circuiting
-		c.scp = newScope(c.scp)
+		c.builder().scp = newScope(c.builder().scp)
 		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
 		// claim the temporary, as the phi instruction will become the actual temporary
 		if rhsIsTemp && !rhsTyp.IsPrimitive() {
-			rhs = c.scp.claimTemporary(rhs)
+			rhs = c.builder().scp.claimTemporary(rhs)
 		}
 		// free temporaries
-		c.scp = c.exitScope(c.scp)
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.cbb.NewBr(leaveBlock)
-		falseBlock = c.cbb
+		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().CreateBr(leaveBlock)
+		falseBlock = c.builder().cb
 
 		// simple case, where both can be treated the same way
 		if lhsIsTemp == rhsIsTemp {
-			c.latestIsTemp = lhsIsTemp
+			c.builder().latestIsTemp = lhsIsTemp
 		} else {
-			c.latestIsTemp = true
+			c.builder().latestIsTemp = true
 
 			// we need to copy the non-temp value to be sure
-			c.cbb = trueBlock
+			c.builder().setBlock(trueBlock)
 			if lhsIsTemp {
-				c.cbb = falseBlock
+				c.builder().setBlock(falseBlock)
 			}
 
 			// turn the non-temp into a temporary and claim the temporary,
 			// as the phi instruction will become the actual temporary
-			dest := c.NewAlloca(lhsTyp.IrType())
+			dest := c.NewAlloca(lhsTyp.LLType())
 			if lhsIsTemp {
 				rhs = c.deepCopyInto(dest, rhs, lhsTyp)
 			} else {
@@ -1739,13 +1700,14 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 			}
 		}
 
-		c.cbb = leaveBlock
-		c.commentNode(c.cbb, e, e.Operator.String())
-		c.latestReturn = c.cbb.NewPhi(ir.NewIncoming(lhs, trueBlock), ir.NewIncoming(rhs, falseBlock))
-		if c.latestIsTemp {
-			c.scp.addTemporary(c.latestReturn, lhsTyp)
+		c.builder().setBlock(leaveBlock)
+		phi := c.builder().CreatePHI(rhsTyp.LLType(), "")
+		phi.AddIncoming([]llvm.Value{lhs, rhs}, []llvm.BasicBlock{trueBlock, falseBlock})
+		c.builder().latestReturn = phi
+		if c.builder().latestIsTemp {
+			c.builder().scp.addTemporary(c.builder().latestReturn, lhsTyp)
 		}
-		c.latestReturnType = lhsTyp
+		c.builder().latestReturnType = lhsTyp
 		return ast.VisitRecurse
 	}
 
@@ -1755,44 +1717,47 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 
 	switch e.Operator {
 	case ast.TER_SLICE:
-		dest := c.NewAlloca(lhsTyp.IrType())
+		dest := c.NewAlloca(lhsTyp.LLType())
 		mid = c.floatOrByteAsInt(mid, midTyp)
 		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
 		switch lhsTyp {
 		case c.ddpstring:
-			c.cbb.NewCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
+			c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, mid, rhs}, "")
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-				c.cbb.NewCall(listTyp.sliceIrFun, dest, lhs, mid, rhs)
+				c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, mid, rhs}, "")
 			} else {
 				c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
 		}
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, lhsTyp)
-		c.latestIsTemp = true
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, lhsTyp)
+		c.builder().latestIsTemp = true
 	case ast.TER_BETWEEN:
 		// lhs zwischen mid und rhs
 		// = (lhs > rhs && lhs < mid) || (lhs > mid && lhs < rhs)
 		if lhsTyp == c.ddpfloattyp || rhsTyp == c.ddpfloattyp || midTyp == c.ddpfloattyp {
 			lhs, mid, rhs = c.intOrByteAsFloat(lhs, lhsTyp), c.intOrByteAsFloat(mid, midTyp), c.intOrByteAsFloat(rhs, rhsTyp)
-			c.latestReturn = c.cbb.NewOr(
-				c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, rhs), c.cbb.NewFCmp(enum.FPredOLT, lhs, mid)),
-				c.cbb.NewAnd(c.cbb.NewFCmp(enum.FPredOGT, lhs, mid), c.cbb.NewFCmp(enum.FPredOLT, lhs, rhs)),
+			c.builder().latestReturn = c.builder().CreateOr(
+				c.builder().CreateAnd(c.builder().CreateFCmp(llvm.FloatOGT, lhs, rhs, ""), c.builder().CreateFCmp(llvm.FloatOLT, lhs, mid, ""), ""),
+				c.builder().CreateAnd(c.builder().CreateFCmp(llvm.FloatOGT, lhs, mid, ""), c.builder().CreateFCmp(llvm.FloatOLT, lhs, rhs, ""), ""),
+				"",
 			)
 		} else if lhsTyp == c.ddpbytetyp && rhsTyp == c.ddpbytetyp && midTyp == c.ddpbytetyp {
-			c.latestReturn = c.cbb.NewOr(
-				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredUGT, lhs, rhs), c.cbb.NewICmp(enum.IPredULT, lhs, mid)),
-				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredUGT, lhs, mid), c.cbb.NewICmp(enum.IPredULT, lhs, rhs)),
+			c.builder().latestReturn = c.builder().CreateOr(
+				c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntUGT, lhs, rhs, ""), c.builder().CreateICmp(llvm.IntULT, lhs, mid, ""), ""),
+				c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntUGT, lhs, mid, ""), c.builder().CreateICmp(llvm.IntULT, lhs, rhs, ""), ""),
+				"",
 			)
 		} else {
 			lhs, mid, rhs = c.floatOrByteAsInt(lhs, lhsTyp), c.floatOrByteAsInt(mid, midTyp), c.floatOrByteAsInt(rhs, rhsTyp)
-			c.latestReturn = c.cbb.NewOr(
-				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, rhs), c.cbb.NewICmp(enum.IPredSLT, lhs, mid)),
-				c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSGT, lhs, mid), c.cbb.NewICmp(enum.IPredSLT, lhs, rhs)),
+			c.builder().latestReturn = c.builder().CreateOr(
+				c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSGT, lhs, rhs, ""), c.builder().CreateICmp(llvm.IntSLT, lhs, mid, ""), ""),
+				c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSGT, lhs, mid, ""), c.builder().CreateICmp(llvm.IntSLT, lhs, rhs, ""), ""),
+				"",
 			)
 		}
 
-		c.latestReturnType = c.ddpbooltyp
+		c.builder().latestReturnType = c.ddpbooltyp
 	default:
 		c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 	}
@@ -1822,26 +1787,26 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	nonPrimitiveAnyCast := func() {
 		nonPrimTyp := c.toIrType(targetType)
 
-		dest := c.NewAlloca(nonPrimTyp.IrType())
+		dest := c.NewAlloca(nonPrimTyp.LLType())
 		c.createIfElse(c.compareAnyType(lhs, vtable), func() {
 			// temporary values can be claimed
 			if isTempLhs {
-				val_ptr := c.loadAnyValuePtr(lhs, nonPrimTyp.IrType())
-				val := c.cbb.NewLoad(nonPrimTyp.IrType(), val_ptr)
-				c.cbb.NewStore(val, dest)
+				val_ptr := c.loadAnyValuePtr(lhs, nonPrimTyp.LLType())
+				val := c.builder().CreateLoad(nonPrimTyp.LLType(), val_ptr, "")
+				c.builder().CreateStore(val, dest)
 				c.createIfElse(c.isSmallAny(lhs), func() {}, func() {
-					c.ddp_reallocate(val_ptr, newInt(int64(c.getTypeSize(nonPrimTyp))), zero)
+					c.ddp_reallocate(val_ptr, c.newInt(int64(c.getTypeSize(nonPrimTyp))), c.zero)
 				})
-				c.scp.claimTemporary(lhs) // don't call free func on the now invalid any
+				c.builder().scp.claimTemporary(lhs) // don't call free func on the now invalid any
 			} else {
 				// non-temporaries are simply deep copied
-				c.deepCopyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.IrType()), nonPrimTyp)
+				c.deepCopyInto(dest, c.loadAnyValuePtr(lhs, nonPrimTyp.LLType()), nonPrimTyp)
 			}
-			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, nonPrimTyp)
-			c.latestIsTemp = true
+			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, nonPrimTyp)
+			c.builder().latestIsTemp = true
 		}, func() {
 			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-			c.runtime_error(1, c.bad_cast_error_string, newInt(line), newInt(column))
+			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
 		})
 	}
 
@@ -1853,20 +1818,20 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
-		c.cbb.NewCall(listType.fromConstantsIrFun, list, newInt(1))
-		elementPtr := c.indexArray(c.loadStructField(list, list_arr_field_index), zero)
+		c.builder().CreateCall(c.void, listType.fromConstantsIrFun, []llvm.Value{list, c.newInt(1)}, "")
+		elementPtr := c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), c.zero)
 		c.claimOrCopy(elementPtr, lhs, lhsTyp, isTempLhs)
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(list, listType)
-		c.latestIsTemp = true
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(list, listType)
+		c.builder().latestIsTemp = true
 	} else {
 		// helper function to cast primitive from any to their concrete type
 		primitiveAnyCast := func(primTyp ddpIrType) {
 			c.createIfElse(c.compareAnyType(lhs, vtable), func() {
-				c.latestReturn = c.loadSmallAnyValue(lhs, primTyp.IrType())
-				c.latestReturnType, c.latestIsTemp = primTyp, true
+				c.builder().latestReturn = c.loadSmallAnyValue(lhs, primTyp.LLType())
+				c.builder().latestReturnType, c.builder().latestIsTemp = primTyp, true
 			}, func() {
 				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-				c.runtime_error(1, c.bad_cast_error_string, newInt(line), newInt(column))
+				c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
 			})
 		}
 
@@ -1874,14 +1839,14 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
-				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
-				c.latestReturn = c.cbb.NewZExt(cond, ddpint)
+				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.zero, "")
+				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpint, "")
 			case c.ddpchartyp:
-				c.latestReturn = c.cbb.NewSExt(lhs, ddpint)
+				c.builder().latestReturn = c.builder().CreateSExt(lhs, c.ddpint, "")
 			case c.ddpstring:
-				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
+				c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.functions["ddp_string_to_int"].irFunc, []llvm.Value{lhs}, "")
 			case c.ddpany:
 				primitiveAnyCast(c.ddpinttyp)
 			default:
@@ -1890,9 +1855,9 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpstring:
-				c.latestReturn = c.cbb.NewCall(c.functions["ddp_string_to_float"].irFunc, lhs)
+				c.builder().latestReturn = c.builder().CreateCall(c.ddpfloat, c.functions["ddp_string_to_float"].irFunc, []llvm.Value{lhs}, "")
 			case c.ddpany:
 				primitiveAnyCast(c.ddpfloattyp)
 			default:
@@ -1901,15 +1866,15 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.BYTE:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
-				cond := c.cbb.NewICmp(enum.IPredNE, lhs, zero)
-				c.latestReturn = c.cbb.NewZExt(cond, ddpbyte)
+				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.zero, "")
+				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpbyte, "")
 			case c.ddpchartyp:
-				c.latestReturn = c.cbb.NewTrunc(lhs, ddpbyte)
+				c.builder().latestReturn = c.builder().CreateTrunc(lhs, c.ddpbyte, "")
 			case c.ddpstring:
-				intVal := c.cbb.NewCall(c.functions["ddp_string_to_int"].irFunc, lhs)
-				c.latestReturn = c.cbb.NewTrunc(intVal, ddpbyte)
+				intVal := c.builder().CreateCall(c.ddpint, c.functions["ddp_string_to_int"].irFunc, []llvm.Value{lhs}, "")
+				c.builder().latestReturn = c.builder().CreateTrunc(intVal, c.ddpbyte, "")
 			case c.ddpany:
 				primitiveAnyCast(c.ddpinttyp)
 			default:
@@ -1918,11 +1883,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.WAHRHEITSWERT:
 			switch lhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntNE, lhs, c.zero, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewICmp(enum.IPredNE, lhs, zero8)
+				c.builder().latestReturn = c.builder().CreateICmp(llvm.IntNE, lhs, c.zero8, "")
 			case c.ddpbooltyp:
-				c.latestReturn = lhs
+				c.builder().latestReturn = lhs
 			case c.ddpany:
 				primitiveAnyCast(c.ddpbooltyp)
 			default:
@@ -1931,11 +1896,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.BUCHSTABE:
 			switch lhsTyp {
 			case c.ddpinttyp:
-				c.latestReturn = c.cbb.NewTrunc(lhs, ddpchar)
+				c.builder().latestReturn = c.builder().CreateTrunc(lhs, c.ddpchar, "")
 			case c.ddpbytetyp:
-				c.latestReturn = c.cbb.NewZExt(lhs, ddpchar)
+				c.builder().latestReturn = c.builder().CreateZExt(lhs, c.ddpchar, "")
 			case c.ddpchartyp:
-				c.latestReturn = lhs
+				c.builder().latestReturn = lhs
 			case c.ddpany:
 				primitiveAnyCast(c.ddpchartyp)
 			default:
@@ -1948,13 +1913,13 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			}
 
 			if lhsTyp == c.ddpstring {
-				c.latestReturn = lhs
-				c.latestReturnType = c.ddpstring
-				c.latestIsTemp = isTempLhs
+				c.builder().latestReturn = lhs
+				c.builder().latestReturnType = c.ddpstring
+				c.builder().latestIsTemp = isTempLhs
 				return ast.VisitRecurse // don't free lhs
 			}
 
-			var to_string_func *ir.Func
+			var to_string_func llvm.Value
 			switch lhsTyp {
 			case c.ddpinttyp:
 				to_string_func = c.ddpstring.int_to_string_IrFun
@@ -1970,15 +1935,15 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.err("invalid Parameter Type for TEXT: %s", lhsTyp.Name())
 			}
 			dest := c.NewAlloca(c.ddpstring.typ)
-			c.cbb.NewCall(to_string_func, dest, lhs)
-			c.latestReturn, c.latestReturnType = c.scp.addTemporary(dest, c.ddpstring)
-			c.latestIsTemp = true
+			c.builder().CreateCall(c.void, to_string_func, []llvm.Value{dest, lhs}, "")
+			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, c.ddpstring)
+			c.builder().latestIsTemp = true
 		case ddptypes.VARIABLE:
 			if lhsTyp == c.ddpany {
 				break
 			}
 
-			c.latestReturn, c.latestReturnType, c.latestIsTemp = c.castNonAnyToAny(lhs, lhsTyp, isTempLhs, lhsTyp.VTable())
+			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = c.castNonAnyToAny(lhs, lhsTyp, isTempLhs, lhsTyp.VTable())
 		default:
 			if lhsTyp == c.ddpany {
 				nonPrimitiveAnyCast()
@@ -1988,7 +1953,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			// c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
 		}
 	}
-	c.latestReturnType = c.toIrType(targetType)
+	c.builder().latestReturnType = c.toIrType(targetType)
 	return ast.VisitRecurse
 }
 
@@ -2000,27 +1965,27 @@ func (c *compiler) VisitCastAssigneable(e *ast.CastAssigneable) ast.VisitResult 
 func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 	switch e.Operator {
 	case ast.TYPE_SIZE:
-		c.latestReturn = c.sizeof(c.toIrType(e.Rhs).IrType())
-		c.latestReturnType = c.ddpinttyp
+		c.builder().latestReturn = c.sizeof(c.toIrType(e.Rhs).LLType())
+		c.builder().latestReturnType = c.ddpinttyp
 	case ast.TYPE_DEFAULT:
 		switch t := ddptypes.TrueUnderlying(e.Rhs).(type) {
 		case *ddptypes.StructType:
 			result, resultType := c.evaluateStructLiteral(t, nil)
-			c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
+			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(result, resultType)
 		default:
 			irType := c.toIrType(e.Rhs)
-			var defaultValue value.Value = irType.DefaultValue()
+			var defaultValue llvm.Value = irType.DefaultValue()
 			if !irType.IsPrimitive() {
-				dest := c.NewAlloca(irType.IrType())
-				c.cbb.NewStore(defaultValue, dest)
+				dest := c.NewAlloca(irType.LLType())
+				c.builder().CreateStore(defaultValue, dest)
 				defaultValue = dest
 			}
-			c.latestReturn, c.latestReturnType = c.scp.addTemporary(defaultValue, irType)
+			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(defaultValue, irType)
 		}
 	default:
 		c.err("invalid TypeOpExpr Operator: %d", e.Operator)
 	}
-	c.latestIsTemp = true
+	c.builder().latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -2032,8 +1997,8 @@ func (c *compiler) VisitTypeCheck(e *ast.TypeCheck) ast.VisitResult {
 		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 	}
 
-	c.latestReturn = c.compareAnyType(lhs, vtable)
-	c.latestReturnType = c.ddpbooltyp
+	c.builder().latestReturn = c.compareAnyType(lhs, vtable)
+	c.builder().latestReturnType = c.ddpbooltyp
 	return ast.VisitRecurse
 }
 
@@ -2045,26 +2010,26 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 // helper for VisitAssignStmt and VisitFuncCall
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
-func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (value.Value, ddpIrType, *ast.Indexing) {
+func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (llvm.Value, ddpIrType, *ast.Indexing) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
+		Var := c.builder().scp.lookupVar(assign.Declaration.(*ast.VarDecl))
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
 		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 			index, indexTyp, _ := c.evaluate(assign.Index)
-			index = c.cbb.NewSub(c.floatOrByteAsInt(index, indexTyp), newInt(1)) // ddpindices start at 1
-			listLen := c.loadStructField(lhs, list_len_field_index)
-			var elementPtr value.Value
+			index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
+			listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
+			var elementPtr llvm.Value
 
-			cond := c.cbb.NewAnd(c.cbb.NewICmp(enum.IPredSLT, index, listLen), c.cbb.NewICmp(enum.IPredSGE, index, zero))
+			cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
 			c.createIfElse(cond, func() {
-				listArr := c.loadStructField(lhs, list_arr_field_index)
-				elementPtr = c.indexArray(listArr, index)
+				listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
+				elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
 			}, func() { // runtime error
 				line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
-				c.out_of_bounds_error(newInt(line), newInt(column), c.cbb.NewAdd(index, newInt(1)), listLen)
+				c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
 			})
 			return elementPtr, listTyp.elementType, nil
 		} else if !as_ref && lhsTyp == c.ddpstring {
@@ -2076,7 +2041,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
 		if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
 			fieldIndex := getFieldIndex(assign.Field.Literal.Literal, structTyp)
-			fieldPtr := c.indexStruct(rhs, fieldIndex)
+			fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
 			return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
 		} else {
 			c.err("non-struct type passed to FieldAccess")
@@ -2085,7 +2050,7 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 		return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
 	}
 	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
-	return nil, nil, nil
+	return llvm.Value{}, nil, nil
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
@@ -2106,7 +2071,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	fun := c.functions[mangledName]
 
-	args := make([]value.Value, 0, len(fun.funcDecl.Parameters)+1)
+	args := make([]llvm.Value, 0, len(fun.funcDecl.Parameters)+1)
 
 	meta := annotators.ConstFuncParamMeta{}
 	if attachement, ok := e.Func.Module().Ast.GetMetadataByKind(fun.funcDecl, annotators.ConstFuncParamMetaKind); ok {
@@ -2115,14 +2080,14 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	irReturnType := c.getPossiblyGenericReturnType(fun.funcDecl)
 
-	var ret value.Value
+	var ret llvm.Value
 	if !irReturnType.IsPrimitive() {
-		ret = c.NewAlloca(irReturnType.IrType())
+		ret = c.NewAlloca(irReturnType.LLType())
 		args = append(args, ret)
 	}
 
 	for _, param := range fun.funcDecl.Parameters {
-		var val value.Value
+		var val llvm.Value
 
 		// differentiate between references and normal parameters
 		if param.Type.IsReference {
@@ -2137,33 +2102,24 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Name.Literal]) {
 				val = eval
 			} else { // function parameters need to be copied by the caller
-				dest := c.NewAlloca(valTyp.IrType())
+				dest := c.NewAlloca(valTyp.LLType())
 				c.claimOrCopy(dest, eval, valTyp, isTemp)
 				val = dest // do not add it to the temporaries, as the callee will free it
 			}
 		}
 
-		// adjust argument types for generic extern functions
-		if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
-			val = c.cbb.NewBitCast(val, i8ptr)
-		} else if isGeneric {
-			// if the param type is generic and not a reference it can only be a list
-			val = c.cbb.NewBitCast(val, c.ddpgenericlist.PtrType())
-		}
-
 		args = append(args, val) // add the value to the arguments
 	}
 
-	c.commentNode(c.cbb, e, "")
 	// compile the actual function call
 	if irReturnType.IsPrimitive() {
-		c.latestReturn = c.cbb.NewCall(fun.irFunc, args...)
+		c.builder().latestReturn = c.builder().CreateCall(fun.llFuncBuilder.llFnType.ReturnType(), fun.irFunc, args, "")
 	} else {
-		c.cbb.NewCall(fun.irFunc, args...)
-		c.latestReturn, c.latestReturnType = c.scp.addTemporary(ret, irReturnType)
-		c.latestIsTemp = true
+		c.builder().CreateCall(fun.llFuncBuilder.llFnType.ReturnType(), fun.irFunc, args, "")
+		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(ret, irReturnType)
+		c.builder().latestIsTemp = true
 	}
-	c.latestReturnType = irReturnType
+	c.builder().latestReturnType = irReturnType
 
 	// the arguments of external functions must be freed by the caller
 	// normal functions free their parameters in their body
@@ -2179,25 +2135,18 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 				arg = args[i+1]
 			}
 
-			// adjust argument types for generic extern functions
-			if ddptypes.IsList(param.Type.Type) {
-				if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(fun.funcDecl.Parameters[i].Type.Type); isGeneric {
-					arg = c.cbb.NewBitCast(arg, paramIrType.PtrType())
-				}
-			}
-
 			c.freeNonPrimitive(arg, paramIrType)
 		}
 	}
 	return ast.VisitRecurse
 }
 
-func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args map[string]ast.Expression) (value.Value, ddpIrType) {
+func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args map[string]ast.Expression) (llvm.Value, ddpIrType) {
 	// search in the types module for the decl, as it might not be present in this module due to transitive dependencies
 	structDeclInterface, _, _ := c.typeMap[structType].Ast.Symbols.LookupDecl(structType.Name)
 	structDecl := structDeclInterface.(*ast.StructDecl)
 	resultType := c.toIrType(structType)
-	result := c.NewAlloca(resultType.IrType())
+	result := c.NewAlloca(resultType.LLType())
 	for i, field := range structType.Fields {
 		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
 		initType := fieldDecl.InitType
@@ -2209,7 +2158,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 
 		// if no default value was given
 		if argExpr == nil {
-			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Range: c.currentNode.GetRange()}
+			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Range: c.builder().currentNode.GetRange()}
 		}
 
 		argVal, argType, isTempArg := c.evaluate(argExpr)
@@ -2224,15 +2173,15 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 			argVal, argType, isTempArg = c.castNonAnyToAny(argVal, argType, isTempArg, vtable)
 		}
 
-		c.claimOrCopy(c.indexStruct(result, int64(i)), argVal, argType, isTempArg)
+		c.claimOrCopy(c.indexStruct(resultType.LLType(), result, i), argVal, argType, isTempArg)
 	}
 	return result, resultType
 }
 
 func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
 	result, resultType := c.evaluateStructLiteral(expr.Type, expr.Args)
-	c.latestReturn, c.latestReturnType = c.scp.addTemporary(result, resultType)
-	c.latestIsTemp = true
+	c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(result, resultType)
+	c.builder().latestIsTemp = true
 	return ast.VisitRecurse
 }
 
@@ -2278,48 +2227,51 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	}
 
 	retType := c.getPossiblyGenericReturnType(decl) // get the llvm type
-	retTypeIr := retType.IrType()
-	params := make([]*ir.Param, 0, len(decl.Parameters)+1) // list of the ir parameters
+	retTypeIr := retType.LLType()
+	params := make([]llvm.Type, 0, len(decl.Parameters)+1)  // list of the ir parameters
+	paramNames := make([]string, 0, len(decl.Parameters)+1) // list of the ir parameters
 
 	hasReturnParam := !retType.IsPrimitive()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
-		params = append(params, ir.NewParam("", retType.PtrType()))
-		retTypeIr = c.voidtyp.IrType()
+		params = append(params, c.ptr)
+		paramNames = append(paramNames, "")
+		retTypeIr = c.voidtyp.LLType()
 	}
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.getPossiblyGenericParamType(&param)                  // convert the type of the parameter
-		params = append(params, ir.NewParam(param.Name.Literal, ty)) // add it to the list
+		ty := c.getPossiblyGenericParamType(&param) // convert the type of the parameter
+		params = append(params, ty)                 // add it to the list
+		paramNames = append(paramNames, param.Name.Literal)
 	}
 
-	irFunc := c.mod.NewFunc(mangledName, retTypeIr, params...) // create the ir function
-	irFunc.CallingConv = enum.CallingConvC                     // every function is called with the c calling convention to make interaction with inbuilt stuff easier
-	// declare it as extern function
-	irFunc.Linkage = enum.LinkageExternal
-	irFunc.Visibility = enum.VisibilityDefault
+	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	c.insertFunction(irFunc.Name(), decl, irFunc)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames)
+	// declare it as extern function
+	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
+	c.insertFunction(llFuncBuilder.fnName, decl, llFuncBuilder.llFn, llFuncBuilder)
 }
 
 func (c *compiler) declareImportedVarDecl(decl *ast.VarDecl) {
 	// imported decls are always in the global scope
 	// even in generic instantiations
-	scp := c.scp
+	scp := c.builder().scp
 	for !scp.isGlobalScope() {
 		scp = scp.enclosing
 	}
 
-	if scp.lookupVar(decl).val != nil {
+	if !scp.lookupVar(decl).val.IsNil() {
 		return
 	}
 
 	c.declareIfStruct(decl.Type)
 	Typ := c.toIrType(decl.Type)
-	globalDecl := c.mod.NewGlobal(c.mangledNameDecl(decl), Typ.IrType())
-	globalDecl.Linkage = enum.LinkageExternal
-	globalDecl.Visibility = enum.VisibilityDefault
+	globalDecl := llvm.AddGlobal(c.llmod, Typ.LLType(), c.mangledNameDecl(decl))
+	globalDecl.SetLinkage(llvm.ExternalLinkage)
+	globalDecl.SetVisibility(llvm.DefaultVisibility)
 
 	scp.addProtected(decl, globalDecl, Typ, false) // freed by module_dispose
 }
@@ -2360,18 +2312,21 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			}
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
-			module_init := c.mod.NewFunc(init_name, c.voidtyp.IrType())
-			module_init.Linkage = enum.LinkageExternal
-			module_init.Visibility = enum.VisibilityDefault
-			c.insertFunction(init_name, nil, module_init)
-			if c.cf != nil && c.cbb != nil { // ddp_main
-				c.cbb.NewCall(module_init) // only call this in main modules
+
+			moduleInitBuilder := c.createBuilder(init_name, c.void, nil)
+			moduleInitBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+			moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
+
+			c.insertFunction(moduleInitBuilder.fnName, nil, moduleInitBuilder.llFn, moduleInitBuilder)
+			if c.builder().isDDPMain() {
+				c.builder().CreateCall(c.void, moduleInitBuilder.llFn, nil, "") // only call this in main modules
 			}
 
-			module_dispose := c.mod.NewFunc(dispose_name, c.voidtyp.IrType())
-			module_dispose.Linkage = enum.LinkageExternal
-			module_dispose.Visibility = enum.VisibilityDefault
-			c.insertFunction(dispose_name, nil, module_dispose)
+			moduleDisposeBuilder := c.createBuilder(dispose_name, c.void, nil)
+			moduleDisposeBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
+			moduleDisposeBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
+
+			c.insertFunction(moduleDisposeBuilder.fnName, nil, moduleDisposeBuilder.llFn, moduleDisposeBuilder)
 
 			c.importedModules[module] = struct{}{}
 		})
@@ -2392,7 +2347,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
 		index = c.floatOrByteAsInt(index, indexTyp)
-		c.cbb.NewCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
+		c.builder().CreateCall(c.void, c.ddpstring.replaceCharIrFun, []llvm.Value{lhs, rhs, index}, "")
 	} else {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
 
@@ -2411,7 +2366,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 }
 
 func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) ast.VisitResult {
-	c.scp = newScope(c.scp) // a block gets its own scope
+	c.builder().scp = newScope(c.builder().scp) // a block gets its own scope
 	wasReturn := false
 	for _, stmt := range s.Statements {
 		c.visitNode(stmt)
@@ -2421,9 +2376,9 @@ func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) ast.VisitResult {
 		}
 	}
 	if wasReturn {
-		c.scp = c.scp.enclosing
+		c.builder().scp = c.builder().scp.enclosing
 	} else {
-		c.scp = c.exitScope(c.scp) // free local variables and return to the previous scope
+		c.builder().scp = c.exitScope(c.builder().scp) // free local variables and return to the previous scope
 	}
 	return ast.VisitRecurse
 }
@@ -2431,371 +2386,357 @@ func (c *compiler) VisitBlockStmt(s *ast.BlockStmt) ast.VisitResult {
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#If
 func (c *compiler) VisitIfStmt(s *ast.IfStmt) ast.VisitResult {
 	cond, _, _ := c.evaluate(s.Condition)
-	thenBlock, elseBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.commentNode(c.cbb, s, "")
+	thenBlock, elseBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 	if s.Else != nil {
-		c.cbb.NewCondBr(cond, thenBlock, elseBlock)
+		c.builder().CreateCondBr(cond, thenBlock, elseBlock)
 	} else {
-		c.cbb.NewCondBr(cond, thenBlock, leaveBlock)
+		c.builder().CreateCondBr(cond, thenBlock, leaveBlock)
 	}
 
-	c.cbb, c.scp = thenBlock, newScope(c.scp)
+	c.builder().setBlock(thenBlock)
+	c.builder().scp = newScope(c.builder().scp)
 	c.visitNode(s.Then)
-	if c.cbb.Term == nil {
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewBr(leaveBlock)
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateBr(leaveBlock)
 	}
-	c.scp = c.exitScope(c.scp)
+	c.builder().scp = c.exitScope(c.builder().scp)
 
 	if s.Else != nil {
-		c.cbb, c.scp = elseBlock, newScope(c.scp)
+		c.builder().setBlock(elseBlock)
+		c.builder().scp = newScope(c.builder().scp)
 		c.visitNode(s.Else)
-		if c.cbb.Term == nil {
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewBr(leaveBlock)
+		if c.builder().cb.Terminator().IsNil() {
+			c.builder().CreateBr(leaveBlock)
 		}
-		c.scp = c.exitScope(c.scp)
+		c.builder().scp = c.exitScope(c.builder().scp)
 	} else {
-		elseBlock.NewUnreachable()
+		c.builder().withBlock(elseBlock, func() { c.builder().CreateUnreachable() })
 	}
 
-	c.cbb = leaveBlock
+	c.builder().setBlock(leaveBlock)
 	return ast.VisitRecurse
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitWhileStmt(s *ast.WhileStmt) ast.VisitResult {
-	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock
 	switch op := s.While.Type; op {
 	case token.SOLANGE, token.MACHE:
-		condBlock, body, bodyScope := c.cf.NewBlock(""), c.cf.NewBlock(""), newScope(c.scp)
-		breakLeave := c.cf.NewBlock("")
-		c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = bodyScope, breakLeave, condBlock
+		condBlock, body, bodyScope := c.builder().newBlock(), c.builder().newBlock(), newScope(c.builder().scp)
+		breakLeave := c.builder().newBlock()
+		c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = bodyScope, breakLeave, condBlock
 
-		c.commentNode(c.cbb, s, "")
 		if op == token.SOLANGE {
-			c.cbb.NewBr(condBlock)
+			c.builder().CreateBr(condBlock)
 		} else {
-			c.cbb.NewBr(body)
+			c.builder().CreateBr(body)
 		}
 
-		c.cbb, c.scp = body, bodyScope
+		c.builder().setBlock(body)
+		c.builder().scp = bodyScope
 		c.visitNode(s.Body)
-		if c.cbb.Term == nil {
-			c.cbb.NewBr(condBlock)
+		if c.builder().cb.Terminator().IsNil() {
+			c.builder().CreateBr(condBlock)
 		}
 
-		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
+		c.builder().setBlock(condBlock)
+		c.builder().scp = c.exitScope(c.builder().scp)
 		cond, _, _ := c.evaluate(s.Condition)
-		leaveBlock := c.cf.NewBlock("")
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewCondBr(cond, body, leaveBlock)
+		leaveBlock := c.builder().newBlock()
+		c.builder().CreateCondBr(cond, body, leaveBlock)
 
-		trueLeave := c.cf.NewBlock("")
-		leaveBlock.NewBr(trueLeave)
-		breakLeave.NewBr(trueLeave)
-		c.cbb = trueLeave
+		trueLeave := c.builder().newBlock()
+		c.builder().withBlock(leaveBlock, func() { c.builder().CreateBr(trueLeave) })
+		c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(trueLeave) })
+		c.builder().setBlock(trueLeave)
 	case token.WIEDERHOLE:
-		counter := c.NewAlloca(ddpint)
+		counter := c.NewAlloca(c.ddpint)
 		cond, _, _ := c.evaluate(s.Condition)
-		c.cbb.NewStore(cond, counter)
-		condBlock, body, bodyScope := c.cf.NewBlock(""), c.cf.NewBlock(""), newScope(c.scp)
-		breakLeave := c.cf.NewBlock("")
-		c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = bodyScope, breakLeave, condBlock
+		c.builder().CreateStore(cond, counter)
+		condBlock, body, bodyScope := c.builder().newBlock(), c.builder().newBlock(), newScope(c.builder().scp)
+		breakLeave := c.builder().newBlock()
+		c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = bodyScope, breakLeave, condBlock
 
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewBr(condBlock)
+		c.builder().CreateBr(condBlock)
 
-		c.cbb, c.scp = body, bodyScope
-		c.cbb.NewStore(c.cbb.NewSub(c.cbb.NewLoad(ddpint, counter), newInt(1)), counter)
+		c.builder().setBlock(body)
+		c.builder().scp = bodyScope
+		c.builder().CreateStore(c.builder().CreateSub(c.builder().CreateLoad(c.ddpint, counter, ""), c.newInt(1), ""), counter)
 		c.visitNode(s.Body)
-		if c.cbb.Term == nil {
-			c.commentNode(c.cbb, s, "")
-			c.cbb.NewBr(condBlock)
+		if c.builder().cb.Terminator().IsNil() {
+			c.builder().CreateBr(condBlock)
 		}
 
-		leaveBlock := c.cf.NewBlock("")
-		c.cbb, c.scp = condBlock, c.exitScope(c.scp) // the condition is not in scope
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewCondBr( // while counter != 0, execute body
-			c.cbb.NewICmp(enum.IPredNE, c.cbb.NewLoad(ddpint, counter), zero),
+		leaveBlock := c.builder().newBlock()
+		c.builder().setBlock(condBlock)
+		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().CreateCondBr( // while counter != 0, execute body
+			c.builder().CreateICmp(llvm.IntNE, c.builder().CreateLoad(c.ddpint, counter, ""), c.zero, ""),
 			body,
 			leaveBlock,
 		)
 
-		trueLeave := c.cf.NewBlock("")
-		leaveBlock.NewBr(trueLeave)
-		breakLeave.NewBr(trueLeave)
-		c.cbb = trueLeave
+		trueLeave := c.builder().newBlock()
+		c.builder().withBlock(leaveBlock, func() { c.builder().CreateBr(trueLeave) })
+		c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(trueLeave) })
+		c.builder().setBlock(trueLeave)
 	}
-	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
 	return ast.VisitRecurse
 }
 
 // for info on how the generated ir works you might want to see https://llir.github.io/document/user-guide/control/#Loop
 func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
-	new_IorF_comp := func(ipred enum.IPred, fpred enum.FPred, x value.Value, xType ddpIrType, yi value.Value, yiType ddpIrType, yf value.Value) value.Value {
+	new_IorF_comp := func(ipred llvm.IntPredicate, fpred llvm.FloatPredicate, x llvm.Value, xType ddpIrType, yi llvm.Value, yiType ddpIrType, yf llvm.Value) llvm.Value {
 		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.BYTE) {
 			x, yi = c.floatOrByteAsInt(x, xType), c.floatOrByteAsInt(yi, yiType)
 		}
 
 		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
-			return c.cbb.NewFCmp(fpred, x, yf)
+			return c.builder().CreateFCmp(fpred, x, yf, "")
 		} else {
-			return c.cbb.NewICmp(ipred, x, yi)
+			return c.builder().CreateICmp(ipred, x, yi, "")
 		}
 	}
 
-	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock
 
-	c.scp = newScope(c.scp)    // scope for the for body
-	c.visitNode(s.Initializer) // compile the counter variable declaration
-	Var := c.scp.lookupVar(s.Initializer)
+	c.builder().scp = newScope(c.builder().scp) // scope for the for body
+	c.visitNode(s.Initializer)                  // compile the counter variable declaration
+	Var := c.builder().scp.lookupVar(s.Initializer)
 	// this is the actual index used
-	var indexVar *ir.InstAlloca
+	var indexVar llvm.Value
 	var indexTyp ddpIrType
 	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
-		indexVar, indexTyp = c.NewAlloca(ddpfloat), c.ddpfloattyp
+		indexVar, indexTyp = c.NewAlloca(c.ddpfloat), c.ddpfloattyp
 	} else {
-		indexVar, indexTyp = c.NewAlloca(ddpint), c.ddpinttyp
+		indexVar, indexTyp = c.NewAlloca(c.ddpint), c.ddpinttyp
 	}
-	var incrementer value.Value // Schrittgröße
+	var incrementer llvm.Value // Schrittgröße
 	var incrementerType ddpIrType
 	// if no stepsize was present it is 1
 	if s.StepSize == nil {
 		if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
-			incrementer, incrementerType = constant.NewFloat(ddpfloat, 1.0), c.ddpfloattyp
+			incrementer, incrementerType = llvm.ConstFloat(c.ddpfloat, 1.0), c.ddpfloattyp
 		} else {
-			incrementer, incrementerType = newInt(1), c.ddpinttyp
+			incrementer, incrementerType = c.newInt(1), c.ddpinttyp
 		}
 	} else { // stepsize was present, so compile it
 		incrementer, incrementerType, _ = c.evaluate(s.StepSize)
 	}
 
-	condBlock := c.cf.NewBlock("")
-	incrementBlock := c.cf.NewBlock("")
-	forBody := c.cf.NewBlock("")
+	condBlock, incrementBlock, forBody, breakLeave := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 
-	breakLeave := c.cf.NewBlock("")
-	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, incrementBlock
+	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.builder().scp, breakLeave, incrementBlock
 
-	c.cbb.NewStore(c.numericCast(c.cbb.NewLoad(Var.typ.IrType(), Var.val), Var.typ, indexTyp), indexVar)
+	c.builder().CreateStore(c.numericCast(c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, indexTyp), indexVar)
 
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
+	c.builder().CreateBr(condBlock) // we begin by evaluating the condition (not compiled yet, but the ir starts here)
 	// compile the for-body
-	c.cbb = forBody
+	c.builder().setBlock(forBody)
 	c.visitNode(s.Body)
-	if c.cbb.Term == nil { // if there is no return at the end we jump to the incrementBlock
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewBr(incrementBlock)
+	if c.builder().cb.Terminator().IsNil() { // if there is no return at the end we jump to the incrementBlock
+		c.builder().CreateBr(incrementBlock)
 	}
 
 	// compile the incrementBlock
-	c.cbb = incrementBlock
-	indexVal := c.cbb.NewLoad(indexTyp.IrType(), indexVar)
+	c.builder().setBlock(incrementBlock)
+	indexVal := c.builder().CreateLoad(indexTyp.LLType(), indexVar, "")
 
 	// add the incrementer to the counter variable
-	var add value.Value
+	var add llvm.Value
 	if ddptypes.DeepEqual(s.Initializer.Type, ddptypes.KOMMAZAHL) {
-		add = c.cbb.NewFAdd(indexVal, c.intOrByteAsFloat(incrementer, incrementerType))
-		c.cbb.NewStore(add, Var.val)
+		add = c.builder().CreateFAdd(indexVal, c.intOrByteAsFloat(incrementer, incrementerType), "")
+		c.builder().CreateStore(add, Var.val)
 	} else {
-		add = c.cbb.NewAdd(indexVal, c.floatOrByteAsInt(incrementer, incrementerType))
-		c.cbb.NewStore(c.numericCast(add, c.ddpinttyp, Var.typ), Var.val)
+		add = c.builder().CreateAdd(indexVal, c.floatOrByteAsInt(incrementer, incrementerType), "")
+		c.builder().CreateStore(c.numericCast(add, c.ddpinttyp, Var.typ), Var.val)
 	}
-	c.cbb.NewStore(add, indexVar)
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewBr(condBlock) // check the condition (loop)
+	c.builder().CreateStore(add, indexVar)
+	c.builder().CreateBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
-	loopDown := c.cf.NewBlock("")
-	loopUp := c.cf.NewBlock("")
-	leaveBlock := c.cf.NewBlock("") // after the condition is false we jump to the leaveBlock
+	loopDown, loopUp, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 
-	c.cbb = condBlock
+	c.builder().setBlock(condBlock)
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
-	cond := new_IorF_comp(enum.IPredSLT, enum.FPredOLT, incrementer, incrementerType, newInt(0), c.ddpinttyp, constant.NewFloat(ddpfloat, 0.0))
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewCondBr(cond, loopDown, loopUp)
+	cond := new_IorF_comp(llvm.IntSLT, llvm.FloatOLT, incrementer, incrementerType, c.newInt(0), c.ddpinttyp, llvm.ConstFloat(c.ddpfloat, 0.0))
+	c.builder().CreateCondBr(cond, loopDown, loopUp)
 
-	c.cbb = loopUp
+	c.builder().setBlock(loopUp)
 	// we are counting up, so compare less-or-equal
 	to, toType, _ := c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSLE, enum.FPredOLE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewCondBr(cond, forBody, leaveBlock)
+	cond = new_IorF_comp(llvm.IntSLE, llvm.FloatOLE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
+	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
-	c.cbb = loopDown
+	c.builder().setBlock(loopDown)
 	// we are counting down, so compare greater-or-equal
 	to, toType, _ = c.evaluate(s.To)
-	cond = new_IorF_comp(enum.IPredSGE, enum.FPredOGE, c.cbb.NewLoad(indexTyp.IrType(), indexVar), indexTyp, to, toType, to)
-	c.commentNode(c.cbb, s, "")
-	c.cbb.NewCondBr(cond, forBody, leaveBlock)
+	cond = new_IorF_comp(llvm.IntSGE, llvm.FloatOGE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
+	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
-	c.cbb = leaveBlock
-	c.scp = c.exitScope(c.scp) // leave the scope
+	c.builder().setBlock(leaveBlock)
+	c.builder().scp = c.exitScope(c.builder().scp) // leave the scope
 
-	trueLeave := c.cf.NewBlock("")
-	leaveBlock.NewBr(trueLeave)
-	breakLeave.NewBr(trueLeave)
-	c.cbb = trueLeave
+	trueLeave, leaveBlock, breakLeave := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	c.builder().setBlock(trueLeave)
 
-	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
-	loopScopeBack, leaveBlockBack, continueBlockBack := c.curLoopScope, c.curLeaveBlock, c.curContinueBlock
+	loopScopeBack, leaveBlockBack, continueBlockBack := c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock
 
-	c.scp = newScope(c.scp)
+	c.builder().scp = newScope(c.builder().scp)
 	in, inTyp, isTempIn := c.evaluate(s.In)
 
-	temp := c.NewAlloca(inTyp.IrType())
+	temp := c.NewAlloca(inTyp.LLType())
 	c.claimOrCopy(temp, in, inTyp, isTempIn)
-	in, _ = c.scp.addTemporary(temp, inTyp)
-	c.scp.protectTemporary(in)
+	in, _ = c.builder().scp.addTemporary(temp, inTyp)
+	c.builder().scp.protectTemporary(in)
 
 	var (
-		iter_ptr      value.Value // pointer used for iteration
-		iter_ptr_type types.Type
-		end_ptr       value.Value // points to the one-after-last element
-		length        value.Value
-		index         value.Value = c.NewAlloca(c.ddpinttyp.IrType())
+		end_ptr llvm.Value // points to the one-after-last element
+		length  llvm.Value
+		index   llvm.Value = c.NewAlloca(c.ddpinttyp.LLType())
 	)
 
+	iter_ptr := c.NewAlloca(c.ptr) // pointer used for iteration
+
 	if inTyp == c.ddpstring {
-		iter_ptr_type = i8ptr
-		iter_ptr = c.NewAlloca(iter_ptr_type)
-		iter_ptr_val := c.loadStructField(in, string_str_field_index)
-		c.cbb.NewStore(iter_ptr_val, iter_ptr)
-		length = c.loadStructField(in, string_cap_field_index)
-		end_ptr = c.indexArray(iter_ptr_val, c.cbb.NewSub(length, newInt(1)))
+		iter_ptr_val := c.loadStructField(c.ddpstring.typ, in, string_str_field_index)
+		c.builder().CreateStore(iter_ptr_val, iter_ptr)
+		length = c.loadStructField(c.ddpstring.typ, in, string_cap_field_index)
+		end_ptr = c.indexArray(c.ddpchar, iter_ptr_val, c.builder().CreateSub(length, c.newInt(1), ""))
 	} else {
-		iter_ptr_type = inTyp.(*ddpIrListType).elementType.PtrType()
-		iter_ptr = c.NewAlloca(iter_ptr_type)
-		iter_ptr_val := c.loadStructField(in, list_arr_field_index)
-		c.cbb.NewStore(iter_ptr_val, iter_ptr)
-		length = c.loadStructField(in, list_len_field_index)
-		end_ptr = c.indexArray(iter_ptr_val, length)
+		iter_ptr_val := c.loadStructField(inTyp.LLType(), in, list_arr_field_index)
+		c.builder().CreateStore(iter_ptr_val, iter_ptr)
+		length = c.loadStructField(inTyp.LLType(), in, list_len_field_index)
+		end_ptr = c.indexArray(inTyp.(*ddpIrListType).elementType.LLType(), iter_ptr_val, length)
 	}
 
-	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock(""), c.cf.NewBlock("")
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredEQ, length, zero), leaveBlock, loopStart)
+	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntEQ, length, c.zero, ""), leaveBlock, loopStart)
 
-	c.cbb = loopStart
+	c.builder().setBlock(loopStart)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addProtected(s.Initializer, c.NewAlloca(irType.IrType()), irType, false)
+	c.builder().scp.addProtected(s.Initializer, c.NewAlloca(irType.LLType()), irType, false)
 	if s.Index != nil {
-		c.scp.addVar(s.Index, index, c.ddpinttyp, false)
-		c.cbb.NewStore(newInt(1), index)
+		c.builder().scp.addVar(s.Index, index, c.ddpinttyp, false)
+		c.builder().CreateStore(c.newInt(1), index)
 	}
-	c.cbb.NewBr(condBlock)
+	c.builder().CreateBr(condBlock)
 
-	c.cbb = condBlock
-	c.cbb.NewCondBr(c.cbb.NewICmp(enum.IPredNE, c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint), c.cbb.NewPtrToInt(end_ptr, ddpint)), bodyBlock, leaveBlock)
+	c.builder().setBlock(condBlock)
+	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntNE, c.builder().CreateLoad(c.ptr, iter_ptr, ""), end_ptr, ""), bodyBlock, leaveBlock)
 
-	loopVar := c.scp.lookupVar(s.Initializer)
+	loopVar := c.builder().scp.lookupVar(s.Initializer)
 
-	continueBlock := c.cf.NewBlock("")
-	c.cbb = continueBlock
+	continueBlock := c.builder().newBlock()
+	c.builder().setBlock(continueBlock)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
-	c.cbb.NewBr(incrementBlock)
+	c.builder().CreateBr(incrementBlock)
 
-	c.cbb = bodyBlock
-	var num_bytes value.Value
+	c.builder().setBlock(bodyBlock)
+	var num_bytes llvm.Value
 	if inTyp == c.ddpstring {
-		num_bytes = c.cbb.NewCall(utf8_string_to_char_irfun,
-			c.cbb.NewLoad(iter_ptr_type, iter_ptr),
-			loopVar.val,
+		num_bytes = c.builder().CreateCall(c.ddpchar, utf8_string_to_char_irfun,
+			[]llvm.Value{
+				c.builder().CreateLoad(c.ptr, iter_ptr, ""),
+				loopVar.val,
+			},
+			"",
 		)
-		c.createIfElse(c.cbb.NewICmp(enum.IPredEQ, num_bytes, all_ones), func() {
+		c.createIfElse(c.builder().CreateICmp(llvm.IntEQ, num_bytes, c.all_ones, ""), func() {
 			line, column := int64(s.In.Token().Range.Start.Line), int64(s.In.Token().Range.Start.Column)
-			c.runtime_error(1, c.invalid_utf8_error_string, newInt(line), newInt(column))
+			c.runtime_error(1, c.invalid_utf8_error_string, c.newInt(line), c.newInt(column))
 		}, func() {})
 	} else {
-		elementPtr := c.cbb.NewLoad(iter_ptr_type, iter_ptr)
+		elementPtr := c.builder().CreateLoad(c.ptr, iter_ptr, "")
 		inListTyp := inTyp.(*ddpIrListType)
 		if inListTyp.elementType.IsPrimitive() {
-			element := c.cbb.NewLoad(inListTyp.elementType.IrType(), elementPtr)
-			c.cbb.NewStore(element, loopVar.val)
+			element := c.builder().CreateLoad(inListTyp.elementType.LLType(), elementPtr, "")
+			c.builder().CreateStore(element, loopVar.val)
 		} else {
 			c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
 		}
 	}
-	breakLeave := c.cf.NewBlock("")
-	breakLeave.NewBr(leaveBlock)
-	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = c.scp, breakLeave, continueBlock
+	breakLeave := c.builder().newBlock()
+	c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(leaveBlock) })
+	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.builder().scp, breakLeave, continueBlock
 	c.visitNode(s.Body)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
-	if c.cbb.Term == nil {
-		c.cbb.NewBr(incrementBlock)
+	if c.builder().cb.Terminator().IsNil() {
+		c.builder().CreateBr(incrementBlock)
 	}
 
-	c.cbb = incrementBlock
+	c.builder().setBlock(incrementBlock)
 	if inTyp == c.ddpstring {
-		c.cbb.NewStore(
-			c.cbb.NewIntToPtr(
-				c.cbb.NewAdd(
-					c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint),
+		c.builder().CreateStore(
+			c.builder().CreateIntToPtr(
+				c.builder().CreateAdd(
+					c.builder().CreatePtrToInt(c.builder().CreateLoad(c.ptr, iter_ptr, ""), c.ddpint, ""),
 					num_bytes,
+					"",
 				),
-				i8ptr,
+				c.ptr,
+				"",
 			),
 			iter_ptr,
 		)
 	} else {
 		inListTyp := inTyp.(*ddpIrListType)
-		c.cbb.NewStore(
-			c.cbb.NewIntToPtr(
-				c.cbb.NewAdd(
-					c.cbb.NewPtrToInt(c.cbb.NewLoad(iter_ptr_type, iter_ptr), ddpint),
-					newInt(int64(c.getTypeSize(inListTyp.elementType))),
+		c.builder().CreateStore(
+			c.builder().CreateIntToPtr(
+				c.builder().CreateAdd(
+					c.builder().CreatePtrToInt(c.builder().CreateLoad(c.ptr, iter_ptr, ""), c.ddpint, ""),
+					c.newInt(int64(c.getTypeSize(inListTyp.elementType))),
+					"",
 				),
-				iter_ptr_type,
+				c.ptr,
+				"",
 			),
 			iter_ptr,
 		)
 	}
 	if s.Index != nil {
-		c.cbb.NewStore(c.cbb.NewAdd(c.cbb.NewLoad(c.ddpinttyp.IrType(), index), newInt(1)), index) // index += 1
+		c.builder().CreateStore(c.builder().CreateAdd(c.builder().CreateLoad(c.ddpinttyp.LLType(), index, ""), c.newInt(1), ""), index) // index += 1
 	}
-	c.cbb.NewBr(condBlock)
+	c.builder().CreateBr(condBlock)
 
-	c.cbb = leaveBlock
-	c.scp.unprotectTemporary(in)
-	// delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
-	c.scp = c.exitScope(c.scp)
+	c.builder().setBlock(leaveBlock)
+	c.builder().scp.unprotectTemporary(in)
+	// delete(c.builder().scp.variables, s.Initializer.Name()) // the loopvar was already freed
+	c.builder().scp = c.exitScope(c.builder().scp)
 
-	c.cbb = breakLeave
+	c.builder().setBlock(breakLeave)
 	c.freeNonPrimitive(in, inTyp)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
 
-	trueLeave := c.cf.NewBlock("")
-	leaveBlock.NewBr(trueLeave)
-	breakLeave.NewBr(trueLeave)
-	c.cbb = trueLeave
+	trueLeave := c.builder().newBlock()
+	c.builder().withBlock(leaveBlock, func() { c.builder().CreateBr(trueLeave) })
+	c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(trueLeave) })
+	c.builder().setBlock(trueLeave)
 
-	c.curLoopScope, c.curLeaveBlock, c.curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
+	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitBreakContinueStmt(s *ast.BreakContinueStmt) ast.VisitResult {
-	c.exitNestedScopes(c.curLoopScope)
-	c.commentNode(c.cbb, s, "")
+	c.exitNestedScopes(c.builder().curLoopScope)
 	if s.Tok.Type == token.VERLASSE {
-		c.cbb.NewBr(c.curLeaveBlock)
-		c.cbb = c.cf.NewBlock("")
-		return ast.VisitRecurse
+		c.builder().CreateBr(c.builder().curLeaveBlock)
+	} else {
+		c.builder().CreateBr(c.builder().curContinueBlock)
 	}
-	c.cbb.NewBr(c.curContinueBlock)
-	c.cbb = c.cf.NewBlock("")
+	c.builder().setBlock(c.builder().newBlock())
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	exitScopeReturn := func() {
-		for scp := c.scp; scp != c.cfscp; scp = scp.enclosing {
+		for scp := c.builder().scp; scp != c.builder().scp; scp = scp.enclosing {
 			for _, Var := range scp.variables {
 				if !Var.isRef {
 					c.freeNonPrimitive(Var.val, Var.typ)
@@ -2808,8 +2749,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 
 	if s.Value == nil {
 		exitScopeReturn()
-		c.commentNode(c.cbb, s, "")
-		c.cbb.NewRet(nil)
+		c.builder().CreateRet(llvm.Value{})
 		return ast.VisitRecurse
 	}
 	val, valTyp, isTemp := c.evaluate(s.Value)
@@ -2822,12 +2762,12 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
 
 			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
-			c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
-			c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
-			c.cbb.NewRet(nil)
+			c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, ""), c.builder().params[0].val)
+			c.claimOrCopy(c.builder().params[0].val, val, valTyp, isTemp)
+			c.builder().CreateRet(llvm.Value{})
 		} else {
 			// normal return
-			c.cbb.NewRet(val)
+			c.builder().CreateRet(val)
 		}
 	} else {
 		// implicit cast to any if required
@@ -2835,30 +2775,24 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
 		}
 
-		c.cbb.NewStore(c.cbb.NewLoad(valTyp.IrType(), val), c.cf.Params[0])
-		c.claimOrCopy(c.cf.Params[0], val, valTyp, isTemp)
-		c.cbb.NewRet(nil)
+		c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, ""), c.builder().params[0].val)
+		c.claimOrCopy(c.builder().params[0].val, val, valTyp, isTemp)
+		c.builder().CreateRet(llvm.Value{})
 	}
 	exitScopeReturn()
-	c.commentNode(c.cbb, s, "")
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
 	line, column := int64(stmt.Token().Range.Start.Line), int64(stmt.Token().Range.Start.Column)
-	c.runtime_error(1, c.todo_error_string, newInt(line), newInt(column))
-}
-
-func (c *compiler) VisitTodoStmt(stmt *ast.TodoStmt) ast.VisitResult {
-	line, column := int64(stmt.Token().Range.Start.Line), int64(stmt.Token().Range.Start.Column)
-	c.runtime_error(1, c.todo_error_string, newInt(line), newInt(column))
+	c.runtime_error(1, c.todo_error_string, c.newInt(line), c.newInt(column))
 	return ast.VisitRecurse
 }
 
 // exits all scopes until the current function scope
 // frees all scp.non_primitives
 func (c *compiler) exitNestedScopes(targetScope *scope) {
-	for scp := c.scp; scp != targetScope.enclosing; scp = c.exitScope(scp) {
+	for scp := c.builder().scp; scp != targetScope.enclosing; scp = c.exitScope(scp) {
 	}
 }
 
@@ -2870,35 +2804,18 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 
 	ir_type := c.toIrType(d.Type)
 
-	// see equivalent in runtime/include/ddptypes.h
-	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
-		ddpint, // ddpint type_size
-		ptr(types.NewFunc(types.Void, ir_type.PtrType())),                    // free_func_ptr free_func
-		ptr(types.NewFunc(types.Void, ir_type.PtrType(), ir_type.PtrType())), // deep_copy_func_ptr deep_copy_func
-		ptr(types.NewFunc(ddpbool, ir_type.PtrType(), ir_type.PtrType())),    // equal_func_ptr equal_func
-	))
+	vtable := llvm.AddGlobal(c.llmod, c.ptr, name+"_vtable")
+	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	var vtable *ir.Global
-	if declarationOnly {
-		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
-		vtable.Linkage = enum.LinkageExternal
-		vtable.Visibility = enum.VisibilityDefault
-	} else {
-		if ir_type.IsPrimitive() {
-			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-				newInt(int64(c.getTypeSize(ir_type))),
-				constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
-				constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
-				constant.NewNull(vtable_type.(*types.StructType).Fields[3].(*types.PointerType)),
-			))
-		} else {
-			vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-				newInt(int64(c.getTypeSize(ir_type))),
-				ir_type.FreeFunc(),
-				ir_type.DeepCopyFunc(),
-				ir_type.EqualsFunc(),
-			))
-		}
+	if !declarationOnly {
+		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+			llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
+			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
+		}, false))
 	}
+
 	c.typeDefVTables[name] = vtable
 }

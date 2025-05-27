@@ -138,10 +138,10 @@ signature:
 c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
 func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false))
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false), []string{"ret", "count"})
 	defer c.disposeAndPop()
 
-	ret, count := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
+	ret, count := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -166,7 +166,7 @@ func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationO
 
 	c.builder().CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -181,10 +181,10 @@ signature:
 c.void.IrType() ddp_free_x(x* list)
 */
 func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), []string{"p"})
 	defer c.disposeAndPop()
 
-	list := llFuncBuilder.llFn.Param(0)
+	list := llFuncBuilder.params[0].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -211,7 +211,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 
 	c.builder().CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -226,10 +226,10 @@ signature:
 c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
 func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), []string{"ret", "p"})
 	defer c.disposeAndPop()
 
-	ret, list := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
+	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -273,7 +273,7 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 
 	llFuncBuilder.CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -286,10 +286,10 @@ signature:
 bool ddp_x_equal(x* list1, x* list2)
 */
 func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false))
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), []string{"l1, l2"})
 	defer c.disposeAndPop()
 
-	list1, list2 := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
+	list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -343,7 +343,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 		llFuncBuilder.CreateRet(c.True)
 	}
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -356,11 +356,11 @@ signature:
 void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false))
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false), []string{"ret", "l", "i1", "i2"})
 	defer c.disposeAndPop()
 
-	ret, list := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1)
-	index1, index2 := llFuncBuilder.llFn.Param(2), llFuncBuilder.llFn.Param(3)
+	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
+	index1, index2 := llFuncBuilder.params[2].val, llFuncBuilder.params[3].val
 
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -460,7 +460,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	llFuncBuilder.CreateRet(llvm.Value{})
 
-	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn)
+	c.insertFunction(llFuncBuilder.fnName, nil, llFuncBuilder.llFn, llFuncBuilder)
 	return llFuncBuilder.llFn
 }
 
@@ -511,16 +511,16 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	finish := func() llvm.Value {
 		c.builder().CreateRet(llvm.Value{})
 
-		c.insertFunction(c.builder().fnName, nil, c.builder().llFn)
+		c.insertFunction(c.builder().fnName, nil, c.builder().llFn, c.builder())
 		return c.builder().llFn
 	}
 
 	// defines the list_list_verkettet function
 	list_list_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false))
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false), []string{"ret", "list1", "list2"})
 		defer c.disposeAndPop()
 
-		ret, list1, list2 := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1), llFuncBuilder.llFn.Param(2)
+		ret, list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
 
 		if declarationOnly {
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -562,10 +562,10 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	list_scalar_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false))
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false), []string{"ret", "list", "scal"})
 		defer c.disposeAndPop()
 
-		ret, list, scal := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1), llFuncBuilder.llFn.Param(2)
+		ret, list, scal := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
 
 		if declarationOnly {
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -597,10 +597,10 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	scalar_scalar_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false))
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false), []string{"ret", "scal1", "scal2"})
 		defer c.disposeAndPop()
 
-		ret, scal1, scal2 := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1), llFuncBuilder.llFn.Param(2)
+		ret, scal1, scal2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
 
 		if declarationOnly {
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
@@ -637,10 +637,10 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	scalar_list_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false))
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false), []string{"ret", "scal", "list"})
 		defer c.disposeAndPop()
 
-		ret, scal, list := llFuncBuilder.llFn.Param(0), llFuncBuilder.llFn.Param(1), llFuncBuilder.llFn.Param(2)
+		ret, scal, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
 
 		if declarationOnly {
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)

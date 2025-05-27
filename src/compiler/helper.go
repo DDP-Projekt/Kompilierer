@@ -228,3 +228,11 @@ func (c *compiler) compare_values(lhs, rhs llvm.Value, typ ddpIrType) llvm.Value
 	c.builder().latestReturnType = c.ddpbooltyp
 	return c.builder().latestReturn
 }
+
+// converts b to 1 or 0
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

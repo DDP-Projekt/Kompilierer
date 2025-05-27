@@ -133,10 +133,7 @@ func Compile(options Options) (result *Result, err error) {
 		if err != nil {
 			return nil, err
 		}
-		comp_result, err := compiler.compile(true)
-		if err != nil {
-			return nil, err
-		}
+		comp_result := compiler.compile(true)
 		defer comp_result.llContext.Dispose()
 
 		// early return
