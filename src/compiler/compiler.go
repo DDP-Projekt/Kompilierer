@@ -54,7 +54,7 @@ func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Re
 	}
 
 	// compile this module
-	compiler, err := newCompiler(mod, errHndl, optimizationLevel)
+	compiler, err := newCompiler(mod.FileName, mod, errHndl, optimizationLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -165,12 +165,12 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
+func newCompiler(name string, module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
 
-	context, err := newllvmModuleContext(module.FileName)
+	context, err := newllvmModuleContext(name)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating llvmModuleContext: %w", context)
 	}
@@ -265,6 +265,12 @@ func (c *compiler) compile(isMainModule bool) (result *Result) {
 // dumps only the definitions for inbuilt list types to w
 func (c *compiler) dumpListDefinitions() llvmModuleContext {
 	defer compiler_panic_wrapper(c)
+
+	c.pushBuilder(&llBuilder{
+		c:       c,
+		Builder: c.llctx.NewBuilder(),
+		scp:     newScope(nil),
+	})
 
 	c.setupErrorStrings()
 	// the order of these function calls is important

@@ -129,7 +129,7 @@ func Compile(options Options) (result *Result, err error) {
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 
 	if !options.LinkInModules {
-		compiler, err := newCompiler(ddp_main_module, options.ErrorHandler, options.OptimizationLevel)
+		compiler, err := newCompiler(ddp_main_module.FileName, ddp_main_module, options.ErrorHandler, options.OptimizationLevel)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +254,7 @@ func Compile(options Options) (result *Result, err error) {
 func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) (err error) {
 	defer panic_wrapper(&err)
 
-	compiler, err := newCompiler(&ast.Module{FileName: ddppath.LIST_DEFS_NAME}, errorHandler, optimizationLevel)
+	compiler, err := newCompiler(ddppath.LIST_DEFS_NAME, nil, errorHandler, optimizationLevel)
 	if err != nil {
 		return err
 	}

@@ -666,7 +666,7 @@ func (t Type) StructElementTypes() []Type {
 }
 
 func (t Type) StructElementTypeAtIndex(i int) (r Type) {
-	r.C = C.LLVMStructGetTypeAtIndex(t, C.unsigned(i))
+	r.C = C.LLVMStructGetTypeAtIndex(t.C, C.unsigned(i))
 	return r
 }
 
@@ -1219,8 +1219,8 @@ func (v Value) BasicBlocks() []BasicBlock {
 	return out
 }
 
-func (bb BasicBlock) Terminator() (term BasicBlock) {
-	term.C = C.LLVMGetBasicBlockTerminator()
+func (bb BasicBlock) Terminator() (term Value) {
+	term.C = C.LLVMGetBasicBlockTerminator(bb.C)
 	return term
 }
 

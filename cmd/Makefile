@@ -36,7 +36,7 @@ GCCVERSIONFULL := $(shell gcc --version | head -n1)
 KDDP_LDFLAGS := "-s -w -X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'"
 
 kddp: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
-kddp: export CGO_CXXFLAGS = -std=c++14
+kddp: export CGO_CXXFLAGS = -std=c++17 -O2
 kddp: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS)
 
 all: kddp ddp-setup
