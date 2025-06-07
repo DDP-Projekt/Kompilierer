@@ -54,76 +54,70 @@ func (target *llTarget) Dispose() {
 // all variables needed
 // to use llvm
 // needs to be disposed after use
-type llvmModuleContext struct {
+type llvmTargetContext struct {
 	llTarget
 	llctx llvm.Context
-	llmod llvm.Module
 }
 
-func newllvmModuleContext(moduleName string) (llctx llvmModuleContext, err error) {
+func (llctx *llvmTargetContext) newModule(name string) llvm.Module {
+	mod := llctx.llctx.NewModule(name)
+	mod.SetDataLayout(llctx.llTargetData.String())
+	mod.SetTarget(llctx.llTargetMachine.Triple())
+	return mod
+}
+
+func newllvmModuleContext(moduleName string) (llctx llvmTargetContext, err error) {
 	target, err := newllvmTarget()
 	if err != nil {
-		return llvmModuleContext{}, err
+		return llvmTargetContext{}, err
 	}
 
-	llctx = llvmModuleContext{}
+	llctx = llvmTargetContext{}
 	llctx.llTarget = *target
 
 	llctx.llctx = llvm.NewContext()
-	llctx.llmod = llctx.llctx.NewModule(moduleName)
-	llctx.llmod.SetDataLayout(llctx.llTargetData.String())
-	llctx.llmod.SetTarget(llctx.llTargetMachine.Triple())
 
 	return llctx, nil
 }
 
-func newllvmModuleContextFromIR(name string, llvm_ir []byte) (llvmModuleContext, error) {
-	target, err := newllvmTarget()
-	if err != nil {
-		return llvmModuleContext{}, err
-	}
-
-	llctx := llvmModuleContext{}
-	llctx.llTarget = *target
-
-	llctx.llctx = llvm.NewContext()
-
+func (llctx *llvmTargetContext) parseIR(llvm_ir []byte) (llvm.Module, error) {
 	buf := llvm.NewMemoryBufferFromRangeCopy(llvm_ir)
 
-	if llctx.llmod, err = llctx.llctx.ParseIR(buf); err != nil {
-		return llctx, fmt.Errorf("could not parse llvm ir: %w", err)
+	mod, err := llctx.llctx.ParseIR(buf)
+	if err != nil {
+		return llvm.Module{}, fmt.Errorf("could not parse llvm ir: %w", err)
 	}
 
-	llctx.llmod.SetDataLayout(llctx.llTargetData.String())
-	llctx.llmod.SetTarget(llctx.llTargetMachine.Triple())
+	mod.SetDataLayout(llctx.llTargetData.String())
+	mod.SetTarget(llctx.llTargetMachine.Triple())
 
-	return llctx, nil
+	return mod, nil
 }
 
-func (llctx *llvmModuleContext) Dispose() {
+func (llctx *llvmTargetContext) Dispose() {
 	llctx.llTarget.Dispose()
-	if !llctx.llmod.IsNil() {
-		llctx.llmod.Dispose()
-	}
 	llctx.llctx.Dispose()
 }
 
-func newllvmModuleContextFromListDefs() (llvmModuleContext, error) {
+func parseListDefsIntoContext(llctx *llvmTargetContext) (llvm.Module, error) {
 	list_defs_ir, err := os.ReadFile(ddppath.DDP_List_Types_Defs_LL)
 	if err != nil {
-		return llvmModuleContext{}, fmt.Errorf("could not read list_defs: %w", err)
+		return llvm.Module{}, fmt.Errorf("could not read list_defs: %w", err)
 	}
-	return newllvmModuleContextFromIR(ddppath.DDP_List_Types_Defs_LL, list_defs_ir)
+	return llctx.parseIR(list_defs_ir)
 }
 
 // optimizes the given module and returns any error
-func (llctx *llvmModuleContext) optimizeModule() error {
-	return llctx.llmod.RunPasses("default<O2>", llctx.llTargetMachine, llvm.NewPassBuilderOptions())
+func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
+	options := llvm.NewPassBuilderOptions()
+	defer options.Dispose()
+	options.SetVerifyEach(true) // TODO: only do this in debug mode as it is expensive
+	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
 }
 
 // compiles the module to w and returns w.Write
-func (llctx *llvmModuleContext) compileModule(fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
-	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(llctx.llmod, fileType)
+func (llctx *llvmTargetContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
+	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(mod, fileType)
 	if err != nil {
 		return 0, fmt.Errorf("could not compile module to memory buffer: %w", err)
 	}
@@ -135,15 +129,14 @@ func (llctx *llvmModuleContext) compileModule(fileType llvm.CodeGenFileType, w i
 // links all sources into dest, destroying them
 // in case of failure, all sources that were not used yet are disposed
 // and dest should not be used
-func llvmLinkAllModules(dest llvmModuleContext, sources []*llvmModuleContext) error {
+func llvmLinkAllModules(dest llvm.Module, sources []llvm.Module) error {
 	for i, src := range sources {
-		if err := llvm.LinkModules(dest.llmod, src.llmod); err != nil {
+		if err := llvm.LinkModules(dest, src); err != nil {
 			for _, mod := range sources[i+1:] {
 				mod.Dispose()
 			}
 			return err
 		}
-		src.llmod = llvm.Module{}
 	}
 	return nil
 }

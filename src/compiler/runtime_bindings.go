@@ -86,8 +86,9 @@ func (c *compiler) initRuntimeFunctions() {
 // helper functions to use the runtime-bindings
 
 func (c *compiler) runtime_error(exit_code int, fmt llvm.Value, args ...llvm.Value) {
-	args = append([]llvm.Value{c.newInt(int64(exit_code)), fmt}, args...)
-	c.builder().CreateCall(c.void, ddp_runtime_error_irfun, args, "")
+	strPtr := llvm.ConstInBoundsGEP(fmt.GlobalValueType(), fmt, []llvm.Value{c.zero, c.zero})
+	args = append([]llvm.Value{c.newInt(int64(exit_code)), c.builder().CreateBitCast(strPtr, c.ptr, "")}, args...)
+	c.builder().createCall(ddp_runtime_error_irfun, args...)
 	c.builder().CreateUnreachable()
 }
 
@@ -97,7 +98,7 @@ func (c *compiler) out_of_bounds_error(line, column, index, len llvm.Value) {
 
 // calls ddp_reallocate from the runtime
 func (c *compiler) ddp_reallocate(pointer, oldSize, newSize llvm.Value) llvm.Value {
-	return c.builder().CreateCall(c.ptr, ddp_reallocate_irfun, []llvm.Value{pointer, oldSize, newSize}, "")
+	return c.builder().createCall(ddp_reallocate_irfun, pointer, oldSize, newSize)
 }
 
 // dynamically allocates a single value of type typ
@@ -134,7 +135,7 @@ func (c *compiler) freeArr(elementType llvm.Type, ptr, n llvm.Value) {
 // wraps the memcpy function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *compiler) memcpy(dest, src, n llvm.Value) llvm.Value {
-	return c.builder().CreateCall(c.ptr, _libc_memcpy_irfun, []llvm.Value{dest, src, n}, "")
+	return c.builder().createCall(_libc_memcpy_irfun, dest, src, n)
 }
 
 // wraps memcpy for a array, where n is the length of the array in src
@@ -146,7 +147,7 @@ func (c *compiler) memcpyArr(elementType llvm.Type, dest, src, n llvm.Value) llv
 // wraps the memmove function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *compiler) memmove(dest, src, n llvm.Value) llvm.Value {
-	return c.builder().CreateCall(c.ptr, _libc_memmove_irfun, []llvm.Value{dest, src, n}, "")
+	return c.builder().createCall(_libc_memmove_irfun, dest, src, n)
 }
 
 // wraps memmove for a array, where n is the length of the array in src
@@ -156,5 +157,5 @@ func (c *compiler) memmoveArr(elementType llvm.Type, dest, src, n llvm.Value) ll
 }
 
 func (c *compiler) memcmp(buf1, buf2, size llvm.Value) llvm.Value {
-	return c.builder().CreateCall(c.ptr, _libc_memcmp_irfun, []llvm.Value{buf1, buf2, size}, "")
+	return c.builder().createCall(_libc_memcmp_irfun, buf1, buf2, size)
 }

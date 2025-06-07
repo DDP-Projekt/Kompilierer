@@ -15,31 +15,28 @@ import (
 // compiles a mainModule and all it's imports
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
-// returns:
-//   - a set of all external dependendcies
-//   - an error
-func compileWithImports(mod *ast.Module, resultConsumer func(*ast.Module, *Result),
+func compileWithImports(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
 	errHndl ddperror.Handler, optimizationLevel uint,
-) (map[string]struct{}, error) {
-	compiledMods := map[string]*ast.Module{}
+) (map[*ast.Module]Result, map[string]struct{}, error) {
+	compiledMods := map[*ast.Module]Result{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, resultConsumer, compiledMods, dependencies, true, errHndl, optimizationLevel)
+	return compileWithImportsRec(mod, contextCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
 }
 
-func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Result),
-	compiledMods map[string]*ast.Module, dependencies map[string]struct{},
+func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
+	compiledMods map[*ast.Module]Result, dependencies map[string]struct{},
 	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
-) (map[string]struct{}, error) {
+) (map[*ast.Module]Result, map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
-		return nil, fmt.Errorf("Fehlerhafter Quellcode im Modul '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
+		return compiledMods, dependencies, fmt.Errorf("Fehlerhafter Quellcode im Modul '%s', Kompilierung abgebrochen", mod.GetIncludeFilename())
 	}
 
 	// check if the module was already compiled
-	if _, alreadyCompiled := compiledMods[mod.FileName]; !alreadyCompiled {
-		compiledMods[mod.FileName] = mod // add the module to the set
+	if _, alreadyCompiled := compiledMods[mod]; !alreadyCompiled {
+		compiledMods[mod] = Result{} // add the module to the set
 	} else {
-		return dependencies, nil // break the recursion if the module was already compiled
+		return compiledMods, dependencies, nil // break the recursion if the module was already compiled
 	}
 
 	// add the external dependencies
@@ -53,24 +50,28 @@ func compileWithImportsRec(mod *ast.Module, resultConsumer func(*ast.Module, *Re
 		dependencies[path] = struct{}{}
 	}
 
-	// compile this module
-	compiler, err := newCompiler(mod.FileName, mod, errHndl, optimizationLevel)
+	context, err := contextCreator(mod)
 	if err != nil {
-		return nil, err
+		return compiledMods, dependencies, fmt.Errorf("Fehler beim erstellen des LLVM Context: %w", err)
 	}
-	result := compiler.compile(isMainModule)
-	resultConsumer(mod, result)
+
+	// compile this module
+	compiler, err := newCompiler(mod.FileName, mod, context, errHndl, optimizationLevel)
+	if err != nil {
+		return compiledMods, dependencies, err
+	}
+	compiledMods[mod] = compiler.compile(isMainModule)
 
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if _, err := compileWithImportsRec(imprtMod, resultConsumer, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
-				return nil, err
+			if r, d, err := compileWithImportsRec(imprtMod, contextCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+				return r, d, err
 			}
 		}
 	}
 
-	return dependencies, nil
+	return compiledMods, dependencies, nil
 }
 
 // small wrapper for a ast.FuncDecl and the corresponding ir function
@@ -99,9 +100,9 @@ func newLLTypes(llctx llvm.Context) llTypes {
 		i64:      i64,
 		ddpint:   i64,
 		ddpfloat: llctx.DoubleType(),
-		ddpbyte:  llctx.Int8Type(),
+		ddpbyte:  i8,
 		ddpbool:  llctx.Int1Type(),
-		ddpchar:  llctx.Int32Type(),
+		ddpchar:  i32,
 		vtable_type: llctx.StructType([]llvm.Type{
 			i64,
 			ptr,
@@ -131,11 +132,12 @@ func newLLConstants(types llTypes) llConstants {
 
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
-	llvmModuleContext
+	llvmTargetContext
+	llmod             llvm.Module
 	ddpModule         *ast.Module      // the module to be compiled
 	errorHandler      ddperror.Handler // errors are passed to this function
 	optimizationLevel uint             // level of optimization
-	result            *Result          // result of the compilation
+	result            Result           // result of the compilation
 
 	builderStack    []*llBuilder
 	functions       map[string]*funcWrapper                   // all the global functions
@@ -165,26 +167,25 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(name string, module *ast.Module, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
+func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
 
-	context, err := newllvmModuleContext(name)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating llvmModuleContext: %w", context)
-	}
+	llmod := ctx.newModule(name)
 
-	types := newLLTypes(context.llctx)
+	types := newLLTypes(ctx.llctx)
 	constants := newLLConstants(types)
 
 	return &compiler{
-		llvmModuleContext: context,
+		llvmTargetContext: ctx,
+		llmod:             llmod,
 		ddpModule:         module,
 		errorHandler:      errorHandler,
 		optimizationLevel: optimizationLevel,
-		result: &Result{
+		result: Result{
 			Dependencies: make(map[string]struct{}),
+			llMod:        llmod,
 		},
 
 		functions:       make(map[string]*funcWrapper),
@@ -202,7 +203,7 @@ func newCompiler(name string, module *ast.Module, errorHandler ddperror.Handler,
 // if w is not nil, the resulting llir is written to w
 // otherwise a string representation is returned in result
 // if isMainModule is false, no ddp_main function will be generated
-func (c *compiler) compile(isMainModule bool) (result *Result) {
+func (c *compiler) compile(isMainModule bool) Result {
 	defer compiler_panic_wrapper(c)
 
 	c.addExternalDependencies()
@@ -217,7 +218,7 @@ func (c *compiler) compile(isMainModule bool) (result *Result) {
 
 	if isMainModule {
 		c.disposeAndPop()
-		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.llctx.Int64Type(), nil, false), nil)
+		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, false)
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
@@ -247,23 +248,26 @@ func (c *compiler) compile(isMainModule bool) (result *Result) {
 		for mod := range c.importedModules {
 			_, dispose_name := getModuleInitDisposeName(mod)
 			dispose_fun := c.functions[dispose_name]
-			c.builder().CreateCall(c.void, dispose_fun.irFunc, nil, "")
+			c.builder().createCall(dispose_fun.irFunc)
 		}
 		// on success ddpmain returns 0
 		c.builder().CreateRet(c.zero)
 	}
 
-	c.moduleInitBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
+	c.moduleInitBuilder.CreateRet(llvm.Value{})    // terminate the module_init func
+	c.moduleDisposeBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
 
 	for _, wrapper := range c.functions {
-		wrapper.llFuncBuilder.Dispose()
+		if wrapper.llFuncBuilder != nil {
+			wrapper.llFuncBuilder.Dispose()
+		}
 	}
 
 	return c.result
 }
 
 // dumps only the definitions for inbuilt list types to w
-func (c *compiler) dumpListDefinitions() llvmModuleContext {
+func (c *compiler) dumpListDefinitions() llvm.Module {
 	defer compiler_panic_wrapper(c)
 
 	c.pushBuilder(&llBuilder{
@@ -284,7 +288,7 @@ func (c *compiler) dumpListDefinitions() llvmModuleContext {
 	c.ddpany = c.defineAnyType()
 	c.setupListTypes(false) // we want definitions
 
-	return c.llvmModuleContext
+	return c.llmod
 }
 
 func (c *compiler) addExternalDependencies() {
@@ -350,10 +354,15 @@ func (c *compiler) setup() {
 // used in setup()
 func (c *compiler) setupErrorStrings() {
 	createErrorString := func(msg string) llvm.Value {
-		error_string := c.builder().CreateGlobalString(msg, "")
-		// error_string.SetLinkage(llvm.InternalLinkage)
-		// error_string.SetVisibility(llvm.DefaultVisibility)
+		str := llvm.ConstString(msg, true)
+		error_string := llvm.AddGlobal(c.llmod, str.Type(), "")
+		error_string.SetLinkage(llvm.InternalLinkage)
+		error_string.SetVisibility(llvm.DefaultVisibility)
 		error_string.SetGlobalConstant(true)
+		error_string.SetLinkage(llvm.PrivateLinkage)
+		error_string.SetUnnamedAddr(true)
+		error_string.SetAlignment(1)
+		error_string.SetInitializer(str)
 		return error_string
 	}
 
@@ -389,11 +398,11 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
@@ -414,7 +423,7 @@ func (c *compiler) setupOperators() {
 // deep copies the value pointed to by src into dest
 // and returns dest
 func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value {
-	dest = c.builder().CreateCall(c.void, typ.DeepCopyFunc(), []llvm.Value{dest, src}, "")
+	dest = c.builder().createCall(typ.DeepCopyFunc(), dest, src)
 	return dest
 }
 
@@ -422,7 +431,7 @@ func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value 
 // if typ.IsPrimitive() == false
 func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 	if !typ.IsPrimitive() {
-		c.builder().CreateCall(c.void, typ.FreeFunc(), []llvm.Value{val}, "")
+		c.builder().createCall(typ.FreeFunc(), val)
 	}
 }
 
@@ -614,7 +623,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		paramNames = append(paramNames, param.Name.Literal)
 	}
 
-	llFuncBuilder := c.newBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames)
+	llFuncBuilder := c.newBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, ast.IsExternFunc(decl))
 	// make private functions static like in C
 	// commented out because of generics where private functions might be called
 	// from a different module
@@ -645,6 +654,7 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 // helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
 func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool, decl *ast.FuncDecl) {
 	llFuncBuilder.scp = newScope(c.builder().scp)
+	llFuncBuilder.fnScope = llFuncBuilder.scp
 	c.pushBuilder(llFuncBuilder)
 	defer c.popBuilder()
 
@@ -691,23 +701,27 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 			break
 		}
 	}
+
+	// don't overwrite a possible return
+	if !c.builder().cb.Terminator().IsNil() {
+		c.builder().SetInsertPointBefore(c.builder().cb.LastInstruction())
+	}
+
 	// free the local variables of the function
+	// then
+	// free the parameters of the function
 	if toplevelReturn {
+		c.builder().scp = c.builder().scp.enclosing
 		c.builder().scp = c.builder().scp.enclosing
 	} else {
 		c.builder().scp = c.exitScope(c.builder().scp)
+		c.builder().scp = c.exitFuncScope(decl)
 	}
 
 	if c.builder().cb.Terminator().IsNil() {
 		c.builder().CreateRet(llvm.Value{}) // every block needs a terminator, and every function a return
 	}
 
-	// free the parameters of the function
-	if toplevelReturn {
-		c.builder().scp = c.builder().scp.enclosing
-	} else {
-		c.builder().scp = c.exitFuncScope(decl)
-	}
 	c.popBuilder()
 }
 
@@ -760,7 +774,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 		lhs, lhsTyp, _ := c.evaluate(stringIndexing.Lhs)
 		index, _, _ := c.evaluate(stringIndexing.Index)
 		lhs = c.floatOrByteAsInt(lhs, lhsTyp)
-		c.builder().latestReturn = c.builder().CreateCall(c.ddpchar, c.ddpstring.indexIrFun, []llvm.Value{lhs, index}, "")
+		c.builder().latestReturn = c.builder().createCall(c.ddpstring.indexIrFun, lhs, index)
 		c.builder().latestReturnType = c.ddpchartyp
 		// c.builder().latestIsTemp = false // it is a primitive typ, so we don't care
 		return ast.VisitRecurse
@@ -825,7 +839,7 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 		c.builder().CreateStore(c.ddpstring.DefaultValue(), dest)
 	} else {
 		constStr := c.builder().CreateGlobalString(e.Value, "")
-		c.builder().CreateCall(c.void, c.ddpstring.fromConstantsIrFun, []llvm.Value{dest, constStr}, "")
+		c.builder().createCall(c.ddpstring.fromConstantsIrFun, dest, constStr)
 	}
 	c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, c.ddpstring) // so that it is freed later
 	c.builder().latestIsTemp = true
@@ -852,7 +866,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	}
 
 	// create a empty list of the correct length
-	c.builder().CreateCall(c.void, listType.fromConstantsIrFun, []llvm.Value{list, listLen}, "")
+	c.builder().createCall(listType.fromConstantsIrFun, list, listLen)
 
 	listArr := c.loadStructField(listType.typ, list, list_arr_field_index) // load the array
 
@@ -931,7 +945,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 			c.err("invalid Parameter Type for NEGATE: %s", typ.Name())
 		}
 	case ast.UN_NOT:
-		c.builder().latestReturn = c.builder().CreateXor(rhs, c.newInt(1), "")
+		c.builder().latestReturn = c.builder().CreateXor(rhs, c.newIntT(c.ddpbool, 1), "")
 		c.builder().latestReturnType = c.ddpbooltyp
 	case ast.UN_LOGIC_NOT:
 		switch typ {
@@ -945,7 +959,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	case ast.UN_LEN:
 		switch typ {
 		case c.ddpstring:
-			c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.ddpstring.lengthIrFun, []llvm.Value{rhs}, "")
+			c.builder().latestReturn = c.builder().createCall(c.ddpstring.lengthIrFun, rhs)
 		default:
 			if listTyp, isList := typ.(*ddpIrListType); isList {
 				c.builder().latestReturn = c.loadStructField(listTyp.typ, rhs, list_len_field_index)
@@ -1115,7 +1129,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			rhs = c.deepCopyInto(dest, rhs, rhsTyp)
 		}
 
-		c.builder().CreateCall(c.void, concat_func, []llvm.Value{result, lhs, rhs}, "")
+		c.builder().createCall(concat_func, result, lhs, rhs)
 		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(result, resultTyp)
 		c.builder().latestIsTemp = true
 	case ast.BIN_PLUS:
@@ -1316,7 +1330,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	case ast.BIN_INDEX:
 		switch lhsTyp {
 		case c.ddpstring:
-			c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.ddpstring.indexIrFun, []llvm.Value{lhs, c.floatOrByteAsInt(rhs, rhsTyp)}, "")
+			c.builder().latestReturn = c.builder().createCall(c.ddpstring.indexIrFun, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			c.builder().latestReturnType = c.ddpchartyp
 		default:
 			if listType, isList := lhsTyp.(*ddpIrListType); isList {
@@ -1363,18 +1377,18 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		switch lhsTyp {
 		case c.ddpstring:
 			if e.Operator == ast.BIN_SLICE_FROM {
-				str_len := c.builder().CreateCall(c.ddpint, c.ddpstring.lengthIrFun, []llvm.Value{lhs}, "")
-				c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, rhs, str_len}, "")
+				str_len := c.builder().createCall(c.ddpstring.lengthIrFun, lhs)
+				c.builder().createCall(c.ddpstring.sliceIrFun, dest, lhs, rhs, str_len)
 			} else {
-				c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, c.newInt(1), rhs}, "")
+				c.builder().createCall(c.ddpstring.sliceIrFun, dest, lhs, c.newInt(1), rhs)
 			}
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
 				if e.Operator == ast.BIN_SLICE_FROM {
 					lst_len := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
-					c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, rhs, lst_len}, "")
+					c.builder().createCall(listTyp.sliceIrFun, dest, lhs, rhs, lst_len)
 				} else {
-					c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, c.newInt(1), rhs}, "")
+					c.builder().createCall(listTyp.sliceIrFun, dest, lhs, c.newInt(1), rhs)
 				}
 			} else {
 				c.err("invalid Parameter Types for %s (%s, %s)", e.Operator.String(), lhsTyp.Name(), rhsTyp.Name())
@@ -1401,8 +1415,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			c.err("invalid Parameter Types for HOCH (Rhs: %s)", lhsTyp.Name())
 		}
-		llFuncBuilder := c.functions["pow"].llFuncBuilder
-		c.builder().latestReturn = c.builder().CreateCall(llFuncBuilder.llFnType.ReturnType(), llFuncBuilder.llFn, []llvm.Value{lhs, rhs}, "")
+		irFunc := c.functions["pow"].irFunc
+		c.builder().latestReturn = c.builder().createCall(irFunc, lhs, rhs)
 		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_LOG:
 		switch lhsTyp {
@@ -1423,9 +1437,9 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		default:
 			c.err("invalid Parameter Types for Logarithmus (Rhs: %s)", lhsTyp.Name())
 		}
-		log10FuncBuilder := c.functions["log10"].llFuncBuilder
-		log10_num := c.builder().CreateCall(log10FuncBuilder.llFnType.ReturnType(), log10FuncBuilder.llFn, []llvm.Value{lhs}, "")
-		log10_base := c.builder().CreateCall(log10FuncBuilder.llFnType.ReturnType(), log10FuncBuilder.llFn, []llvm.Value{rhs}, "")
+		irFunc := c.functions["log10"].irFunc
+		log10_num := c.builder().createCall(irFunc, lhs)
+		log10_base := c.builder().createCall(irFunc, rhs)
 		c.builder().latestReturn = c.builder().CreateFDiv(log10_num, log10_base, "")
 		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_LOGIC_AND:
@@ -1728,10 +1742,10 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
 		switch lhsTyp {
 		case c.ddpstring:
-			c.builder().CreateCall(c.void, c.ddpstring.sliceIrFun, []llvm.Value{dest, lhs, mid, rhs}, "")
+			c.builder().createCall(c.ddpstring.sliceIrFun, dest, lhs, mid, rhs)
 		default:
 			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-				c.builder().CreateCall(c.void, listTyp.sliceIrFun, []llvm.Value{dest, lhs, mid, rhs}, "")
+				c.builder().createCall(listTyp.sliceIrFun, dest, lhs, mid, rhs)
 			} else {
 				c.err("invalid Parameter Types for VONBIS (%s, %s, %s)", lhsTyp.Name(), midTyp.Name(), rhsTyp.Name())
 			}
@@ -1824,7 +1838,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 
 		listType := c.getListType(lhsTyp)
 		list := c.NewAlloca(listType.typ)
-		c.builder().CreateCall(c.void, listType.fromConstantsIrFun, []llvm.Value{list, c.newInt(1)}, "")
+		c.builder().createCall(listType.fromConstantsIrFun, list, c.newInt(1))
 		elementPtr := c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), c.zero)
 		c.claimOrCopy(elementPtr, lhs, lhsTyp, isTempLhs)
 		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(list, listType)
@@ -1847,12 +1861,12 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
 				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
-				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.zero, "")
+				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.False, "")
 				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpint, "")
 			case c.ddpchartyp:
 				c.builder().latestReturn = c.builder().CreateSExt(lhs, c.ddpint, "")
 			case c.ddpstring:
-				c.builder().latestReturn = c.builder().CreateCall(c.ddpint, c.functions["ddp_string_to_int"].irFunc, []llvm.Value{lhs}, "")
+				c.builder().latestReturn = c.builder().createCall(c.functions["ddp_string_to_int"].irFunc, lhs)
 			case c.ddpany:
 				primitiveAnyCast(c.ddpinttyp)
 			default:
@@ -1863,7 +1877,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
 				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpstring:
-				c.builder().latestReturn = c.builder().CreateCall(c.ddpfloat, c.functions["ddp_string_to_float"].irFunc, []llvm.Value{lhs}, "")
+				c.builder().latestReturn = c.builder().createCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			case c.ddpany:
 				primitiveAnyCast(c.ddpfloattyp)
 			default:
@@ -1874,12 +1888,12 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
 				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
 			case c.ddpbooltyp:
-				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.zero, "")
+				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.False, "")
 				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpbyte, "")
 			case c.ddpchartyp:
 				c.builder().latestReturn = c.builder().CreateTrunc(lhs, c.ddpbyte, "")
 			case c.ddpstring:
-				intVal := c.builder().CreateCall(c.ddpint, c.functions["ddp_string_to_int"].irFunc, []llvm.Value{lhs}, "")
+				intVal := c.builder().createCall(c.functions["ddp_string_to_int"].irFunc, lhs)
 				c.builder().latestReturn = c.builder().CreateTrunc(intVal, c.ddpbyte, "")
 			case c.ddpany:
 				primitiveAnyCast(c.ddpinttyp)
@@ -1941,7 +1955,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 				c.err("invalid Parameter Type for TEXT: %s", lhsTyp.Name())
 			}
 			dest := c.NewAlloca(c.ddpstring.typ)
-			c.builder().CreateCall(c.void, to_string_func, []llvm.Value{dest, lhs}, "")
+			c.builder().createCall(to_string_func, dest, lhs)
 			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(dest, c.ddpstring)
 			c.builder().latestIsTemp = true
 		case ddptypes.VARIABLE:
@@ -1980,7 +1994,7 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 			c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(result, resultType)
 		default:
 			irType := c.toIrType(e.Rhs)
-			var defaultValue llvm.Value = irType.DefaultValue()
+			defaultValue := irType.DefaultValue()
 			if !irType.IsPrimitive() {
 				dest := c.NewAlloca(irType.LLType())
 				c.builder().CreateStore(defaultValue, dest)
@@ -2119,9 +2133,9 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	// compile the actual function call
 	if irReturnType.IsPrimitive() {
-		c.builder().latestReturn = c.builder().CreateCall(fun.llFuncBuilder.llFnType.ReturnType(), fun.irFunc, args, "")
+		c.builder().latestReturn = c.builder().createCall(fun.irFunc, args...)
 	} else {
-		c.builder().CreateCall(fun.llFuncBuilder.llFnType.ReturnType(), fun.irFunc, args, "")
+		c.builder().createCall(fun.irFunc, args...)
 		c.builder().latestReturn, c.builder().latestReturnType = c.builder().scp.addTemporary(ret, irReturnType)
 		c.builder().latestIsTemp = true
 	}
@@ -2254,7 +2268,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames, true)
 	// declare it as extern function
 	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
@@ -2319,16 +2333,16 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
 
-			moduleInitBuilder := c.createBuilder(init_name, c.void, nil)
+			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, true)
 			moduleInitBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
 			c.insertFunction(moduleInitBuilder.fnName, nil, moduleInitBuilder.llFn, moduleInitBuilder)
 			if c.builder().isDDPMain() {
-				c.builder().CreateCall(c.void, moduleInitBuilder.llFn, nil, "") // only call this in main modules
+				c.builder().createCall(moduleInitBuilder.llFn) // only call this in main modules
 			}
 
-			moduleDisposeBuilder := c.createBuilder(dispose_name, c.void, nil)
+			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, true)
 			moduleDisposeBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleDisposeBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2353,7 +2367,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
 		index = c.floatOrByteAsInt(index, indexTyp)
-		c.builder().CreateCall(c.void, c.ddpstring.replaceCharIrFun, []llvm.Value{lhs, rhs, index}, "")
+		c.builder().createCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
 
@@ -2584,7 +2598,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	c.builder().setBlock(leaveBlock)
 	c.builder().scp = c.exitScope(c.builder().scp) // leave the scope
 
-	trueLeave, leaveBlock, breakLeave := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	trueLeave := c.builder().newBlock()
 	c.builder().setBlock(trueLeave)
 
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
@@ -2647,12 +2661,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.builder().setBlock(bodyBlock)
 	var num_bytes llvm.Value
 	if inTyp == c.ddpstring {
-		num_bytes = c.builder().CreateCall(c.ddpchar, utf8_string_to_char_irfun,
-			[]llvm.Value{
-				c.builder().CreateLoad(c.ptr, iter_ptr, ""),
-				loopVar.val,
-			},
-			"",
+		num_bytes = c.builder().createCall(utf8_string_to_char_irfun,
+			c.builder().CreateLoad(c.ptr, iter_ptr, ""),
+			loopVar.val,
 		)
 		c.createIfElse(c.builder().CreateICmp(llvm.IntEQ, num_bytes, c.all_ones, ""), func() {
 			line, column := int64(s.In.Token().Range.Start.Line), int64(s.In.Token().Range.Start.Column)
@@ -2810,17 +2821,18 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 
 	ir_type := c.toIrType(d.Type)
 
-	vtable := llvm.AddGlobal(c.llmod, c.ptr, name+"_vtable")
+	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
 	if !declarationOnly {
-		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+		vtable.SetGlobalConstant(true)
+		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
-		}, false))
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+		}))
 	}
 
 	c.typeDefVTables[name] = vtable

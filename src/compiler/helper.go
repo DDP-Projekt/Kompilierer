@@ -29,7 +29,13 @@ func (c *compiler) newFloat(f float64) llvm.Value {
 // because allocatin on c.cbb can cause stackoverflows in loops
 func (c *compiler) NewAlloca(elemType llvm.Type) llvm.Value {
 	cb := c.builder().cb
-	c.builder().SetInsertPointAtEnd(c.builder().llFn.FirstBasicBlock())
+	bb := c.builder().llFn.FirstBasicBlock()
+	firstInst := bb.FirstInstruction()
+	if !firstInst.IsNil() {
+		c.builder().SetInsertPointBefore(firstInst) // allocas may not override terminators
+	} else {
+		c.builder().SetInsertPointAtEnd(bb)
+	}
 	alloca := c.builder().CreateAlloca(elemType, "")
 	c.builder().SetInsertPointAtEnd(cb)
 	return alloca

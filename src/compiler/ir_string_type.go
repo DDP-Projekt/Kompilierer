@@ -81,13 +81,13 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	// declare all the external functions to work with strings
 
 	// allocates a buffer for ret and copies str into it
-	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, c.voidtyp.LLType(), c.ptr, c.ptr)
+	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, c.void, c.ptr, c.ptr)
 
 	// frees the given string
-	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", false, c.voidtyp.LLType(), c.ptr)
+	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", false, c.void, c.ptr)
 
 	// places a copy of str in ret allocating new buffers
-	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", false, c.voidtyp.LLType(), c.ptr, c.ptr)
+	ddpstring.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_string", false, c.void, c.ptr, c.ptr)
 
 	// checks wether the two strings are equal
 	ddpstring.equalsIrFun = c.declareExternalRuntimeFunction("ddp_string_equal", false, c.ddpbool, c.ptr, c.ptr)
@@ -99,31 +99,32 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.indexIrFun = c.declareExternalRuntimeFunction("ddp_string_index", false, c.ddpchar, c.ptr, c.ddpint)
 
 	// replaces the utf8-char at the index with ch
-	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("ddp_replace_char_in_string", false, c.voidtyp.LLType(), c.ptr, c.ddpchar, c.ddpint)
+	ddpstring.replaceCharIrFun = c.declareExternalRuntimeFunction("ddp_replace_char_in_string", false, c.void, c.ptr, c.ddpchar, c.ddpint)
 
-	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("ddp_string_slice", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ddpint, c.ddpint)
+	ddpstring.sliceIrFun = c.declareExternalRuntimeFunction("ddp_string_slice", false, c.void, c.ptr, c.ptr, c.ddpint, c.ddpint)
 
-	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_string_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ptr)
-	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_char_string_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ddpchar, c.ptr)
-	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_char_verkettet", false, c.voidtyp.LLType(), c.ptr, c.ptr, c.ddpchar)
+	ddpstring.str_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_string_verkettet", false, c.void, c.ptr, c.ptr, c.ptr)
+	ddpstring.char_str_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_char_string_verkettet", false, c.void, c.ptr, c.ddpchar, c.ptr)
+	ddpstring.str_char_concat_IrFunc = c.declareExternalRuntimeFunction("ddp_string_char_verkettet", false, c.void, c.ptr, c.ptr, c.ddpchar)
 
-	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpint)
-	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpfloat)
-	ddpstring.byte_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_byte_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpbyte)
-	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpbool)
-	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", false, c.voidtyp.LLType(), c.ptr, c.ddpchar)
+	ddpstring.int_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_int_to_string", false, c.void, c.ptr, c.ddpint)
+	ddpstring.float_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_float_to_string", false, c.void, c.ptr, c.ddpfloat)
+	ddpstring.byte_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_byte_to_string", false, c.void, c.ptr, c.ddpbyte)
+	ddpstring.bool_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_bool_to_string", false, c.void, c.ptr, c.ddpbool)
+	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", false, c.void, c.ptr, c.ddpchar)
 
-	vtable := llvm.AddGlobal(c.llmod, c.ptr, "ddpstring_vtable")
+	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, "ddpstring_vtable")
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
 	if !declarationOnly {
-		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+		vtable.SetGlobalConstant(true)
+		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
-		}, false))
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+		}))
 	}
 
 	ddpstring.vtable = vtable

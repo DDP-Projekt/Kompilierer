@@ -117,12 +117,10 @@ func (c *compiler) loadStructField(structType llvm.Type, structPtr llvm.Value, i
 // genFalseBody may be nil if no else is required
 // c.cbb and c.cf must be set/restored correctly by the caller
 func (c *compiler) createIfElse(cond llvm.Value, genTrueBody, genFalseBody func()) {
-	trueBlock, falseBlock, leaveBlock := c.builder().newBlock(), llvm.BasicBlock{}, c.builder().newBlock()
-	if genFalseBody == nil {
-		falseBlock = leaveBlock // no else, so we jump directly to leave
-	} else {
+	trueBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock()
+	falseBlock := leaveBlock
+	if genFalseBody != nil {
 		// to keep the order of blocks in the ir correct
-		falseBlock = leaveBlock
 		leaveBlock = c.builder().newBlock()
 	}
 	c.builder().CreateCondBr(cond, trueBlock, falseBlock)

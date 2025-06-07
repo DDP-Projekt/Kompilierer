@@ -70,17 +70,18 @@ func (c *compiler) definePrimitiveType(typ llvm.Type, defaultValue llvm.Value, n
 		name:         name,
 	}
 
-	vtable := llvm.AddGlobal(c.llmod, c.ptr, name+"_vtable")
+	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
 	if !declarationOnly {
-		vtable.SetInitializer(llvm.ConstStruct([]llvm.Value{
+		vtable.SetGlobalConstant(true)
+		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(primitive), false),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[0]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[1]),
-			llvm.ConstNull(c.vtable_type.StructElementTypes()[2]),
-		}, false))
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+		}))
 	}
 
 	primitive.vtable = vtable
