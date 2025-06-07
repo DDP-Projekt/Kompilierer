@@ -143,7 +143,7 @@ func (c *compiler) castNonAnyToAny(val llvm.Value, typ ddpIrType, isTemp bool, v
 
 	// copy the value
 	c.claimOrCopy(c.loadAnyValuePtr(result, typ.LLType()), val, typ, isTemp)
-	result, _ = c.builder().scp.addTemporary(result, c.ddpany)
+	result, _ = c.scp.addTemporary(result, c.ddpany)
 
 	return result, c.ddpany, true
 }

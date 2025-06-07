@@ -20,8 +20,6 @@ type llBuilder struct {
 	llFn     llvm.Value      // the llvm function value
 	ddpDecl  *ast.FuncDecl   // the ddp decl for the current function
 	cb       llvm.BasicBlock // current block
-	scp      *scope          // current scope in the ast (not in the ir)
-	fnScope  *scope
 	params   []funcParam
 
 	latestReturn     llvm.Value // return of the latest evaluated expression (in the ir)
@@ -63,7 +61,6 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames
 		fnName:  funcName,
 		c:       c,
 		Builder: c.llctx.NewBuilder(),
-		scp:     newScope(nil),
 	}
 
 	builder.llFnType = funcType

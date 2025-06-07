@@ -218,9 +218,6 @@ func Compile(options Options) (result *Result, err error) {
 	delete(ll_modules, ddp_main_module)
 	defer func() {
 		ll_main_module.Dispose()
-		for _, mod := range ll_modules {
-			mod.Dispose()
-		}
 	}()
 
 	options.Log("Linke llvm Module")
