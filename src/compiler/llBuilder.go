@@ -32,8 +32,19 @@ type llBuilder struct {
 	curLoopScope     *scope          // scope of the current loop for break/continue to free to
 }
 
+func (b *llBuilder) newBlockNamed(name string) llvm.BasicBlock {
+	if b.currentNode != nil {
+		name = b.currentNode.String() + ": " + name
+	}
+	return b.c.llctx.AddBasicBlock(b.llFn, name)
+}
+
 func (b *llBuilder) newBlock() llvm.BasicBlock {
-	return b.c.llctx.AddBasicBlock(b.llFn, "")
+	name := ""
+	if b.currentNode != nil {
+		name = b.currentNode.String()
+	}
+	return b.c.llctx.AddBasicBlock(b.llFn, name)
 }
 
 func (b *llBuilder) setBlock(bb llvm.BasicBlock) {

@@ -259,11 +259,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 	c.moduleInitBuilder.CreateRet(llvm.Value{})    // terminate the module_init func
 	c.moduleDisposeBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
 
-	for _, wrapper := range c.functions {
-		if wrapper.llFuncBuilder != nil {
-			wrapper.llFuncBuilder.Dispose()
-		}
-	}
+	c.disposeBuilders()
 
 	return c.result
 }
@@ -290,7 +286,17 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 	c.ddpany = c.defineAnyType()
 	c.setupListTypes(false) // we want definitions
 
+	c.disposeBuilders()
+
 	return c.llmod
+}
+
+func (c *compiler) disposeBuilders() {
+	for _, wrapper := range c.functions {
+		if wrapper.llFuncBuilder != nil {
+			wrapper.llFuncBuilder.Dispose()
+		}
+	}
 }
 
 func (c *compiler) addExternalDependencies() {
@@ -312,8 +318,10 @@ var Comments_Enabled = true
 
 // helper to visit a single node
 func (c *compiler) visitNode(node ast.Node) {
+	oldNode := c.builder().currentNode
 	c.builder().currentNode = node
 	node.Accept(c)
+	c.builder().currentNode = oldNode
 }
 
 // helper to evaluate an expression and return its ir value and type
@@ -425,7 +433,7 @@ func (c *compiler) setupOperators() {
 // deep copies the value pointed to by src into dest
 // and returns dest
 func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value {
-	dest = c.builder().createCall(typ.DeepCopyFunc(), dest, src)
+	c.builder().createCall(typ.DeepCopyFunc(), dest, src)
 	return dest
 }
 
@@ -641,7 +649,8 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		paramNames = append(paramNames, param.Name.Literal)
 	}
 
-	llFuncBuilder := c.newBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, ast.IsExternFunc(decl))
+	// createBuilder NOT newBuilder, because defineFuncBody pushes it
+	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, ast.IsExternFunc(decl))
 	// make private functions static like in C
 	// commented out because of generics where private functions might be called
 	// from a different module
@@ -2560,7 +2569,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 		incrementer, incrementerType, _ = c.evaluate(s.StepSize)
 	}
 
-	condBlock, incrementBlock, forBody, breakLeave := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	condBlock, incrementBlock, forBody, breakLeave := c.builder().newBlockNamed("condBlock"), c.builder().newBlockNamed("incrementBlock"), c.builder().newBlockNamed("forBody"), c.builder().newBlockNamed("breakLeave")
 
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.scp, breakLeave, incrementBlock
 
@@ -2591,7 +2600,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	c.builder().CreateBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
-	loopDown, loopUp, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	loopDown, loopUp, leaveBlock := c.builder().newBlockNamed("loopDown"), c.builder().newBlockNamed("loopUp"), c.builder().newBlockNamed("leaveBlock")
 
 	c.builder().setBlock(condBlock)
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
@@ -2610,7 +2619,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	cond = new_IorF_comp(llvm.IntSGE, llvm.FloatOGE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
 	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
-	trueLeave := c.builder().newBlock()
+	trueLeave := c.builder().newBlockNamed("trueLeave")
 
 	c.builder().setBlock(leaveBlock)
 	c.scp = c.exitScope(c.scp) // leave the scope

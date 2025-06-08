@@ -229,7 +229,8 @@ func (c *compiler) compare_values(lhs, rhs llvm.Value, typ ddpIrType) llvm.Value
 	case c.ddpfloattyp:
 		c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOEQ, lhs, rhs, "")
 	default:
-		c.builder().latestReturn = c.builder().CreateCall(c.ddpbool, typ.EqualsFunc(), []llvm.Value{lhs, rhs}, "")
+		equalsFunc := typ.EqualsFunc()
+		c.builder().latestReturn = c.builder().createCall(equalsFunc, lhs, rhs)
 	}
 	c.builder().latestReturnType = c.ddpbooltyp
 	return c.builder().latestReturn
