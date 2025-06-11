@@ -1694,7 +1694,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	// if due to short circuiting
 	if e.Operator == ast.TER_FALLS {
 		mid, _, _ := c.evaluate(e.Mid)
-		trueBlock, falseBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+		trueBlock, falseBlock, leaveBlock := c.builder().newBlockNamed("trueBlock"), c.builder().newBlockNamed("falseBlock"), c.builder().newBlockNamed("leaveBlock")
 		c.builder().CreateCondBr(mid, trueBlock, falseBlock)
 
 		c.builder().setBlock(trueBlock)
@@ -1707,7 +1707,6 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		}
 		// free temporaries
 		c.scp = c.exitScope(c.scp)
-		c.builder().CreateBr(leaveBlock)
 		trueBlock = c.builder().cb
 
 		c.builder().setBlock(falseBlock)
@@ -1720,7 +1719,6 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		}
 		// free temporaries
 		c.scp = c.exitScope(c.scp)
-		c.builder().CreateBr(leaveBlock)
 		falseBlock = c.builder().cb
 
 		// simple case, where both can be treated the same way
@@ -1745,8 +1743,15 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 			}
 		}
 
+		c.builder().withBlock(falseBlock, func() { c.builder().CreateBr(leaveBlock) })
+		c.builder().withBlock(trueBlock, func() { c.builder().CreateBr(leaveBlock) })
+
 		c.builder().setBlock(leaveBlock)
-		phi := c.builder().CreatePHI(rhsTyp.LLType(), "")
+		phiType := rhsTyp.LLType()
+		if !rhsTyp.IsPrimitive() {
+			phiType = c.ptr
+		}
+		phi := c.builder().CreatePHI(phiType, "")
 		phi.AddIncoming([]llvm.Value{lhs, rhs}, []llvm.BasicBlock{trueBlock, falseBlock})
 		c.builder().latestReturn = phi
 		if c.builder().latestIsTemp {
