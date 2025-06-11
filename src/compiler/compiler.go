@@ -2657,7 +2657,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		iter_ptr_val := c.loadStructField(c.ddpstring.typ, in, string_str_field_index)
 		c.builder().CreateStore(iter_ptr_val, iter_ptr)
 		length = c.loadStructField(c.ddpstring.typ, in, string_cap_field_index)
-		end_ptr = c.indexArray(c.ddpchar, iter_ptr_val, c.builder().CreateSub(length, c.newInt(1), ""))
+		end_ptr = c.indexArray(c.i8, iter_ptr_val, c.builder().CreateSub(length, c.newInt(1), ""))
 	} else {
 		iter_ptr_val := c.loadStructField(inTyp.LLType(), in, list_arr_field_index)
 		c.builder().CreateStore(iter_ptr_val, iter_ptr)
@@ -2665,7 +2665,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		end_ptr = c.indexArray(inTyp.(*ddpIrListType).elementType.LLType(), iter_ptr_val, length)
 	}
 
-	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
+	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlockNamed("loopStart"), c.builder().newBlockNamed("condBlock"), c.builder().newBlockNamed("bodyBlock"), c.builder().newBlockNamed("incrementBlock"), c.builder().newBlockNamed("leaveBlock")
 	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntEQ, length, c.zero, ""), leaveBlock, loopStart)
 
 	c.builder().setBlock(loopStart)
@@ -2682,7 +2682,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	loopVar := c.scp.lookupVar(s.Initializer)
 
-	continueBlock := c.builder().newBlock()
+	continueBlock := c.builder().newBlockNamed("continueBlock")
 	c.builder().setBlock(continueBlock)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
 	c.builder().CreateBr(incrementBlock)
@@ -2708,8 +2708,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 			c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
 		}
 	}
-	breakLeave := c.builder().newBlock()
-	c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(leaveBlock) })
+	breakLeave := c.builder().newBlockNamed("breakLeave")
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.scp, breakLeave, continueBlock
 	c.visitNode(s.Body)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
@@ -2756,13 +2755,15 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	// delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
 	c.scp = c.exitScope(c.scp)
 
+	trueLeave := c.builder().newBlockNamed("trueLeave")
+
 	c.builder().setBlock(breakLeave)
 	c.freeNonPrimitive(in, inTyp)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
+	c.builder().CreateBr(trueLeave)
 
-	trueLeave := c.builder().newBlock()
 	c.builder().withBlock(leaveBlock, func() { c.builder().CreateBr(trueLeave) })
-	c.builder().withBlock(breakLeave, func() { c.builder().CreateBr(trueLeave) })
+
 	c.builder().setBlock(trueLeave)
 
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = loopScopeBack, leaveBlockBack, continueBlockBack
