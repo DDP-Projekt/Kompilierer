@@ -499,7 +499,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		retCapPtr := c.indexStruct(listType.typ, ret, list_cap_field_index)
 		// while (ret->cap < ret->len) ret->cap = GROW_CAPACITY(ret->cap);
 		c.createWhile(func() llvm.Value {
-			return c.builder().CreateICmp(llvm.IntSLT, c.loadStructField(listType.typ, ret, list_cap_field_index), c.zero, "") // count > 0
+			return c.builder().CreateICmp(llvm.IntSLT, c.loadStructField(listType.typ, ret, list_cap_field_index), c.loadStructField(listType.typ, ret, list_len_field_index), "")
 		}, func() {
 			c.builder().CreateStore(c.growCapacity(c.loadStructField(listType.typ, ret, list_cap_field_index)), retCapPtr)
 		})
@@ -585,7 +585,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		listLen := c.loadStructField(listType.typ, list, list_len_field_index)
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[list->len] = scal
-			c.builder().CreateStore(scal, c.indexArray(listType.typ, retArr, listLen))
+			c.builder().CreateStore(scal, c.indexArray(listType.elementType.LLType(), retArr, listLen))
 		} else {
 			// ddp_deep_copy_scal(&ret->arr[list->len], scal)
 			dst := c.indexArray(listType.elementType.LLType(), retArr, listLen)
@@ -658,7 +658,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		// memmove(&ret->arr[1], ret->arr, sizeof(elementType) * list->len);
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
-		c.memmoveArr(listType.elementType.LLType(), c.indexArray(listType.typ, retArr, c.newInt(1)), retArr, c.loadStructField(listType.typ, list, list_len_field_index))
+		c.memmoveArr(listType.elementType.LLType(), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1)), retArr, c.loadStructField(listType.typ, list, list_len_field_index))
 
 		if listType.elementType.IsPrimitive() {
 			// ret->arr[0] = scal;
