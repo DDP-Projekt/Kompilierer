@@ -1,0 +1,10 @@
+[package]
+name = "runtime-rust"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "runtime_rust"
+crate-type = ["staticlib"]
+
+[dependencies]
