@@ -1,0 +1,11 @@
+mod ddptypes;
+mod ausgabe;
+mod mathe;
+mod zufall;
+mod zeit;
+mod kryptographie;
+mod umgebungsvariablen;
+mod pfade;
+mod texte;
+mod text_iterator;
+mod listen;

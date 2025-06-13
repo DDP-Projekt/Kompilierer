@@ -131,7 +131,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	if options.LinkInListDefs {
 		args = append(args, ddppath.DDP_List_Types_Defs_O)
 	}
-	args = append(args, "-lruntime_rust", "-lddpruntime", "-lm")
+	args = append(args, "-lddpruntime", "-lm")
 	args = append(args, options.MainFile)
 	args = append(args, "-lpcre2-8", "-larchive", "-lz", "-llzma", "-lbz2", "-llz4")
 	if runtime.GOOS == "windows" {
