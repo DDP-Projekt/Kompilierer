@@ -66,7 +66,7 @@ pub struct DDPList<T> {
 
 impl<T> From<&[T]> for DDPList<T> {
 	fn from(value: &[T]) -> Self {
-		DDPList { 
+		DDPList {
 			arr: value.as_ptr(), 
 			len: value.len(),
 			cap: value.len()

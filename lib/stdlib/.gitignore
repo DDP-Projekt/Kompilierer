@@ -5,4 +5,3 @@
 /.cache/
 compile_commands.json
 /pcre2_build/*
-target/
