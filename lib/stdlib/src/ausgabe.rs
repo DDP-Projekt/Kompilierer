@@ -45,7 +45,7 @@ pub extern "C" fn Schreibe_Text(x: *const DDPString) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Schreibe_Fehler(x: DDPString) {
-	eprintln!("{x}");
+pub extern "C" fn Schreibe_Fehler(x: *const DDPString) {
+	unsafe {eprintln!("{}",  (*x) ); }
 	let _ = io::stdout().flush();
 }
