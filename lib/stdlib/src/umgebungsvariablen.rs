@@ -4,7 +4,7 @@ use crate::ddptypes::DDPString;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hole_Umgebungsvariable(ret: *mut DDPString, name: &DDPString) {
-    unsafe {
+	unsafe {
 		ret.write(DDPString::from(env::var(name.to_string()).unwrap()))
 	}
 }

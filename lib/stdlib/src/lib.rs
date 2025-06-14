@@ -14,7 +14,7 @@ mod listen;
 mod laufzeit;
 
 unsafe extern "C" {
-    pub unsafe fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8;
+	pub unsafe fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8;
 	pub unsafe fn ddp_end_runtime();
 	pub unsafe fn ddp_runtime_error(code: DDPInt, fmt: *const std::ffi::c_char);
 }

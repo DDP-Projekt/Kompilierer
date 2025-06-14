@@ -69,14 +69,14 @@ impl From<String> for DDPString {
 impl fmt::Display for DDPString {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		if self.str.is_null() {
-            return write!(f, "");
-        }
-        unsafe {
-            match ffi::CStr::from_ptr(self.str).to_str() {
-                Ok(s) => write!(f, "{}", s),
-                Err(e) => write!(f, "<{}>", e),
-            }
-        }
+			return write!(f, "");
+		}
+		unsafe {
+			match ffi::CStr::from_ptr(self.str).to_str() {
+				Ok(s) => write!(f, "{}", s),
+				Err(e) => write!(f, "<{}>", e),
+			}
+		}
 	}
 }
 

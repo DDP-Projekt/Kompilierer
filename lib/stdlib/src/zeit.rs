@@ -28,6 +28,6 @@ pub extern "C" fn Zeit_Lokal(ret: *mut DDPString) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Warte(seconds: DDPFloat) {
-    let duration = Duration::from_secs_f64(seconds);
-    std::thread::sleep(duration);
+	let duration = Duration::from_secs_f64(seconds);
+	std::thread::sleep(duration);
 }
