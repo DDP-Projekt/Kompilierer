@@ -1,11 +1,10 @@
 use std::time::Duration;
 use chrono::{Datelike, Local, Timelike};
-
 use crate::ddptypes::{DDPFloat, DDPInt, DDPString};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Zeit_Seit_Programmstart() -> DDPInt {
-	0 // TODO
+	unimplemented!()
 }
 
 #[unsafe(no_mangle)]

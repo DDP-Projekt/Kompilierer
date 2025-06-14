@@ -1,5 +1,4 @@
 use std::env;
-
 use crate::ddptypes::DDPString;
 
 #[unsafe(no_mangle)]

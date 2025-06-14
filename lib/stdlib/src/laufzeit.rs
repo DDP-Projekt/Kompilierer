@@ -1,6 +1,6 @@
 use std::{io::IsTerminal, process::exit};
-
-use crate::{ddp_end_runtime, ddp_runtime_error, ddptypes::*};
+use crate::{ddp_end_runtime, ddp_runtime_error};
+use crate::ddptypes::{DDPInt, DDPString, DDPBool};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Programm_Beenden(code: DDPInt) {

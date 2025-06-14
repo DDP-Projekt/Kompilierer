@@ -12,6 +12,8 @@ mod texte;
 mod text_iterator;
 mod listen;
 mod laufzeit;
+mod text_bauer;
+mod c;
 
 unsafe extern "C" {
 	pub unsafe fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8;

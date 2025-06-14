@@ -1,5 +1,4 @@
 use std::io::{self, Write};
-
 use crate::ddptypes::*;
 
 #[unsafe(no_mangle)]

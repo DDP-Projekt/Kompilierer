@@ -11,66 +11,86 @@ pub struct TextIterator {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_von_Text(text: *const DDPString) -> TextIterator {
-	unsafe {
-		TextIterator {
-			ptr: (*text).str,
-			end_ptr: if (*text).cap <= 0 {
-				(*text).str
-			} else {
-				(*text).str.add((*text).cap - 1) 
-			},
-			text: text,
-			index: 1
-		}
-
+pub extern "C" fn TextIterator_von_Text(ret: &mut TextIterator, text: &DDPString) {
+	*ret = TextIterator {
+		ptr: text.str,
+		end_ptr: if text.cap <= 0 {
+			text.str
+		} else {
+			unsafe { text.str.add(text.cap - 1) }
+		},
+		text: text,
+		index: 1
 	}
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Zuende(it: *const TextIterator) -> DDPBool {
-	unsafe { (*it).ptr >= (*it).end_ptr }
+pub extern "C" fn TextIterator_Zuende(it: &TextIterator) -> DDPBool {
+	it.ptr >= it.end_ptr
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Buchstabe(it: *const TextIterator) -> DDPChar {
+pub extern "C" fn TextIterator_Buchstabe(it: &TextIterator) -> DDPChar {
 	if TextIterator_Zuende(it) {
 		return 0;
 	} 
 
-	unsafe {
-		let slice = CStr::from_ptr((*it).ptr).to_bytes();
-		let ch = std::str::from_utf8(slice).ok().and_then(|s| s.chars().next()).unwrap_or('\0');
-		ch as u32
-	}
+	let slice = unsafe { CStr::from_ptr((*it).ptr).to_bytes() };
+	std::str::from_utf8(slice).ok()
+		.and_then(|s| s.chars().next())
+		.unwrap_or('\0') as u32
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Naechster(it: *const TextIterator) {
-	unimplemented!()
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Verbleibend(it: *const TextIterator) -> DDPInt {
+pub extern "C" fn TextIterator_Naechster(it: &mut TextIterator) -> DDPChar {
 	if TextIterator_Zuende(it) {
 		return 0;
 	}
 
-	unimplemented!()
+	unsafe {
+		match CStr::from_ptr(it.ptr).to_str() {
+			Ok(s) => {
+				if let Some(c) = s.chars().next() {
+					it.ptr = it.ptr.add(c.len_utf8());
+					it.index += 1;
+					c as u32
+				} else {
+					panic!("Empty string")
+				}
+			}
+			Err(e) => panic!("{e}")
+		}
+	}
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Rest(it: *const TextIterator) -> DDPString {
+pub extern "C" fn TextIterator_Verbleibend(it: &TextIterator) -> DDPInt {
 	if TextIterator_Zuende(it) {
-		return DDPString::from("");
+		return 0;
 	}
 
 	unsafe {
-		DDPString::from(CStr::from_ptr((*it).ptr).to_bytes())
+		CStr::from_ptr(it.ptr).to_str().unwrap().len() as DDPInt
 	}
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn TextIterator_Bisher(it: *const TextIterator) -> DDPString {
-	unimplemented!()
+pub extern "C" fn TextIterator_Rest(ret: &mut DDPString, it: &TextIterator) {
+	if TextIterator_Zuende(it) {
+		return *ret = DDPString::new();
+	}
+
+	*ret = DDPString::from(unsafe { CStr::from_ptr(it.ptr) }.to_bytes())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn TextIterator_Bisher(ret: &mut DDPString, it: &TextIterator) {
+	unsafe { 
+		if it.ptr <= (*it.text).str {
+			return;
+		}
+
+		let cap = it.ptr.sub((*it.text).str.addr()).addr();
+		*ret = DDPString::from_raw_parts((*it.text).str as *const u8, cap)
+	}
 }
