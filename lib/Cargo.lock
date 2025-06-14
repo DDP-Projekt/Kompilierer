@@ -287,6 +287,7 @@ dependencies = [
  "chrono",
  "rand",
  "sha2",
+ "typed-path",
 ]
 
 [[package]]
@@ -299,6 +300,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "typed-path"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c462d18470a2857aa657d338af5fa67170bb48bcc80a296710ce3b0802a32566"
 
 [[package]]
 name = "typenum"
