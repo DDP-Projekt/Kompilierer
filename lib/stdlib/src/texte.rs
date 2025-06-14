@@ -1,35 +1,27 @@
-use std::ptr::{null_mut};
-
 use crate::ddptypes::{DDPByte, DDPList, DDPString};
 
-unsafe extern "C" {
-    fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8;
-}
-
 #[unsafe(no_mangle)]
-pub extern "C" fn Text_Zu_ByteListe(text: *mut DDPString) -> DDPList<DDPByte> {
+pub extern "C" fn Text_Zu_ByteListe(ret: *mut DDPList<DDPByte>, text: &DDPString) {
 	unsafe {
-		let cap = (*text).cap-1;
-		let ptr = ddp_reallocate(null_mut(), 0, cap);
-		((*text).str as *const u8).copy_to(ptr, cap);
-
-		DDPList { 
-			arr: ptr,
-			len: cap,
-			cap: cap
+		if text.is_empty() {
+			return ret.write(DDPList::new());
 		}
+
+		ret.write(DDPList::from_raw_parts(text.str as *const u8, text.cap-1))
 	}
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ByteListe_Zu_Text(liste: *mut DDPList<DDPByte>) -> DDPString {
+pub extern "C" fn ByteListe_Zu_Text(ret: *mut DDPString, liste: *mut DDPList<DDPByte>) {
 	unsafe {
-		let ptr = ddp_reallocate(null_mut(), 0, (*liste).len);
-		(*liste).arr.copy_to(ptr, (*liste).len);
-
-		DDPString {
-			str: ptr as *const i8,
-			cap: (*liste).len
+		if (*liste).len == 0 {
+			return ret.write(DDPString::new());
 		}
+
+		let src = std::slice::from_raw_parts((*liste).arr, (*liste).len as usize);
+		let mut with_terminator = Vec::from(src);
+		with_terminator.push(0);
+
+		ret.write(DDPString::from_raw_parts(with_terminator.as_ptr(), with_terminator.len()));
 	}
 }

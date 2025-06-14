@@ -1,6 +1,8 @@
-use std::ffi::CStr;
 use std::fmt;
 use std::ffi;
+use std::ptr::null;
+use std::ptr::null_mut;
+use crate::ddp_reallocate;
 
 pub type DDPInt = i64;
 pub type DDPFloat = f64;
@@ -8,7 +10,7 @@ pub type DDPByte = u8;
 pub type DDPChar = u32;
 pub type DDPBool = bool;
 pub type DDPAny = ffi::c_void;
- 
+
 #[repr(C)]
 pub struct DDPString {
 	pub str: *const ffi::c_char,
@@ -16,37 +18,58 @@ pub struct DDPString {
 }
 
 impl DDPString {
-	pub unsafe fn as_bytes(&self) -> &'static [u8] {
-		unsafe { std::slice::from_raw_parts(self.str as *const u8, self.cap) }
+	// creates an empty String
+	pub fn new() -> DDPString {
+		DDPString { 
+			str: null(),
+			cap: 0
+		}
+	}
+
+	/// allocates a new DDP String using the given buffer and length
+	/// WARNING: BUFFER HAS TO BE NULL TERMINATED
+	pub unsafe fn from_raw_parts(ptr: *const u8, len: usize) -> DDPString {
+		unsafe {
+			let dst = ddp_reallocate(null_mut(), 0, len);
+			std::ptr::copy_nonoverlapping(ptr, dst, len);	
+
+			DDPString {
+				str: dst as *const i8,
+				cap: len
+			}
+		}
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.str.is_null() || self.cap <= 0 || unsafe { self.str.read() == 0 }
 	}
 }
 
 impl From<&[u8]> for DDPString {
+	/// allocates a new DDP String from a u8 slice
 	fn from(value: &[u8]) -> Self {
-		let cstr = CStr::from_bytes_with_nul(value).unwrap();
-		DDPString {
-			str: cstr.as_ptr(),
-			cap: value.len()
-		}
+		unsafe { DDPString::from_raw_parts(value.as_ptr(), value.len()) }
 	}
 }
 
 impl From<&str> for DDPString {
+	/// allocates a new DDP String from a str
 	fn from(value: &str) -> Self {
-		DDPString::from(value.as_bytes())
+		unsafe { DDPString::from_raw_parts(value.as_ptr(), value.len()) }
 	}
 }
 
 impl From<String> for DDPString {
+	/// allocates a new DDP String from a String
 	fn from(value: String) -> Self {
-		DDPString::from(value.as_bytes())
+		unsafe { DDPString::from_raw_parts(value.as_ptr(), value.len()) }
 	}
 }
 
 impl fmt::Display for DDPString {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		if self.str.is_null() {
-            return write!(f, "<null>");
+            return write!(f, "");
         }
         unsafe {
             match ffi::CStr::from_ptr(self.str).to_str() {
@@ -60,16 +83,31 @@ impl fmt::Display for DDPString {
 #[repr(C)]
 pub struct DDPList<T> {
 	pub arr: *const T,
-	pub len: usize,
-	pub cap: usize
+	pub len: i64,
+	pub cap: i64
+}
+
+impl<T> DDPList<T> {
+	pub fn new() -> DDPList<T> {
+		DDPList { arr: null(), len: 0, cap: 0 }
+	}
+
+	pub unsafe fn from_raw_parts(ptr: *const T, len: usize) -> DDPList<T> {
+		unsafe {
+			let dst = ddp_reallocate(null_mut(), 0, len);
+			std::ptr::copy_nonoverlapping(ptr, dst as *mut T, len);	
+		
+			DDPList {
+				arr: dst as *const T,
+				len: len as i64,
+				cap: len as i64
+			}
+		}
+	}
 }
 
 impl<T> From<&[T]> for DDPList<T> {
 	fn from(value: &[T]) -> Self {
-		DDPList {
-			arr: value.as_ptr(), 
-			len: value.len(),
-			cap: value.len()
-		}
+		unsafe { DDPList::from_raw_parts(value.as_ptr(), value.len()) }
 	}
 }

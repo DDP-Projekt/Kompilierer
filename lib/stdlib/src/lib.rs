@@ -9,3 +9,7 @@ mod pfade;
 mod texte;
 mod text_iterator;
 mod listen;
+
+unsafe extern "C" {
+    pub unsafe fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8;
+}
