@@ -19,13 +19,13 @@ pub extern "C" fn Ist_Befehlszeile() -> DDPBool {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Betriebssystem(ret: *mut DDPString) {
-	unsafe { ret.write(DDPString::from(std::env::consts::OS)) }
+pub extern "C" fn Betriebssystem(ret: &mut DDPString) {
+	*ret = DDPString::from(std::env::consts::OS)
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Arbeitsverzeichnis(ret: *mut DDPString) {
+pub extern "C" fn Arbeitsverzeichnis(ret: &mut DDPString) {
 	let cwd = std::env::current_dir().unwrap();
 	let cwd_str = cwd.to_str().unwrap();
-	unsafe { ret.write(DDPString::from(cwd_str)) }
+	*ret = DDPString::from(cwd_str)
 }

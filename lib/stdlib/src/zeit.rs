@@ -9,7 +9,7 @@ pub extern "C" fn Zeit_Seit_Programmstart() -> DDPInt {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Zeit_Lokal(ret: *mut DDPString) {
+pub extern "C" fn Zeit_Lokal(ret: &mut DDPString) {
 	let now = Local::now();
 	let time = format!(
 		"{:02}:{:02}:{:02} {:02}.{:02}.{:04}",
@@ -21,9 +21,7 @@ pub extern "C" fn Zeit_Lokal(ret: *mut DDPString) {
 		now.year()
 	);
 
-	unsafe {
-		ret.write(DDPString::from(time))
-	}
+	*ret = DDPString::from(time)	
 }
 
 #[unsafe(no_mangle)]

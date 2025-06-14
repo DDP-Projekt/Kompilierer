@@ -3,10 +3,8 @@ use std::env;
 use crate::ddptypes::DDPString;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Hole_Umgebungsvariable(ret: *mut DDPString, name: &DDPString) {
-	unsafe {
-		ret.write(DDPString::from(env::var(name.to_string()).unwrap()))
-	}
+pub extern "C" fn Hole_Umgebungsvariable(ret: &mut DDPString, name: &DDPString) {
+	*ret = DDPString::from(env::var(name.to_string()).unwrap())
 }
 
 #[unsafe(no_mangle)]
