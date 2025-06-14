@@ -2,67 +2,67 @@ use crate::ddptypes::*;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Sinus(x: DDPFloat) -> DDPFloat {
-    x.sin()
+	x.sin()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Kosinus(x: DDPFloat) -> DDPFloat {
-    x.cos()
+	x.cos()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Tangens(x: DDPFloat) -> DDPFloat {
-    x.tan()
+	x.tan()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Arkussinus(x: DDPFloat) -> DDPFloat {
-    x.asin()
+	x.asin()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Arkuskosinus(x: DDPFloat) -> DDPFloat {
-    x.acos()
+	x.acos()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Arkustangens(x: DDPFloat) -> DDPFloat {
-    x.atan()
+	x.atan()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hyperbelsinus(x: DDPFloat) -> DDPFloat {
-    x.sinh()
+	x.sinh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hyperbelkosinus(x: DDPFloat) -> DDPFloat {
-    x.cosh()
+	x.cosh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hyperbeltangens(x: DDPFloat) -> DDPFloat {
-    x.tanh()
+	x.tanh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Areahyperbelsinus(x: DDPFloat) -> DDPFloat {
-    x.asinh()
+	x.asinh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Areahyperbelkosinus(x: DDPFloat) -> DDPFloat {
-    x.acosh()
+	x.acosh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Areahyperbeltangens(x: DDPFloat) -> DDPFloat {
-    x.atanh()
+	x.atanh()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Winkel(x: DDPFloat, y: DDPFloat) -> DDPFloat {
-    x.atan2(y)
+	x.atan2(y)
 }
 
 #[unsafe(no_mangle)]
@@ -73,6 +73,6 @@ pub extern "C" fn Gausssche_Fehlerfunktion(x: DDPFloat) -> DDPFloat {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Runden(x: DDPFloat, n: DDPInt) -> DDPFloat {
-    let shft = 10_f64.powi(n as i32);
-    (x * shft).round() / shft
+	let shft = 10_f64.powi(n as i32);
+	(x * shft).round() / shft
 }
