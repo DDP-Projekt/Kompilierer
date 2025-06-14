@@ -17,11 +17,7 @@ pub extern "C" fn ByteListe_Zu_Text(ret: *mut DDPString, liste: *mut DDPList<DDP
 		if (*liste).len == 0 {
 			return ret.write(DDPString::new());
 		}
-
-		let src = std::slice::from_raw_parts((*liste).arr, (*liste).len as usize);
-		let mut with_terminator = Vec::from(src);
-		with_terminator.push(0);
-
-		ret.write(DDPString::from_raw_parts(with_terminator.as_ptr(), with_terminator.len()));
+		
+		ret.write(DDPString::from_raw_parts((*liste).arr, (*liste).len as usize));
 	}
 }

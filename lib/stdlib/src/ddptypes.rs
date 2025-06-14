@@ -11,6 +11,7 @@ pub type DDPChar = u32;
 pub type DDPBool = bool;
 pub type DDPAny = ffi::c_void;
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct DDPString {
 	pub str: *const ffi::c_char,
@@ -26,16 +27,21 @@ impl DDPString {
 		}
 	}
 
-	/// allocates a new DDP String using the given buffer and length
-	/// WARNING: BUFFER HAS TO BE NULL TERMINATED
+	/// allocates a new DDP String using the given buffer and length\
+	/// WARNING: BUFFER SHOULD NOT BE NULL TERMINATED
 	pub unsafe fn from_raw_parts(ptr: *const u8, len: usize) -> DDPString {
+		if ptr.is_null() {
+			panic!("ptr was null")
+		}
+
 		unsafe {
-			let dst = ddp_reallocate(null_mut(), 0, len);
-			std::ptr::copy_nonoverlapping(ptr, dst, len);	
+			let dst = ddp_reallocate(null_mut(), 0, len+1);
+			std::ptr::copy_nonoverlapping(ptr, dst, len);
+			*dst.add(len) = 0; // add null terminator
 
 			DDPString {
 				str: dst as *const i8,
-				cap: len
+				cap: len+1
 			}
 		}
 	}
@@ -80,6 +86,7 @@ impl fmt::Display for DDPString {
 	}
 }
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct DDPList<T> {
 	pub arr: *const T,
