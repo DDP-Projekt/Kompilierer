@@ -2,7 +2,7 @@ use std::fmt;
 use std::ffi;
 use std::ptr::null;
 use std::ptr::null_mut;
-use crate::ddp_reallocate;
+use runtime_rust::ddp_reallocate;
 
 pub type DDPInt = i64;
 pub type DDPFloat = f64;

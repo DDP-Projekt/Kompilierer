@@ -5,6 +5,6 @@ edition = "2024"
 
 [lib]
 name = "runtime_rust"
-crate-type = ["staticlib"]
+crate-type = ["lib", "staticlib"]
 
 [dependencies]

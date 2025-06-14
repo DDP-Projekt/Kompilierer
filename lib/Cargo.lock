@@ -286,6 +286,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "rand",
+ "runtime-rust",
  "sha2",
  "typed-path",
 ]

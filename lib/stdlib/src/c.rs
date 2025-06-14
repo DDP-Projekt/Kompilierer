@@ -1,6 +1,6 @@
 use std::ptr::{null_mut};
-
-use crate::{ddp_reallocate, ddptypes::{DDPChar, DDPInt, DDPString}};
+use crate::ddptypes::{DDPChar, DDPInt, DDPString};
+use runtime_rust::ddp_reallocate;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn C_Memcpy(dest: DDPInt, src: DDPInt, size: DDPInt) {
