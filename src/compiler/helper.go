@@ -14,6 +14,12 @@ import (
 )
 
 func (c *compiler) newInt(i int64) llvm.Value {
+	switch i {
+	case 0:
+		return c.zero
+	case 1:
+		return c.one
+	}
 	return llvm.ConstInt(c.ddpint, uint64(i), false)
 }
 

@@ -114,7 +114,7 @@ func newLLTypes(llctx llvm.Context) llTypes {
 }
 
 type llConstants struct {
-	zero, zerof, zero8, all_ones, all_ones8, False, True, Null llvm.Value
+	zero, zerof, zero8, one, all_ones, all_ones8, False, True, Null llvm.Value
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -122,6 +122,7 @@ func newLLConstants(types llTypes) llConstants {
 		zero:      llvm.ConstInt(types.i64, 0, false),
 		zerof:     llvm.ConstFloat(types.ddpfloat, 0),
 		zero8:     llvm.ConstInt(types.i8, 0, false),
+		one:       llvm.ConstInt(types.i64, 1, false),
 		all_ones:  llvm.ConstAllOnes(types.i64),
 		all_ones8: llvm.ConstAllOnes(types.i8),
 		False:     llvm.ConstInt(types.ddpbool, 0, false),
@@ -2826,7 +2827,6 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
 
 			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
-			c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, ""), c.builder().params[0].val)
 			c.claimOrCopy(c.builder().params[0].val, val, valTyp, isTemp)
 			c.builder().CreateRet(llvm.Value{})
 		} else {
@@ -2839,7 +2839,6 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
 		}
 
-		c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, s.Value.String()), c.builder().params[0].val)
 		c.claimOrCopy(c.builder().params[0].val, val, valTyp, isTemp)
 		c.builder().CreateRet(llvm.Value{})
 	}

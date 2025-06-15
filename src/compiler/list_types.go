@@ -391,7 +391,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 			func() llvm.Value { return val },
 		)
 		return c.createTernary(c.ddpint,
-			llFuncBuilder.CreateICmp(llvm.IntSLT, temp, max, ""),
+			llFuncBuilder.CreateICmp(llvm.IntSGT, temp, max, ""),
 			func() llvm.Value { return max },
 			func() llvm.Value { return temp },
 		)
@@ -428,7 +428,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	if listType.elementType.IsPrimitive() {
 		// memcpy primitive types
-		c.memcpyArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_arr_field_index), c.indexArray(listType.typ, c.loadStructField(listType.typ, list, list_arr_field_index), index1), new_len)
+		c.memcpyArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_arr_field_index), c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), index1), new_len)
 	} else {
 		/*
 			size_t j = 0;

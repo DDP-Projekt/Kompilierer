@@ -33,11 +33,7 @@ type llBuilder struct {
 }
 
 func (b *llBuilder) newBlock() llvm.BasicBlock {
-	name := ""
-	if b.currentNode != nil {
-		name = b.currentNode.String()
-	}
-	return b.c.llctx.AddBasicBlock(b.llFn, name)
+	return b.c.llctx.AddBasicBlock(b.llFn, "")
 }
 
 func (b *llBuilder) setBlock(bb llvm.BasicBlock) {
