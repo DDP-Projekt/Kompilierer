@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/DDP-Projekt/Kompilierer/cmd/internal/gcc"
 	"github.com/DDP-Projekt/Kompilierer/cmd/internal/linker"
@@ -31,6 +32,11 @@ var buildCmd = &cobra.Command{
 		print := func(format string, args ...any) {
 			if verbose {
 				fmt.Printf(format+"\n", args...)
+			}
+		}
+		printTook := func(phase string, start time.Time) {
+			if verbose && timeFlag {
+				fmt.Printf("%s hat %s gedauert\n", phase, time.Since(start))
 			}
 		}
 
@@ -111,6 +117,7 @@ var buildCmd = &cobra.Command{
 		}
 		defer to.Close()
 
+		srcReadStart := time.Now()
 		var src []byte
 		// if no input file was specified, we read from stdin
 		if filePath == "" {
@@ -118,10 +125,12 @@ var buildCmd = &cobra.Command{
 			if src, err = io.ReadAll(os.Stdin); err != nil {
 				return fmt.Errorf("Fehler beim Lesen von stdin: %w", err)
 			}
+			printTook("Das Lesen der Standardeingabe", srcReadStart)
 		} else {
 			if src, err = os.ReadFile(filePath); err != nil {
 				return fmt.Errorf("Fehler beim Lesen von %s: %w", filePath, err)
 			}
+			printTook("Das Lesen der Datei", srcReadStart)
 		}
 
 		errorHandler := ddperror.MakeAdvancedHandler(filePath, src, os.Stderr)
@@ -135,6 +144,7 @@ var buildCmd = &cobra.Command{
 			OutputType:              compOutType,
 			ErrorHandler:            errorHandler,
 			Log:                     print,
+			LogTook:                 printTook,
 			DeleteIntermediateFiles: !buildNoDeletes,
 			LinkInModules:           buildLinkModules,
 			LinkInListDefs:          buildLinkListDefs,
@@ -150,7 +160,8 @@ var buildCmd = &cobra.Command{
 
 		// the target is an executable so we link the produced object file
 		print("Objekte werden gelinkt")
-		if output, err := linker.LinkDDPFiles(linker.Options{
+		linkStart := time.Now()
+		output, err := linker.LinkDDPFiles(linker.Options{
 			InputFile:               objPath,
 			OutputFile:              buildOutputPath,
 			Dependencies:            result,
@@ -160,7 +171,9 @@ var buildCmd = &cobra.Command{
 			MainFile:                buildMainPath,
 			ExternGCCFlags:          buildExternGCCFlags,
 			LinkInListDefs:          !buildLinkListDefs, // if they are allready linked in, don't link them again
-		}); err != nil {
+		})
+		printTook("Das Linken", linkStart)
+		if err != nil {
 			return fmt.Errorf("Fehler beim Linken: %w (%s)", err, string(output))
 		}
 		return nil

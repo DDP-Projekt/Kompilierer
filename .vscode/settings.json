@@ -3,6 +3,9 @@
 	"go.lintTool": "staticcheck",
 	"gopls": {
 		"formatting.gofumpt": true,
+		"build.buildFlags": [
+			"-tags=byollvm,llvm20"
+		]
 	},
 	"ddp.DDPLS.useSystemwideInstall": true,
 }

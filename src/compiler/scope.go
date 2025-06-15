@@ -2,13 +2,13 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/llir/llvm/ir/value"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 )
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val       value.Value // alloca or global-Def in the ir
-	typ       ddpIrType   // ir type of the variable
+	val       llvm.Value // alloca or global-Def in the ir
+	typ       ddpIrType  // ir type of the variable
 	isRef     bool
 	protected bool // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
 }
@@ -40,24 +40,24 @@ func (s *scope) lookupVar(decl *ast.VarDecl) varwrapper {
 		if s.enclosing != nil {
 			return s.enclosing.lookupVar(decl)
 		}
-		return varwrapper{val: nil, typ: nil} // variable doesn't exist (should not happen, resolver should take care of that)
+		return varwrapper{val: llvm.Value{}, typ: nil} // variable doesn't exist (should not happen, resolver should take care of that)
 	} else {
 		return v
 	}
 }
 
 // add a variable to the scope
-func (scope *scope) addVar(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+func (scope *scope) addVar(decl *ast.VarDecl, val llvm.Value, ty ddpIrType, isRef bool) llvm.Value {
 	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
 	return val
 }
 
-func (scope *scope) addProtected(decl *ast.VarDecl, val value.Value, ty ddpIrType, isRef bool) value.Value {
+func (scope *scope) addProtected(decl *ast.VarDecl, val llvm.Value, ty ddpIrType, isRef bool) llvm.Value {
 	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
 	return val
 }
 
-func (scope *scope) protectTemporary(val value.Value) {
+func (scope *scope) protectTemporary(val llvm.Value) {
 	for i := len(scope.temporaries) - 1; i >= 0; i-- {
 		if scope.temporaries[i].val == val {
 			scope.temporaries[i].protected = true
@@ -67,7 +67,7 @@ func (scope *scope) protectTemporary(val value.Value) {
 	panic("attempted Value protection not found in scope.temporaries")
 }
 
-func (scope *scope) unprotectTemporary(val value.Value) {
+func (scope *scope) unprotectTemporary(val llvm.Value) {
 	for i := len(scope.temporaries) - 1; i >= 0; i-- {
 		if scope.temporaries[i].val == val {
 			scope.temporaries[i].protected = false
@@ -77,7 +77,7 @@ func (scope *scope) unprotectTemporary(val value.Value) {
 	panic("attempted Value unprotection not found in scope.temporaries")
 }
 
-func (scope *scope) addTemporary(val value.Value, typ ddpIrType) (value.Value, ddpIrType) {
+func (scope *scope) addTemporary(val llvm.Value, typ ddpIrType) (llvm.Value, ddpIrType) {
 	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false, protected: false})
 	return val, typ
 }
@@ -85,7 +85,7 @@ func (scope *scope) addTemporary(val value.Value, typ ddpIrType) (value.Value, d
 // removes the given value from scope.temporaries giving ownership to the caller
 // who now has to make sure it is freed
 // returns the value
-func (scope *scope) claimTemporary(val value.Value) value.Value {
+func (scope *scope) claimTemporary(val llvm.Value) llvm.Value {
 	// loop backwards, because we mostlikely claim new values more frequently
 	for i := len(scope.temporaries) - 1; i >= 0; i-- {
 		// remove the found value and return

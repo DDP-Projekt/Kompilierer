@@ -19,12 +19,16 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 }
 
-// global verbose flag for all commands
-var verbose bool
+// global flags for all commands
+var (
+	verbose  bool
+	timeFlag bool
+)
 
 func init() {
 	// Flags inherited by all sub commands
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "wortreich", "w", false, "Gibt wortreiche Informationen aus")
+	rootCmd.PersistentFlags().BoolVarP(&timeFlag, "zeitmessen", "t", false, "Gibt in Kombination mit --wortreich Zeitmessungen aus")
 
 	// sub commands
 	rootCmd.AddCommand(

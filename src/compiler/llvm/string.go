@@ -40,12 +40,10 @@ func (t TypeKind) String() string {
 		return "ArrayTypeKind"
 	case PointerTypeKind:
 		return "PointerTypeKind"
-	case MetadataTypeKind:
-		return "MetadataTypeKind"
 	case VectorTypeKind:
 		return "VectorTypeKind"
-	case ScalableVectorTypeKind:
-		return "ScalableVectorTypeKind"
+	case MetadataTypeKind:
+		return "MetadataTypeKind"
 	}
 	panic("unreachable")
 }

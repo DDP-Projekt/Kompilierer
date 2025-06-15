@@ -1,59 +1,37 @@
-/*
-This file is not part of the official llvm Go bindings
-I added it myself because functionality was I needed was missing
-*/
+//===- irreader.go - Bindings for irreader --------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+// This file defines bindings for the irreader component.
+//
+//===----------------------------------------------------------------------===//
+
 package llvm
 
 /*
-#include "llvm-c/IRReader.h"
 #include "llvm-c/Core.h"
+#include "llvm-c/IRReader.h"
 #include <stdlib.h>
 */
 import "C"
 
 import (
 	"errors"
-	"unsafe"
 )
 
-// ParseIRFile parses the LLVM IR (textual) in the file with the
-// specified name, and returns a new LLVM module.
-func ParseIRFile(name string, context Context) (Module, error) {
-	var buf C.LLVMMemoryBufferRef
-	var errmsg *C.char
-	var cfilename *C.char = C.CString(name)
-	defer C.free(unsafe.Pointer(cfilename))
-	result := C.LLVMCreateMemoryBufferWithContentsOfFile(cfilename, &buf, &errmsg)
-	if result != 0 {
-		err := errors.New(C.GoString(errmsg))
-		C.free(unsafe.Pointer(errmsg))
-		return Module{}, err
-	}
-	// defer C.LLVMDisposeMemoryBuffer(buf)
-
+// ParseIR parses the textual IR given in the memory buffer and returns a new
+// LLVM module in this context.
+func (c *Context) ParseIR(buf MemoryBuffer) (Module, error) {
 	var m Module
-	result = C.LLVMParseIRInContext(context.C, buf, &m.C, &errmsg)
-	if result != 0 {
+	var errmsg *C.char
+	if C.LLVMParseIRInContext(c.C, buf.C, &m.C, &errmsg) != 0 {
 		err := errors.New(C.GoString(errmsg))
-		C.free(unsafe.Pointer(errmsg))
+		C.LLVMDisposeMessage(errmsg)
 		return Module{}, err
 	}
-
 	return m, nil
-}
-
-// parses the LLVM IR (textual) from the given memory buffer
-// the resulting module takes ownership of the passed buffer
-// meaning that you should not dispose it
-func ParseIRFromMemoryBuffer(buf MemoryBuffer, context Context) (Module, error) {
-	var errmsg *C.char
-
-	var m Module
-	if C.LLVMParseIRInContext(context.C, buf.C, &m.C, &errmsg) == 0 {
-		return m, nil
-	}
-
-	err := errors.New(C.GoString(errmsg))
-	C.free(unsafe.Pointer(errmsg))
-	return Module{}, err
 }

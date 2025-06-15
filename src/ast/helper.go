@@ -29,7 +29,6 @@ func IsGeneric(decl Declaration) bool {
 	case *StructDecl:
 		_, ok := decl.Type.(*ddptypes.GenericStructType)
 		return ok
-
 	}
 	return false
 }

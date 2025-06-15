@@ -1,27 +1,13 @@
-//===- executionengine_test.go - Tests for executionengine ----------------===//
-//
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-//
-// This file tests bindings for the executionengine component.
-//
-//===----------------------------------------------------------------------===//
-
 package llvm
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestFactorial(t *testing.T) {
-	LinkInMCJIT()
+func TestPasses(t *testing.T) {
 	InitializeNativeTarget()
 	InitializeNativeAsmPrinter()
 
 	ctx := NewContext()
+
 	mod := ctx.NewModule("fac_module")
 
 	fac_args := []Type{ctx.Int32Type()}
@@ -66,22 +52,31 @@ func TestFactorial(t *testing.T) {
 		return
 	}
 
-	options := NewMCJITCompilerOptions()
-	options.SetMCJITOptimizationLevel(2)
-	options.SetMCJITEnableFastISel(true)
-	options.SetMCJITNoFramePointerElim(true)
-	options.SetMCJITCodeModel(CodeModelJITDefault)
-	engine, err := NewMCJITCompiler(mod, options)
+	targ, err := GetTargetFromTriple(DefaultTargetTriple())
 	if err != nil {
-		t.Errorf("Error creating JIT: %s", err)
-		return
+		t.Error(err)
 	}
-	defer engine.Dispose()
 
-	exec_args := []GenericValue{NewGenericValueFromInt(ctx.Int32Type(), 10, false)}
-	exec_res := engine.RunFunction(fac, exec_args)
-	var fac10 uint64 = 10 * 9 * 8 * 7 * 6 * 5 * 4 * 3 * 2 * 1
-	if exec_res.Int(false) != fac10 {
-		t.Errorf("Expected %d, got %d", fac10, exec_res.Int(false))
-	}
+	mt := targ.CreateTargetMachine(DefaultTargetTriple(), "", "", CodeGenLevelDefault, RelocDefault, CodeModelDefault)
+
+	pbo := NewPassBuilderOptions()
+	defer pbo.Dispose()
+
+	t.Run("no error running default pass", func(t *testing.T) {
+		err := mod.RunPasses("default<Os>", mt, pbo)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("errors on unknown pass name", func(t *testing.T) {
+		err := mod.RunPasses("badpassnamedoesnotexist", mt, pbo)
+		if err == nil {
+			t.Error("expecting error but got none")
+		}
+
+		if err.Error() != "unknown pass name 'badpassnamedoesnotexist'" {
+			t.Errorf("expected error about unknow pass name, instead got %s", err)
+		}
+	})
 }

@@ -99,7 +99,7 @@ jobs:
     - name: Setup LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-14.0.0-${{ runner.os == 'Windows' && 'windows-mingw-12.2.0-ucrt-posix-seh-x86_64' || 'linux-gcc-11.4.0-x86_64' }}.tar.gz
+        curl -L -o ./llvm_build.tar.gz https://github.com/DDP-Projekt/Kompilierer/releases/download/llvm-binaries/llvm_build-20.1.4-${{ runner.os == 'Windows' && 'windows-mingw-12.2.0-ucrt-posix-seh-x86_64' || 'linux-gcc-13.3.0-x86_64' }}.tar.gz
         mkdir -p ./llvm_build/
         tar -xzf ./llvm_build.tar.gz -C ./ --force-local
         rm ./llvm_build.tar.gz

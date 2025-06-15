@@ -14,14 +14,12 @@ package llvm
 
 /*
 #include "llvm-c/BitWriter.h"
+#include "backports.h"
 #include <stdlib.h>
 */
 import "C"
-
-import (
-	"errors"
-	"os"
-)
+import "os"
+import "errors"
 
 var writeBitcodeToFileErr = errors.New("Failed to write bitcode to file")
 
@@ -35,6 +33,11 @@ func WriteBitcodeToFile(m Module, file *os.File) error {
 
 func WriteBitcodeToMemoryBuffer(m Module) MemoryBuffer {
 	mb := C.LLVMWriteBitcodeToMemoryBuffer(m.C)
+	return MemoryBuffer{mb}
+}
+
+func WriteThinLTOBitcodeToMemoryBuffer(m Module) MemoryBuffer {
+	mb := C.LLVMGoWriteThinLTOBitcodeToMemoryBuffer(m.C)
 	return MemoryBuffer{mb}
 }
 

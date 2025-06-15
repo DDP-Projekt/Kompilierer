@@ -18,11 +18,8 @@ package llvm
 #include <stdlib.h>
 */
 import "C"
-
-import (
-	"errors"
-	"unsafe"
-)
+import "unsafe"
+import "errors"
 
 func LinkInMCJIT()       { C.LLVMLinkInMCJIT() }
 func LinkInInterpreter() { C.LLVMLinkInInterpreter() }
@@ -67,12 +64,10 @@ func NewGenericValueFromInt(t Type, n uint64, signed bool) (g GenericValue) {
 	g.C = C.LLVMCreateGenericValueOfInt(t.C, C.ulonglong(n), boolToLLVMBool(signed))
 	return
 }
-
 func NewGenericValueFromPointer(p unsafe.Pointer) (g GenericValue) {
 	g.C = C.LLVMCreateGenericValueOfPointer(p)
 	return
 }
-
 func NewGenericValueFromFloat(t Type, n float64) (g GenericValue) {
 	g.C = C.LLVMCreateGenericValueOfFloat(t.C, C.double(n))
 	return
@@ -81,11 +76,9 @@ func (g GenericValue) IntWidth() int { return int(C.LLVMGenericValueIntWidth(g.C
 func (g GenericValue) Int(signed bool) uint64 {
 	return uint64(C.LLVMGenericValueToInt(g.C, boolToLLVMBool(signed)))
 }
-
 func (g GenericValue) Float(t Type) float64 {
 	return float64(C.LLVMGenericValueToFloat(t.C, g.C))
 }
-
 func (g GenericValue) Pointer() unsafe.Pointer {
 	return C.LLVMGenericValueToPointer(g.C)
 }
