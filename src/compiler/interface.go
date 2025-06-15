@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"time"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
@@ -45,6 +46,8 @@ type Options struct {
 	ErrorHandler ddperror.Handler
 	// optional Log function to print intermediate messages
 	Log func(string, ...any)
+	// optional function to log time events
+	LogTook func(string, time.Time)
 	// wether or not to delete intermediate .ll files
 	DeleteIntermediateFiles bool
 	// wether all compiled DDP Modules
@@ -98,6 +101,9 @@ func validateOptions(options *Options) error {
 	if options.Log == nil {
 		options.Log = func(string, ...any) {}
 	}
+	if options.LogTook == nil {
+		options.LogTook = func(s string, t time.Time) {}
+	}
 	return nil
 }
 
@@ -115,13 +121,17 @@ func Compile(options Options) (result *Result, err error) {
 	// compile the ddp-source into an Ast
 	options.Log("Parse DDP Quellcode")
 	if options.Source == nil && options.From != nil {
+		readStart := time.Now()
 		options.Source, err = io.ReadAll(options.From)
+		options.LogTook("Das Lesen der Quelle", readStart)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	parseStart := time.Now()
 	ddp_main_module, err := parser.Parse(options.ToParserOptions())
+	options.LogTook("Das Parsen", parseStart)
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Parsen: %w", err)
 	}
@@ -134,12 +144,14 @@ func Compile(options Options) (result *Result, err error) {
 	}
 
 	if !options.LinkInModules {
+		compileStart := time.Now()
 		compiler, err := newCompiler(ddp_main_module.FileName, ddp_main_module, llContext, options.ErrorHandler, options.OptimizationLevel)
 		if err != nil {
 			return nil, err
 		}
 		comp_result := compiler.compile(true)
 		defer comp_result.llMod.Dispose()
+		options.LogTook("Das Kompilieren", compileStart)
 
 		// early return
 		if !options.LinkInListDefs && options.OutputType == OutputIR {
@@ -148,6 +160,7 @@ func Compile(options Options) (result *Result, err error) {
 		}
 
 		if options.LinkInListDefs {
+			linkStart := time.Now()
 			options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
 			list_defs, err := parseListDefsIntoContext(&llContext)
 			if err != nil {
@@ -160,11 +173,14 @@ func Compile(options Options) (result *Result, err error) {
 			if err := llvmLinkAllModules(comp_result.llMod, []llvm.Module{list_defs}); err != nil {
 				return nil, fmt.Errorf("Fehler beim Linken von %s: %w", ddppath.DDP_List_Types_Defs_LL, err)
 			}
+			options.LogTook("Das Linken der List Definitionen", linkStart)
 		}
 
 		switch options.OutputType {
 		case OutputIR:
+			outputStart := time.Now()
 			_, err := io.WriteString(options.To, comp_result.llMod.String())
+			options.LogTook("Das Kompilieren zum Ausgabe Format", outputStart)
 			return &comp_result, err
 		case OutputAsm, OutputObj:
 			file_type := llvm.AssemblyFile
@@ -176,14 +192,18 @@ func Compile(options Options) (result *Result, err error) {
 			}
 
 			if options.OptimizationLevel >= 1 {
+				optimizeStart := time.Now()
 				if err := llContext.optimizeModule(comp_result.llMod); err != nil {
 					return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
 				}
+				options.LogTook("Das Optimieren", optimizeStart)
 			}
 
+			outputStart := time.Now()
 			if _, err := llContext.compileModule(comp_result.llMod, file_type, options.To); err != nil {
 				return nil, fmt.Errorf("Fehler beim Kompilieren von llvm-ir: %w", err)
 			}
+			options.LogTook("Das Kompilieren zum Ausgabe Format", outputStart)
 
 			return &comp_result, nil
 		default:
@@ -192,9 +212,11 @@ func Compile(options Options) (result *Result, err error) {
 	}
 	// options.LinkInModules == true
 
+	compileStart := time.Now()
 	results, dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) (llvmTargetContext, error) {
 		return llContext, nil
 	}, options.ErrorHandler, options.OptimizationLevel)
+	options.LogTook("Das Kompilieren", compileStart)
 	if err != nil {
 		return nil, err
 	}
@@ -206,10 +228,12 @@ func Compile(options Options) (result *Result, err error) {
 	// optionally link in list-defs
 	if options.LinkInListDefs {
 		options.Log("Parse %s zu llvm-Module", ddppath.DDP_List_Types_Defs_LL)
+		linkStart := time.Now()
 		list_defs, err := parseListDefsIntoContext(&llContext)
 		if err != nil {
 			return nil, fmt.Errorf("Fehler beim Parsen von %s: %w", ddppath.DDP_List_Types_Defs_LL, err)
 		}
+		options.LogTook("Das Linken der List Definitionen", linkStart)
 		// no defer list_defs.Dispose() because it will be destroyed when linking it into the main module
 		ll_modules[&ast.Module{FileName: ddppath.DDP_List_Types_Defs_LL}] = list_defs
 	}
@@ -221,9 +245,11 @@ func Compile(options Options) (result *Result, err error) {
 	}()
 
 	options.Log("Linke llvm Module")
+	linkStart := time.Now()
 	if err := llvmLinkAllModules(ll_main_module, mapToSlice(ll_modules)); err != nil {
 		return nil, fmt.Errorf("Fehler beim Linken von llvm-Modulen: %w", err)
 	}
+	options.LogTook("Das Linken der Module", linkStart)
 
 	// if we output llvm ir we are finished here
 	if options.OutputType == OutputIR {
@@ -234,8 +260,12 @@ func Compile(options Options) (result *Result, err error) {
 		return &Result{Dependencies: dependencies}, nil
 	}
 
-	if err := llContext.optimizeModule(ll_main_module); err != nil {
-		return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+	if options.OptimizationLevel >= 1 {
+		optimizeStart := time.Now()
+		if err := llContext.optimizeModule(ll_main_module); err != nil {
+			return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+		}
+		options.LogTook("Das Optimieren", optimizeStart)
 	}
 
 	file_type := llvm.AssemblyFile
@@ -246,9 +276,11 @@ func Compile(options Options) (result *Result, err error) {
 		options.Log("Kompiliere llvm-ir zu Assembler")
 	}
 
+	outputStart := time.Now()
 	if _, err := llContext.compileModule(ll_main_module, file_type, options.To); err != nil {
 		return nil, err
 	}
+	options.LogTook("Das Kompilieren zum Ausgabe Format", outputStart)
 
 	return &Result{Dependencies: dependencies}, nil
 }
