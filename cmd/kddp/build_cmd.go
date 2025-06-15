@@ -35,7 +35,7 @@ var buildCmd = &cobra.Command{
 			}
 		}
 		printTook := func(phase string, start time.Time) {
-			if verbose {
+			if verbose && timeFlag {
 				fmt.Printf("%s hat %s gedauert\n", phase, time.Since(start))
 			}
 		}
