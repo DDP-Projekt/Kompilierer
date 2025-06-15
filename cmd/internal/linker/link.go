@@ -135,6 +135,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	args = append(args, options.MainFile)
 	args = append(args, "-lpcre2-8")
 	args = append(args, "-larchive")
+	args = append(args, "-lacl")
 	args = append(args, "-lz")
 	args = append(args, "-llzma")
 	args = append(args, "-lbz2")
