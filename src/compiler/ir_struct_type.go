@@ -115,9 +115,9 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(structType), false),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
+			structType.freeIrFun,
+			structType.deepCopyIrFun,
+			structType.equalsIrFun,
 		}))
 	}
 

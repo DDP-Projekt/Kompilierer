@@ -680,10 +680,14 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 
 // helper function for VisitFuncDef and VisitFuncDecl to compile the  body of a ir function
 func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool, decl *ast.FuncDecl) {
+	fnScope := c.fnScope
 	c.scp = newScope(c.scp)
 	c.fnScope = c.scp
 	c.pushBuilder(llFuncBuilder)
-	defer c.popBuilder()
+	defer func() {
+		c.popBuilder()
+		c.fnScope = fnScope
+	}()
 
 	params := llFuncBuilder.params
 	// we want to skip the possible return-parameter
@@ -1694,7 +1698,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	// if due to short circuiting
 	if e.Operator == ast.TER_FALLS {
 		mid, _, _ := c.evaluate(e.Mid)
-		trueBlock, falseBlock, leaveBlock := c.builder().newBlockNamed("trueBlock"), c.builder().newBlockNamed("falseBlock"), c.builder().newBlockNamed("leaveBlock")
+		trueBlock, falseBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 		c.builder().CreateCondBr(mid, trueBlock, falseBlock)
 
 		c.builder().setBlock(trueBlock)
@@ -2574,7 +2578,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 		incrementer, incrementerType, _ = c.evaluate(s.StepSize)
 	}
 
-	condBlock, incrementBlock, forBody, breakLeave := c.builder().newBlockNamed("condBlock"), c.builder().newBlockNamed("incrementBlock"), c.builder().newBlockNamed("forBody"), c.builder().newBlockNamed("breakLeave")
+	condBlock, incrementBlock, forBody, breakLeave := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.scp, breakLeave, incrementBlock
 
@@ -2605,7 +2609,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	c.builder().CreateBr(condBlock) // check the condition (loop)
 
 	// finally compile the condition block(s)
-	loopDown, loopUp, leaveBlock := c.builder().newBlockNamed("loopDown"), c.builder().newBlockNamed("loopUp"), c.builder().newBlockNamed("leaveBlock")
+	loopDown, loopUp, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 
 	c.builder().setBlock(condBlock)
 	// we check the counter differently depending on wether or not we are looping up or down (positive vs negative stepsize)
@@ -2624,7 +2628,7 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	cond = new_IorF_comp(llvm.IntSGE, llvm.FloatOGE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
 	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
-	trueLeave := c.builder().newBlockNamed("trueLeave")
+	trueLeave := c.builder().newBlock()
 
 	c.builder().setBlock(leaveBlock)
 	c.scp = c.exitScope(c.scp) // leave the scope
@@ -2670,7 +2674,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		end_ptr = c.indexArray(inTyp.(*ddpIrListType).elementType.LLType(), iter_ptr_val, length)
 	}
 
-	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlockNamed("loopStart"), c.builder().newBlockNamed("condBlock"), c.builder().newBlockNamed("bodyBlock"), c.builder().newBlockNamed("incrementBlock"), c.builder().newBlockNamed("leaveBlock")
+	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
 	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntEQ, length, c.zero, ""), leaveBlock, loopStart)
 
 	c.builder().setBlock(loopStart)
@@ -2687,7 +2691,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	loopVar := c.scp.lookupVar(s.Initializer)
 
-	continueBlock := c.builder().newBlockNamed("continueBlock")
+	continueBlock := c.builder().newBlock()
 	c.builder().setBlock(continueBlock)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
 	c.builder().CreateBr(incrementBlock)
@@ -2713,7 +2717,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 			c.deepCopyInto(loopVar.val, elementPtr, inListTyp.elementType)
 		}
 	}
-	breakLeave := c.builder().newBlockNamed("breakLeave")
+	breakLeave := c.builder().newBlock()
 	c.builder().curLoopScope, c.builder().curLeaveBlock, c.builder().curContinueBlock = c.scp, breakLeave, continueBlock
 	c.visitNode(s.Body)
 	c.freeNonPrimitive(loopVar.val, loopVar.typ)
@@ -2760,7 +2764,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	// delete(c.scp.variables, s.Initializer.Name()) // the loopvar was already freed
 	c.scp = c.exitScope(c.scp)
 
-	trueLeave := c.builder().newBlockNamed("trueLeave")
+	trueLeave := c.builder().newBlock()
 
 	c.builder().setBlock(breakLeave)
 	c.freeNonPrimitive(in, inTyp)
@@ -2796,7 +2800,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			}()
 		}
 
-		for scp := c.scp; scp != c.scp; scp = scp.enclosing {
+		for scp := c.scp; scp != c.fnScope; scp = scp.enclosing {
 			for _, Var := range scp.variables {
 				if !Var.isRef {
 					c.freeNonPrimitive(Var.val, Var.typ)
@@ -2835,7 +2839,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			val, valTyp, isTemp = c.castNonAnyToAny(val, valTyp, isTemp, vtable)
 		}
 
-		c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, ""), c.builder().params[0].val)
+		c.builder().CreateStore(c.builder().CreateLoad(valTyp.LLType(), val, s.Value.String()), c.builder().params[0].val)
 		c.claimOrCopy(c.builder().params[0].val, val, valTyp, isTemp)
 		c.builder().CreateRet(llvm.Value{})
 	}
@@ -2872,9 +2876,9 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
+			ir_type.FreeFunc(),
+			ir_type.DeepCopyFunc(),
+			ir_type.EqualsFunc(),
 		}))
 	}
 

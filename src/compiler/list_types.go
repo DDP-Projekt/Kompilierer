@@ -110,9 +110,9 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(list), false),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
+			list.freeIrFun,
+			list.deepCopyIrFun,
+			list.equalsIrFun,
 		}))
 	}
 

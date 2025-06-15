@@ -121,9 +121,9 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
+			ddpstring.freeIrFun,
+			ddpstring.deepCopyIrFun,
+			ddpstring.equalsIrFun,
 		}))
 	}
 

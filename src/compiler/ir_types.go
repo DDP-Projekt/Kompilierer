@@ -26,6 +26,7 @@ type ddpIrPrimitiveType struct {
 	llType       llvm.Type
 	defaultValue llvm.Value
 	vtable       llvm.Value
+	funcNull     llvm.Value
 	name         string
 }
 
@@ -51,22 +52,23 @@ func (t *ddpIrPrimitiveType) VTable() llvm.Value {
 	return t.vtable
 }
 
-func (*ddpIrPrimitiveType) FreeFunc() llvm.Value {
-	return llvm.Value{}
+func (t *ddpIrPrimitiveType) FreeFunc() llvm.Value {
+	return t.funcNull
 }
 
-func (*ddpIrPrimitiveType) DeepCopyFunc() llvm.Value {
-	return llvm.Value{}
+func (t *ddpIrPrimitiveType) DeepCopyFunc() llvm.Value {
+	return t.funcNull
 }
 
-func (*ddpIrPrimitiveType) EqualsFunc() llvm.Value {
-	return llvm.Value{}
+func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
+	return t.funcNull
 }
 
 func (c *compiler) definePrimitiveType(typ llvm.Type, defaultValue llvm.Value, name string, declarationOnly bool) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		llType:       typ,
 		defaultValue: defaultValue,
+		funcNull:     llvm.ConstNull(c.ptr),
 		name:         name,
 	}
 
