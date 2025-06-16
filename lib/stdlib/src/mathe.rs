@@ -1,4 +1,4 @@
-use crate::ddptypes::*;
+use ddpruntime::ddptypes::*;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Sinus(x: DDPFloat) -> DDPFloat {

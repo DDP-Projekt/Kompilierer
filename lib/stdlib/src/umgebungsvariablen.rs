@@ -1,5 +1,5 @@
 use std::env;
-use crate::ddptypes::DDPString;
+use ddpruntime::ddptypes::DDPString;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hole_Umgebungsvariable(ret: &mut DDPString, name: &DDPString) {

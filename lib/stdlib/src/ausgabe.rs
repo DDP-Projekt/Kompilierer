@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use crate::ddptypes::*;
+use ddpruntime::ddptypes::*;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Schreibe_Zahl(x: DDPInt) {

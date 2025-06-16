@@ -99,6 +99,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ddpruntime"
+version = "0.1.0"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -254,10 +258,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "runtime-rust"
-version = "0.1.0"
-
-[[package]]
 name = "rustversion"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -285,8 +285,8 @@ name = "stdlib"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "ddpruntime",
  "rand",
- "runtime-rust",
  "sha2",
  "typed-path",
 ]

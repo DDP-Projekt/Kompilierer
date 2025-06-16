@@ -1,6 +1,5 @@
 use std::ffi::{self, CStr};
-
-use crate::ddptypes::{DDPBool, DDPChar, DDPInt, DDPString};
+use ddpruntime::ddptypes::{DDPBool, DDPChar, DDPInt, DDPString};
 
 #[repr(C)]
 pub struct TextIterator {

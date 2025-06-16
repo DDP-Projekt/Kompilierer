@@ -1,4 +1,4 @@
-use crate::ddptypes::{DDPAny, DDPChar, DDPList, DDPString};
+use ddpruntime::ddptypes::{DDPAny, DDPChar, DDPList, DDPString};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Aneinandergehaengt_Buchstabe_Ref(liste: *mut DDPList<DDPChar>) -> DDPString {

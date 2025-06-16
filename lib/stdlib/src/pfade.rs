@@ -1,5 +1,5 @@
 use typed_path::WindowsPath;
-use crate::ddptypes::DDPString;
+use ddpruntime::ddptypes::DDPString;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Windows_Saeubern(ret: &mut DDPString, pfad: &DDPString) {

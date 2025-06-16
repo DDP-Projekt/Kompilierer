@@ -1,6 +1,3 @@
-use crate::ddptypes::DDPInt;
-
-mod ddptypes;
 mod ausgabe;
 mod mathe;
 mod zufall;
@@ -14,6 +11,8 @@ mod listen;
 mod laufzeit;
 mod text_bauer;
 mod c;
+
+use ddpruntime::ddptypes::DDPInt;
 
 unsafe extern "C" {
 	pub unsafe fn ddp_end_runtime();

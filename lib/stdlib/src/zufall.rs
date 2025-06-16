@@ -1,5 +1,5 @@
 use rand;
-use crate::ddptypes::*;
+use ddpruntime::ddptypes::*;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Zufalls_Kommazahl(a: DDPFloat, b: DDPFloat) -> DDPFloat {

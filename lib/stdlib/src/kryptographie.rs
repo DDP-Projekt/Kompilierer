@@ -1,4 +1,4 @@
-use crate::ddptypes::DDPString;
+use ddpruntime::ddptypes::DDPString;
 use sha2::{Digest, Sha256, Sha512};
 
 #[unsafe(no_mangle)]

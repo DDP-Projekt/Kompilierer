@@ -1,5 +1,5 @@
-use crate::ddptypes::{DDPChar, DDPInt, DDPString};
-use runtime_rust::ddp_reallocate;
+use ddpruntime::ddptypes::{DDPChar, DDPInt, DDPString};
+use ddpruntime::ddp_reallocate;
 
 #[repr(C)]
 pub struct TextBauer {

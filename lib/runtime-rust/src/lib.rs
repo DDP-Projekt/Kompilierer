@@ -1,3 +1,5 @@
+pub mod ddptypes;
+
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ffi::c_int;
 use std::ptr::null_mut;

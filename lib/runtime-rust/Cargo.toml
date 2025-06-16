@@ -1,10 +1,10 @@
 [package]
-name = "runtime-rust"
+name = "ddpruntime"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "runtime_rust"
+name = "ddpruntime"
 crate-type = ["lib", "staticlib"]
 
 [dependencies]

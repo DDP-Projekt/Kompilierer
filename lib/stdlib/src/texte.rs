@@ -1,4 +1,4 @@
-use crate::ddptypes::{DDPByte, DDPList, DDPString};
+use ddpruntime::ddptypes::{DDPByte, DDPList, DDPString};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Text_Zu_ByteListe(ret: &mut DDPList<DDPByte>, text: &DDPString) {
