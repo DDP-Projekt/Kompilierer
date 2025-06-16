@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ffi;
-use std::ptr::null;
-use std::ptr::null_mut;
+use std::ffi::CStr;
+use std::ptr::{null, null_mut};
 use crate::ddp_reallocate;
 
 pub type DDPInt = i64;
@@ -49,6 +49,30 @@ impl DDPString {
 	pub fn is_empty(&self) -> bool {
 		self.str.is_null() || self.cap <= 0 || unsafe { self.str.read() == 0 }
 	}
+
+	pub fn byte_len(&self) -> DDPInt {
+		if self.str.is_null() {
+			0
+		}
+		else {
+			unsafe { CStr::from_ptr(self.str) }.to_bytes().len() as DDPInt
+		}
+	}
+}
+
+impl Clone for DDPString {
+	fn clone(&self) -> Self {
+		if self.str.is_null() {
+			return DDPString::new();
+		}
+
+		unsafe {
+			let ptr = ddp_reallocate(null_mut(), 0, self.cap);
+			std::ptr::copy_nonoverlapping(self.str as *const u8, ptr, self.cap);
+
+			Self { str: ptr as *const i8, cap: self.cap }
+		}
+	}
 }
 
 impl From<&[u8]> for DDPString {
@@ -78,7 +102,7 @@ impl fmt::Display for DDPString {
 			return write!(f, "");
 		}
 		unsafe {
-			match ffi::CStr::from_ptr(self.str).to_str() {
+			match CStr::from_ptr(self.str).to_str() {
 				Ok(s) => write!(f, "{}", s),
 				Err(e) => write!(f, "<{}>", e),
 			}
