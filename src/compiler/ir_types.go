@@ -6,45 +6,34 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
 )
 
 // interface for the ir-representation of a ddptype
 // it exposes some information that all types share
 type ddpIrType interface {
-	IrType() types.Type              // retreives the corresponding types.Type
-	PtrType() *types.PointerType     // ptr(IrType())
-	Name() string                    // name of the type
-	IsPrimitive() bool               // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
-	DefaultValue() constant.Constant // returns a default value for the type
-	VTable() constant.Constant       // returns a pointer to the vtable of this type
-	LLVMType() llvm.Type             // returns the llvm type
-	FreeFunc() *ir.Func              // returns the irFunc used to free this type, nil if IsPrimitive == true
-	DeepCopyFunc() *ir.Func          // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
-	EqualsFunc() *ir.Func            // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
+	LLType() llvm.Type        // returns the llvm type
+	Name() string             // name of the type
+	IsPrimitive() bool        // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
+	DefaultValue() llvm.Value // returns a default value for the type
+	VTable() llvm.Value       // returns a pointer to the vtable of this type
+	FreeFunc() llvm.Value     // returns the irFunc used to free this type, nil if IsPrimitive == true
+	DeepCopyFunc() llvm.Value // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
+	EqualsFunc() llvm.Value   // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
 }
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
 type ddpIrPrimitiveType struct {
-	typ          types.Type
-	ptr          *types.PointerType
-	defaultValue constant.Constant
-	vtable       *ir.Global
-	name         string
 	llType       llvm.Type
+	defaultValue llvm.Value
+	vtable       llvm.Value
+	funcNull     llvm.Value
+	name         string
 }
 
 var _ ddpIrType = (*ddpIrPrimitiveType)(nil)
 
-func (t *ddpIrPrimitiveType) IrType() types.Type {
-	return t.typ
-}
-
-func (t *ddpIrPrimitiveType) PtrType() *types.PointerType {
-	return t.ptr
+func (t *ddpIrPrimitiveType) LLType() llvm.Type {
+	return t.llType
 }
 
 func (t *ddpIrPrimitiveType) Name() string {
@@ -55,61 +44,46 @@ func (*ddpIrPrimitiveType) IsPrimitive() bool {
 	return true
 }
 
-func (t *ddpIrPrimitiveType) DefaultValue() constant.Constant {
+func (t *ddpIrPrimitiveType) DefaultValue() llvm.Value {
 	return t.defaultValue
 }
 
-func (t *ddpIrPrimitiveType) VTable() constant.Constant {
+func (t *ddpIrPrimitiveType) VTable() llvm.Value {
 	return t.vtable
 }
 
-func (t *ddpIrPrimitiveType) LLVMType() llvm.Type {
-	return t.llType
+func (t *ddpIrPrimitiveType) FreeFunc() llvm.Value {
+	return t.funcNull
 }
 
-func (*ddpIrPrimitiveType) FreeFunc() *ir.Func {
-	return nil
+func (t *ddpIrPrimitiveType) DeepCopyFunc() llvm.Value {
+	return t.funcNull
 }
 
-func (*ddpIrPrimitiveType) DeepCopyFunc() *ir.Func {
-	return nil
+func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
+	return t.funcNull
 }
 
-func (*ddpIrPrimitiveType) EqualsFunc() *ir.Func {
-	return nil
-}
-
-func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Constant, llType llvm.Type, name string, declarationOnly bool) *ddpIrPrimitiveType {
-	typ_ptr := ptr(typ)
-
-	// the single field is a dummy pointer to make the struct non-zero sized
-	vtable_type := c.mod.NewTypeDef(name+"_vtable_type", types.NewStruct(
-		ddpint,
-		ptr(types.NewFunc(types.Void, typ_ptr)),
-		ptr(types.NewFunc(types.Void, typ_ptr, typ_ptr)),
-		ptr(types.NewFunc(ddpbool, typ_ptr, typ_ptr)),
-	))
-
+func (c *compiler) definePrimitiveType(typ llvm.Type, defaultValue llvm.Value, name string, declarationOnly bool) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
-		typ:          typ,
-		ptr:          typ_ptr,
+		llType:       typ,
 		defaultValue: defaultValue,
+		funcNull:     llvm.ConstNull(c.ptr),
 		name:         name,
-		llType:       llType,
 	}
 
-	var vtable *ir.Global
-	if declarationOnly {
-		vtable = c.mod.NewGlobal(name+"_vtable", ptr(vtable_type))
-		vtable.Linkage = enum.LinkageExternal
-		vtable.Visibility = enum.VisibilityDefault
-	} else {
-		vtable = c.mod.NewGlobalDef(name+"_vtable", constant.NewStruct(vtable_type.(*types.StructType),
-			newInt(int64(c.getTypeSize(primitive))),
-			constant.NewNull(vtable_type.(*types.StructType).Fields[1].(*types.PointerType)),
-			constant.NewNull(vtable_type.(*types.StructType).Fields[2].(*types.PointerType)),
-			constant.NewNull(vtable_type.(*types.StructType).Fields[3].(*types.PointerType)),
-		))
+	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
+	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetVisibility(llvm.DefaultVisibility)
+
+	if !declarationOnly {
+		vtable.SetGlobalConstant(true)
+		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+			llvm.ConstInt(c.ddpint, c.getTypeSize(primitive), false),
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+		}))
 	}
 
 	primitive.vtable = vtable
@@ -118,16 +92,18 @@ func (c *compiler) definePrimitiveType(typ types.Type, defaultValue constant.Con
 }
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
-type ddpIrVoidType struct{}
+type ddpIrVoidType struct {
+	rawType llvm.Type
+}
 
 var _ ddpIrType = (*ddpIrVoidType)(nil)
 
-func (t *ddpIrVoidType) IrType() types.Type {
-	return types.Void
+func (t *ddpIrVoidType) LLType() llvm.Type {
+	return t.rawType
 }
 
-func (t *ddpIrVoidType) PtrType() *types.PointerType {
-	return nil
+func (t *ddpIrVoidType) PtrType() llvm.Type {
+	return llvm.Type{}
 }
 
 func (t *ddpIrVoidType) Name() string {
@@ -138,26 +114,26 @@ func (*ddpIrVoidType) IsPrimitive() bool {
 	return true
 }
 
-func (t *ddpIrVoidType) DefaultValue() constant.Constant {
-	return nil
+func (t *ddpIrVoidType) DefaultValue() llvm.Value {
+	return llvm.Value{}
 }
 
-func (t *ddpIrVoidType) VTable() constant.Constant {
-	return nil
+func (t *ddpIrVoidType) VTable() llvm.Value {
+	return llvm.Value{}
 }
 
-func (t *ddpIrVoidType) LLVMType() llvm.Type {
-	return llvm.VoidType()
+func (*ddpIrVoidType) FreeFunc() llvm.Value {
+	return llvm.Value{}
 }
 
-func (*ddpIrVoidType) FreeFunc() *ir.Func {
-	return nil
+func (*ddpIrVoidType) DeepCopyFunc() llvm.Value {
+	return llvm.Value{}
 }
 
-func (*ddpIrVoidType) DeepCopyFunc() *ir.Func {
-	return nil
+func (*ddpIrVoidType) EqualsFunc() llvm.Value {
+	return llvm.Value{}
 }
 
-func (*ddpIrVoidType) EqualsFunc() *ir.Func {
-	return nil
+func (c *compiler) defineVoidType() *ddpIrVoidType {
+	return &ddpIrVoidType{rawType: c.void}
 }

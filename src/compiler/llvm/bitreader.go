@@ -24,9 +24,9 @@ import (
 	"unsafe"
 )
 
-// ParseBitcodeFile parses the LLVM IR (bitcode) in the file with the
-// specified name, and returns a new LLVM module.
-func ParseBitcodeFile(name string) (Module, error) {
+// ParseBitcodeFile parses the LLVM IR (bitcode) in the file with the specified
+// name, and returns a new LLVM module.
+func (c Context) ParseBitcodeFile(name string) (Module, error) {
 	var buf C.LLVMMemoryBufferRef
 	var errmsg *C.char
 	var cfilename *C.char = C.CString(name)
@@ -40,7 +40,7 @@ func ParseBitcodeFile(name string) (Module, error) {
 	defer C.LLVMDisposeMemoryBuffer(buf)
 
 	var m Module
-	if C.LLVMParseBitcode2(buf, &m.C) == 0 {
+	if C.LLVMParseBitcodeInContext2(c.C, buf, &m.C) == 0 {
 		return m, nil
 	}
 

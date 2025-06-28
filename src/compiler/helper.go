@@ -9,51 +9,42 @@ import (
 	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
-
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 )
 
-// often used types declared here to shorten their names
-var (
-	i8  = types.I8
-	i32 = types.I32
-	i64 = types.I64
-
-	// convenience declarations for often used types
-	ddpint   = i64
-	ddpfloat = types.Double
-	ddpbyte  = types.I8
-	ddpbool  = types.I1
-	ddpchar  = i32
-
-	ptr = types.NewPointer
-
-	i8ptr = ptr(i8)
-
-	zero      = newInt(0) // 0: i64
-	zerof     = constant.NewFloat(ddpfloat, 0)
-	zero8     = newIntT(ddpbyte, 0)
-	all_ones  = newInt(^0) // int with all bits set to 1
-	all_ones8 = newIntT(ddpbyte, ^0)
-)
-
-func newInt(value int64) *constant.Int {
-	return constant.NewInt(ddpint, value)
+func (c *compiler) newInt(i int64) llvm.Value {
+	switch i {
+	case 0:
+		return c.zero
+	case 1:
+		return c.one
+	}
+	return llvm.ConstInt(c.ddpint, uint64(i), false)
 }
 
-func newIntT(typ *types.IntType, value int64) *constant.Int {
-	return constant.NewInt(typ, value)
+func (c *compiler) newIntT(t llvm.Type, i int64) llvm.Value {
+	return llvm.ConstInt(t, uint64(i), false)
+}
+
+func (c *compiler) newFloat(f float64) llvm.Value {
+	return llvm.ConstFloat(c.ddpfloat, f)
 }
 
 // wrapper for c.cf.Blocks[0].NewAlloca
 // because allocatin on c.cbb can cause stackoverflows in loops
-func (c *compiler) NewAlloca(elemType types.Type) *ir.InstAlloca {
-	return c.cf.Blocks[0].NewAlloca(elemType)
+func (c *compiler) NewAlloca(elemType llvm.Type) llvm.Value {
+	cb := c.builder().cb
+	bb := c.builder().llFn.FirstBasicBlock()
+	firstInst := bb.FirstInstruction()
+	if !firstInst.IsNil() {
+		c.builder().SetInsertPointBefore(firstInst) // allocas may not override terminators
+	} else {
+		c.builder().SetInsertPointAtEnd(bb)
+	}
+	alloca := c.builder().CreateAlloca(elemType, "")
+	c.builder().SetInsertPointAtEnd(cb)
+	return alloca
 }
 
 // turn a ddptypes.Type into the corresponding llvm type
@@ -96,7 +87,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VARIABLE:
 			return c.ddpany
 		case ddptypes.VoidType{}:
-			return c.void
+			return c.voidtyp
 		default: // struct types
 			return c.structTypes[ddpType.(*ddptypes.StructType)]
 		}
@@ -104,14 +95,14 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 }
 
 // used to handle possible reference parameters
-func (c *compiler) toIrParamType(ty ddptypes.ParameterType) types.Type {
+func (c *compiler) toIrParamType(ty ddptypes.ParameterType) llvm.Type {
 	irType := c.toIrType(ty.Type)
 
 	if !ty.IsReference && irType.IsPrimitive() {
-		return irType.IrType()
+		return irType.LLType()
 	}
 
-	return irType.PtrType()
+	return c.ptr
 }
 
 func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
@@ -137,7 +128,7 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 
 // returns the aligned size of a type
 func (c *compiler) getTypeSize(ty ddpIrType) uint64 {
-	return c.llTarget.targetData.TypeAllocSize(ty.LLVMType())
+	return c.llTargetData.TypeAllocSize(ty.LLType())
 }
 
 func getHashableModuleName(mod *ast.Module) string {
@@ -237,15 +228,24 @@ func mangledNameBase(name string, module *ast.Module) string {
 }
 
 // compares two values of same type for equality
-func (c *compiler) compare_values(lhs, rhs value.Value, typ ddpIrType) value.Value {
+func (c *compiler) compare_values(lhs, rhs llvm.Value, typ ddpIrType) llvm.Value {
 	switch typ {
 	case c.ddpinttyp, c.ddpbytetyp, c.ddpbooltyp, c.ddpchartyp:
-		c.latestReturn = c.cbb.NewICmp(enum.IPredEQ, lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateICmp(llvm.IntEQ, lhs, rhs, "")
 	case c.ddpfloattyp:
-		c.latestReturn = c.cbb.NewFCmp(enum.FPredOEQ, lhs, rhs)
+		c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOEQ, lhs, rhs, "")
 	default:
-		c.latestReturn = c.cbb.NewCall(typ.EqualsFunc(), lhs, rhs)
+		equalsFunc := typ.EqualsFunc()
+		c.builder().latestReturn = c.builder().createCall(equalsFunc, lhs, rhs)
 	}
-	c.latestReturnType = c.ddpbooltyp
-	return c.latestReturn
+	c.builder().latestReturnType = c.ddpbooltyp
+	return c.builder().latestReturn
+}
+
+// converts b to 1 or 0
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

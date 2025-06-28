@@ -198,6 +198,15 @@ const (
 	ShuffleVector  Opcode = C.LLVMShuffleVector
 	ExtractValue   Opcode = C.LLVMExtractValue
 	InsertValue    Opcode = C.LLVMInsertValue
+
+	// Exception Handling Operators
+	Resume      Opcode = C.LLVMResume
+	LandingPad  Opcode = C.LLVMLandingPad
+	CleanupRet  Opcode = C.LLVMCleanupRet
+	CatchRet    Opcode = C.LLVMCatchRet
+	CatchPad    Opcode = C.LLVMCatchPad
+	CleanupPad  Opcode = C.LLVMCleanupPad
+	CatchSwitch Opcode = C.LLVMCatchSwitch
 )
 
 const (
@@ -229,22 +238,21 @@ const (
 //-------------------------------------------------------------------------
 
 const (
-	VoidTypeKind           TypeKind = C.LLVMVoidTypeKind
-	FloatTypeKind          TypeKind = C.LLVMFloatTypeKind
-	DoubleTypeKind         TypeKind = C.LLVMDoubleTypeKind
-	X86_FP80TypeKind       TypeKind = C.LLVMX86_FP80TypeKind
-	FP128TypeKind          TypeKind = C.LLVMFP128TypeKind
-	PPC_FP128TypeKind      TypeKind = C.LLVMPPC_FP128TypeKind
-	LabelTypeKind          TypeKind = C.LLVMLabelTypeKind
-	IntegerTypeKind        TypeKind = C.LLVMIntegerTypeKind
-	FunctionTypeKind       TypeKind = C.LLVMFunctionTypeKind
-	StructTypeKind         TypeKind = C.LLVMStructTypeKind
-	ArrayTypeKind          TypeKind = C.LLVMArrayTypeKind
-	PointerTypeKind        TypeKind = C.LLVMPointerTypeKind
-	MetadataTypeKind       TypeKind = C.LLVMMetadataTypeKind
-	TokenTypeKind          TypeKind = C.LLVMTokenTypeKind
-	VectorTypeKind         TypeKind = C.LLVMVectorTypeKind
-	ScalableVectorTypeKind TypeKind = C.LLVMScalableVectorTypeKind
+	VoidTypeKind      TypeKind = C.LLVMVoidTypeKind
+	FloatTypeKind     TypeKind = C.LLVMFloatTypeKind
+	DoubleTypeKind    TypeKind = C.LLVMDoubleTypeKind
+	X86_FP80TypeKind  TypeKind = C.LLVMX86_FP80TypeKind
+	FP128TypeKind     TypeKind = C.LLVMFP128TypeKind
+	PPC_FP128TypeKind TypeKind = C.LLVMPPC_FP128TypeKind
+	LabelTypeKind     TypeKind = C.LLVMLabelTypeKind
+	IntegerTypeKind   TypeKind = C.LLVMIntegerTypeKind
+	FunctionTypeKind  TypeKind = C.LLVMFunctionTypeKind
+	StructTypeKind    TypeKind = C.LLVMStructTypeKind
+	ArrayTypeKind     TypeKind = C.LLVMArrayTypeKind
+	PointerTypeKind   TypeKind = C.LLVMPointerTypeKind
+	VectorTypeKind    TypeKind = C.LLVMVectorTypeKind
+	MetadataTypeKind  TypeKind = C.LLVMMetadataTypeKind
+	TokenTypeKind     TypeKind = C.LLVMTokenTypeKind
 )
 
 //-------------------------------------------------------------------------
@@ -395,6 +403,16 @@ func (c Context) CreateEnumAttribute(kind uint, val uint64) (a Attribute) {
 	return
 }
 
+func (c Context) CreateTypeAttribute(kind uint, t Type) (a Attribute) {
+	a.C = C.LLVMCreateTypeAttribute(c.C, C.unsigned(kind), t.C)
+	return
+}
+
+func (a Attribute) GetTypeValue() (t Type) {
+	t.C = C.LLVMGetTypeAttributeValue(a.C)
+	return
+}
+
 func (a Attribute) GetEnumKind() (id int) {
 	id = int(C.LLVMGetEnumAttributeKind(a.C))
 	return
@@ -442,13 +460,6 @@ func (a Attribute) IsString() bool {
 
 // Create and destroy modules.
 // See llvm::Module::Module.
-func NewModule(name string) (m Module) {
-	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
-	m.C = C.LLVMModuleCreateWithName(cname)
-	return
-}
-
 func (c Context) NewModule(name string) (m Module) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -497,7 +508,7 @@ func (m Module) Dump() {
 
 func (m Module) String() string {
 	cir := C.LLVMPrintModuleToString(m.C)
-	defer C.free(unsafe.Pointer(cir))
+	defer C.LLVMDisposeMessage(cir)
 	ir := C.GoString(cir)
 	return ir
 }
@@ -558,17 +569,6 @@ func (c Context) IntType(numbits int) (t Type) {
 	return
 }
 
-func Int1Type() (t Type)  { t.C = C.LLVMInt1Type(); return }
-func Int8Type() (t Type)  { t.C = C.LLVMInt8Type(); return }
-func Int16Type() (t Type) { t.C = C.LLVMInt16Type(); return }
-func Int32Type() (t Type) { t.C = C.LLVMInt32Type(); return }
-func Int64Type() (t Type) { t.C = C.LLVMInt64Type(); return }
-
-func IntType(numbits int) (t Type) {
-	t.C = C.LLVMIntType(C.unsigned(numbits))
-	return
-}
-
 func (t Type) IntTypeWidth() int {
 	return int(C.LLVMGetIntTypeWidth(t.C))
 }
@@ -579,12 +579,6 @@ func (c Context) DoubleType() (t Type)   { t.C = C.LLVMDoubleTypeInContext(c.C);
 func (c Context) X86FP80Type() (t Type)  { t.C = C.LLVMX86FP80TypeInContext(c.C); return }
 func (c Context) FP128Type() (t Type)    { t.C = C.LLVMFP128TypeInContext(c.C); return }
 func (c Context) PPCFP128Type() (t Type) { t.C = C.LLVMPPCFP128TypeInContext(c.C); return }
-
-func FloatType() (t Type)    { t.C = C.LLVMFloatType(); return }
-func DoubleType() (t Type)   { t.C = C.LLVMDoubleType(); return }
-func X86FP80Type() (t Type)  { t.C = C.LLVMX86FP80Type(); return }
-func FP128Type() (t Type)    { t.C = C.LLVMFP128Type(); return }
-func PPCFP128Type() (t Type) { t.C = C.LLVMPPCFP128Type(); return }
 
 // Operations on function types
 func FunctionType(returnType Type, paramTypes []Type, isVarArg bool) (t Type) {
@@ -671,6 +665,11 @@ func (t Type) StructElementTypes() []Type {
 	return out
 }
 
+func (t Type) StructElementTypeAtIndex(i int) (r Type) {
+	r.C = C.LLVMStructGetTypeAtIndex(t.C, C.unsigned(i))
+	return r
+}
+
 // Operations on array, pointer, and vector types (sequence types)
 func (t Type) Subtypes() (ret []Type) {
 	ret = make([]Type, C.LLVMGetNumContainedTypes(t.C))
@@ -702,9 +701,10 @@ func (t Type) VectorSize() int          { return int(C.LLVMGetVectorSize(t.C)) }
 func (c Context) VoidType() (t Type)  { t.C = C.LLVMVoidTypeInContext(c.C); return }
 func (c Context) LabelType() (t Type) { t.C = C.LLVMLabelTypeInContext(c.C); return }
 func (c Context) TokenType() (t Type) { t.C = C.LLVMTokenTypeInContext(c.C); return }
-
-func VoidType() (t Type)  { t.C = C.LLVMVoidType(); return }
-func LabelType() (t Type) { t.C = C.LLVMLabelType(); return }
+func (c Context) PointerType(addressSpace int) (t Type) {
+	t.C = C.LLVMPointerTypeInContext(c.C, C.unsigned(addressSpace))
+	return
+}
 
 //-------------------------------------------------------------------------
 // llvm.Value
@@ -728,6 +728,14 @@ func (v Value) Metadata(kind int) (rv Value) {
 
 func (v Value) SetMetadata(kind int, node Metadata) {
 	C.LLVMSetMetadata2(v.C, C.unsigned(kind), node.C)
+}
+
+// Obtain the string value of the instruction. Same as would be printed with
+// Value.Dump() (with two spaces at the start but no newline at the end).
+func (v Value) String() string {
+	cstr := C.LLVMPrintValueToString(v.C)
+	defer C.LLVMDisposeMessage(cstr)
+	return C.GoString(cstr)
 }
 
 // Conversion functions.
@@ -867,6 +875,11 @@ func ConstFloatFromString(t Type, str string) (v Value) {
 
 func (v Value) ZExtValue() uint64 { return uint64(C.LLVMConstIntGetZExtValue(v.C)) }
 func (v Value) SExtValue() int64  { return int64(C.LLVMConstIntGetSExtValue(v.C)) }
+func (v Value) DoubleValue() (result float64, inexact bool) {
+	var losesInfo C.LLVMBool
+	doubleResult := C.LLVMConstRealGetDouble(v.C, &losesInfo)
+	return float64(doubleResult), losesInfo != 0
+}
 
 // Operations on composite constants
 func (c Context) ConstString(str string, addnull bool) (v Value) {
@@ -916,101 +929,57 @@ func ConstVector(scalarConstVals []Value, packed bool) (v Value) {
 	return
 }
 
+// IsConstantString checks if the constant is an array of i8.
+func (v Value) IsConstantString() bool {
+	return C.LLVMIsConstantString(v.C) != 0
+}
+
+// ConstGetAsString will return the string contained in a constant.
+func (v Value) ConstGetAsString() string {
+	length := C.size_t(0)
+	cstr := C.LLVMGetAsString(v.C, &length)
+	return C.GoStringN(cstr, C.int(length))
+}
+
 // Constant expressions
-func (v Value) Opcode() Opcode                { return Opcode(C.LLVMGetConstOpcode(v.C)) }
-func (v Value) InstructionOpcode() Opcode     { return Opcode(C.LLVMGetInstructionOpcode(v.C)) }
-func AlignOf(t Type) (v Value)                { v.C = C.LLVMAlignOf(t.C); return }
-func SizeOf(t Type) (v Value)                 { v.C = C.LLVMSizeOf(t.C); return }
-func ConstNeg(v Value) (rv Value)             { rv.C = C.LLVMConstNeg(v.C); return }
-func ConstNSWNeg(v Value) (rv Value)          { rv.C = C.LLVMConstNSWNeg(v.C); return }
-func ConstNUWNeg(v Value) (rv Value)          { rv.C = C.LLVMConstNUWNeg(v.C); return }
-func ConstFNeg(v Value) (rv Value)            { rv.C = C.LLVMConstFNeg(v.C); return }
-func ConstNot(v Value) (rv Value)             { rv.C = C.LLVMConstNot(v.C); return }
-func ConstAdd(lhs, rhs Value) (v Value)       { v.C = C.LLVMConstAdd(lhs.C, rhs.C); return }
-func ConstNSWAdd(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNSWAdd(lhs.C, rhs.C); return }
-func ConstNUWAdd(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNUWAdd(lhs.C, rhs.C); return }
-func ConstFAdd(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstFAdd(lhs.C, rhs.C); return }
-func ConstSub(lhs, rhs Value) (v Value)       { v.C = C.LLVMConstSub(lhs.C, rhs.C); return }
-func ConstNSWSub(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNSWSub(lhs.C, rhs.C); return }
-func ConstNUWSub(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNUWSub(lhs.C, rhs.C); return }
-func ConstFSub(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstFSub(lhs.C, rhs.C); return }
-func ConstMul(lhs, rhs Value) (v Value)       { v.C = C.LLVMConstMul(lhs.C, rhs.C); return }
-func ConstNSWMul(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNSWMul(lhs.C, rhs.C); return }
-func ConstNUWMul(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstNUWMul(lhs.C, rhs.C); return }
-func ConstFMul(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstFMul(lhs.C, rhs.C); return }
-func ConstUDiv(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstUDiv(lhs.C, rhs.C); return }
-func ConstSDiv(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstSDiv(lhs.C, rhs.C); return }
-func ConstExactSDiv(lhs, rhs Value) (v Value) { v.C = C.LLVMConstExactSDiv(lhs.C, rhs.C); return }
-func ConstFDiv(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstFDiv(lhs.C, rhs.C); return }
-func ConstURem(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstURem(lhs.C, rhs.C); return }
-func ConstSRem(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstSRem(lhs.C, rhs.C); return }
-func ConstFRem(lhs, rhs Value) (v Value)      { v.C = C.LLVMConstFRem(lhs.C, rhs.C); return }
-func ConstAnd(lhs, rhs Value) (v Value)       { v.C = C.LLVMConstAnd(lhs.C, rhs.C); return }
-func ConstOr(lhs, rhs Value) (v Value)        { v.C = C.LLVMConstOr(lhs.C, rhs.C); return }
-func ConstXor(lhs, rhs Value) (v Value)       { v.C = C.LLVMConstXor(lhs.C, rhs.C); return }
+func (v Value) Opcode() Opcode             { return Opcode(C.LLVMGetConstOpcode(v.C)) }
+func (v Value) InstructionOpcode() Opcode  { return Opcode(C.LLVMGetInstructionOpcode(v.C)) }
+func AlignOf(t Type) (v Value)             { v.C = C.LLVMAlignOf(t.C); return }
+func SizeOf(t Type) (v Value)              { v.C = C.LLVMSizeOf(t.C); return }
+func ConstNeg(v Value) (rv Value)          { rv.C = C.LLVMConstNeg(v.C); return }
+func ConstNSWNeg(v Value) (rv Value)       { rv.C = C.LLVMConstNSWNeg(v.C); return }
+func ConstNot(v Value) (rv Value)          { rv.C = C.LLVMConstNot(v.C); return }
+func ConstAdd(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstAdd(lhs.C, rhs.C); return }
+func ConstNSWAdd(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNSWAdd(lhs.C, rhs.C); return }
+func ConstNUWAdd(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNUWAdd(lhs.C, rhs.C); return }
+func ConstSub(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstSub(lhs.C, rhs.C); return }
+func ConstNSWSub(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNSWSub(lhs.C, rhs.C); return }
+func ConstNUWSub(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNUWSub(lhs.C, rhs.C); return }
+func ConstMul(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstMul(lhs.C, rhs.C); return }
+func ConstNSWMul(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNSWMul(lhs.C, rhs.C); return }
+func ConstNUWMul(lhs, rhs Value) (v Value) { v.C = C.LLVMConstNUWMul(lhs.C, rhs.C); return }
+func ConstXor(lhs, rhs Value) (v Value)    { v.C = C.LLVMConstXor(lhs.C, rhs.C); return }
 
-func ConstICmp(pred IntPredicate, lhs, rhs Value) (v Value) {
-	v.C = C.LLVMConstICmp(C.LLVMIntPredicate(pred), lhs.C, rhs.C)
-	return
-}
-
-func ConstFCmp(pred FloatPredicate, lhs, rhs Value) (v Value) {
-	v.C = C.LLVMConstFCmp(C.LLVMRealPredicate(pred), lhs.C, rhs.C)
-	return
-}
-
-func ConstShl(lhs, rhs Value) (v Value)  { v.C = C.LLVMConstShl(lhs.C, rhs.C); return }
-func ConstLShr(lhs, rhs Value) (v Value) { v.C = C.LLVMConstLShr(lhs.C, rhs.C); return }
-func ConstAShr(lhs, rhs Value) (v Value) { v.C = C.LLVMConstAShr(lhs.C, rhs.C); return }
-
-func ConstGEP2(t Type, v Value, indices []Value) (rv Value) {
+func ConstGEP(t Type, v Value, indices []Value) (rv Value) {
 	ptr, nvals := llvmValueRefs(indices)
 	rv.C = C.LLVMConstGEP2(t.C, v.C, ptr, nvals)
 	return
 }
 
-func ConstInBoundsGEP2(t Type, v Value, indices []Value) (rv Value) {
+func ConstInBoundsGEP(t Type, v Value, indices []Value) (rv Value) {
 	ptr, nvals := llvmValueRefs(indices)
 	rv.C = C.LLVMConstInBoundsGEP2(t.C, v.C, ptr, nvals)
 	return
 }
 func ConstTrunc(v Value, t Type) (rv Value)    { rv.C = C.LLVMConstTrunc(v.C, t.C); return }
-func ConstSExt(v Value, t Type) (rv Value)     { rv.C = C.LLVMConstSExt(v.C, t.C); return }
-func ConstZExt(v Value, t Type) (rv Value)     { rv.C = C.LLVMConstZExt(v.C, t.C); return }
-func ConstFPTrunc(v Value, t Type) (rv Value)  { rv.C = C.LLVMConstFPTrunc(v.C, t.C); return }
-func ConstFPExt(v Value, t Type) (rv Value)    { rv.C = C.LLVMConstFPExt(v.C, t.C); return }
-func ConstUIToFP(v Value, t Type) (rv Value)   { rv.C = C.LLVMConstUIToFP(v.C, t.C); return }
-func ConstSIToFP(v Value, t Type) (rv Value)   { rv.C = C.LLVMConstSIToFP(v.C, t.C); return }
-func ConstFPToUI(v Value, t Type) (rv Value)   { rv.C = C.LLVMConstFPToUI(v.C, t.C); return }
-func ConstFPToSI(v Value, t Type) (rv Value)   { rv.C = C.LLVMConstFPToSI(v.C, t.C); return }
 func ConstPtrToInt(v Value, t Type) (rv Value) { rv.C = C.LLVMConstPtrToInt(v.C, t.C); return }
 func ConstIntToPtr(v Value, t Type) (rv Value) { rv.C = C.LLVMConstIntToPtr(v.C, t.C); return }
 func ConstBitCast(v Value, t Type) (rv Value)  { rv.C = C.LLVMConstBitCast(v.C, t.C); return }
-func ConstZExtOrBitCast(v Value, t Type) (rv Value) {
-	rv.C = C.LLVMConstZExtOrBitCast(v.C, t.C)
-	return
-}
-
-func ConstSExtOrBitCast(v Value, t Type) (rv Value) {
-	rv.C = C.LLVMConstSExtOrBitCast(v.C, t.C)
-	return
-}
-
 func ConstTruncOrBitCast(v Value, t Type) (rv Value) {
 	rv.C = C.LLVMConstTruncOrBitCast(v.C, t.C)
 	return
 }
 func ConstPointerCast(v Value, t Type) (rv Value) { rv.C = C.LLVMConstPointerCast(v.C, t.C); return }
-func ConstIntCast(v Value, t Type, signed bool) (rv Value) {
-	rv.C = C.LLVMConstIntCast(v.C, t.C, boolToLLVMBool(signed))
-	return
-}
-func ConstFPCast(v Value, t Type) (rv Value) { rv.C = C.LLVMConstFPCast(v.C, t.C); return }
-func ConstSelect(cond, iftrue, iffalse Value) (rv Value) {
-	rv.C = C.LLVMConstSelect(cond.C, iftrue.C, iffalse.C)
-	return
-}
-
 func ConstExtractElement(vec, i Value) (rv Value) {
 	rv.C = C.LLVMConstExtractElement(vec.C, i.C)
 	return
@@ -1023,30 +992,6 @@ func ConstInsertElement(vec, elem, i Value) (rv Value) {
 
 func ConstShuffleVector(veca, vecb, mask Value) (rv Value) {
 	rv.C = C.LLVMConstShuffleVector(veca.C, vecb.C, mask.C)
-	return
-}
-
-// TODO
-// LLVMValueRef LLVMConstExtractValue(LLVMValueRef AggConstant, unsigned *IdxList,
-//                                   unsigned NumIdx);
-
-func ConstExtractValue(agg Value, indices []uint32) (rv Value) {
-	n := len(indices)
-	if n == 0 {
-		panic("one or more indices are required")
-	}
-	ptr := (*C.unsigned)(&indices[0])
-	rv.C = C.LLVMConstExtractValue(agg.C, ptr, C.unsigned(n))
-	return
-}
-
-func ConstInsertValue(agg, val Value, indices []uint32) (rv Value) {
-	n := len(indices)
-	if n == 0 {
-		panic("one or more indices are required")
-	}
-	ptr := (*C.unsigned)(&indices[0])
-	rv.C = C.LLVMConstInsertValue(agg.C, val.C, ptr, C.unsigned(n))
 	return
 }
 
@@ -1071,6 +1016,7 @@ func (v Value) SetVisibility(vi Visibility) { C.LLVMSetVisibility(v.C, C.LLVMVis
 func (v Value) Alignment() int              { return int(C.LLVMGetAlignment(v.C)) }
 func (v Value) SetAlignment(a int)          { C.LLVMSetAlignment(v.C, C.unsigned(a)) }
 func (v Value) SetUnnamedAddr(ua bool)      { C.LLVMSetUnnamedAddr(v.C, boolToLLVMBool(ua)) }
+func (v Value) GlobalValueType() (t Type)   { t.C = C.LLVMGlobalGetValueType(v.C); return }
 
 // Operations on global variables
 func AddGlobal(m Module, t Type, name string) (v Value) {
@@ -1133,7 +1079,7 @@ func (v Value) SetCmpXchgFailureOrdering(ordering AtomicOrdering) {
 }
 
 // Operations on aliases
-func AddAlias2(m Module, t Type, addressSpace uint32, aliasee Value, name string) (v Value) {
+func AddAlias(m Module, t Type, addressSpace int, aliasee Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	v.C = C.LLVMAddAlias2(m.C, t.C, C.unsigned(addressSpace), aliasee.C, cname)
@@ -1272,14 +1218,37 @@ func (v Value) BasicBlocks() []BasicBlock {
 	C.LLVMGetBasicBlocks(v.C, llvmBasicBlockRefPtr(&out[0]))
 	return out
 }
-func (v Value) FirstBasicBlock() (bb BasicBlock)    { bb.C = C.LLVMGetFirstBasicBlock(v.C); return }
-func (v Value) LastBasicBlock() (bb BasicBlock)     { bb.C = C.LLVMGetLastBasicBlock(v.C); return }
-func NextBasicBlock(bb BasicBlock) (rbb BasicBlock) { rbb.C = C.LLVMGetNextBasicBlock(bb.C); return }
+
+func (bb BasicBlock) Terminator() (term Value) {
+	term.C = C.LLVMGetBasicBlockTerminator(bb.C)
+	return term
+}
+
+func (v Value) FirstBasicBlock() (bb BasicBlock) {
+	bb.C = C.LLVMGetFirstBasicBlock(v.C)
+	return
+}
+
+func (v Value) LastBasicBlock() (bb BasicBlock) {
+	bb.C = C.LLVMGetLastBasicBlock(v.C)
+	return
+}
+
+func NextBasicBlock(bb BasicBlock) (rbb BasicBlock) {
+	rbb.C = C.LLVMGetNextBasicBlock(bb.C)
+	return
+}
+
 func PrevBasicBlock(bb BasicBlock) (rbb BasicBlock) {
 	rbb.C = C.LLVMGetPreviousBasicBlock(bb.C)
 	return
 }
-func (v Value) EntryBasicBlock() (bb BasicBlock) { bb.C = C.LLVMGetEntryBasicBlock(v.C); return }
+
+func (v Value) EntryBasicBlock() (bb BasicBlock) {
+	bb.C = C.LLVMGetEntryBasicBlock(v.C)
+	return
+}
+
 func (c Context) AddBasicBlock(f Value, name string) (bb BasicBlock) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -1335,12 +1304,30 @@ func (v Value) AddCallSiteAttribute(i int, a Attribute) {
 	C.LLVMAddCallSiteAttribute(v.C, C.LLVMAttributeIndex(i), a.C)
 }
 
+func (v Value) GetCallSiteEnumAttribute(i int, kind uint) (a Attribute) {
+	a.C = C.LLVMGetCallSiteEnumAttribute(v.C, C.LLVMAttributeIndex(i), C.unsigned(kind))
+	return
+}
+
+func (v Value) GetCallSiteStringAttribute(i int, kind string) (a Attribute) {
+	ckind := C.CString(kind)
+	defer C.free(unsafe.Pointer(ckind))
+	a.C = C.LLVMGetCallSiteStringAttribute(v.C, C.LLVMAttributeIndex(i),
+		ckind, C.unsigned(len(kind)))
+	return
+}
+
 func (v Value) SetInstrParamAlignment(i int, align int) {
-	C.LLVMSetInstrParamAlignment(v.C, C.LLVMAttributeIndex(i), C.unsigned(align))
+	C.LLVMSetInstrParamAlignment(v.C, C.unsigned(i), C.unsigned(align))
 }
 
 func (v Value) CalledValue() (rv Value) {
 	rv.C = C.LLVMGetCalledValue(v.C)
+	return
+}
+
+func (v Value) CalledFunctionType() (t Type) {
+	t.C = C.LLVMGetCalledFunctionType(v.C)
 	return
 }
 
@@ -1370,7 +1357,7 @@ func InlineAsm(t Type, asmString, constraints string, hasSideEffects, isAlignSta
 	defer C.free(unsafe.Pointer(casm))
 	cconstraints := C.CString(constraints)
 	defer C.free(unsafe.Pointer(cconstraints))
-	rv.C = C.LLVMGetInlineAsm(t.C, casm, C.size_t(len(asmString)), cconstraints, C.size_t(len(constraints)), boolToLLVMBool(hasSideEffects), boolToLLVMBool(isAlignStack), C.LLVMInlineAsmDialect(dialect), boolToLLVMBool(canThrow))
+	rv.C = C.LLVMGoGetInlineAsm(t.C, casm, C.size_t(len(asmString)), cconstraints, C.size_t(len(constraints)), boolToLLVMBool(hasSideEffects), boolToLLVMBool(isAlignStack), C.LLVMInlineAsmDialect(dialect), boolToLLVMBool(canThrow))
 	return
 }
 
@@ -1391,6 +1378,12 @@ func (v Value) Indices() []uint32 {
 func (v Value) IntPredicate() IntPredicate     { return IntPredicate(C.LLVMGetICmpPredicate(v.C)) }
 func (v Value) FloatPredicate() FloatPredicate { return FloatPredicate(C.LLVMGetFCmpPredicate(v.C)) }
 
+// Operations on GEPs
+func (v Value) GEPSourceElementType() (t Type) { t.C = C.LLVMGetGEPSourceElementType(v.C); return }
+
+// Operations on allocas
+func (v Value) AllocatedType() (t Type) { t.C = C.LLVMGetAllocatedType(v.C); return }
+
 //-------------------------------------------------------------------------
 // llvm.Builder
 //-------------------------------------------------------------------------
@@ -1399,7 +1392,7 @@ func (v Value) FloatPredicate() FloatPredicate { return FloatPredicate(C.LLVMGet
 // exclusive means of building instructions using the C interface.
 
 func (c Context) NewBuilder() (b Builder) { b.C = C.LLVMCreateBuilderInContext(c.C); return }
-func NewBuilder() (b Builder)             { b.C = C.LLVMCreateBuilder(); return }
+
 func (b Builder) SetInsertPoint(block BasicBlock, instr Value) {
 	C.LLVMPositionBuilder(b.C, block.C, instr.C)
 }
@@ -1438,11 +1431,11 @@ func (b Builder) GetCurrentDebugLocation() (loc DebugLoc) {
 func (b Builder) SetInstDebugLocation(v Value) { C.LLVMSetInstDebugLocation(b.C, v.C) }
 func (b Builder) InsertDeclare(module Module, storage Value, md Value) Value {
 	f := module.NamedFunction("llvm.dbg.declare")
+	ftyp := FunctionType(module.Context().VoidType(), []Type{storage.Type(), md.Type()}, false)
 	if f.IsNil() {
-		ftyp := FunctionType(VoidType(), []Type{storage.Type(), md.Type()}, false)
 		f = AddFunction(module, "llvm.dbg.declare", ftyp)
 	}
-	return b.CreateCall2(f.Type(), f, []Value{storage, md}, "")
+	return b.CreateCall(ftyp, f, []Value{storage, md}, "")
 }
 
 // Terminators
@@ -1469,20 +1462,96 @@ func (b Builder) CreateIndirectBr(addr Value, numDests int) (rv Value) {
 	return
 }
 
-func (b Builder) CreateInvoke2(fn Value, args []Value, then, catch BasicBlock, name string) (rv Value) {
+func (b Builder) CreateInvoke(t Type, fn Value, args []Value, then, catch BasicBlock, name string) (rv Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	ptr, nvals := llvmValueRefs(args)
-	rv.C = C.LLVMBuildInvoke2(b.C, fn.Type().C, fn.C, ptr, nvals, then.C, catch.C, cname)
+	rv.C = C.LLVMBuildInvoke2(b.C, t.C, fn.C, ptr, nvals, then.C, catch.C, cname)
 	return
 }
 func (b Builder) CreateUnreachable() (rv Value) { rv.C = C.LLVMBuildUnreachable(b.C); return }
+
+// Exception Handling
+
+func (b Builder) CreateResume(ex Value) (v Value) {
+	v.C = C.LLVMBuildResume(b.C, ex.C)
+	return
+}
+
+func (b Builder) CreateLandingPad(t Type, nclauses int, name string) (l Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	l.C = C.LLVMBuildLandingPad(b.C, t.C, nil, C.unsigned(nclauses), cname)
+	return l
+}
+
+func (b Builder) CreateCleanupRet(catchpad Value, bb BasicBlock) (v Value) {
+	v.C = C.LLVMBuildCleanupRet(b.C, catchpad.C, bb.C)
+	return
+}
+
+func (b Builder) CreateCatchRet(catchpad Value, bb BasicBlock) (v Value) {
+	v.C = C.LLVMBuildCatchRet(b.C, catchpad.C, bb.C)
+	return
+}
+
+func (b Builder) CreateCatchPad(parentPad Value, args []Value, name string) (v Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ptr, nvals := llvmValueRefs(args)
+	v.C = C.LLVMBuildCatchPad(b.C, parentPad.C, ptr, nvals, cname)
+	return
+}
+
+func (b Builder) CreateCleanupPad(parentPad Value, args []Value, name string) (v Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ptr, nvals := llvmValueRefs(args)
+	v.C = C.LLVMBuildCleanupPad(b.C, parentPad.C, ptr, nvals, cname)
+	return
+}
+
+func (b Builder) CreateCatchSwitch(parentPad Value, unwindBB BasicBlock, numHandlers int, name string) (v Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	v.C = C.LLVMBuildCatchSwitch(b.C, parentPad.C, unwindBB.C, C.unsigned(numHandlers), cname)
+	return
+}
 
 // Add a case to the switch instruction
 func (v Value) AddCase(on Value, dest BasicBlock) { C.LLVMAddCase(v.C, on.C, dest.C) }
 
 // Add a destination to the indirectbr instruction
 func (v Value) AddDest(dest BasicBlock) { C.LLVMAddDestination(v.C, dest.C) }
+
+// Add a destination to the catchswitch instruction.
+func (v Value) AddHandler(bb BasicBlock) { C.LLVMAddHandler(v.C, bb.C) }
+
+// Obtain the basic blocks acting as handlers for a catchswitch instruction.
+func (v Value) GetHandlers() []BasicBlock {
+	num := C.LLVMGetNumHandlers(v.C)
+	if num == 0 {
+		return nil
+	}
+	blocks := make([]BasicBlock, num)
+	C.LLVMGetHandlers(v.C, &blocks[0].C)
+	return blocks
+}
+
+// Get the parent catchswitch instruction of a catchpad instruction.
+//
+// This only works on catchpad instructions.
+func (v Value) GetParentCatchSwitch() (rv Value) {
+	rv.C = C.LLVMGetParentCatchSwitch(v.C)
+	return
+}
+
+// Set the parent catchswitch instruction of a catchpad instruction.
+//
+// This only works on llvm::CatchPadInst instructions.
+func (v Value) SetParentCatchSwitch(catchSwitch Value) {
+	C.LLVMSetParentCatchSwitch(v.C, catchSwitch.C)
+}
 
 // Arithmetic
 func (b Builder) CreateAdd(lhs, rhs Value, name string) (v Value) {
@@ -1681,13 +1750,6 @@ func (b Builder) CreateNSWNeg(v Value, name string) (rv Value) {
 	return
 }
 
-func (b Builder) CreateNUWNeg(v Value, name string) (rv Value) {
-	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
-	rv.C = C.LLVMBuildNUWNeg(b.C, v.C, cname)
-	return
-}
-
 func (b Builder) CreateFNeg(v Value, name string) (rv Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -1737,7 +1799,7 @@ func (b Builder) CreateFree(p Value) (v Value) {
 	return
 }
 
-func (b Builder) CreateLoad2(t Type, p Value, name string) (v Value) {
+func (b Builder) CreateLoad(t Type, p Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	v.C = C.LLVMBuildLoad2(b.C, t.C, p.C, cname)
@@ -1749,7 +1811,7 @@ func (b Builder) CreateStore(val Value, p Value) (v Value) {
 	return
 }
 
-func (b Builder) CreateGEP2(t Type, p Value, indices []Value, name string) (v Value) {
+func (b Builder) CreateGEP(t Type, p Value, indices []Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	ptr, nvals := llvmValueRefs(indices)
@@ -1757,7 +1819,7 @@ func (b Builder) CreateGEP2(t Type, p Value, indices []Value, name string) (v Va
 	return
 }
 
-func (b Builder) CreateInBoundsGEP2(t Type, p Value, indices []Value, name string) (v Value) {
+func (b Builder) CreateInBoundsGEP(t Type, p Value, indices []Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	ptr, nvals := llvmValueRefs(indices)
@@ -1765,7 +1827,7 @@ func (b Builder) CreateInBoundsGEP2(t Type, p Value, indices []Value, name strin
 	return
 }
 
-func (b Builder) CreateStructGEP2(t Type, p Value, i int, name string) (v Value) {
+func (b Builder) CreateStructGEP(t Type, p Value, i int, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	v.C = C.LLVMBuildStructGEP2(b.C, t.C, p.C, C.unsigned(i), cname)
@@ -1956,11 +2018,11 @@ func (b Builder) CreatePHI(t Type, name string) (v Value) {
 	return
 }
 
-func (b Builder) CreateCall2(ty Type, fn Value, args []Value, name string) (v Value) {
+func (b Builder) CreateCall(t Type, fn Value, args []Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 	ptr, nvals := llvmValueRefs(args)
-	v.C = C.LLVMBuildCall2(b.C, ty.C, fn.C, ptr, nvals, cname)
+	v.C = C.LLVMBuildCall2(b.C, t.C, fn.C, ptr, nvals, cname)
 	return
 }
 
@@ -2027,18 +2089,11 @@ func (b Builder) CreateIsNotNull(val Value, name string) (v Value) {
 	return
 }
 
-func (b Builder) CreatePtrDiff2(elemType Type, lhs, rhs Value, name string) (v Value) {
+func (b Builder) CreatePtrDiff(t Type, lhs, rhs Value, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
-	v.C = C.LLVMBuildPtrDiff2(b.C, elemType.C, lhs.C, rhs.C, cname)
+	v.C = C.LLVMBuildPtrDiff2(b.C, t.C, lhs.C, rhs.C, cname)
 	return
-}
-
-func (b Builder) CreateLandingPad(t Type, nclauses int, name string) (l Value) {
-	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
-	l.C = C.LLVMBuildLandingPad(b.C, t.C, nil, C.unsigned(nclauses), cname)
-	return l
 }
 
 func (l Value) AddClause(v Value) {
@@ -2047,11 +2102,6 @@ func (l Value) AddClause(v Value) {
 
 func (l Value) SetCleanup(cleanup bool) {
 	C.LLVMSetCleanup(l.C, boolToLLVMBool(cleanup))
-}
-
-func (b Builder) CreateResume(ex Value) (v Value) {
-	v.C = C.LLVMBuildResume(b.C, ex.C)
-	return
 }
 
 //-------------------------------------------------------------------------
