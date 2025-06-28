@@ -110,6 +110,13 @@ func parseListDefsIntoContext(llctx *llvmTargetContext) (llvm.Module, error) {
 // optimizes the given module and returns any error
 func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 	options := llvm.NewPassBuilderOptions()
+	options.SetCallGraphProfile(true)
+	options.SetMergeFunctions(true)
+	options.SetLoopUnrolling(true)
+	options.SetLoopInterleaving(true)
+	options.SetLoopVectorization(true)
+	options.SetSLPVectorization(true)
+
 	defer options.Dispose()
 	// options.SetVerifyEach(true) // TODO: only do this in debug mode as it is expensive
 	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
