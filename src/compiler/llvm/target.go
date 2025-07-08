@@ -19,7 +19,6 @@ package llvm
 #include <stdlib.h>
 */
 import "C"
-
 import (
 	"errors"
 	"unsafe"
@@ -223,7 +222,7 @@ func GetTargetFromTriple(triple string) (t Target, err error) {
 	fail := C.LLVMGetTargetFromTriple(ctriple, &t.C, &errstr)
 	if fail != 0 {
 		err = errors.New(C.GoString(errstr))
-		C.free(unsafe.Pointer(errstr))
+		C.LLVMDisposeMessage(errstr)
 	}
 	return
 }
@@ -243,8 +242,7 @@ func (t Target) Description() string {
 // CreateTargetMachine creates a new TargetMachine.
 func (t Target) CreateTargetMachine(Triple string, CPU string, Features string,
 	Level CodeGenOptLevel, Reloc RelocMode,
-	CodeModel CodeModel,
-) (tm TargetMachine) {
+	CodeModel CodeModel) (tm TargetMachine) {
 	cTriple := C.CString(Triple)
 	defer C.free(unsafe.Pointer(cTriple))
 	cCPU := C.CString(CPU)
@@ -268,6 +266,7 @@ func (tm TargetMachine) CreateTargetData() TargetData {
 // Triple returns the triple describing the machine (arch-vendor-os).
 func (tm TargetMachine) Triple() string {
 	cstr := C.LLVMGetTargetMachineTriple(tm.C)
+	defer C.LLVMDisposeMessage(cstr)
 	return C.GoString(cstr)
 }
 
@@ -294,7 +293,7 @@ func (tm TargetMachine) Dispose() {
 
 func DefaultTargetTriple() (triple string) {
 	cTriple := C.LLVMGetDefaultTargetTriple()
-	defer C.free(unsafe.Pointer(cTriple))
+	defer C.LLVMDisposeMessage(cTriple)
 	triple = C.GoString(cTriple)
 	return
 }

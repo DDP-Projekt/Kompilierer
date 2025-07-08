@@ -24,7 +24,7 @@ func (c *compiler) err(msg string, args ...any) {
 		Err:        nil,
 		Msg:        fmt.Sprintf("(%s, %d) %s", filepath.Base(file), line, fmt.Sprintf(msg, args...)),
 		ModulePath: mod_path,
-		Node:       c.currentNode,
+		Node:       c.builder().currentNode,
 		StackTrace: stack_trace,
 	})
 }
@@ -44,7 +44,7 @@ func compiler_panic_wrapper(c *compiler) {
 			Err:        err,
 			Msg:        getCompilerErrorMsg(err),
 			ModulePath: mod_path,
-			Node:       c.currentNode,
+			Node:       c.builder().currentNode,
 			StackTrace: stack_trace,
 		})
 	}

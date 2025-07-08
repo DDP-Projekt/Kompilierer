@@ -14,6 +14,7 @@ package llvm
 
 /*
 #include "IRBindings.h"
+#include "backports.h"
 #include <stdlib.h>
 */
 import "C"
@@ -224,6 +225,43 @@ func (d *DIBuilder) CreateFunction(diScope Metadata, f DIFunction) Metadata {
 		C.unsigned(f.ScopeLine),
 		C.LLVMDIFlags(f.Flags),
 		C.LLVMBool(boolToCInt(f.Optimized)),
+	)
+	return Metadata{C: result}
+}
+
+// DIGlobalVariableExpression holds the values for creating global variable
+// debug metadata.
+type DIGlobalVariableExpression struct {
+	Name        string   // Name of the variable.
+	LinkageName string   // Mangled name of the variable
+	File        Metadata // File where this variable is defined.
+	Line        int      // Line number.
+	Type        Metadata // Variable Type.
+	LocalToUnit bool     // Flag indicating whether this variable is externally visible or not.
+	Expr        Metadata // The location of the global relative to the attached GlobalVariable.
+	Decl        Metadata // Reference to the corresponding declaration.
+	AlignInBits uint32   // Variable alignment(or 0 if no alignment attr was specified).
+}
+
+// CreateGlobalVariableExpression creates a new descriptor for the specified
+// global variable.
+func (d *DIBuilder) CreateGlobalVariableExpression(diScope Metadata, g DIGlobalVariableExpression) Metadata {
+	name := C.CString(g.Name)
+	defer C.free(unsafe.Pointer(name))
+	linkageName := C.CString(g.LinkageName)
+	defer C.free(unsafe.Pointer(linkageName))
+	result := C.LLVMDIBuilderCreateGlobalVariableExpression(
+		d.ref,                       // Builder
+		diScope.C,                   // Scope
+		name, C.size_t(len(g.Name)), // Name, NameLen
+		linkageName, C.size_t(len(g.LinkageName)), // Linkage, LinkLen
+		g.File.C,                              // File
+		C.unsigned(g.Line),                    // LineNo
+		g.Type.C,                              // Ty
+		C.LLVMBool(boolToCInt(g.LocalToUnit)), // LocalToUnit
+		g.Expr.C,                              // Expr
+		g.Decl.C,                              // Decl
+		C.uint32_t(g.AlignInBits),             // AlignInBits
 	)
 	return Metadata{C: result}
 }
@@ -572,22 +610,12 @@ func (d *DIBuilder) CreateExpression(addr []uint64) Metadata {
 	return Metadata{C: result}
 }
 
-// InsertDeclareAtEnd inserts a call to llvm.dbg.declare at the end of the
-// specified basic block for the given value and associated debug metadata.
-func (d *DIBuilder) InsertDeclareAtEnd(v Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) Value {
-	loc := C.LLVMDIBuilderCreateDebugLocation(
-		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C)
-	result := C.LLVMDIBuilderInsertDeclareAtEnd(d.ref, v.C, diVarInfo.C, expr.C, loc, bb.C)
-	return Value{C: result}
-}
-
 // InsertValueAtEnd inserts a call to llvm.dbg.value at the end of the
 // specified basic block for the given value and associated debug metadata.
-func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) Value {
+func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) {
 	loc := C.LLVMDIBuilderCreateDebugLocation(
 		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C)
-	result := C.LLVMDIBuilderInsertDbgValueAtEnd(d.ref, v.C, diVarInfo.C, expr.C, loc, bb.C)
-	return Value{C: result}
+	C.LLVMGoDIBuilderInsertDbgValueRecordAtEnd(d.ref, v.C, diVarInfo.C, expr.C, loc, bb.C)
 }
 
 func (v Value) SetSubprogram(sp Metadata) {
@@ -597,6 +625,11 @@ func (v Value) SetSubprogram(sp Metadata) {
 func (v Value) Subprogram() (md Metadata) {
 	md.C = C.LLVMGetSubprogram(v.C)
 	return
+}
+
+// AddMetadata adds a metadata entry of the given kind to a global object.
+func (v Value) AddMetadata(kind int, md Metadata) {
+	C.LLVMGlobalObjectAddMetadata(v.C, C.unsigned(kind), md.C)
 }
 
 func boolToCInt(v bool) C.int {
@@ -662,17 +695,25 @@ func (md Metadata) Kind() MetadataKind {
 	return MetadataKind(C.LLVMGetMetadataKind(md.C))
 }
 
-// FileDirectory returns the directory of a DIFile metadata node.
+// FileDirectory returns the directory of a DIFile metadata node, or the empty
+// string if there is no directory information.
 func (md Metadata) FileDirectory() string {
 	var length C.unsigned
 	ptr := C.LLVMDIFileGetDirectory(md.C, &length)
+	if ptr == nil {
+		return ""
+	}
 	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
 }
 
-// FileFilename returns the filename of a DIFile metadata node.
+// FileFilename returns the filename of a DIFile metadata node, or the empty
+// string if there is no filename information.
 func (md Metadata) FileFilename() string {
 	var length C.unsigned
 	ptr := C.LLVMDIFileGetFilename(md.C, &length)
+	if ptr == nil {
+		return ""
+	}
 	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
 }
 
@@ -680,6 +721,9 @@ func (md Metadata) FileFilename() string {
 func (md Metadata) FileSource() string {
 	var length C.unsigned
 	ptr := C.LLVMDIFileGetSource(md.C, &length)
+	if ptr == nil {
+		return ""
+	}
 	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
 }
 
@@ -708,4 +752,9 @@ func (md Metadata) LocationInlinedAt() Metadata {
 // ScopeFile returns the file (DIFile) of a given scope.
 func (md Metadata) ScopeFile() Metadata {
 	return Metadata{C.LLVMDIScopeGetFile(md.C)}
+}
+
+// SubprogramLine returns the line number of a DISubprogram.
+func (md Metadata) SubprogramLine() uint {
+	return uint(C.LLVMDISubprogramGetLine(md.C))
 }
