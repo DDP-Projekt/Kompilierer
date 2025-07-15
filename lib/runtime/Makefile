@@ -1,7 +1,7 @@
 OUT_FILE_NAME = libddpruntime.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 
-.PHONY: all clean debug format
+.PHONY: all clean debug format rust
 .DEFAULT_GOAL = all
 
 CC = gcc
@@ -26,6 +26,8 @@ OBJS_DEBUG = $(OBJS:.o=_debug.o)
 LIB_OBJS = $(filter-out source/main.o, $(OBJS))
 LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
 
+TARGET_TRIPLE=x86_64-pc-windows-gnu
+
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) -o $@ $< 
 
@@ -36,11 +38,19 @@ all: $(OUT_FILE_NAME) source/main.o compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
+ifeq ($(RUST), true)
+$(OUT_FILE_NAME): rust
+else
 $(OUT_FILE_NAME): $(LIB_OBJS)
 	$(AR) $(OUT_FILE_NAME) $(LIB_OBJS)
+endif
 
+ifeq ($(RUST), true)
+$(OUT_FILE_NAME_DEBUG): rust-debug
+else
 $(OUT_FILE_NAME_DEBUG): $(LIB_OBJS_DEBUG)
 	$(AR) $(OUT_FILE_NAME_DEBUG) $(LIB_OBJS_DEBUG)
+endif
 
 compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
@@ -59,5 +69,21 @@ format:
 
 .depend: $(SRCS) $(HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend
+
+rust:
+ifeq ($(OS),Windows_NT)
+	cargo build --release --target $(TARGET_TRIPLE)
+else
+	cargo build --release
+endif
+	cp ../target/$(TARGET_TRIPLE)/release/$(OUT_FILE_NAME) $(OUT_FILE_NAME)
+
+rust-debug:
+ifeq ($(OS),Windows_NT)
+	cargo build --target $(TARGET_TRIPLE)
+else
+	cargo build
+endif
+	cp ../target/$(TARGET_TRIPLE)/debug/$(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG)
 
 include .depend

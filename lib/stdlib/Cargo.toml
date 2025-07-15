@@ -8,7 +8,7 @@ name = "ddpstdlib"
 crate-type = ["staticlib"]
 
 [dependencies]
-ddpruntime = { path = "../runtime-rust" }
+ddpruntime = { path = "../runtime" }
 chrono = "0.4.41"
 rand = "0.9.1"
 sha2 = "0.10.9"

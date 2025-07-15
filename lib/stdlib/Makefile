@@ -3,7 +3,7 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 PCRE2_DIR = ../external/pcre2_build/
 LIBAR_DIR = ../external/libarchive/libarchive/
 
-.PHONY: all clean debug format
+.PHONY: all clean debug format rust
 .DEFAULT_GOAL = all
 
 CC = gcc
@@ -28,6 +28,8 @@ RUNTIME_SRCS = $(wildcard ../runtime/source/DDP/*.c ../runtime/source/DDP/*/*.c)
 OBJS = $(SRCS:.c=.o)
 OBJS_DEBUG = $(OBJS:.o=_debug.o)
 
+TARGET_TRIPLE=x86_64-pc-windows-gnu
+
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) -o $@ $<
 
@@ -38,11 +40,20 @@ all: $(OUT_FILE_NAME) compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG)
 
-$(OUT_FILE_NAME): $(OBJS) 
+ifeq ($(RUST), true)
+$(OUT_FILE_NAME): rust
+else
+$(OUT_FILE_NAME): $(OBJS)
 	$(AR) $(OUT_FILE_NAME) $(OBJS)
+endif
 
-$(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG) 
+ifeq ($(RUST), true)
+$(OUT_FILE_NAME_DEBUG): rust-debug
+else
+$(OUT_FILE_NAME_DEBUG): $(OBJS_DEBUG)
 	$(AR) $(OUT_FILE_NAME_DEBUG) $(OBJS_DEBUG)
+endif
+
 
 compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
@@ -61,5 +72,21 @@ format:
 
 .depend: $(SRCS) $(RUNTIME_SRCS) $(HEADERS) $(RUNTIME_HEADERS)
 	$(CC) -MM $(INC) $(SRCS) > .depend
+
+rust:
+ifeq ($(OS),Windows_NT)
+	cargo build --release --target $(TARGET_TRIPLE)
+else
+	cargo build --release
+endif
+	cp ../target/$(TARGET_TRIPLE)/release/$(OUT_FILE_NAME) $(OUT_FILE_NAME)
+
+rust-debug:
+ifeq ($(OS),Windows_NT)
+	cargo build --target $(TARGET_TRIPLE)
+else
+	cargo build
+endif
+	cp ../target/$(TARGET_TRIPLE)/debug/$(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG)
 
 include .depend

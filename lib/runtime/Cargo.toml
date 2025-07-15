@@ -8,3 +8,4 @@ name = "ddpruntime"
 crate-type = ["lib", "staticlib"]
 
 [dependencies]
+debug_print = "1.0.0"
