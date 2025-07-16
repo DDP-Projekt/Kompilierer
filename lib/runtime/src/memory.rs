@@ -11,18 +11,11 @@ static ALLOCATED: AtomicUsize = AtomicUsize::new(0);
 
 unsafe impl GlobalAlloc for DDPAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let ret = unsafe { System.alloc(layout) };
-        if !ret.is_null() {
-            ALLOCATED.fetch_add(layout.size(), Relaxed);
-        }
-        ret
+        unsafe { System.alloc(layout) }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        unsafe {
-            System.dealloc(ptr, layout);
-        }
-        ALLOCATED.fetch_sub(layout.size(), Relaxed);
+        unsafe { System.dealloc(ptr, layout) }
     }
 }
 
@@ -47,16 +40,23 @@ fn check_null(ptr: *mut u8) -> *mut u8 {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize) -> *mut u8 {
-    debug_println!("\tcalling ddp_reallocate {ptr:?} {old_size} {new_size}\n");
+    #[cfg(debug_assertions)]
+    if new_size == 0 {
+        ALLOCATED.fetch_sub(old_size, Relaxed);
+        debug_println!(
+            "freed {} bytes, now at {} bytesAllocated",
+            old_size,
+            ALLOCATED.load(Relaxed)
+        );
+    }
+
     let result = match (ptr, old_size, new_size) {
         // freeing null is a noop
         (_, _, 0) if ptr.is_null() => {
-            debug_println!("\tfreeing null (noop)");
             return null_mut();
         }
         // new_size == 0 means free
         (_, _, 0) => {
-            debug_println!("\tfreeing");
             unsafe {
                 DDP_ALLOC.dealloc(
                     ptr,
@@ -67,13 +67,11 @@ pub extern "C" fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize)
         }
         (ptr, old, new) if old == new => ptr,
         (ptr, _, _) if ptr.is_null() => unsafe {
-            debug_println!("\tallocating");
             check_null(
                 DDP_ALLOC.alloc(Layout::from_size_align(new_size, DDP_DEFAULT_ALIGN).unwrap()),
             )
         },
         (ptr, old_size, new_size) => unsafe {
-            debug_println!("\treallocating");
             check_null(DDP_ALLOC.realloc(
                 ptr,
                 Layout::from_size_align(old_size, DDP_DEFAULT_ALIGN).unwrap(),
@@ -81,7 +79,16 @@ pub extern "C" fn ddp_reallocate(ptr: *mut u8, old_size: usize, new_size: usize)
             ))
         },
     };
-    debug_println!("\treturning {result:?}");
+
+    #[cfg(debug_assertions)]
+    if !result.is_null() {
+        ALLOCATED.fetch_add(new_size - old_size, Relaxed);
+        debug_println!(
+            "allocated {} bytes, now at {} bytesAllocated",
+            new_size - old_size,
+            ALLOCATED.load(Relaxed)
+        );
+    }
     result
 }
 

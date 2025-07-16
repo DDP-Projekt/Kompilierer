@@ -9,3 +9,4 @@ crate-type = ["lib", "staticlib"]
 
 [dependencies]
 debug_print = "1.0.0"
+libc = "0.2.174"

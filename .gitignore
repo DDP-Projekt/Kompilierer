@@ -4,3 +4,4 @@
 *.exe
 /.vscode/*.log
 *.log
+*.lock

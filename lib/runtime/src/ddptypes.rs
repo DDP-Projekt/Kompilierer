@@ -1,5 +1,3 @@
-use debug_print::debug_println;
-
 use crate::memory::{ddp_allocate, ddp_free, ddp_reallocate};
 use crate::runtime::ddp_runtime_error;
 use core::slice;
@@ -39,12 +37,10 @@ impl DDPString {
         }
 
         unsafe {
-            debug_println!("allocating string");
             let dst = ddp_allocate(len + 1);
             std::ptr::copy_nonoverlapping(ptr, dst, len);
             *dst.add(len) = 0; // add null terminator
 
-            debug_println!("done allocating string");
             DDPString {
                 str: dst as *const i8,
                 cap: len + 1,
@@ -67,7 +63,6 @@ impl DDPString {
 
 impl Drop for DDPString {
     fn drop(&mut self) {
-        debug_println!("\tdroping string {self:?}\n");
         ddp_free_string(self);
     }
 }
@@ -92,7 +87,6 @@ impl Clone for DDPString {
 
 impl PartialEq<Self> for DDPString {
     fn eq(&self, other: &Self) -> bool {
-        debug_println!("comparing strings");
         ptr::eq(self, other)
             || !(self.byte_len() != other.byte_len())
                 && unsafe { CStr::from_ptr(self.str).eq(CStr::from_ptr(other.str)) }
@@ -137,9 +131,10 @@ impl fmt::Display for DDPString {
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_string_from_constant(ret: *mut DDPString, str: *const i8) {
     unsafe {
-        debug_println!("\tstring constant start");
-        ptr::write(ret, DDPString::from_raw_parts(str as *const u8, CStr::from_ptr(str).to_bytes().len()));
-        debug_println!("\tstring constant done");
+        ptr::write(
+            ret,
+            DDPString::from_raw_parts(str as *const u8, CStr::from_ptr(str).to_bytes().len()),
+        );
     }
 }
 
@@ -150,7 +145,7 @@ pub extern "C" fn ddp_free_string(str: &mut DDPString) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_deep_copy_string(ret: *mut DDPString, str: &mut DDPString) {
-    unsafe { 
+    unsafe {
         ptr::write(ret, str.clone());
     }
 }
@@ -167,7 +162,6 @@ pub extern "C" fn ddp_strlen(str: &mut DDPString) -> DDPInt {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_string_equal(str1: &mut DDPString, str2: &mut DDPString) -> DDPBool {
-    debug_println!("comparing strings {str1:?} {str2:?}");
     str1 == str2
 }
 

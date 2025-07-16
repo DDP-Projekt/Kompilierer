@@ -1,7 +1,7 @@
 OUT_FILE_NAME = libddpruntime.a
 OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 
-.PHONY: all clean debug format rust
+.PHONY: all clean debug format $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG)
 .DEFAULT_GOAL = all
 
 CC = gcc
@@ -9,7 +9,18 @@ CCFLAGS = -c -Wall -Werror -Wextra -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C
 DEBUGFLAGS = -DDDP_DEBUG
 INC = -I./include/
 
-AR = ar rcs
+
+ifeq ($(OS),Windows_NT)
+	TARGET_TRIPLE 	  = x86_64-pc-windows-gnu
+	CARGO_FLAGS 	  = --release --target $(TARGET_TRIPLE)
+	CARGO_FLAGS_DEBUG = --target $(TARGET_TRIPLE)
+else
+	TARGET_TRIPLE	  =
+	CARGO_FLAGS  	  = --release
+	CARGO_FLAGS_DEBUG =
+endif
+
+CARGO = cargo
 RM = rm -f
 
 CLANG_FORMAT_FILE= ../../.clang-format
@@ -19,38 +30,16 @@ CLANG_FORMAT= clang-format -i -style='file:$(CLANG_FORMAT_FILE)'
 # so include/utf8/utf8.c is matched but include/utf8/test_dir/test.c would NOT be matched
 # if you want to add more subdirectories, simply add a nesting more here (aka: include/*/*/*.h)
 HEADERS = $(wildcard include/DDP/*.h include/DDP/*/*.h)
-SRCS = $(wildcard source/DDP/*.c source/DDP/*/*.c)
-OBJS = $(SRCS:.c=.o)
-OBJS_DEBUG = $(OBJS:.o=_debug.o)
-
-LIB_OBJS = $(filter-out source/main.o, $(OBJS))
-LIB_OBJS_DEBUG = $(filter-out source/main_debug.o, $(OBJS_DEBUG))
-
-TARGET_TRIPLE=x86_64-pc-windows-gnu
 
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) -o $@ $< 
 
-%_debug.o: %.c
+%.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
 all: $(OUT_FILE_NAME) source/main.o compile_commands.json
 
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
-
-ifeq ($(RUST), true)
-$(OUT_FILE_NAME): rust
-else
-$(OUT_FILE_NAME): $(LIB_OBJS)
-	$(AR) $(OUT_FILE_NAME) $(LIB_OBJS)
-endif
-
-ifeq ($(RUST), true)
-$(OUT_FILE_NAME_DEBUG): rust-debug
-else
-$(OUT_FILE_NAME_DEBUG): $(LIB_OBJS_DEBUG)
-	$(AR) $(OUT_FILE_NAME_DEBUG) $(LIB_OBJS_DEBUG)
-endif
 
 compile_commands.json: $(SRCS) $(HEADERS)
 	@if [ ! -f bear ]; then \
@@ -62,28 +51,17 @@ compile_commands.json: $(SRCS) $(HEADERS)
 	fi
 
 clean:
-	$(RM) $(OBJS) $(OBJS_DEBUG) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) .depend
+	$(RM) $(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG) main.o main_debug.o .depend
+	$(CARGO) clean
 
 format:
-	$(CLANG_FORMAT) $(SRCS)  $(HEADERS)
+	$(CLANG_FORMAT) $(HEADERS)
+	$(CARGO) fmt
 
-.depend: $(SRCS) $(HEADERS)
-	$(CC) -MM $(INC) $(SRCS) > .depend
-
-rust:
-ifeq ($(OS),Windows_NT)
-	cargo build --release --target $(TARGET_TRIPLE)
-else
-	cargo build --release
-endif
+$(OUT_FILE_NAME):
+	$(CARGO) build $(CARGO_FLAGS)
 	cp ../target/$(TARGET_TRIPLE)/release/$(OUT_FILE_NAME) $(OUT_FILE_NAME)
 
-rust-debug:
-ifeq ($(OS),Windows_NT)
-	cargo build --target $(TARGET_TRIPLE)
-else
-	cargo build
-endif
+$(OUT_FILE_NAME_DEBUG):
+	$(CARGO) build $(CARGO_FLAGS_DEBUG)
 	cp ../target/$(TARGET_TRIPLE)/debug/$(OUT_FILE_NAME) $(OUT_FILE_NAME_DEBUG)
-
-include .depend
