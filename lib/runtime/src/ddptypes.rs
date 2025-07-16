@@ -1,7 +1,7 @@
 use crate::memory::{ddp_allocate, ddp_free, ddp_reallocate};
 use crate::runtime::ddp_runtime_error;
 use core::slice;
-use std::ffi::{CStr, c_void};
+use std::ffi::{CStr, CString, c_void};
 use std::ptr::{null, null_mut};
 use std::{fmt, ptr};
 
@@ -48,6 +48,19 @@ impl DDPString {
         }
     }
 
+    pub fn from_string(str: String) -> DDPString {
+        DDPString {
+            cap: str.capacity(),
+            str: CString::new(str).unwrap().into_raw(),
+        }
+    }
+
+    pub fn to_string(self) -> String {
+        unsafe { CString::from_raw(self.str as *mut i8) }
+            .into_string()
+            .unwrap()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.str.is_null() || self.cap <= 0 || unsafe { self.str.read() == 0 }
     }
@@ -57,6 +70,30 @@ impl DDPString {
             0
         } else {
             unsafe { CStr::from_ptr(self.str) }.to_bytes().len() as DDPInt
+        }
+    }
+
+    pub fn len(&self) -> DDPInt {
+        if self.is_empty() {
+            0
+        } else {
+            unsafe { CStr::from_ptr(self.str) }
+                .to_str()
+                .unwrap()
+                .chars()
+                .count() as DDPInt
+        }
+    }
+
+    pub fn bounds_check(&self, index: usize) {
+        if index as usize > self.cap || self.cap <= 1 {
+            unsafe {
+                ddp_runtime_error(
+                    1,
+                    "Index außerhalb der Text Länge (Index war %lld)\n".as_ptr(),
+                    index,
+                );
+            }
         }
     }
 }
@@ -163,6 +200,62 @@ pub extern "C" fn ddp_strlen(str: &mut DDPString) -> DDPInt {
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_string_equal(str1: &mut DDPString, str2: &mut DDPString) -> DDPBool {
     str1 == str2
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_length(str1: &DDPString) -> DDPInt {
+    str1.len()
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_index(str: &DDPString, index: DDPInt) -> DDPChar {
+    if index < 1 {
+        unsafe {
+            ddp_runtime_error(
+                1,
+                "Texte fangen bei Index 1 an. Es wurde wurde versucht %lld zu indizieren\n"
+                    .as_ptr(),
+                index,
+            );
+        }
+    }
+
+    str.bounds_check(index as usize);
+
+    match unsafe { CStr::from_ptr(str.str) }
+        .to_str()
+        .unwrap()
+        .chars()
+        .nth(index as usize)
+    {
+        Some(c) => c as DDPChar,
+        None => unsafe {
+            ddp_runtime_error(
+                1,
+                "Index außerhalb der Text Länge (Index war %lld)\n".as_ptr(),
+                index,
+            );
+        },
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_replace_char_in_string(str: &DDPString, ch: DDPChar, index: DDPInt) {
+    if index < 1 {
+        unsafe {
+            ddp_runtime_error(
+                1,
+                "Texte fangen bei Index 1 an. Es wurde wurde versucht %lld zu indizieren\n"
+                    .as_ptr(),
+                index,
+            );
+        }
+    }
+    str.bounds_check(index as usize);
+    let mut tmp = [0u8; 4];
+    let replacement = unsafe { char::from_u32_unchecked(ch) }.encode_utf8(&mut tmp);
+    str.to_string()
+        .replace_range(..index as usize, &replacement);
 }
 
 #[derive(Debug)]

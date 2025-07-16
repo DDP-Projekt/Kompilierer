@@ -16,7 +16,7 @@ use std::{
 use crate::ddptypes::{DDPList, DDPString};
 
 unsafe extern "C" {
-    pub fn ddp_runtime_error(code: i32, fmt: *const u8, ...);
+    pub fn ddp_runtime_error(code: i32, fmt: *const u8, ...) -> !;
 }
 
 #[cfg(target_os = "windows")]

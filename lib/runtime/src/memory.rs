@@ -1,12 +1,16 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ffi::c_int;
 use std::ptr::null_mut;
+
+#[cfg(debug_assertions)]
 use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
+#[cfg(debug_assertions)]
 use debug_print::debug_println;
 
 struct DDPAlloc;
 
+#[cfg(debug_assertions)]
 static ALLOCATED: AtomicUsize = AtomicUsize::new(0);
 
 unsafe impl GlobalAlloc for DDPAlloc {
