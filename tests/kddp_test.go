@@ -230,7 +230,7 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 			}
 		} else {
 			// error if 'out' was not the expected output
-			if out, expected := string(out), string(expected); out != expected {
+			if out, expected := strings.ReplaceAll(string(out), "\r\n", "\n"), strings.ReplaceAll(string(expected), "\r\n", "\n"); out != expected {
 				diff, err := get_diff(filepath.Join(path, "expected.txt"), out)
 				if err != nil {
 					t.Errorf("Error getting diff: %s", err)

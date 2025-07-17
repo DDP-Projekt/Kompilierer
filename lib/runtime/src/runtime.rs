@@ -5,7 +5,7 @@
 use debug_print::debug_println;
 use libc::{SIGSEGV, signal};
 use std::{
-    ffi::{CStr, c_char, c_int},
+    ffi::{CStr, CString, c_char, c_int},
     io::Write,
     sync::{
         Mutex,
@@ -15,8 +15,20 @@ use std::{
 
 use crate::ddptypes::{DDPList, DDPString};
 
+#[cfg(not(test))]
 unsafe extern "C" {
     pub fn ddp_runtime_error(code: i32, fmt: *const u8, ...) -> !;
+}
+
+#[cfg(test)]
+pub fn ddp_runtime_error(code: i32, fmt: *const u8) -> ! {
+    panic!("runtime error");
+}
+
+pub fn ddp_panic(code: i32, msg: String) -> ! {
+    unsafe {
+        ddp_runtime_error(code, CString::new(msg).unwrap().as_ptr() as *const u8);
+    }
 }
 
 #[cfg(target_os = "windows")]

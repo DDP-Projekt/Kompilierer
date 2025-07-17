@@ -1,5 +1,4 @@
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::ffi::c_int;
 use std::ptr::null_mut;
 
 #[cfg(debug_assertions)]
@@ -7,6 +6,8 @@ use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
 #[cfg(debug_assertions)]
 use debug_print::debug_println;
+
+use crate::runtime::ddp_runtime_error;
 
 struct DDPAlloc;
 
@@ -26,17 +27,12 @@ unsafe impl GlobalAlloc for DDPAlloc {
 #[global_allocator]
 static DDP_ALLOC: DDPAlloc = DDPAlloc;
 
-unsafe extern "C" {
-    fn ddp_runtime_error(code: c_int, fmt: *const u8, ...);
-}
-
 const DDP_DEFAULT_ALIGN: usize = 8;
 
 fn check_null(ptr: *mut u8) -> *mut u8 {
     match ptr {
         result if result.is_null() => {
             unsafe { ddp_runtime_error(1, "out of memory\n".as_ptr()) };
-            unreachable!("ddp_runtime_error");
         }
         result => result,
     }

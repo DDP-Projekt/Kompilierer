@@ -26,7 +26,7 @@ pub extern "C" fn Erstelle_Byte_Puffer(ret: &mut DDPString, n: DDPInt) {
         (*buf.add(n as usize)) = 0;
 
         ret.cap = (n + 1) as usize;
-        ret.str = buf as *const i8;
+        ret.str = buf;
     }
 }
 

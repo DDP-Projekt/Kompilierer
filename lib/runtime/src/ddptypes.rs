@@ -1,9 +1,11 @@
+use debug_print::debug_println;
+
 use crate::memory::{ddp_allocate, ddp_free, ddp_reallocate};
-use crate::runtime::ddp_runtime_error;
+use crate::runtime::{ddp_panic, ddp_runtime_error};
 use core::slice;
-use std::ffi::{CStr, CString, c_void};
+use std::ffi::{CStr, CString, c_char, c_void};
 use std::ptr::{null, null_mut};
-use std::{fmt, ptr};
+use std::{fmt, ptr, str};
 
 pub type DDPInt = i64;
 pub type DDPFloat = f64;
@@ -14,7 +16,7 @@ pub type DDPBool = bool;
 #[derive(Debug)]
 #[repr(C)]
 pub struct DDPString {
-    pub str: *const i8,
+    pub str: *const u8,
     pub cap: usize,
 }
 
@@ -42,23 +44,49 @@ impl DDPString {
             *dst.add(len) = 0; // add null terminator
 
             DDPString {
-                str: dst as *const i8,
+                str: dst,
                 cap: len + 1,
             }
         }
     }
 
-    pub fn from_string(str: String) -> DDPString {
-        DDPString {
-            cap: str.capacity(),
-            str: CString::new(str).unwrap().into_raw(),
+    // copies self into other and sets self to an empty string without dropping it
+    // basically:
+    //      *other = *self
+    //      *self = DDP_EMPTY_STRING
+    pub fn transfer_to(&mut self, other: *mut Self) {
+        unsafe {
+            ptr::copy_nonoverlapping(self as *mut DDPString, other, 1);
         }
+        self.str = null();
+        self.cap = 0;
     }
 
     pub fn to_string(self) -> String {
         unsafe { CString::from_raw(self.str as *mut i8) }
             .into_string()
             .unwrap()
+    }
+
+    pub fn as_slice(&self) -> Option<&[u8]> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(unsafe { slice::from_raw_parts(self.str, self.cap) })
+        }
+    }
+
+    pub fn as_cstr<'a>(&'a self) -> Option<&'a CStr> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(unsafe { CStr::from_ptr(self.str as *const c_char) })
+        }
+    }
+
+    pub fn to_str(&self) -> Result<Option<&str>, str::Utf8Error> {
+        self.as_cstr()
+            .map_or(Ok(None), |s| s.to_str().map(|s| Some(s)))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -69,7 +97,7 @@ impl DDPString {
         if self.str.is_null() {
             0
         } else {
-            unsafe { CStr::from_ptr(self.str) }.to_bytes().len() as DDPInt
+            self.cap as DDPInt
         }
     }
 
@@ -77,29 +105,67 @@ impl DDPString {
         if self.is_empty() {
             0
         } else {
-            unsafe { CStr::from_ptr(self.str) }
-                .to_str()
-                .unwrap()
-                .chars()
-                .count() as DDPInt
+            self.to_str().unwrap().unwrap().chars().count() as DDPInt
         }
     }
 
+    // helper function for certain inbuild functions
+    // assumes 1-based index
     pub fn bounds_check(&self, index: usize) {
         if index as usize > self.cap || self.cap <= 1 {
-            unsafe {
-                ddp_runtime_error(
-                    1,
-                    "Index außerhalb der Text Länge (Index war %lld)\n".as_ptr(),
-                    index,
-                );
-            }
+            ddp_panic(
+                1,
+                format! {"Index außerhalb der Text Länge (Index war {index})\n"},
+            );
+        }
+    }
+
+    pub fn push(&mut self, c: char) {
+        let mut tmp = [0u8; 4];
+        let slice = c.encode_utf8(&mut tmp);
+
+        if self.is_empty() {
+            *self = DDPString::from(slice as &str);
+            return;
+        }
+
+        self.str = ddp_reallocate(self.str.cast_mut(), self.cap, self.cap + slice.len());
+        unsafe {
+            ptr::copy_nonoverlapping(
+                slice.as_ptr(),
+                self.str.cast_mut().add(self.cap - 1),
+                self.cap + slice.len(),
+            );
+            self.cap = self.cap + slice.len();
+            ptr::write(self.str.cast_mut().add(self.cap - 1), 0);
+        }
+    }
+
+    pub fn prepend(&mut self, c: char) {
+        let mut tmp = [0u8; 4];
+        let slice = c.encode_utf8(&mut tmp);
+
+        if self.is_empty() {
+            *self = DDPString::from(slice as &str);
+            return;
+        }
+
+        self.str = ddp_reallocate(self.str.cast_mut(), self.cap, self.cap + slice.len());
+        unsafe {
+            ptr::copy(
+                self.str.cast_mut(),
+                self.str.cast_mut().add(slice.len()),
+                self.cap,
+            );
+            ptr::copy_nonoverlapping(slice.as_ptr(), self.str.cast_mut(), slice.len());
+            self.cap = self.cap + slice.len();
         }
     }
 }
 
 impl Drop for DDPString {
     fn drop(&mut self) {
+        debug_println!("dropping string {:?}", self as *mut DDPString);
         ddp_free_string(self);
     }
 }
@@ -115,7 +181,7 @@ impl Clone for DDPString {
             std::ptr::copy_nonoverlapping(self.str as *const u8, ptr, self.cap);
 
             Self {
-                str: ptr as *const i8,
+                str: ptr,
                 cap: self.cap,
             }
         }
@@ -125,8 +191,8 @@ impl Clone for DDPString {
 impl PartialEq<Self> for DDPString {
     fn eq(&self, other: &Self) -> bool {
         ptr::eq(self, other)
-            || !(self.byte_len() != other.byte_len())
-                && unsafe { CStr::from_ptr(self.str).eq(CStr::from_ptr(other.str)) }
+            || self.byte_len() == other.byte_len()
+                && (self.byte_len() == 0 || self.as_cstr().unwrap().eq(other.as_cstr().unwrap()))
     }
 }
 
@@ -147,7 +213,10 @@ impl From<&str> for DDPString {
 impl From<String> for DDPString {
     /// allocates a new DDP String from a String
     fn from(value: String) -> Self {
-        unsafe { DDPString::from_raw_parts(value.as_ptr(), value.len()) }
+        Self {
+            cap: value.capacity(),
+            str: CString::new(value).unwrap().into_raw() as *const u8,
+        }
     }
 }
 
@@ -156,11 +225,9 @@ impl fmt::Display for DDPString {
         if self.str.is_null() {
             return write!(f, "");
         }
-        unsafe {
-            match CStr::from_ptr(self.str).to_str() {
-                Ok(s) => write!(f, "{}", s),
-                Err(e) => write!(f, "<{}>", e),
-            }
+        match self.to_str() {
+            Ok(s) => write!(f, "{}", s.unwrap_or("")),
+            Err(e) => write!(f, "<{}>", e),
         }
     }
 }
@@ -210,52 +277,189 @@ pub extern "C" fn ddp_string_length(str1: &DDPString) -> DDPInt {
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_string_index(str: &DDPString, index: DDPInt) -> DDPChar {
     if index < 1 {
-        unsafe {
-            ddp_runtime_error(
-                1,
-                "Texte fangen bei Index 1 an. Es wurde wurde versucht %lld zu indizieren\n"
-                    .as_ptr(),
-                index,
-            );
-        }
+        ddp_panic(
+            1,
+            format!("Texte fangen bei Index 1 an. Es wurde wurde versucht {index} zu indizieren\n"),
+        );
     }
 
     str.bounds_check(index as usize);
 
-    match unsafe { CStr::from_ptr(str.str) }
+    match str
         .to_str()
         .unwrap()
+        .unwrap()
         .chars()
-        .nth(index as usize)
+        .nth(index as usize - 1)
     {
         Some(c) => c as DDPChar,
-        None => unsafe {
-            ddp_runtime_error(
-                1,
-                "Index außerhalb der Text Länge (Index war %lld)\n".as_ptr(),
-                index,
-            );
-        },
+        None => ddp_panic(
+            1,
+            format!("Index außerhalb der Text Länge (Index war {index})\n"),
+        ),
     }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_replace_char_in_string(str: &DDPString, ch: DDPChar, index: DDPInt) {
     if index < 1 {
-        unsafe {
-            ddp_runtime_error(
-                1,
-                "Texte fangen bei Index 1 an. Es wurde wurde versucht %lld zu indizieren\n"
-                    .as_ptr(),
-                index,
-            );
-        }
+        ddp_panic(
+            1,
+            format!("Texte fangen bei Index 1 an. Es wurde wurde versucht {index} zu indizieren\n"),
+        );
     }
     str.bounds_check(index as usize);
     let mut tmp = [0u8; 4];
     let replacement = unsafe { char::from_u32_unchecked(ch) }.encode_utf8(&mut tmp);
     str.to_string()
         .replace_range(..index as usize, &replacement);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_slice(
+    ret: *mut DDPString,
+    str: &mut DDPString,
+    index1: DDPInt,
+    index2: DDPInt,
+) {
+    unsafe { ptr::write(ret, DDPString::new()) };
+
+    if str.is_empty() {
+        return;
+    }
+
+    let len = str.len();
+    let index1 = index1.clamp(1, len);
+    let index2 = index2.clamp(1, len);
+    if index2 < index1 {
+        ddp_panic(
+            1,
+            format!("Invalide Indexe (Index 1 war {index1}, Index 2 war {index2}\n"),
+        );
+    }
+
+    let index1 = (index1 - 1) as usize;
+    let index2 = (index2 - 1) as usize;
+
+    let str_slice = str.to_str().unwrap().unwrap();
+    let mut indices = str_slice.char_indices().map(|(i, _)| i);
+    let start = indices.nth(index1).unwrap();
+    let end = indices.nth(index2 - index1).unwrap_or(str_slice.len());
+    unsafe { ptr::write(ret, DDPString::from(&str_slice[start..end])) };
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_string_verkettet(
+    ret: *mut DDPString,
+    str1: &mut DDPString,
+    str2: &DDPString,
+) {
+    unsafe {
+        ptr::write(ret, DDPString::new());
+    }
+
+    if str1.is_empty() && str2.is_empty() {
+        return;
+    } else if str1.is_empty() {
+        unsafe {
+            ptr::write(ret, str2.clone());
+        }
+        ddp_free_string(str1);
+        return;
+    } else if str2.is_empty() {
+        str1.transfer_to(ret);
+        return;
+    }
+
+    str1.str = ddp_reallocate(str1.str.cast_mut(), str1.cap, str1.cap - 1 + str2.cap);
+    unsafe {
+        ptr::copy_nonoverlapping(
+            str2.str.cast_mut(),
+            str1.str.cast_mut().add(str1.cap - 1),
+            str2.cap,
+        );
+        str1.cap = str1.cap - 1 + str2.cap;
+        str1.transfer_to(ret);
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_char_verkettet(ret: *mut DDPString, str: &mut DDPString, ch: DDPChar) {
+    let ch = unsafe { char::from_u32_unchecked(ch) };
+    str.push(ch);
+    str.transfer_to(ret);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_char_string_verkettet(ret: *mut DDPString, ch: DDPChar, str: &mut DDPString) {
+    let ch = unsafe { char::from_u32_unchecked(ch) };
+    str.prepend(ch);
+    str.transfer_to(ret);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_int_to_string(ret: *mut DDPString, i: DDPInt) {
+    unsafe {
+        ptr::write(ret, DDPString::from(i.to_string()));
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_float_to_string(ret: *mut DDPString, f: DDPFloat) {
+    unsafe {
+        ptr::write(ret, DDPString::from(format!("{f}").replacen(".", ",", 1)));
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_byte_to_string(ret: *mut DDPString, b: DDPByte) {
+    unsafe {
+        ptr::write(ret, DDPString::from(b.to_string()));
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_bool_to_string(ret: *mut DDPString, b: DDPBool) {
+    unsafe {
+        ptr::write(ret, DDPString::from(if b { "wahr" } else { "falsch" }));
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_char_to_string(ret: *mut DDPString, c: DDPChar) {
+    unsafe {
+        ptr::write(
+            ret,
+            DDPString::from(char::from_u32_unchecked(c).to_string()),
+        );
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_to_int(str: &DDPString) -> DDPInt {
+    if str.is_empty() {
+        return 0;
+    }
+
+    str.to_str()
+        .unwrap_or(None)
+        .unwrap_or("")
+        .parse::<DDPInt>()
+        .unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ddp_string_to_float(str: &DDPString) -> DDPFloat {
+    if str.is_empty() {
+        return 0.0;
+    }
+
+    str.to_str()
+        .unwrap_or(None)
+        .unwrap_or("")
+        .replacen(",", ".", 1)
+        .parse::<DDPFloat>()
+        .unwrap_or(0.0)
 }
 
 #[derive(Debug)]

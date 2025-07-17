@@ -2,10 +2,10 @@ use core::slice;
 use std::ffi::c_int;
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn utf8_indicated_num_bytes(c: u8) -> c_int {
-    match c.trailing_zeros() {
-        7 => 1,
-        6 => 2,
+pub extern "C" fn utf8_indicated_num_bytes(c: u8) -> c_int {
+    match c.leading_ones() {
+        0 => 1,
+        2 => 2,
         3 => 3,
         4 => 4,
         _ => 0,
@@ -13,11 +13,11 @@ pub unsafe extern "C" fn utf8_indicated_num_bytes(c: u8) -> c_int {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn utf8_string_to_char(str: *const u8, out: *mut u32) -> usize {
+pub extern "C" fn utf8_string_to_char(str: *const u8, out: *mut u32) -> usize {
     if str.is_null() {
         return usize::MAX;
     }
-    let num_bytes = unsafe { utf8_indicated_num_bytes(str.read()) };
+    let num_bytes = utf8_indicated_num_bytes(unsafe { str.read() });
 
     // Read up to 4 bytes from the pointer (max size of a UTF-8 codepoint)
     let bytes = unsafe { slice::from_raw_parts(str, num_bytes as usize) };
@@ -34,8 +34,24 @@ pub unsafe extern "C" fn utf8_string_to_char(str: *const u8, out: *mut u32) -> u
     usize::MAX
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::utf8::utf8_string_to_char;
+
+    #[test]
+    fn test_utf8_string_to_char() {
+        let mut s: [u8; 5] = [0, 0, 0, 0, 0];
+        'Ü'.encode_utf8(s.as_mut_slice());
+
+        let mut c: u32 = 0;
+        let ps: *const u8 = s.as_ptr();
+        let pc: *mut u32 = &mut c;
+        assert_eq!(utf8_string_to_char(ps, pc), 2);
+    }
+}
+
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn utf8_char_to_string(str: *mut u8, c: u32) -> usize {
+pub extern "C" fn utf8_char_to_string(str: *mut u8, c: u32) -> usize {
     let ch = match std::char::from_u32(c) {
         Some(ch) => ch,
         None => unsafe {

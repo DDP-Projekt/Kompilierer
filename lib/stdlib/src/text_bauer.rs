@@ -11,8 +11,7 @@ pub struct TextBauer {
 pub extern "C" fn Erhoehe_Kapazitaet(bauer: &mut TextBauer, cap: DDPInt) {
     unsafe {
         bauer.puffer.str =
-            ddp_reallocate(bauer.puffer.str as *mut u8, bauer.puffer.cap, cap as usize)
-                as *const i8;
+            ddp_reallocate(bauer.puffer.str as *mut u8, bauer.puffer.cap, cap as usize);
         std::ptr::write_bytes(
             bauer.puffer.str.add(bauer.puffer.cap) as *mut u8,
             0,

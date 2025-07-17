@@ -1,14 +1,12 @@
-use std::env;
 use ddpruntime::ddptypes::DDPString;
+use std::env;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Hole_Umgebungsvariable(ret: &mut DDPString, name: &DDPString) {
-	*ret = DDPString::from(env::var(name.to_string()).unwrap())
+    *ret = DDPString::from(env::var(name.to_string()).unwrap())
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Setze_Umgebungsvariable(name: &DDPString, wert: &DDPString) {
-	unsafe {
-		env::set_var(name.to_string(), wert.to_string())
-	}
+    unsafe { env::set_var(name.to_string(), wert.to_string()) }
 }
