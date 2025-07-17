@@ -213,9 +213,10 @@ impl From<&str> for DDPString {
 impl From<String> for DDPString {
     /// allocates a new DDP String from a String
     fn from(value: String) -> Self {
+        let str = CString::new(value).unwrap();
         Self {
-            cap: value.capacity(),
-            str: CString::new(value).unwrap().into_raw() as *const u8,
+            cap: str.count_bytes() + 1,
+            str: str.into_raw() as *const u8,
         }
     }
 }
@@ -301,7 +302,7 @@ pub extern "C" fn ddp_string_index(str: &DDPString, index: DDPInt) -> DDPChar {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ddp_replace_char_in_string(str: &DDPString, ch: DDPChar, index: DDPInt) {
+pub extern "C" fn ddp_replace_char_in_string(str: &mut DDPString, ch: DDPChar, index: DDPInt) {
     if index < 1 {
         ddp_panic(
             1,
@@ -309,10 +310,19 @@ pub extern "C" fn ddp_replace_char_in_string(str: &DDPString, ch: DDPChar, index
         );
     }
     str.bounds_check(index as usize);
+    let index = index - 1;
     let mut tmp = [0u8; 4];
     let replacement = unsafe { char::from_u32_unchecked(ch) }.encode_utf8(&mut tmp);
-    str.to_string()
-        .replace_range(..index as usize, &replacement);
+
+    let str_slice = str.to_str().unwrap().unwrap();
+    let start = str_slice.char_indices().nth(index as usize).unwrap();
+    let end = start.0 + start.1.len_utf8();
+    let start = start.0;
+
+    // TODO: don't copy the whole string here
+    let mut new = str.to_string();
+    new.replace_range(start..end, &replacement);
+    *str = DDPString::from(new);
 }
 
 #[unsafe(no_mangle)]
