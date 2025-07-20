@@ -5,18 +5,18 @@ use std::ptr::null_mut;
 #[unsafe(no_mangle)]
 pub extern "C" fn C_Memcpy(dest: DDPInt, src: DDPInt, size: DDPInt) {
     unsafe {
-        std::ptr::copy_nonoverlapping(src as *mut u64, dest as *mut u64, size as usize);
+        std::ptr::copy_nonoverlapping(src as *mut u8, dest as *mut u8, size as usize);
     }
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Text_Zu_CString(t: &DDPString) -> DDPInt {
-    t.str.addr() as DDPInt
+    t.str as DDPInt
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Text_Zu_Zeiger(t: *const DDPString) -> DDPInt {
-    t.addr() as DDPInt
+    t as DDPInt
 }
 
 #[unsafe(no_mangle)]

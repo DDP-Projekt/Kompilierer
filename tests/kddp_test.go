@@ -161,6 +161,7 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		ctx, cf := context.WithTimeout(context.Background(), timeout)
 		defer cf()
 		cmd := exec.CommandContext(ctx, "../build/DDP/bin/kddp", "kompiliere", changeExtension(ddp_path, ".ddp"), "-o", changeExtension(ddp_path, ".exe"), "--wortreich")
+		cmd.Env = append(cmd.Env, os.Environ()...)
 		// get build output
 		if out, err := cmd.CombinedOutput(); err != nil {
 			if err := ctx.Err(); err != nil {

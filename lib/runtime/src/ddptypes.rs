@@ -32,13 +32,11 @@ impl DDPString {
     /// allocates a new DDP String using the given buffer and length\
     /// WARNING: BUFFER SHOULD NOT BE NULL TERMINATED
     pub unsafe fn from_raw_parts(ptr: *const u8, len: usize) -> DDPString {
-        if ptr.is_null() {
-            unsafe {
+        unsafe {
+            if ptr.is_null() {
                 ddp_runtime_error(1, "ptr was null".as_ptr());
             }
-        }
 
-        unsafe {
             let dst = ddp_allocate(len + 1);
             std::ptr::copy_nonoverlapping(ptr, dst, len);
             *dst.add(len) = 0; // add null terminator
