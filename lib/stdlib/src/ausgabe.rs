@@ -22,7 +22,7 @@ pub extern "C" fn Schreibe_Kommazahl(x: DDPFloat) {
     } else if x.is_nan() {
         print!("Keine Zahl (NaN)")
     } else {
-        print!("{}", format!("{x}").replacen(".", ",", 1))
+        print!("{}", format!("{x:?}").replacen(".", ",", 1))
     }
     flush();
 }
