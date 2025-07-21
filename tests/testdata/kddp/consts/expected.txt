@@ -5,7 +5,7 @@ g
 hallo welt
 
 3, 5, 6
-3,2, 5,76, 6
+3,2, 5,76, 6,0
 wahr, falsch, wahr
 d, a, d
 hallo welt, yo, 
