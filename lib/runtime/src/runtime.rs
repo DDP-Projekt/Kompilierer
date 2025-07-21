@@ -7,10 +7,7 @@ use libc::{SIGSEGV, signal};
 use std::{
     ffi::{CStr, CString, c_char, c_int},
     io::Write,
-    sync::{
-        Mutex,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 use crate::ddptypes::{DDPList, DDPString};
@@ -66,7 +63,7 @@ fn set_locales() {
     };
 }
 
-static mut CMD_ARGS: Mutex<Vec<DDPString>> = Mutex::new(Vec::new());
+static mut CMD_ARGS: Vec<DDPString> = Vec::new();
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ddp_init_runtime(argc: c_int, argv: *const *const c_char) {
@@ -79,21 +76,17 @@ pub extern "C" fn ddp_init_runtime(argc: c_int, argv: *const *const c_char) {
     }
 
     unsafe {
-        (*(&raw mut CMD_ARGS))
-            .lock()
-            .unwrap()
-            .reserve_exact(argc as usize);
+        #[allow(static_mut_refs)]
+        CMD_ARGS.reserve_exact(argc as usize);
     }
     for i in 0..argc {
         unsafe {
-            let arg_ptr = *argv.offset(i as isize);
-            (*(&raw mut CMD_ARGS))
-                .lock()
-                .unwrap()
-                .push(DDPString::from_raw_parts(
-                    arg_ptr as *const u8,
-                    CStr::from_ptr(arg_ptr).to_bytes().len(),
-                ));
+            let arg_ptr = argv.add(i as usize).read();
+            #[allow(static_mut_refs)]
+            CMD_ARGS.push(DDPString::from_raw_parts(
+                arg_ptr as *const u8,
+                CStr::from_ptr(arg_ptr).to_bytes().len(),
+            ));
         }
     }
 }
@@ -111,7 +104,8 @@ pub extern "C" fn ddp_end_runtime() {
 
     debug_println!("end_runtime");
     unsafe {
-        (*(&raw mut CMD_ARGS)).lock().unwrap().clear();
+        #[allow(static_mut_refs)]
+        CMD_ARGS.clear();
     }
 }
 

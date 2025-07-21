@@ -16,7 +16,7 @@ pub type DDPBool = bool;
 #[derive(Debug)]
 #[repr(C)]
 pub struct DDPString {
-    pub str: *const u8,
+    pub str: *mut u8,
     pub cap: usize,
 }
 
@@ -24,7 +24,7 @@ impl DDPString {
     // creates an empty String
     pub fn new() -> DDPString {
         DDPString {
-            str: null(),
+            str: null_mut(),
             cap: 0,
         }
     }
@@ -56,7 +56,7 @@ impl DDPString {
         unsafe {
             ptr::copy_nonoverlapping(self as *mut DDPString, other, 1);
         }
-        self.str = null();
+        self.str = null_mut();
         self.cap = 0;
     }
 
@@ -127,15 +127,15 @@ impl DDPString {
             return;
         }
 
-        self.str = ddp_reallocate(self.str.cast_mut(), self.cap, self.cap + slice.len());
+        self.str = ddp_reallocate(self.str, self.cap, self.cap + slice.len());
         unsafe {
             ptr::copy_nonoverlapping(
                 slice.as_ptr(),
-                self.str.cast_mut().add(self.cap - 1),
+                self.str.add(self.cap - 1),
                 self.cap + slice.len(),
             );
             self.cap = self.cap + slice.len();
-            ptr::write(self.str.cast_mut().add(self.cap - 1), 0);
+            ptr::write(self.str.add(self.cap - 1), 0);
         }
     }
 
@@ -148,14 +148,10 @@ impl DDPString {
             return;
         }
 
-        self.str = ddp_reallocate(self.str.cast_mut(), self.cap, self.cap + slice.len());
+        self.str = ddp_reallocate(self.str, self.cap, self.cap + slice.len());
         unsafe {
-            ptr::copy(
-                self.str.cast_mut(),
-                self.str.cast_mut().add(slice.len()),
-                self.cap,
-            );
-            ptr::copy_nonoverlapping(slice.as_ptr(), self.str.cast_mut(), slice.len());
+            ptr::copy(self.str, self.str.add(slice.len()), self.cap);
+            ptr::copy_nonoverlapping(slice.as_ptr(), self.str, slice.len());
             self.cap = self.cap + slice.len();
         }
     }
@@ -201,6 +197,17 @@ impl From<&[u8]> for DDPString {
     }
 }
 
+impl From<&[u32]> for DDPString {
+    /// allocates a new DDP String from a u8 slice
+    fn from(value: &[u32]) -> Self {
+        let string: String = value
+            .iter()
+            .map(|c| unsafe { char::from_u32_unchecked(*c) })
+            .collect();
+        DDPString::from(string)
+    }
+}
+
 impl From<&str> for DDPString {
     /// allocates a new DDP String from a str
     fn from(value: &str) -> Self {
@@ -211,11 +218,7 @@ impl From<&str> for DDPString {
 impl From<String> for DDPString {
     /// allocates a new DDP String from a String
     fn from(value: String) -> Self {
-        let str = CString::new(value).unwrap();
-        Self {
-            cap: str.count_bytes() + 1,
-            str: str.into_raw() as *const u8,
-        }
+        unsafe { DDPString::from_raw_parts(value.as_ptr(), value.as_bytes().len()) }
     }
 }
 
@@ -379,13 +382,9 @@ pub extern "C" fn ddp_string_string_verkettet(
         return;
     }
 
-    str1.str = ddp_reallocate(str1.str.cast_mut(), str1.cap, str1.cap - 1 + str2.cap);
+    str1.str = ddp_reallocate(str1.str, str1.cap, str1.cap - 1 + str2.cap);
     unsafe {
-        ptr::copy_nonoverlapping(
-            str2.str.cast_mut(),
-            str1.str.cast_mut().add(str1.cap - 1),
-            str2.cap,
-        );
+        ptr::copy_nonoverlapping(str2.str, str1.str.add(str1.cap - 1), str2.cap);
         str1.cap = str1.cap - 1 + str2.cap;
         str1.transfer_to(ret);
     }
@@ -473,7 +472,7 @@ pub extern "C" fn ddp_string_to_float(str: &DDPString) -> DDPFloat {
 #[derive(Debug)]
 #[repr(C)]
 pub struct DDPList<T> {
-    pub arr: *const T,
+    pub arr: *mut T,
     pub len: i64,
     pub cap: i64,
 }
@@ -481,29 +480,51 @@ pub struct DDPList<T> {
 impl<T> DDPList<T> {
     pub fn new() -> DDPList<T> {
         DDPList {
-            arr: null(),
+            arr: null_mut(),
             len: 0,
             cap: 0,
         }
     }
 
-    pub unsafe fn from_raw_parts(ptr: *const T, len: usize) -> DDPList<T> {
+    pub fn grow_capacity(cap: DDPInt) -> DDPInt {
+        if cap < 8 {
+            8
+        } else {
+            (cap as f64 * 1.5).ceil() as DDPInt
+        }
+    }
+
+    pub unsafe fn from_raw_parts(ptr: *mut T, len: usize) -> DDPList<T> {
         unsafe {
-            let dst = ddp_reallocate(null_mut(), 0, len);
+            let dst = ddp_reallocate(null_mut(), 0, len) as *mut T;
             std::ptr::copy_nonoverlapping(ptr, dst as *mut T, len);
 
             DDPList {
-                arr: dst as *const T,
+                arr: dst,
                 len: len as i64,
                 cap: len as i64,
             }
         }
     }
+
+    pub fn grow_if_needed(&mut self, elem_size: DDPInt, additional_space_needed: DDPInt) {
+        if self.len + additional_space_needed < self.cap {
+            return;
+        }
+
+        let old_cap = self.cap;
+        self.cap = Self::grow_capacity(self.cap).max(self.len + additional_space_needed);
+        self.arr = ddp_reallocate(
+            self.arr as *mut u8,
+            (old_cap * elem_size) as usize,
+            (self.cap * elem_size) as usize,
+        ) as *mut T;
+    }
 }
 
 impl<T> From<&[T]> for DDPList<T> {
     fn from(value: &[T]) -> Self {
-        unsafe { DDPList::from_raw_parts(value.as_ptr(), value.len()) }
+        unsafe { DDPList::from_raw_parts(value.as_ptr().cast_mut(), value.len()) }
     }
 }
 
@@ -566,6 +587,31 @@ impl DDPAny {
 
     pub fn is_primitive(&self) -> bool {
         !self.is_standard_value() && unsafe { self.vtable_ptr.read().is_primitive() }
+    }
+
+    // helper function to get a vtable to the contained type
+    // or the any vtable if the any is null
+    pub fn get_generic_vtable(&self) -> &DDPVTable {
+        static mut ANY_VTABLE: Option<DDPVTable> = None;
+
+        unsafe {
+            #[allow(static_mut_refs)]
+            if ANY_VTABLE.is_none() {
+                ANY_VTABLE = Some(DDPVTable {
+                    type_size: size_of::<DDPAny>() as DDPInt,
+                    free_func: Some(std::mem::transmute(ddp_free_any as *const c_void)),
+                    deep_copy_func: Some(std::mem::transmute(ddp_deep_copy_any as *const c_void)),
+                    equal_func: Some(std::mem::transmute(ddp_any_equal as *const c_void)),
+                })
+            }
+
+            if self.vtable_ptr.is_null() {
+                #[allow(static_mut_refs)]
+                ANY_VTABLE.as_ref().unwrap()
+            } else {
+                self.vtable_ptr.as_ref().unwrap()
+            }
+        }
     }
 }
 

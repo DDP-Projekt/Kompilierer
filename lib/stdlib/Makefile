@@ -19,6 +19,7 @@ RM = rm -f
 
 all: $(OUT_FILE_NAME)
 
+debug: RUST_BACKTRACE=1
 debug: $(OUT_FILE_NAME_DEBUG)
 
 clean:

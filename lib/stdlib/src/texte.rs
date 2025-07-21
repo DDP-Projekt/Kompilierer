@@ -6,7 +6,7 @@ pub extern "C" fn Text_Zu_ByteListe(ret: &mut DDPList<DDPByte>, text: &DDPString
         return *ret = DDPList::new();
     }
 
-    unsafe { *ret = DDPList::from_raw_parts(text.str as *const u8, text.cap - 1) }
+    unsafe { *ret = DDPList::from_raw_parts(text.str, text.cap - 1) }
 }
 
 #[unsafe(no_mangle)]

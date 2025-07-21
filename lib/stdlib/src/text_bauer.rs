@@ -50,9 +50,6 @@ pub extern "C" fn TextBauer_Als_Text(ret: *mut DDPString, bauer: &TextBauer) {
 #[unsafe(no_mangle)]
 pub extern "C" fn TextBauer_Buchstabe_Anfuegen_C(bauer: &mut TextBauer, c: DDPChar) {
     debug_println!("Buchstabe Anfügen");
-    utf8_char_to_string(
-        unsafe { bauer.puffer.str.cast_mut().add(bauer.laenge as usize) },
-        c,
-    );
+    utf8_char_to_string(unsafe { bauer.puffer.str.add(bauer.laenge as usize) }, c);
     debug_println!("Buchstabe Anfügen done");
 }

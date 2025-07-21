@@ -39,6 +39,7 @@ HEADERS = $(wildcard include/DDP/*.h include/DDP/*/*.h)
 
 all: $(OUT_FILE_NAME) source/main.o compile_commands.json
 
+debug: RUST_BACKTRACE=1
 debug: $(OUT_FILE_NAME_DEBUG) source/main_debug.o
 
 compile_commands.json: $(SRCS) $(HEADERS)
