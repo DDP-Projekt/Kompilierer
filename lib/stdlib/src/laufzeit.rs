@@ -1,4 +1,7 @@
-use ddpruntime::{ddptypes::{DDPBool, DDPInt, DDPString}, runtime::{ddp_end_runtime, ddp_runtime_error}};
+use ddpruntime::{
+    ddptypes::{DDPBool, DDPInt, DDPString},
+    runtime::{ddp_end_runtime, ddp_runtime_error},
+};
 use std::{io::IsTerminal, process::exit};
 
 #[unsafe(no_mangle)]
@@ -7,6 +10,7 @@ pub extern "C" fn Programm_Beenden(code: DDPInt) {
     exit(code as i32)
 }
 
+#[cfg(not(test))]
 #[unsafe(no_mangle)]
 pub extern "C" fn Laufzeitfehler(nachricht: &DDPString, code: DDPInt) {
     unsafe {

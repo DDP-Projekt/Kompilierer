@@ -7,7 +7,8 @@ Binde "Duden/TextBauer" ein.
 Die öffentliche Funktion FNV_Hash mit dem Parameter t vom Typ Text Referenz, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 und kann so benutzt werden:
-	"der Hash von <t>"
+	"der Hash von <t>",
+	"dem Hash von <t>"
 
 [
 	Gibt den Hash für die Zahl z zurück.
@@ -15,7 +16,8 @@ und kann so benutzt werden:
 Die öffentliche Funktion Zahl_Hash mit dem Parameter z vom Typ Zahl, gibt eine Zahl zurück, macht:
 	Gib z zurück.
 Und kann so benutzt werden:
-	"der Hash von <z>"
+	"der Hash von <z>",
+	"dem Hash von <z>"
 
 [
 	Gibt den Hash für die Kommazahl z zurück.
@@ -23,7 +25,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Kommazahl_Hash mit dem Parameter z vom Typ Kommazahl, gibt eine Zahl zurück,
 ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
-	"der Hash von <z>"
+	"der Hash von <z>",
+	"dem Hash von <z>"
 
 [
 	Gibt den Hash für den Buchstaben b zurück.
@@ -31,7 +34,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Buchstaben_Hash mit dem Parameter b vom Typ Buchstabe, gibt eine Zahl zurück, macht:
 	Gib b als Zahl zurück.
 Und kann so benutzt werden:
-	"der Hash von <b>"
+	"der Hash von <b>",
+	"dem Hash von <b>"
 
 [
 	Gibt den Hash für den Buchstaben b zurück.
@@ -39,7 +43,8 @@ Und kann so benutzt werden:
 Die öffentliche Funktion Wahrheitswert_Hash mit dem Parameter w vom Typ Wahrheitswert, gibt eine Zahl zurück, macht:
 	Gib w als Zahl zurück.
 Und kann so benutzt werden:
-	"der Hash von <w>"
+	"der Hash von <w>",
+	"dem Hash von <w>"
 
 [
 	Representiert einen Eintrag in einer HashTabelle.
@@ -124,7 +129,7 @@ Die öffentliche generische Funktion Tabelle_Zu_Text mit dem Parameter tabelle v
 Und überlädt den "als" Operator.
 
 Die generische Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S Referenz, gibt eine Zahl zurück, macht:
-	Die Zahl index ist der Hash von schlüssel modulo der Kapazität von tabelle plus 1.
+	Die Zahl index ist der Betrag von dem Hash von schlüssel modulo der Kapazität von tabelle plus 1.
 	Die Zahl grabstein_index ist -1.
 
 	Solange wahr, mache:

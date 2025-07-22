@@ -3,6 +3,9 @@ name = "ddpruntime"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+testing = []
+
 [lib]
 name = "ddpruntime"
 crate-type = ["lib", "staticlib"]

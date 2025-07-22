@@ -67,8 +67,7 @@ pub extern "C" fn Winkel(x: DDPFloat, y: DDPFloat) -> DDPFloat {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Gausssche_Fehlerfunktion(x: DDPFloat) -> DDPFloat {
-    // TODO: maybe implement, not in rusts stdlib. We could remove this function idk what the use it has
-    unimplemented!()
+    libm::erf(x)
 }
 
 #[unsafe(no_mangle)]

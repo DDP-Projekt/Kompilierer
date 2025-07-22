@@ -12,14 +12,14 @@ use std::{
 
 use crate::ddptypes::{DDPList, DDPString};
 
-#[cfg(not(test))]
+#[cfg(all(not(test), not(feature = "testing")))]
 unsafe extern "C" {
     pub fn ddp_runtime_error(code: i32, fmt: *const u8, ...) -> !;
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub fn ddp_runtime_error(code: i32, fmt: *const u8) -> ! {
-    panic!("runtime error");
+    panic!("{code}: runtime error");
 }
 
 pub fn ddp_panic(code: i32, msg: String) -> ! {

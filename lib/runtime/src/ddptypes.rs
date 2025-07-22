@@ -4,6 +4,7 @@ use crate::memory::{ddp_allocate, ddp_free, ddp_reallocate};
 use crate::runtime::{ddp_panic, ddp_runtime_error};
 use core::slice;
 use std::ffi::{CStr, CString, c_char, c_void};
+use std::hash::Hash;
 use std::ptr::{null, null_mut};
 use std::{fmt, ptr, str};
 
@@ -217,6 +218,7 @@ impl From<&str> for DDPString {
 
 impl From<String> for DDPString {
     /// allocates a new DDP String from a String
+    // TODO: make this not allocate but take ownership
     fn from(value: String) -> Self {
         unsafe { DDPString::from_raw_parts(value.as_ptr(), value.as_bytes().len()) }
     }
@@ -230,6 +232,14 @@ impl fmt::Display for DDPString {
         match self.to_str() {
             Ok(s) => write!(f, "{}", s.unwrap_or("")),
             Err(e) => write!(f, "<{}>", e),
+        }
+    }
+}
+
+impl Hash for DDPString {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if !self.is_empty() {
+            Hash::hash_slice(self.as_slice().unwrap(), state);
         }
     }
 }

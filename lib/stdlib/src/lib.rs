@@ -1,5 +1,7 @@
 mod ausgabe;
 mod c;
+mod eingabe;
+mod hash_table;
 mod kryptographie;
 mod laufzeit;
 mod listen;
