@@ -2,16 +2,21 @@ use ddpruntime::ddptypes::DDPString;
 use sha2::{Digest, Sha256, Sha512};
 
 #[unsafe(no_mangle)]
-pub extern "C" fn SHA_256(ret: &mut DDPString, x: &DDPString) {
-    if x.is_empty() {
-        *ret = DDPString::from("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+pub extern "C" fn SHA_256(ret: *mut DDPString, x: &DDPString) {
+    unsafe {
+        std::ptr::write(
+            ret,
+            if x.is_empty() {
+                DDPString::from("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+            } else {
+                let s: String = Sha256::digest(x.to_string())
+                    .iter()
+                    .map(|f| format!("{:02x}", f))
+                    .collect();
+                DDPString::from(s)
+            },
+        );
     }
-
-    let sha: String = Sha256::digest(x.to_string())
-        .iter()
-        .map(|f| format!("{:02x}", f))
-        .collect();
-    *ret = DDPString::from(sha)
 }
 
 #[unsafe(no_mangle)]

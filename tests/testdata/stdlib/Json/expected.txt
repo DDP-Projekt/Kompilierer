@@ -16,7 +16,7 @@ wahr
 []
 welt
 42
-{"daten":42,"hallo":"welt"}
+{"hallo":"welt","daten":42}
 42
 hi
 wahr
@@ -26,4 +26,4 @@ wahr
 welt
 42
 32
-{"daten":{"mehr_daten":{"test":32},"antwort":42},"hallo":"welt"}
+{"hallo":"welt","daten":{"antwort":42,"mehr_daten":{"test":32}}}
