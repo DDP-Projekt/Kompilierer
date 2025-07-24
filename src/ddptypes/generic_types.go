@@ -21,7 +21,7 @@ func (t GenericType) String() string {
 }
 
 func CastDeeplyNestedGenerics(t Type) ([]GenericType, bool) {
-	t = GetNestedListElementType(t)
+	t = GetNestedType(t)
 	generic, ok := t.(GenericType)
 	if ok {
 		return []GenericType{generic}, ok
@@ -41,16 +41,26 @@ func CastDeeplyNestedGenerics(t Type) ([]GenericType, bool) {
 }
 
 // helper to unify generic types in a loop
-func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[string]Type) Type {
-	instantiatedType, genericType := argType, paramType.Type
+func UnifyGenericType(argType Type, paramType Type, genericTypes map[string]Type) Type {
+	instantiatedType, genericType := argType, paramType
+
+	isRefList := make([]bool, 0, 4)
 
 	argListType, isArgList := CastList(instantiatedType)
 	paramListType, isParamList := CastList(genericType)
 
-	listDepth := 0
-	for isArgList && isParamList {
-		listDepth++
-		instantiatedType, genericType = argListType.ElementType, paramListType.ElementType
+	argRefType, isArgRef := CastReference(instantiatedType)
+	paramRefType, isParamRef := CastReference(genericType)
+
+	for (isArgList && isParamList) || (isArgRef && isParamRef) {
+		switch GetUnderlying(instantiatedType).(type) {
+		case ReferenceType:
+			isRefList = append(isRefList, true)
+			instantiatedType, genericType = argRefType.Type, paramRefType.Type
+		case ListType:
+			isRefList = append(isRefList, false)
+			instantiatedType, genericType = argListType.ElementType, paramListType.ElementType
+		}
 
 		if IsGeneric(genericType) {
 			break
@@ -58,9 +68,12 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 
 		argListType, isArgList = CastList(instantiatedType)
 		paramListType, isParamList = CastList(genericType)
+
+		argRefType, isArgRef = CastReference(instantiatedType)
+		paramRefType, isParamRef = CastReference(genericType)
 	}
 
-	if isParamList && !isArgList {
+	if (isParamList && !isArgList) || (isParamRef && !isArgRef) {
 		return nil
 	}
 
@@ -107,8 +120,12 @@ func UnifyGenericType(argType Type, paramType ParameterType, genericTypes map[st
 		}
 	}
 
-	for range listDepth {
-		genericType = ListType{ElementType: genericType}
+	for _, isRef := range slices.Backward(isRefList) {
+		if isRef {
+			genericType = ReferenceType{Type: genericType}
+		} else {
+			genericType = ListType{ElementType: genericType}
+		}
 	}
 	return genericType
 }
@@ -131,18 +148,28 @@ func (t *InstantiatedGenericType) String() string {
 // instantiates a type by replacing nested occurences of generic types with the actual types
 func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 	instantiatedType := t
-	listType, isList := CastList(instantiatedType)
 
-	listDepth := 0
-	for isList {
-		listDepth++
-		instantiatedType = listType.ElementType
+	isRefList := make([]bool, 0, 4)
+
+	listType, isList := CastList(instantiatedType)
+	refType, isRef := CastReference(instantiatedType)
+
+	for isList || isRef {
+		switch GetUnderlying(instantiatedType).(type) {
+		case ReferenceType:
+			isRefList = append(isRefList, true)
+			instantiatedType = refType.Type
+		case ListType:
+			isRefList = append(isRefList, false)
+			instantiatedType = listType.ElementType
+		}
 
 		if IsGeneric(instantiatedType) {
 			break
 		}
 
 		listType, isList = CastList(instantiatedType)
+		refType, isRef = CastReference(instantiatedType)
 	}
 
 	if generic, ok := CastGeneric(instantiatedType); ok {
@@ -166,8 +193,12 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 		}
 	}
 
-	for range listDepth {
-		instantiatedType = ListType{ElementType: instantiatedType}
+	for _, isRef := range slices.Backward(isRefList) {
+		if isRef {
+			instantiatedType = ReferenceType{Type: instantiatedType}
+		} else {
+			instantiatedType = ListType{ElementType: instantiatedType}
+		}
 	}
 
 	return instantiatedType

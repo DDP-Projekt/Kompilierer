@@ -76,7 +76,6 @@ const (
 	TYP_BAD_FIELD_ACCESS                                               // a non-struct type was accessed or similar
 	TYP_PRIVATE_FIELD_ACCESS                                           // a non-public field was accessed from another module
 	TYP_BAD_OPERATOR_RETURN_TYPE                                       // the return type of a operator overload is void
-	TYP_REFERENCE_TYPE_PARAM                                           // a generic type param was a reference
 	TYP_GENERIC_TYPE_NOT_UNIFIED                                       // a generic field type could not be unified
 	TYP_COULD_NOT_INSTANTIATE_GENERIC                                  // a generic type could not be instantiated with the given parameters
 	TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN                    // a generic extern functions parameter was not a list or reference

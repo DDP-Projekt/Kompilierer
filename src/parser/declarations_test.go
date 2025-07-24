@@ -235,11 +235,7 @@ func TestTypeAliasAliasInsert(t *testing.T) {
 	eof := token.Token{Type: token.EOF}
 	expectedType := &ddptypes.TypeAlias{Name: "Hausnummer", GramGender: ddptypes.FEMININ, Underlying: ddptypes.ZAHL}
 
-	assert.True(ddptypes.ParamTypesEqual(ddptypes.ParameterType{
-		Type: expectedType,
-	}, ddptypes.ParameterType{
-		Type: ddptypes.ZAHL,
-	}))
+	assert.True(ddptypes.Equal(expectedType, ddptypes.ZAHL))
 
 	expectedAlias := &ast.FuncAlias{
 		Original: token.Token{Literal: "Schreibe <p1>"},
@@ -249,24 +245,18 @@ func TestTypeAliasAliasInsert(t *testing.T) {
 	aliasTrie := at.New[*token.Token, ast.Alias](tokenEqual, tokenLess)
 	aliasTrie.Insert([]*token.Token{
 		{Type: token.IDENTIFIER, Literal: "Schreibe"},
-		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: &ddptypes.ParameterType{
-			Type: ddptypes.ZAHL,
-		}},
+		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: ddptypes.ZAHL},
 	}, expectedAlias)
 
 	exists, actualAlias := aliasTrie.Contains([]*token.Token{
 		{Type: token.IDENTIFIER, Literal: "Schreibe"},
-		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: &ddptypes.ParameterType{
-			Type: ddptypes.ZAHL,
-		}},
+		{Type: token.ALIAS_PARAMETER, Literal: "<p1>", AliasInfo: ddptypes.ZAHL},
 	})
 	assert.True(exists)
 	assert.Equal(expectedAlias, actualAlias)
 	exists, actualAlias = aliasTrie.Contains([]*token.Token{
 		{Type: token.IDENTIFIER, Literal: "Schreibe"},
-		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: &ddptypes.ParameterType{
-			Type: expectedType,
-		}},
+		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: expectedType},
 	})
 	assert.True(exists)
 	assert.NotNil(actualAlias)
@@ -278,9 +268,7 @@ func TestTypeAliasAliasInsert(t *testing.T) {
 
 	testTokens := []token.Token{
 		{Type: token.IDENTIFIER, Literal: "Schreibe"},
-		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: &ddptypes.ParameterType{
-			Type: expectedType,
-		}},
+		{Type: token.ALIAS_PARAMETER, Literal: "<hnummer>", AliasInfo: expectedType},
 		eof,
 	}
 
@@ -389,7 +377,7 @@ func TestGenericFuncDeclParameterTypes(t *testing.T) {
 		func_decl := decl_stmt.(*ast.DeclStmt).Decl.(*ast.FuncDecl)
 		assert.NotNil(func_decl.Generic)
 		assert.ElementsMatch(genericTypes, maps.Keys(func_decl.Generic.Types))
-		assert.ElementsMatch(parameterTypes, mapSlice(func_decl.Parameters, func(p ast.ParameterInfo) string { return p.Type.Type.String() }))
+		assert.ElementsMatch(parameterTypes, mapSlice(func_decl.Parameters, func(p ast.ParameterInfo) string { return p.Type.String() }))
 		assert.Equal(returnType, func_decl.ReturnType.String())
 	}
 	runTest(`
@@ -437,7 +425,7 @@ Und kann so benutzt werden:
 Die generische Funktion foo mit den Parametern a und b vom Typ T Listen Referenz und Zahl, gibt eine T Liste zurück, macht:
 	Gib 1 zurück.
 Und kann so benutzt werden:
-	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T Liste", "Zahl"},
+	"foo <a> <b>"`, []string{"T"}, "T Liste", []string{"T Listen Referenz", "Zahl"},
 	)
 }
 
@@ -582,8 +570,8 @@ Und kann so benutzt werden:
 	_, exists, _ = decl.Generic.Context.Symbols.LookupDecl("test")
 	assert.True(exists)
 
-	foo_alias := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: decl.Generic.Types["T"], IsReference: false},
+	foo_alias := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": decl.Generic.Types["T"],
 	})
 
 	exists, alias := given.aliases.Contains(foo_alias.GetKey())
@@ -619,9 +607,9 @@ func TestValidateStructAlias(t *testing.T) {
 
 	given := createParser(t, parser{})
 
-	alias := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL},
-		"b": {Type: ddptypes.ZAHL},
+	alias := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ZAHL,
 	})
 	err, _ := given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
 		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.ZAHL},
@@ -629,9 +617,9 @@ func TestValidateStructAlias(t *testing.T) {
 	})
 	assert.Nil(err)
 
-	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL},
-		"b": {Type: ddptypes.ZAHL},
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ZAHL,
 	})
 	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
 		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.ZAHL},
@@ -639,9 +627,9 @@ func TestValidateStructAlias(t *testing.T) {
 	})
 	assert.Nil(err)
 
-	alias = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}},
-		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	alias = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.GenericType{Name: "R"},
 	})
 	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
 		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
@@ -649,9 +637,9 @@ func TestValidateStructAlias(t *testing.T) {
 	})
 	assert.Nil(err)
 
-	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}},
-		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.GenericType{Name: "R"},
 	})
 	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
 		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},
@@ -660,9 +648,9 @@ func TestValidateStructAlias(t *testing.T) {
 	assert.NotNil(err)
 	assert.Equal(ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, err.Code)
 
-	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}},
-		"b": {Type: ddptypes.GenericType{Name: "R"}},
+	alias = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.GenericType{Name: "R"},
 	})
 	err, _ = given.validateStructAlias(alias.GetTokens(), []*ast.VarDecl{
 		{NameTok: token.Token{Literal: "a"}, Type: ddptypes.GenericType{Name: "T"}},

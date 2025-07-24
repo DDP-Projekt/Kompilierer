@@ -157,7 +157,7 @@ func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		}
 
 		for _, param := range decl.Parameters {
-			if !IsPublicType(param.Type.Type, t.CurrentTable) {
+			if !IsPublicType(param.Type, t.CurrentTable) {
 				t.err(ddperror.SEM_BAD_PUBLIC_MODIFIER, param.TypeRange, "Die Parameter Typen einer öffentlichen Funktion müssen ebenfalls öffentlich sein")
 			}
 		}
@@ -635,7 +635,7 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 	for k, expr := range callExpr.Args {
 		argType := t.Evaluate(expr)
 
-		var paramType ddptypes.ParameterType
+		var paramType ddptypes.Type
 
 		for _, param := range decl.Parameters {
 			if param.Name.Literal == k {
@@ -644,15 +644,15 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
-		if ass, ok := expr.(ast.Assigneable); paramType.IsReference && !ok {
+		if ass, ok := expr.(ast.Assigneable); ddptypes.IsReference(paramType) && !ok {
 			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
-		} else if ass, ok := ass.(*ast.Indexing); paramType.IsReference && ddptypes.Equal(paramType.Type, ddptypes.BUCHSTABE) && ok {
+		} else if ass, ok := ass.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.Equal(paramType, ddptypes.BUCHSTABE) && ok {
 			lhs := t.Evaluate(ass.Lhs)
 			if ddptypes.Equal(lhs, ddptypes.TEXT) {
 				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
 			}
 		}
-		if !ddptypes.Equal(argType, paramType.Type) {
+		if !ddptypes.Equal(argType, paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
@@ -919,7 +919,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 // and with the SymbolTable that was in use when the type was declared
 func IsPublicType(typ ddptypes.Type, table ast.SymbolTable) bool {
 	// a list-type is public if its underlying type is public
-	typ = ddptypes.GetNestedListElementType(typ)
+	typ = ddptypes.GetNestedType(typ)
 
 	// a struct type is public if a corresponding struct-decl is public or if it was imported from another module
 	if ddptypes.IsTypeAlias(typ) || ddptypes.IsStruct(typ) {
@@ -948,7 +948,7 @@ func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *
 	}
 
 	containsUserDefinedType := slices.ContainsFunc(operands, func(o operand) bool {
-		return ddptypes.IsStruct(ddptypes.GetNestedListElementType(o.typ))
+		return ddptypes.IsStruct(ddptypes.GetNestedType(o.typ))
 	})
 
 	genericTypes := make(map[string]ddptypes.Type, len(operands))
@@ -970,16 +970,16 @@ overload_loop:
 		for i, operand := range operands {
 			actualParamType := overload.Parameters[i].Type
 			if ast.IsGeneric(overload) {
-				actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
+				actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			}
 
-			if !ddptypes.Equal(actualParamType.Type, operand.typ) {
+			if !ddptypes.Equal(actualParamType, operand.typ) {
 				continue overload_loop
 			}
 
 			// turn arguments for reference parameters into assigneables
 			operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
-			if actualParamType.IsReference {
+			if ddptypes.IsReference(actualParamType) {
 				if ass, isAssignable := isAssignable(operand.expr); isAssignable {
 					operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
 				} else {
@@ -1011,7 +1011,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 		return nil
 	}
 
-	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedListElementType(operand.typ))
+	containsUserDefinedType := ddptypes.IsStruct(ddptypes.GetNestedType(operand.typ))
 
 	genericTypes := make(map[string]ddptypes.Type, 1)
 
@@ -1031,19 +1031,19 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 		actualParamType := overload.Parameters[0].Type
 		returnType := overload.ReturnType
 		if ast.IsGeneric(overload) {
-			actualParamType.Type = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
+			actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
 				returnType = genericTypes[generic.Name]
 			}
 		}
 
-		if !ddptypes.Equal(actualParamType.Type, operand.typ) || !ddptypes.Equal(returnType, expr.TargetType) {
+		if !ddptypes.Equal(actualParamType, operand.typ) || !ddptypes.Equal(returnType, expr.TargetType) {
 			continue
 		}
 
 		// turn arguments for reference parameters into assigneables
 		operator_overload.Args[overload.Parameters[0].Name.Literal] = operand.expr
-		if actualParamType.IsReference {
+		if ddptypes.IsReference(actualParamType) {
 			if ass, isAssignable := isAssignable(operand.expr); isAssignable {
 				operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
 			} else {

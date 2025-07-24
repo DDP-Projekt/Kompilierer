@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func scanAlias(t *testing.T, alias string, params map[string]ddptypes.ParameterType) ast.Alias {
+func scanAlias(t *testing.T, alias string, params map[string]ddptypes.Type) ast.Alias {
 	orig := token.Token{Literal: "\"" + alias + "\""}
 	result, err := scanner.ScanAlias(orig, testHandler(t))
 	if err != nil {
@@ -22,7 +22,7 @@ func scanAlias(t *testing.T, alias string, params map[string]ddptypes.ParameterT
 	for i := range result {
 		if result[i].Type == token.ALIAS_PARAMETER {
 			info := params[strings.Trim(result[i].Literal, "<>")]
-			result[i].AliasInfo = &info
+			result[i].AliasInfo = info
 		}
 	}
 	return &ast.FuncAlias{
@@ -36,40 +36,44 @@ func TestAliasSorter(t *testing.T) {
 	assert := assert.New(t)
 
 	a := scanAlias(t, `foo`, nil)
-	b := scanAlias(t, `foo <a> test`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
+	b := scanAlias(t, `foo <a> test`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
 	})
-	c := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
+	c := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
 	})
-	d := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: true},
+	d := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
 	})
-	e := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ZAHL, IsReference: true},
+	e := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
 	})
-	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: true},
-		"b": {Type: ddptypes.ZAHL, IsReference: true},
+	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+		"b": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
 	})
-	g := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
+	g := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
 	})
-	h := scanAlias(t, `foo <a>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: true},
+	h := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.GenericType{Name: "T"}},
 	})
-	i := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
-		"b": {Type: ddptypes.ZAHL, IsReference: false},
+	i := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.ZAHL,
 	})
-	j := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
-		"b": {Type: ddptypes.GenericType{Name: "R"}, IsReference: false},
+	j := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.GenericType{Name: "R"},
 	})
-	k := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
-		"b": {Type: ddptypes.GenericType{Name: "R"}, IsReference: true},
+	k := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.ReferenceType{Type: ddptypes.GenericType{Name: "R"}},
+	})
+	l := scanAlias(t, `foo <a> <b> sehr viel länger`, map[string]ddptypes.Type{
+		"a": ddptypes.GenericType{Name: "T"},
+		"b": ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "R"}},
 	})
 
 	// longer aliase to the top
@@ -111,6 +115,16 @@ func TestAliasSorter(t *testing.T) {
 	aliases = []ast.Alias{j, k}
 	sortAliases(aliases)
 	assert.Equal([]ast.Alias{k, j}, aliases)
+
+	// count generics through references
+	aliases = []ast.Alias{k, i}
+	sortAliases(aliases)
+	assert.Equal([]ast.Alias{i, k}, aliases)
+
+	// count generics through lists
+	aliases = []ast.Alias{l, i}
+	sortAliases(aliases)
+	assert.Equal([]ast.Alias{i, l}, aliases)
 
 	// everything
 	aliases = []ast.Alias{a, b, c, d, e, f, g, h, i, j, k}
@@ -178,11 +192,11 @@ func TestGenerateGenericContext(t *testing.T) {
 	}
 
 	context := given.generateGenericContext(declContext, []ast.ParameterInfo{
-		{Name: token.Token{Literal: "a"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
-		{Name: token.Token{Literal: "b"}, Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false}},
-		{Name: token.Token{Literal: "c"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "T"}, IsReference: false}},
-		{Name: token.Token{Literal: "d"}, Type: ddptypes.ParameterType{Type: ddptypes.GenericType{Name: "R"}, IsReference: false}},
-		{Name: token.Token{Literal: "e"}, Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "T"}}, IsReference: false}},
+		{Name: token.Token{Literal: "a"}, Type: ddptypes.ZAHL},
+		{Name: token.Token{Literal: "b"}, Type: ddptypes.ZAHL},
+		{Name: token.Token{Literal: "c"}, Type: ddptypes.GenericType{Name: "T"}},
+		{Name: token.Token{Literal: "d"}, Type: ddptypes.GenericType{Name: "R"}},
+		{Name: token.Token{Literal: "e"}, Type: ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "T"}}},
 	}, map[string]ddptypes.Type{
 		"T": ddptypes.ZAHL,
 		"R": structDecl.Type,
@@ -482,9 +496,9 @@ func TestCheckAlias(t *testing.T) {
 		tokens: scanTokens(t, `foo 1 2`),
 	})
 
-	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ZAHL, IsReference: false},
+	f := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ZAHL,
 	})
 	cached_args := make(map[cachedArgKey]*cachedArg, 4)
 	args, funcInstantiation, structTypeInstantiation, errs := given.checkAlias(f, true, 0, cached_args)
@@ -503,7 +517,7 @@ func TestCheckAlias(t *testing.T) {
 		Parameters: []ast.ParameterInfo{
 			{
 				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+				Type: ddptypes.ZAHL,
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -514,11 +528,10 @@ Ende`),
 			Instantiations: make(map[*ast.Module][]*ast.FuncDecl),
 		},
 	}
-	_ = genericFunc
 
-	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.GenericType{Name: "T"}, IsReference: false},
+	g := scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.GenericType{Name: "T"},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -551,11 +564,11 @@ Ende`),
 		Parameters: []ast.ParameterInfo{
 			{
 				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+				Type: ddptypes.ZAHL,
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+				Type: ddptypes.ListType{ElementType: genericType},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -567,9 +580,9 @@ Ende`),
 		},
 	}
 
-	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ListType{ElementType: genericType},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -602,11 +615,11 @@ Ende`),
 		Parameters: []ast.ParameterInfo{
 			{
 				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+				Type: ddptypes.ZAHL,
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+				Type: ddptypes.ListType{ElementType: genericType},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -619,9 +632,9 @@ Ende`),
 		},
 	}
 
-	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ListType{ElementType: genericType},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -643,11 +656,11 @@ Ende`),
 		Parameters: []ast.ParameterInfo{
 			{
 				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+				Type: ddptypes.ZAHL,
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+				Type: ddptypes.ListType{ElementType: genericType},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -660,9 +673,9 @@ Ende`),
 		},
 	}
 
-	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: false},
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ListType{ElementType: genericType},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 
@@ -686,11 +699,11 @@ Ende`),
 		Parameters: []ast.ParameterInfo{
 			{
 				Name: token.Token{Literal: "a"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ZAHL, IsReference: false},
+				Type: ddptypes.ZAHL,
 			},
 			{
 				Name: token.Token{Literal: "b"},
-				Type: ddptypes.ParameterType{Type: ddptypes.ListType{ElementType: genericType}, IsReference: true},
+				Type: ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: genericType}},
 			},
 		},
 		Generic: &ast.GenericFuncInfo{
@@ -703,9 +716,9 @@ Ende`),
 		},
 	}
 
-	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.ParameterType{
-		"a": {Type: ddptypes.ZAHL, IsReference: false},
-		"b": {Type: ddptypes.ListType{ElementType: genericType}, IsReference: true},
+	g = scanAlias(t, `foo <a> <b>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+		"b": ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: genericType}},
 	})
 	g.(*ast.FuncAlias).Func = genericFunc
 	given.aliases.Insert(g.GetKey(), g)

@@ -43,15 +43,6 @@ func GetListElementType(typ Type) Type {
 	return typ
 }
 
-// gets the underlying type for nested lists
-// if typ is not a list type typ is returned
-func GetNestedListElementType(typ Type) Type {
-	for IsList(typ) {
-		typ = GetNestedListElementType(GetUnderlying(typ).(ListType).ElementType)
-	}
-	return typ
-}
-
 // helper that flattens list types to not contain typedefs/aliases
 func getTrueListUnderlying(typ Type) Type {
 	typ = TrueUnderlying(typ)

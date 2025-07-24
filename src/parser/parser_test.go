@@ -17,12 +17,19 @@ func TestInsertOperatorOverload(t *testing.T) {
 		errorHandler: errorCollector.GetHandler(),
 	})
 
+	ofref := func(t ddptypes.Type, isref bool) ddptypes.Type {
+		if isref {
+			return ddptypes.ReferenceType{Type: t}
+		}
+		return t
+	}
+
 	op := func(a, b ddptypes.Type, aref, bref bool) *ast.FuncDecl {
 		return &ast.FuncDecl{
 			Operator: ast.BIN_PLUS,
 			Parameters: []ast.ParameterInfo{
-				{Type: ddptypes.ParameterType{Type: a, IsReference: aref}},
-				{Type: ddptypes.ParameterType{Type: b, IsReference: bref}},
+				{Type: ofref(a, aref)},
+				{Type: ofref(b, bref)},
 			},
 		}
 	}
@@ -30,9 +37,9 @@ func TestInsertOperatorOverload(t *testing.T) {
 		return &ast.FuncDecl{
 			Operator: ast.BIN_PLUS,
 			Parameters: []ast.ParameterInfo{
-				{Type: ddptypes.ParameterType{Type: a, IsReference: aref}},
-				{Type: ddptypes.ParameterType{Type: b, IsReference: bref}},
-				{Type: ddptypes.ParameterType{Type: c, IsReference: cref}},
+				{Type: ofref(a, aref)},
+				{Type: ofref(b, bref)},
+				{Type: ofref(c, cref)},
 			},
 		}
 	}

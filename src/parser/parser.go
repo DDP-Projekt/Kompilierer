@@ -476,10 +476,10 @@ func (p *parser) insertOperatorOverload(decl *ast.FuncDecl) {
 	i, _ := slices.BinarySearchFunc(overloads, decl, func(a, t *ast.FuncDecl) int {
 		countRefAndGenericArgs := func(params []ast.ParameterInfo) (refs, gen int) {
 			for i := range params {
-				if params[i].Type.IsReference {
+				if ddptypes.IsReference(params[i].Type) {
 					refs++
 				}
-				_, isGeneric := ddptypes.CastDeeplyNestedGenerics(params[i].Type.Type)
+				_, isGeneric := ddptypes.CastDeeplyNestedGenerics(params[i].Type)
 				if isGeneric {
 					gen++
 				}

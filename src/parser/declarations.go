@@ -325,10 +325,10 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 	// parse the types of the parameters
 	validate(p.consumeSeq(token.VOM, token.TYP))
 	firstTypeStart := p.previous()
-	firstType, ref := p.parseReferenceType(isGeneric)
+	firstType := p.parseType(isGeneric)
 	firstTypeEnd := p.previous()
 	validate(firstType != nil)
-	params[0].Type = ddptypes.ParameterType{Type: firstType, IsReference: ref}
+	params[0].Type = firstType
 	params[0].TypeRange = token.NewRange(firstTypeStart, firstTypeEnd)
 
 	if !singleParameter {
@@ -337,11 +337,11 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 		addType := func() {
 			// validate the parameter type and append it
 			typeStart := p.peek()
-			typ, ref := p.parseReferenceType(isGeneric)
+			typ := p.parseType(isGeneric)
 			typeEnd := p.previous()
 			validate(typ != nil)
 			if i < len(params) {
-				params[i].Type = ddptypes.ParameterType{Type: typ, IsReference: ref}
+				params[i].Type = typ
 				params[i].TypeRange = token.NewRange(typeStart, typeEnd)
 				i++
 			}
@@ -393,7 +393,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 	}
 
 	// map function parameters to their type (given to the alias if it is valid)
-	paramTypesMap := make(map[string]ddptypes.ParameterType, len(params))
+	paramTypesMap := make(map[string]ddptypes.Type, len(params))
 	for _, param := range params {
 		if param.HasValidType() {
 			paramTypesMap[param.Name.Literal] = param.Type
@@ -549,7 +549,7 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 	params := p.parseFunctionParameters(perr, validate, isGeneric)
 	genericTypes := make(map[string]ddptypes.GenericType, 4)
 	for _, param := range params {
-		if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+		if generics, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type); isGeneric {
 			for _, generic := range generics {
 				genericTypes[generic.String()] = generic
 			}
@@ -607,8 +607,8 @@ func (p *parser) funcDeclaration(startDepth int) ast.Statement {
 
 		if isGeneric {
 			for _, param := range params {
-				if !ddptypes.IsList(param.Type.Type) && !param.Type.IsReference {
-					if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric {
+				if !ddptypes.IsList(param.Type) && !ddptypes.IsReference(param.Type) {
+					if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type); isGeneric {
 						perr(ddperror.TYP_GENERIC_EXTERN_FUNCTION_BAD_PARAM_OR_RETURN, param.TypeRange, "Generische Parameter einer externen Funktion müssen Listen oder Referenzen sein")
 					}
 				}
@@ -742,7 +742,7 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 				NameTok:    decl.Parameters[i].Name,
 				IsPublic:   false,
 				Mod:        p.module,
-				Type:       decl.Parameters[i].Type.Type,
+				Type:       decl.Parameters[i].Type,
 				Range:      token.NewRange(&decl.Parameters[i].Name, &decl.Parameters[i].Name),
 				CommentTok: decl.Parameters[i].Comment,
 			},
@@ -843,8 +843,8 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 		return &err
 	}
 
-	nameTypeMap := make(map[string]ddptypes.ParameterType, len(params)) // map that holds the parameter names contained in the alias and their corresponding type
-	nameSet := make(map[string]struct{}, len(params))                   // set that holds the parameter names contained in the alias
+	nameTypeMap := make(map[string]ddptypes.Type, len(params)) // map that holds the parameter names contained in the alias and their corresponding type
+	nameSet := make(map[string]struct{}, len(params))          // set that holds the parameter names contained in the alias
 	for _, param := range params {
 		if param.HasValidType() {
 			nameTypeMap[param.Name.Literal] = param.Type
@@ -869,7 +869,7 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 		}
 
 		if argTyp, ok := nameTypeMap[k]; ok {
-			aliasTokens[i].AliasInfo = &argTyp
+			aliasTokens[i].AliasInfo = argTyp
 			delete(nameTypeMap, k)
 		} else {
 			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
@@ -910,14 +910,11 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		return &err, nil
 	}
 
-	nameTypeMap := make(map[string]ddptypes.ParameterType, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
-	args := make(map[string]ddptypes.Type, len(fields))                 // the arguments of the alias
-	genericUnifiedMap := make(map[string]bool, len(fields)*2)           // holds wether a generic type is unified
+	nameTypeMap := make(map[string]ddptypes.Type, len(fields)) // map that holds the parameter names contained in the alias and their corresponding type
+	args := make(map[string]ddptypes.Type, len(fields))        // the arguments of the alias
+	genericUnifiedMap := make(map[string]bool, len(fields)*2)  // holds wether a generic type is unified
 	for _, v := range fields {
-		nameTypeMap[v.Name()] = ddptypes.ParameterType{
-			Type:        v.Type,
-			IsReference: false, // fields are never references
-		}
+		nameTypeMap[v.Name()] = v.Type
 		args[v.Name()] = v.Type
 		genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(v.Type)
 		for _, typ := range genericTypes {
@@ -944,9 +941,9 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 		}
 
 		if argTyp, ok := nameTypeMap[k]; ok {
-			aliasTokens[i].AliasInfo = &argTyp
+			aliasTokens[i].AliasInfo = argTyp
 
-			genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(argTyp.Type)
+			genericTypes, _ := ddptypes.CastDeeplyNestedGenerics(argTyp)
 			for _, typ := range genericTypes {
 				genericUnifiedMap[typ.Name] = true
 			}
@@ -1253,7 +1250,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	funDecl := decl.(*ast.FuncDecl)
 
 	// map function parameters to their type (given to the alias if it is valid)
-	paramTypes := make(map[string]ddptypes.ParameterType, 4)
+	paramTypes := make(map[string]ddptypes.Type, 4)
 	for _, param := range funDecl.Parameters {
 		if param.HasValidType() {
 			paramTypes[param.Name.Literal] = param.Type

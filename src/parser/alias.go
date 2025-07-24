@@ -195,12 +195,13 @@ func sortAliases(matchedAliases []ast.Alias) {
 
 		// Sort by functions that take references up and generics down
 
-		countRefAndGenericArgs := func(params map[string]ddptypes.ParameterType) (refs, gen int) {
+		countRefAndGenericArgs := func(params map[string]ddptypes.Type) (refs, gen int) {
 			for _, paramType := range params {
-				if paramType.IsReference {
+				if ddptypes.IsReference(paramType) {
 					refs++
 				}
-				if ddptypes.IsGeneric(paramType.Type) {
+
+				if _, ok := ddptypes.CastDeeplyNestedGenerics(paramType); ok {
 					gen++
 				}
 			}
@@ -255,12 +256,12 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 			pType := p.peek().Type
 			// early return if a non-identifier expression is passed as reference
-			if typeSensitive && paramType.IsReference && pType != token.IDENTIFIER && pType != token.LPAREN {
+			if typeSensitive && ddptypes.IsReference(paramType) && pType != token.IDENTIFIER && pType != token.LPAREN {
 				return nil, nil, nil, reported_errors
 			}
 
 			// create the key for the argument
-			cached_arg_key := cachedArgKey{cur: p.cur, isReference: paramType.IsReference}
+			cached_arg_key := cachedArgKey{cur: p.cur, isReference: ddptypes.IsReference(paramType)}
 			cached_arg, ok := cached_args[cached_arg_key]
 
 			if !ok { // if the argument was not already parsed
@@ -306,7 +307,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					Operators:   p.Operators,
 				}
 
-				if paramType.IsReference {
+				if cached_arg_key.isReference {
 					argParser.advance() // consume the identifier or LPAREN for assigneable() to work
 					cached_arg.Arg = argParser.assigneable()
 				} else if isGrouping {
@@ -330,12 +331,17 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 				didMatch := true
 
+				// we parsed an assigneable and implicitly cast it
+				if cached_arg_key.isReference && !ddptypes.IsReference(typ) {
+					typ = ddptypes.ReferenceType{Type: typ}
+				}
+
 				underlyingParamType := ddptypes.UnifyGenericType(typ, paramType, genericTypes)
 
 				if !ddptypes.Equal(typ, underlyingParamType) {
 					didMatch = false
-				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                                // string-indexings may not be passed as char-reference
-				paramType.IsReference && ddptypes.Equal(underlyingParamType, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
+				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                                          // string-indexings may not be passed as char-reference
+				ddptypes.IsReference(paramType) && ddptypes.Equal(underlyingParamType, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
 					ok { // and the argument is a indexing
 					lhs := p.typechecker.EvaluateSilent(ass.Lhs)
 					if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
@@ -401,12 +407,12 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 	// meaning types must contain the correct type for each parameter
 	for i, param := range genericFunc.Parameters {
 		parameters[i] = param
-		_, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type)
+		_, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type)
 		if !isGeneric {
 			continue
 		}
 
-		parameters[i].Type.Type = ddptypes.GetInstantiatedType(parameters[i].Type.Type, genericTypes)
+		parameters[i].Type = ddptypes.GetInstantiatedType(parameters[i].Type, genericTypes)
 	}
 
 	genericModule := p.genericModule
@@ -422,7 +428,7 @@ func (p *parser) InstantiateGenericFunction(genericFunc *ast.FuncDecl, genericTy
 
 	for _, instantiation := range instantiations {
 		if slices.EqualFunc(instantiation.Parameters, parameters, func(a, b ast.ParameterInfo) bool {
-			return ddptypes.ParamTypesEqual(a.Type, b.Type)
+			return ddptypes.Equal(a.Type, b.Type)
 		}) {
 			return instantiation, nil
 		}
@@ -502,7 +508,7 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 				NameTok:    params[i].Name,
 				IsPublic:   false,
 				Mod:        p.module,
-				Type:       ddptypes.GetInstantiatedType(params[i].Type.Type, genericTypes),
+				Type:       ddptypes.GetInstantiatedType(params[i].Type, genericTypes),
 				Range:      token.NewRange(&params[i].Name, &params[i].Name),
 				CommentTok: params[i].Comment,
 			},

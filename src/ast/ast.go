@@ -91,17 +91,17 @@ type (
 		// *FuncDecl or *StructDecl
 		Decl() Declaration
 		// types of the arguments (used for funcCall parsing)
-		GetArgs() map[string]ddptypes.ParameterType
+		GetArgs() map[string]ddptypes.Type
 	}
 
 	// wrapper for a function alias
 	FuncAlias struct {
-		Tokens   []token.Token                     // tokens of the alias
-		pTokens  []*token.Token                    // cache for GetPTokens
-		Original token.Token                       // the original string
-		Func     *FuncDecl                         // the function it refers to (if it is used outside a FuncDecl)
-		Args     map[string]ddptypes.ParameterType // types of the arguments (used for funcCall parsing)
-		Negated  bool                              // if the alias has been negated
+		Tokens   []token.Token            // tokens of the alias
+		pTokens  []*token.Token           // cache for GetPTokens
+		Original token.Token              // the original string
+		Func     *FuncDecl                // the function it refers to (if it is used outside a FuncDecl)
+		Args     map[string]ddptypes.Type // types of the arguments (used for funcCall parsing)
+		Negated  bool                     // if the alias has been negated
 	}
 
 	// wrapper for a struct alias
@@ -133,7 +133,7 @@ func (alias *FuncAlias) Decl() Declaration {
 	return alias.Func
 }
 
-func (alias *FuncAlias) GetArgs() map[string]ddptypes.ParameterType {
+func (alias *FuncAlias) GetArgs() map[string]ddptypes.Type {
 	return alias.Args
 }
 
@@ -156,28 +156,25 @@ func (alias *StructAlias) Decl() Declaration {
 	return alias.Struct
 }
 
-func (alias *StructAlias) GetArgs() map[string]ddptypes.ParameterType {
-	paramTypes := make(map[string]ddptypes.ParameterType, len(alias.Args))
+func (alias *StructAlias) GetArgs() map[string]ddptypes.Type {
+	paramTypes := make(map[string]ddptypes.Type, len(alias.Args))
 	for name, arg := range alias.Args {
-		paramTypes[name] = ddptypes.ParameterType{
-			Type:        arg,
-			IsReference: false,
-		}
+		paramTypes[name] = arg
 	}
 	return paramTypes
 }
 
 // holds all information about a single function parameter
 type ParameterInfo struct {
-	Name      token.Token            // the name token of the parameter
-	Type      ddptypes.ParameterType // the type of the parameter or default value if there was an error during parsing
-	TypeRange token.Range            // range of the type (mainly for the LSP)
-	Comment   *token.Token           // the comment token, or nil if none was present
+	Name      token.Token   // the name token of the parameter
+	Type      ddptypes.Type // the type of the parameter or default value if there was an error during parsing
+	TypeRange token.Range   // range of the type (mainly for the LSP)
+	Comment   *token.Token  // the comment token, or nil if none was present
 }
 
 // wether the ParameterInfo's type is not the default value (i.e. was not parsed)
 func (param *ParameterInfo) HasValidType() bool {
-	return param.Type != ddptypes.ParameterType{}
+	return param.Type != nil
 }
 
 //go-sumtype:decl Node

@@ -23,7 +23,7 @@ func tokenEqual(t1, t2 *token.Token) bool {
 
 	switch t1.Type {
 	case token.ALIAS_PARAMETER:
-		return ddptypes.ParamTypesEqual(*t1.AliasInfo, *t2.AliasInfo)
+		return ddptypes.Equal(t1.AliasInfo, t2.AliasInfo)
 	case token.IDENTIFIER, token.SYMBOL, token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal == t2.Literal
 	}
@@ -51,16 +51,17 @@ func tokenLess(t1, t2 *token.Token) bool {
 
 	switch t1.Type {
 	case token.ALIAS_PARAMETER:
-		if t1.AliasInfo.IsReference != t2.AliasInfo.IsReference {
-			return boolToInt(t1.AliasInfo.IsReference) < boolToInt(t2.AliasInfo.IsReference)
+
+		if isRef1, isRef2 := ddptypes.IsReference(t1.AliasInfo), ddptypes.IsReference(t2.AliasInfo); isRef1 != isRef2 {
+			return boolToInt(isRef1) < boolToInt(isRef2)
 		}
 
-		isList1, isList2 := ddptypes.IsList(t1.AliasInfo.Type), ddptypes.IsList(t2.AliasInfo.Type)
+		isList1, isList2 := ddptypes.IsList(t1.AliasInfo), ddptypes.IsList(t2.AliasInfo)
 		if isList1 != isList2 {
 			return boolToInt(isList1) < boolToInt(isList2)
 		}
 
-		return ddptypes.GetUnderlying(t1.AliasInfo.Type).String() < ddptypes.GetUnderlying(t2.AliasInfo.Type).String()
+		return ddptypes.GetUnderlying(t1.AliasInfo).String() < ddptypes.GetUnderlying(t2.AliasInfo).String()
 	case token.IDENTIFIER, token.SYMBOL, token.INT, token.FLOAT, token.CHAR, token.STRING:
 		return t1.Literal < t2.Literal
 	}
@@ -249,14 +250,14 @@ func operatorReturnTypeEqual(a, b ddptypes.Type) bool {
 
 func operatorParameterTypesEqual(pi1, pi2 []ast.ParameterInfo) bool {
 	return slices.EqualFunc(pi1, pi2, func(pi1, pi2 ast.ParameterInfo) bool {
-		_, isGen1 := ddptypes.CastDeeplyNestedGenerics(pi1.Type.Type)
-		_, isGen2 := ddptypes.CastDeeplyNestedGenerics(pi2.Type.Type)
+		_, isGen1 := ddptypes.CastDeeplyNestedGenerics(pi1.Type)
+		_, isGen2 := ddptypes.CastDeeplyNestedGenerics(pi2.Type)
 
 		if isGen1 || isGen2 {
-			return isGen1 && isGen2 && pi1.Type.IsReference == pi2.Type.IsReference
+			return isGen1 && isGen2 && ddptypes.IsReference(pi1.Type) == ddptypes.IsReference(pi2.Type)
 		}
 
-		return ddptypes.ParamTypesEqual(pi1.Type, pi2.Type)
+		return ddptypes.Equal(pi1.Type, pi2.Type)
 	})
 }
 

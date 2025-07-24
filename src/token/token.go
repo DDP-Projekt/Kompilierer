@@ -10,11 +10,11 @@ type TokenType int
 
 // a single ddp token
 type Token struct {
-	Type      TokenType               // type of the token
-	Literal   string                  // the literal from which it was scanned
-	Indent    uint                    // how many levels it is indented
-	Range     Range                   // the range the token spans
-	AliasInfo *ddptypes.ParameterType // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
+	Type      TokenType     // type of the token
+	Literal   string        // the literal from which it was scanned
+	Indent    uint          // how many levels it is indented
+	Range     Range         // the range the token spans
+	AliasInfo ddptypes.Type // only present in ALIAS_PARAMETERs, holds type information, nil otherwise
 }
 
 func (t *Token) String() string {

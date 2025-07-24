@@ -104,21 +104,21 @@ func TestParseReferenceType(t *testing.T) {
 			errorHandler: mockHandler.GetHandler(),
 		})
 
-		typ, isRef := given.parseReferenceType(isGeneric)
+		typ := given.parseType(isGeneric)
 		assert.Equal(shouldError, mockHandler.DidError())
 		assert.Equal(expectedType, typ)
-		assert.Equal(shouldBeRef, isRef)
+		assert.Equal(shouldBeRef, ddptypes.IsReference(typ))
 	}
 
 	runTest(`Zahl`, false, false, false, ddptypes.ZAHL)
 	runTest(`Zahlen Liste`, false, false, false, ddptypes.ListType{ElementType: ddptypes.ZAHL})
-	runTest(`Zahlen Referenz`, false, false, true, ddptypes.ZAHL)
+	runTest(`Zahlen Referenz`, false, false, true, ddptypes.ReferenceType{Type: ddptypes.ZAHL})
 
 	runTest(`T`, false, true, false, nil)
 
 	runTest(`T`, true, false, false, ddptypes.GenericType{Name: "T"})
 	runTest(`T Liste`, true, false, false, ddptypes.ListType{ElementType: ddptypes.GenericType{Name: "T"}})
-	runTest(`T Referenz`, true, false, true, ddptypes.GenericType{Name: "T"})
+	runTest(`T Referenz`, true, false, true, ddptypes.ReferenceType{Type: ddptypes.GenericType{Name: "T"}})
 
 	runGenericTest := func(src, declName string, genericFields []ddptypes.StructField, genericTypes []ddptypes.GenericType, resultFields []ddptypes.StructField, isRef, success bool) {
 		mockHandler := ddperror.Collector{}
@@ -140,7 +140,7 @@ func TestParseReferenceType(t *testing.T) {
 		})
 		given.setScope(symbols)
 
-		typ, isReference := given.parseReferenceType(false)
+		typ := given.parseType(false)
 		if !success {
 			assert.True(mockHandler.DidError())
 			return
@@ -148,9 +148,14 @@ func TestParseReferenceType(t *testing.T) {
 
 		assert.False(mockHandler.DidError())
 		assert.NotNil(typ)
-		assert.IsType(&ddptypes.StructType{}, typ)
-		assert.Equal(resultFields, typ.(*ddptypes.StructType).Fields)
-		assert.Equal(isRef, isReference)
+		if isRef {
+			assert.IsType(&ddptypes.StructType{}, typ.(ddptypes.ReferenceType).Type)
+			assert.Equal(resultFields, typ.(ddptypes.ReferenceType).Type.(*ddptypes.StructType).Fields)
+		} else {
+			assert.IsType(&ddptypes.StructType{}, typ)
+			assert.Equal(resultFields, typ.(*ddptypes.StructType).Fields)
+		}
+		assert.Equal(isRef, ddptypes.IsReference(typ))
 	}
 
 	runGenericTest(`Zahl-Vektor`,
@@ -197,17 +202,17 @@ func TestParseReferenceType(t *testing.T) {
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}},
 		[]ddptypes.GenericType{{Name: "T"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}},
+		[]ddptypes.StructField{{Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL}}},
 		true,
-		false,
+		true,
 	)
 	runGenericTest(`Zahlen Referenz-Vektor Referenz`,
 		"Vektor",
 		[]ddptypes.StructField{{Type: ddptypes.GenericType{Name: "T"}}},
 		[]ddptypes.GenericType{{Name: "T"}},
-		[]ddptypes.StructField{{Type: ddptypes.ZAHL}},
+		[]ddptypes.StructField{{Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL}}},
 		true,
-		false,
+		true,
 	)
 
 	// lists
@@ -231,9 +236,9 @@ func TestParseReferenceType(t *testing.T) {
 	})
 	given.setScope(symbols)
 
-	typ, isReference := given.parseReferenceType(false)
+	typ := given.parseType(false)
 	if assert.False(mockHandler.DidError()) {
-		assert.False(isReference)
+		assert.False(ddptypes.IsReference(typ))
 		assert.NotNil(typ)
 		assert.True(ddptypes.IsList(typ))
 		assert.Equal([]ddptypes.StructField{{Type: ddptypes.ZAHL}}, typ.(ddptypes.ListType).ElementType.(*ddptypes.StructType).Fields)

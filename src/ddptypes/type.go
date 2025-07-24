@@ -159,3 +159,29 @@ func CastGenericStructType(t Type) (*GenericStructType, bool) {
 	generic, ok := t.(*GenericStructType)
 	return generic, ok
 }
+
+func IsReference(t Type) bool {
+	_, ok := CastReference(t)
+	return ok
+}
+
+func CastReference(t Type) (ReferenceType, bool) {
+	t = GetUnderlying(t)
+	reference, ok := t.(ReferenceType)
+	return reference, ok
+}
+
+// gets the underlying type for nested lists and References
+// if typ is not a list or reference type typ is returned
+func GetNestedType(typ Type) Type {
+	typ = GetUnderlying(typ)
+	for IsList(typ) || IsReference(typ) {
+		switch typ.(type) {
+		case ReferenceType:
+			typ = GetNestedType(GetUnderlying(typ).(ReferenceType).Type)
+		case ListType:
+			typ = GetNestedType(GetUnderlying(typ).(ListType).ElementType)
+		}
+	}
+	return typ
+}
