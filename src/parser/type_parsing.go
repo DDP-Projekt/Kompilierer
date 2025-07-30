@@ -46,6 +46,44 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 		return nil // void indicates error
 	}
 
+	squashTypes := func(types []ddptypes.Type) ddptypes.Type {
+		if len(types) == 0 {
+			return nil
+		} else if len(types) == 1 {
+			return types[0]
+		}
+
+		mainType := types[len(types)-1]
+
+		listDepth := 0
+		mainListType, isMainList := ddptypes.CastList(mainType)
+		for isMainList {
+			listDepth++
+			mainType = mainListType.ElementType
+
+			mainListType, isMainList = ddptypes.CastList(mainType)
+		}
+
+		if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
+			if instantiation := ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]); instantiation == nil {
+				p.err(ddperror.TYP_COULD_NOT_INSTANTIATE_GENERIC, p.previous().Range,
+					fmt.Sprintf("Der generische Typ %s konnte nicht mit den Typparametern %s instanziiert werden", genericStruct.String(), types[:len(types)-1]))
+			} else {
+				mainType = instantiation
+			}
+
+			for range listDepth {
+				mainType = ddptypes.ListType{ElementType: mainType}
+			}
+
+			return mainType
+		}
+
+		p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein Typ, der keine generische Kombination ist kann keine Typparameter haben")
+
+		return mainType
+	}
+
 	types := make([]ddptypes.Type, 0, 4)
 
 	for ok := true; ok; ok = p.matchAny(token.NEGATE) {
@@ -68,9 +106,13 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 					// because there is a valid token afterwards
 					p.advance()
 				}
-				typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-3).Type)}}
+				types = append(types, ddptypes.ListType{ElementType: p.tokenTypeToType(p.peekN(-3).Type)})
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else if p.matchAny(token.REFERENZ) {
-				typ = ddptypes.ReferenceType{Type: p.tokenTypeToType(p.peekN(-2).Type)}
+				types = append(types, p.tokenTypeToType(p.peekN(-2).Type))
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else {
 				typ = p.tokenTypeToType(p.previous().Type)
 			}
@@ -79,40 +121,56 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 				typ = ddptypes.ListType{ElementType: ddptypes.ZAHL}
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: ddptypes.ZAHL}}
+				types = append(types, ddptypes.ListType{ElementType: ddptypes.ZAHL})
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.ZAHL}
+				types = append(types, ddptypes.ZAHL)
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			}
 		case token.KOMMAZAHLEN:
 			if p.matchAny(token.LISTE) {
 				typ = ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL}}
+				types = append(types, ddptypes.ListType{ElementType: ddptypes.KOMMAZAHL})
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.KOMMAZAHL}
+				types = append(types, ddptypes.KOMMAZAHL)
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			}
 		case token.BUCHSTABEN:
 			if p.matchAny(token.LISTE) {
 				typ = ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}}
+				types = append(types, ddptypes.ListType{ElementType: ddptypes.BUCHSTABE})
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.BUCHSTABE}
+				types = append(types, ddptypes.BUCHSTABE)
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			}
 		case token.VARIABLEN:
 			if p.matchAny(token.LISTE) {
 				typ = ddptypes.ListType{ElementType: ddptypes.VARIABLE}
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: ddptypes.VARIABLE}}
+				types = append(types, ddptypes.ListType{ElementType: ddptypes.VARIABLE})
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			} else {
 				p.consumeSeq(token.REFERENZ)
-				typ = ddptypes.ReferenceType{Type: ddptypes.VARIABLE}
+				types = append(types, ddptypes.VARIABLE)
+				typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+				types = types[:0]
 			}
 		case token.LPAREN:
 			typ = p.parseType(generic)
@@ -131,9 +189,13 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 						// because there is a valid token afterwards
 						p.advance()
 					}
-					typ = ddptypes.ReferenceType{Type: ddptypes.ListType{ElementType: Type}}
+					types = append(types, ddptypes.ListType{ElementType: Type})
+					typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+					types = types[:0]
 				} else if p.matchAny(token.REFERENZ) {
-					typ = ddptypes.ReferenceType{Type: Type}
+					types = append(types, Type)
+					typ = ddptypes.ReferenceType{Type: squashTypes(types)}
+					types = types[:0]
 				} else {
 					typ = Type
 				}
@@ -147,42 +209,7 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 			types = append(types, typ)
 		}
 	}
-
-	if len(types) == 0 {
-		return nil
-	} else if len(types) == 1 {
-		return types[0]
-	}
-
-	mainType := types[len(types)-1]
-
-	listDepth := 0
-	mainListType, isMainList := ddptypes.CastList(mainType)
-	for isMainList {
-		listDepth++
-		mainType = mainListType.ElementType
-
-		mainListType, isMainList = ddptypes.CastList(mainType)
-	}
-
-	if genericStruct, isGeneric := ddptypes.CastGenericStructType(mainType); isGeneric {
-		if instantiation := ddptypes.GetInstantiatedStructType(genericStruct, types[:len(types)-1]); instantiation == nil {
-			p.err(ddperror.TYP_COULD_NOT_INSTANTIATE_GENERIC, p.previous().Range,
-				fmt.Sprintf("Der generische Typ %s konnte nicht mit den Typparametern %s instanziiert werden", genericStruct.String(), types[:len(types)-1]))
-		} else {
-			mainType = instantiation
-		}
-
-		for range listDepth {
-			mainType = ddptypes.ListType{ElementType: mainType}
-		}
-
-		return mainType
-	}
-
-	p.err(ddperror.SEM_CANNOT_INSTANTIATE_NON_GENERIC_TYPE, p.previous().Range, "Ein Typ, der keine generische Kombination ist kann keine Typparameter haben")
-
-	return mainType
+	return squashTypes(types)
 }
 
 // parses tokens into a DDPType
