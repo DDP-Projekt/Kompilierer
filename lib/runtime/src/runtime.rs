@@ -1,6 +1,4 @@
 // TODO: signal handler
-// TODO: LC_ALL/LC_NUMERIC windows vs linux
-// TODO: init/end runtime
 
 use debug_print::debug_println;
 use libc::{SIGSEGV, signal};

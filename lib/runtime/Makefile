@@ -34,7 +34,7 @@ HEADERS = $(wildcard include/DDP/*.h include/DDP/*/*.h)
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INC) -o $@ $< 
 
-%.o: %.c
+%_debug.o: %.c
 	$(CC) $(CCFLAGS) $(DEBUGFLAGS) $(INC) -o $@ $<
 
 all: $(OUT_FILE_NAME) source/main.o compile_commands.json
