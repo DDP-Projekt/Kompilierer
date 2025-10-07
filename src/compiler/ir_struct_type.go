@@ -26,11 +26,15 @@ func (t *ddpIrStructType) LLType() llvm.Type {
 	return t.typ
 }
 
+func (t *ddpIrStructType) DDPType() ddptypes.Type {
+	return t.listType.elementType.DDPType()
+}
+
 func (t *ddpIrStructType) Name() string {
 	return t.name
 }
 
-func (*ddpIrStructType) IsPrimitive() bool {
+func (*ddpIrStructType) TriviallyCopyable() bool {
 	return false
 }
 
@@ -164,7 +168,7 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 	// deep-copy non-primitives
 	for i, field := range structTyp.fieldIrTypes {
 		dstPtr := c.indexStruct(structTyp.typ, ret, i)
-		if !field.IsPrimitive() {
+		if !field.TriviallyCopyable() {
 			srcPtr := c.indexStruct(structTyp.typ, structParam, i)
 			c.deepCopyInto(dstPtr, srcPtr, field)
 		} else {
@@ -199,7 +203,7 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 	// compare every single field and return if one is not equal
 	for i, field := range structTyp.fieldIrTypes {
 		var f1, f2 llvm.Value
-		if field.IsPrimitive() {
+		if field.TriviallyCopyable() {
 			f1, f2 = c.loadStructField(structTyp.typ, struct1, i), c.loadStructField(structTyp.typ, struct2, i)
 		} else {
 			f1, f2 = c.indexStruct(structTyp.typ, struct1, i), c.indexStruct(structTyp.typ, struct2, i)

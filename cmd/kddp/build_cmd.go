@@ -134,6 +134,9 @@ var buildCmd = &cobra.Command{
 		}
 
 		errorHandler := ddperror.MakeAdvancedHandler(filePath, src, os.Stderr)
+		if buildPanicOnFirstErr {
+			errorHandler = ddperror.MakePanicHandler()
+		}
 
 		print("Kompiliere DDP-Quellcode nach %s", buildOutputPath)
 		result, err := compiler.Compile(compiler.Options{
@@ -190,6 +193,7 @@ var (
 	buildLinkListDefs      bool   // flag for kompiliere
 	buildGCCExecutable     string // flag for kompiliere
 	buildOptimizationLevel uint   // flag for kompiliere
+	buildPanicOnFirstErr   bool   // flag for kompiliere
 )
 
 func init() {
@@ -202,6 +206,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&buildLinkListDefs, "list-defs-linken", true, "Ob die eingebauten Listen Definitionen in das Hauptmodul gelinkt werden sollen")
 	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zur gcc executable, die genutzt werden soll")
 	buildCmd.Flags().UintVarP(&buildOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
+	buildCmd.Flags().BoolVar(&buildPanicOnFirstErr, "panic-on-error", false, "For Developers")
 }
 
 // helper function

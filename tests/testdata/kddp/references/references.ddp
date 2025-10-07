@@ -62,3 +62,13 @@ Schreibe buchstabe.
 Schreibe '\n'.
 foo text.
 foo "".
+
+Die Zahlen Referenz zr ist 5.
+Die Zahl z ist zr.
+
+Schreibe (zr) auf eine Zeile.
+Schreibe (z) auf eine Zeile.
+Inkrementiere zr.
+Inkrementiere z.
+Inkrementiere z.
+Schreibe (zr plus z) auf eine Zeile.

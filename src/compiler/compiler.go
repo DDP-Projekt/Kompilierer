@@ -146,7 +146,8 @@ type compiler struct {
 	functions       map[string]*funcWrapper                   // all the global functions
 	typeMap         map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
 	structTypes     map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
-	importedModules map[*ast.Module]struct{}                  // all the modules that have already been imported
+	refTypes        map[ddptypes.Type]*ddpIrReferenceType
+	importedModules map[*ast.Module]struct{} // all the modules that have already been imported
 	typeDefVTables  map[string]llvm.Value
 
 	moduleInitBuilder          *llBuilder // the module_init func of this module
@@ -194,6 +195,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		functions:       make(map[string]*funcWrapper),
 		typeMap:         createTypeMap(module),
 		structTypes:     make(map[*ddptypes.StructType]*ddpIrStructType),
+		refTypes:        make(map[ddptypes.Type]*ddpIrReferenceType),
 		importedModules: make(map[*ast.Module]struct{}),
 		typeDefVTables:  make(map[string]llvm.Value),
 
@@ -208,6 +210,9 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 // if isMainModule is false, no ddp_main function will be generated
 func (c *compiler) compile(isMainModule bool) Result {
 	defer compiler_panic_wrapper(c)
+
+	// annotate with implicit ref cast metadata
+	ast.VisitModule(c.ddpModule, &ImplicitRefCastAnnotator{})
 
 	c.addExternalDependencies()
 
@@ -329,8 +334,51 @@ func (c *compiler) visitNode(node ast.Node) {
 // the  bool signals wether the returned value is a temporary value that can be claimed
 // or if it is a 'reference' to a variable that must be copied
 func (c *compiler) evaluate(expr ast.Expression) (llvm.Value, ddpIrType, bool) {
+	return c.evaluateNumeric(expr, nil)
+}
+
+// helper to evaluate an expression and return its ir value and type
+// the  bool signals wether the returned value is a temporary value that can be claimed
+// or if it is a 'reference' to a variable that must be copied
+func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Value, ddpIrType, bool) {
 	c.visitNode(expr)
+	val, ty, isTemp := c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp
+
+	if c.isDereferencedImplicitly(expr) {
+		if refType, ok := ty.(*ddpIrReferenceType); ok {
+			ty = c.toIrType(refType.ddpType.Type)
+			val = c.builder().CreateLoad(ty.LLType(), val, "")
+			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = val, ty, isTemp
+		}
+		if to != nil {
+			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = c.numericCast(val, ty, to), to, false
+		}
+	} else if c.isPromotedToRefImplicitly(expr) {
+		if to != nil {
+			val, ty, isTemp = c.numericCast(val, ty, to), to, false
+		}
+		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, ty.VTable())
+		c.builder().CreateStore(val, ref)
+		c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = ref, c.getReferenceType(ty), false
+	}
+
 	return c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp
+}
+
+// wether expr gets implicitly dereferenced as annotated
+func (c *compiler) isDereferencedImplicitly(expr ast.Expression) bool {
+	if att, ok := c.ddpModule.Ast.GetMetadataByKind(expr, ImplicitRefCastMetaKind); ok {
+		return att.(ImplicitRefCastMeta).FromRef
+	}
+	return false
+}
+
+// wether expr gets implicitly dereferenced as annotated
+func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) bool {
+	if att, ok := c.ddpModule.Ast.GetMetadataByKind(expr, ImplicitRefCastMetaKind); ok {
+		return !att.(ImplicitRefCastMeta).FromRef
+	}
+	return false
 }
 
 // helper to insert a function into the global function map
@@ -386,11 +434,11 @@ func (c *compiler) setupErrorStrings() {
 
 // used in setup()
 func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
-	c.ddpinttyp = c.definePrimitiveType(c.ddpint, c.zero, "ddpint", declarationOnly)
-	c.ddpfloattyp = c.definePrimitiveType(c.ddpfloat, c.zerof, "ddpfloat", declarationOnly)
-	c.ddpbytetyp = c.definePrimitiveType(c.ddpbyte, c.zero8, "ddpbyte", declarationOnly)
-	c.ddpbooltyp = c.definePrimitiveType(c.ddpbool, c.False, "ddpbool", declarationOnly)
-	c.ddpchartyp = c.definePrimitiveType(c.ddpchar, llvm.ConstInt(c.ddpchar, 0, false), "ddpchar", declarationOnly)
+	c.ddpinttyp = c.definePrimitiveType(ddptypes.ZAHL, c.ddpint, c.zero, "ddpint", declarationOnly)
+	c.ddpfloattyp = c.definePrimitiveType(ddptypes.KOMMAZAHL, c.ddpfloat, c.zerof, "ddpfloat", declarationOnly)
+	c.ddpbytetyp = c.definePrimitiveType(ddptypes.BYTE, c.ddpbyte, c.zero8, "ddpbyte", declarationOnly)
+	c.ddpbooltyp = c.definePrimitiveType(ddptypes.WAHRHEITSWERT, c.ddpbool, c.False, "ddpbool", declarationOnly)
+	c.ddpchartyp = c.definePrimitiveType(ddptypes.BUCHSTABE, c.ddpchar, llvm.ConstInt(c.ddpchar, 0, false), "ddpchar", declarationOnly)
 }
 
 // used in setup()
@@ -441,7 +489,7 @@ func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value 
 // calls the corresponding free function on val
 // if typ.IsPrimitive() == false
 func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
-	if !typ.IsPrimitive() {
+	if !typ.TriviallyCopyable() {
 		c.builder().createCall(typ.FreeFunc(), val)
 	}
 }
@@ -449,7 +497,7 @@ func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 // claims the given value if possible, copies it otherwise
 // dest should be a value that is definetly freed at some point (meaning a variable or list-element etc.)
 func (c *compiler) claimOrCopy(dest, val llvm.Value, valTyp ddpIrType, isTemp bool) {
-	if !valTyp.IsPrimitive() {
+	if !valTyp.TriviallyCopyable() {
 		if isTemp { // temporaries can be claimed
 			val = c.builder().CreateLoad(valTyp.LLType(), c.scp.claimTemporary(val), "")
 			c.builder().CreateStore(val, dest)
@@ -553,11 +601,21 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 
 	// adds the variable initializer to the function fun
 	addInitializer := func() {
-		initVal, initTyp, isTemp := c.evaluate(d.InitVal) // evaluate the initial value
+		var (
+			initVal llvm.Value
+			initTyp ddpIrType
+			isTemp  bool
+		)
 
 		// implicit numeric casts
-		if ddptypes.IsNumeric(d.Type) && ddptypes.IsNumeric(d.InitType) {
-			initVal, initTyp = c.numericCast(initVal, initTyp, Typ), Typ
+		if ddptypes.IsNumericDeref(d.Type) && ddptypes.IsNumericDeref(d.InitType) {
+			numericType := Typ
+			if ref, ok := numericType.(*ddpIrReferenceType); ok {
+				numericType = ref.underlying
+			}
+			initVal, initTyp, isTemp = c.evaluateNumeric(d.InitVal, numericType) // evaluate the initial value
+		} else {
+			initVal, initTyp, isTemp = c.evaluate(d.InitVal) // evaluate the initial value
 		}
 
 		// implicit cast to any if required
@@ -609,13 +667,17 @@ func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
 }
 
 func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) llvm.Type {
-	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(param.Type.Type); isGeneric && param.Type.IsReference {
+	t := ddptypes.TrueUnderlying(param.Type)
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(t); isGeneric || ddptypes.IsReference(t) {
 		return c.ptr
-	} else if isGeneric {
-		return c.ptr
-	} else {
-		return c.toIrParamType(param.Type) // convert the type of the parameter
 	}
+
+	irType := c.toIrType(t)
+
+	if irType.TriviallyCopyable() {
+		return c.toIrType(param.Type).LLType() // convert the type of the parameter
+	}
+	return c.ptr
 }
 
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
@@ -634,7 +696,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	params := make([]llvm.Type, 0, len(decl.Parameters)+1) // list of the ir parameters
 	paramNames := make([]string, 0, len(decl.Parameters)+1)
 
-	hasReturnParam := !retType.IsPrimitive()
+	hasReturnParam := !retType.TriviallyCopyable()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, c.ptr)
@@ -675,7 +737,7 @@ func (c *compiler) VisitFuncDef(def *ast.FuncDef) ast.VisitResult {
 	fun := c.functions[c.mangledNameDecl(def.Func)] // retreive the function (the resolver took care that it is present)
 	retType := c.toIrType(def.Func.ReturnType)      // get the llvm type
 
-	c.defineFuncBody(fun.llFuncBuilder, !retType.IsPrimitive(), def.Func)
+	c.defineFuncBody(fun.llFuncBuilder, !retType.TriviallyCopyable(), def.Func)
 	return ast.VisitRecurse
 }
 
@@ -704,15 +766,10 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 	// passed arguments are immutable (llvm uses ssa registers) so we declare them as local variables
 	// the caller has to take care of possible deep-copies
 	for i := range params {
-		irType := c.toIrType(decl.Parameters[i].Type.Type)
+		irType := c.toIrType(decl.Parameters[i].Type)
 		varDecl, _, _ := body.Symbols.LookupDecl(params[i].name)
 		paramDecl := varDecl.(*ast.VarDecl)
-		if decl.Parameters[i].Type.IsReference {
-			// references are implemented similar to name-shadowing
-			// they basically just get another name in the function scope, which
-			// refers to the same variable allocation
-			c.scp.addVar(paramDecl, params[i].val, irType, true)
-		} else if !irType.IsPrimitive() { // strings and lists need special handling
+		if !irType.TriviallyCopyable() { // strings and lists need special handling
 			// add the local variable for the parameter
 			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType, false)
 			c.builder().CreateStore(c.builder().CreateLoad(irType.LLType(), params[i].val, ""), v) // store the copy in the local variable
@@ -787,7 +844,7 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 	Var := c.scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 
-	if Var.typ.IsPrimitive() { // primitives are simply loaded
+	if Var.typ.TriviallyCopyable() { // primitives are simply loaded
 		c.builder().latestReturn = c.builder().CreateLoad(Var.typ.LLType(), Var.val, "")
 	} else { // non-primitives are used by pointer
 		c.builder().latestReturn = Var.val
@@ -809,7 +866,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 		// c.builder().latestIsTemp = false // it is a primitive typ, so we don't care
 		return ast.VisitRecurse
 	} else {
-		if elementType.IsPrimitive() {
+		if elementType.TriviallyCopyable() {
 			c.builder().latestReturn = c.builder().CreateLoad(elementType.LLType(), elementPtr, "")
 		} else {
 			c.builder().latestReturn = elementPtr
@@ -823,7 +880,7 @@ func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
 func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
 
-	if fieldType.IsPrimitive() {
+	if fieldType.TriviallyCopyable() {
 		c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 	} else {
 		dest := c.NewAlloca(fieldType.LLType())
@@ -912,7 +969,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 
 		c.createFor(c.zero, c.forDefaultCond(listLen), func(index llvm.Value) {
 			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
-			if listType.elementType.IsPrimitive() {
+			if listType.elementType.TriviallyCopyable() {
 				c.builder().CreateStore(val, elementPtr)
 			} else {
 				c.deepCopyInto(elementPtr, val, listType.elementType)
@@ -1064,7 +1121,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
 			fieldType := structType.fieldIrTypes[fieldIndex]
 			fieldPtr := c.indexStruct(structType.typ, rhs, fieldIndex)
-			if fieldType.IsPrimitive() {
+			if fieldType.TriviallyCopyable() {
 				c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 			} else if !rhsIsTemp {
 				c.builder().latestReturn, c.builder().latestIsTemp = fieldPtr, false
@@ -1373,7 +1430,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 					elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 					// if the list is a temporary, we need to copy the element
 					if isTempLhs {
-						if listType.elementType.IsPrimitive() { // primitives are simply loaded
+						if listType.elementType.TriviallyCopyable() { // primitives are simply loaded
 							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
 						} else {
 							dest := c.NewAlloca(listType.elementType.LLType())
@@ -1384,7 +1441,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 							c.builder().latestIsTemp = true // the element is now also a temporary
 						}
 					} else {
-						if listType.elementType.IsPrimitive() {
+						if listType.elementType.TriviallyCopyable() {
 							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
 						} else { // the list is not temporary, so a reference to the element is enough
 							c.builder().latestReturn = elementPtr
@@ -1707,7 +1764,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		c.scp = newScope(c.scp)
 		lhs, lhsTyp, lhsIsTemp := c.evaluate(e.Lhs)
 		// claim the temporary, as the phi instruction will become the actual temporary
-		if lhsIsTemp && !lhsTyp.IsPrimitive() {
+		if lhsIsTemp && !lhsTyp.TriviallyCopyable() {
 			lhs = c.scp.claimTemporary(lhs)
 		}
 		// free temporaries
@@ -1719,7 +1776,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 		c.scp = newScope(c.scp)
 		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
 		// claim the temporary, as the phi instruction will become the actual temporary
-		if rhsIsTemp && !rhsTyp.IsPrimitive() {
+		if rhsIsTemp && !rhsTyp.TriviallyCopyable() {
 			rhs = c.scp.claimTemporary(rhs)
 		}
 		// free temporaries
@@ -1753,7 +1810,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 
 		c.builder().setBlock(leaveBlock)
 		phiType := rhsTyp.LLType()
-		if !rhsTyp.IsPrimitive() {
+		if !rhsTyp.TriviallyCopyable() {
 			phiType = c.ptr
 		}
 		phi := c.builder().CreatePHI(phiType, "")
@@ -1865,6 +1922,36 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		})
 	}
 
+	// helper function to cast primitive from any to their concrete type
+	primitiveAnyCast := func(primTyp ddpIrType) {
+		c.createIfElse(c.compareAnyType(lhs, vtable), func() {
+			c.builder().latestReturn = c.loadSmallAnyValue(lhs, primTyp.LLType())
+			c.builder().latestReturnType, c.builder().latestIsTemp = primTyp, true
+		}, func() {
+			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
+		})
+	}
+
+	lhsRefTyp, isRefLhs := lhsTyp.(*ddpIrReferenceType)
+
+	// cast to ref
+	if !isRefLhs && ddptypes.IsReference(targetType) {
+		if lhsTyp == c.ddpany {
+			primitiveAnyCast(c.toIrType(targetType))
+			return ast.VisitRecurse
+		}
+
+		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, lhsTyp.VTable())
+		c.claimOrCopy(ref, lhs, lhsTyp, isTempLhs)
+		c.builder().latestReturn = ref
+		c.builder().latestIsTemp = false
+		c.builder().latestReturnType = c.toIrType(targetType)
+		return ast.VisitRecurse
+	} else if isRefLhs {
+		lhs, lhsTyp, isTempLhs = c.builder().CreateLoad(lhsRefTyp.underlying.LLType(), lhs, ""), c.toIrType(lhsRefTyp.ddpType.Type), false
+	}
+
 	if ddptypes.IsList(targetType) {
 		if lhsTyp == c.ddpany {
 			nonPrimitiveAnyCast()
@@ -1879,17 +1966,6 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(list, listType)
 		c.builder().latestIsTemp = true
 	} else {
-		// helper function to cast primitive from any to their concrete type
-		primitiveAnyCast := func(primTyp ddpIrType) {
-			c.createIfElse(c.compareAnyType(lhs, vtable), func() {
-				c.builder().latestReturn = c.loadSmallAnyValue(lhs, primTyp.LLType())
-				c.builder().latestReturnType, c.builder().latestIsTemp = primTyp, true
-			}, func() {
-				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-				c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
-			})
-		}
-
 		switch targetType {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
@@ -2030,7 +2106,7 @@ func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 		default:
 			irType := c.toIrType(e.Rhs)
 			defaultValue := irType.DefaultValue()
-			if !irType.IsPrimitive() {
+			if !irType.TriviallyCopyable() {
 				dest := c.NewAlloca(irType.LLType())
 				c.builder().CreateStore(defaultValue, dest)
 				defaultValue = dest
@@ -2069,6 +2145,9 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 	switch assign := ass.(type) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
+		if ddptypes.IsReference(Var.typ.DDPType()) {
+			return c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, nil
+		}
 		return Var.val, Var.typ, nil
 	case *ast.Indexing:
 		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
@@ -2136,7 +2215,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	irReturnType := c.getPossiblyGenericReturnType(fun.funcDecl)
 
 	var ret llvm.Value
-	if !irReturnType.IsPrimitive() {
+	if !irReturnType.TriviallyCopyable() {
 		ret = c.NewAlloca(irReturnType.LLType())
 		args = append(args, ret)
 	}
@@ -2145,7 +2224,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		var val llvm.Value
 
 		// differentiate between references and normal parameters
-		if param.Type.IsReference {
+		if ddptypes.IsReference(param.Type) {
 			if assign, ok := e.Args[param.Name.Literal].(ast.Assigneable); ok {
 				val, _, _ = c.evaluateAssignableOrReference(assign, true)
 			} else {
@@ -2153,7 +2232,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 			}
 		} else {
 			eval, valTyp, isTemp := c.evaluate(e.Args[param.Name.Literal]) // compile each argument for the function
-			if valTyp.IsPrimitive() ||
+			if valTyp.TriviallyCopyable() ||
 				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Name.Literal]) {
 				val = eval
 			} else { // function parameters need to be copied by the caller
@@ -2167,7 +2246,7 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	}
 
 	// compile the actual function call
-	if irReturnType.IsPrimitive() {
+	if irReturnType.TriviallyCopyable() {
 		c.builder().latestReturn = c.builder().createCall(fun.irFunc, args...)
 	} else {
 		c.builder().createCall(fun.irFunc, args...)
@@ -2183,10 +2262,10 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	}
 
 	for i, param := range e.Func.Parameters {
-		if !param.Type.IsReference {
-			paramIrType := c.toIrType(param.Type.Type)
+		if !ddptypes.IsReference(param.Type) {
+			paramIrType := c.toIrType(param.Type)
 			arg := args[i]
-			if !irReturnType.IsPrimitive() {
+			if !irReturnType.TriviallyCopyable() {
 				arg = args[i+1]
 			}
 
@@ -2278,7 +2357,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	// declare all types this function depends on
 	c.declareIfStruct(decl.ReturnType)
 	for _, param := range decl.Parameters {
-		c.declareIfStruct(param.Type.Type)
+		c.declareIfStruct(param.Type)
 	}
 
 	retType := c.getPossiblyGenericReturnType(decl) // get the llvm type
@@ -2286,7 +2365,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	params := make([]llvm.Type, 0, len(decl.Parameters)+1)  // list of the ir parameters
 	paramNames := make([]string, 0, len(decl.Parameters)+1) // list of the ir parameters
 
-	hasReturnParam := !retType.IsPrimitive()
+	hasReturnParam := !retType.TriviallyCopyable()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, c.ptr)
@@ -2390,14 +2469,24 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 }
 
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
-	rhs, rhsTyp, isTempRhs := c.evaluate(s.Rhs) // compile the expression
-
-	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
+	var (
+		rhs       llvm.Value
+		rhsTyp    ddpIrType
+		isTempRhs bool
+	)
 
 	// implicit numeric casts
-	if ddptypes.IsNumeric(s.VarType) && ddptypes.IsNumeric(s.RhsType) {
-		rhs, rhsTyp = c.numericCast(rhs, rhsTyp, lhsTyp), lhsTyp
+	if ddptypes.IsNumericDeref(s.VarType) && ddptypes.IsNumericDeref(s.RhsType) {
+		numericType := c.toIrType(s.VarType)
+		if ref, ok := numericType.(*ddpIrReferenceType); ok {
+			numericType = ref.underlying
+		}
+		rhs, rhsTyp, isTempRhs = c.evaluateNumeric(s.Rhs, numericType) // evaluate the initial value
+	} else {
+		rhs, rhsTyp, isTempRhs = c.evaluate(s.Rhs) // evaluate the initial value
 	}
+
+	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
@@ -2711,7 +2800,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	} else {
 		elementPtr := c.builder().CreateLoad(c.ptr, iter_ptr, "")
 		inListTyp := inTyp.(*ddpIrListType)
-		if inListTyp.elementType.IsPrimitive() {
+		if inListTyp.elementType.TriviallyCopyable() {
 			element := c.builder().CreateLoad(inListTyp.elementType.LLType(), elementPtr, "")
 			c.builder().CreateStore(element, loopVar.val)
 		} else {
@@ -2822,7 +2911,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	if typeDef, isTypeDef := ddptypes.CastTypeDef(s.Func.ReturnType); isTypeDef {
 		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 	}
-	if valTyp.IsPrimitive() {
+	if valTyp.TriviallyCopyable() {
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && valTyp != c.ddpany {
 

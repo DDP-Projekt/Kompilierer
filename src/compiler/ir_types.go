@@ -6,14 +6,16 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // interface for the ir-representation of a ddptype
 // it exposes some information that all types share
 type ddpIrType interface {
 	LLType() llvm.Type        // returns the llvm type
+	DDPType() ddptypes.Type   // returns the ddp type this represents
 	Name() string             // name of the type
-	IsPrimitive() bool        // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
+	TriviallyCopyable() bool  // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
 	DefaultValue() llvm.Value // returns a default value for the type
 	VTable() llvm.Value       // returns a pointer to the vtable of this type
 	FreeFunc() llvm.Value     // returns the irFunc used to free this type, nil if IsPrimitive == true
@@ -24,6 +26,7 @@ type ddpIrType interface {
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
 type ddpIrPrimitiveType struct {
 	llType       llvm.Type
+	ddpType      ddptypes.Type
 	defaultValue llvm.Value
 	vtable       llvm.Value
 	funcNull     llvm.Value
@@ -36,11 +39,15 @@ func (t *ddpIrPrimitiveType) LLType() llvm.Type {
 	return t.llType
 }
 
+func (t *ddpIrPrimitiveType) DDPType() ddptypes.Type {
+	return t.ddpType
+}
+
 func (t *ddpIrPrimitiveType) Name() string {
 	return t.name
 }
 
-func (*ddpIrPrimitiveType) IsPrimitive() bool {
+func (*ddpIrPrimitiveType) TriviallyCopyable() bool {
 	return true
 }
 
@@ -64,9 +71,10 @@ func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
 	return t.funcNull
 }
 
-func (c *compiler) definePrimitiveType(typ llvm.Type, defaultValue llvm.Value, name string, declarationOnly bool) *ddpIrPrimitiveType {
+func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defaultValue llvm.Value, name string, declarationOnly bool) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		llType:       typ,
+		ddpType:      ddptyp,
 		defaultValue: defaultValue,
 		funcNull:     llvm.ConstNull(c.ptr),
 		name:         name,
@@ -102,6 +110,10 @@ func (t *ddpIrVoidType) LLType() llvm.Type {
 	return t.rawType
 }
 
+func (t *ddpIrVoidType) DDPType() ddptypes.Type {
+	return ddptypes.VoidType{}
+}
+
 func (t *ddpIrVoidType) PtrType() llvm.Type {
 	return llvm.Type{}
 }
@@ -110,7 +122,7 @@ func (t *ddpIrVoidType) Name() string {
 	return "void"
 }
 
-func (*ddpIrVoidType) IsPrimitive() bool {
+func (*ddpIrVoidType) TriviallyCopyable() bool {
 	return true
 }
 

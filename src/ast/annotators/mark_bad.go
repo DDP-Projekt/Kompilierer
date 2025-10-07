@@ -21,8 +21,10 @@ func (m *BadMeta) String() string {
 	return fmt.Sprintf("BadMeta(%d)", m.n)
 }
 
+const BadMetaKind ast.MetadataKind = "DDP_BadMeta"
+
 func (m *BadMeta) Kind() ast.MetadataKind {
-	return "Bad"
+	return BadMetaKind
 }
 
 // example annotator

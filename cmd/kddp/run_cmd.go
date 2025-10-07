@@ -44,6 +44,7 @@ var runCmd = &cobra.Command{
 		buildOutputPath = exePath
 		buildGCCFlags = runGCCFlags
 		buildExternGCCFlags = runExternGCCFlags
+		buildPanicOnFirstErr = runPanicOnError
 
 		print("Kompiliere den Quellcode")
 		if err = buildCmd.RunE(buildCmd, []string{filePath}); err != nil {
@@ -66,9 +67,11 @@ var runCmd = &cobra.Command{
 var (
 	runGCCFlags       string // flag for starte
 	runExternGCCFlags string // flag for starte
+	runPanicOnError   bool   // flag for starte
 )
 
 func init() {
 	runCmd.Flags().StringVar(&runGCCFlags, "gcc-optionen", "", "Benutzerdefinierte Optionen, die gcc übergeben werden")
 	runCmd.Flags().StringVar(&runExternGCCFlags, "externe-gcc-optionen", "", "Benutzerdefinierte Optionen, die gcc für jede externe .c Datei übergeben werden")
+	runCmd.Flags().BoolVar(&runPanicOnError, "panic-on-error", false, "For Developers")
 }

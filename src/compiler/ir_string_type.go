@@ -6,6 +6,7 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // implementation of ddpIrType for a ddpstring
@@ -40,11 +41,15 @@ func (t *ddpIrStringType) LLType() llvm.Type {
 	return t.typ
 }
 
+func (t *ddpIrStringType) DDPType() ddptypes.Type {
+	return ddptypes.TEXT
+}
+
 func (t *ddpIrStringType) Name() string {
 	return "ddpstring"
 }
 
-func (*ddpIrStringType) IsPrimitive() bool {
+func (*ddpIrStringType) TriviallyCopyable() bool {
 	return false
 }
 

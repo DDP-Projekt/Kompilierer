@@ -26,6 +26,10 @@ var (
 	_libc_memcpy_irfun        llvm.Value
 	_libc_memcmp_irfun        llvm.Value
 	_libc_memmove_irfun       llvm.Value
+
+	// reference functions
+	ddp_free_ref_type_irfun   llvm.Value
+	ddp_allocate_gc_ref_irfun llvm.Value
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -80,6 +84,20 @@ func (c *compiler) initRuntimeFunctions() {
 		c.ptr,
 		c.ptr,
 		c.i64,
+	)
+
+	ddp_free_ref_type_irfun = c.declareExternalRuntimeFunction(
+		"ddp_free_ref_type",
+		false,
+		c.void,
+		c.ptr,
+	)
+
+	ddp_allocate_gc_ref_irfun = c.declareExternalRuntimeFunction(
+		"ddp_allocate_gc_ref",
+		false,
+		c.ptr,
+		c.ptr, // vtable
 	)
 }
 

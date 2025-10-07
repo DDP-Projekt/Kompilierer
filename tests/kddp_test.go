@@ -230,7 +230,7 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 			}
 		} else {
 			// error if 'out' was not the expected output
-			if out, expected := string(out), string(expected); out != expected {
+			if out, expected := normalize_lineendings(string(out)), normalize_lineendings(string(expected)); out != expected {
 				diff, err := get_diff(filepath.Join(path, "expected.txt"), out)
 				if err != nil {
 					t.Errorf("Error getting diff: %s", err)
@@ -274,4 +274,8 @@ func get_diff(expected_path, got string) (string, error) {
 	cmd.Stdin = strings.NewReader(got)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+func normalize_lineendings(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
 }

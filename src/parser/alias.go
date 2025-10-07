@@ -322,7 +322,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 				reported_errors = append(reported_errors, cached_arg.Errors...)
 			}
 
-			// check if the argument type matches the prameter type
+			// check if the argument type matches the parameter type
 
 			// we are in the for loop below, so the types must match
 			// otherwise it doesn't matter
@@ -336,9 +336,13 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					typ = ddptypes.ReferenceType{Type: typ}
 				}
 
-				underlyingParamType := ddptypes.UnifyGenericType(typ, paramType, genericTypes)
+				underlyingParamType := paramType
+				if ast.IsGeneric(mAlias.Decl()) {
+					underlyingParamType = ddptypes.UnifyGenericType(typ, paramType, genericTypes)
+				}
 
-				if !ddptypes.Equal(typ, underlyingParamType) {
+				// TODO: Equal or EqualDeref?
+				if !ddptypes.EqualDeref(typ, underlyingParamType) {
 					didMatch = false
 				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                                          // string-indexings may not be passed as char-reference
 				ddptypes.IsReference(paramType) && ddptypes.Equal(underlyingParamType, ddptypes.BUCHSTABE) && // if the parameter is a char-reference

@@ -14,6 +14,30 @@ type GenericInstantiator interface {
 	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
 }
 
+type TypeMeta struct {
+	t ddptypes.Type
+}
+
+var _ ast.MetadataAttachment = TypeMeta{}
+
+func (t TypeMeta) String() string {
+	return fmt.Sprintf("TypeMeta(%s)", t.t)
+}
+
+const TypeMetaKind ast.MetadataKind = "DDP_TypeMeta"
+
+func (t TypeMeta) Kind() ast.MetadataKind {
+	return TypeMetaKind
+}
+
+// if expr was typechecked, returns the type of expr
+func TypeOfTypecheckedExpression(a *ast.Ast, expr ast.Expression) ddptypes.Type {
+	if att, ok := a.GetMetadataByKind(expr, TypeMetaKind); ok {
+		return att.(TypeMeta).t
+	}
+	return nil
+}
+
 // holds state to check if the types of an AST are valid
 //
 // even though it is a visitor, it should not be used seperately from the parser
@@ -50,7 +74,7 @@ func New(Mod *ast.Module, operators ast.OperatorOverloadMap, errorHandler ddperr
 
 // typecheck a single node
 func (t *Typechecker) TypecheckNode(node ast.Node) {
-	node.Accept(t)
+	t.visit(node)
 }
 
 // helper to visit a node
@@ -61,6 +85,7 @@ func (t *Typechecker) visit(node ast.Node) {
 // Evaluates the type of an expression
 func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 	t.visit(expr)
+	t.Module.Ast.AddAttachement(expr, TypeMeta{t: t.latestReturnedType})
 	return t.latestReturnedType
 }
 
@@ -129,8 +154,8 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	}
 	decl.InitType = initialType
 
-	typesDontMatch := !ddptypes.IsGeneric(decl.Type) && !ddptypes.Equal(initialType, decl.Type) && (!ddptypes.Equal(decl.Type, ddptypes.VARIABLE) || ddptypes.Equal(initialType, ddptypes.VoidType{}))
-	numericCastPossible := ddptypes.IsNumeric(decl.Type) && ddptypes.IsNumeric(initialType)
+	typesDontMatch := !ddptypes.IsGenericDeref(decl.Type) && !ddptypes.EqualDeref(initialType, decl.Type) && (!ddptypes.EqualDeref(decl.Type, ddptypes.VARIABLE) || ddptypes.EqualDeref(initialType, ddptypes.VoidType{}))
+	numericCastPossible := ddptypes.IsNumericDeref(decl.Type) && ddptypes.IsNumericDeref(initialType)
 
 	if typesDontMatch && !numericCastPossible {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
@@ -148,7 +173,7 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 func (t *Typechecker) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	// already typechecked in blockStmt
 	/*if !ast.IsExternFunc(decl) {
-		decl.Body.Accept(t)
+		t.visit(decl.Body)
 	}*/
 
 	if decl.IsPublic {
@@ -210,6 +235,7 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: this can be a ref, does this need changing?
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
 	if !ok || !isVar || decl == nil {
@@ -217,7 +243,11 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	} else {
 		switch decl := decl.(type) {
 		case *ast.VarDecl:
-			t.latestReturnedType = decl.Type
+			if !ddptypes.IsReference(decl.Type) {
+				t.latestReturnedType = ddptypes.ReferenceType{Type: decl.Type}
+			} else {
+				t.latestReturnedType = decl.Type
+			}
 		case *ast.ConstDecl:
 			t.latestReturnedType = decl.Type
 		default:
@@ -227,17 +257,17 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
-	if typ := t.Evaluate(expr.Index); !ddptypes.Equal(typ, ddptypes.ZAHL) && !ddptypes.Equal(typ, ddptypes.BYTE) {
+	if typ := t.Evaluate(expr.Index); !ddptypes.EqualDeref(typ, ddptypes.ZAHL) && !ddptypes.EqualDeref(typ, ddptypes.BYTE) {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl oder einen Byte als zweiten Operanden, nicht %s", typ)
 	}
 
 	lhs := t.Evaluate(expr.Lhs)
-	if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
+	if !ddptypes.IsListDeref(lhs) && !ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 	}
 
-	if ddptypes.IsList(lhs) {
-		t.latestReturnedType = ddptypes.GetListElementType(lhs)
+	if ddptypes.IsListDeref(lhs) {
+		t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
 	} else {
 		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 	}
@@ -246,7 +276,7 @@ func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
 
 func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
 	rhs := t.Evaluate(expr.Rhs)
-	if !ddptypes.IsStruct(rhs) {
+	if !ddptypes.IsStructDeref(rhs) {
 		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, expr.Rhs, "Der VON Operator erwartet eine Struktur als rechten Operanden, nicht %s", rhs)
 		t.latestReturnedType = ddptypes.VoidType{}
 	} else {
@@ -284,13 +314,13 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
-			if ty := t.Evaluate(v); !ddptypes.Equal(elementType, ty) {
+			if ty := t.Evaluate(v); !ddptypes.EqualDeref(elementType, ty) {
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
 		expr.Type = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
-		if count := t.Evaluate(expr.Count); !ddptypes.Equal(count, ddptypes.ZAHL) && !ddptypes.Equal(count, ddptypes.BYTE) {
+		if count := t.Evaluate(expr.Count); !ddptypes.EqualDeref(count, ddptypes.ZAHL) && !ddptypes.EqualDeref(count, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl oder Byte angegeben werden, nicht als %s", count)
 		}
 
@@ -312,11 +342,11 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 
 	switch expr.Operator {
 	case ast.UN_ABS, ast.UN_NEGATE:
-		if !ddptypes.IsNumeric(rhs) {
+		if !ddptypes.IsNumericDeref(rhs) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 		}
 		// unsigned to signed cast
-		if ddptypes.Equal(rhs, ddptypes.BYTE) {
+		if ddptypes.EqualDeref(rhs, ddptypes.BYTE) {
 			t.latestReturnedType = ddptypes.ZAHL
 		}
 	case ast.UN_NOT:
@@ -330,7 +360,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
 	case ast.UN_LEN:
-		if !ddptypes.IsList(rhs) && !ddptypes.Equal(rhs, ddptypes.TEXT) {
+		if !ddptypes.IsListDeref(rhs) && !ddptypes.EqualDeref(rhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet einen Text oder eine Liste als Operanden, nicht %s", ast.UN_LEN, rhs)
 		}
 
@@ -363,56 +393,56 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 
 	switch expr.Operator {
 	case ast.BIN_CONCAT:
-		if (!ddptypes.IsList(lhs) && !ddptypes.IsList(rhs)) && (ddptypes.Equal(lhs, ddptypes.TEXT) || ddptypes.Equal(rhs, ddptypes.TEXT)) { // string, char edge case
+		if (!ddptypes.IsListDeref(lhs) && !ddptypes.IsListDeref(rhs)) && (ddptypes.EqualDeref(lhs, ddptypes.TEXT) || ddptypes.EqualDeref(rhs, ddptypes.TEXT)) { // string, char edge case
 			validate(ddptypes.TEXT, ddptypes.BUCHSTABE)
 			t.latestReturnedType = ddptypes.TEXT
 		} else { // lists
-			if !ddptypes.Equal(ddptypes.GetListElementType(lhs), ddptypes.GetListElementType(rhs)) {
+			if !ddptypes.Equal(ddptypes.GetListElementTypeDeref(lhs), ddptypes.GetListElementTypeDeref(rhs)) {
 				t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die Typenkombination aus %s und %s passt nicht zum VERKETTET Operator", lhs, rhs)
 			}
-			t.latestReturnedType = ddptypes.ListType{ElementType: ddptypes.GetListElementType(lhs)}
+			t.latestReturnedType = ddptypes.ListType{ElementType: ddptypes.GetListElementTypeDeref(lhs)}
 		}
 	case ast.BIN_PLUS, ast.BIN_MINUS, ast.BIN_MULT:
 		validate(ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE)
 
-		if ddptypes.Equal(lhs, ddptypes.ZAHL) && ddptypes.Equal(rhs, ddptypes.ZAHL) {
+		if ddptypes.EqualDeref(lhs, ddptypes.ZAHL) && ddptypes.EqualDeref(rhs, ddptypes.ZAHL) {
 			t.latestReturnedType = ddptypes.ZAHL
-		} else if ddptypes.Equal(lhs, ddptypes.BYTE) && ddptypes.Equal(rhs, ddptypes.BYTE) {
+		} else if ddptypes.EqualDeref(lhs, ddptypes.BYTE) && ddptypes.EqualDeref(rhs, ddptypes.BYTE) {
 			t.latestReturnedType = ddptypes.BYTE
-		} else if ddptypes.Equal(lhs, ddptypes.KOMMAZAHL) || ddptypes.Equal(rhs, ddptypes.KOMMAZAHL) {
+		} else if ddptypes.EqualDeref(lhs, ddptypes.KOMMAZAHL) || ddptypes.EqualDeref(rhs, ddptypes.KOMMAZAHL) {
 			t.latestReturnedType = ddptypes.KOMMAZAHL
 		} else {
 			t.latestReturnedType = ddptypes.BYTE
 		}
 	case ast.BIN_INDEX:
-		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
+		if !ddptypes.IsListDeref(lhs) && !ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
 		}
-		if !ddptypes.Equal(rhs, ddptypes.ZAHL) && !ddptypes.Equal(rhs, ddptypes.BYTE) {
+		if !ddptypes.EqualDeref(rhs, ddptypes.ZAHL) && !ddptypes.EqualDeref(rhs, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Rhs, "Der STELLE Operator erwartet eine Zahl oder einen Byte als zweiten Operanden, nicht %s", rhs)
 		}
 
-		if listType, isList := ddptypes.CastList(lhs); isList {
-			t.latestReturnedType = listType.ElementType
-		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
+		if ddptypes.IsListDeref(lhs) {
+			t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
+		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
-		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
+		if !ddptypes.IsListDeref(lhs) && !ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der '%s' Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
 		if !isOneOf(rhs, ddptypes.ZAHL, ddptypes.BYTE) {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
 
-		if ddptypes.IsList(lhs) {
+		if ddptypes.IsListDeref(lhs) {
 			t.latestReturnedType = lhs
-		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
+		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.TEXT
 		}
 	case ast.BIN_FIELD_ACCESS:
 		if ident, isIdent := expr.Lhs.(*ast.Ident); isIdent {
-			if !ddptypes.IsStruct(rhs) {
+			if !ddptypes.IsStructDeref(rhs) {
 				// error was already reported by the resolver
 				t.latestReturnedType = ddptypes.VoidType{}
 			} else {
@@ -437,7 +467,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		validate(ddptypes.ZAHL, ddptypes.BYTE)
 		t.latestReturnedType = lhs
 	case ast.BIN_EQUAL, ast.BIN_UNEQUAL:
-		if !ddptypes.Equal(lhs, rhs) {
+		if !ddptypes.EqualDeref(lhs, rhs) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der '%s' Operator erwartet zwei Operanden gleichen Typs aber hat '%s' und '%s' bekommen", expr.Operator, lhs, rhs)
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
@@ -469,7 +499,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 
 	switch expr.Operator {
 	case ast.TER_SLICE:
-		if !ddptypes.IsList(lhs) && !ddptypes.Equal(lhs, ddptypes.TEXT) {
+		if !ddptypes.IsListDeref(lhs) && !ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der %s Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", expr.Operator, lhs)
 		}
 
@@ -480,9 +510,9 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 			t.errExpected(expr.Operator, expr.Rhs, rhs, ddptypes.ZAHL, ddptypes.BYTE)
 		}
 
-		if ddptypes.IsList(lhs) {
+		if ddptypes.IsListDeref(lhs) {
 			t.latestReturnedType = lhs
-		} else if ddptypes.Equal(lhs, ddptypes.TEXT) {
+		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.TEXT
 		}
 	case ast.TER_BETWEEN:
@@ -497,7 +527,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 		}
 		t.latestReturnedType = ddptypes.WAHRHEITSWERT
 	case ast.TER_FALLS:
-		if !ddptypes.Equal(lhs, rhs) {
+		if !ddptypes.EqualDeref(lhs, rhs) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Die linke und rechte Seite des 'falls' Ausdrucks müssen den selben Typ haben, aber es wurde %s und %s gefunden", lhs, rhs)
 		}
 		if !isOneOf(mid, ddptypes.WAHRHEITSWERT) {
@@ -510,6 +540,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: handle references
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	castErr := func() {
@@ -525,10 +556,18 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
 	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs)
 
+	targetRef, isTargetRef := ddptypes.CastReference(expr.TargetType)
+
 	if ddptypes.IsAny(lhs) || (ddptypes.IsAny(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
 		// casts from/to any are always valid but might error at runtime
 		t.latestReturnedType = expr.TargetType
 		return ast.VisitRecurse
+
+	} else if !ddptypes.IsReference(lhs) && isTargetRef {
+		// reference types can always be cast from/to their underlying type
+		if !ddptypes.Equal(lhs, targetRef.Type) {
+			castErr()
+		}
 	} else if isTargetTypeDef && isLhsTypeDef {
 		// typedefs can only be converted to/from their underlying type
 		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.Equal(targetTypeDef.Underlying, lhs) {
@@ -553,27 +592,27 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		// special rules for primitive conversions
 		switch primitiveType {
 		case ddptypes.ZAHL:
-			if !ddptypes.IsPrimitive(lhs) {
+			if !ddptypes.IsPrimitiveDeref(lhs) {
 				castErr()
 			}
 		case ddptypes.KOMMAZAHL:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+			if !ddptypes.IsPrimitiveDeref(lhs) || !isOneOf(lhs, ddptypes.TEXT, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.BYTE:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
+			if !ddptypes.IsPrimitiveDeref(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.KOMMAZAHL, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.WAHRHEITSWERT:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT, ddptypes.BYTE) {
+			if !ddptypes.IsPrimitiveDeref(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.WAHRHEITSWERT, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.BUCHSTABE:
-			if !ddptypes.IsPrimitive(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE, ddptypes.BYTE) {
+			if !ddptypes.IsPrimitiveDeref(lhs) || !isOneOf(lhs, ddptypes.ZAHL, ddptypes.BUCHSTABE, ddptypes.BYTE) {
 				castErr()
 			}
 		case ddptypes.TEXT:
-			if !ddptypes.IsPrimitive(lhs) {
+			if !ddptypes.IsPrimitiveDeref(lhs) {
 				castErr()
 			}
 		default:
@@ -586,6 +625,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: is this needed with references?
 func (t *Typechecker) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	if !ddptypes.Equal(ddptypes.TrueUnderlying(lhs), ddptypes.TrueUnderlying(expr.TargetType)) {
@@ -625,7 +665,7 @@ func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
-	expr.Expr.Accept(t)
+	t.Evaluate(expr.Expr)
 	return ast.VisitRecurse
 }
 
@@ -636,7 +676,6 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 		argType := t.Evaluate(expr)
 
 		var paramType ddptypes.Type
-
 		for _, param := range decl.Parameters {
 			if param.Name.Literal == k {
 				paramType = param.Type
@@ -646,13 +685,13 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 
 		if ass, ok := expr.(ast.Assigneable); ddptypes.IsReference(paramType) && !ok {
 			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
-		} else if ass, ok := ass.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.Equal(paramType, ddptypes.BUCHSTABE) && ok {
+		} else if ass, ok := ass.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.EqualDeref(paramType, ddptypes.BUCHSTABE) && ok {
 			lhs := t.Evaluate(ass.Lhs)
-			if ddptypes.Equal(lhs, ddptypes.TEXT) {
+			if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
 			}
 		}
-		if !ddptypes.Equal(argType, paramType) {
+		if !ddptypes.Equal(argType, paramType) && !ddptypes.Equal(ddptypes.Deref(argType), paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
@@ -679,7 +718,7 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 			}
 		}
 
-		if !ddptypes.Equal(argType, paramType) {
+		if !ddptypes.Equal(ddptypes.Deref(argType), paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
 				"Die Struktur %s erwartet einen Wert vom Typ %s für das Feld %s, aber hat %s bekommen",
 				expr.Struct.Name(),
@@ -700,12 +739,12 @@ func (t *Typechecker) VisitBadStmt(stmt *ast.BadStmt) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitDeclStmt(stmt *ast.DeclStmt) ast.VisitResult {
-	stmt.Decl.Accept(t)
+	t.visit(stmt.Decl)
 	return ast.VisitRecurse
 }
 
 func (t *Typechecker) VisitExprStmt(stmt *ast.ExprStmt) ast.VisitResult {
-	stmt.Expr.Accept(t)
+	t.Evaluate(stmt.Expr)
 	return ast.VisitRecurse
 }
 
@@ -719,8 +758,8 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	target := t.Evaluate(stmt.Var)
 	stmt.VarType = target
 
-	typesDontMatch := !ddptypes.Equal(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.Equal(rhs, ddptypes.VoidType{}))
-	numericCastPossible := ddptypes.IsNumeric(target) && ddptypes.IsNumeric(rhs)
+	typesDontMatch := !ddptypes.EqualDeref(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.EqualDeref(rhs, ddptypes.VoidType{}))
+	numericCastPossible := ddptypes.IsNumericDeref(target) && ddptypes.IsNumericDeref(rhs)
 
 	if typesDontMatch && !numericCastPossible {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
@@ -743,7 +782,7 @@ func (t *Typechecker) VisitBlockStmt(stmt *ast.BlockStmt) ast.VisitResult {
 
 func (t *Typechecker) VisitIfStmt(stmt *ast.IfStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
-	if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
+	if !ddptypes.EqualDeref(conditionType, ddptypes.WAHRHEITSWERT) {
 		t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 			"Die Bedingung einer Wenn-Anweisung muss ein Wahrheitswert sein, war aber vom Typ %s",
 			conditionType,
@@ -760,7 +799,7 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 	conditionType := t.Evaluate(stmt.Condition)
 	switch stmt.While.Type {
 	case token.SOLANGE, token.MACHE:
-		if !ddptypes.Equal(conditionType, ddptypes.WAHRHEITSWERT) {
+		if !ddptypes.EqualDeref(conditionType, ddptypes.WAHRHEITSWERT) {
 			t.errExpr(ddperror.TYP_BAD_CONDITION, stmt.Condition,
 				"Die Bedingung einer %s muss ein Wahrheitswert sein, war aber vom Typ %s",
 				stmt.While.Type,
@@ -768,38 +807,38 @@ func (t *Typechecker) VisitWhileStmt(stmt *ast.WhileStmt) ast.VisitResult {
 			)
 		}
 	case token.WIEDERHOLE:
-		if !ddptypes.Equal(conditionType, ddptypes.ZAHL) && !ddptypes.Equal(conditionType, ddptypes.BYTE) {
+		if !ddptypes.EqualDeref(conditionType, ddptypes.ZAHL) && !ddptypes.EqualDeref(conditionType, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, stmt.Condition,
 				"Die Anzahl an Wiederholungen einer WIEDERHOLE Anweisung muss vom Typ ZAHL sein, war aber vom Typ %s",
 				conditionType,
 			)
 		}
 	}
-	stmt.Body.Accept(t)
+	t.visit(stmt.Body)
 	return ast.VisitRecurse
 }
 
 func (t *Typechecker) VisitForStmt(stmt *ast.ForStmt) ast.VisitResult {
 	t.visit(stmt.Initializer)
 	iter_type := stmt.Initializer.Type
-	if !ddptypes.Equal(iter_type, ddptypes.ZAHL) && !ddptypes.Equal(iter_type, ddptypes.KOMMAZAHL) && !ddptypes.Equal(iter_type, ddptypes.BYTE) {
+	if !ddptypes.IsNumericDeref(iter_type) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(), "Der Zähler in einer zählenden-Schleife muss eine Zahl, eine Kommazahl oder ein Byte sein")
 	}
-	if toType := t.Evaluate(stmt.To); !ddptypes.IsNumeric(toType) {
+	if toType := t.Evaluate(stmt.To); !ddptypes.IsNumericDeref(toType) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.To,
 			"Der Endwert in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 			toType,
 		)
 	}
 	if stmt.StepSize != nil {
-		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.IsNumeric(stepType) {
+		if stepType := t.Evaluate(stmt.StepSize); !ddptypes.IsNumericDeref(stepType) {
 			t.errExpr(ddperror.TYP_BAD_FOR, stmt.StepSize,
 				"Die Schrittgröße in einer Zählenden-Schleife muss ein numerischer Typ sein aber war %s",
 				stepType,
 			)
 		}
 	}
-	stmt.Body.Accept(t)
+	t.visit(stmt.Body)
 	return ast.VisitRecurse
 }
 
@@ -807,22 +846,22 @@ func (t *Typechecker) VisitForRangeStmt(stmt *ast.ForRangeStmt) ast.VisitResult 
 	elementType := stmt.Initializer.Type
 	inType := t.Evaluate(stmt.In)
 
-	if !ddptypes.IsList(inType) && !ddptypes.Equal(inType, ddptypes.TEXT) {
+	if !ddptypes.IsListDeref(inType) && !ddptypes.EqualDeref(inType, ddptypes.TEXT) {
 		t.errExpr(ddperror.TYP_BAD_FOR, stmt.In, "Man kann nur über Texte oder Listen iterieren")
 	}
 
-	if inTypeList, isList := ddptypes.CastList(inType); isList && !ddptypes.Equal(elementType, inTypeList.ElementType) {
+	if inTypeList, isList := ddptypes.CastListDeref(inType); isList && !ddptypes.EqualDeref(elementType, inTypeList.ElementType) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde eine %s erwartet (Listen-Typ des Iterators), aber ein Ausdruck vom Typ %s gefunden",
 				elementType, inTypeList),
 		)
-	} else if ddptypes.Equal(inType, ddptypes.TEXT) && !ddptypes.Equal(elementType, ddptypes.BUCHSTABE) {
+	} else if ddptypes.EqualDeref(inType, ddptypes.TEXT) && !ddptypes.EqualDeref(elementType, ddptypes.BUCHSTABE) {
 		t.err(ddperror.TYP_BAD_FOR, stmt.Initializer.GetRange(),
 			fmt.Sprintf("Es wurde ein Ausdruck vom Typ Buchstabe erwartet aber %s gefunden",
 				elementType),
 		)
 	}
-	stmt.Body.Accept(t)
+	t.visit(stmt.Body)
 	return ast.VisitRecurse
 }
 
@@ -839,8 +878,8 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	if !ddptypes.Equal(stmt.Func.ReturnType, returnType) &&
-		(!ddptypes.Equal(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.Equal(returnType, ddptypes.VoidType{})) {
+	if !ddptypes.EqualDeref(stmt.Func.ReturnType, returnType) &&
+		(!ddptypes.EqualDeref(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.EqualDeref(returnType, ddptypes.VoidType{})) {
 		errRange := stmt.Range
 		if stmt.Value != nil {
 			errRange = stmt.Value.GetRange()
@@ -862,7 +901,7 @@ func (*Typechecker) VisitTodoStmt(*ast.TodoStmt) ast.VisitResult {
 // checks if t is contained in types
 func isOneOf(t ddptypes.Type, types ...ddptypes.Type) bool {
 	for _, v := range types {
-		if ddptypes.Equal(t, v) {
+		if ddptypes.EqualDeref(t, v) {
 			return true
 		}
 	}
@@ -872,7 +911,7 @@ func isOneOf(t ddptypes.Type, types ...ddptypes.Type) bool {
 // helper for field access
 // panics if originalType is not a struct type
 func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Type) ddptypes.Type {
-	structType, ok := ddptypes.GetUnderlying(originalType).(*ddptypes.StructType)
+	structType, ok := ddptypes.CastStructDeref(originalType)
 	if !ok {
 		panic(fmt.Sprintf("non struct type (%s) passed to checkFieldAccess", originalType))
 	}
@@ -941,6 +980,7 @@ type operand struct {
 	expr ast.Expression
 }
 
+// TODO: handle possible implicit dereferencing
 func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
 	overloads := t.Operators[operator]
 	if len(overloads) == 0 {
@@ -957,7 +997,7 @@ overload_loop:
 	for _, overload := range overloads {
 		// generics can only overload operators for user defined types
 		if !containsUserDefinedType && ast.IsGeneric(overload) {
-			// we can return because all following overloads will be generic as well
+			// we can return because all following overloads will be generic as well due to how they are sorted
 			return nil
 		}
 		clear(genericTypes)
@@ -1005,6 +1045,7 @@ overload_loop:
 	return nil
 }
 
+// TODO: handle possible implicit dereferencing
 func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast.OperatorOverload {
 	overloads := t.Operators[ast.CAST_OP]
 	if len(overloads) == 0 {

@@ -26,7 +26,11 @@ func (ast *Ast) GetMetadata(node Node) (Metadata, bool) {
 // returns the metadata of the given kind attached to the given node
 func (ast *Ast) GetMetadataByKind(node Node, kind MetadataKind) (MetadataAttachment, bool) {
 	md, ok := ast.GetMetadata(node)
-	return md.Attachments[kind], ok
+	if ok {
+		att, ok := md.Attachments[kind]
+		return att, ok
+	}
+	return nil, false
 }
 
 // adds metadata to the given node

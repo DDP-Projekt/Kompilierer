@@ -123,6 +123,7 @@ type (
 
 	// a CastExpr that can be assignable
 	// which is always a typedef/alias cast to its underlying type
+	// TODO: is this needed with references?
 	CastAssigneable struct {
 		Range      token.Range
 		TargetType ddptypes.Type

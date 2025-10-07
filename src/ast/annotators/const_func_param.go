@@ -7,8 +7,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-const ConstFuncParamMetaKind ast.MetadataKind = "ConstFuncParam"
-
 type ConstFuncParamMeta struct {
 	// wether each parameter is const
 	IsConst map[string]bool
@@ -19,6 +17,8 @@ var _ ast.MetadataAttachment = (*ConstFuncParamMeta)(nil)
 func (m ConstFuncParamMeta) String() string {
 	return fmt.Sprintf("ConstFuncParamMeta[%v]", m.IsConst)
 }
+
+const ConstFuncParamMetaKind ast.MetadataKind = "DDP_ConstFuncParam"
 
 func (m ConstFuncParamMeta) Kind() ast.MetadataKind {
 	return ConstFuncParamMetaKind

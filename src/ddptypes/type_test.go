@@ -446,3 +446,58 @@ func TestGetInstantiatedStructType(t *testing.T) {
 	assert.Nil(instantiated)
 	assert.Len(genericStruct.Instantiations, 0)
 }
+
+func TestTryDeref(t *testing.T) {
+	assert := assert.New(t)
+
+	a := TryDeref(ZAHL, ZAHL)
+	assert.Equal(ZAHL, a)
+
+	a = TryDeref(ZAHL, ReferenceType{Type: ZAHL})
+	assert.Equal(ZAHL, a)
+
+	a = TryDeref(ReferenceType{Type: ZAHL}, ZAHL)
+	assert.Equal(ZAHL, a)
+
+	a = TryDeref(ReferenceType{Type: TEXT}, ZAHL)
+	assert.Equal(ReferenceType{Type: TEXT}, a)
+
+	a = TryDeref(ZAHL, ReferenceType{Type: TEXT})
+	assert.Equal(ZAHL, a)
+}
+
+func TestTryDeref2(t *testing.T) {
+	assert := assert.New(t)
+
+	a, b := TryDeref2(ZAHL, ZAHL)
+	assert.Equal(ZAHL, a)
+	assert.Equal(ZAHL, b)
+
+	a, b = TryDeref2(ZAHL, ReferenceType{Type: ZAHL})
+	assert.Equal(ZAHL, a)
+	assert.Equal(ZAHL, b)
+
+	a, b = TryDeref2(ReferenceType{Type: ZAHL}, ZAHL)
+	assert.Equal(ZAHL, a)
+	assert.Equal(ZAHL, b)
+
+	a, b = TryDeref2(ReferenceType{Type: TEXT}, ZAHL)
+	assert.Equal(ReferenceType{Type: TEXT}, a)
+	assert.Equal(ZAHL, b)
+
+	a, b = TryDeref2(ZAHL, ReferenceType{Type: TEXT})
+	assert.Equal(ZAHL, a)
+	assert.Equal(ReferenceType{Type: TEXT}, b)
+}
+
+func TestEqualDeref(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.False(EqualDeref(ZAHL, TEXT))
+	assert.False(EqualDeref(ReferenceType{Type: TEXT}, ZAHL))
+	assert.False(EqualDeref(ZAHL, ReferenceType{Type: TEXT}))
+
+	assert.True(EqualDeref(ZAHL, ZAHL))
+	assert.True(EqualDeref(ZAHL, ReferenceType{Type: ZAHL}))
+	assert.True(EqualDeref(ReferenceType{Type: ZAHL}, ZAHL))
+}

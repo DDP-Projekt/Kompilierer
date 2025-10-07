@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // holds the ir-definitions of a ddp-list-type
@@ -45,11 +46,15 @@ func (t *ddpIrListType) LLType() llvm.Type {
 	return t.typ
 }
 
+func (t *ddpIrListType) DDPType() ddptypes.Type {
+	return ddptypes.ListType{ElementType: t.elementType.DDPType()}
+}
+
 func (t *ddpIrListType) Name() string {
 	return t.name
 }
 
-func (*ddpIrListType) IsPrimitive() bool {
+func (*ddpIrListType) TriviallyCopyable() bool {
 	return false
 }
 
@@ -192,7 +197,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 		return llFuncBuilder.llFn
 	}
 
-	if !listType.elementType.IsPrimitive() {
+	if !listType.elementType.TriviallyCopyable() {
 		/*
 			for (int i = 0; i < list->len; i++) {
 				free(list->arr[i]);
@@ -251,7 +256,7 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 	arr := c.allocateArr(listType.elementType.LLType(), origCap)
 
 	// primitive types can easily be copied
-	if listType.elementType.IsPrimitive() {
+	if listType.elementType.TriviallyCopyable() {
 		// memcpy(arr, list->arr, list->len)
 		c.memcpyArr(listType.elementType.LLType(), arr, origArr, origLen)
 	} else { // non-primitive types need to be seperately deep-copied
@@ -315,7 +320,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 
 	// compare single elements
 	// primitive types can easily be compared
-	if listType.elementType.IsPrimitive() {
+	if listType.elementType.TriviallyCopyable() {
 		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len) == 0;
 		size := llFuncBuilder.CreateMul(c.sizeof(listType.elementType.LLType()), list1_len, "")
 		memcmp := c.memcmp(c.loadStructField(listType.typ, list1, list_arr_field_index), c.loadStructField(listType.typ, list2, list_arr_field_index), size)
@@ -426,7 +431,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	llFuncBuilder.CreateStore(c.growCapacity(new_len), retCapPtr)
 	llFuncBuilder.CreateStore(c.allocateArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_cap_field_index)), retArrPtr)
 
-	if listType.elementType.IsPrimitive() {
+	if listType.elementType.TriviallyCopyable() {
 		// memcpy primitive types
 		c.memcpyArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_arr_field_index), c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), index1), new_len)
 	} else {
@@ -476,7 +481,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	// non-primitive types are passed as pointers
 	// until I can pass structs correctly
 	scal_param_type := listType.elementType.LLType()
-	if !listType.elementType.IsPrimitive() {
+	if !listType.elementType.TriviallyCopyable() {
 		scal_param_type = c.ptr
 	}
 
@@ -538,7 +543,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		new_arr := c.loadStructField(listType.typ, ret, list_arr_field_index)
 
-		if listType.elementType.IsPrimitive() {
+		if listType.elementType.TriviallyCopyable() {
 			// memcpy(&ret->arr[list1->len], list2->arr, sizeof(elementType) * list2->len)
 			c.memcpyArr(listType.elementType.LLType(), c.indexArray(listType.elementType.LLType(), new_arr, c.loadStructField(listType.typ, list1, list_len_field_index)), c.loadStructField(listType.typ, list2, list_arr_field_index), c.loadStructField(listType.typ, list2, list_len_field_index))
 		} else {
@@ -583,7 +588,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
 		listLen := c.loadStructField(listType.typ, list, list_len_field_index)
-		if listType.elementType.IsPrimitive() {
+		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[list->len] = scal
 			c.builder().CreateStore(scal, c.indexArray(listType.elementType.LLType(), retArr, listLen))
 		} else {
@@ -622,7 +627,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
 		retArr0Ptr, retArr1Ptr := c.indexArray(listType.elementType.LLType(), retArr, c.zero), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1))
-		if listType.elementType.IsPrimitive() {
+		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[0] = scal1;
 			// ret->arr[1] = scal1;
 			c.builder().CreateStore(scal1, retArr0Ptr)
@@ -660,7 +665,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
 		c.memmoveArr(listType.elementType.LLType(), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1)), retArr, c.loadStructField(listType.typ, list, list_len_field_index))
 
-		if listType.elementType.IsPrimitive() {
+		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[0] = scal;
 			c.builder().CreateStore(scal, retArr)
 		} else {

@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // implementation of ddpIrType for a ddpany
@@ -22,11 +23,15 @@ func (t *ddpIrAnyType) LLType() llvm.Type {
 	return t.typ
 }
 
+func (t *ddpIrAnyType) DDPType() ddptypes.Type {
+	return ddptypes.VARIABLE
+}
+
 func (t *ddpIrAnyType) Name() string {
 	return "ddpany"
 }
 
-func (*ddpIrAnyType) IsPrimitive() bool {
+func (*ddpIrAnyType) TriviallyCopyable() bool {
 	return false
 }
 

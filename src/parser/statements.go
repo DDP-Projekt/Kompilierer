@@ -209,7 +209,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consumeSeq(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
-		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
+		if ddptypes.EqualDeref(typ, ddptypes.WAHRHEITSWERT) {
 			operator = ast.UN_NOT
 		}
 		return &ast.AssignStmt{

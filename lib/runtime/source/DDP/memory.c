@@ -1,4 +1,5 @@
 #include "DDP/ddpmemory.h"
+#include "DDP/ddptypes.h"
 #include "DDP/debug.h"
 #include <stdlib.h>
 
@@ -39,4 +40,16 @@ void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize) {
 	}
 
 	return result;
+}
+
+static void *_;
+
+void ddp_free_ref_type(void *ref) {
+	DDP_DBGLOG("Freeing ref: %p", ref);
+	_ = ref;
+}
+
+void *ddp_allocate_gc_ref(ddpvtable *vtable) {
+	DDP_DBGLOG("Allocating GC ref from vtable: %p", vtable);
+	return ddp_reallocate(NULL, 0, vtable->type_size);
 }

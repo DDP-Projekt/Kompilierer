@@ -1,6 +1,9 @@
 package ddptypes
 
-import "slices"
+import (
+	"cmp"
+	"slices"
+)
 
 // enum Type for the grammatical gender of a type
 type GrammaticalGender int
@@ -61,6 +64,8 @@ func GetUnderlying(t Type) Type {
 		return GetUnderlying(typ.Underlying)
 	case ListType:
 		return ListType{ElementType: GetUnderlying(typ.ElementType)}
+	case ReferenceType:
+		return ReferenceType{Type: GetUnderlying(typ.Type)}
 	case *InstantiatedGenericType:
 		return GetUnderlying(typ.Actual)
 	default:
@@ -171,6 +176,12 @@ func CastReference(t Type) (ReferenceType, bool) {
 	return reference, ok
 }
 
+// wether a is a reference to b
+func IsReferenceTo(a, b Type) bool {
+	aRef, isARef := CastReference(a)
+	return isARef && Equal(aRef.Type, b)
+}
+
 // gets the underlying type for nested lists and References
 // if typ is not a list or reference type typ is returned
 func GetNestedType(typ Type) Type {
@@ -184,4 +195,96 @@ func GetNestedType(typ Type) Type {
 		}
 	}
 	return typ
+}
+
+// if t is a Reference Type, the underlying Type is returned
+func Deref(t Type) Type {
+	if r, ok := CastReference(t); ok {
+		return r.Type
+	}
+	return t
+}
+
+// trys to dereference src to target
+func TryDeref(src, target Type) Type {
+	srcRef, isSrcRef := CastReference(src)
+	targetRef, isTargetRef := CastReference(target)
+
+	if isSrcRef != isTargetRef {
+		srcU, targetU := cmp.Or(srcRef.Type, src), cmp.Or(targetRef.Type, target)
+		if Equal(srcU, targetU) {
+			return srcU
+		}
+	}
+
+	return src
+}
+
+// if only one of the two types is a reference, a deref is attempted
+// otherwise the original types are returned
+func TryDeref2(a, b Type) (Type, Type) {
+	ar, aref := CastReference(a)
+	br, bref := CastReference(b)
+
+	if aref != bref {
+		au, bu := cmp.Or(ar.Type, a), cmp.Or(br.Type, b)
+		if Equal(au, bu) {
+			return au, bu
+		}
+	}
+
+	return a, b
+}
+
+// helper function to apply a predicate with TryDeref
+func WithDeref[R any](ty, target Type, f func(Type) R) R {
+	return f(TryDeref(ty, target))
+}
+
+// wether p applies to either t or it's dereferenced type
+func MaybeDeref(t Type, p func(Type) bool) bool {
+	if t, ok := CastReference(t); ok {
+		return p(t.Type)
+	}
+	return p(t)
+}
+
+// wether src can be assigned to dest directly or through an implicit deref of one of the types
+// Equal(TryDeref(src, dest), dest)
+func EqualDeref(src, dest Type) bool {
+	return Equal(TryDeref2(src, dest))
+}
+
+func IsListDeref(a Type) bool {
+	return MaybeDeref(a, IsList)
+}
+
+func IsStructDeref(a Type) bool {
+	return MaybeDeref(a, IsStruct)
+}
+
+func IsPrimitiveDeref(t Type) bool {
+	return MaybeDeref(t, IsPrimitive)
+}
+
+func IsNumericDeref(t Type) bool {
+	return MaybeDeref(t, IsNumeric)
+}
+
+func IsGenericDeref(t Type) bool {
+	return MaybeDeref(t, IsGeneric)
+}
+
+func CastListDeref(t Type) (ListType, bool) {
+	if ref, ok := CastReference(t); ok {
+		return CastList(ref.Type)
+	}
+	return CastList(t)
+}
+
+func CastStructDeref(t Type) (*StructType, bool) {
+	if ref, ok := CastReference(t); ok {
+		return CastStruct(ref.Type)
+	}
+	return CastStruct(t)
 }

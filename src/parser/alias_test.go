@@ -736,4 +736,38 @@ Ende`),
 	_, second_instantiation, _, _ = given.checkAlias(g, true, 0, cached_args)
 	assert.Same(funcInstantiation, second_instantiation)
 	assert.Same(genericFunc, second_instantiation.GenericInstantiation.GenericDecl)
+
+	// test with references and recursive functions
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo z`),
+	})
+	symbols = createSymbols("z", ddptypes.ListType{ElementType: ddptypes.ZAHL})
+	given.setScope(symbols)
+
+	Func := &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ListType{ElementType: ddptypes.ZAHL},
+			},
+		},
+	}
+
+	g = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ListType{ElementType: ddptypes.ZAHL},
+	})
+	g.(*ast.FuncAlias).Func = Func
+	given.aliases.Insert(g.GetKey(), g)
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.Nil(funcInstantiation)
+	assert.Nil(structTypeInstantiation)
+	assert.IsType(&ast.Ident{}, args["a"])
 }

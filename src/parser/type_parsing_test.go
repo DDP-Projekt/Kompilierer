@@ -107,6 +107,7 @@ func TestParseReferenceType(t *testing.T) {
 		typ := given.parseType(isGeneric)
 		assert.Equal(shouldError, mockHandler.DidError())
 		assert.Equal(expectedType, typ)
+
 		assert.Equal(shouldBeRef, ddptypes.IsReference(typ))
 	}
 

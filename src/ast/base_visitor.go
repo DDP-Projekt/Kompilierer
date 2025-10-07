@@ -39,6 +39,8 @@ type BaseVisitor struct {
 	CurrentModule *Module
 	// the current scope
 	CurrentScope SymbolTable
+	// the current visitor
+	CurrentVisitor FullVisitor
 	// Condition to check if a node should be visited
 	// if nil, all nodes are visited
 	VisitCondition func(Node) bool
@@ -48,6 +50,7 @@ var (
 	_ Visitor            = (*BaseVisitor)(nil)
 	_ ModuleSetter       = (*BaseVisitor)(nil)
 	_ ScopeSetter        = (*BaseVisitor)(nil)
+	_ VisitorSetter      = (*BaseVisitor)(nil)
 	_ ConditionalVisitor = (*BaseVisitor)(nil)
 )
 
@@ -59,6 +62,10 @@ func (v *BaseVisitor) SetModule(m *Module) {
 
 func (v *BaseVisitor) SetScope(s SymbolTable) {
 	v.CurrentScope = s
+}
+
+func (v *BaseVisitor) SetVisitor(f FullVisitor) {
+	v.CurrentVisitor = f
 }
 
 func (v *BaseVisitor) ShouldVisit(n Node) bool {

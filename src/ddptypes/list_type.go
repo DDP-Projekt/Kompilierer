@@ -43,6 +43,15 @@ func GetListElementType(typ Type) Type {
 	return typ
 }
 
+// gets the underlying type of a List or List Reference
+// if typ is not a list it is returned unchanged
+func GetListElementTypeDeref(typ Type) Type {
+	if refType, isRef := CastReference(typ); isRef {
+		return GetListElementType(refType.Type)
+	}
+	return GetListElementType(typ)
+}
+
 // helper that flattens list types to not contain typedefs/aliases
 func getTrueListUnderlying(typ Type) Type {
 	typ = TrueUnderlying(typ)

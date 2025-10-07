@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 type ddpIrGenericListType struct {
@@ -15,11 +16,15 @@ func (t *ddpIrGenericListType) LLType() llvm.Type {
 	return t.typ
 }
 
+func (t *ddpIrGenericListType) DDPType() ddptypes.Type {
+	return ddptypes.ListType{ElementType: ddptypes.VoidType{}}
+}
+
 func (t *ddpIrGenericListType) Name() string {
 	return "ddpgenericlist"
 }
 
-func (*ddpIrGenericListType) IsPrimitive() bool {
+func (*ddpIrGenericListType) TriviallyCopyable() bool {
 	return false
 }
 

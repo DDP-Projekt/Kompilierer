@@ -50,6 +50,11 @@ func (c *compiler) NewAlloca(elemType llvm.Type) llvm.Value {
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
+
+	if r, ok := ddptypes.CastReference(ddpType); ok {
+		return c.defineReferenceType(r)
+	}
+
 	if listType, isList := ddptypes.CastList(ddpType); isList {
 		underlying := ddptypes.TrueUnderlying(listType.ElementType)
 		switch underlying {
@@ -68,6 +73,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VARIABLE:
 			return c.ddpanylist
 		default:
+			// TODO: add reference types
 			return c.structTypes[underlying.(*ddptypes.StructType)].listType
 		}
 	} else {
@@ -89,22 +95,13 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VoidType{}:
 			return c.voidtyp
 		default: // struct types
+			// TODO: add reference types
 			return c.structTypes[ddpType.(*ddptypes.StructType)]
 		}
 	}
 }
 
-// used to handle possible reference parameters
-func (c *compiler) toIrParamType(ty ddptypes.ParameterType) llvm.Type {
-	irType := c.toIrType(ty.Type)
-
-	if !ty.IsReference && irType.IsPrimitive() {
-		return irType.LLType()
-	}
-
-	return c.ptr
-}
-
+// TODO: add reference types
 func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	switch ty {
 	case c.ddpinttyp:
@@ -124,6 +121,10 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 	default:
 		return ty.(*ddpIrStructType).listType
 	}
+}
+
+func (c *compiler) getReferenceType(ty ddpIrType) *ddpIrReferenceType {
+	return c.defineReferenceType(ddptypes.ReferenceType{Type: ty.DDPType()})
 }
 
 // returns the aligned size of a type
@@ -176,7 +177,7 @@ func (c *compiler) mangledNameDecl(decl ast.Declaration) string {
 		if ast.IsGenericInstantiation(decl) {
 			declName += "_generic_"
 			for _, p := range decl.Parameters {
-				declName += strings.ReplaceAll(p.Type.Type.String(), " ", "_")
+				declName += strings.ReplaceAll(p.Type.String(), " ", "_")
 			}
 		}
 	case *ast.VarDecl:

@@ -8,6 +8,7 @@ import (
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
+	"github.com/DDP-Projekt/Kompilierer/src/compiler"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ var parseCmd = &cobra.Command{
 			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
 			Annotators: []ast.Annotator{
 				&annotators.ConstFuncParamAnnotator{},
+				&compiler.ImplicitRefCastAnnotator{},
 			},
 		})
 		if err != nil {
