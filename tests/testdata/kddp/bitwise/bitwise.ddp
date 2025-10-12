@@ -8,9 +8,9 @@ Schreibe die Zahl (5 logisch oder 2).
 Schreibe den Buchstaben '\n'.
 Schreibe die Zahl (8 logisch kontra 5).
 Schreibe den Buchstaben '\n'.
-Schreibe die Zahl (7 um 3 Bit nach links verschoben).
+Schreibe die Zahl (der Wert 7 um 3 Bit nach Links verschoben).
 Schreibe den Buchstaben '\n'.
-Schreibe die Zahl (70 um 2 Bit nach rechts verschoben).
+Schreibe die Zahl (der Wert 70 um 2 Bit nach Rechts verschoben).
 Schreibe den Buchstaben '\n'.
 Schreibe den Buchstaben '\n'.
 
@@ -22,9 +22,9 @@ Schreibe den Byte ((5 als Byte) logisch oder (2 als Byte)).
 Schreibe den Buchstaben '\n'.
 Schreibe den Byte ((8 als Byte) logisch kontra (5 als Byte)).
 Schreibe den Buchstaben '\n'.
-Schreibe den Byte ((7 als Byte) um (3 als Byte) Bit nach links verschoben).
+Schreibe den Byte (der Wert 7 als Byte um (3 als Byte) Bit nach Links verschoben).
 Schreibe den Buchstaben '\n'.
-Schreibe den Byte ((70 als Byte) um (2 als Byte) Bit nach rechts verschoben).
+Schreibe den Byte (der Wert 70 als Byte um (2 als Byte) Bit nach Rechts verschoben).
 Schreibe den Buchstaben '\n'.
 Schreibe den Buchstaben '\n'.
 
@@ -36,6 +36,6 @@ Schreibe (5 logisch oder (2 als Byte)).
 Schreibe den Buchstaben '\n'.
 Schreibe (8 logisch kontra (5 als Byte)).
 Schreibe den Buchstaben '\n'.
-Schreibe (7 um (3 als Byte) Bit nach links verschoben).
+Schreibe (der Wert 7 um 3 als Byte Bit nach Links verschoben).
 Schreibe den Buchstaben '\n'.
-Schreibe (70 um (2 als Byte) Bit nach rechts verschoben).
+Schreibe (der Wert 70 um 2 als Byte Bit nach Rechts verschoben).

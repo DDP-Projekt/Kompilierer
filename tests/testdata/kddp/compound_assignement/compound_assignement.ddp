@@ -37,7 +37,7 @@ Negiere z.
 Schreibe z auf eine Zeile.
 
 Die Kommazahl zf ist 18,0.
-Teile zf durch 2.
+Teile zf in 2 Teile.
 Schreibe zf auf eine Zeile.
 
 Negiere zf.
@@ -74,7 +74,7 @@ Schreibe (zl an der Stelle 2) auf eine Zeile.
 
 Die Kommazahlen Liste zfl ist eine Liste, die aus 1,0, 18,0, 2,5 besteht.
 
-Teile zfl an der Stelle 2 durch 2.
+Teile zfl an der Stelle 2 in 2 Teile.
 Schreibe (zfl an der Stelle 2) auf eine Zeile.
 
 Negiere zfl an der Stelle 2.

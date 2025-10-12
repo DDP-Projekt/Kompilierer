@@ -17,6 +17,7 @@ func (p *parser) statement() ast.Statement {
 	// check for assignement
 	if p.matchAny(token.IDENTIFIER) {
 		if p.peek().Type == token.IST || p.peek().Type == token.AN {
+			p.decrease()
 			return p.assignLiteral() // x ist ... assignements may only have literals, so we use this helper function
 		} else {
 			p.decrease() // no assignement, so probably an expressionStatement()
@@ -201,8 +202,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		operator = ast.BIN_DIV
 	}
 
-	p.consumeAny(token.IDENTIFIER, token.LPAREN)
-	varName := p.assigneable()
+	varName := p.expression()
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
@@ -226,7 +226,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 	}
 
 	if tok.Type == token.TEILE {
-		p.consumeSeq(token.DURCH)
+		p.consumeSeq(token.IN)
 	} else {
 		p.consumeSeq(token.UM)
 	}
@@ -256,6 +256,9 @@ func (p *parser) compoundAssignement() ast.Statement {
 			},
 		}
 	} else {
+		if tok.Type == token.TEILE {
+			p.consumeSeq(token.TEILE)
+		}
 		p.consumeSeq(token.DOT)
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
@@ -274,12 +277,12 @@ func (p *parser) compoundAssignement() ast.Statement {
 
 // helper to parse assignements which may only be literals
 func (p *parser) assignLiteral() ast.Statement {
-	ident := p.assigneable() // name of the variable was already consumed
+	ident := p.expression() // name of the variable was already consumed
 	p.consumeSeq(token.IST)
 	expr := p.assignRhs(false) // parse the expression
 	// validate that the expression is a literal
 	if _, isLiteral := expr.(ast.Literal); !isLiteral {
-		if typ := p.typechecker.Evaluate(ident); !ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
+		if typ := p.typechecker.Evaluate(ident); !ddptypes.EqualDeref(typ, ddptypes.WAHRHEITSWERT) {
 			p.err(ddperror.SYN_EXPECTED_LITERAL, expr.GetRange(), "Es wurde ein Literal erwartet aber ein Ausdruck gefunden")
 		}
 	}
@@ -299,8 +302,7 @@ func (p *parser) assignNoLiteral() ast.Statement {
 	speichere := p.previous() // Speichere token
 	expr := p.expression()
 	p.consumeSeq(token.IN)
-	p.consumeAny(token.IDENTIFIER, token.LPAREN)
-	name := p.assigneable() // name of the variable is the just consumed identifier
+	name := p.expression()
 	return p.finishStatement(
 		&ast.AssignStmt{
 			Range: token.NewRange(speichere, p.peek()),

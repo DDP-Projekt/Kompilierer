@@ -35,7 +35,6 @@ var (
 	_ ast.VarDeclVisitor = (*ImplicitRefCastAnnotator)(nil)
 
 	_ ast.IdentVisitor         = (*ImplicitRefCastAnnotator)(nil)
-	_ ast.IndexingVisitor      = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.ListLitVisitor       = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.UnaryExprVisitor     = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.BinaryExprVisitor    = (*ImplicitRefCastAnnotator)(nil)
@@ -53,6 +52,10 @@ var (
 
 func (a *ImplicitRefCastAnnotator) typeOf(expr ast.Expression) ddptypes.Type {
 	return typechecker.TypeOfTypecheckedExpression(a.CurrentModule.Ast, expr)
+}
+
+func (a *ImplicitRefCastAnnotator) clearAnnotation(node ast.Node) {
+	a.CurrentModule.Ast.RemoveAttachment(node, ImplicitRefCastMetaKind)
 }
 
 func (a *ImplicitRefCastAnnotator) annotateFromRef(node ast.Node) {
@@ -80,24 +83,20 @@ func (a *ImplicitRefCastAnnotator) annotateDeref(expr ast.Expression) {
 }
 
 func (a *ImplicitRefCastAnnotator) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
+	a.Visit(d.InitVal)
+	a.clearAnnotation(d.InitVal)
 	if ddptypes.IsReferenceTo(d.Type, d.InitType) {
 		a.annotateToRef(d.InitVal)
 	} else if ddptypes.IsReferenceTo(d.InitType, d.Type) {
 		a.annotateFromRef(d.InitVal)
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
 func (a *ImplicitRefCastAnnotator) VisitIdent(e *ast.Ident) ast.VisitResult {
 	if varDecl, ok := e.Declaration.(*ast.VarDecl); ok && !ddptypes.IsReference(varDecl.Type) {
 		a.annotateFromRef(e)
 	}
-	return ast.VisitRecurse
-}
-
-func (a *ImplicitRefCastAnnotator) VisitIndexing(e *ast.Indexing) ast.VisitResult {
-	a.annotateDeref(e.Index)
-	a.annotateDeref(e.Lhs)
 	return ast.VisitRecurse
 }
 
@@ -189,7 +188,17 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 	if ddptypes.IsReferenceTo(s.RhsType, s.VarType) {
 		a.annotateFromRef(s.Rhs)
 	}
-	return ast.VisitRecurse
+
+	a.Visit(s.Var)
+	a.Visit(s.Rhs)
+	a.clearAnnotation(s.Rhs)
+	// if ddptypes.IsReferenceTo(s.VarType, s.RhsType) {
+	// 	a.annotateToRef(s.Rhs)
+	// } else
+	if ddptypes.IsReferenceTo(s.RhsType, s.VarType) {
+		a.annotateFromRef(s.Rhs)
+	}
+	return ast.VisitSkipChildren
 }
 
 func (a *ImplicitRefCastAnnotator) VisitIfStmt(s *ast.IfStmt) ast.VisitResult {

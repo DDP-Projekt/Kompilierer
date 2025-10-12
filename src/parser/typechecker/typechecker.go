@@ -256,35 +256,6 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-func (t *Typechecker) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
-	if typ := t.Evaluate(expr.Index); !ddptypes.EqualDeref(typ, ddptypes.ZAHL) && !ddptypes.EqualDeref(typ, ddptypes.BYTE) {
-		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Index, "Der STELLE Operator erwartet eine Zahl oder einen Byte als zweiten Operanden, nicht %s", typ)
-	}
-
-	lhs := t.Evaluate(expr.Lhs)
-	if !ddptypes.IsListDeref(lhs) && !ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
-		t.errExpr(ddperror.TYP_BAD_INDEXING, expr.Lhs, "Der STELLE Operator erwartet einen Text oder eine Liste als ersten Operanden, nicht %s", lhs)
-	}
-
-	if ddptypes.IsListDeref(lhs) {
-		t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
-	} else {
-		t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
-	}
-	return ast.VisitRecurse
-}
-
-func (t *Typechecker) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
-	rhs := t.Evaluate(expr.Rhs)
-	if !ddptypes.IsStructDeref(rhs) {
-		t.errExpr(ddperror.TYP_BAD_FIELD_ACCESS, expr.Rhs, "Der VON Operator erwartet eine Struktur als rechten Operanden, nicht %s", rhs)
-		t.latestReturnedType = ddptypes.VoidType{}
-	} else {
-		t.latestReturnedType = t.checkFieldAccess(expr.Field, rhs)
-	}
-	return ast.VisitRecurse
-}
-
 func (t *Typechecker) VisitIntLit(expr *ast.IntLit) ast.VisitResult {
 	t.latestReturnedType = ddptypes.ZAHL
 	return ast.VisitRecurse
@@ -424,6 +395,9 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 
 		if ddptypes.IsListDeref(lhs) {
 			t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
+			if ddptypes.IsReference(lhs) {
+				t.latestReturnedType = ddptypes.ReferenceType{Type: t.latestReturnedType}
+			}
 		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
@@ -553,8 +527,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDef(expr.TargetType)
-	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDef(lhs)
+	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDefDeref(expr.TargetType)
+	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDefDeref(lhs)
 
 	targetRef, isTargetRef := ddptypes.CastReference(expr.TargetType)
 
@@ -625,16 +599,6 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-// TODO: is this needed with references?
-func (t *Typechecker) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
-	lhs := t.Evaluate(expr.Lhs)
-	if !ddptypes.Equal(ddptypes.TrueUnderlying(lhs), ddptypes.TrueUnderlying(expr.TargetType)) {
-		t.err(ddperror.TYP_BAD_CAST, expr.GetRange(), "Falsche Nutzung einer Typumwandlung in einem Referenz Kontext")
-	}
-	t.latestReturnedType = expr.TargetType
-	return ast.VisitRecurse
-}
-
 func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	switch expr.Operator {
 	case ast.TYPE_SIZE:
@@ -683,14 +647,12 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
-		if ass, ok := expr.(ast.Assigneable); ddptypes.IsReference(paramType) && !ok {
-			t.errExpr(ddperror.TYP_EXPECTED_REFERENCE, expr, "Es wurde ein Referenz-Typ erwartet aber ein Ausdruck gefunden")
-		} else if ass, ok := ass.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.EqualDeref(paramType, ddptypes.BUCHSTABE) && ok {
-			lhs := t.Evaluate(ass.Lhs)
-			if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
-				t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
-			}
-		}
+		// if ass, ok := expr.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.EqualDeref(paramType, ddptypes.BUCHSTABE) && ok {
+		// 	lhs := t.Evaluate(ass.Lhs)
+		// 	if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
+		// 		t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
+		// 	}
+		// }
 		if !ddptypes.Equal(argType, paramType) && !ddptypes.Equal(ddptypes.Deref(argType), paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
@@ -950,6 +912,9 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 		}
 	}
 
+	if ddptypes.IsReference(originalType) {
+		return ddptypes.ReferenceType{Type: fieldType}
+	}
 	return fieldType
 }
 
@@ -1019,13 +984,6 @@ overload_loop:
 
 			// turn arguments for reference parameters into assigneables
 			operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
-			if ddptypes.IsReference(actualParamType) {
-				if ass, isAssignable := isAssignable(operand.expr); isAssignable {
-					operator_overload.Args[overload.Parameters[i].Name.Literal] = ass
-				} else {
-					continue overload_loop
-				}
-			}
 		}
 
 		// early return for normal overloads
@@ -1084,13 +1042,6 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 
 		// turn arguments for reference parameters into assigneables
 		operator_overload.Args[overload.Parameters[0].Name.Literal] = operand.expr
-		if ddptypes.IsReference(actualParamType) {
-			if ass, isAssignable := isAssignable(operand.expr); isAssignable {
-				operator_overload.Args[overload.Parameters[0].Name.Literal] = ass
-			} else {
-				continue
-			}
-		}
 
 		// early return for normal overloads
 		if !ast.IsGeneric(overload) {

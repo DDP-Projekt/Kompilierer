@@ -292,22 +292,23 @@ func (p *parser) comparison() ast.Expression {
 }
 
 func (p *parser) bitShift() ast.Expression {
-	expr := p.term()
-	for p.matchAny(token.UM) {
-		rhs := p.term()
-		p.consumeSeq(token.BIT, token.NACH)
-		if !p.matchAny(token.LINKS, token.RECHTS) {
-			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
+	var expr ast.Expression
+	for p.matchSeq(token.DER, token.WERT) {
+		expr = p.expression()
+		p.consumeSeq(token.UM)
+		rhs := p.expression()
+
+		operator := ast.BIN_LEFT_SHIFT
+		if p.matchSeq(token.BIT, token.NACH, token.RECHTS, token.VERSCHOBEN) {
+			operator = ast.BIN_RIGHT_SHIFT
+		} else if !p.consumeSeq(token.BIT, token.NACH, token.LINKS, token.VERSCHOBEN) {
 			return &ast.BadExpr{
 				Err: p.lastError,
 				Tok: expr.Token(),
 			}
 		}
-		tok := p.previous()
-		operator := ast.BIN_LEFT_SHIFT
-		if tok.Type == token.RECHTS {
-			operator = ast.BIN_RIGHT_SHIFT
-		}
+
+		tok := p.peekN(-2)
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
@@ -318,7 +319,9 @@ func (p *parser) bitShift() ast.Expression {
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consumeSeq(token.VERSCHOBEN)
+	}
+	if expr == nil {
+		expr = p.term()
 	}
 	return expr
 }
@@ -764,76 +767,6 @@ func (p *parser) grouping() ast.Expression {
 		LParen: *lParen,
 		Expr:   innerExpr,
 	}
-}
-
-// either ast.Ident, ast.Indexing or ast.FieldAccess
-// p.previous() must be of Type token.IDENTIFIER or token.LPAREN
-// TODO: fix precedence with braces
-func (p *parser) assigneable() ast.Assigneable {
-	var assigneable_impl func(bool) ast.Assigneable
-	assigneable_impl = func(isInFieldAcess bool) ast.Assigneable {
-		isParenthesized := p.previous().Type == token.LPAREN
-		if isParenthesized {
-			p.consumeSeq(token.IDENTIFIER)
-		}
-		ident := &ast.Ident{
-			Literal: *p.previous(),
-		}
-		decl, ok, _ := p.scope().LookupDecl(ident.Literal.Literal)
-		if _, isVar := decl.(*ast.VarDecl); ok && !isVar {
-			p.err(ddperror.SEM_CONSTANT_IS_NOT_ASSIGNABLE, p.previous().Range, "Eine konstante kann nicht in als Referenz verwendet werden")
-		}
-
-		var ass ast.Assigneable = ident
-
-		for p.matchAny(token.ALS) {
-			ass = &ast.CastAssigneable{
-				Range: token.Range{
-					Start: ass.GetRange().Start,
-					End:   token.NewEndPos(p.previous()),
-				},
-				TargetType: p.parseType(false),
-				Lhs:        ass,
-			}
-		}
-
-		for p.matchAny(token.VON) {
-			if p.matchAny(token.IDENTIFIER) {
-				rhs := assigneable_impl(true)
-				ass = &ast.FieldAccess{
-					Rhs:   rhs,
-					Field: ident,
-				}
-			} else {
-				p.consumeSeq(token.LPAREN)
-				rhs := assigneable_impl(false)
-				ass = &ast.FieldAccess{
-					Rhs:   rhs,
-					Field: ident,
-				}
-			}
-		}
-
-		if !isInFieldAcess {
-			for p.matchAny(token.AN) {
-				p.consumeSeq(token.DER, token.STELLE)
-				index := p.unary()
-				ass = &ast.Indexing{
-					Lhs:   ass,
-					Index: index,
-				}
-				if !p.matchAny(token.COMMA) {
-					break
-				}
-			}
-		}
-
-		if isParenthesized {
-			p.consumeSeq(token.RPAREN)
-		}
-		return ass
-	}
-	return assigneable_impl(false)
 }
 
 /*** Helper functions ***/

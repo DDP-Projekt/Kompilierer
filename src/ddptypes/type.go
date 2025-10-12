@@ -288,3 +288,10 @@ func CastStructDeref(t Type) (*StructType, bool) {
 	}
 	return CastStruct(t)
 }
+
+func CastTypeDefDeref(t Type) (*TypeDef, bool) {
+	if ref, ok := CastReference(t); ok {
+		return CastTypeDef(ref.Type)
+	}
+	return CastTypeDef(t)
+}

@@ -185,7 +185,6 @@ func (param *ParameterInfo) HasValidType() bool {
 //go-sumtype:decl Expression
 //go-sumtype:decl Statement
 //go-sumtype:decl Declaration
-//go-sumtype:decl Assigneable
 
 // basic Node interfaces
 type (
@@ -214,13 +213,5 @@ type (
 		Public() bool          // returns wether the declaration is public. always false for BadDecls
 		Comment() *token.Token // returns a optional comment
 		Module() *Module       // returns the module from which the declaration comes
-	}
-
-	// *Ident or *Indexing
-	// Nodes that fulfill this interface can be
-	// on the left side of an assignement (meaning, variables or references)
-	Assigneable interface {
-		Expression
-		assigneable() // dummy function for the interface
 	}
 )

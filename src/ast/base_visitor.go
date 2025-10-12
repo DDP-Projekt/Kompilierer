@@ -74,3 +74,10 @@ func (v *BaseVisitor) ShouldVisit(n Node) bool {
 	}
 	return v.VisitCondition(n)
 }
+
+func (v *BaseVisitor) Visit(node Node) VisitResult {
+	if v.CurrentVisitor != nil && node != nil {
+		return node.Accept(v.CurrentVisitor)
+	}
+	return VisitRecurse
+}

@@ -167,16 +167,6 @@ func (pr *printer) VisitIdent(expr *Ident) VisitResult {
 	return VisitRecurse
 }
 
-func (pr *printer) VisitIndexing(expr *Indexing) VisitResult {
-	pr.parenthesizeNode("Indexing", expr.Lhs, expr.Index)
-	return VisitRecurse
-}
-
-func (pr *printer) VisitFieldAccess(expr *FieldAccess) VisitResult {
-	pr.parenthesizeNode("FieldAccess", expr.Field, expr.Rhs)
-	return VisitRecurse
-}
-
 func (pr *printer) VisitIntLit(expr *IntLit) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("IntLit(%d)", expr.Value))
 	return VisitRecurse
@@ -232,11 +222,6 @@ func (pr *printer) VisitTernaryExpr(expr *TernaryExpr) VisitResult {
 
 func (pr *printer) VisitCastExpr(expr *CastExpr) VisitResult {
 	pr.parenthesizeNode(fmt.Sprintf("CastExpr[%s]", expr.TargetType), expr.Lhs)
-	return VisitRecurse
-}
-
-func (pr *printer) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
-	pr.parenthesizeNode(fmt.Sprintf("CastAssigneable[%s]", expr.TargetType), expr.Lhs)
 	return VisitRecurse
 }
 

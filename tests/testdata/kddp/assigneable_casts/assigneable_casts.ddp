@@ -21,13 +21,8 @@ Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurüc
 Und kann so benutzt werden:
 	"foo <z>"
 
-Die Zahl z ist 1.
-foo (z als Zahl).
-Schreibe z auf eine Zeile.
-
-
 Die Hausnummer h ist 1 als Hausnummer.
-foo (h als Zahl).
+foo (h als Zahlen Referenz).
 Schreibe (h als Zahl) auf eine Zeile.
 
 Die Funktion bar mit den Parametern z und w vom Typ Zahlen Referenz und Zahl, gibt eine Zahl zurück, macht:

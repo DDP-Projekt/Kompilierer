@@ -39,8 +39,6 @@ type FullVisitor interface {
 
 	BadExprVisitor
 	IdentVisitor
-	IndexingVisitor
-	FieldAccessVisitor
 	IntLitVisitor
 	FloatLitVisitor
 	BoolLitVisitor
@@ -51,7 +49,6 @@ type FullVisitor interface {
 	BinaryExprVisitor
 	TernaryExprVisitor
 	CastExprVisitor
-	CastAssigneableVisitor
 	TypeOpExprVisitor
 	TypeCheckVisitor
 	GroupingVisitor
@@ -119,14 +116,6 @@ type (
 		Visitor
 		VisitIdent(*Ident) VisitResult
 	}
-	IndexingVisitor interface {
-		Visitor
-		VisitIndexing(*Indexing) VisitResult
-	}
-	FieldAccessVisitor interface {
-		Visitor
-		VisitFieldAccess(*FieldAccess) VisitResult
-	}
 	IntLitVisitor interface {
 		Visitor
 		VisitIntLit(*IntLit) VisitResult
@@ -166,10 +155,6 @@ type (
 	CastExprVisitor interface {
 		Visitor
 		VisitCastExpr(*CastExpr) VisitResult
-	}
-	CastAssigneableVisitor interface {
-		Visitor
-		VisitCastAssigneable(*CastAssigneable) VisitResult
 	}
 	TypeOpExprVisitor interface {
 		Visitor
@@ -339,24 +324,6 @@ func (f IdentVisitorFunc) VisitIdent(expr *Ident) VisitResult {
 	return f(expr)
 }
 
-type IndexingVisitorFunc func(*Indexing) VisitResult
-
-var _ IndexingVisitor = (IndexingVisitorFunc)(nil)
-
-func (IndexingVisitorFunc) Visitor() {}
-func (f IndexingVisitorFunc) VisitIndexing(expr *Indexing) VisitResult {
-	return f(expr)
-}
-
-type FieldAccessVisitorFunc func(*FieldAccess) VisitResult
-
-var _ FieldAccessVisitor = (FieldAccessVisitorFunc)(nil)
-
-func (FieldAccessVisitorFunc) Visitor() {}
-func (f FieldAccessVisitorFunc) VisitFieldAccess(expr *FieldAccess) VisitResult {
-	return f(expr)
-}
-
 type IntLitVisitorFunc func(*IntLit) VisitResult
 
 var _ IntLitVisitor = (IntLitVisitorFunc)(nil)
@@ -444,15 +411,6 @@ var _ CastExprVisitor = (CastExprVisitorFunc)(nil)
 
 func (CastExprVisitorFunc) Visitor() {}
 func (f CastExprVisitorFunc) VisitCastExpr(expr *CastExpr) VisitResult {
-	return f(expr)
-}
-
-type CastAssigneableVisitorFunc func(*CastAssigneable) VisitResult
-
-var _ CastAssigneableVisitor = (CastAssigneableVisitorFunc)(nil)
-
-func (CastAssigneableVisitorFunc) Visitor() {}
-func (f CastAssigneableVisitorFunc) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
 	return f(expr)
 }
 

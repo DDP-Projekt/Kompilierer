@@ -173,7 +173,9 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 	}
 
 	if generic, ok := CastGeneric(instantiatedType); ok {
-		instantiatedType = genericTypes[generic.Name]
+		if instantiatedType, ok = genericTypes[generic.Name]; !ok {
+			instantiatedType = generic // if unifying failed, use the generic type for better error messages
+		}
 	}
 
 	if structType, isStruct := CastStruct(instantiatedType); isStruct && structType.genericType != nil {

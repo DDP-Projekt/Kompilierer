@@ -213,17 +213,6 @@ func (r *Resolver) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-func (r *Resolver) VisitIndexing(expr *ast.Indexing) ast.VisitResult {
-	r.visit(expr.Lhs)
-	r.visit(expr.Index)
-	return ast.VisitRecurse
-}
-
-func (r *Resolver) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
-	r.visit(expr.Rhs)
-	return ast.VisitRecurse
-}
-
 // nothing to do for literals
 func (r *Resolver) VisitIntLit(expr *ast.IntLit) ast.VisitResult {
 	return ast.VisitRecurse
@@ -281,11 +270,6 @@ func (r *Resolver) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 }
 
 func (r *Resolver) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
-	r.visit(expr.Lhs) // visit the actual expressions
-	return ast.VisitRecurse
-}
-
-func (r *Resolver) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
 	r.visit(expr.Lhs) // visit the actual expressions
 	return ast.VisitRecurse
 }
@@ -360,26 +344,7 @@ func (r *Resolver) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 }
 
 func (r *Resolver) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
-	switch assign := stmt.Var.(type) {
-	case *ast.Ident:
-		// check if the variable exists
-		if varDecl, exists, isVar := r.CurrentTable.LookupDecl(assign.Literal.Literal); !exists {
-			r.err(ddperror.SEM_NAME_UNDEFINED, assign.Literal.Range, fmt.Sprintf("Der Name '%s' wurde in noch nicht als Variable deklariert", assign.Literal.Literal))
-		} else if !isVar {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für eine Funktion oder Struktur und nicht für eine Variable", assign.Literal.Literal))
-		} else if _, isConst := varDecl.(*ast.ConstDecl); isConst {
-			r.err(ddperror.SEM_BAD_NAME_CONTEXT, assign.Token().Range, fmt.Sprintf("Der Name '%s' steht für einer Konstante und kann daher nicht zugewiesen werden", assign.Literal.Literal))
-		} else { // set the reference to the declaration
-			assign.Declaration = varDecl
-		}
-	case *ast.Indexing:
-		r.visit(assign.Lhs)
-		r.visit(assign.Index)
-	case *ast.FieldAccess:
-		r.visit(assign.Rhs)
-	case *ast.CastAssigneable:
-		r.visit(assign.Lhs)
-	}
+	r.visit(stmt.Var)
 	r.visit(stmt.Rhs)
 	return ast.VisitRecurse
 }

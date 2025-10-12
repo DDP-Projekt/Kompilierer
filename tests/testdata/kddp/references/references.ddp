@@ -66,9 +66,17 @@ foo "".
 Die Zahlen Referenz zr ist 5.
 Die Zahl z ist zr.
 
-Schreibe (zr) auf eine Zeile.
-Schreibe (z) auf eine Zeile.
+Schreibe zr auf eine Zeile.
+Schreibe z auf eine Zeile.
 Inkrementiere zr.
 Inkrementiere z.
 Inkrementiere z.
 Schreibe (zr plus z) auf eine Zeile.
+
+Der Text t ist "Hallo".
+Die Text Referenz tr ist t.
+Schreibe t auf eine Zeile.
+Schreibe tr auf eine Zeile.
+Speichere "Welt" in t.
+Schreibe t auf eine Zeile.
+Schreibe tr auf eine Zeile.

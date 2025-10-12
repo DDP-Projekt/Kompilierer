@@ -145,7 +145,9 @@ func (p *parser) parseType(generic bool) ddptypes.Type {
 				types = types[:0]
 			}
 		case token.BUCHSTABEN:
-			if p.matchAny(token.LISTE) {
+			if p.peekN(-2).Type == token.EINEN || p.peekN(-2).Type == token.JEDEN { // edge case in function return types and for-range loops
+				typ = ddptypes.BUCHSTABE
+			} else if p.matchAny(token.LISTE) {
 				typ = ddptypes.ListType{ElementType: ddptypes.BUCHSTABE}
 			} else if p.matchAny(token.LISTEN) {
 				p.consumeSeq(token.REFERENZ)

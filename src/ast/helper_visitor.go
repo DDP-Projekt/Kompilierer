@@ -248,22 +248,6 @@ func (h *helperVisitor) VisitIdent(expr *Ident) VisitResult {
 	return VisitRecurse
 }
 
-func (h *helperVisitor) VisitIndexing(expr *Indexing) VisitResult {
-	result := VisitRecurse
-	if vis, ok := h.actualVisitor.(IndexingVisitor); ok {
-		result = vis.VisitIndexing(expr)
-	}
-	return h.visitChildren(result, expr.Lhs, expr.Index)
-}
-
-func (h *helperVisitor) VisitFieldAccess(expr *FieldAccess) VisitResult {
-	result := VisitRecurse
-	if vis, ok := h.actualVisitor.(FieldAccessVisitor); ok {
-		result = vis.VisitFieldAccess(expr)
-	}
-	return h.visitChildren(result, expr.Field, expr.Rhs)
-}
-
 // nothing to do for literals
 func (h *helperVisitor) VisitIntLit(expr *IntLit) VisitResult {
 	if vis, ok := h.actualVisitor.(IntLitVisitor); ok {
@@ -348,14 +332,6 @@ func (h *helperVisitor) VisitCastExpr(expr *CastExpr) VisitResult {
 	result := VisitRecurse
 	if vis, ok := h.actualVisitor.(CastExprVisitor); ok {
 		result = vis.VisitCastExpr(expr)
-	}
-	return h.visitChildren(result, expr.Lhs)
-}
-
-func (h *helperVisitor) VisitCastAssigneable(expr *CastAssigneable) VisitResult {
-	result := VisitRecurse
-	if vis, ok := h.actualVisitor.(CastAssigneableVisitor); ok {
-		result = vis.VisitCastAssigneable(expr)
 	}
 	return h.visitChildren(result, expr.Lhs)
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
@@ -65,9 +64,6 @@ type Options struct {
 
 func (options *Options) ToParserOptions() parser.Options {
 	var annos []ast.Annotator
-	if options.OptimizationLevel >= 2 {
-		annos = append(annos, &annotators.ConstFuncParamAnnotator{})
-	}
 	return parser.Options{
 		FileName:     options.FileName,
 		Source:       options.Source,

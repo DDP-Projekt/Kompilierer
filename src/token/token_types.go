@@ -34,8 +34,8 @@ const (
 	ZWISCHEN     // zwischen <a> und <b>
 	NEGATE       // -
 	IST          // ist
-	LINKS        // links
-	RECHTS       // rechts
+	LINKS        // Links
+	RECHTS       // Rechts
 	GRÖßE        // Größe von
 	LÄNGE        // Länge von
 	KONTRA       // kontra
@@ -161,6 +161,7 @@ const (
 	INDEX
 	GENERISCHE
 	KONSTANTE
+	WERT
 
 	DOT     // .
 	COMMA   // ,
@@ -331,6 +332,7 @@ var tokenStrings = [...]string{
 	INDEX:         "Index",
 	GENERISCHE:    "generische",
 	KONSTANTE:     "Konstante",
+	WERT:          "Wert",
 
 	DOT:     ".",
 	COMMA:   ",",
@@ -408,8 +410,8 @@ var KeywordMap = map[string]TokenType{
 	"um":             UM,
 	"Bit":            BIT,
 	"nach":           NACH,
-	"links":          LINKS,
-	"rechts":         RECHTS,
+	"Links":          LINKS,
+	"Rechts":         RECHTS,
 	"verschoben":     VERSCHOBEN,
 	"Größe":          GRÖßE,
 	"Groesse":        GRÖßE,
@@ -506,6 +508,7 @@ var KeywordMap = map[string]TokenType{
 	"Index":          INDEX,
 	"generische":     GENERISCHE,
 	"Konstante":      KONSTANTE,
+	"Wert":           WERT,
 }
 
 func KeywordToTokenType(keyword string) TokenType {

@@ -161,7 +161,7 @@ func (p *parser) alias() ast.Expression {
 	// errors for the arguments
 
 	// generic aliases may not be called with typeSensitive = false
-	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) {
+	if funcAlias, ok := mostFitting.alias.(*ast.FuncAlias); ok && ast.IsGeneric(funcAlias.Func) && len(mostFitting.errs) != 0 {
 		p.errVal(ddperror.Error{
 			Code:                 ddperror.SEM_ERROR_INSTANTIATING_GENERIC_FUNCTION,
 			Level:                ddperror.LEVEL_ERROR,
@@ -221,7 +221,8 @@ func sortAliases(matchedAliases []ast.Alias) {
 // used for caching by checkAlias
 // represents an argument that was already parsed
 type cachedArg struct {
-	Arg     ast.Expression   // expression (might be an assignable)
+	Arg     ast.Expression // expression (might be an assignable)
+	Type    ddptypes.Type
 	Errors  []ddperror.Error // the errors that occured while parsing the argument
 	exprEnd int              // where the expression was over (p.cur for the token after)
 }
@@ -307,10 +308,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					Operators:   p.Operators,
 				}
 
-				if cached_arg_key.isReference {
-					argParser.advance() // consume the identifier or LPAREN for assigneable() to work
-					cached_arg.Arg = argParser.assigneable()
-				} else if isGrouping {
+				if isGrouping {
 					argParser.advance() // consume the LPAREN for grouping() to work
 					cached_arg.Arg = argParser.grouping()
 				} else {
@@ -327,33 +325,29 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 			// we are in the for loop below, so the types must match
 			// otherwise it doesn't matter
 			if typeSensitive {
-				typ := p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
+				if cached_arg.Type == nil {
+					cached_arg.Type = p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
+				}
 
-				didMatch := true
-
+				typ := cached_arg.Type
 				// we parsed an assigneable and implicitly cast it
 				if cached_arg_key.isReference && !ddptypes.IsReference(typ) {
+					// TODO: should we do this?
 					typ = ddptypes.ReferenceType{Type: typ}
 				}
 
 				underlyingParamType := paramType
 				if ast.IsGeneric(mAlias.Decl()) {
 					underlyingParamType = ddptypes.UnifyGenericType(typ, paramType, genericTypes)
+
+					// account for the possibility of unifying param=T with arg=T Referenz
+					if refType, isRef := ddptypes.CastReference(typ); !ddptypes.EqualDeref(typ, underlyingParamType) && isRef {
+						underlyingParamType = ddptypes.UnifyGenericType(refType.Type, paramType, genericTypes)
+					}
 				}
 
 				// TODO: Equal or EqualDeref?
 				if !ddptypes.EqualDeref(typ, underlyingParamType) {
-					didMatch = false
-				} else if ass, ok := cached_arg.Arg.(*ast.Indexing);                                          // string-indexings may not be passed as char-reference
-				ddptypes.IsReference(paramType) && ddptypes.Equal(underlyingParamType, ddptypes.BUCHSTABE) && // if the parameter is a char-reference
-					ok { // and the argument is a indexing
-					lhs := p.typechecker.EvaluateSilent(ass.Lhs)
-					if ddptypes.Equal(lhs, ddptypes.TEXT) { // check if the lhs is a string
-						didMatch = false
-					}
-				}
-
-				if !didMatch {
 					return nil, nil, nil, reported_errors
 				}
 			}

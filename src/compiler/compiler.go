@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/ast/annotators"
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
@@ -347,7 +346,15 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Valu
 	if c.isDereferencedImplicitly(expr) {
 		if refType, ok := ty.(*ddpIrReferenceType); ok {
 			ty = c.toIrType(refType.ddpType.Type)
-			val = c.builder().CreateLoad(ty.LLType(), val, "")
+
+			if ty.TriviallyCopyable() {
+				val = c.builder().CreateLoad(ty.LLType(), val, "")
+			} else {
+				dest := c.NewAlloca(ty.LLType())
+				val, _ = c.scp.addTemporary(c.deepCopyInto(dest, val, ty), ty)
+				isTemp = true
+			}
+
 			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = val, ty, isTemp
 		}
 		if to != nil {
@@ -547,13 +554,8 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 		}()
 	}
 
-	meta := annotators.ConstFuncParamMeta{}
-	if attachement, ok := fun.Module().Ast.GetMetadataByKind(fun, annotators.ConstFuncParamMetaKind); ok {
-		meta = attachement.(annotators.ConstFuncParamMeta)
-	}
-
-	for paramDecl, v := range c.fnScope.variables {
-		if !v.isRef && (!meta.IsConst[paramDecl.Name()] || c.optimizationLevel < 2) {
+	for _, v := range c.fnScope.variables {
+		if !v.isRef {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
@@ -851,44 +853,6 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 	}
 	c.builder().latestReturnType = Var.typ
 	c.builder().latestIsTemp = false
-	return ast.VisitRecurse
-}
-
-func (c *compiler) VisitIndexing(e *ast.Indexing) ast.VisitResult {
-	elementPtr, elementType, stringIndexing := c.evaluateAssignableOrReference(e, false)
-
-	if stringIndexing != nil {
-		lhs, lhsTyp, _ := c.evaluate(stringIndexing.Lhs)
-		index, _, _ := c.evaluate(stringIndexing.Index)
-		lhs = c.floatOrByteAsInt(lhs, lhsTyp)
-		c.builder().latestReturn = c.builder().createCall(c.ddpstring.indexIrFun, lhs, index)
-		c.builder().latestReturnType = c.ddpchartyp
-		// c.builder().latestIsTemp = false // it is a primitive typ, so we don't care
-		return ast.VisitRecurse
-	} else {
-		if elementType.TriviallyCopyable() {
-			c.builder().latestReturn = c.builder().CreateLoad(elementType.LLType(), elementPtr, "")
-		} else {
-			c.builder().latestReturn = elementPtr
-			c.builder().latestIsTemp = false
-		}
-	}
-	c.builder().latestReturnType = elementType
-	return ast.VisitRecurse
-}
-
-func (c *compiler) VisitFieldAccess(expr *ast.FieldAccess) ast.VisitResult {
-	fieldPtr, fieldType, _ := c.evaluateAssignableOrReference(expr, false)
-
-	if fieldType.TriviallyCopyable() {
-		c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
-	} else {
-		dest := c.NewAlloca(fieldType.LLType())
-		c.deepCopyInto(dest, fieldPtr, fieldType)
-		c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(dest, fieldType)
-		c.builder().latestIsTemp = true
-	}
-	c.builder().latestReturnType = fieldType
 	return ast.VisitRecurse
 }
 
@@ -2088,11 +2052,6 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-func (c *compiler) VisitCastAssigneable(e *ast.CastAssigneable) ast.VisitResult {
-	c.evaluate(&ast.CastExpr{Lhs: e.Lhs, TargetType: e.TargetType, Range: e.Range})
-	return ast.VisitRecurse
-}
-
 func (c *compiler) VisitTypeOpExpr(e *ast.TypeOpExpr) ast.VisitResult {
 	switch e.Operator {
 	case ast.TYPE_SIZE:
@@ -2141,7 +2100,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 // helper for VisitAssignStmt and VisitFuncCall
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
-func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref bool) (llvm.Value, ddpIrType, *ast.Indexing) {
+func (c *compiler) evaluateAssignableOrReference(ass ast.Expression, as_ref bool) (llvm.Value, ddpIrType, *ast.BinaryExpr) {
 	switch assign := ass.(type) {
 	case *ast.Ident:
 		Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
@@ -2149,41 +2108,46 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Assigneable, as_ref boo
 			return c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, nil
 		}
 		return Var.val, Var.typ, nil
-	case *ast.Indexing:
-		lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
-		if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-			index, indexTyp, _ := c.evaluate(assign.Index)
-			index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
-			listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
-			var elementPtr llvm.Value
+	case *ast.BinaryExpr:
+		switch assign.Operator {
+		case ast.BIN_INDEX:
+			lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
+			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
+				index, indexTyp, _ := c.evaluate(assign.Rhs)
+				index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
+				listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
+				var elementPtr llvm.Value
 
-			cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
-			c.createIfElse(cond, func() {
-				listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
-				elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
-			}, func() { // runtime error
-				line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
-				c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
-			})
-			return elementPtr, listTyp.elementType, nil
-		} else if !as_ref && lhsTyp == c.ddpstring {
-			return lhs, lhsTyp, assign
-		} else {
-			c.err("non-list/string/struct type passed as assignable/reference")
+				cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
+				c.createIfElse(cond, func() {
+					listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
+					elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
+				}, func() { // runtime error
+					line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
+					c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
+				})
+				return elementPtr, listTyp.elementType, nil
+			} else if !as_ref && lhsTyp == c.ddpstring {
+				return lhs, lhsTyp, assign
+			} else {
+				c.err("non-list/string/struct type passed as assignable/reference")
+			}
+		case ast.BIN_FIELD_ACCESS:
+			rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
+			if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
+				fieldIndex := getFieldIndex(assign.Lhs.(*ast.Ident).Literal.Literal, structTyp)
+				fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
+				return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
+			} else {
+				c.err("non-struct type passed to FieldAccess")
+			}
+		default:
+			c.err("Invalid binary operator in evaluateAssignableOrReference: %s", assign.Operator)
 		}
-	case *ast.FieldAccess:
-		rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
-		if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
-			fieldIndex := getFieldIndex(assign.Field.Literal.Literal, structTyp)
-			fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
-			return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
-		} else {
-			c.err("non-struct type passed to FieldAccess")
-		}
-	case *ast.CastAssigneable:
+	case *ast.CastExpr:
 		return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
 	}
-	c.err("Invalid types in evaluateAssignableOrReference %s", ass)
+	c.err("Invalid types in evaluateAssignableOrReference: %s", ass)
 	return llvm.Value{}, nil, nil
 }
 
@@ -2207,11 +2171,6 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 	args := make([]llvm.Value, 0, len(fun.funcDecl.Parameters)+1)
 
-	meta := annotators.ConstFuncParamMeta{}
-	if attachement, ok := e.Func.Module().Ast.GetMetadataByKind(fun.funcDecl, annotators.ConstFuncParamMetaKind); ok {
-		meta = attachement.(annotators.ConstFuncParamMeta)
-	}
-
 	irReturnType := c.getPossiblyGenericReturnType(fun.funcDecl)
 
 	var ret llvm.Value
@@ -2225,15 +2184,10 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 
 		// differentiate between references and normal parameters
 		if ddptypes.IsReference(param.Type) {
-			if assign, ok := e.Args[param.Name.Literal].(ast.Assigneable); ok {
-				val, _, _ = c.evaluateAssignableOrReference(assign, true)
-			} else {
-				c.err("non-assignable passed as reference to %s", fun.funcDecl.Name())
-			}
+			val, _, _ = c.evaluateAssignableOrReference(e.Args[param.Name.Literal], true)
 		} else {
 			eval, valTyp, isTemp := c.evaluate(e.Args[param.Name.Literal]) // compile each argument for the function
-			if valTyp.TriviallyCopyable() ||
-				(!ast.IsExternFunc(fun.funcDecl) && c.optimizationLevel >= 2 && meta.IsConst[param.Name.Literal]) {
+			if valTyp.TriviallyCopyable() {
 				val = eval
 			} else { // function parameters need to be copied by the caller
 				dest := c.NewAlloca(valTyp.LLType())
@@ -2489,7 +2443,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
 
 	if lhsStringIndexing != nil {
-		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Index)
+		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Rhs)
 		index = c.floatOrByteAsInt(index, indexTyp)
 		c.builder().createCall(c.ddpstring.replaceCharIrFun, lhs, rhs, index)
 	} else {
