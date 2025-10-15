@@ -9,8 +9,7 @@ import (
 type varwrapper struct {
 	val       llvm.Value // alloca or global-Def in the ir
 	typ       ddpIrType  // ir type of the variable
-	isRef     bool
-	protected bool // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
+	protected bool       // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
 }
 
 // wraps local variables of a scope + the enclosing scope
@@ -47,13 +46,13 @@ func (s *scope) lookupVar(decl *ast.VarDecl) varwrapper {
 }
 
 // add a variable to the scope
-func (scope *scope) addVar(decl *ast.VarDecl, val llvm.Value, ty ddpIrType, isRef bool) llvm.Value {
-	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: false}
+func (scope *scope) addVar(decl *ast.VarDecl, val llvm.Value, ty ddpIrType) llvm.Value {
+	scope.variables[decl] = varwrapper{val: val, typ: ty, protected: false}
 	return val
 }
 
-func (scope *scope) addProtected(decl *ast.VarDecl, val llvm.Value, ty ddpIrType, isRef bool) llvm.Value {
-	scope.variables[decl] = varwrapper{val: val, typ: ty, isRef: isRef, protected: true}
+func (scope *scope) addProtected(decl *ast.VarDecl, val llvm.Value, ty ddpIrType) llvm.Value {
+	scope.variables[decl] = varwrapper{val: val, typ: ty, protected: true}
 	return val
 }
 
@@ -78,7 +77,7 @@ func (scope *scope) unprotectTemporary(val llvm.Value) {
 }
 
 func (scope *scope) addTemporary(val llvm.Value, typ ddpIrType) (llvm.Value, ddpIrType) {
-	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, isRef: false, protected: false})
+	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, protected: false})
 	return val, typ
 }
 

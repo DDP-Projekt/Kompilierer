@@ -96,6 +96,7 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 
 	primitive.vtable = vtable
 
+	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptyp}, primitive, declarationOnly)
 	return primitive
 }
 

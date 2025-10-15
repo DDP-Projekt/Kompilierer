@@ -52,7 +52,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
 
 	if r, ok := ddptypes.CastReference(ddpType); ok {
-		return c.defineReferenceType(r)
+		return c.defineReferenceType(r, c.toIrType(r.Type), false)
 	}
 
 	if listType, isList := ddptypes.CastList(ddpType); isList {
@@ -73,7 +73,6 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VARIABLE:
 			return c.ddpanylist
 		default:
-			// TODO: add reference types
 			return c.structTypes[underlying.(*ddptypes.StructType)].listType
 		}
 	} else {
@@ -95,7 +94,6 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 		case ddptypes.VoidType{}:
 			return c.voidtyp
 		default: // struct types
-			// TODO: add reference types
 			return c.structTypes[ddpType.(*ddptypes.StructType)]
 		}
 	}
@@ -124,7 +122,7 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 }
 
 func (c *compiler) getReferenceType(ty ddpIrType) *ddpIrReferenceType {
-	return c.defineReferenceType(ddptypes.ReferenceType{Type: ty.DDPType()})
+	return c.defineReferenceType(ddptypes.ReferenceType{Type: ty.DDPType()}, ty, false)
 }
 
 // returns the aligned size of a type

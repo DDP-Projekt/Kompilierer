@@ -135,5 +135,6 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.vtable = vtable
 	ddpstring.defaultValue = llvm.ConstNull(ddpstring.typ)
 
+	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptypes.TEXT}, ddpstring, declarationOnly)
 	return ddpstring
 }

@@ -202,7 +202,12 @@ func (p *parser) compoundAssignement() ast.Statement {
 		operator = ast.BIN_DIV
 	}
 
+	// parse it 2 times, so we don't need to deep copy the expression
+	// the deep copy is needed so that metadata annotations used by the compiler work correctly
+	cur := p.cur
 	varName := p.expression()
+	p.cur = cur
+	target := p.expression()
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
@@ -215,7 +220,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   *tok,
-			Var:   varName,
+			Var:   target,
 			Rhs: &ast.UnaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
 				Tok:      *tok,
@@ -246,7 +251,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   *assign_token,
-			Var:   varName,
+			Var:   target,
 			Rhs: &ast.BinaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
 				Tok:      *tok,
@@ -263,7 +268,7 @@ func (p *parser) compoundAssignement() ast.Statement {
 		return &ast.AssignStmt{
 			Range: token.NewRange(tok, p.previous()),
 			Tok:   *tok,
-			Var:   varName,
+			Var:   target,
 			Rhs: &ast.BinaryExpr{
 				Range:    token.NewRange(tok, p.previous()),
 				Tok:      *tok,

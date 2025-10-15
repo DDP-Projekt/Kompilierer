@@ -55,7 +55,7 @@ func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
-func (c *compiler) defineAnyType() *ddpIrAnyType {
+func (c *compiler) defineAnyType(declarationOnly bool) *ddpIrAnyType {
 	ddpany := &ddpIrAnyType{}
 	ddpany.typ = c.llctx.StructType([]llvm.Type{c.ptr, llvm.ArrayType(c.i8, 16)}, false)
 
@@ -70,6 +70,7 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 
 	ddpany.defaultValue = llvm.ConstNull(ddpany.typ)
 
+	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptypes.VARIABLE}, ddpany, declarationOnly)
 	return ddpany
 }
 

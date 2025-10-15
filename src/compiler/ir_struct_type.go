@@ -131,6 +131,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 
 	structType.defaultValue = llvm.ConstNull(structType.typ)
 
+	c.defineReferenceType(ddptypes.ReferenceType{Type: typ}, structType, declarationOnly)
 	c.structTypes[typ] = structType
 }
 

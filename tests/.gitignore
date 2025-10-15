@@ -4,5 +4,6 @@
 *.zip
 *.dump.txt
 **/got.txt
+**/expected_cleaned.txt
 **/diff.txt
 coverage.md

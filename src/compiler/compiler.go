@@ -145,7 +145,7 @@ type compiler struct {
 	functions       map[string]*funcWrapper                   // all the global functions
 	typeMap         map[ddptypes.Type]*ast.Module             // maps ddpTypes to the module they originate from
 	structTypes     map[*ddptypes.StructType]*ddpIrStructType // struct names mapped to their IR type
-	refTypes        map[ddptypes.Type]*ddpIrReferenceType
+	refTypes        map[ddptypes.ReferenceType]*ddpIrReferenceType
 	importedModules map[*ast.Module]struct{} // all the modules that have already been imported
 	typeDefVTables  map[string]llvm.Value
 
@@ -194,7 +194,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		functions:       make(map[string]*funcWrapper),
 		typeMap:         createTypeMap(module),
 		structTypes:     make(map[*ddptypes.StructType]*ddpIrStructType),
-		refTypes:        make(map[ddptypes.Type]*ddpIrReferenceType),
+		refTypes:        make(map[ddptypes.ReferenceType]*ddpIrReferenceType),
 		importedModules: make(map[*ast.Module]struct{}),
 		typeDefVTables:  make(map[string]llvm.Value),
 
@@ -288,7 +288,7 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 	c.initRuntimeFunctions()
 	c.setupPrimitiveTypes(false)
 	c.ddpstring = c.defineStringType(false)
-	c.ddpany = c.defineAnyType()
+	c.ddpany = c.defineAnyType(false)
 	c.setupListTypes(false) // we want definitions
 
 	c.disposeBuilders()
@@ -365,7 +365,8 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Valu
 			val, ty, isTemp = c.numericCast(val, ty, to), to, false
 		}
 		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, ty.VTable())
-		c.builder().CreateStore(val, ref)
+		// c.builder().CreateStore(val, ref)
+		c.claimOrCopy(ref, val, ty, isTemp)
 		c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = ref, c.getReferenceType(ty), false
 	}
 
@@ -409,7 +410,7 @@ func (c *compiler) setup() {
 	c.initRuntimeFunctions()
 	c.setupPrimitiveTypes(true)
 	c.ddpstring = c.defineStringType(true)
-	c.ddpany = c.defineAnyType()
+	c.ddpany = c.defineAnyType(true)
 	c.setupListTypes(true)
 
 	c.setupModuleInitDispose()
@@ -537,7 +538,7 @@ func (c *compiler) exitScope(scp *scope) *scope {
 	}
 
 	for _, v := range scp.variables {
-		if !v.isRef && !v.protected {
+		if !v.protected {
 			c.freeNonPrimitive(v.val, v.typ)
 		}
 	}
@@ -555,9 +556,7 @@ func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
 	}
 
 	for _, v := range c.fnScope.variables {
-		if !v.isRef {
-			c.freeNonPrimitive(v.val, v.typ)
-		}
+		c.freeNonPrimitive(v.val, v.typ)
 	}
 	c.freeTemporaries(c.fnScope, true)
 	return c.fnScope.enclosing
@@ -655,7 +654,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		addInitializer()
 	}
 
-	c.scp.addVar(d, varLocation, Typ, false)
+	c.scp.addVar(d, varLocation, Typ)
 	return ast.VisitRecurse
 }
 
@@ -773,10 +772,10 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 		paramDecl := varDecl.(*ast.VarDecl)
 		if !irType.TriviallyCopyable() { // strings and lists need special handling
 			// add the local variable for the parameter
-			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType, false)
+			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
 			c.builder().CreateStore(c.builder().CreateLoad(irType.LLType(), params[i].val, ""), v) // store the copy in the local variable
 		} else { // primitive types don't need any special handling
-			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType, false)
+			v := c.scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
 			c.builder().CreateStore(params[i].val, v)
 		}
 	}
@@ -846,12 +845,13 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 	Var := c.scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 
-	if Var.typ.TriviallyCopyable() { // primitives are simply loaded
+	if _, isRef := Var.typ.(*ddpIrReferenceType); isRef { // primitives are simply loaded
 		c.builder().latestReturn = c.builder().CreateLoad(Var.typ.LLType(), Var.val, "")
+		c.builder().latestReturnType = Var.typ
 	} else { // non-primitives are used by pointer
 		c.builder().latestReturn = Var.val
+		c.builder().latestReturnType = c.getReferenceType(Var.typ)
 	}
-	c.builder().latestReturnType = Var.typ
 	c.builder().latestIsTemp = false
 	return ast.VisitRecurse
 }
@@ -1081,25 +1081,33 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		return ast.VisitRecurse
 	case ast.BIN_FIELD_ACCESS:
 		rhs, rhsTyp, rhsIsTemp := c.evaluate(e.Rhs)
-		if structType, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
-			fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
-			fieldType := structType.fieldIrTypes[fieldIndex]
-			fieldPtr := c.indexStruct(structType.typ, rhs, fieldIndex)
-			if fieldType.TriviallyCopyable() {
-				c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
-			} else if !rhsIsTemp {
-				c.builder().latestReturn, c.builder().latestIsTemp = fieldPtr, false
-			} else {
-				dest := c.NewAlloca(fieldType.LLType())
-				c.builder().CreateStore(c.builder().CreateLoad(fieldType.LLType(), fieldPtr, ""), dest)
-				c.builder().CreateStore(fieldType.DefaultValue(), fieldPtr)
-				c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(dest, fieldType)
-				c.builder().latestIsTemp = true
-			}
-			c.builder().latestReturnType = fieldType
-		} else {
+
+		rhsRefTyp, isRefRhs := rhsTyp.(*ddpIrReferenceType)
+		if isRefRhs {
+			rhsTyp = rhsRefTyp.underlying
+		}
+
+		structType, isStruct := rhsTyp.(*ddpIrStructType)
+		if !isStruct {
 			c.err("invalid Parameter Types for VON (%s)", rhsTyp.Name())
 		}
+
+		fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
+		fieldType := structType.fieldIrTypes[fieldIndex]
+		fieldPtr := c.indexStruct(structType.typ, rhs, fieldIndex)
+		if fieldType.TriviallyCopyable() && !isRefRhs {
+			c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
+		} else if !rhsIsTemp {
+			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = fieldPtr, c.getReferenceType(fieldType), false
+			return ast.VisitRecurse
+		} else {
+			dest := c.NewAlloca(fieldType.LLType())
+			c.builder().CreateStore(c.builder().CreateLoad(fieldType.LLType(), fieldPtr, ""), dest)
+			c.builder().CreateStore(fieldType.DefaultValue(), fieldPtr)
+			c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(dest, fieldType)
+			c.builder().latestIsTemp = true
+		}
+		c.builder().latestReturnType = fieldType
 		return ast.VisitRecurse
 	}
 
@@ -1384,42 +1392,42 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.builder().latestReturn = c.builder().createCall(c.ddpstring.indexIrFun, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			c.builder().latestReturnType = c.ddpchartyp
 		default:
-			if listType, isList := lhsTyp.(*ddpIrListType); isList {
-				listLen := c.loadStructField(listType.typ, lhs, list_len_field_index)
-				index := c.builder().CreateSub(c.floatOrByteAsInt(rhs, rhsTyp), c.newInt(1), "") // ddp indices start at 1, so subtract 1
-				// index bounds check
-				cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
-				c.createIfElse(cond, func() {
-					listArr := c.loadStructField(listType.typ, lhs, list_arr_field_index)
-					elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
-					// if the list is a temporary, we need to copy the element
-					if isTempLhs {
-						if listType.elementType.TriviallyCopyable() { // primitives are simply loaded
-							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
-						} else {
-							dest := c.NewAlloca(listType.elementType.LLType())
-							c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(
-								c.deepCopyInto(dest, elementPtr, listType.elementType),
-								listType.elementType,
-							)
-							c.builder().latestIsTemp = true // the element is now also a temporary
-						}
-					} else {
-						if listType.elementType.TriviallyCopyable() {
-							c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
-						} else { // the list is not temporary, so a reference to the element is enough
-							c.builder().latestReturn = elementPtr
-							c.builder().latestIsTemp = false
-						}
-					}
-				}, func() { // runtime error
-					line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-					c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
-				})
-				c.builder().latestReturnType = listType.elementType
-			} else {
+			lhsRefType, isRefLhs := lhsTyp.(*ddpIrReferenceType)
+			if isRefLhs {
+				lhsTyp = lhsRefType.underlying
+			}
+
+			listType, isList := lhsTyp.(*ddpIrListType)
+			if !isList {
 				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
 			}
+
+			listLen := c.loadStructField(listType.typ, lhs, list_len_field_index)
+			index := c.builder().CreateSub(c.floatOrByteAsInt(rhs, rhsTyp), c.newInt(1), "") // ddp indices start at 1, so subtract 1
+			// index bounds check
+			cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
+			c.createIfElse(cond, func() {
+				listArr := c.loadStructField(listType.typ, lhs, list_arr_field_index)
+				elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
+
+				if listType.elementType.TriviallyCopyable() && !isRefLhs {
+					c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
+				} else if !isTempLhs {
+					c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = elementPtr, c.getReferenceType(listType.elementType), false
+					return
+				} else {
+					dest := c.NewAlloca(listType.elementType.LLType())
+					c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(
+						c.deepCopyInto(dest, elementPtr, listType.elementType),
+						listType.elementType,
+					)
+					c.builder().latestIsTemp = true // the element is now also a temporary
+				}
+			}, func() { // runtime error
+				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+				c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
+			})
+			c.builder().latestReturnType = listType.elementType
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
 		dest := c.NewAlloca(lhsTyp.LLType())
@@ -2101,54 +2109,58 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
 func (c *compiler) evaluateAssignableOrReference(ass ast.Expression, as_ref bool) (llvm.Value, ddpIrType, *ast.BinaryExpr) {
-	switch assign := ass.(type) {
-	case *ast.Ident:
-		Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
-		if ddptypes.IsReference(Var.typ.DDPType()) {
-			return c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, nil
-		}
-		return Var.val, Var.typ, nil
-	case *ast.BinaryExpr:
-		switch assign.Operator {
-		case ast.BIN_INDEX:
-			lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
-			if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-				index, indexTyp, _ := c.evaluate(assign.Rhs)
-				index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
-				listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
-				var elementPtr llvm.Value
+	val, valTyp, _ := c.evaluate(ass)
+	return val, valTyp, nil
+	/*
+		switch assign := ass.(type) {
+		case *ast.Ident:
+			Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
+			if ddptypes.IsReference(Var.typ.DDPType()) {
+				return c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, nil
+			}
+			return Var.val, Var.typ, nil
+		case *ast.BinaryExpr:
+			switch assign.Operator {
+			case ast.BIN_INDEX:
+				lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
+				if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
+					index, indexTyp, _ := c.evaluate(assign.Rhs)
+					index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
+					listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
+					var elementPtr llvm.Value
 
-				cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
-				c.createIfElse(cond, func() {
-					listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
-					elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
-				}, func() { // runtime error
-					line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
-					c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
-				})
-				return elementPtr, listTyp.elementType, nil
-			} else if !as_ref && lhsTyp == c.ddpstring {
-				return lhs, lhsTyp, assign
-			} else {
-				c.err("non-list/string/struct type passed as assignable/reference")
+					cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
+					c.createIfElse(cond, func() {
+						listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
+						elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
+					}, func() { // runtime error
+						line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
+						c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
+					})
+					return elementPtr, listTyp.elementType, nil
+				} else if !as_ref && lhsTyp == c.ddpstring {
+					return lhs, lhsTyp, assign
+				} else {
+					c.err("non-list/string/struct type passed as assignable/reference")
+				}
+			case ast.BIN_FIELD_ACCESS:
+				rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
+				if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
+					fieldIndex := getFieldIndex(assign.Lhs.(*ast.Ident).Literal.Literal, structTyp)
+					fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
+					return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
+				} else {
+					c.err("non-struct type passed to FieldAccess")
+				}
+			default:
+				c.err("Invalid binary operator in evaluateAssignableOrReference: %s", assign.Operator)
 			}
-		case ast.BIN_FIELD_ACCESS:
-			rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
-			if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
-				fieldIndex := getFieldIndex(assign.Lhs.(*ast.Ident).Literal.Literal, structTyp)
-				fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
-				return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
-			} else {
-				c.err("non-struct type passed to FieldAccess")
-			}
-		default:
-			c.err("Invalid binary operator in evaluateAssignableOrReference: %s", assign.Operator)
+		case *ast.CastExpr:
+			return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
 		}
-	case *ast.CastExpr:
-		return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
-	}
-	c.err("Invalid types in evaluateAssignableOrReference: %s", ass)
-	return llvm.Value{}, nil, nil
+		c.err("Invalid types in evaluateAssignableOrReference: %s", ass)
+		return llvm.Value{}, nil, nil
+	*/
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
@@ -2182,18 +2194,13 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	for _, param := range fun.funcDecl.Parameters {
 		var val llvm.Value
 
-		// differentiate between references and normal parameters
-		if ddptypes.IsReference(param.Type) {
-			val, _, _ = c.evaluateAssignableOrReference(e.Args[param.Name.Literal], true)
-		} else {
-			eval, valTyp, isTemp := c.evaluate(e.Args[param.Name.Literal]) // compile each argument for the function
-			if valTyp.TriviallyCopyable() {
-				val = eval
-			} else { // function parameters need to be copied by the caller
-				dest := c.NewAlloca(valTyp.LLType())
-				c.claimOrCopy(dest, eval, valTyp, isTemp)
-				val = dest // do not add it to the temporaries, as the callee will free it
-			}
+		eval, valTyp, isTemp := c.evaluate(e.Args[param.Name.Literal]) // compile each argument for the function
+		if valTyp.TriviallyCopyable() {
+			val = eval
+		} else { // function parameters need to be copied by the caller
+			dest := c.NewAlloca(valTyp.LLType())
+			c.claimOrCopy(dest, eval, valTyp, isTemp)
+			val = dest // do not add it to the temporaries, as the callee will free it
 		}
 
 		args = append(args, val) // add the value to the arguments
@@ -2361,7 +2368,7 @@ func (c *compiler) declareImportedVarDecl(decl *ast.VarDecl) {
 	globalDecl.SetLinkage(llvm.ExternalLinkage)
 	globalDecl.SetVisibility(llvm.DefaultVisibility)
 
-	scp.addProtected(decl, globalDecl, Typ, false) // freed by module_dispose
+	scp.addProtected(decl, globalDecl, Typ) // freed by module_dispose
 }
 
 func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
@@ -2723,9 +2730,9 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	c.builder().setBlock(loopStart)
 	irType := c.toIrType(s.Initializer.Type)
-	c.scp.addProtected(s.Initializer, c.NewAlloca(irType.LLType()), irType, false)
+	c.scp.addProtected(s.Initializer, c.NewAlloca(irType.LLType()), irType)
 	if s.Index != nil {
-		c.scp.addVar(s.Index, index, c.ddpinttyp, false)
+		c.scp.addVar(s.Index, index, c.ddpinttyp)
 		c.builder().CreateStore(c.newInt(1), index)
 	}
 	c.builder().CreateBr(condBlock)
@@ -2846,9 +2853,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 
 		for scp := c.scp; scp != c.fnScope; scp = scp.enclosing {
 			for _, Var := range scp.variables {
-				if !Var.isRef {
-					c.freeNonPrimitive(Var.val, Var.typ)
-				}
+				c.freeNonPrimitive(Var.val, Var.typ)
 			}
 			c.freeTemporaries(scp, true)
 		}

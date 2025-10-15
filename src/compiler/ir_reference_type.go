@@ -58,7 +58,7 @@ func (t *ddpIrReferenceType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
-func (c *compiler) defineReferenceType(t ddptypes.ReferenceType) *ddpIrReferenceType {
+func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType, declarationOnly bool) *ddpIrReferenceType {
 	if r, ok := c.refTypes[t]; ok {
 		return r
 	}
@@ -67,7 +67,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType) *ddpIrReference
 		typ:          c.ptr,
 		defaultValue: c.Null,
 		ddpType:      t,
-		underlying:   c.toIrType(t.Type),
+		underlying:   underlying,
 		name:         strings.ReplaceAll(t.String(), " ", "_"),
 	}
 
@@ -75,15 +75,15 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType) *ddpIrReference
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	// if !declarationOnly {
-	vtable.SetGlobalConstant(true)
-	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
-		llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
-		ddp_free_ref_type_irfun, // TODO: this should probably not be null
-		llvm.ConstNull(c.ptr),
-		llvm.ConstNull(c.ptr),
-	}))
-	// }
+	if !declarationOnly {
+		vtable.SetGlobalConstant(true)
+		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+			llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
+			ddp_free_ref_type_irfun, // TODO: this should probably not be null
+			llvm.ConstNull(c.ptr),
+			llvm.ConstNull(c.ptr),
+		}))
+	}
 
 	refType.vtable = vtable
 

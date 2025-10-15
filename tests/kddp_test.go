@@ -231,7 +231,10 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		} else {
 			// error if 'out' was not the expected output
 			if out, expected := normalize_lineendings(string(out)), normalize_lineendings(string(expected)); out != expected {
-				diff, err := get_diff(filepath.Join(path, "expected.txt"), out)
+				if err := dump_file(filepath.Join(path, "expected_cleaned.txt"), expected); err != nil {
+					t.Errorf("Error dumping output: %s", err)
+				}
+				diff, err := get_diff(filepath.Join(path, "expected_cleaned.txt"), out)
 				if err != nil {
 					t.Errorf("Error getting diff: %s", err)
 				}

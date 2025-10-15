@@ -124,6 +124,7 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	list.vtable = vtable
 	list.defaultValue = llvm.ConstNull(list.typ)
 
+	c.defineReferenceType(ddptypes.ReferenceType{Type: list.DDPType()}, list, declarationOnly)
 	return list
 }
 

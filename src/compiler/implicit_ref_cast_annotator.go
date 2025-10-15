@@ -100,6 +100,7 @@ func (a *ImplicitRefCastAnnotator) VisitIdent(e *ast.Ident) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+// TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitListLit(e *ast.ListLit) ast.VisitResult {
 	if e.Values != nil {
 		for _, v := range e.Values {
@@ -130,8 +131,15 @@ func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitR
 		// TODO
 		return ast.VisitRecurse
 	}
-	a.annotateDeref(e.Lhs)
-	a.annotateDeref(e.Rhs)
+	switch e.Operator {
+	case ast.BIN_INDEX:
+		a.annotateDeref(e.Rhs)
+	case ast.BIN_FIELD_ACCESS:
+		a.annotateDeref(e.Lhs)
+	default:
+		a.annotateDeref(e.Lhs)
+		a.annotateDeref(e.Rhs)
+	}
 	return ast.VisitRecurse
 }
 
@@ -148,6 +156,8 @@ func (a *ImplicitRefCastAnnotator) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visi
 
 func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	for k, expr := range e.Args {
+		a.Visit(expr)
+		a.clearAnnotation(expr)
 		var paramType ddptypes.Type
 		for _, param := range e.Func.Parameters {
 			if param.Name.Literal == k {
@@ -162,9 +172,10 @@ func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResul
 			a.annotateFromRef(expr)
 		}
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
+// TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
 	for k, expr := range e.Args {
 		var paramType ddptypes.Type
@@ -191,6 +202,7 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 
 	a.Visit(s.Var)
 	a.Visit(s.Rhs)
+	a.clearAnnotation(s.Var)
 	a.clearAnnotation(s.Rhs)
 	// if ddptypes.IsReferenceTo(s.VarType, s.RhsType) {
 	// 	a.annotateToRef(s.Rhs)
@@ -222,6 +234,7 @@ func (a *ImplicitRefCastAnnotator) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Vi
 	return ast.VisitRecurse
 }
 
+// TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	t := a.typeOf(s.Value)
 	if ddptypes.IsReferenceTo(s.Func.ReturnType, t) {
