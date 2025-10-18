@@ -2668,15 +2668,19 @@ func (c *compiler) VisitForStmt(s *ast.ForStmt) ast.VisitResult {
 	c.builder().CreateCondBr(cond, loopDown, loopUp)
 
 	c.builder().setBlock(loopUp)
-	// we are counting up, so compare less-or-equal
+	c.scp = newScope(c.scp) // new scope to not create a double-free from s.To
 	to, toType, _ := c.evaluate(s.To)
+	// we are counting up, so compare less-or-equal
 	cond = new_IorF_comp(llvm.IntSLE, llvm.FloatOLE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
+	c.scp = c.exitScope(c.scp)
 	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
 	c.builder().setBlock(loopDown)
-	// we are counting down, so compare greater-or-equal
+	c.scp = newScope(c.scp) // new scope to not create a double-free from s.To
 	to, toType, _ = c.evaluate(s.To)
+	// we are counting down, so compare greater-or-equal
 	cond = new_IorF_comp(llvm.IntSGE, llvm.FloatOGE, c.builder().CreateLoad(indexTyp.LLType(), indexVar, ""), indexTyp, to, toType, to)
+	c.scp = c.exitScope(c.scp)
 	c.builder().CreateCondBr(cond, forBody, leaveBlock)
 
 	trueLeave := c.builder().newBlock()
