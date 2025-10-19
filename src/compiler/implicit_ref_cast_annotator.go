@@ -26,6 +26,7 @@ func (m ImplicitRefCastMeta) Kind() ast.MetadataKind {
 
 type ImplicitRefCastAnnotator struct {
 	ast.BaseVisitor
+	visitedGenericInstantiations map[*ast.FuncDecl]struct{}
 }
 
 var (
@@ -133,9 +134,22 @@ func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitR
 	}
 	switch e.Operator {
 	case ast.BIN_INDEX:
+		a.Visit(e.Lhs)
+		a.Visit(e.Rhs)
 		a.annotateDeref(e.Rhs)
+		a.clearAnnotation(e.Lhs)
+		if !ddptypes.IsReference(a.typeOf(e.Lhs)) {
+			a.annotateDeref(e)
+		}
+		return ast.VisitSkipChildren
 	case ast.BIN_FIELD_ACCESS:
-		a.annotateDeref(e.Lhs)
+		a.Visit(e.Lhs)
+		a.Visit(e.Rhs)
+		a.clearAnnotation(e.Rhs)
+		if !ddptypes.IsReference(a.typeOf(e.Rhs)) {
+			a.annotateDeref(e)
+		}
+		return ast.VisitSkipChildren
 	default:
 		a.annotateDeref(e.Lhs)
 		a.annotateDeref(e.Rhs)
@@ -155,6 +169,14 @@ func (a *ImplicitRefCastAnnotator) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visi
 }
 
 func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
+	if _, ok := a.visitedGenericInstantiations[e.Func]; ast.IsGenericInstantiation(e.Func) && !ok {
+		if a.visitedGenericInstantiations == nil {
+			a.visitedGenericInstantiations = make(map[*ast.FuncDecl]struct{})
+		}
+		a.visitedGenericInstantiations[e.Func] = struct{}{}
+		a.Visit(e.Func)
+	}
+
 	for k, expr := range e.Args {
 		a.Visit(expr)
 		a.clearAnnotation(expr)
@@ -175,9 +197,10 @@ func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResul
 	return ast.VisitSkipChildren
 }
 
-// TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
 	for k, expr := range e.Args {
+		a.Visit(expr)
+		a.clearAnnotation(expr)
 		var paramType ddptypes.Type
 		for _, field := range e.Type.Fields {
 			if field.Name == k {

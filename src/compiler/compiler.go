@@ -350,9 +350,8 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Valu
 			if ty.TriviallyCopyable() {
 				val = c.builder().CreateLoad(ty.LLType(), val, "")
 			} else {
-				dest := c.NewAlloca(ty.LLType())
-				val, _ = c.scp.addTemporary(c.deepCopyInto(dest, val, ty), ty)
-				isTemp = true
+				// just make sure the value is treated as a temporary
+				isTemp = false
 			}
 
 			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = val, ty, isTemp
@@ -1095,6 +1094,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		fieldIndex := getFieldIndex(e.Lhs.Token().Literal, structType)
 		fieldType := structType.fieldIrTypes[fieldIndex]
 		fieldPtr := c.indexStruct(structType.typ, rhs, fieldIndex)
+
 		if fieldType.TriviallyCopyable() && !isRefRhs {
 			c.builder().latestReturn = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 		} else if !rhsIsTemp {
@@ -1411,7 +1411,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 
 				if listType.elementType.TriviallyCopyable() && !isRefLhs {
-					c.builder().latestReturn = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, "")
+					c.builder().latestReturn, c.builder().latestReturnType = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
 				} else if !isTempLhs {
 					c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = elementPtr, c.getReferenceType(listType.elementType), false
 					return
@@ -1427,7 +1427,6 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
 				c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
 			})
-			c.builder().latestReturnType = listType.elementType
 		}
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
 		dest := c.NewAlloca(lhsTyp.LLType())
