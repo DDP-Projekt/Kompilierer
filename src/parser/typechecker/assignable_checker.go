@@ -2,6 +2,7 @@ package typechecker
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
 
 // casts the given expression to an assigneable
@@ -19,6 +20,10 @@ func isAssignable(expr ast.Expression) (ast.Assigneable, bool) {
 	case *ast.CastExpr:
 		// overloaded expressions cannot be assignables
 		if ass.OverloadedBy != nil {
+			return nil, false
+		}
+
+		if ddptypes.Equal(ddptypes.TrueUnderlying(ass.LhsType), ddptypes.VARIABLE) && !ddptypes.Equal(ddptypes.TrueUnderlying(ass.TargetType), ddptypes.VARIABLE) {
 			return nil, false
 		}
 

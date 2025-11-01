@@ -512,6 +512,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 
 func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
+	expr.LhsType = lhs
 	castErr := func() {
 		t.errExpr(ddperror.TYP_BAD_CAST, expr, "Ein Ausdruck vom Typ %s kann nicht in den Typ %s umgewandelt werden", lhs, expr.TargetType)
 	}
@@ -590,6 +591,9 @@ func (t *Typechecker) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitR
 	lhs := t.Evaluate(expr.Lhs)
 	if !ddptypes.Equal(ddptypes.TrueUnderlying(lhs), ddptypes.TrueUnderlying(expr.TargetType)) {
 		t.err(ddperror.TYP_BAD_CAST, expr.GetRange(), "Falsche Nutzung einer Typumwandlung in einem Referenz Kontext")
+	}
+	if ddptypes.Equal(ddptypes.TrueUnderlying(lhs), ddptypes.VARIABLE) && !ddptypes.Equal(ddptypes.TrueUnderlying(expr.TargetType), ddptypes.VARIABLE) {
+		t.err(ddperror.TYP_BAD_CAST, expr.GetRange(), "Variablen Casts können nicht als Referenzen verwendet werden")
 	}
 	t.latestReturnedType = expr.TargetType
 	return ast.VisitRecurse

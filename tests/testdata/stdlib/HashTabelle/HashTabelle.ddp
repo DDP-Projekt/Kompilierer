@@ -87,4 +87,18 @@ Für jede Zahl i von 1 bis die Länge von test_werte, mache:
 	Wenn wert ungleich (test_werte an der Stelle i) ist, dann:
 		Löse einen Laufzeitfehler mit der Nachricht "wert ungleich 3" und dem Code 1 aus.
 
+Die Funktion Neue_Tabelle gibt eine Zahl-Text-HashTabelle zurück, macht:
+	Die Zahl-Text-HashTabelle zt ist der Standardwert von einer Zahl-Text-HashTabelle.
+	Setze den Wert von 0 in zt auf "0".
+	Setze den Wert von 1 in zt auf "1".
+	Setze den Wert von 2 in zt auf "2".
+	Gib zt zurück.
+Und kann so benutzt werden:
+	"einer neuen Tabelle",
+	"eine neue Tabelle"
+
+Schreibe (0 in (einer neuen Tabelle) enthalten ist) auf eine Zeile.
+Schreibe (3 in (einer neuen Tabelle) enthalten ist) auf eine Zeile.
+Schreibe ((eine neue Tabelle) an der Stelle 1) auf eine Zeile.
+
 Schreibe "Erfolg" auf eine Zeile.

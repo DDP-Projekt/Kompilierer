@@ -110,7 +110,7 @@ Die öffentliche Funktion Setze_Fehler mit dem Parameter Fehler vom Typ Text, gi
 	Speichere wahr in Fehlermeldung_Valide.
 
 	Wenn (Fehlerbehandlungs_Methode logisch und SchreibeFehlerFlag) größer als 0 ist, dann:
-		Schreibe den Fehler Fehlermeldung.
+		Schreibe den Fehler ("DDP Fehler: " verkettet mit Fehlermeldung verkettet mit '\n').
 
 	Wenn (Fehlerbehandlungs_Methode logisch und LaufzeitfehlerFlag) größer als 0 ist, dann:
 		Löse einen Laufzeitfehler mit der Nachricht Fehlermeldung und dem Code 1 aus.

@@ -123,6 +123,10 @@ Die öffentliche generische Funktion Tabelle_Zu_Text mit dem Parameter tabelle v
 	Gib b als Text zurück.
 Und überlädt den "als" Operator.
 
+Die öffentliche generische Funktion Tabelle_Zu_Text_Wert mit dem Parameter tabelle vom Typ S-W-HashTabelle, gibt einen Text zurück, macht:
+	Gib tabelle als Text zurück.
+Und überlädt den "als" Operator.
+
 Die generische Funktion Finde_Eintrag mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S Referenz, gibt eine Zahl zurück, macht:
 	Die Zahl index ist der Hash von schlüssel modulo der Kapazität von tabelle plus 1.
 	Die Zahl grabstein_index ist -1.
@@ -198,6 +202,10 @@ Die öffentliche generische Funktion Tabellen_Wert_Lesen mit den Parametern tabe
 	Gib Wert von (einträge von tabelle an der Stelle eintrag_index) zurück.
 Und überlädt den "an der Stelle" Operator.
 
+Die öffentliche generische Funktion Tabellen_Wert_Lesen_Wert mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle und S, gibt einen W zurück, macht:
+	Gib tabelle an der Stelle schlüssel zurück.
+Und überlädt den "an der Stelle" Operator.
+
 Die öffentliche generische Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen Wahrheitswert zurück, macht:
 	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
 		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
@@ -205,6 +213,12 @@ Die öffentliche generische Funktion Tabelle_Hat_Schlüssel mit den Parametern t
 
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Gib falsch, wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, zurück.
+Und kann so benutzt werden:
+	"<schlüssel> <!nicht> in <tabelle> enthalten ist",
+	"<tabelle> <schlüssel> <!nicht> enthält"
+
+Die öffentliche generische Funktion Tabelle_Hat_Schlüssel_Wert mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle und S, gibt einen Wahrheitswert zurück, macht:
+	Gib wahr, wenn tabelle schlüssel enthält, zurück.
 Und kann so benutzt werden:
 	"<schlüssel> <!nicht> in <tabelle> enthalten ist",
 	"<tabelle> <schlüssel> <!nicht> enthält"
@@ -238,6 +252,12 @@ Die öffentliche generische Funktion Tabellen_Einträge mit dem Parameter tabell
 			Speichere (einträge von tabelle an der Stelle i) in (einträge an der Stelle j).
 			Erhöhe j um 1.
 	Gib einträge bis zum (j minus 1). Element zurück.
+Und kann so benutzt werden:
+	"die Einträge von <tabelle>",
+	"alle Einträge von <tabelle>"
+
+Die öffentliche generische Funktion Tabellen_Einträge_Wert mit dem Parameter tabelle vom Typ S-W-HashTabelle, gibt eine S-W-Eintrag Liste zurück, macht:
+	Gib die Einträge von tabelle zurück.
 Und kann so benutzt werden:
 	"die Einträge von <tabelle>",
 	"alle Einträge von <tabelle>"

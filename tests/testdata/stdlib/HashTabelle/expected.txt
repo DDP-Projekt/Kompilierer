@@ -9,4 +9,7 @@ wahr
 1,5
 1,5
 fuzz
+wahr
+falsch
+1
 Erfolg

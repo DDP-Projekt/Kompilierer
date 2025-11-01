@@ -118,6 +118,7 @@ type (
 		Range        token.Range
 		TargetType   ddptypes.Type
 		Lhs          Expression
+		LhsType      ddptypes.Type // filled in by the typechecker
 		OverloadedBy *OperatorOverload
 	}
 
