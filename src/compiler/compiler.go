@@ -356,20 +356,24 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Valu
 
 			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = val, ty, isTemp
 		}
-		if to != nil {
-			c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = c.numericCast(val, ty, to), to, false
+		if _, ok := ty.(*ddpIrPrimitiveType); to != nil && ok {
+			return c.numericCast(val, ty, to), to, false
 		}
+		return val, ty, isTemp
 	} else if c.isPromotedToRefImplicitly(expr) {
-		if to != nil {
+		if _, ok := ty.(*ddpIrPrimitiveType); to != nil && ok {
 			val, ty, isTemp = c.numericCast(val, ty, to), to, false
 		}
 		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, ty.VTable())
 		// c.builder().CreateStore(val, ref)
 		c.claimOrCopy(ref, val, ty, isTemp)
-		c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = ref, c.getReferenceType(ty), false
+		return ref, c.getReferenceType(ty), false
 	}
 
-	return c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp
+	if _, ok := ty.(*ddpIrPrimitiveType); to != nil && ok {
+		return c.numericCast(val, ty, to), to, false
+	}
+	return val, ty, isTemp
 }
 
 // wether expr gets implicitly dereferenced as annotated
@@ -610,7 +614,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		// implicit numeric casts
 		if ddptypes.IsNumericDeref(d.Type) && ddptypes.IsNumericDeref(d.InitType) {
 			numericType := Typ
-			if ref, ok := numericType.(*ddpIrReferenceType); ok {
+			for ref, ok := numericType.(*ddpIrReferenceType); ok; ref, ok = numericType.(*ddpIrReferenceType) {
 				numericType = ref.underlying
 			}
 			initVal, initTyp, isTemp = c.evaluateNumeric(d.InitVal, numericType) // evaluate the initial value
@@ -2438,7 +2442,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	// implicit numeric casts
 	if ddptypes.IsNumericDeref(s.VarType) && ddptypes.IsNumericDeref(s.RhsType) {
 		numericType := c.toIrType(s.VarType)
-		if ref, ok := numericType.(*ddpIrReferenceType); ok {
+		for ref, ok := numericType.(*ddpIrReferenceType); ok; ref, ok = numericType.(*ddpIrReferenceType) {
 			numericType = ref.underlying
 		}
 		rhs, rhsTyp, isTempRhs = c.evaluateNumeric(s.Rhs, numericType) // evaluate the initial value

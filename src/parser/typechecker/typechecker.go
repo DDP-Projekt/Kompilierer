@@ -243,14 +243,11 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	} else {
 		switch decl := decl.(type) {
 		case *ast.VarDecl:
-			if !ddptypes.IsReference(decl.Type) {
-				t.latestReturnedType = ddptypes.ReferenceType{Type: decl.Type}
-			} else {
-				t.latestReturnedType = decl.Type
-			}
+			t.latestReturnedType = ddptypes.ReferenceType{Type: decl.Type}
 		case *ast.ConstDecl:
 			t.latestReturnedType = decl.Type
 		default:
+			t.latestReturnedType = ddptypes.VoidType{}
 		}
 	}
 	return ast.VisitRecurse
@@ -530,7 +527,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	targetTypeDef, isTargetTypeDef := ddptypes.CastTypeDefDeref(expr.TargetType)
 	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDefDeref(lhs)
 
-	targetRef, isTargetRef := ddptypes.CastReference(expr.TargetType)
+	targetRef, _, isTargetRef := ddptypes.CastReference(expr.TargetType)
 
 	if ddptypes.IsAny(lhs) || (ddptypes.IsAny(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
 		// casts from/to any are always valid but might error at runtime
@@ -653,7 +650,7 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 		// 		t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
 		// 	}
 		// }
-		if !ddptypes.Equal(argType, paramType) && !ddptypes.Equal(ddptypes.Deref(argType), paramType) {
+		if !ddptypes.Equal(argType, paramType) && !ddptypes.IsDereferencableTo(argType, paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
@@ -720,16 +717,27 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	target := t.Evaluate(stmt.Var)
 	stmt.VarType = target
 
-	typesDontMatch := !ddptypes.EqualDeref(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.EqualDeref(rhs, ddptypes.VoidType{}))
-	numericCastPossible := ddptypes.IsNumericDeref(target) && ddptypes.IsNumericDeref(rhs)
+	// typesDontMatch := !ddptypes.EqualDeref(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.EqualDeref(rhs, ddptypes.VoidType{}))
 
-	if typesDontMatch && !numericCastPossible {
+	targetRef, _, isTargetRef := ddptypes.CastReference(target)
+	if !isTargetRef {
+		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
+			"Ein Wert vom Typ %s kann keinem Wert vom Typ %s zugewiesen werden, da dieser kein Referenz Typ ist",
+			rhs,
+			target,
+		)
+		return ast.VisitRecurse
+	}
+
+	numericCastPossible := ddptypes.IsNumericDeref(target) && ddptypes.IsNumericDeref(rhs)
+	if !ddptypes.IsReferenceTo(target, rhs) && !(ddptypes.IsDereferencableTo(rhs, targetRef.Type)) && !numericCastPossible && !ddptypes.EqualDeref(target, ddptypes.VARIABLE) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,
 			target,
 		)
 	}
+
 	return ast.VisitRecurse
 }
 
@@ -912,10 +920,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 		}
 	}
 
-	if ddptypes.IsReference(originalType) {
-		return ddptypes.ReferenceType{Type: fieldType}
-	}
-	return fieldType
+	return ddptypes.ReferenceType{Type: fieldType}
 }
 
 // reports wether the given type from this module of the given table is public

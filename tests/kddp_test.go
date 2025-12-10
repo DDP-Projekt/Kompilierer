@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"flag"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -16,28 +15,26 @@ import (
 )
 
 var (
-	test_dirs_flag = flag.String("test_dirs", "", "")
-	kddp_args_flag = flag.String("kddp_args", "", "")
-	test_dirs      []string
-	kddp_args      []string
-	timeout        = time.Second * 10
-	diff_cmd       = ""
+	test_dirs []string
+	kddp_args []string
+	timeout   = time.Second * 10
+	diff_cmd  = ""
 )
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-	test_dirs = strings.Split(*test_dirs_flag, " ")
-	if *test_dirs_flag == "" {
+func init() {
+	test_dirs_env, _ := os.LookupEnv("DDPTEST_TEST_DIRS")
+	test_dirs = strings.Split(test_dirs_env, " ")
+	if test_dirs_env == "" {
 		test_dirs = []string{}
 	}
-	kddp_args = strings.Split(*kddp_args_flag, " ")
-	if *kddp_args_flag == "" {
+	kddp_args_env, _ := os.LookupEnv("DDPTEST_KDDP_ARGS")
+	kddp_args = strings.Split(kddp_args_env, " ")
+	if kddp_args_env == "" {
 		kddp_args = []string{}
 	}
 	if cmd, err := exec.LookPath("diff"); err == nil {
 		diff_cmd = cmd
 	}
-	os.Exit(m.Run())
 }
 
 func TestKDDP(t *testing.T) {

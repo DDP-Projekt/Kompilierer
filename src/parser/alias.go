@@ -341,7 +341,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					underlyingParamType = ddptypes.UnifyGenericType(typ, paramType, genericTypes)
 
 					// account for the possibility of unifying param=T with arg=T Referenz
-					if refType, isRef := ddptypes.CastReference(typ); !ddptypes.EqualDeref(typ, underlyingParamType) && isRef {
+					if refType, _, isRef := ddptypes.CastReference(typ); !ddptypes.EqualDeref(typ, underlyingParamType) && isRef {
 						underlyingParamType = ddptypes.UnifyGenericType(refType.Type, paramType, genericTypes)
 					}
 				}

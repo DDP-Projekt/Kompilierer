@@ -122,3 +122,19 @@ Schreibe (y von vec2) auf eine Zeile.
 Schreibe (x von basis von vec3) auf eine Zeile.
 Schreibe (y von basis von vec3) auf eine Zeile.
 Schreibe (z von vec3) auf eine Zeile.
+
+Die Funktion As_Ref mit dem Parameter x vom Typ Zahlen Referenz, gibt eine Zahlen Referenz zurück, macht:
+	Gib x zurück.
+Und kann so benutzt werden:
+	"ref(<x>)"
+
+Die Zahl x ist 2.
+Die Zahlen Referenz y ist ref(x).
+
+Schreibe x auf eine Zeile.
+Schreibe y auf eine Zeile.
+
+Speichere 3 in y.
+
+Schreibe x auf eine Zeile.
+Schreibe y auf eine Zeile.

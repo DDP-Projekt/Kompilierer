@@ -166,20 +166,37 @@ func CastGenericStructType(t Type) (*GenericStructType, bool) {
 }
 
 func IsReference(t Type) bool {
-	_, ok := CastReference(t)
+	_, _, ok := CastReference(t)
 	return ok
 }
 
-func CastReference(t Type) (ReferenceType, bool) {
-	t = GetUnderlying(t)
-	reference, ok := t.(ReferenceType)
-	return reference, ok
+func CastReference(t Type) (ReferenceType, Type, bool) {
+	reference, isRef := GetUnderlying(t).(ReferenceType)
+	for ref, ok := reference, isRef; ok; ref, ok = GetUnderlying(t).(ReferenceType) {
+		t = ref.Type
+	}
+	return reference, t, isRef
 }
 
 // wether a is a reference to b
 func IsReferenceTo(a, b Type) bool {
-	aRef, isARef := CastReference(a)
-	return isARef && Equal(aRef.Type, b)
+	_, aType, isARef := CastReference(a)
+	return isARef && Equal(aType, b)
+}
+
+func IsDereferencableTo(a, b Type) bool {
+	if Equal(a, b) {
+		return true
+	}
+
+	aRef, _, isaRef := CastReference(a)
+	for isaRef {
+		if Equal(aRef.Type, b) {
+			return true
+		}
+		aRef, _, isaRef = CastReference(aRef.Type)
+	}
+	return false
 }
 
 // gets the underlying type for nested lists and References
@@ -199,52 +216,16 @@ func GetNestedType(typ Type) Type {
 
 // if t is a Reference Type, the underlying Type is returned
 func Deref(t Type) Type {
-	if r, ok := CastReference(t); ok {
+	if r, _, ok := CastReference(t); ok {
 		return r.Type
 	}
 	return t
 }
 
-// trys to dereference src to target
-func TryDeref(src, target Type) Type {
-	srcRef, isSrcRef := CastReference(src)
-	targetRef, isTargetRef := CastReference(target)
-
-	if isSrcRef != isTargetRef {
-		srcU, targetU := cmp.Or(srcRef.Type, src), cmp.Or(targetRef.Type, target)
-		if Equal(srcU, targetU) {
-			return srcU
-		}
-	}
-
-	return src
-}
-
-// if only one of the two types is a reference, a deref is attempted
-// otherwise the original types are returned
-func TryDeref2(a, b Type) (Type, Type) {
-	ar, aref := CastReference(a)
-	br, bref := CastReference(b)
-
-	if aref != bref {
-		au, bu := cmp.Or(ar.Type, a), cmp.Or(br.Type, b)
-		if Equal(au, bu) {
-			return au, bu
-		}
-	}
-
-	return a, b
-}
-
-// helper function to apply a predicate with TryDeref
-func WithDeref[R any](ty, target Type, f func(Type) R) R {
-	return f(TryDeref(ty, target))
-}
-
 // wether p applies to either t or it's dereferenced type
 func MaybeDeref(t Type, p func(Type) bool) bool {
-	if t, ok := CastReference(t); ok {
-		return p(t.Type)
+	if _, t, ok := CastReference(t); ok {
+		return p(t)
 	}
 	return p(t)
 }
@@ -252,7 +233,13 @@ func MaybeDeref(t Type, p func(Type) bool) bool {
 // wether src can be assigned to dest directly or through an implicit deref of one of the types
 // Equal(TryDeref(src, dest), dest)
 func EqualDeref(src, dest Type) bool {
-	return Equal(TryDeref2(src, dest))
+	_, srcType, _ := CastReference(src)
+	_, destType, _ := CastReference(dest)
+
+	srcType = cmp.Or(srcType, src)
+	destType = cmp.Or(destType, dest)
+
+	return Equal(srcType, destType)
 }
 
 func IsListDeref(a Type) bool {
@@ -276,22 +263,22 @@ func IsGenericDeref(t Type) bool {
 }
 
 func CastListDeref(t Type) (ListType, bool) {
-	if ref, ok := CastReference(t); ok {
-		return CastList(ref.Type)
+	if _, t, ok := CastReference(t); ok {
+		return CastList(t)
 	}
 	return CastList(t)
 }
 
 func CastStructDeref(t Type) (*StructType, bool) {
-	if ref, ok := CastReference(t); ok {
-		return CastStruct(ref.Type)
+	if _, t, ok := CastReference(t); ok {
+		return CastStruct(t)
 	}
 	return CastStruct(t)
 }
 
 func CastTypeDefDeref(t Type) (*TypeDef, bool) {
-	if ref, ok := CastReference(t); ok {
-		return CastTypeDef(ref.Type)
+	if _, t, ok := CastReference(t); ok {
+		return CastTypeDef(t)
 	}
 	return CastTypeDef(t)
 }

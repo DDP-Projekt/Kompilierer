@@ -51,7 +51,7 @@ func (c *compiler) NewAlloca(elemType llvm.Type) llvm.Value {
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
 
-	if r, ok := ddptypes.CastReference(ddpType); ok {
+	if r, _, ok := ddptypes.CastReference(ddpType); ok {
 		return c.defineReferenceType(r, c.toIrType(r.Type), false)
 	}
 

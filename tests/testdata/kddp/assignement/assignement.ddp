@@ -24,3 +24,17 @@ Schreibe den Wahrheitswert b.
 Schreibe den Buchstaben ','.
 b ist falsch, wenn 1 ungleich 2 ist.
 Schreibe den Wahrheitswert b.
+Schreibe den Buchstaben '\n'.
+
+Die Zahl z1 ist 2.
+Die Zahl z2 ist 3.
+Schreibe z1.
+Schreibe den Buchstaben ','.
+Schreibe z2.
+Schreibe den Buchstaben ','.
+
+Speichere z2 in z1.
+
+Schreibe z1.
+Schreibe den Buchstaben ','.
+Schreibe z2.

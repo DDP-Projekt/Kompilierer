@@ -16,7 +16,7 @@ func (t ReferenceType) String() string {
 	}
 
 	if IsPrimitive(t.Type) {
-		switch t.Type.(PrimitiveType) {
+		switch GetUnderlying(t.Type).(PrimitiveType) {
 		case ZAHL, KOMMAZAHL:
 			return t.Type.String() + "en Referenz"
 		case BUCHSTABE:

@@ -219,10 +219,6 @@ func (a *ImplicitRefCastAnnotator) VisitStructLiteral(e *ast.StructLiteral) ast.
 }
 
 func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
-	if ddptypes.IsReferenceTo(s.RhsType, s.VarType) {
-		a.annotateFromRef(s.Rhs)
-	}
-
 	a.Visit(s.Var)
 	a.Visit(s.Rhs)
 	a.clearAnnotation(s.Var)
@@ -230,7 +226,11 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 	// if ddptypes.IsReferenceTo(s.VarType, s.RhsType) {
 	// 	a.annotateToRef(s.Rhs)
 	// } else
-	if ddptypes.IsReferenceTo(s.RhsType, s.VarType) {
+	_, varType, ok := ddptypes.CastReference(s.VarType)
+	if !ok {
+		varType = ddptypes.Deref(s.VarType)
+	}
+	if ddptypes.IsReferenceTo(s.RhsType, varType) {
 		a.annotateFromRef(s.Rhs)
 	}
 	return ast.VisitSkipChildren

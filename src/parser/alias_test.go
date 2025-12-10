@@ -771,3 +771,37 @@ Ende`),
 	assert.Nil(structTypeInstantiation)
 	assert.IsType(&ast.Ident{}, args["a"])
 }
+
+func TestGenericsFull(t *testing.T) {
+	assert := assert.New(t)
+
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `
+Die generische Funktion Setze_Auf_1 mit dem Parameter a vom Typ T Referenz, gibt nichts zurück, macht:
+	Speichere 1 als T in a.
+Und kann so benutzt werden:
+	"Setze <a> auf 1"
+
+Die generische Funktion Tausche_Und_Setze mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
+	Speichere a in b.
+	Setze a auf 1.
+Und kann so benutzt werden:
+	"Tausche <a> und <b>"
+
+Die Kommazahl kz ist 2,0.
+Die Kommazahl kz2 ist 5,0.
+Tausche kz und kz2.
+		`),
+	})
+
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	assert.False(given.errored)
+	assert.Equal(4, len(given.module.Ast.Statements))
+
+	call := given.alias().(*ast.FuncCall)
+	assert.False(given.errored)
+	assert.IsType(call, call)
+}

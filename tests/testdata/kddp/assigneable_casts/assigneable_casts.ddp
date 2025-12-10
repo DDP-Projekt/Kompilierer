@@ -4,7 +4,7 @@ Wir definieren eine Hausnummer als eine Zahl.
 Wir definieren eine Buchstabenfolge als einen Text.
 
 Die Zahl zahl1 ist 1.
-Speichere 2 in zahl1 als Zahl.
+Speichere 2 in zahl1 als Zahlen Referenz.
 Schreibe zahl1 auf eine Zeile.
 
 Die Hausnummer hausnummer1 ist 1 als Hausnummer.
@@ -13,7 +13,7 @@ Sollte eigentlich
 	Speichere 2 als Hausnummer in hausnummer1.
 sein, aber für diesen Test nun mal so.
 ]
-Speichere 2 in hausnummer1 als Zahl.
+Speichere 2 in hausnummer1 als Hausnummer Referenz.
 Schreibe (hausnummer1 als Zahl) auf eine Zeile.
 
 Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurück, macht:

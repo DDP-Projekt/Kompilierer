@@ -193,11 +193,15 @@ KDDP_ARGS =
 test-unit:
 	go test $(shell go list ./src/... | grep -v compiler)
 
+test-normal: export DDPTEST_TEST_DIRS = $(TEST_DIRS)
+test-normal: export DDPTEST_KDDP_ARGS = $(KDDP_ARGS)
 test-normal: all ## runs the tests
-	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib$|TestBuildExamples)' | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
+test-memory: export DDPTEST_TEST_DIRS = $(TEST_DIRS)
+test-memory: export DDPTEST_KDDP_ARGS = $(KDDP_ARGS)
 test-memory: debug ## runs the tests checking for memory leaks
-	go test -v ./tests '-run=(TestMemory)' -test_dirs="$(TEST_DIRS)" -kddp_args="$(KDDP_ARGS)" | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestMemory)' | $(SED) -u ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) -u ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-normal-memory: ## runs test-normal and test-memory in the correct order
 	'$(MAKE)' test-normal 

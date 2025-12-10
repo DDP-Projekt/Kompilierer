@@ -251,6 +251,12 @@ func TestUnifyGenericType(t *testing.T) {
 	assert.Equal(ReferenceType{Type: ReferenceType{Type: ZAHL}}, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
+	// special case where one level of reference indirection is removed
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ReferenceType{Type: ReferenceType{Type: ZAHL}}, ReferenceType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ReferenceType{Type: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
 	// mixed
 
 	genericTypes = map[string]Type{}
@@ -447,49 +453,6 @@ func TestGetInstantiatedStructType(t *testing.T) {
 	assert.Len(genericStruct.Instantiations, 0)
 }
 
-func TestTryDeref(t *testing.T) {
-	assert := assert.New(t)
-
-	a := TryDeref(ZAHL, ZAHL)
-	assert.Equal(ZAHL, a)
-
-	a = TryDeref(ZAHL, ReferenceType{Type: ZAHL})
-	assert.Equal(ZAHL, a)
-
-	a = TryDeref(ReferenceType{Type: ZAHL}, ZAHL)
-	assert.Equal(ZAHL, a)
-
-	a = TryDeref(ReferenceType{Type: TEXT}, ZAHL)
-	assert.Equal(ReferenceType{Type: TEXT}, a)
-
-	a = TryDeref(ZAHL, ReferenceType{Type: TEXT})
-	assert.Equal(ZAHL, a)
-}
-
-func TestTryDeref2(t *testing.T) {
-	assert := assert.New(t)
-
-	a, b := TryDeref2(ZAHL, ZAHL)
-	assert.Equal(ZAHL, a)
-	assert.Equal(ZAHL, b)
-
-	a, b = TryDeref2(ZAHL, ReferenceType{Type: ZAHL})
-	assert.Equal(ZAHL, a)
-	assert.Equal(ZAHL, b)
-
-	a, b = TryDeref2(ReferenceType{Type: ZAHL}, ZAHL)
-	assert.Equal(ZAHL, a)
-	assert.Equal(ZAHL, b)
-
-	a, b = TryDeref2(ReferenceType{Type: TEXT}, ZAHL)
-	assert.Equal(ReferenceType{Type: TEXT}, a)
-	assert.Equal(ZAHL, b)
-
-	a, b = TryDeref2(ZAHL, ReferenceType{Type: TEXT})
-	assert.Equal(ZAHL, a)
-	assert.Equal(ReferenceType{Type: TEXT}, b)
-}
-
 func TestEqualDeref(t *testing.T) {
 	assert := assert.New(t)
 
@@ -500,4 +463,20 @@ func TestEqualDeref(t *testing.T) {
 	assert.True(EqualDeref(ZAHL, ZAHL))
 	assert.True(EqualDeref(ZAHL, ReferenceType{Type: ZAHL}))
 	assert.True(EqualDeref(ReferenceType{Type: ZAHL}, ZAHL))
+}
+
+func TestIsDereferencableTo(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.True(IsDereferencableTo(ZAHL, ZAHL))
+	assert.True(IsDereferencableTo(ReferenceType{ZAHL}, ZAHL))
+	assert.True(IsDereferencableTo(ReferenceType{ReferenceType{ZAHL}}, ZAHL))
+
+	assert.False(IsDereferencableTo(ZAHL, BUCHSTABE))
+	assert.False(IsDereferencableTo(ReferenceType{ZAHL}, BUCHSTABE))
+	assert.False(IsDereferencableTo(ReferenceType{ReferenceType{ZAHL}}, BUCHSTABE))
+
+	assert.False(IsDereferencableTo(BUCHSTABE, ZAHL))
+	assert.False(IsDereferencableTo(ReferenceType{BUCHSTABE}, ZAHL))
+	assert.False(IsDereferencableTo(ReferenceType{ReferenceType{BUCHSTABE}}, ZAHL))
 }

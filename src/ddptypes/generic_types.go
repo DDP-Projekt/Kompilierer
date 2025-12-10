@@ -49,8 +49,8 @@ func UnifyGenericType(argType Type, paramType Type, genericTypes map[string]Type
 	argListType, isArgList := CastList(instantiatedType)
 	paramListType, isParamList := CastList(genericType)
 
-	argRefType, isArgRef := CastReference(instantiatedType)
-	paramRefType, isParamRef := CastReference(genericType)
+	argRefType, _, isArgRef := CastReference(instantiatedType)
+	paramRefType, _, isParamRef := CastReference(genericType)
 
 	for (isArgList && isParamList) || (isArgRef && isParamRef) {
 		switch GetUnderlying(instantiatedType).(type) {
@@ -63,14 +63,17 @@ func UnifyGenericType(argType Type, paramType Type, genericTypes map[string]Type
 		}
 
 		if IsGeneric(genericType) {
+			if inst, _, isRef := CastReference(instantiatedType); isRef {
+				instantiatedType = inst.Type
+			}
 			break
 		}
 
 		argListType, isArgList = CastList(instantiatedType)
 		paramListType, isParamList = CastList(genericType)
 
-		argRefType, isArgRef = CastReference(instantiatedType)
-		paramRefType, isParamRef = CastReference(genericType)
+		argRefType, _, isArgRef = CastReference(instantiatedType)
+		paramRefType, _, isParamRef = CastReference(genericType)
 	}
 
 	if (isParamList && !isArgList) || (isParamRef && !isArgRef) {
@@ -152,7 +155,7 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 	isRefList := make([]bool, 0, 4)
 
 	listType, isList := CastList(instantiatedType)
-	refType, isRef := CastReference(instantiatedType)
+	refType, _, isRef := CastReference(instantiatedType)
 
 	for isList || isRef {
 		switch GetUnderlying(instantiatedType).(type) {
@@ -169,7 +172,7 @@ func GetInstantiatedType(t Type, genericTypes map[string]Type) Type {
 		}
 
 		listType, isList = CastList(instantiatedType)
-		refType, isRef = CastReference(instantiatedType)
+		refType, _, isRef = CastReference(instantiatedType)
 	}
 
 	if generic, ok := CastGeneric(instantiatedType); ok {
