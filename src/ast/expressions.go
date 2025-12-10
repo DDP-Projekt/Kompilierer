@@ -14,11 +14,13 @@ type OperatorOverload struct {
 
 type (
 	BadExpr struct {
+		Metadata
 		Tok token.Token
 		Err ddperror.Error
 	}
 
 	Ident struct {
+		Metadata
 		Literal token.Token
 		// the variable declaration this identifier refers to
 		// is set by the resolver, or nil if the name was not found
@@ -31,31 +33,37 @@ type (
 	}
 
 	IntLit struct {
+		Metadata
 		Literal token.Token
 		Value   int64
 	}
 
 	FloatLit struct {
+		Metadata
 		Literal token.Token
 		Value   float64 // the parsed float
 	}
 
 	BoolLit struct {
+		Metadata
 		Literal token.Token
 		Value   bool
 	}
 
 	CharLit struct {
+		Metadata
 		Literal token.Token
 		Value   rune
 	}
 
 	StringLit struct {
+		Metadata
 		Literal token.Token
 		Value   string // the evaluated string
 	}
 
 	ListLit struct {
+		Metadata
 		Tok   token.Token
 		Range token.Range
 		// type of the empty list if Values is nil
@@ -68,6 +76,7 @@ type (
 	}
 
 	UnaryExpr struct {
+		Metadata
 		Range        token.Range
 		Tok          token.Token
 		Operator     UnaryOperator
@@ -76,6 +85,7 @@ type (
 	}
 
 	BinaryExpr struct {
+		Metadata
 		Range        token.Range
 		Tok          token.Token
 		Lhs          Expression
@@ -86,6 +96,7 @@ type (
 
 	// currently only used for von bis
 	TernaryExpr struct {
+		Metadata
 		Range        token.Range
 		Tok          token.Token
 		Lhs          Expression
@@ -99,6 +110,7 @@ type (
 	// because the type operator might be multiple
 	// tokens long
 	CastExpr struct {
+		Metadata
 		Range        token.Range
 		TargetType   ddptypes.Type
 		Lhs          Expression
@@ -107,6 +119,7 @@ type (
 
 	// expressions that operate on types (Standardwert, Größe, ein/eine)
 	TypeOpExpr struct {
+		Metadata
 		Range    token.Range
 		Tok      token.Token
 		Operator TypeOperator
@@ -115,6 +128,7 @@ type (
 
 	// ein/eine, seperate from CastExpr as it should not be overloadable
 	TypeCheck struct {
+		Metadata
 		Range     token.Range
 		Tok       token.Token
 		CheckType ddptypes.Type
@@ -122,12 +136,14 @@ type (
 	}
 
 	Grouping struct {
+		Metadata
 		Range  token.Range
 		LParen token.Token // (
 		Expr   Expression
 	}
 
 	FuncCall struct {
+		Metadata
 		Range token.Range
 		Tok   token.Token // first token of the call
 		Name  string      // name of the function
@@ -138,6 +154,7 @@ type (
 	}
 
 	StructLiteral struct {
+		Metadata
 		Range token.Range
 		Tok   token.Token // first token of the literal
 		// the struct declaration this literal refers to

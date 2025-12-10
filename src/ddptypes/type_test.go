@@ -236,10 +236,10 @@ func TestUnifyGenericType(t *testing.T) {
 	assert.Equal(ReferenceType{Type: ZAHL}, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
-	genericTypes = map[string]Type{}
-	typ = UnifyGenericType(ReferenceType{Type: ZAHL}, GenericType{Name: "T"}, genericTypes)
-	assert.Equal(ReferenceType{Type: ZAHL}, typ)
-	assert.Equal(map[string]Type{"T": ReferenceType{Type: ZAHL}}, genericTypes)
+	// genericTypes = map[string]Type{}
+	// typ = UnifyGenericType(ReferenceType{Type: ZAHL}, GenericType{Name: "T"}, genericTypes)
+	// assert.Equal(ReferenceType{Type: ZAHL}, typ)
+	// assert.Equal(map[string]Type{"T": ReferenceType{Type: ZAHL}}, genericTypes)
 
 	genericTypes = map[string]Type{}
 	typ = UnifyGenericType(ZAHL, ReferenceType{Type: GenericType{Name: "T"}}, genericTypes)
@@ -255,6 +255,11 @@ func TestUnifyGenericType(t *testing.T) {
 	genericTypes = map[string]Type{}
 	typ = UnifyGenericType(ReferenceType{Type: ReferenceType{Type: ZAHL}}, ReferenceType{Type: GenericType{Name: "T"}}, genericTypes)
 	assert.Equal(ReferenceType{Type: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ReferenceType{Type: ZAHL}, GenericType{Name: "T"}, genericTypes)
+	assert.Equal(ZAHL, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
 	// mixed

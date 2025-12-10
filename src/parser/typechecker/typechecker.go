@@ -31,8 +31,12 @@ func (t TypeMeta) Kind() ast.MetadataKind {
 }
 
 // if expr was typechecked, returns the type of expr
-func TypeOfTypecheckedExpression(a *ast.Ast, expr ast.Expression) ddptypes.Type {
-	if att, ok := a.GetMetadataByKind(expr, TypeMetaKind); ok {
+func TypeOfTypecheckedExpression(expr ast.Expression) ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+
+	if att, ok := expr.GetMetadataByKind(TypeMetaKind); ok {
 		return att.(TypeMeta).t
 	}
 	return nil
@@ -85,7 +89,7 @@ func (t *Typechecker) visit(node ast.Node) {
 // Evaluates the type of an expression
 func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 	t.visit(expr)
-	t.Module.Ast.AddAttachement(expr, TypeMeta{t: t.latestReturnedType})
+	expr.SetMetadataAttachement(TypeMeta{t: t.latestReturnedType})
 	return t.latestReturnedType
 }
 
@@ -521,6 +525,11 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	if overload := t.findOverloadCast(expr, operand{lhs, expr.Lhs}); overload != nil {
 		expr.OverloadedBy = overload
 		t.latestReturnedType = overload.Decl.ReturnType
+		return ast.VisitRecurse
+	}
+
+	if ddptypes.Equal(lhs, expr.TargetType) {
+		t.latestReturnedType = expr.TargetType
 		return ast.VisitRecurse
 	}
 

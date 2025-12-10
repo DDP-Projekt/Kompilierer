@@ -18,6 +18,8 @@ type Metadata struct {
 	Attachments map[MetadataKind]MetadataAttachment
 }
 
+var _ *MetadataAnnotated = nil
+
 // TODO: make this good
 func (md *Metadata) String() string {
 	return fmt.Sprintf("Metadata{ %v }", md.Attachments)
@@ -25,3 +27,41 @@ func (md *Metadata) String() string {
 
 // Annotator is a Visitor that can be used to annotate an AST with Metadata
 type Annotator Visitor
+
+type MetadataAnnotated interface {
+	GetMetadata() Metadata
+	GetMetadataByKind(MetadataKind) (MetadataAttachment, bool)
+	SetMetadataAttachement(MetadataAttachment)
+	RemoveMetadataAttachment(MetadataKind)
+}
+
+func (md *Metadata) GetMetadata() Metadata {
+	return *md
+}
+
+func (md *Metadata) GetMetadataByKind(kind MetadataKind) (MetadataAttachment, bool) {
+	if md == nil {
+		return nil, false
+	}
+	att, ok := md.Attachments[kind]
+	return att, ok
+}
+
+func (md *Metadata) SetMetadataAttachement(attachment MetadataAttachment) {
+	if md == nil {
+		return
+	}
+
+	if md.Attachments == nil {
+		md.Attachments = make(map[MetadataKind]MetadataAttachment)
+	}
+	md.Attachments[attachment.Kind()] = attachment
+}
+
+func (md *Metadata) RemoveMetadataAttachment(kind MetadataKind) {
+	if md == nil {
+		return
+	}
+
+	delete(md.Attachments, kind)
+}

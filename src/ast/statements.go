@@ -8,21 +8,25 @@ import (
 
 type (
 	BadStmt struct {
+		Metadata
 		Tok token.Token
 		Err ddperror.Error
 	}
 
 	DeclStmt struct {
+		Metadata
 		Decl Declaration
 	}
 
 	ExprStmt struct {
+		Metadata
 		Expr Expression
 	}
 
 	// import statement for meta-information in the ast
 	// will be already resolved by the parser
 	ImportStmt struct {
+		Metadata
 		Range token.Range
 		// wether the statement imported a directory
 		IsDirectoryImport bool
@@ -41,6 +45,7 @@ type (
 	}
 
 	AssignStmt struct {
+		Metadata
 		Range   token.Range
 		Tok     token.Token
 		Var     Expression    // the variable to assign to (needs to be of reference type)
@@ -50,6 +55,7 @@ type (
 	}
 
 	BlockStmt struct {
+		Metadata
 		Range      token.Range
 		Colon      token.Token
 		Statements []Statement
@@ -57,6 +63,7 @@ type (
 	}
 
 	IfStmt struct {
+		Metadata
 		Range     token.Range
 		If        token.Token // wenn/aber
 		Condition Expression
@@ -65,6 +72,7 @@ type (
 	}
 
 	WhileStmt struct {
+		Metadata
 		Range     token.Range
 		While     token.Token // solange, mache, mal
 		Condition Expression
@@ -72,6 +80,7 @@ type (
 	}
 
 	ForStmt struct {
+		Metadata
 		Range       token.Range
 		For         token.Token // Für
 		Initializer *VarDecl    // Zahl (name) von (Initializer.InitVal)
@@ -81,6 +90,7 @@ type (
 	}
 
 	ForRangeStmt struct {
+		Metadata
 		Range       token.Range
 		For         token.Token // Für
 		Initializer *VarDecl    // InitVal is the same pointer as In
@@ -90,11 +100,13 @@ type (
 	}
 
 	BreakContinueStmt struct {
+		Metadata
 		Range token.Range
 		Tok   token.Token // VERLASSE for break, otherwise continue
 	}
 
 	ReturnStmt struct {
+		Metadata
 		Range  token.Range
 		Return token.Token // Gib
 		Func   *FuncDecl
@@ -102,6 +114,7 @@ type (
 	}
 
 	TodoStmt struct {
+		Metadata
 		Tok token.Token // ...
 	}
 )

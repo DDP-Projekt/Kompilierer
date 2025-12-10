@@ -12,12 +12,14 @@ type AliasTrie = *at.Trie[*token.Token, Alias]
 type (
 	// an invalid Declaration
 	BadDecl struct {
+		Metadata
 		Tok token.Token
 		Err ddperror.Error
 		Mod *Module
 	}
 
 	ConstDecl struct {
+		Metadata
 		Range      token.Range
 		Mod        *Module       // the module in which the variable was declared
 		CommentTok *token.Token  // optional comment (also contained in ast.Comments)
@@ -28,6 +30,7 @@ type (
 	}
 
 	VarDecl struct {
+		Metadata
 		Range           token.Range
 		CommentTok      *token.Token  // optional comment (also contained in ast.Comments)
 		Type            ddptypes.Type // type of the variable
@@ -42,6 +45,7 @@ type (
 	}
 
 	FuncDecl struct {
+		Metadata
 		Range                token.Range
 		CommentTok           *token.Token              // optional comment (also contained in ast.Comments)
 		Tok                  token.Token               // Die
@@ -85,6 +89,7 @@ type (
 
 	// is a statement and not a declaration but grouped in this File with FuncDecl for readability
 	FuncDef struct {
+		Metadata
 		Range token.Range
 		Tok   token.Token // Die
 		Func  *FuncDecl
@@ -92,6 +97,7 @@ type (
 	}
 
 	StructDecl struct {
+		Metadata
 		Range      token.Range
 		CommentTok *token.Token // optional comment (also contained in ast.Comments)
 		Tok        token.Token  // Wir
@@ -106,6 +112,7 @@ type (
 	}
 
 	TypeAliasDecl struct {
+		Metadata
 		Range           token.Range
 		CommentTok      *token.Token // optional comment
 		Tok             token.Token  // Wir
@@ -118,6 +125,7 @@ type (
 	}
 
 	TypeDefDecl struct {
+		Metadata
 		Range           token.Range
 		CommentTok      *token.Token // optional comment
 		Tok             token.Token  // Wir

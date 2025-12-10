@@ -43,19 +43,19 @@ var (
 )
 
 func (a *BadAnnotator) VisitBadDecl(b *ast.BadDecl) ast.VisitResult {
-	a.CurrentModule.Ast.AddAttachement(b, &BadMeta{n: a.n})
+	b.SetMetadataAttachement(&BadMeta{n: a.n})
 	a.n++
 	return ast.VisitRecurse
 }
 
 func (a *BadAnnotator) VisitBadExpr(b *ast.BadExpr) ast.VisitResult {
-	a.CurrentModule.Ast.AddAttachement(b, &BadMeta{n: a.n})
+	b.SetMetadataAttachement(&BadMeta{n: a.n})
 	a.n++
 	return ast.VisitRecurse
 }
 
 func (a *BadAnnotator) VisitBadStmt(b *ast.BadStmt) ast.VisitResult {
-	a.CurrentModule.Ast.AddAttachement(b, &BadMeta{n: a.n})
+	b.SetMetadataAttachement(&BadMeta{n: a.n})
 	a.n++
 	return ast.VisitRecurse
 }

@@ -43,8 +43,8 @@ func (pr *printer) parenthesizeNode(name string, nodes ...Node) string {
 		pr.printIndent()
 		node.Accept(pr)
 
-		md, ok := pr.ast.GetMetadata(node)
-		if !ok || len(md.Attachments) == 0 {
+		md := node.GetMetadata()
+		if len(md.Attachments) == 0 {
 			continue
 		}
 

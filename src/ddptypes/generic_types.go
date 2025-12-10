@@ -52,6 +52,10 @@ func UnifyGenericType(argType Type, paramType Type, genericTypes map[string]Type
 	argRefType, _, isArgRef := CastReference(instantiatedType)
 	paramRefType, _, isParamRef := CastReference(genericType)
 
+	if inst, _, isRef := CastReference(instantiatedType); isRef && !isParamRef && IsGeneric(genericType) {
+		instantiatedType = inst.Type
+	}
+
 	for (isArgList && isParamList) || (isArgRef && isParamRef) {
 		switch GetUnderlying(instantiatedType).(type) {
 		case ReferenceType:

@@ -378,7 +378,7 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) (llvm.Valu
 
 // wether expr gets implicitly dereferenced as annotated
 func (c *compiler) isDereferencedImplicitly(expr ast.Expression) bool {
-	if att, ok := c.ddpModule.Ast.GetMetadataByKind(expr, ImplicitRefCastMetaKind); ok {
+	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
 		return att.(ImplicitRefCastMeta).FromRef
 	}
 	return false
@@ -386,7 +386,7 @@ func (c *compiler) isDereferencedImplicitly(expr ast.Expression) bool {
 
 // wether expr gets implicitly dereferenced as annotated
 func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) bool {
-	if att, ok := c.ddpModule.Ast.GetMetadataByKind(expr, ImplicitRefCastMetaKind); ok {
+	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
 		return !att.(ImplicitRefCastMeta).FromRef
 	}
 	return false

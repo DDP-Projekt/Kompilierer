@@ -52,25 +52,28 @@ var (
 )
 
 func (a *ImplicitRefCastAnnotator) typeOf(expr ast.Expression) ddptypes.Type {
-	return typechecker.TypeOfTypecheckedExpression(a.CurrentModule.Ast, expr)
+	return typechecker.TypeOfTypecheckedExpression(expr)
 }
 
 func (a *ImplicitRefCastAnnotator) clearAnnotation(node ast.Node) {
-	a.CurrentModule.Ast.RemoveAttachment(node, ImplicitRefCastMetaKind)
+	if node == nil {
+		return
+	}
+	node.RemoveMetadataAttachment(ImplicitRefCastMetaKind)
 }
 
 func (a *ImplicitRefCastAnnotator) annotateFromRef(node ast.Node) {
 	if node == nil {
 		return
 	}
-	a.CurrentModule.Ast.AddAttachement(node, ImplicitRefCastMeta{FromRef: true})
+	node.SetMetadataAttachement(ImplicitRefCastMeta{FromRef: true})
 }
 
 func (a *ImplicitRefCastAnnotator) annotateToRef(node ast.Node) {
 	if node == nil {
 		return
 	}
-	a.CurrentModule.Ast.AddAttachement(node, ImplicitRefCastMeta{FromRef: false})
+	node.SetMetadataAttachement(ImplicitRefCastMeta{FromRef: false})
 }
 
 func (a *ImplicitRefCastAnnotator) annotateDeref(expr ast.Expression) {
@@ -175,6 +178,14 @@ func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResul
 		}
 		a.visitedGenericInstantiations[e.Func] = struct{}{}
 		a.Visit(e.Func)
+	}
+
+	if ast.IsGenericInstantiation(e.Func) {
+		oldMod := a.CurrentModule
+		a.CurrentModule = e.Func.GenericInstantiation.GenericDecl.Module()
+		defer func() {
+			a.CurrentModule = oldMod
+		}()
 	}
 
 	for k, expr := range e.Args {
