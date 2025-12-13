@@ -211,7 +211,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 	defer compiler_panic_wrapper(c)
 
 	// annotate with implicit ref cast metadata
-	ast.VisitModule(c.ddpModule, &ImplicitRefCastAnnotator{})
+	ast.VisitModuleRec(c.ddpModule, &ImplicitRefCastAnnotator{})
 
 	c.addExternalDependencies()
 

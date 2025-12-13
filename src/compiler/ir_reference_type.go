@@ -68,7 +68,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 		defaultValue: c.Null,
 		ddpType:      t,
 		underlying:   underlying,
-		name:         strings.ReplaceAll(t.String(), " ", "_"),
+		name:         strings.ReplaceAll(underlying.Name()+"_Referenz", " ", "_"),
 	}
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, refType.name+"_vtable")
