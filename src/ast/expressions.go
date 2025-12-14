@@ -8,8 +8,7 @@ import (
 
 // holds information on the parsed operator-overload for an expression
 type OperatorOverload struct {
-	Decl *FuncDecl             // the function that overloads the operator
-	Args map[string]Expression // the parsed (assigneable) arguments for the operator
+	Call *FuncCall // a constructed function call that represents what is actually executed
 }
 
 type (

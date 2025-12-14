@@ -310,9 +310,9 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	// Evaluate the rhs expression and check if the operator fits it
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, operand{rhs, expr.Rhs}); overload != nil {
+	if overload := t.findOverload(expr, expr.Operator, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Decl.ReturnType
+		t.latestReturnedType = overload.Call.Func.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -351,9 +351,9 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, operand{lhs, expr.Lhs}, operand{rhs, expr.Rhs}); overload != nil {
+	if overload := t.findOverload(expr, expr.Operator, operand{lhs, expr.Lhs}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Decl.ReturnType
+		t.latestReturnedType = overload.Call.Func.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -470,9 +470,9 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	mid := t.Evaluate(expr.Mid)
 	rhs := t.Evaluate(expr.Rhs)
 
-	if overload := t.findOverload(expr.Operator, operand{lhs, expr.Lhs}, operand{mid, expr.Mid}, operand{rhs, expr.Rhs}); overload != nil {
+	if overload := t.findOverload(expr, expr.Operator, operand{lhs, expr.Lhs}, operand{mid, expr.Mid}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Decl.ReturnType
+		t.latestReturnedType = overload.Call.Func.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -528,7 +528,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 
 	if overload := t.findOverloadCast(expr, operand{lhs, expr.Lhs}); overload != nil {
 		expr.OverloadedBy = overload
-		t.latestReturnedType = overload.Decl.ReturnType
+		t.latestReturnedType = overload.Call.Func.ReturnType
 		return ast.VisitRecurse
 	}
 
@@ -965,7 +965,7 @@ type operand struct {
 }
 
 // TODO: handle possible implicit dereferencing
-func (t *Typechecker) findOverload(operator ast.Operator, operands ...operand) *ast.OperatorOverload {
+func (t *Typechecker) findOverload(expr ast.Expression, operator ast.Operator, operands ...operand) *ast.OperatorOverload {
 	overloads := t.Operators[operator]
 	if len(overloads) == 0 {
 		return nil
@@ -987,8 +987,13 @@ overload_loop:
 		clear(genericTypes)
 
 		operator_overload := &ast.OperatorOverload{
-			Decl: overload,
-			Args: make(map[string]ast.Expression, len(overload.Parameters)),
+			Call: &ast.FuncCall{
+				Range: expr.GetRange(),
+				Tok:   expr.Token(),
+				Name:  overload.Name(),
+				Func:  overload,
+				Args:  make(map[string]ast.Expression, len(overload.Parameters)),
+			},
 		}
 
 		for i, operand := range operands {
@@ -997,12 +1002,12 @@ overload_loop:
 				actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			}
 
-			if !ddptypes.Equal(actualParamType, operand.typ) {
+			if !ddptypes.EqualDeref(actualParamType, operand.typ) {
 				continue overload_loop
 			}
 
 			// turn arguments for reference parameters into assigneables
-			operator_overload.Args[overload.Parameters[i].Name.Literal] = operand.expr
+			operator_overload.Call.Args[overload.Parameters[i].Name.Literal] = operand.expr
 		}
 
 		// early return for normal overloads
@@ -1016,7 +1021,7 @@ overload_loop:
 			return nil
 		}
 
-		operator_overload.Decl = instantiation
+		operator_overload.Call.Func = instantiation
 		return operator_overload
 	}
 	return nil
@@ -1042,8 +1047,13 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 		clear(genericTypes)
 
 		operator_overload := &ast.OperatorOverload{
-			Decl: overload,
-			Args: make(map[string]ast.Expression, 1),
+			Call: &ast.FuncCall{
+				Range: expr.GetRange(),
+				Tok:   expr.Token(),
+				Name:  overload.Name(),
+				Func:  overload,
+				Args:  make(map[string]ast.Expression, 1),
+			},
 		}
 
 		actualParamType := overload.Parameters[0].Type
@@ -1055,12 +1065,12 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 			}
 		}
 
-		if !ddptypes.Equal(actualParamType, operand.typ) || !ddptypes.Equal(returnType, expr.TargetType) {
+		if !ddptypes.EqualDeref(actualParamType, operand.typ) || !ddptypes.EqualDeref(returnType, expr.TargetType) {
 			continue
 		}
 
 		// turn arguments for reference parameters into assigneables
-		operator_overload.Args[overload.Parameters[0].Name.Literal] = operand.expr
+		operator_overload.Call.Args[overload.Parameters[0].Name.Literal] = operand.expr
 
 		// early return for normal overloads
 		if !ast.IsGeneric(overload) {
@@ -1072,7 +1082,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 			return nil
 		}
 
-		operator_overload.Decl = instantiation
+		operator_overload.Call.Func = instantiation
 		return operator_overload
 	}
 	return nil

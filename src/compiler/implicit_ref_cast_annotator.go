@@ -40,6 +40,7 @@ var (
 	_ ast.UnaryExprVisitor     = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.BinaryExprVisitor    = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.TernaryExprVisitor   = (*ImplicitRefCastAnnotator)(nil)
+	_ ast.CastExprVisitor      = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.FuncCallVisitor      = (*ImplicitRefCastAnnotator)(nil)
 	_ ast.StructLiteralVisitor = (*ImplicitRefCastAnnotator)(nil)
 
@@ -125,8 +126,8 @@ func (a *ImplicitRefCastAnnotator) VisitListLit(e *ast.ListLit) ast.VisitResult 
 
 func (a *ImplicitRefCastAnnotator) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		// TODO
-		return ast.VisitRecurse
+		a.Visit(e.OverloadedBy.Call)
+		return ast.VisitSkipChildren
 	}
 	a.annotateDeref(e.Rhs)
 	return ast.VisitRecurse
@@ -134,8 +135,8 @@ func (a *ImplicitRefCastAnnotator) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitRes
 
 func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		// TODO
-		return ast.VisitRecurse
+		a.Visit(e.OverloadedBy.Call)
+		return ast.VisitSkipChildren
 	}
 	switch e.Operator {
 	case ast.BIN_INDEX:
@@ -164,12 +165,21 @@ func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitR
 
 func (a *ImplicitRefCastAnnotator) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		// TODO
-		return ast.VisitRecurse
+		a.Visit(e.OverloadedBy.Call)
+		return ast.VisitSkipChildren
 	}
 	a.annotateDeref(e.Lhs)
 	a.annotateDeref(e.Mid)
 	a.annotateDeref(e.Rhs)
+	return ast.VisitRecurse
+}
+
+func (a *ImplicitRefCastAnnotator) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
+	if e.OverloadedBy != nil {
+		a.Visit(e.OverloadedBy.Call)
+		return ast.VisitSkipChildren
+	}
+
 	return ast.VisitRecurse
 }
 

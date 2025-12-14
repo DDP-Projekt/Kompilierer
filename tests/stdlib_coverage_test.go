@@ -184,25 +184,25 @@ func TestStdlibCoverage(t *testing.T) {
 
 		ast.VisitModule(module, unaryExprVisitor(func(c *ast.UnaryExpr) {
 			if c.OverloadedBy != nil {
-				func_called(c.OverloadedBy.Decl)
+				func_called(c.OverloadedBy.Call.Func)
 			}
 		}))
 
 		ast.VisitModule(module, binaryExprVisitor(func(c *ast.BinaryExpr) {
 			if c.OverloadedBy != nil {
-				func_called(c.OverloadedBy.Decl)
+				func_called(c.OverloadedBy.Call.Func)
 			}
 		}))
 
 		ast.VisitModule(module, ternaryExprVisitor(func(c *ast.TernaryExpr) {
 			if c.OverloadedBy != nil {
-				func_called(c.OverloadedBy.Decl)
+				func_called(c.OverloadedBy.Call.Func)
 			}
 		}))
 
 		ast.VisitModule(module, castExprVisitor(func(c *ast.CastExpr) {
 			if c.OverloadedBy != nil {
-				func_called(c.OverloadedBy.Decl)
+				func_called(c.OverloadedBy.Call.Func)
 			}
 		}))
 

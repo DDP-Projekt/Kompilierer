@@ -952,13 +952,7 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 
 func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		return c.VisitFuncCall(&ast.FuncCall{
-			Range: e.GetRange(),
-			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Decl.Name(),
-			Func:  e.OverloadedBy.Decl,
-			Args:  e.OverloadedBy.Args,
-		})
+		return c.VisitFuncCall(e.OverloadedBy.Call)
 	}
 
 	rhs, typ, _ := c.evaluate(e.Rhs) // compile the expression onto which the operator is applied
@@ -1032,13 +1026,7 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		return c.VisitFuncCall(&ast.FuncCall{
-			Range: e.GetRange(),
-			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Decl.Name(),
-			Func:  e.OverloadedBy.Decl,
-			Args:  e.OverloadedBy.Args,
-		})
+		return c.VisitFuncCall(e.OverloadedBy.Call)
 	}
 
 	if _, isStringIndexing := e.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
@@ -1726,13 +1714,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		return c.VisitFuncCall(&ast.FuncCall{
-			Range: e.GetRange(),
-			Tok:   e.Tok,
-			Name:  e.OverloadedBy.Decl.Name(),
-			Func:  e.OverloadedBy.Decl,
-			Args:  e.OverloadedBy.Args,
-		})
+		return c.VisitFuncCall(e.OverloadedBy.Call)
 	}
 
 	// if due to short circuiting
@@ -1860,13 +1842,7 @@ func (c *compiler) VisitTernaryExpr(e *ast.TernaryExpr) ast.VisitResult {
 
 func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	if e.OverloadedBy != nil {
-		return c.VisitFuncCall(&ast.FuncCall{
-			Range: e.GetRange(),
-			Tok:   e.Token(),
-			Name:  e.OverloadedBy.Decl.Name(),
-			Func:  e.OverloadedBy.Decl,
-			Args:  e.OverloadedBy.Args,
-		})
+		return c.VisitFuncCall(e.OverloadedBy.Call)
 	}
 
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
