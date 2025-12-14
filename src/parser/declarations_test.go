@@ -144,9 +144,8 @@ func createSymbols(args ...any) ast.SymbolTable {
 		case ddptypes.Type:
 			symbols.InsertDecl(args[i].(string),
 				&ast.VarDecl{
-					NameTok:  token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
-					Type:     args[i+1].(ddptypes.Type),
-					InitType: args[i+1].(ddptypes.Type),
+					NameTok: token.Token{Type: token.IDENTIFIER, Literal: args[i].(string)},
+					Type:    args[i+1].(ddptypes.Type),
 				},
 			)
 		case *ast.FuncDecl:

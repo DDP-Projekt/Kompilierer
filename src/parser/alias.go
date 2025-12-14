@@ -534,7 +534,7 @@ func (p *parser) fillAndVerifyGenericStructInstantiationParams(structDecl *ast.S
 		}
 
 		if _, wasUnified := genericTypes[field.Type.String()]; !wasUnified {
-			genericTypes[field.Type.String()] = field.InitType
+			genericTypes[field.Type.String()] = typechecker.TypeOfTypecheckedExpression(field.InitVal)
 		}
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -728,9 +729,9 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 			lhs = &ast.ListLit{
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
-				Type:   listType,
 				Values: nil,
 			}
+			lhs.SetMetadataAttachement(typechecker.NewTypeMeta(listType))
 		} else {
 			p.consumeSeq(token.LISTE, token.COMMA, token.DIE, token.AUS)
 			values := append(make([]ast.Expression, 0, 2), p.expression())

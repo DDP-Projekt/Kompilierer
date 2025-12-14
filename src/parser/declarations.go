@@ -121,7 +121,6 @@ func (p *parser) constDeclaration(startDepth int) ast.Declaration {
 		expr = &ast.ListLit{
 			Tok:    expr.Token(),
 			Range:  token.NewRange(&expr_tok, p.previous()),
-			Type:   ddptypes.ListType{},
 			Values: nil,
 			Count:  expr,
 			Value:  value,
@@ -220,7 +219,6 @@ func (p *parser) varDeclaration(startDepth int, isField, isGeneric bool) ast.Dec
 			expr = &ast.ListLit{
 				Tok:    expr.Token(),
 				Range:  token.NewRange(&expr_tok, p.previous()),
-				Type:   typ.(ddptypes.ListType),
 				Values: nil,
 				Count:  expr,
 				Value:  value,

@@ -89,9 +89,10 @@ func (a *ImplicitRefCastAnnotator) annotateDeref(expr ast.Expression) {
 func (a *ImplicitRefCastAnnotator) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	a.Visit(d.InitVal)
 	a.clearAnnotation(d.InitVal)
-	if ddptypes.IsReferenceTo(d.Type, d.InitType) {
+	initDDPType := a.typeOf(d.InitVal)
+	if ddptypes.IsReferenceTo(d.Type, initDDPType) {
 		a.annotateToRef(d.InitVal)
-	} else if ddptypes.IsReferenceTo(d.InitType, d.Type) {
+	} else if ddptypes.IsReferenceTo(initDDPType, d.Type) {
 		a.annotateFromRef(d.InitVal)
 	}
 	return ast.VisitSkipChildren
@@ -106,12 +107,13 @@ func (a *ImplicitRefCastAnnotator) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 // TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitListLit(e *ast.ListLit) ast.VisitResult {
+	elementType := a.typeOf(e).(ddptypes.ListType).ElementType
 	if e.Values != nil {
 		for _, v := range e.Values {
 			t := a.typeOf(v)
-			if ddptypes.IsReferenceTo(e.Type.ElementType, t) {
+			if ddptypes.IsReferenceTo(elementType, t) {
 				a.annotateToRef(v)
-			} else if ddptypes.IsReferenceTo(t, e.Type.ElementType) {
+			} else if ddptypes.IsReferenceTo(t, elementType) {
 				a.annotateFromRef(v)
 			}
 		}
@@ -234,14 +236,15 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 	a.Visit(s.Rhs)
 	a.clearAnnotation(s.Var)
 	a.clearAnnotation(s.Rhs)
+	varType := a.typeOf(s.Var)
 	// if ddptypes.IsReferenceTo(s.VarType, s.RhsType) {
 	// 	a.annotateToRef(s.Rhs)
 	// } else
-	_, varType, ok := ddptypes.CastReference(s.VarType)
+	_, varType, ok := ddptypes.CastReference(varType)
 	if !ok {
-		varType = ddptypes.Deref(s.VarType)
+		varType = ddptypes.Deref(varType)
 	}
-	if ddptypes.IsReferenceTo(s.RhsType, varType) {
+	if ddptypes.IsReferenceTo(a.typeOf(s.Rhs), varType) {
 		a.annotateFromRef(s.Rhs)
 	}
 	return ast.VisitSkipChildren

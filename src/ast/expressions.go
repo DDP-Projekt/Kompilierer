@@ -67,8 +67,6 @@ type (
 		Tok   token.Token
 		Range token.Range
 		// type of the empty list if Values is nil
-		// the typechecker fills this field if Values is non-nil
-		Type   ddptypes.ListType
 		Values []Expression // the values in the Literal
 		// if Values, Count and Value are nil, the list is empty
 		Count Expression // for big list initializations
@@ -285,3 +283,18 @@ func (expr *BoolLit) literal()   {}
 func (expr *CharLit) literal()   {}
 func (expr *StringLit) literal() {}
 func (expr *ListLit) literal()   {}
+
+// metadata to signal if a BinaryExpr is a string indexing
+type StringIndexingMeta struct{}
+
+var _ MetadataAttachment = StringIndexingMeta{}
+
+func (StringIndexingMeta) String() string {
+	return "StringIndexingMeta"
+}
+
+const StringIndexingMetaKind = "DDP_StringIndexingMeta"
+
+func (StringIndexingMeta) Kind() MetadataKind {
+	return StringIndexingMetaKind
+}

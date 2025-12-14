@@ -194,7 +194,7 @@ func (pr *printer) VisitStringLit(expr *StringLit) VisitResult {
 
 func (pr *printer) VisitListLit(expr *ListLit) VisitResult {
 	if expr.Values == nil {
-		pr.parenthesizeNode(fmt.Sprintf("ListLit[%s]", expr.Type))
+		pr.parenthesizeNode("ListLit")
 	} else {
 		nodes := make([]Node, 0, len(expr.Values))
 		for _, v := range expr.Values {

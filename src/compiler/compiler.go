@@ -8,6 +8,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
+	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -611,8 +612,9 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 			isTemp  bool
 		)
 
+		initDDPType := typechecker.TypeOfTypecheckedExpression(d.InitVal)
 		// implicit numeric casts
-		if ddptypes.IsNumericDeref(d.Type) && ddptypes.IsNumericDeref(d.InitType) {
+		if ddptypes.IsNumericDeref(d.Type) && ddptypes.IsNumericDeref(initDDPType) {
 			numericType := Typ
 			for ref, ok := numericType.(*ddpIrReferenceType); ok; ref, ok = numericType.(*ddpIrReferenceType) {
 				numericType = ref.underlying
@@ -625,7 +627,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		// implicit cast to any if required
 		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
 			vtable := initTyp.VTable()
-			if typeDef, isTypeDef := ddptypes.CastTypeDef(d.InitType); isTypeDef {
+			if typeDef, isTypeDef := ddptypes.CastTypeDef(initDDPType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 			}
 
@@ -901,7 +903,7 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 }
 
 func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
-	listType := c.toIrType(e.Type).(*ddpIrListType)
+	listType := c.toIrType(typechecker.TypeOfTypecheckedExpression(e)).(*ddpIrListType)
 	list := c.NewAlloca(listType.LLType())
 
 	// get the listLen as irValue
@@ -1037,6 +1039,11 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			Func:  e.OverloadedBy.Decl,
 			Args:  e.OverloadedBy.Args,
 		})
+	}
+
+	if _, isStringIndexing := e.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
+		c.evaluate(e.Lhs)
+		return ast.VisitRecurse
 	}
 
 	// for UND and ODER both operands are booleans, so we don't need to worry about memory management
@@ -2111,7 +2118,12 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 // helper for VisitAssignStmt and VisitFuncCall
 // if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
 // if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
-func (c *compiler) evaluateAssignableOrReference(ass ast.Expression, as_ref bool) (llvm.Value, ddpIrType, *ast.BinaryExpr) {
+func (c *compiler) evaluateAssignableOrReference(ass ast.Expression) (llvm.Value, ddpIrType, *ast.BinaryExpr) {
+	if _, isStringIndexing := ass.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
+		lhs, lhsTyp, _ := c.evaluate(ass)
+		return lhs, lhsTyp, ass.(*ast.BinaryExpr)
+	}
+
 	val, valTyp, _ := c.evaluate(ass)
 	return val, valTyp, nil
 	/*
@@ -2247,7 +2259,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 	result := c.NewAlloca(resultType.LLType())
 	for i, field := range structType.Fields {
 		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
-		initType := fieldDecl.InitType
+		initType := typechecker.TypeOfTypecheckedExpression(fieldDecl.InitVal)
 		argExpr := fieldDecl.InitVal
 		if fieldArg, hasArg := args[field.Name]; hasArg {
 			// the arg was passed so use that instead
@@ -2439,9 +2451,11 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		isTempRhs bool
 	)
 
+	varDDPType, rhsDDPType := typechecker.TypeOfTypecheckedExpression(s.Var), typechecker.TypeOfTypecheckedExpression(s.Rhs)
+
 	// implicit numeric casts
-	if ddptypes.IsNumericDeref(s.VarType) && ddptypes.IsNumericDeref(s.RhsType) {
-		numericType := c.toIrType(s.VarType)
+	if ddptypes.IsNumericDeref(varDDPType) && ddptypes.IsNumericDeref(rhsDDPType) {
+		numericType := c.toIrType(varDDPType)
 		for ref, ok := numericType.(*ddpIrReferenceType); ok; ref, ok = numericType.(*ddpIrReferenceType) {
 			numericType = ref.underlying
 		}
@@ -2450,7 +2464,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		rhs, rhsTyp, isTempRhs = c.evaluate(s.Rhs) // evaluate the initial value
 	}
 
-	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var, false)
+	lhs, lhsTyp, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var)
 
 	if lhsStringIndexing != nil {
 		index, indexTyp, _ := c.evaluate(lhsStringIndexing.Rhs)
@@ -2462,7 +2476,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		// implicit cast to any if required
 		if lhsTyp == c.ddpany && rhsTyp != c.ddpany {
 			vtable := rhsTyp.VTable()
-			if typeDef, isTypeDef := ddptypes.CastTypeDef(s.RhsType); isTypeDef {
+			if typeDef, isTypeDef := ddptypes.CastTypeDef(rhsDDPType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 			}
 			rhs, rhsTyp, isTempRhs = c.castNonAnyToAny(rhs, rhsTyp, isTempRhs, vtable)

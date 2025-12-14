@@ -70,10 +70,10 @@ Schreibe tl.
 Schreibe '\n'.
 Schreibe (tl an der Stelle 1).
 Schreibe '\n'.
-tl an der Stelle 1, an der Stelle 1 ist 'Ü'.
+tl an der Stelle 1 an der Stelle 1 ist 'Ü'.
 Schreibe (tl an der Stelle 1).
 Schreibe '\n'.
-tl an der Stelle 1, an der Stelle 2 ist 'Ü'.
+tl an der Stelle 1 an der Stelle 2 ist 'Ü'.
 Schreibe (tl an der Stelle 1).
 Schreibe '\n'.
 Schreibe tl.

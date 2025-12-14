@@ -18,6 +18,10 @@ type TypeMeta struct {
 	t ddptypes.Type
 }
 
+func NewTypeMeta(t ddptypes.Type) TypeMeta {
+	return TypeMeta{t: t}
+}
+
 var _ ast.MetadataAttachment = TypeMeta{}
 
 func (t TypeMeta) String() string {
@@ -156,7 +160,6 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 	if decl.InitVal != nil {
 		initialType = t.Evaluate(decl.InitVal)
 	}
-	decl.InitType = initialType
 
 	typesDontMatch := !ddptypes.IsGenericDeref(decl.Type) && !ddptypes.EqualDeref(initialType, decl.Type) && (!ddptypes.EqualDeref(decl.Type, ddptypes.VARIABLE) || ddptypes.EqualDeref(initialType, ddptypes.VoidType{}))
 	numericCastPossible := ddptypes.IsNumericDeref(decl.Type) && ddptypes.IsNumericDeref(initialType)
@@ -283,6 +286,7 @@ func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
+	listType := TypeOfTypecheckedExpression(expr)
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
@@ -290,15 +294,15 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
-		expr.Type = ddptypes.ListType{ElementType: elementType}
+		listType = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
 		if count := t.Evaluate(expr.Count); !ddptypes.EqualDeref(count, ddptypes.ZAHL) && !ddptypes.EqualDeref(count, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl oder Byte angegeben werden, nicht als %s", count)
 		}
 
-		expr.Type = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
+		listType = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
 	}
-	t.latestReturnedType = expr.Type
+	t.latestReturnedType = listType
 	return ast.VisitRecurse
 }
 
@@ -653,12 +657,6 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
-		// if ass, ok := expr.(*ast.Indexing); ddptypes.IsReference(paramType) && ddptypes.EqualDeref(paramType, ddptypes.BUCHSTABE) && ok {
-		// 	lhs := t.Evaluate(ass.Lhs)
-		// 	if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
-		// 		t.errExpr(ddperror.TYP_INVALID_REFERENCE, expr, "Ein Buchstabe in einem Text kann nicht als Buchstaben Referenz übergeben werden")
-		// 	}
-		// }
 		if !ddptypes.Equal(argType, paramType) && !ddptypes.IsDereferencableTo(argType, paramType) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
@@ -722,14 +720,16 @@ func (t *Typechecker) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 
 func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	rhs := t.Evaluate(stmt.Rhs)
-	stmt.RhsType = rhs
 	target := t.Evaluate(stmt.Var)
-	stmt.VarType = target
 
-	// typesDontMatch := !ddptypes.EqualDeref(target, rhs) && (!ddptypes.Equal(target, ddptypes.VARIABLE) || ddptypes.EqualDeref(rhs, ddptypes.VoidType{}))
+	isStringIndexing := false
+	if bin, isBin := stmt.Var.(*ast.BinaryExpr); isBin && bin.Operator == ast.BIN_INDEX && ddptypes.Equal(target, ddptypes.BUCHSTABE) && ddptypes.EqualDeref(TypeOfTypecheckedExpression(bin.Lhs), ddptypes.TEXT) {
+		stmt.Var.SetMetadataAttachement(ast.StringIndexingMeta{}) // mark the string indexing
+		isStringIndexing = true
+	}
 
 	targetRef, _, isTargetRef := ddptypes.CastReference(target)
-	if !isTargetRef {
+	if !isTargetRef && !isStringIndexing {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keinem Wert vom Typ %s zugewiesen werden, da dieser kein Referenz Typ ist",
 			rhs,
@@ -739,7 +739,12 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	}
 
 	numericCastPossible := ddptypes.IsNumericDeref(target) && ddptypes.IsNumericDeref(rhs)
-	if !ddptypes.IsReferenceTo(target, rhs) && !(ddptypes.IsDereferencableTo(rhs, targetRef.Type)) && !numericCastPossible && !ddptypes.EqualDeref(target, ddptypes.VARIABLE) {
+	if isStringIndexing {
+		if !ddptypes.EqualDeref(rhs, ddptypes.BUCHSTABE) {
+			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs, "Ein Wert von Typ %s kann keinem Buchstaben eines Textes zugewiesen werden", rhs)
+		}
+		return ast.VisitRecurse
+	} else if !ddptypes.IsReferenceTo(target, rhs) && !(ddptypes.IsDereferencableTo(rhs, targetRef.Type)) && !numericCastPossible && !ddptypes.EqualDeref(target, ddptypes.VARIABLE) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,

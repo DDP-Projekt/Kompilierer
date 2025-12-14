@@ -2,7 +2,6 @@ package ast
 
 import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -46,12 +45,10 @@ type (
 
 	AssignStmt struct {
 		Metadata
-		Range   token.Range
-		Tok     token.Token
-		Var     Expression    // the variable to assign to (needs to be of reference type)
-		VarType ddptypes.Type // filled in by the typechecker, to keep information about typedefs
-		Rhs     Expression    // literal assign value
-		RhsType ddptypes.Type // filled in by the typechecker, to keep information about typedefs
+		Range token.Range
+		Tok   token.Token
+		Var   Expression // the variable to assign to (needs to be of reference type)
+		Rhs   Expression // literal assign value
 	}
 
 	BlockStmt struct {
