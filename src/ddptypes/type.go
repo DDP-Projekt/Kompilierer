@@ -54,7 +54,7 @@ func Equal(t1, t2 Type) bool {
 // that is, wether t1 and t2 refer to the same type
 // throughout TypeAliases and TypeDefs and also List Types
 func DeepEqual(t1, t2 Type) bool {
-	return getTrueListUnderlying(t1) == getTrueListUnderlying(t2)
+	return getTrueListRefUnderlying(t1) == getTrueListRefUnderlying(t2)
 }
 
 // returns the underlying type for nested TypeAliases

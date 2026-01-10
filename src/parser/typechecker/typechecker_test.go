@@ -147,7 +147,18 @@ func TestReferences(t *testing.T) {
 
 func TestAssignStmt(t *testing.T) {
 	assert := assert.New(t)
-	symbols := createSymbols("z", ddptypes.ZAHL, "zr", ddptypes.ReferenceType{Type: ddptypes.ZAHL}, "v", ddptypes.VARIABLE, "vr", ddptypes.ReferenceType{Type: ddptypes.VARIABLE}, "b", ddptypes.BYTE, "br", ddptypes.ReferenceType{Type: ddptypes.BYTE})
+
+	td := ddptypes.TypeDef{Underlying: ddptypes.ZAHL, Name: "Nummer"}
+
+	symbols := createSymbols("z", ddptypes.ZAHL,
+		"zr", ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+		"v", ddptypes.VARIABLE,
+		"vr", ddptypes.ReferenceType{Type: ddptypes.VARIABLE},
+		"b", ddptypes.BYTE,
+		"br", ddptypes.ReferenceType{Type: ddptypes.BYTE},
+		"td", &td,
+		"tdr", ddptypes.ReferenceType{Type: &td},
+	)
 
 	testExpr := func(expr ast.Node) {
 		ty := createTypechecker(t, Typechecker{CurrentTable: symbols, Module: &ast.Module{Ast: &ast.Ast{Symbols: symbols}}})
@@ -183,4 +194,44 @@ func TestAssignStmt(t *testing.T) {
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "v"), Rhs: makeIdent(symbols, "v")})
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "vr"), Rhs: makeIdent(symbols, "z")})
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "vr"), Rhs: makeIdent(symbols, "v")})
+}
+
+func TestCastExpr(t *testing.T) {
+	assert := assert.New(t)
+
+	td := ddptypes.TypeDef{Underlying: ddptypes.ZAHL, Name: "Nummer"}
+
+	symbols := createSymbols("z", ddptypes.ZAHL,
+		"zr", ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+		"v", ddptypes.VARIABLE,
+		"vr", ddptypes.ReferenceType{Type: ddptypes.VARIABLE},
+		"b", ddptypes.BYTE,
+		"br", ddptypes.ReferenceType{Type: ddptypes.BYTE},
+		"td", &td,
+		"tdr", ddptypes.ReferenceType{Type: &td},
+	)
+
+	testExpr := func(expr ast.Node) {
+		ty := createTypechecker(t, Typechecker{CurrentTable: symbols, Module: &ast.Module{Ast: &ast.Ast{Symbols: symbols}}})
+
+		ty.TypecheckNode(expr)
+		assert.False(*ty.panicMode)
+	}
+
+	testExprErr := func(expr ast.Node) {
+		ty := createTypechecker(t, Typechecker{CurrentTable: symbols, Module: &ast.Module{Ast: &ast.Ast{Symbols: symbols}}, ErrorHandler: ddperror.EmptyHandler})
+
+		ty.TypecheckNode(expr)
+		assert.True(*ty.panicMode)
+	}
+
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "z"), TargetType: ddptypes.ZAHL})
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: &td})
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: &td}})
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ZAHL})
+	testExprErr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.TEXT})
+	testExprErr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: ddptypes.TEXT}})
+
+	// reference side-casts
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: ddptypes.ZAHL}})
 }

@@ -13,13 +13,18 @@ Sollte eigentlich
 	Speichere 2 als Hausnummer in hausnummer1.
 sein, aber für diesen Test nun mal so.
 ]
-Speichere 2 in hausnummer1 als Hausnummer Referenz.
+Speichere 2 in hausnummer1 als Zahlen Referenz.
 Schreibe (hausnummer1 als Zahl) auf eine Zeile.
 
 Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurück, macht:
 	Speichere 42 in z.
 Und kann so benutzt werden:
 	"foo <z>"
+
+Die Zahl z ist 1.
+foo (z als Zahlen Referenz).
+Schreibe z auf eine Zeile.
+
 
 Die Hausnummer h ist 1 als Hausnummer.
 foo (h als Zahlen Referenz).
@@ -33,7 +38,7 @@ Und überlädt den "an der Stelle" Operator.
 Schreibe (z an der Stelle 5) auf eine Zeile.
 Schreibe z auf eine Zeile.
 
-Schreibe (h als Zahl an der Stelle 5) auf eine Zeile.
+Schreibe (h als Zahlen Referenz an der Stelle 5) auf eine Zeile.
 Schreibe (h als Zahl) auf eine Zeile.
 
 
@@ -45,11 +50,11 @@ Und kann so benutzt werden:
 	"foo2 <z>"
 
 Der Text t ist "hallo".
-foo2 (t als Text).
+foo2 (t als Text Referenz).
 Schreibe t auf eine Zeile.
 
 Die Buchstabenfolge b ist "hallo" als Buchstabenfolge.
-foo2 (b als Text).
+foo2 (b als Text Referenz).
 Schreibe (b als Text) auf eine Zeile.
 
 Die Funktion bar2 mit den Parametern z und w vom Typ Text Referenz und Text, gibt einen Text zurück, macht:
@@ -60,5 +65,5 @@ Und überlädt den "an der Stelle" Operator.
 Schreibe (t an der Stelle "test") auf eine Zeile.
 Schreibe t auf eine Zeile.
 
-Schreibe (b als Text an der Stelle "test") auf eine Zeile.
+Schreibe (b als Text Referenz an der Stelle "test") auf eine Zeile.
 Schreibe (b als Text) auf eine Zeile.

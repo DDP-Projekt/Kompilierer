@@ -541,20 +541,26 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	lhsTypeDef, isLhsTypeDef := ddptypes.CastTypeDefDeref(lhs)
 
 	targetRef, _, isTargetRef := ddptypes.CastReference(expr.TargetType)
+	lhsRef, _, isLhsRef := ddptypes.CastReference(lhs)
 
 	if ddptypes.IsAny(lhs) || (ddptypes.IsAny(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
 		// casts from/to any are always valid but might error at runtime
 		t.latestReturnedType = expr.TargetType
 		return ast.VisitRecurse
 
-	} else if !ddptypes.IsReference(lhs) && isTargetRef {
+	} else if !isLhsRef && isTargetRef {
 		// reference types can always be cast from/to their underlying type
 		if !ddptypes.Equal(lhs, targetRef.Type) {
 			castErr()
 		}
+	} else if isLhsRef && isLhsTypeDef {
+		// typedefs can only be converted to/from their underlying type or
+		if !ddptypes.EqualDeref(expr.TargetType, lhsRef.Type) && !ddptypes.EqualDeref(expr.TargetType, lhsTypeDef.Underlying) {
+			castErr()
+		}
 	} else if isTargetTypeDef && isLhsTypeDef {
 		// typedefs can only be converted to/from their underlying type
-		if !ddptypes.Equal(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.Equal(targetTypeDef.Underlying, lhs) {
+		if !ddptypes.EqualDeref(lhsTypeDef.Underlying, expr.TargetType) && !ddptypes.EqualDeref(targetTypeDef.Underlying, lhs) {
 			castErr()
 		}
 	} else if isTargetTypeDef {

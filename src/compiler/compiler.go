@@ -1846,16 +1846,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	}
 
 	targetType := ddptypes.TrueUnderlying(e.TargetType)
+	targetIrType := c.toIrType(targetType)
 	lhs, lhsTyp, isTempLhs := c.evaluate(e.Lhs)
 
-	vtable := c.toIrType(targetType).VTable()
+	vtable := targetIrType.VTable()
 	if typeDef, isTypeDef := ddptypes.CastTypeDef(e.TargetType); isTypeDef {
 		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 	}
 
 	// helper function to cast non-primitive from any to their concrete type
 	nonPrimitiveAnyCast := func() {
-		nonPrimTyp := c.toIrType(targetType)
+		nonPrimTyp := targetIrType
 
 		dest := c.NewAlloca(nonPrimTyp.LLType())
 		c.createIfElse(c.compareAnyType(lhs, vtable), func() {
@@ -1892,11 +1893,12 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	}
 
 	lhsRefTyp, isRefLhs := lhsTyp.(*ddpIrReferenceType)
+	targetRefTyp, isRefTarget := targetIrType.(*ddpIrReferenceType)
 
 	// cast to ref
 	if !isRefLhs && ddptypes.IsReference(targetType) {
 		if lhsTyp == c.ddpany {
-			primitiveAnyCast(c.toIrType(targetType))
+			primitiveAnyCast(targetIrType)
 			return ast.VisitRecurse
 		}
 
@@ -1904,7 +1906,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		c.claimOrCopy(ref, lhs, lhsTyp, isTempLhs)
 		c.builder().latestReturn = ref
 		c.builder().latestIsTemp = false
-		c.builder().latestReturnType = c.toIrType(targetType)
+		c.builder().latestReturnType = targetIrType
+		return ast.VisitRecurse
+	} else if isRefLhs && isRefTarget {
+		if lhsRefTyp == targetRefTyp {
+			c.builder().latestReturn = lhs
+			c.builder().latestIsTemp = false
+			c.builder().latestReturnType = targetIrType
+		} else if lhsRefTyp.underlying == targetRefTyp {
+			// TODO
+		}
+
 		return ast.VisitRecurse
 	} else if isRefLhs {
 		lhs, lhsTyp, isTempLhs = c.builder().CreateLoad(lhsRefTyp.underlying.LLType(), lhs, ""), c.toIrType(lhsRefTyp.ddpType.Type), false
@@ -1928,7 +1940,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.ZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, targetIrType)
 			case c.ddpbooltyp:
 				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.False, "")
 				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpint, "")
@@ -1944,7 +1956,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.KOMMAZAHL:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, targetIrType)
 			case c.ddpstring:
 				c.builder().latestReturn = c.builder().createCall(c.functions["ddp_string_to_float"].irFunc, lhs)
 			case c.ddpany:
@@ -1955,7 +1967,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		case ddptypes.BYTE:
 			switch lhsTyp {
 			case c.ddpinttyp, c.ddpfloattyp, c.ddpbytetyp:
-				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, c.toIrType(targetType))
+				c.builder().latestReturn = c.numericCast(lhs, lhsTyp, targetIrType)
 			case c.ddpbooltyp:
 				cond := c.builder().CreateICmp(llvm.IntNE, lhs, c.False, "")
 				c.builder().latestReturn = c.builder().CreateZExt(cond, c.ddpbyte, "")
@@ -2042,7 +2054,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			// c.err("Invalide Typumwandlung zu %s (%s)", e.TargetType, targetType)
 		}
 	}
-	c.builder().latestReturnType = c.toIrType(targetType)
+	c.builder().latestReturnType = targetIrType
 	return ast.VisitRecurse
 }
 
@@ -2091,9 +2103,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-// helper for VisitAssignStmt and VisitFuncCall
-// if as_ref is true, the assignable is treated as a reference parameter and the third return value can be ignored
-// if as_ref is false, the assignable is treated as the lhs in an AssignStmt and might be a string indexing
+// helper for VisitAssignStmt
 func (c *compiler) evaluateAssignableOrReference(ass ast.Expression) (llvm.Value, ddpIrType, *ast.BinaryExpr) {
 	if _, isStringIndexing := ass.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
 		lhs, lhsTyp, _ := c.evaluate(ass)
@@ -2102,56 +2112,6 @@ func (c *compiler) evaluateAssignableOrReference(ass ast.Expression) (llvm.Value
 
 	val, valTyp, _ := c.evaluate(ass)
 	return val, valTyp, nil
-	/*
-		switch assign := ass.(type) {
-		case *ast.Ident:
-			Var := c.scp.lookupVar(assign.Declaration.(*ast.VarDecl))
-			if ddptypes.IsReference(Var.typ.DDPType()) {
-				return c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ, nil
-			}
-			return Var.val, Var.typ, nil
-		case *ast.BinaryExpr:
-			switch assign.Operator {
-			case ast.BIN_INDEX:
-				lhs, lhsTyp, _ := c.evaluateAssignableOrReference(assign.Lhs, as_ref) // get the (possibly nested) assignable
-				if listTyp, isList := lhsTyp.(*ddpIrListType); isList {
-					index, indexTyp, _ := c.evaluate(assign.Rhs)
-					index = c.builder().CreateSub(c.floatOrByteAsInt(index, indexTyp), c.newInt(1), "") // ddpindices start at 1
-					listLen := c.loadStructField(listTyp.typ, lhs, list_len_field_index)
-					var elementPtr llvm.Value
-
-					cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
-					c.createIfElse(cond, func() {
-						listArr := c.loadStructField(listTyp.typ, lhs, list_arr_field_index)
-						elementPtr = c.indexArray(listTyp.elementType.LLType(), listArr, index)
-					}, func() { // runtime error
-						line, column := int64(assign.Token().Range.Start.Line), int64(assign.Token().Range.Start.Column)
-						c.out_of_bounds_error(c.newInt(line), c.newInt(column), c.builder().CreateAdd(index, c.newInt(1), ""), listLen)
-					})
-					return elementPtr, listTyp.elementType, nil
-				} else if !as_ref && lhsTyp == c.ddpstring {
-					return lhs, lhsTyp, assign
-				} else {
-					c.err("non-list/string/struct type passed as assignable/reference")
-				}
-			case ast.BIN_FIELD_ACCESS:
-				rhs, rhsTyp, _ := c.evaluateAssignableOrReference(assign.Rhs, as_ref)
-				if structTyp, isStruct := rhsTyp.(*ddpIrStructType); isStruct {
-					fieldIndex := getFieldIndex(assign.Lhs.(*ast.Ident).Literal.Literal, structTyp)
-					fieldPtr := c.indexStruct(structTyp.typ, rhs, fieldIndex)
-					return fieldPtr, structTyp.fieldIrTypes[fieldIndex], nil
-				} else {
-					c.err("non-struct type passed to FieldAccess")
-				}
-			default:
-				c.err("Invalid binary operator in evaluateAssignableOrReference: %s", assign.Operator)
-			}
-		case *ast.CastExpr:
-			return c.evaluateAssignableOrReference(assign.Lhs, as_ref)
-		}
-		c.err("Invalid types in evaluateAssignableOrReference: %s", ass)
-		return llvm.Value{}, nil, nil
-	*/
 }
 
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {

@@ -53,10 +53,12 @@ func GetListElementTypeDeref(typ Type) Type {
 }
 
 // helper that flattens list types to not contain typedefs/aliases
-func getTrueListUnderlying(typ Type) Type {
+func getTrueListRefUnderlying(typ Type) Type {
 	typ = TrueUnderlying(typ)
 	if IsList(typ) {
-		typ = ListType{ElementType: getTrueListUnderlying(typ.(ListType).ElementType)}
+		typ = ListType{ElementType: getTrueListRefUnderlying(typ.(ListType).ElementType)}
+	} else if IsReference(typ) {
+		typ = ReferenceType{Type: getTrueListRefUnderlying(typ.(ReferenceType).Type)}
 	}
 	return typ
 }

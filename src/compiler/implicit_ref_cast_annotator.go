@@ -180,6 +180,12 @@ func (a *ImplicitRefCastAnnotator) VisitCastExpr(e *ast.CastExpr) ast.VisitResul
 		return ast.VisitSkipChildren
 	}
 
+	if ddptypes.DeepEqual(a.typeOf(e.Lhs), e.TargetType) {
+		a.Visit(e.Lhs)
+		a.clearAnnotation(e.Lhs)
+		return ast.VisitSkipChildren
+	}
+
 	return ast.VisitRecurse
 }
 
