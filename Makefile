@@ -83,7 +83,7 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir format-stdlib format-runtime format checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations help
+.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir format-stdlib format-runtime format checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations test-without-optimizations help
 
 all: kddp runtime stdlib ddp-setup $(OUT_DIR)LICENSE $(OUT_DIR)README.md ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
@@ -196,7 +196,7 @@ test-unit:
 test-normal: export DDPTEST_TEST_DIRS = $(TEST_DIRS)
 test-normal: export DDPTEST_KDDP_ARGS = $(KDDP_ARGS)
 test-normal: all ## runs the tests
-	go test -v ./tests '-run=(TestKDDP|TestStdlib$|TestBuildExamples)' | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+	go test -v ./tests '-run=(TestKDDP|TestStdlib|TestBuildExamples)' | $(SED) ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | $(SED) ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
 test-memory: export DDPTEST_TEST_DIRS = $(TEST_DIRS)
 test-memory: export DDPTEST_KDDP_ARGS = $(KDDP_ARGS)
@@ -218,7 +218,10 @@ test: test-unit test-normal-memory ## runs all the tests
 	'$(MAKE)' coverage
 
 test-with-optimizations: ## runs all tests with full optimizations enabled
-	'$(MAKE)' KDDP_ARGS="-O 2" test
+	'$(MAKE)' DDPTEST_KDDP_ARGS="-O2" test
+
+test-without-optimizations: ## without any optimizations enabled
+	'$(MAKE)' DDPTEST_KDDP_ARGS="-O0" test
 
 help: ## Show this help.
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'

@@ -543,7 +543,7 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 	targetRef, _, isTargetRef := ddptypes.CastReference(expr.TargetType)
 	lhsRef, _, isLhsRef := ddptypes.CastReference(lhs)
 
-	if ddptypes.IsAny(lhs) || (ddptypes.IsAny(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
+	if ddptypes.IsAnyDeref(lhs) || (ddptypes.IsAnyDeref(expr.TargetType) && !ddptypes.IsVoid(lhs)) {
 		// casts from/to any are always valid but might error at runtime
 		t.latestReturnedType = expr.TargetType
 		return ast.VisitRecurse
@@ -629,7 +629,7 @@ func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 
 func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
 	lhs := t.Evaluate(expr.Lhs)
-	if !ddptypes.Equal(lhs, ddptypes.VARIABLE) {
+	if !ddptypes.EqualDeref(lhs, ddptypes.VARIABLE) {
 		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr.Lhs,
 			"Der '%s' Operator erwartet einen Ausdruck vom Typ '%s' aber hat '%s' bekommen",
 			expr.Tok.Literal,
@@ -637,7 +637,7 @@ func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
 			lhs,
 		)
 	}
-	if ddptypes.Equal(expr.CheckType, ddptypes.VARIABLE) {
+	if ddptypes.EqualDeref(expr.CheckType, ddptypes.VARIABLE) {
 		t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Dieser Ausdruck ist immer 'wahr'")
 	}
 	t.latestReturnedType = ddptypes.WAHRHEITSWERT

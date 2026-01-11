@@ -1915,11 +1915,18 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.builder().latestReturnType = targetIrType
 		} else if lhsRefTyp.underlying == targetRefTyp {
 			// TODO
+		} else if lhsRefTyp.underlying == c.ddpany {
+			lhs = c.builder().CreateLoad(c.ddpany.typ, lhs, "")
+			primitiveAnyCast(targetIrType)
 		}
 
 		return ast.VisitRecurse
 	} else if isRefLhs {
-		lhs, lhsTyp, isTempLhs = c.builder().CreateLoad(lhsRefTyp.underlying.LLType(), lhs, ""), c.toIrType(lhsRefTyp.ddpType.Type), false
+		if lhsRefTyp.underlying.TriviallyCopyable() {
+			lhs, lhsTyp, isTempLhs = c.builder().CreateLoad(lhsRefTyp.underlying.LLType(), lhs, ""), lhsRefTyp.underlying, false
+		} else {
+			lhsTyp = lhsRefTyp.underlying
+		}
 	}
 
 	if ddptypes.IsList(targetType) {
@@ -2410,7 +2417,7 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		c.freeNonPrimitive(lhs, lhsTyp) // free the old value in the variable/list
 
 		// implicit cast to any if required
-		if lhsTyp == c.ddpany && rhsTyp != c.ddpany {
+		if ddptypes.IsAnyDeref(varDDPType) && rhsTyp != c.ddpany {
 			vtable := rhsTyp.VTable()
 			if typeDef, isTypeDef := ddptypes.CastTypeDef(rhsDDPType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]

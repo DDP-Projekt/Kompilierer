@@ -258,6 +258,10 @@ func IsNumericDeref(t Type) bool {
 	return MaybeDeref(t, IsNumeric)
 }
 
+func IsAnyDeref(t Type) bool {
+	return MaybeDeref(t, IsAny)
+}
+
 func IsGenericDeref(t Type) bool {
 	return MaybeDeref(t, IsGeneric)
 }
