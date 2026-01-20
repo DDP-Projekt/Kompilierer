@@ -178,6 +178,15 @@ func CastReference(t Type) (ReferenceType, Type, bool) {
 	return reference, t, isRef
 }
 
+func RefDepth(t Type) (result int) {
+	r, _, isRef := CastReference(t)
+	for isRef {
+		result++
+		r, _, isRef = CastReference(r.Type)
+	}
+	return result
+}
+
 // wether a is a reference to b
 func IsReferenceTo(a, b Type) bool {
 	_, aType, isARef := CastReference(a)

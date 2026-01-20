@@ -16,13 +16,13 @@ Die Befehlszeile b ist
     (eine Liste, die aus "kddp", "hallo", "--ausgabe", "welt", "--lang-von-kddp",
 	 "-k", "test1", "-d", "test.ddp", "test2" besteht) mit kddp analysiert.
 
-Schreibe (den Wert für "ausgabe" von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'o' von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für "lang-von-kddp" von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'k' von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'n' von b als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'd' von b als Text) auf eine Zeile.
-Schreibe (den Wert für "datei" von b als Text) auf eine Zeile.
+Schreibe (die Angabe für "ausgabe" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'o' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für "lang-von-kddp" von b als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'k' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'n' von b als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'd' von b als Text) auf eine Zeile.
+Schreibe (die Angabe für "datei" von b als Text) auf eine Zeile.
 Schreibe (argumente von b) auf eine Zeile.
 Schreibe (b 'k' enthält) auf eine Zeile.
 Schreibe (b "ausgabe" enthält) auf eine Zeile.
@@ -49,13 +49,13 @@ Die Befehlszeile c ist
 
 Schreibe (unterBefehle von c) auf eine Zeile.
 Schreibe (argumente von c) auf eine Zeile.
-Schreibe (den Wert für "ausgabe" von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'o' von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für "hilfe" von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'h' von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für "lang-von-kompiliere" von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'c' von c als Wahrheitswert) auf eine Zeile.
-Schreibe (den Wert für 'n' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für "ausgabe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'o' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für "hilfe" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'h' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für "lang-von-kompiliere" von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'c' von c als Wahrheitswert) auf eine Zeile.
+Schreibe (die Angabe für 'n' von c als Wahrheitswert) auf eine Zeile.
 Schreibe (c 'k' enthält) auf eine Zeile.
 Schreibe (c "ausgabe" enthält) auf eine Zeile.
 Schreibe (c 'o' enthält) auf eine Zeile.

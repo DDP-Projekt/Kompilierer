@@ -58,7 +58,7 @@ func (t *ddpIrReferenceType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
-func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType, declarationOnly bool) *ddpIrReferenceType {
+func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType) *ddpIrReferenceType {
 	if r, ok := c.refTypes[t]; ok {
 		return r
 	}
@@ -72,18 +72,16 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	}
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, refType.name+"_vtable")
-	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	if !declarationOnly {
-		vtable.SetGlobalConstant(true)
-		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
-			llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
-			ddp_free_ref_type_irfun, // TODO: this should probably not be null
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-		}))
-	}
+	vtable.SetGlobalConstant(true)
+	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+		llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
+		ddp_free_ref_type_irfun,
+		llvm.ConstNull(c.ptr),
+		llvm.ConstNull(c.ptr),
+	}))
 
 	refType.vtable = vtable
 

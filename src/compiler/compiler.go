@@ -287,9 +287,9 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 	// and the void type before everything else
 	c.voidtyp = &ddpIrVoidType{}
 	c.initRuntimeFunctions()
-	c.setupPrimitiveTypes(false)
-	c.ddpstring = c.defineStringType(false)
-	c.ddpany = c.defineAnyType(false)
+	c.setupPrimitiveTypes()
+	c.ddpstring = c.defineStringType()
+	c.ddpany = c.defineAnyType()
 	c.setupListTypes(false) // we want definitions
 
 	c.disposeBuilders()
@@ -412,9 +412,9 @@ func (c *compiler) setup() {
 	// before the list types
 	c.voidtyp = c.defineVoidType()
 	c.initRuntimeFunctions()
-	c.setupPrimitiveTypes(true)
-	c.ddpstring = c.defineStringType(true)
-	c.ddpany = c.defineAnyType(true)
+	c.setupPrimitiveTypes()
+	c.ddpstring = c.defineStringType()
+	c.ddpany = c.defineAnyType()
 	c.setupListTypes(true)
 
 	c.setupModuleInitDispose()
@@ -445,12 +445,12 @@ func (c *compiler) setupErrorStrings() {
 }
 
 // used in setup()
-func (c *compiler) setupPrimitiveTypes(declarationOnly bool) {
-	c.ddpinttyp = c.definePrimitiveType(ddptypes.ZAHL, c.ddpint, c.zero, "ddpint", declarationOnly)
-	c.ddpfloattyp = c.definePrimitiveType(ddptypes.KOMMAZAHL, c.ddpfloat, c.zerof, "ddpfloat", declarationOnly)
-	c.ddpbytetyp = c.definePrimitiveType(ddptypes.BYTE, c.ddpbyte, c.zero8, "ddpbyte", declarationOnly)
-	c.ddpbooltyp = c.definePrimitiveType(ddptypes.WAHRHEITSWERT, c.ddpbool, c.False, "ddpbool", declarationOnly)
-	c.ddpchartyp = c.definePrimitiveType(ddptypes.BUCHSTABE, c.ddpchar, llvm.ConstInt(c.ddpchar, 0, false), "ddpchar", declarationOnly)
+func (c *compiler) setupPrimitiveTypes() {
+	c.ddpinttyp = c.definePrimitiveType(ddptypes.ZAHL, c.ddpint, c.zero, "ddpint")
+	c.ddpfloattyp = c.definePrimitiveType(ddptypes.KOMMAZAHL, c.ddpfloat, c.zerof, "ddpfloat")
+	c.ddpbytetyp = c.definePrimitiveType(ddptypes.BYTE, c.ddpbyte, c.zero8, "ddpbyte")
+	c.ddpbooltyp = c.definePrimitiveType(ddptypes.WAHRHEITSWERT, c.ddpbool, c.False, "ddpbool")
+	c.ddpchartyp = c.definePrimitiveType(ddptypes.BUCHSTABE, c.ddpchar, llvm.ConstInt(c.ddpchar, 0, false), "ddpchar")
 }
 
 // used in setup()
@@ -625,7 +625,8 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		}
 
 		// implicit cast to any if required
-		if ddptypes.DeepEqual(d.Type, ddptypes.VARIABLE) && initTyp != c.ddpany {
+		_, t, _ := ddptypes.CastReference(d.Type)
+		if ddptypes.DeepEqual(t, ddptypes.VARIABLE) && initTyp != c.ddpany {
 			vtable := initTyp.VTable()
 			if typeDef, isTypeDef := ddptypes.CastTypeDef(initDDPType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
@@ -828,7 +829,7 @@ func (c *compiler) VisitTypeAliasDecl(decl *ast.TypeAliasDecl) ast.VisitResult {
 }
 
 func (c *compiler) VisitTypeDefDecl(decl *ast.TypeDefDecl) ast.VisitResult {
-	c.addTypdefVTable(decl, false)
+	c.addTypdefVTable(decl)
 	return ast.VisitRecurse
 }
 
@@ -1386,47 +1387,47 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		}
 		c.builder().latestReturnType = c.ddpfloattyp
 	case ast.BIN_INDEX:
-		switch lhsTyp {
-		case c.ddpstring:
+		lhsRefType, isRefLhs := lhsTyp.(*ddpIrReferenceType)
+		if isRefLhs {
+			lhsTyp = lhsRefType.underlying
+		}
+
+		if lhsTyp == c.ddpstring {
 			c.builder().latestReturn = c.builder().createCall(c.ddpstring.indexIrFun, lhs, c.floatOrByteAsInt(rhs, rhsTyp))
 			c.builder().latestReturnType = c.ddpchartyp
-		default:
-			lhsRefType, isRefLhs := lhsTyp.(*ddpIrReferenceType)
-			if isRefLhs {
-				lhsTyp = lhsRefType.underlying
-			}
-
-			listType, isList := lhsTyp.(*ddpIrListType)
-			if !isList {
-				c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
-			}
-
-			listLen := c.loadStructField(listType.typ, lhs, list_len_field_index)
-			index := c.builder().CreateSub(c.floatOrByteAsInt(rhs, rhsTyp), c.newInt(1), "") // ddp indices start at 1, so subtract 1
-			// index bounds check
-			cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
-			c.createIfElse(cond, func() {
-				listArr := c.loadStructField(listType.typ, lhs, list_arr_field_index)
-				elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
-
-				if listType.elementType.TriviallyCopyable() && !isRefLhs {
-					c.builder().latestReturn, c.builder().latestReturnType = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
-				} else if !isTempLhs {
-					c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = elementPtr, c.getReferenceType(listType.elementType), false
-					return
-				} else {
-					dest := c.NewAlloca(listType.elementType.LLType())
-					c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(
-						c.deepCopyInto(dest, elementPtr, listType.elementType),
-						listType.elementType,
-					)
-					c.builder().latestIsTemp = true // the element is now also a temporary
-				}
-			}, func() { // runtime error
-				line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-				c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
-			})
+			break
 		}
+
+		listType, isList := lhsTyp.(*ddpIrListType)
+		if !isList {
+			c.err("invalid Parameter Types for STELLE (%s, %s)", lhsTyp.Name(), rhsTyp.Name())
+		}
+
+		listLen := c.loadStructField(listType.typ, lhs, list_len_field_index)
+		index := c.builder().CreateSub(c.floatOrByteAsInt(rhs, rhsTyp), c.newInt(1), "") // ddp indices start at 1, so subtract 1
+		// index bounds check
+		cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
+		c.createIfElse(cond, func() {
+			listArr := c.loadStructField(listType.typ, lhs, list_arr_field_index)
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
+
+			if listType.elementType.TriviallyCopyable() && !isRefLhs {
+				c.builder().latestReturn, c.builder().latestReturnType = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
+			} else if !isTempLhs {
+				c.builder().latestReturn, c.builder().latestReturnType, c.builder().latestIsTemp = elementPtr, c.getReferenceType(listType.elementType), false
+				return
+			} else {
+				dest := c.NewAlloca(listType.elementType.LLType())
+				c.builder().latestReturn, c.builder().latestReturnType = c.scp.addTemporary(
+					c.deepCopyInto(dest, elementPtr, listType.elementType),
+					listType.elementType,
+				)
+				c.builder().latestIsTemp = true // the element is now also a temporary
+			}
+		}, func() { // runtime error
+			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
+			c.out_of_bounds_error(c.newInt(line), c.newInt(column), rhs, listLen)
+		})
 	case ast.BIN_SLICE_FROM, ast.BIN_SLICE_TO:
 		dest := c.NewAlloca(lhsTyp.LLType())
 		rhs = c.floatOrByteAsInt(rhs, rhsTyp)
@@ -2346,7 +2347,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 			c.declareIfStruct(decl.Type)
 		case *ast.TypeDefDecl:
 			c.declareIfStruct(decl.Type)
-			c.addTypdefVTable(decl, true)
+			c.addTypdefVTable(decl)
 		case *ast.StructDecl:
 			c.defineOrDeclareAllDeclTypes(decl)
 		case *ast.BadDecl:
@@ -2664,6 +2665,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.scp = newScope(c.scp)
 	in, inTyp, isTempIn := c.evaluate(s.In)
 
+	if refType, isRef := inTyp.(*ddpIrReferenceType); isRef {
+		inTyp, isTempIn = refType.underlying, false
+	}
+
 	temp := c.NewAlloca(inTyp.LLType())
 	c.claimOrCopy(temp, in, inTyp, isTempIn)
 	in, _ = c.scp.addTemporary(temp, inTyp)
@@ -2871,7 +2876,7 @@ func (c *compiler) exitNestedScopes(targetScope *scope) {
 	}
 }
 
-func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
+func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl) {
 	name := c.mangledNameType(d.Type)
 	if _, ok := c.typeDefVTables[name]; ok {
 		return
@@ -2880,18 +2885,16 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl, declarationOnly bool) {
 	ir_type := c.toIrType(d.Type)
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
-	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	if !declarationOnly {
-		vtable.SetGlobalConstant(true)
-		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
-			llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
-			ir_type.FreeFunc(),
-			ir_type.DeepCopyFunc(),
-			ir_type.EqualsFunc(),
-		}))
-	}
+	vtable.SetGlobalConstant(true)
+	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+		llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
+		ir_type.FreeFunc(),
+		ir_type.DeepCopyFunc(),
+		ir_type.EqualsFunc(),
+	}))
 
 	c.typeDefVTables[name] = vtable
 }

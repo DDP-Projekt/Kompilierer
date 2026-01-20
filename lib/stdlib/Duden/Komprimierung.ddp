@@ -16,7 +16,7 @@ Und kann so benutzt werden:
 	"Verpacke die Dateien <dateiPfade> zu einem neuen <typ> Archiv bei <arPfad>"
 
 Die öffentliche Funktion Archiv_Aus_Datei mit den Parametern typ, dateiPfad und arPfad vom Typ Zahl, Text und Text, gibt nichts zurück, macht:
-	Verpacke die Dateien (eine Liste, die aus dateiPfad besteht) zu einem neuen typ Archiv bei arPfad.
+	Verpacke die Dateien (eine Liste, die aus dateiPfad als Text besteht) zu einem neuen typ Archiv bei arPfad.
 Und kann so benutzt werden:
 	"Verpacke die Datei <dateiPfad> zu einem neuen <typ> Archiv bei <arPfad>"
 
@@ -35,7 +35,7 @@ Und kann so benutzt werden:
 	"Entpacke die Dateien <dateiPfade> vom Archiv <arPfad> in den Ordner <ordnerPfad>"
 
 Die öffentliche Funktion Archiv_Entpacken_Datei mit den Parametern dateiPfad, arPfad und ordnerPfad vom Typ Text, Text und Text, gibt nichts zurück, macht:
-	Entpacke die Dateien (eine Liste, die aus dateiPfad besteht) vom Archiv arPfad in den Ordner ordnerPfad.
+	Entpacke die Dateien (eine Liste, die aus dateiPfad als Text besteht) vom Archiv arPfad in den Ordner ordnerPfad.
 Und kann so benutzt werden:
 	"Entpacke die Datei <dateiPfad> vom Archiv <arPfad> in den Ordner <ordnerPfad>"
 

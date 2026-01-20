@@ -71,7 +71,7 @@ func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
 	return t.funcNull
 }
 
-func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defaultValue llvm.Value, name string, declarationOnly bool) *ddpIrPrimitiveType {
+func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defaultValue llvm.Value, name string) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		llType:       typ,
 		ddpType:      ddptyp,
@@ -81,22 +81,20 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 	}
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
-	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	if !declarationOnly {
-		vtable.SetGlobalConstant(true)
-		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
-			llvm.ConstInt(c.ddpint, c.getTypeSize(primitive), false),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-			llvm.ConstNull(c.ptr),
-		}))
-	}
+	vtable.SetGlobalConstant(true)
+	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+		llvm.ConstInt(c.ddpint, c.getTypeSize(primitive), false),
+		llvm.ConstNull(c.ptr),
+		llvm.ConstNull(c.ptr),
+		llvm.ConstNull(c.ptr),
+	}))
 
 	primitive.vtable = vtable
 
-	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptyp}, primitive, declarationOnly)
+	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptyp}, primitive)
 	return primitive
 }
 

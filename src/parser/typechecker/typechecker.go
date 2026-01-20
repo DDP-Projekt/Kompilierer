@@ -578,6 +578,8 @@ func (t *Typechecker) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
 		if !isOneOf(lhs, underlying) {
 			castErr()
 		}
+	} else if ddptypes.IsReferenceTo(lhs, expr.TargetType) {
+		// struct types can also be cast from/to their reference type
 	} else if primitiveType, isPrimitive := ddptypes.CastPrimitive(expr.TargetType); isPrimitive {
 		// special rules for primitive conversions
 		switch primitiveType {

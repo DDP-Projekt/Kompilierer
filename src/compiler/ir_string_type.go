@@ -78,7 +78,7 @@ const (
 	string_cap_field_index = 1
 )
 
-func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
+func (c *compiler) defineStringType() *ddpIrStringType {
 	ddpstring := &ddpIrStringType{}
 
 	ddpstring.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint}, false)
@@ -119,22 +119,20 @@ func (c *compiler) defineStringType(declarationOnly bool) *ddpIrStringType {
 	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", false, c.void, c.ptr, c.ddpchar)
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, "ddpstring_vtable")
-	vtable.SetLinkage(llvm.ExternalLinkage)
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
-	if !declarationOnly {
-		vtable.SetGlobalConstant(true)
-		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
-			llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
-			ddpstring.freeIrFun,
-			ddpstring.deepCopyIrFun,
-			ddpstring.equalsIrFun,
-		}))
-	}
+	vtable.SetGlobalConstant(true)
+	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+		llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
+		ddpstring.freeIrFun,
+		ddpstring.deepCopyIrFun,
+		ddpstring.equalsIrFun,
+	}))
 
 	ddpstring.vtable = vtable
 	ddpstring.defaultValue = llvm.ConstNull(ddpstring.typ)
 
-	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptypes.TEXT}, ddpstring, declarationOnly)
+	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptypes.TEXT}, ddpstring)
 	return ddpstring
 }

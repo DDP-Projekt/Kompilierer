@@ -201,6 +201,8 @@ func TestCastExpr(t *testing.T) {
 
 	td := ddptypes.TypeDef{Underlying: ddptypes.ZAHL, Name: "Nummer"}
 
+	structType := &ddptypes.StructType{Name: "struct"}
+
 	symbols := createSymbols("z", ddptypes.ZAHL,
 		"zr", ddptypes.ReferenceType{Type: ddptypes.ZAHL},
 		"v", ddptypes.VARIABLE,
@@ -209,6 +211,7 @@ func TestCastExpr(t *testing.T) {
 		"br", ddptypes.ReferenceType{Type: ddptypes.BYTE},
 		"td", &td,
 		"tdr", ddptypes.ReferenceType{Type: &td},
+		"str", structType,
 	)
 
 	testExpr := func(expr ast.Node) {
@@ -234,4 +237,7 @@ func TestCastExpr(t *testing.T) {
 
 	// reference side-casts
 	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: ddptypes.ZAHL}})
+
+	// struct references
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "str"), TargetType: structType})
 }

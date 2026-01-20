@@ -262,6 +262,13 @@ func TestUnifyGenericType(t *testing.T) {
 	assert.Equal(ZAHL, typ)
 	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
 
+	// higher level of references
+
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(ReferenceType{Type: ReferenceType{Type: ZAHL}}, ReferenceType{Type: GenericType{Name: "T"}}, genericTypes)
+	assert.Equal(ReferenceType{Type: ZAHL}, typ)
+	assert.Equal(map[string]Type{"T": ZAHL}, genericTypes)
+
 	// mixed
 
 	genericTypes = map[string]Type{}
@@ -378,6 +385,79 @@ func TestUnifyGenericType(t *testing.T) {
 		genericTypes,
 	)
 	assert.Nil(typ)
+
+	// structs and multilevel references
+
+	genericType = &GenericStructType{
+		StructType: StructType{
+			Name: "Generic",
+			Fields: []StructField{
+				{Type: GenericType{Name: "A"}},
+				{Type: GenericType{Name: "B"}},
+			},
+		},
+		GenericTypes: []GenericType{
+			{Name: "A"},
+			{Name: "B"},
+		},
+		Instantiations: []*StructType{nil, nil},
+	}
+
+	genericType.Instantiations[0] = &StructType{
+		Name: "Generic",
+		Fields: []StructField{
+			{Type: GenericType{Name: "T"}},
+			{Type: GenericType{Name: "R"}},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			GenericType{Name: "T"},
+			GenericType{Name: "R"},
+		},
+	}
+
+	genericType.Instantiations[1] = &StructType{
+		Name: "Generic",
+		Fields: []StructField{
+			{Type: ZAHL},
+			{Type: TEXT},
+		},
+		genericType: genericType,
+		instantiatedWith: []Type{
+			ZAHL,
+			TEXT,
+		},
+	}
+
+	// a function that takes &T should be instantiatable with an argument of type &&T, as &&T can be dereferenced to &T
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(
+		ReferenceType{Type: ReferenceType{genericType.Instantiations[1]}},
+		ReferenceType{genericType.Instantiations[0]},
+		genericTypes,
+	)
+	if assert.NotNil(typ) {
+		assert.Equal([]StructField{{Type: ZAHL}, {Type: TEXT}}, typ.(ReferenceType).Type.(*StructType).Fields)
+		assert.Equal(map[string]Type{"T": ZAHL, "R": TEXT}, genericTypes)
+		assert.Len(genericType.Instantiations, 2)
+		assert.Contains(genericType.Instantiations, typ.(ReferenceType).Type)
+		assert.Same(genericType.Instantiations[1], typ.(ReferenceType).Type)
+	}
+
+	// same for &&&T
+	genericTypes = map[string]Type{}
+	typ = UnifyGenericType(
+		ReferenceType{Type: ReferenceType{Type: ReferenceType{genericType.Instantiations[1]}}},
+		ReferenceType{genericType.Instantiations[0]},
+		genericTypes,
+	)
+	if assert.NotNil(typ) {
+		assert.Equal([]StructField{{Type: ZAHL}, {Type: TEXT}}, typ.(ReferenceType).Type.(*StructType).Fields)
+		assert.Equal(map[string]Type{"T": ZAHL, "R": TEXT}, genericTypes)
+		assert.Len(genericType.Instantiations, 2)
+		assert.Contains(genericType.Instantiations, typ.(ReferenceType).Type)
+		assert.Same(genericType.Instantiations[1], typ.(ReferenceType).Type)
+	}
 }
 
 func TestGetInstantiatedStructType(t *testing.T) {
@@ -484,4 +564,13 @@ func TestIsDereferencableTo(t *testing.T) {
 	assert.False(IsDereferencableTo(BUCHSTABE, ZAHL))
 	assert.False(IsDereferencableTo(ReferenceType{BUCHSTABE}, ZAHL))
 	assert.False(IsDereferencableTo(ReferenceType{ReferenceType{BUCHSTABE}}, ZAHL))
+}
+
+func TestRefDepth(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.Equal(RefDepth(ZAHL), 0)
+	assert.Equal(RefDepth(ReferenceType{Type: ZAHL}), 1)
+	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ZAHL}}), 2)
+	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ListType{ElementType: ReferenceType{Type: ZAHL}}}}), 2)
 }

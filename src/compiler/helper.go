@@ -52,7 +52,7 @@ func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)
 
 	if r, _, ok := ddptypes.CastReference(ddpType); ok {
-		return c.defineReferenceType(r, c.toIrType(r.Type), false)
+		return c.defineReferenceType(r, c.toIrType(r.Type))
 	}
 
 	if listType, isList := ddptypes.CastList(ddpType); isList {
@@ -122,7 +122,7 @@ func (c *compiler) getListType(ty ddpIrType) *ddpIrListType {
 }
 
 func (c *compiler) getReferenceType(ty ddpIrType) *ddpIrReferenceType {
-	return c.defineReferenceType(ddptypes.ReferenceType{Type: ty.DDPType()}, ty, false)
+	return c.defineReferenceType(ddptypes.ReferenceType{Type: ty.DDPType()}, ty)
 }
 
 // returns the aligned size of a type

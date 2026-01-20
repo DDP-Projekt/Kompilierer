@@ -103,6 +103,13 @@ func UnifyGenericType(argType Type, paramType Type, genericTypes map[string]Type
 	paramStructType, isParamStruct := CastStruct(genericType)
 	argStructType, isArgStruct := CastStruct(instantiatedType)
 
+	// enable args of type &&T to be assigned to &T parameters
+	for isParamStruct && IsReference(instantiatedType) {
+		instantiatedType = instantiatedType.(ReferenceType).Type
+
+		argStructType, isArgStruct = CastStruct(instantiatedType)
+	}
+
 	if isParamStruct && paramStructType.genericType != nil && (!isArgStruct || argStructType.genericType == nil) {
 		return nil
 	} else if isParamStruct && paramStructType.genericType != nil {
@@ -245,12 +252,16 @@ func GetInstantiatedStructType(s *GenericStructType, genericTypes []Type) *Struc
 		return nil
 	}
 
+	// conservative copy because genericTypes individual elements might be overriden
+	instantiatedWith := make([]Type, len(genericTypes))
+	copy(instantiatedWith, genericTypes)
+
 	result := StructType{
 		Name:             s.StructType.Name,
 		GramGender:       s.Gender(),
 		Fields:           make([]StructField, len(s.StructType.Fields)),
 		genericType:      s,
-		instantiatedWith: genericTypes,
+		instantiatedWith: instantiatedWith,
 	}
 
 	genericTypesMap := make(map[string]Type, len(s.GenericTypes))

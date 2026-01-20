@@ -770,6 +770,110 @@ Ende`),
 	assert.Nil(funcInstantiation)
 	assert.Nil(structTypeInstantiation)
 	assert.IsType(&ast.Ident{}, args["a"])
+
+	// test with references and value overloads
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo z`),
+	})
+	symbols = createSymbols("z", ddptypes.ZAHL)
+	given.setScope(symbols)
+
+	Func = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ZAHL,
+			},
+		},
+	}
+
+	FuncRef := &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo_ref"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+			},
+		},
+	}
+
+	g = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+	})
+	g.(*ast.FuncAlias).Func = Func
+	given.aliases.Insert(g.GetKey(), g)
+
+	g_ref := scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+	})
+	g_ref.(*ast.FuncAlias).Func = FuncRef
+	given.aliases.Insert(g_ref.GetKey(), g_ref)
+
+	// should match the ref version
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.Nil(funcInstantiation)
+	assert.Nil(structTypeInstantiation)
+	assert.IsType(&ast.Ident{}, args["a"])
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo 2`),
+	})
+	symbols = createSymbols("z", ddptypes.ZAHL)
+	given.setScope(symbols)
+
+	Func = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ZAHL,
+			},
+		},
+	}
+
+	FuncRef = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo_ref"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+			},
+		},
+	}
+
+	g = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ZAHL,
+	})
+	g.(*ast.FuncAlias).Func = Func
+	given.aliases.Insert(g.GetKey(), g)
+
+	g_ref = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+	})
+	g_ref.(*ast.FuncAlias).Func = FuncRef
+	given.aliases.Insert(g_ref.GetKey(), g_ref)
+
+	// should match the value version
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.Nil(funcInstantiation)
+	assert.Nil(structTypeInstantiation)
+	assert.IsType(&ast.IntLit{}, args["a"])
 }
 
 func TestGenericsFull(t *testing.T) {

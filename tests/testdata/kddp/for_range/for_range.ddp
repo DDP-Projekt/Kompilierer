@@ -77,3 +77,13 @@ Schreibe den Buchstaben '\n'.
 Für jede Zahl z mit Index i in einer Liste, die aus 1, 2, 3, 4 besteht, mache:
 	Schreibe z.
 	Schreibe i.
+
+Schreibe den Buchstaben '\n'.
+
+Die Text Referenz tr ist "Hallo".
+Für jeden Buchstaben b in tr, mache:
+	Schreibe den Buchstaben b.
+Schreibe den Buchstaben '\n'.
+Die Text Liste trl ist eine Liste, die aus "Hallo", "Welt", "." besteht.
+Für jeden Text t in trl, mache:
+	Schreibe den Text t.

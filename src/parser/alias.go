@@ -256,10 +256,6 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 			paramType := mAliasArgs[argName]           // type of the current parameter
 
 			pType := p.peek().Type
-			// early return if a non-identifier expression is passed as reference
-			if typeSensitive && ddptypes.IsReference(paramType) && pType != token.IDENTIFIER && pType != token.LPAREN {
-				return nil, nil, nil, reported_errors
-			}
 
 			// create the key for the argument
 			cached_arg_key := cachedArgKey{cur: p.cur, isReference: ddptypes.IsReference(paramType)}
@@ -331,10 +327,11 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 
 				typ := cached_arg.Type
 				// we parsed an assigneable and implicitly cast it
-				if cached_arg_key.isReference && !ddptypes.IsReference(typ) {
-					// TODO: should we do this?
-					typ = ddptypes.ReferenceType{Type: typ}
-				}
+				// this acts as an implicit up-cast to reference
+				// if cached_arg_key.isReference && !ddptypes.IsReference(typ) {
+				// 	// TODO: should we do this?
+				// 	typ = ddptypes.ReferenceType{Type: typ}
+				// }
 
 				underlyingParamType := paramType
 				if ast.IsGeneric(mAlias.Decl()) {
@@ -347,7 +344,7 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 				}
 
 				// TODO: Equal or EqualDeref?
-				if !ddptypes.EqualDeref(typ, underlyingParamType) {
+				if !ddptypes.IsDereferencableTo(typ, underlyingParamType) {
 					return nil, nil, nil, reported_errors
 				}
 			}

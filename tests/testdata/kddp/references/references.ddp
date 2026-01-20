@@ -138,3 +138,17 @@ Speichere 3 in y.
 
 Schreibe x auf eine Zeile.
 Schreibe y auf eine Zeile.
+
+Die Funktion bar mit den Parametern a und b vom Typ Text und Buchstaben Liste, gibt nichts zurück, macht:
+	Schreibe "bar" auf eine Zeile.
+Und kann so benutzt werden:
+	"bar <a> <b>"
+
+Die Funktion bar2 mit den Parametern a und b vom Typ Text und Buchstaben Listen Referenz, gibt nichts zurück, macht:
+	Schreibe "bar2" auf eine Zeile.
+Und kann so benutzt werden:
+	"bar <a> <b>"
+
+bar "test" (' ' als Buchstaben Liste).
+Die Buchstaben Liste b ist ' ' als Buchstaben Liste.
+bar "test" b.

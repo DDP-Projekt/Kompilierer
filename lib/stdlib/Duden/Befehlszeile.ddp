@@ -144,9 +144,8 @@ Die öffentliche Funktion Parameter_Wert_Lang mit den Parametern befehlszeile un
     Wenn optionIndex kein OptionsIndex ist, gib den Standardwert von einer Variable zurück.
 	Gib optionWerte von befehlszeile an der Stelle index von optionIndex als OptionsIndex zurück.
 Und kann so benutzt werden:
-    "der Wert für <lang> von <befehlszeile>",
-    "dem Wert für <lang> von <befehlszeile>",
-    "den Wert für <lang> von <befehlszeile>"
+    "die Angabe für <lang> von <befehlszeile>",
+    "der Angabe für <lang> von <befehlszeile>"
 
 [
     Gibt den Wert der Option zurück.
@@ -158,9 +157,8 @@ Die öffentliche Funktion Parameter_Wert_Kurz mit den Parametern befehlszeile un
     Wenn optionIndex kein OptionsIndex ist, gib den Standardwert von einer Variable zurück.
 	Gib optionWerte von befehlszeile an der Stelle index von optionIndex als OptionsIndex zurück.
 Und kann so benutzt werden:
-    "der Wert für <kurz> von <befehlszeile>",
-    "dem Wert für <kurz> von <befehlszeile>",
-    "den Wert für <kurz> von <befehlszeile>"
+    "die Angabe für <kurz> von <befehlszeile>",
+    "der Angabe für <kurz> von <befehlszeile>"
 
 [
 	Gibt wahr zurück, wenn die Option einen Wert vom Nutzer zugewiesen bekommen hat.
@@ -228,7 +226,7 @@ Die Funktion Analysiere_Optionn_Wert mit den Parametern wert und standardwert vo
 
         Melde den Fehler "invalider Wahrheitswert gegeben".
     Wenn aber standardwert ein Text ist, dann:
-        Gib wert zurück.
+        Gib wert als Text zurück.
 
     Gib standardwert zurück.
 Und kann so benutzt werden:
@@ -263,7 +261,7 @@ Die Funktion Analysiere_Lange_Option mit den Parametern optionen, argumente, i u
 
     Gib den Wert wert als Optionn Wert mit Standardwert (standardwert von option) zurück.
 Und kann so benutzt werden:
-    "der Wert der nächsten langen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
+    "die Angabe der nächsten langen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
 
 Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i und optionsName vom Typ Tabelle Referenz, Text Listen Referenz, Zahlen Referenz und Buchstaben Referenz, gibt eine Variable zurück, macht:
     Wenn die Länge von argumente an der Stelle i ungleich 2 ist, dann:
@@ -291,9 +289,9 @@ Die Funktion Analysiere_Kurze_Option mit den Parametern optionen, argumente, i u
 
     Gib den Wert wert als Optionn Wert mit Standardwert (standardwert von option) zurück.
 Und kann so benutzt werden:
-    "der Wert der nächsten kurzen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
+    "die Angabe der nächsten kurzen Option von <optionen> mit <argumente> ab <i> mit Namen <optionsName>"
 
-Die Funktion Optionn_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kurz und wert vom Typ Tabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
+Die Funktion Option_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kurz und wert vom Typ Tabelle Referenz, Befehlszeile Referenz, Text, Buchstabe und Variablen Referenz, gibt nichts zurück, macht:
     Die Option o ist eine Option mit der Kurzschreibweise ' '.
 	Der OptionsIndex optionsIndex ist der OptionsIndex -1.
 
@@ -328,40 +326,44 @@ Die öffentliche Funktion Analysiere_Befehlszeile mit den Parametern argumente u
     Speichere die Unterbefehlskette von befehl mit argumente in unterBefehle von ergebnis.
     Die Zahl i ist 2 plus die Länge von unterBefehle von ergebnis.
 
+
 	Der Befehl finalerBefehl ist befehl.
 	Der Befehl momentanerUnterbefehl ist befehl.
 	Für jeden Text unterBefehl in unterBefehle von ergebnis, mache:
 		Speichere (unterBefehle von momentanerUnterbefehl an der Stelle unterBefehl) als Befehl in momentanerUnterbefehl. 
 		Für jeden Text-Variable-Eintrag e in alle Einträge von (optionen von momentanerUnterbefehl), mache:
-		 	Die Variable wert ist Wert von e.
+		 	Die Variable wert ist wert von e.
 			Wenn wert eine Option ist, dann:
 				Füge finalerBefehl (wert als Option) hinzu.
 
+
 	[ Standardwerte für Optionn einfügen ]
     Für jeden Text-Variable-Eintrag e in alle Einträge von (optionen von finalerBefehl), mache:
-        Wenn Wert von e eine Option ist, dann:
-            Die Option o ist (Wert von e) als Option.
+        Wenn wert von e eine Option ist, dann:
+            Die Option o ist (wert von e) als Option.
             Füge (standardwert von o) an (optionWerte von ergebnis) an.
 			Die Variable index ist der OptionsIndex (die Länge von optionWerte von ergebnis).
             Setze den Wert von (lang von o) in (langschreibweisen von ergebnis) auf index.
             Setze den Wert von ((kurz von o) als Text) in (kurzschreibweisen von ergebnis) auf index.
+	
 
     Solange i kleiner als, oder die Länge von argumente ist, mache:
         Der Text arg ist argumente an der Stelle i.
         Wenn "--" am Anfang von arg steht, dann: [ long flag ]
             Der Text optionName ist "".
-            Die Variable wert ist der Wert der nächsten langen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
+            Die Variable wert ist die Angabe der nächsten langen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
                 Setze den Wert von optionName und ' ' in ergebnis mit (optionen von finalerBefehl) auf wert.
         Wenn aber "-" am Anfang von arg steht, dann: [ short flag ]
             Der Buchstabe optionName ist ' '.
-            Die Variable wert ist der Wert der nächsten kurzen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
+            Die Variable wert ist die Angabe der nächsten kurzen Option von (optionen von finalerBefehl) mit argumente ab i mit Namen optionName.
             Wenn wert ungleich dem Standardwert von einer Variable ist, dann:
                 Setze den Wert von "" und optionName in ergebnis mit (optionen von finalerBefehl) auf wert.
         Sonst: [ positional arg ]
             Füge arg an (argumente von ergebnis) an.
 
         Erhöhe i um 1.
+
 
 	[ Schlüssel von Optionn löschen, die entweder nur eine Lang- oder Kurzschreibweise haben ]
     Lösche den Wert für " " aus (kurzschreibweisen von ergebnis).
@@ -399,7 +401,7 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Lang_Haupt mit dem Parameter lang vom Typ Text, gibt eine Variable zurück, macht:
-    Gib den Wert für lang von HauptBefehlszeile zurück.
+    Gib die Angabe für lang von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Optionnwert für <lang>",
     "dem Optionnwert für <lang>",
@@ -409,7 +411,7 @@ Und kann so benutzt werden:
     Gibt den Wert des Parameters zurück.
 ]
 Die öffentliche Funktion Parameter_Wert_Kurz_Haupt mit dem Parameter kurz vom Typ Buchstabe, gibt eine Variable zurück, macht:
-    Gib den Wert für kurz von HauptBefehlszeile zurück.
+    Gib die Angabe für kurz von HauptBefehlszeile zurück.
 Und kann so benutzt werden:
     "der Optionnwert für <kurz>",
     "dem Optionnwert für <kurz>",

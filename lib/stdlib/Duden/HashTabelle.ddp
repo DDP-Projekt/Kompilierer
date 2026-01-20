@@ -47,12 +47,12 @@ Und kann so benutzt werden:
 Wir nennen die generische öffentliche Kombination aus
 	der Zahl art mit Standardwert 2, [ 0 == Leerer Wert, 1 == Grabstein, x == Wert]
 	dem öffentlichen S Schlüssel,
-	der öffentlichen W Wert,
+	dem öffentlichen W wert,
 einen Eintrag,
 und erstellen sie so:
-	"ein Eintrag für <Schlüssel> mit Wert <Wert>" oder
-	"einem Eintrag für <Schlüssel> mit Wert <Wert>" oder
-	"einen Eintrag für <Schlüssel> mit Wert <Wert>"
+	"ein Eintrag für <Schlüssel> mit Wert <wert>" oder
+	"einem Eintrag für <Schlüssel> mit Wert <wert>" oder
+	"einen Eintrag für <Schlüssel> mit Wert <wert>"
 
 Die generische Funktion LeererEintrag mit den Parametern s und w vom Typ S und W, gibt einen S-W-Eintrag zurück, macht:
 	Der S-W-Eintrag e ist der Standardwert von einem S-W-Eintrag.
@@ -115,7 +115,7 @@ Die öffentliche generische Funktion Tabelle_Zu_Text mit dem Parameter tabelle v
 
 		Füge (Schlüssel von (einträge von tabelle an der Stelle i)) an b an.
 	 	Füge ": " an b an.
-		Der W w ist Wert von (einträge von tabelle an der Stelle i).
+		Der W w ist wert von (einträge von tabelle an der Stelle i).
 		Füge (w als Text) an b an.
 
 		Wenn i ungleich die Länge von einträge von tabelle ist, füge ", " an b an.
@@ -146,7 +146,7 @@ Die generische Funktion Kapazität_Anpassen mit den Parametern tabelle und neue_
 	Die S-W-HashTabelle neue_tabelle ist der Standardwert von einer S-W-HashTabelle.
 	:
 		Der S-W-Eintrag leerer_eintrag ist ein leerer Eintrag ((der Standardwert von einem S), (der Standardwert von einem W)).
-		Die S-W-Eintrag Liste neue_einträge ist neue_kapazität Mal leerer_eintrag.
+		Die S-W-Eintrag Liste neue_einträge ist neue_kapazität Mal leerer_eintrag als S-W-Eintrag.
 		Speichere neue_einträge in einträge von neue_tabelle.
 
 	Für jede Zahl i von 1 bis die Kapazität von tabelle, mache:
@@ -195,7 +195,7 @@ Die öffentliche generische Funktion Tabellen_Wert_Lesen mit den Parametern tabe
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
 		Gib den Standardwert von einem W zurück.
-	Gib Wert von (einträge von tabelle an der Stelle eintrag_index) zurück.
+	Gib wert von (einträge von tabelle an der Stelle eintrag_index) zurück.
 Und überlädt den "an der Stelle" Operator.
 
 Die öffentliche generische Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen Wahrheitswert zurück, macht:
@@ -220,7 +220,7 @@ Die öffentliche generische Funktion Tabellen_Wert_Löschen mit den Parametern t
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
 		Gib der Standardwert von einem W zurück.
 
-	Der W wert ist Wert von (einträge von tabelle an der Stelle eintrag_index).
+	Der W wert ist wert von (einträge von tabelle an der Stelle eintrag_index).
 	Speichere einen Grabstein ((der Standardwert von einem S), (der Standardwert von einem W)) in (einträge von tabelle an der Stelle eintrag_index).
 	Gib wert zurück.
 Und kann so benutzt werden:

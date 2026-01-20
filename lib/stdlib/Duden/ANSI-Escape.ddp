@@ -63,7 +63,7 @@ Und kann so benutzt werden:
 	"Bewege den Konsolen Zeiger zu Spalte <n>"
 
 Die öffentliche Funktion Konsole_Zeiger_Position mit den Parametern n und m vom Typ Zahl und Zahl, gibt nichts zurück, macht:
-	Führe die ANSI Funktion 'H' mit den argumenten (eine Liste, die aus n, m besteht) aus.
+	Führe die ANSI Funktion 'H' mit den argumenten (eine Liste, die aus n als Zahl, m besteht) aus.
 Und kann so benutzt werden:
 	"Bewege den Konsolen Zeiger zu Zeile <n> und Spalte <m>"
 

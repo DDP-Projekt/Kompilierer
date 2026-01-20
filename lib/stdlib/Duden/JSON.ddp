@@ -365,7 +365,7 @@ Die öffentliche Funktion Json_Zu_Text mit dem Parameter json vom Typ JsonWert R
 			Füge ((Schlüssel von e) als Text) an bauer an.
 			Füge '"' an bauer an.
 			Füge ':' an bauer an.
-			Füge (den JsonWert (Wert von e) als Text) an bauer an.
+			Füge (den JsonWert (wert von e) als Text) an bauer an.
 			Speichere wahr in hatte_eintrag.
 		Füge '}' an bauer an.
 		Gib bauer als Text zurück.

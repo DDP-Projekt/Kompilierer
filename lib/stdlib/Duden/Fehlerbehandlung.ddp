@@ -26,7 +26,7 @@ Die Zahl Fehlerbehandlungs_Methode ist 0.
 
 [Bitflags was bei der Fehlerbehandlunb passieren soll]
 Die Zahl LaufzeitfehlerFlag ist 1.
-Die Zahl SchreibeFehlerFlag ist 1 um 1 Bit nach Links verschoben.
+Die Zahl SchreibeFehlerFlag ist der Wert 1 um 1 Bit nach Links verschoben.
 
 [
 	Meldet ob es einen Fehler gab
