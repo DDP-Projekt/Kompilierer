@@ -56,7 +56,7 @@ func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 	return b.CreateCall(fn.GlobalValueType(), fn, args, "")
 }
 
-func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames []string, declarationOnly bool) *llBuilder {
+func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames []string, paramAttributes [][]llvm.Attribute, declarationOnly bool) *llBuilder {
 	builder := &llBuilder{
 		fnName:  funcName,
 		c:       c,
@@ -66,6 +66,14 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames
 	builder.llFnType = funcType
 	builder.llFn = llvm.AddFunction(c.llmod, funcName, builder.llFnType)
 	builder.llFn.SetFunctionCallConv(llvm.CCallConv) // every function is called with the c calling convention to make interaction with inbuilt stuff easier
+	builder.llFn.AddFunctionAttr(c.attr_nounwind)
+
+	for i, attrs := range paramAttributes {
+		for _, attr := range attrs {
+			builder.llFn.AddAttributeAtIndex(i+1, attr)
+		}
+	}
+
 	if !declarationOnly {
 		builder.cb = builder.newBlock()
 		builder.SetInsertPointAtEnd(builder.cb)
@@ -77,8 +85,8 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames
 	return builder
 }
 
-func (c *compiler) newBuilder(funcName string, funcType llvm.Type, paramNames []string, declarationOnly bool) *llBuilder {
-	builder := c.createBuilder(funcName, funcType, paramNames, declarationOnly)
+func (c *compiler) newBuilder(funcName string, funcType llvm.Type, paramNames []string, paramAttributes [][]llvm.Attribute, declarationOnly bool) *llBuilder {
+	builder := c.createBuilder(funcName, funcType, paramNames, paramAttributes, declarationOnly)
 	c.builderStack = append(c.builderStack, builder)
 	return builder
 }

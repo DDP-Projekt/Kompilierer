@@ -131,6 +131,20 @@ func newLLConstants(types llTypes) llConstants {
 	}
 }
 
+type llAttributes struct {
+	attr_nounwind llvm.Attribute
+	attr_nonnull  llvm.Attribute
+	attr_noalias  llvm.Attribute
+}
+
+func newLLAttributes(llctx llvm.Context) llAttributes {
+	return llAttributes{
+		attr_nounwind: llctx.CreateEnumAttribute(llvm.AttributeKindID("nounwind"), 0),
+		attr_nonnull:  llctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0),
+		attr_noalias:  llctx.CreateEnumAttribute(llvm.AttributeKindID("noalias"), 0),
+	}
+}
+
 // holds state to compile a DDP AST into llvm ir
 type compiler struct {
 	llvmTargetContext
@@ -161,6 +175,7 @@ type compiler struct {
 	// raw llvm types and constants
 	llTypes
 	llConstants
+	llAttributes
 	// all the type definitions of inbuilt types used by the compiler
 	voidtyp                                                                                    *ddpIrVoidType
 	ddpinttyp, ddpfloattyp, ddpbytetyp, ddpbooltyp, ddpchartyp                                 *ddpIrPrimitiveType
@@ -180,6 +195,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 
 	types := newLLTypes(ctx.llctx)
 	constants := newLLConstants(types)
+	attributes := newLLAttributes(ctx.llctx)
 
 	return &compiler{
 		llvmTargetContext: ctx,
@@ -199,8 +215,9 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		importedModules: make(map[*ast.Module]struct{}),
 		typeDefVTables:  make(map[string]llvm.Value),
 
-		llTypes:     types,
-		llConstants: constants,
+		llTypes:      types,
+		llConstants:  constants,
+		llAttributes: attributes,
 	}, nil
 }
 
@@ -226,7 +243,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 
 	if isMainModule {
 		c.disposeAndPop()
-		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, false)
+		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, nil, false)
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
@@ -469,11 +486,11 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, false)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, false)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
@@ -550,7 +567,7 @@ func (c *compiler) exitScope(scp *scope) *scope {
 	return scp.enclosing
 }
 
-func (c *compiler) exitFuncScope(fun *ast.FuncDecl) *scope {
+func (c *compiler) exitFuncScope() *scope {
 	// don't overwrite a possible return
 	if !c.builder().cb.Terminator().IsNil() {
 		c.builder().SetInsertPointBefore(c.builder().cb.LastInstruction())
@@ -673,18 +690,18 @@ func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
 	}
 }
 
-func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) llvm.Type {
+func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) (llvm.Type, ddpIrType) {
 	t := ddptypes.TrueUnderlying(param.Type)
 	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(t); isGeneric || ddptypes.IsReference(t) {
-		return c.ptr
+		return c.ptr, nil
 	}
 
 	irType := c.toIrType(t)
 
 	if irType.TriviallyCopyable() {
-		return c.toIrType(param.Type).LLType() // convert the type of the parameter
+		return irType.LLType(), irType // convert the type of the parameter
 	}
-	return c.ptr
+	return c.ptr, irType
 }
 
 func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
@@ -702,25 +719,37 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	retTypeIr := retType.LLType()
 	params := make([]llvm.Type, 0, len(decl.Parameters)+1) // list of the ir parameters
 	paramNames := make([]string, 0, len(decl.Parameters)+1)
+	paramAttributes := make([][]llvm.Attribute, 0, len(decl.Parameters)+1)
 
 	hasReturnParam := !retType.TriviallyCopyable()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, c.ptr)
 		paramNames = append(paramNames, "")
+		paramAttributes = append(paramAttributes, []llvm.Attribute{c.attr_nonnull, c.attr_noalias}) // the return param is never null and never aliased
 		retTypeIr = c.voidtyp.LLType()
 	}
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		paramIrType := c.getPossiblyGenericParamType(&param)
+		paramIrType, irType := c.getPossiblyGenericParamType(&param)
 
 		params = append(params, paramIrType) // add it to the list
 		paramNames = append(paramNames, param.Name.Literal)
+
+		var attributes []llvm.Attribute = nil
+		if irType != nil {
+			switch irType.(type) {
+			case *ddpIrAnyType, *ddpIrListType, *ddpIrStringType, *ddpIrStructType, *ddpIrGenericListType:
+				attributes = append(attributes, c.attr_nonnull)
+			}
+		}
+
+		paramAttributes = append(paramAttributes, attributes)
 	}
 
 	// createBuilder NOT newBuilder, because defineFuncBody pushes it
-	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, ast.IsExternFunc(decl))
+	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, paramAttributes, ast.IsExternFunc(decl))
 	// make private functions static like in C
 	// commented out because of generics where private functions might be called
 	// from a different module
@@ -811,7 +840,7 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 		c.scp = c.scp.enclosing
 	} else {
 		c.scp = c.exitScope(c.scp)
-		c.scp = c.exitFuncScope(decl)
+		c.scp = c.exitFuncScope()
 	}
 
 	if c.builder().cb.Terminator().IsNil() {
@@ -2284,25 +2313,38 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 	retTypeIr := retType.LLType()
 	params := make([]llvm.Type, 0, len(decl.Parameters)+1)  // list of the ir parameters
 	paramNames := make([]string, 0, len(decl.Parameters)+1) // list of the ir parameters
+	paramAttributes := make([][]llvm.Attribute, 0, len(decl.Parameters)+1)
 
 	hasReturnParam := !retType.TriviallyCopyable()
 	// non-primitives are returned by passing a pointer to the struct as first parameter
 	if hasReturnParam {
 		params = append(params, c.ptr)
 		paramNames = append(paramNames, "")
+		paramAttributes = append(paramAttributes, []llvm.Attribute{c.attr_nonnull, c.attr_noalias}) // the return param is never null and never aliased
 		retTypeIr = c.voidtyp.LLType()
 	}
 
 	// append all the other parameters
 	for _, param := range decl.Parameters {
-		ty := c.getPossiblyGenericParamType(&param) // convert the type of the parameter
-		params = append(params, ty)                 // add it to the list
+		ty, irType := c.getPossiblyGenericParamType(&param) // convert the type of the parameter
+		params = append(params, ty)                         // add it to the list
 		paramNames = append(paramNames, param.Name.Literal)
+
+		var attributes []llvm.Attribute = nil
+
+		if irType != nil {
+			switch irType.(type) {
+			case *ddpIrAnyType, *ddpIrListType, *ddpIrStringType, *ddpIrStructType, *ddpIrGenericListType:
+				attributes = append(attributes, c.attr_nonnull)
+			}
+		}
+
+		paramAttributes = append(paramAttributes, attributes)
 	}
 
 	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames, true)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames, paramAttributes, true)
 	// declare it as extern function
 	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
@@ -2367,7 +2409,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
 
-			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, true)
+			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, true)
 			moduleInitBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2376,7 +2418,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				c.builder().createCall(moduleInitBuilder.llFn) // only call this in main modules
 			}
 
-			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, true)
+			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, true)
 			moduleDisposeBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleDisposeBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2826,7 +2868,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 			}
 			c.freeTemporaries(scp, true)
 		}
-		c.exitFuncScope(s.Func)
+		c.exitFuncScope()
 	}
 
 	if s.Value == nil {
