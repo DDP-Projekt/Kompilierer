@@ -82,18 +82,20 @@ type funcWrapper struct {
 }
 
 type llTypes struct {
-	ptr, void, i8, i32, i64                     llvm.Type
+	ptr, ptr_gc, void, i8, i32, i64             llvm.Type
 	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
 	vtable_type                                 llvm.Type
 }
 
 func newLLTypes(llctx llvm.Context) llTypes {
 	ptr := llctx.PointerType(0)
+	ptr_gc := llctx.PointerType(1)
 	i8 := llctx.Int8Type()
 	i32 := llctx.Int32Type()
 	i64 := llctx.Int64Type()
 	return llTypes{
 		ptr:      ptr,
+		ptr_gc:   ptr_gc,
 		void:     llctx.VoidType(),
 		i8:       i8,
 		i32:      i32,
@@ -243,7 +245,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 
 	if isMainModule {
 		c.disposeAndPop()
-		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, nil, false)
+		c.newBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, nil, nil, true, false)
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
@@ -251,6 +253,17 @@ func (c *compiler) compile(isMainModule bool) Result {
 			c.builder().llFn,
 			c.builder(),
 		)
+
+		stackMaps := llvm.AddGlobal(c.llmod, c.i8, "__LLVM_StackMaps")
+		stackMaps.SetSection(".llvm_stackmaps")
+		stackMaps.SetLinkage(llvm.ExternalLinkage)
+		stackMaps.SetVisibility(llvm.DefaultVisibility)
+
+		stackMapsExposed := llvm.AddGlobal(c.llmod, c.ptr, "__LLVM_StackMaps_External")
+		stackMapsExposed.SetInitializer(stackMaps)
+		stackMapsExposed.SetLinkage(llvm.ExternalLinkage)
+		stackMapsExposed.SetVisibility(llvm.DefaultVisibility)
+		stackMapsExposed.SetGlobalConstant(true)
 	}
 
 	// visit every statement in the modules AST and compile it
@@ -486,11 +499,11 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, false)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, true, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, false)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, true, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
@@ -659,6 +672,9 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		c.pushBuilder(c.moduleInitBuilder)
 		current_temporaries_end := len(c.scp.temporaries)
 		addInitializer() // initialize the variable in module_init
+		if d.IsGlobal && ddptypes.IsReference(ddptypes.TrueUnderlying(d.Type)) {
+			c.builder().createCall(ddp_register_gc_root, varLocation)
+		}
 		// free all temporaries that were created in the initializer
 		for _, v := range c.scp.temporaries[current_temporaries_end:] {
 			c.freeNonPrimitive(v.val, v.typ)
@@ -675,6 +691,9 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// meaning this module is being compiled as a non-main module
 	if c.builder().isDDPMain() {
 		addInitializer()
+		if d.IsGlobal && ddptypes.IsReference(ddptypes.TrueUnderlying(d.Type)) {
+			c.builder().createCall(ddp_register_gc_root, varLocation)
+		}
 	}
 
 	c.scp.addVar(d, varLocation, Typ)
@@ -749,7 +768,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 	}
 
 	// createBuilder NOT newBuilder, because defineFuncBody pushes it
-	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), paramNames, paramAttributes, ast.IsExternFunc(decl))
+	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), nil, paramNames, paramAttributes, !ast.IsExternFunc(decl), ast.IsExternFunc(decl))
 	// make private functions static like in C
 	// commented out because of generics where private functions might be called
 	// from a different module
@@ -2344,7 +2363,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, paramNames, paramAttributes, true)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, nil, paramNames, paramAttributes, !ast.IsExternFunc(decl), true)
 	// declare it as extern function
 	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
@@ -2409,7 +2428,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
 
-			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, true)
+			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, true, true)
 			moduleInitBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2418,7 +2437,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				c.builder().createCall(moduleInitBuilder.llFn) // only call this in main modules
 			}
 
-			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, true)
+			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, true, true)
 			moduleDisposeBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleDisposeBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 

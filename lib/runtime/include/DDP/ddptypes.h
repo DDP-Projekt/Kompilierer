@@ -1,8 +1,8 @@
 /*
-	declares types and functions to work with ddp types
+        declares types and functions to work with ddp types
 
-	the extern marked functions in this file are generated
-	by the ddpcompiler and will be present at link time
+        the extern marked functions in this file are generated
+        by the ddpcompiler and will be present at link time
 */
 #ifndef DDP_TYPES_H
 #define DDP_TYPES_H
@@ -10,15 +10,19 @@
 #include "common.h"
 #include <assert.h>
 
-static_assert(sizeof(void *) == 8, "sizeof(void*) != 8, unexpected errors could occur");
-static_assert(sizeof(void *) == sizeof(uint8_t *), "sizeof(void*) != sizeof(uint8_t*), unexpected errors could occur");
+static_assert(sizeof(void *) == 8,
+			  "sizeof(void*) != 8, unexpected errors could occur");
+static_assert(
+	sizeof(void *) == sizeof(uint8_t *),
+	"sizeof(void*) != sizeof(uint8_t*), unexpected errors could occur");
 
 // typedefs of primitive ddp types
 typedef int64_t ddpint;
 typedef double ddpfloat;
 typedef uint8_t ddpbyte;
 typedef bool ddpbool;
-typedef int32_t ddpchar; // needs to be 32 bit to hold every possible unicode character
+typedef int32_t
+	ddpchar; // needs to be 32 bit to hold every possible unicode character
 
 // a ddp string is a null-terminated utf8-encoded byte array
 typedef struct {
@@ -65,9 +69,7 @@ typedef struct {
 #define DDP_IS_SMALL_ANY(any) ((any)->vtable_ptr->type_size <= 16)
 // returns a pointer to the any's value, taking big vs small any into account
 #define DDP_ANY_VALUE_PTR(any) \
-	DDP_IS_SMALL_ANY(any) ?    \
-		&((any)->value) :      \
-		(any)->value_ptr
+	DDP_IS_SMALL_ANY(any) ? &((any)->value) : (any)->value_ptr
 
 // frees the given any
 void ddp_free_any(ddpany *any);
@@ -152,7 +154,8 @@ extern void ddp_ddpstringlist_from_constants(ddpstringlist *ret, ddpint count);
 // free a ddpstringlist
 extern void ddp_free_ddpstringlist(ddpstringlist *list);
 // deep copies list into ret
-extern void ddp_deep_copy_ddpstringlist(ddpstringlist *ret, ddpstringlist *list);
+extern void ddp_deep_copy_ddpstringlist(ddpstringlist *ret,
+										ddpstringlist *list);
 
 typedef struct {
 	ddpany *arr; // the element array
@@ -174,7 +177,8 @@ typedef struct {
 	ddpint cap; // the capacity of the array
 } ddpgenericlist;
 
-// helper function for generic extern functions which may pass ddpany as a way to pass type information
+// helper function for generic extern functions which may pass ddpany as a way
+// to pass type information
 const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 
 // useful macros to work with ddp types
@@ -185,10 +189,7 @@ const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 #define DDP_GROW_CAPACITY(capacity) \
 	(capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
 
-#define DDP_EMPTY_STRING \
-	(ddpstring) {        \
-		NULL, 0          \
-	}
+#define DDP_EMPTY_STRING (ddpstring){NULL, 0}
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \
@@ -197,10 +198,7 @@ const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 		}             \
 	}
 
-#define DDP_EMPTY_LIST(type) \
-	(type) {                 \
-		NULL, 0, 0           \
-	}
+#define DDP_EMPTY_LIST(type) (type){NULL, 0, 0}
 
 // useful typedefs to use when interfacing with ddp code
 

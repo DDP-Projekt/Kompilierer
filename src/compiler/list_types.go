@@ -145,7 +145,7 @@ signature:
 c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
 func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false), []string{"ret", "count"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false), nil, []string{"ret", "count"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	ret, count := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -188,7 +188,7 @@ signature:
 c.void.IrType() ddp_free_x(x* list)
 */
 func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), []string{"p"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"p"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	list := llFuncBuilder.params[0].val
@@ -233,7 +233,7 @@ signature:
 c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
 func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), []string{"ret", "p"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "p"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -293,7 +293,7 @@ signature:
 bool ddp_x_equal(x* list1, x* list2)
 */
 func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), []string{"l1", "l2"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"l1", "l2"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -363,7 +363,7 @@ signature:
 void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false), []string{"ret", "l", "i1", "i2"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false), nil, []string{"ret", "l", "i1", "i2"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -524,7 +524,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 	// defines the list_list_verkettet function
 	list_list_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false), []string{"ret", "list1", "list2"}, nil, declarationOnly)
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false), nil, []string{"ret", "list1", "list2"}, nil, true, declarationOnly)
 		defer c.popBuilder()
 
 		ret, list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -569,7 +569,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	list_scalar_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false), []string{"ret", "list", "scal"}, nil, declarationOnly)
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false), nil, []string{"ret", "list", "scal"}, nil, true, declarationOnly)
 		defer c.popBuilder()
 
 		ret, list, scal := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -609,7 +609,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 			return llvm.Value{}
 		}
 
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false), []string{"ret", "scal1", "scal2"}, nil, declarationOnly)
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false), nil, []string{"ret", "scal1", "scal2"}, nil, true, declarationOnly)
 		defer c.popBuilder()
 
 		ret, scal1, scal2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -644,7 +644,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	scalar_list_concat := func() llvm.Value {
-		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false), []string{"ret", "scal", "list"}, nil, declarationOnly)
+		llFuncBuilder := c.newBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false), nil, []string{"ret", "scal", "list"}, nil, true, declarationOnly)
 		defer c.popBuilder()
 
 		ret, scal, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val

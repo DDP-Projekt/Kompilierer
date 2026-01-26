@@ -164,7 +164,7 @@ format-stdlib:
 	'$(MAKE)' -C $(STD_DIR) format
 
 format-runtime:
-	'$(MAKE)' -C $(STD_DIR) format
+	'$(MAKE)' -C $(RUN_DIR) format
 
 format: format-stdlib format-runtime
 

@@ -136,7 +136,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), []string{"v"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), nil, []string{"v"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	if declarationOnly {
@@ -158,7 +158,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 }
 
 func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), []string{"ret", "v"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "v"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	ret, structParam := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -186,7 +186,7 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 }
 
 func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), []string{"v1", "v2"}, nil, declarationOnly)
+	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"v1", "v2"}, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	struct1, struct2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val

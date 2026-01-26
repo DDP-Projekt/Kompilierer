@@ -30,6 +30,7 @@ var (
 	// reference functions
 	ddp_free_ref_type_irfun   llvm.Value
 	ddp_allocate_gc_ref_irfun llvm.Value
+	ddp_register_gc_root      llvm.Value
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -90,14 +91,23 @@ func (c *compiler) initRuntimeFunctions() {
 		"ddp_free_ref_type",
 		false,
 		c.void,
-		c.ptr,
+		c.ptr_gc,
 	)
+	ddp_free_ref_type_irfun.SetGC(DDP_GC_STRATEGY_NAME)
 
 	ddp_allocate_gc_ref_irfun = c.declareExternalRuntimeFunction(
 		"ddp_allocate_gc_ref",
 		false,
-		c.ptr,
+		c.ptr_gc,
 		c.ptr, // vtable
+	)
+	ddp_allocate_gc_ref_irfun.SetGC(DDP_GC_STRATEGY_NAME)
+
+	ddp_register_gc_root = c.declareExternalRuntimeFunction(
+		"ddp_register_gc_root",
+		false,
+		c.void,
+		c.ptr,
 	)
 }
 

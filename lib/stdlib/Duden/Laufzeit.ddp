@@ -68,3 +68,11 @@ ist in "libddpstdlib.a" definiert
 Und kann so benutzt werden:
 	"das Arbeitsverzeichnis",
 	"dem Arbeitsverzeichnis"
+
+[
+	Ruft den Garbage Collector auf
+]
+Die öffentliche Funktion ddp_gc gibt nichts zurück,
+ist in "libddpruntime.a" definiert
+und kann so benutzt werden:
+	"Hol die Müllabfuhr"

@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 bool utf8_is_continuation(char c);
 
 // checks if this byte is part of a multibyte sequence

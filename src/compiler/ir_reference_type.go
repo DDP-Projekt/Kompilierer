@@ -64,7 +64,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	}
 
 	refType := &ddpIrReferenceType{
-		typ:          c.ptr,
+		typ:          c.ptr_gc,
 		defaultValue: c.Null,
 		ddpType:      t,
 		underlying:   underlying,

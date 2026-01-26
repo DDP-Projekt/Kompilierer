@@ -193,6 +193,11 @@ func IsReferenceTo(a, b Type) bool {
 	return isARef && Equal(aType, b)
 }
 
+func IsDirectReferenceTo(a, b Type) bool {
+	aRef, _, isARef := CastReference(a)
+	return isARef && Equal(aRef.Type, b)
+}
+
 func IsDereferencableTo(a, b Type) bool {
 	if Equal(a, b) {
 		return true

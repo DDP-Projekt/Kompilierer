@@ -9,12 +9,17 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
+// #include "../../lib/gc_strategy/DDPGcStrategy.h"
+import "C"
+
 func init() {
 	llvm.InitializeAllTargetInfos()
 	llvm.InitializeAllTargets()
 	llvm.InitializeAllTargetMCs()
 	llvm.InitializeAllAsmParsers()
 	llvm.InitializeAllAsmPrinters()
+
+	C.ddp_initialize_gc_strategy()
 }
 
 type llTarget struct {
@@ -119,7 +124,7 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 
 	defer options.Dispose()
 	// options.SetVerifyEach(true) // TODO: only do this in debug mode as it is expensive
-	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
+	return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
 }
 
 // compiles the module to w and returns w.Write

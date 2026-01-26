@@ -11,6 +11,7 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
 #include "DDP/debug.h"
+#include "DDP/gc.h"
 
 // should not be needed in production
 // mainly for debugging
@@ -53,11 +54,13 @@ void ddp_init_runtime(int argc, char **argv) {
 	SetConsoleOutputCP(CP_UTF8);
 #else
 	setlocale(LC_ALL, "de_DE.UTF-8");
-#endif // DDPOS_WINDOWS
+#endif								// DDPOS_WINDOWS
 
 	signal(SIGSEGV, SignalHandler); // "catch" segfaults
 
-	handle_args(argc, argv); // turn the commandline args into a ddpstringlist
+	handle_args(argc, argv);		// turn the commandline args into a ddpstringlist
+
+	ddp_init_gc();
 }
 
 // end the runtime
@@ -70,6 +73,9 @@ void ddp_end_runtime(void) {
 	ending = true;
 
 	DDP_DBGLOG("end_runtime");
+
+	ddp_gc();
+	ddp_free_gc();
 
 	// free the cmd_args
 	ddp_free_ddpstringlist(&cmd_args);

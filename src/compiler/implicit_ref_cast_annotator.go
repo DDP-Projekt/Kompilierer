@@ -252,15 +252,17 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 	a.Visit(s.Rhs)
 	a.clearAnnotation(s.Var)
 	a.clearAnnotation(s.Rhs)
-	varType := a.typeOf(s.Var)
-	// if ddptypes.IsReferenceTo(s.VarType, s.RhsType) {
-	// 	a.annotateToRef(s.Rhs)
-	// } else
+	varType, rhsType := a.typeOf(s.Var), a.typeOf(s.Rhs)
+
+	// 	if ddptypes.IsDirectReferenceTo(varType, rhsType) {
+	// 		return ast.VisitSkipChildren
+	// 	}
+
 	_, varType, ok := ddptypes.CastReference(varType)
 	if !ok {
 		varType = ddptypes.Deref(varType)
 	}
-	if ddptypes.IsReferenceTo(a.typeOf(s.Rhs), varType) {
+	if ddptypes.IsReferenceTo(rhsType, varType) {
 		a.annotateFromRef(s.Rhs)
 	}
 	return ast.VisitSkipChildren

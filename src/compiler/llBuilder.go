@@ -56,7 +56,9 @@ func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 	return b.CreateCall(fn.GlobalValueType(), fn, args, "")
 }
 
-func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames []string, paramAttributes [][]llvm.Attribute, declarationOnly bool) *llBuilder {
+const DDP_GC_STRATEGY_NAME = "ddp-gc"
+
+func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, isGC bool, declarationOnly bool) *llBuilder {
 	builder := &llBuilder{
 		fnName:  funcName,
 		c:       c,
@@ -67,6 +69,14 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames
 	builder.llFn = llvm.AddFunction(c.llmod, funcName, builder.llFnType)
 	builder.llFn.SetFunctionCallConv(llvm.CCallConv) // every function is called with the c calling convention to make interaction with inbuilt stuff easier
 	builder.llFn.AddFunctionAttr(c.attr_nounwind)
+
+	if isGC {
+		builder.llFn.SetGC(DDP_GC_STRATEGY_NAME)
+	}
+
+	for _, attr := range funcAttributes {
+		builder.llFn.AddFunctionAttr(attr)
+	}
 
 	for i, attrs := range paramAttributes {
 		for _, attr := range attrs {
@@ -85,8 +95,8 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, paramNames
 	return builder
 }
 
-func (c *compiler) newBuilder(funcName string, funcType llvm.Type, paramNames []string, paramAttributes [][]llvm.Attribute, declarationOnly bool) *llBuilder {
-	builder := c.createBuilder(funcName, funcType, paramNames, paramAttributes, declarationOnly)
+func (c *compiler) newBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, isGC bool, declarationOnly bool) *llBuilder {
+	builder := c.createBuilder(funcName, funcType, funcAttributes, paramNames, paramAttributes, isGC, declarationOnly)
 	c.builderStack = append(c.builderStack, builder)
 	return builder
 }
