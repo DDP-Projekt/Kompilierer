@@ -247,6 +247,9 @@ static void UNUSED dump_stackmap(StackMap *stackMap) {
 
 // GC
 
+// TODO: incremental GC (tri-color marking)
+// TODO: mark intermediate values as roots
+
 static size_t UNUSED get_page_size(void) {
 #ifdef DDPOS_WINDOWS
 	SYSTEM_INFO sysInfo;
@@ -261,7 +264,7 @@ static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
 	return a.vtable == b.vtable && a.ptrmask == b.ptrmask;
 }
 
-static int find_first_zero(uint8_t *bitmap, size_t num_bits) {
+static int bitmap_find_first_zero(uint8_t *bitmap, size_t num_bits) {
 	size_t num_bytes = (num_bits + 7) / 8;
 	for (size_t byte = 0; byte < num_bytes; byte++) {
 		if (bitmap[byte] != 0xFF) {
@@ -285,6 +288,29 @@ static void bitmap_set_bit(uint8_t *bitmap, size_t index) {
 	bitmap[index / 8] |= 1 << (index % 8);
 }
 
+static void bitmap_clear_bit(uint8_t *bitmap, size_t index) {
+	bitmap[index / 8] &= ~(1 << (index % 8));
+}
+
+static int UNUSED bitmap_get_bit(uint8_t *bitmap, size_t index) {
+	return bitmap[index / 8] & (1 << (index % 8));
+}
+
+// sets the bit at index and at index+1 to the bits specified in value&0x3
+static void bitmap_set_two_bits(uint8_t *bitmap, size_t index, uint8_t value) {
+	bitmap[index / 8] |= (value & 0x3) << (index % 8);
+}
+//
+// sets the bit at index and at index+1 to the bits specified in value&0x3
+static void bitmap_clear_two_bits(uint8_t *bitmap, size_t index) {
+	bitmap[index / 8] &= ~(0x3 << (index % 8));
+}
+
+// gets the bit at index and at index+1
+static int UNUSED bitmap_get_two_bits(uint8_t *bitmap, size_t index) {
+	return bitmap[index / 8] & (0x3 << (index % 8));
+}
+
 // round up positive number to nearest multiple
 static int round_up_to_multiple(size_t numToRound, size_t multiple) {
 	if (multiple == 0) {
@@ -298,6 +324,12 @@ static int round_up_to_multiple(size_t numToRound, size_t multiple) {
 
 	return numToRound + multiple - remainder;
 }
+
+typedef enum Color {
+	WHITE = 0,
+	GREY = 1,
+	BLACK = 2
+} Color;
 
 typedef struct GCSpan {
 	GCTypeMeta objInfo;
@@ -316,7 +348,7 @@ typedef struct GCSpan {
 typedef struct GC {
 	StackMap stackMap;
 
-	void **global_roots;
+	void ***global_roots;
 	unsigned len_global_roots;
 	unsigned cap_global_roots;
 
@@ -324,6 +356,8 @@ typedef struct GC {
 	GCSpan *spanTail;
 
 	size_t PAGE_SIZE;
+
+	bool collecting;
 } GC;
 
 static GC gc;
@@ -358,6 +392,9 @@ static size_t calculate_span_size(size_t objSize) {
 	return gc.PAGE_SIZE; // TODO: calculate different size classes
 }
 
+#define NUM_FREE_BYTES(numObjs) ((size_t)ceil((double)(numObjs) / 8.0))
+#define NUM_MARK_BYTES(numObjs) ((size_t)ceil((double)(numObjs) / 4.0)) // 2 bits because we have 3 colors
+
 // TODO: use size classes
 static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 	DDP_DBGLOG("Allocating new span");
@@ -369,11 +406,12 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 	newSpan->data = osAlloc(gc.spanTail == NULL ? NULL : &((uint8_t *)gc.spanTail->data)[newSpan->allocatedSize], newSpan->allocatedSize);
 	newSpan->numObjs = newSpan->allocatedSize / newSpan->objSize;
 
-	const size_t objBytes = newSpan->numObjs / 8;
-	newSpan->freeBits = DDP_ALLOCATE(uint8_t, objBytes);
-	memset(newSpan->freeBits, 0, objBytes);
-	newSpan->markBits = DDP_ALLOCATE(uint8_t, objBytes);
-	memset(newSpan->markBits, 0, objBytes);
+	const size_t freeBytes = NUM_FREE_BYTES(newSpan->numObjs);
+	const size_t markBytes = NUM_MARK_BYTES(newSpan->numObjs);
+	newSpan->freeBits = DDP_ALLOCATE(uint8_t, freeBytes);
+	memset(newSpan->freeBits, 0, freeBytes);
+	newSpan->markBits = DDP_ALLOCATE(uint8_t, markBytes);
+	memset(newSpan->markBits, 0, markBytes);
 	newSpan->next = NULL;
 
 	if (gc.spanHead == NULL) {
@@ -388,17 +426,37 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 }
 
 static void UNUSED free_span(GCSpan *span, GCSpan *prev) {
+	GCSpan *next = span->next;
 	if (prev) {
-		prev->next = span->next;
+		prev->next = next;
+	}
+	if (gc.spanHead == span) {
+		gc.spanHead = next;
 	}
 
-	const size_t objBytes = span->numObjs / 8;
-	DDP_FREE_ARRAY(uint8_t, span->freeBits, objBytes);
-	DDP_FREE_ARRAY(uint8_t, span->markBits, objBytes);
+	const size_t freeBytes = NUM_FREE_BYTES(span->numObjs);
+	const size_t markBytes = NUM_MARK_BYTES(span->numObjs);
+	DDP_FREE_ARRAY(uint8_t, span->freeBits, freeBytes);
+	DDP_FREE_ARRAY(uint8_t, span->markBits, markBytes);
 	osFree(span->data, span->allocatedSize);
 	DDP_FREE(GCSpan, span);
 }
 
+static void clear_free_spans(void) {
+	GCSpan *prev = NULL;
+	for (GCSpan *span = gc.spanHead; span != NULL;) {
+		if (span->freeBits[0] == 0 && memcmp(span->freeBits, span->freeBits + 1, NUM_FREE_BYTES(span->numObjs) - 1) == 0) {
+			GCSpan *next = span->next;
+			free_span(span, prev);
+			span = next;
+		} else {
+			prev = span;
+			span = span->next;
+		}
+	}
+}
+
+// TODO: use a binary search lookup table
 static UNUSED GCSpan *get_span_for_pointer(void *p) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		DDP_DBGLOG("Checking span %p for %p", span->data, p);
@@ -411,29 +469,48 @@ static UNUSED GCSpan *get_span_for_pointer(void *p) {
 	return NULL;
 }
 
-static GCSpan *UNUSED find_span_for_object(GCTypeMeta objInfo, void **space) {
+static void mark_node(void *ref, Color color) {
+	GCSpan *span = get_span_for_pointer(ref);
+	if (span == NULL) {
+		return;
+	}
+
+	DDP_DBGLOG("marking node %p with color %d", ref, color);
+
+	unsigned index = (((((uint8_t *)ref) - ((uint8_t *)span->data)) / span->objSize)) * 2 + 1; // * 2 + 1 to account for two bits per object
+	if (color == 0) {
+		bitmap_clear_two_bits(span->markBits, index);
+	} else {
+		bitmap_set_two_bits(span->markBits, index, color);
+	}
+}
+
+static GCSpan *find_or_allocate_span_for_object(GCTypeMeta objInfo, void **space_slot) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		if (type_meta_equal(span->objInfo, objInfo)) {
-			int free_slot = find_first_zero(span->freeBits, span->numObjs);
+			int free_slot = bitmap_find_first_zero(span->freeBits, span->numObjs);
 			DDP_DBGLOG("Found free slot: %d", free_slot);
 			if (free_slot >= 0) {
-				*space = (void *)(((uint8_t *)span->data) + free_slot * span->objSize);
+				*space_slot = (void *)(((uint8_t *)span->data) + free_slot * span->objSize);
 				return span;
 			}
 		}
 	}
 
 	GCSpan *newSpan = allocate_span(objInfo);
-	*space = newSpan->data;
+	*space_slot = newSpan->data;
 	return newSpan;
 }
 
-void ddp_register_gc_root(void *root) {
+void ddp_register_gc_root(void **root) {
 	DDP_DBGLOG("Registering root %p", root);
 
 	if (gc.len_global_roots == gc.cap_global_roots) {
 		gc.cap_global_roots += 8;
-		gc.global_roots = DDP_GROW_ARRAY(void *, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
+		bool c = gc.collecting;
+		gc.collecting = true;
+		gc.global_roots = DDP_GROW_ARRAY(void **, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
+		gc.collecting = c;
 	}
 
 	gc.global_roots[gc.len_global_roots++] = root;
@@ -446,14 +523,14 @@ void ddp_free_gc_ref(void *ref UNUSED) {
 void *ddp_allocate_gc_ref(ddpvtable *vtable) {
 	DDP_DBGLOG("Allocating GC ref from vtable: %p", vtable);
 	GCTypeMeta objInfo = {.vtable = vtable, .ptrmask = 0}; // TODO: get ptrmask
-	void *space = NULL;
-	GCSpan *span = find_span_for_object(objInfo, &space);
+	void *space_slot = NULL;
+	GCSpan *span = find_or_allocate_span_for_object(objInfo, &space_slot);
 
-	unsigned index = (((uint8_t *)space) - ((uint8_t *)span->data)) / span->objSize;
+	unsigned index = (((uint8_t *)space_slot) - ((uint8_t *)span->data)) / span->objSize;
 	bitmap_set_bit(span->freeBits, index);
 
-	DDP_DBGLOG("allocated ref: %p", space);
-	return space;
+	DDP_DBGLOG("allocated ref: %p", space_slot);
+	return space_slot;
 }
 
 // pointer to the .llvm_stackmaps section
@@ -474,31 +551,93 @@ void ddp_init_gc(void) {
 
 	gc.PAGE_SIZE = get_page_size();
 
+	gc.collecting = false;
+
 	DDP_DBGLOG("done initializing gc");
 }
 
 void ddp_gc(void) {
-	static bool collecting = false;
-	if (collecting) {
+	if (gc.collecting) {
 		return;
 	}
-	collecting = true;
+	gc.collecting = true;
 
 	DDP_DBGLOG("GC start");
 
-	for (void **root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
+	// mark global roots
+	for (void ***root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
 		if (*root != NULL) {
-			DDP_DBGLOG("Root %p in use (Ref value: %p) (Span: %p)", *root, *(void **)(*root), get_span_for_pointer(*(void **)(*root)));
+			DDP_DBGLOG("Root %p in use (Ref value: %p) (Span: %p)", *root, **root, get_span_for_pointer(**root));
 		} else {
 			DDP_DBGLOG("Root %p not in use", *root);
 		}
+
+		// ignore null refs
+		if (*root == NULL) {
+			continue;
+		}
+
+		mark_node(**root, GREY);
+
+		// TODO: traverse object using ptrmask
+
+		mark_node(**root, BLACK);
 	}
 
-	collecting = false;
+	// free unmarked objects
+	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
+		free_func_ptr free_func = span->objInfo.vtable->free_func;
+
+		// loop over and free every single white object
+		for (unsigned i = 0; i < NUM_FREE_BYTES(span->numObjs); i++) {
+			uint8_t byte = span->freeBits[i];
+			if (byte == 0) {
+				continue;
+			}
+
+			for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
+				if ((byte & (1 << oneIndex)) == 0) {
+					break;
+				}
+
+				unsigned index = oneIndex + i * 8;
+
+				DDP_DBGLOG("color of index %u is %d", index, bitmap_get_two_bits(span->markBits, index));
+				if (bitmap_get_two_bits(span->markBits, index) != WHITE) {
+					continue;
+				}
+
+				DDP_DBGLOG("freeing gc ref %p", (void *)&((uint8_t *)span->data)[index * span->objSize]);
+
+				bitmap_clear_bit(span->freeBits, index);
+				byte &= ~(1 << (index % 8));
+				DDP_DBGLOG("i: %d, bitmask after clear: %hhx", i, byte);
+
+				// free the object
+				if (free_func != NULL) {
+					free_func((void *)&((uint8_t *)span->data)[index * span->objSize]);
+				}
+			}
+		}
+
+		// mark all objects white before the next collection
+		memset(span->markBits, WHITE, NUM_MARK_BYTES(span->numObjs));
+	}
+
+	clear_free_spans();
+
+	gc.collecting = false;
 	DDP_DBGLOG("GC end");
 }
 
 void ddp_free_gc(void) {
-	free_stack_map(&gc.stackMap);
 	DDP_FREE_ARRAY(void *, gc.global_roots, gc.cap_global_roots);
+	gc.global_roots = NULL;
+	gc.len_global_roots = 0;
+	gc.cap_global_roots = 0;
+	// gc one last time with cleaned roots
+	DDP_DBGLOG("last gc");
+	ddp_gc();
+
+	free_stack_map(&gc.stackMap);
 }

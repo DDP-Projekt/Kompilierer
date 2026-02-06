@@ -25,7 +25,7 @@ typedef struct GCTypeMeta {
   ddpint arrlen; // if arrlen > 0 -> the Object is an array of length arrlen
 } GCTypeMeta;
 
-void ddp_register_gc_root(void *root);
+void ddp_register_gc_root(void **root);
 void ddp_free_gc_ref(void *ref);
 void *ddp_allocate_gc_ref(ddpvtable *vtable);
 
