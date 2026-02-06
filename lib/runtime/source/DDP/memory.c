@@ -20,11 +20,11 @@ void *ddp_reallocate(void *pointer, size_t oldSize, size_t newSize) {
 
 	// newSize == 0 means free
 	if (newSize == 0) {
-		free(pointer);
 #ifdef DDP_DEBUG
 		allocatedBytes -= oldSize;
-		DDP_DBGLOG("freed %lu bytes, now at %llu bytesAllocated", oldSize, allocatedBytes);
+		DDP_DBGLOG("freed %lu bytes (%p), now at %llu bytesAllocated", oldSize, pointer, allocatedBytes);
 #endif // DDP_DEBUG
+		free(pointer);
 		return NULL;
 	}
 

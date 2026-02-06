@@ -210,9 +210,9 @@ func runTests(t *testing.T, ignoreFile, path, root string, d fs.DirEntry, err er
 		}
 
 		if testMemory {
-			now_at_zero := regexp.MustCompile("freed [0-9]+ bytes, now at 0 bytesAllocated")
+			now_at_zero := regexp.MustCompile("freed [0-9]+ bytes \\(.+\\), now at 0 bytesAllocated")
 			if now_at_zero.Find(out) == nil {
-				now_at_x := regexp.MustCompile("freed [0-9]+ bytes, now at (?P<num_bytes>[0-9]+) bytesAllocated")
+				now_at_x := regexp.MustCompile("freed [0-9]+ bytes \\(.+\\), now at (?P<num_bytes>[0-9]+) bytesAllocated")
 				matches := now_at_x.FindAllSubmatch(out, -1)
 				if matches != nil {
 					match := matches[len(matches)-1]

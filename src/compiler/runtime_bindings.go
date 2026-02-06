@@ -28,7 +28,7 @@ var (
 	_libc_memmove_irfun       llvm.Value
 
 	// reference functions
-	ddp_free_ref_type_irfun   llvm.Value
+	ddp_free_gc_ref_irfun     llvm.Value
 	ddp_allocate_gc_ref_irfun llvm.Value
 	ddp_register_gc_root      llvm.Value
 )
@@ -87,14 +87,6 @@ func (c *compiler) initRuntimeFunctions() {
 		c.i64,
 	)
 
-	ddp_free_ref_type_irfun = c.declareExternalRuntimeFunction(
-		"ddp_free_ref_type",
-		false,
-		c.void,
-		c.ptr_gc,
-	)
-	ddp_free_ref_type_irfun.SetGC(DDP_GC_STRATEGY_NAME)
-
 	ddp_allocate_gc_ref_irfun = c.declareExternalRuntimeFunction(
 		"ddp_allocate_gc_ref",
 		false,
@@ -102,6 +94,14 @@ func (c *compiler) initRuntimeFunctions() {
 		c.ptr, // vtable
 	)
 	ddp_allocate_gc_ref_irfun.SetGC(DDP_GC_STRATEGY_NAME)
+
+	ddp_free_gc_ref_irfun = c.declareExternalRuntimeFunction(
+		"ddp_free_gc_ref",
+		false,
+		c.void,
+		c.ptr_gc,
+	)
+	ddp_free_gc_ref_irfun.SetGC(DDP_GC_STRATEGY_NAME)
 
 	ddp_register_gc_root = c.declareExternalRuntimeFunction(
 		"ddp_register_gc_root",
@@ -129,11 +129,6 @@ func (c *compiler) ddp_reallocate(pointer, oldSize, newSize llvm.Value) llvm.Val
 	return c.builder().createCall(ddp_reallocate_irfun, pointer, oldSize, newSize)
 }
 
-// dynamically allocates a single value of type typ
-func (c *compiler) allocate(typ llvm.Type) llvm.Value {
-	return c.ddp_reallocate(c.Null, c.zero, c.sizeof(typ))
-}
-
 // allocates n elements of elementType
 func (c *compiler) allocateArr(elementType llvm.Type, n llvm.Value) llvm.Value {
 	size := c.builder().CreateMul(n, c.sizeof(elementType), "")
@@ -147,11 +142,6 @@ func (c *compiler) growArr(elementType llvm.Type, ptr, oldCount, newCount llvm.V
 	oldSize := c.builder().CreateMul(oldCount, elementSize, "")
 	newSize := c.builder().CreateMul(newCount, elementSize, "")
 	return c.ddp_reallocate(ptr, oldSize, newSize)
-}
-
-// calls free on the passed pointer
-func (c *compiler) free(typ llvm.Type, ptr llvm.Value) {
-	c.ddp_reallocate(ptr, c.sizeof(typ), c.zero)
 }
 
 // frees the pointer val which points to n elements

@@ -127,8 +127,8 @@ func (c *compiler) loadAnyValuePtr(val llvm.Value, typ llvm.Type) llvm.Value {
 }
 
 // creates a new any from the given non-any
-func (c *compiler) castNonAnyToAny(val llvm.Value, typ ddpIrType, isTemp bool, vtable llvm.Value) (llvm.Value, ddpIrType, bool) {
-	if typ == c.ddpany {
+func (c *compiler) castNonAnyToAny(val ddpValue, vtable llvm.Value) ddpValue {
+	if val.typ == c.ddpany {
 		c.err("c.ddpany passed to castNonAnyToAny")
 	}
 
@@ -142,16 +142,16 @@ func (c *compiler) castNonAnyToAny(val llvm.Value, typ ddpIrType, isTemp bool, v
 
 	c.createIfElse(is_small_any, func() {
 	}, func() {
-		type_size := c.newInt(int64(c.getTypeSize(typ)))
+		type_size := c.newInt(int64(c.getTypeSize(val.typ)))
 		value_ptr := c.ddp_reallocate(c.Null, c.zero, type_size)
 		c.builder().CreateStore(value_ptr, c.indexBigAnyValuePtr(result))
 	})
 
 	// copy the value
-	c.claimOrCopy(c.loadAnyValuePtr(result, typ.LLType()), val, typ, isTemp)
-	result, _ = c.scp.addTemporary(result, c.ddpany)
+	c.claimOrCopy(c.loadAnyValuePtr(result, val.typ.LLType()), val)
+	result = c.scp.addTemporary(result, c.ddpany).irVal
 
-	return result, c.ddpany, true
+	return newImmediate(result, c.ddpany)
 }
 
 // checks if val (c.ddpany) holds a targetType

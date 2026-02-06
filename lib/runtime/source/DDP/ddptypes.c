@@ -31,7 +31,7 @@ void ddp_free_string(ddpstring *str) {
 
 // allocate a new ddpstring as copy of str
 void ddp_deep_copy_string(ddpstring *ret, ddpstring *str) {
-	DDP_DBGLOG("_ddp_deep_copy_string: %p, ret: %p", str, ret);
+	DDP_DBGLOG("_ddp_deep_copy_string: %p (%s), ret: %p", str, str->str == NULL ? "" : str->str, ret);
 	if (ret == str) {
 		return;
 	}

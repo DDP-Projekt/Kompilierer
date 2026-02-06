@@ -22,10 +22,8 @@ type llBuilder struct {
 	cb       llvm.BasicBlock // current block
 	params   []funcParam
 
-	latestReturn     llvm.Value // return of the latest evaluated expression (in the ir)
-	latestReturnType ddpIrType  // the type of latestReturn
-	latestIsTemp     bool       // ewther the latestReturn is a temporary or not
-	currentNode      ast.Node   // used for error reporting
+	latestReturn ddpValue // return of the latest evaluated expression (in the ir)
+	currentNode  ast.Node // used for error reporting
 
 	curLeaveBlock    llvm.BasicBlock // leave block of the current loop
 	curContinueBlock llvm.BasicBlock // block where a continue should jump to

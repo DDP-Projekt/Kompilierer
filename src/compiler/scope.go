@@ -76,9 +76,9 @@ func (scope *scope) unprotectTemporary(val llvm.Value) {
 	panic("attempted Value unprotection not found in scope.temporaries")
 }
 
-func (scope *scope) addTemporary(val llvm.Value, typ ddpIrType) (llvm.Value, ddpIrType) {
+func (scope *scope) addTemporary(val llvm.Value, typ ddpIrType) ddpValue {
 	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, protected: false})
-	return val, typ
+	return newImmediate(val, typ)
 }
 
 // removes the given value from scope.temporaries giving ownership to the caller

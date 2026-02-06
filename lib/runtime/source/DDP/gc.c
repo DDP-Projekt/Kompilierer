@@ -220,7 +220,7 @@ static void read_stack_map(StackMap *stackMap, const uint8_t *section) {
 }
 
 static void free_stack_map(StackMap *stackMap) {
-	DDP_FREE(unsigned, (void *)stackMap->record_offsets);
+	DDP_FREE_ARRAY(unsigned, (void *)stackMap->record_offsets, stackMap->numRecords);
 }
 
 static RecordAccessor UNUSED get_record(StackMap *stackMap, unsigned index) {
@@ -248,19 +248,13 @@ static void UNUSED dump_stackmap(StackMap *stackMap) {
 // GC
 
 static size_t UNUSED get_page_size(void) {
-	static size_t pageSize = 0;
-	if (pageSize != 0) {
-		return pageSize;
-	}
-
 #ifdef DDPOS_WINDOWS
 	SYSTEM_INFO sysInfo;
 	GetSystemInfo(&sysInfo);
 
-	pageSize = sysInfo.dwPageSize;
+	return sysInfo.dwPageSize;
 #else
 #endif
-	return pageSize;
 }
 
 static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
@@ -287,25 +281,30 @@ static int find_first_zero(uint8_t *bitmap, size_t num_bits) {
 	return -1; // all bits are 1
 }
 
-static void set_bit(uint8_t *bitmap, size_t index) {
+static void bitmap_set_bit(uint8_t *bitmap, size_t index) {
 	bitmap[index / 8] |= 1 << (index % 8);
 }
 
-// TODO: use these
-static const size_t SPAN_SIZE = 1 << 13;	  // 8 KB
-static const size_t UNUSED SIZE_CLASSES[] = { // copied from the Go GC
-	8, 16, 24, 32, 48, 64, 80, 96,
-	112, 128, 144, 160, 176, 192, 208, 224,
-	240, 256, 288, 320, 352, 384, 416, 448,
-	480, 512, 576, 640, 704, 768, 896, 1024,
-	1152, 1280, 1408, 1536, 1792, 2048, 2304,
-	2688, 3072, 3200, 3456, 4096, 4864, 5376,
-	6144, 6528, 6784, 6912, 8192};
+// round up positive number to nearest multiple
+static int round_up_to_multiple(size_t numToRound, size_t multiple) {
+	if (multiple == 0) {
+		return numToRound;
+	}
+
+	size_t remainder = numToRound % multiple;
+	if (remainder == 0) {
+		return numToRound;
+	}
+
+	return numToRound + multiple - remainder;
+}
 
 typedef struct GCSpan {
 	GCTypeMeta objInfo;
 
 	void *data;
+	size_t allocatedSize; // bytes actually allocated, including potential waste
+	uint32_t objSize;	  // size of a single object (arrays count as single objects)
 	uint16_t numObjs;
 
 	uint8_t *freeBits;
@@ -323,6 +322,8 @@ typedef struct GC {
 
 	GCSpan *spanHead;
 	GCSpan *spanTail;
+
+	size_t PAGE_SIZE;
 } GC;
 
 static GC gc;
@@ -346,14 +347,28 @@ static void osFree(void *p, size_t nbytes) {
 #endif
 }
 
+static size_t calculate_span_size(size_t objSize) {
+	// const size_t perPage = gc.PAGE_SIZE / objSize;
+
+	// large objects
+	if (objSize > gc.PAGE_SIZE) {
+		return round_up_to_multiple(objSize, gc.PAGE_SIZE);
+	}
+
+	return gc.PAGE_SIZE; // TODO: calculate different size classes
+}
+
 // TODO: use size classes
 static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 	DDP_DBGLOG("Allocating new span");
 
 	GCSpan *newSpan = DDP_ALLOCATE(GCSpan, 1);
 	newSpan->objInfo = objInfo;
-	newSpan->data = osAlloc(gc.spanTail == NULL ? NULL : &((uint8_t *)gc.spanTail->data)[SPAN_SIZE], SPAN_SIZE);
-	newSpan->numObjs = SPAN_SIZE / objInfo.vtable->type_size;
+	newSpan->objSize = objInfo.vtable->type_size * (objInfo.arrlen > 0 ? objInfo.arrlen : 1);
+	newSpan->allocatedSize = calculate_span_size(newSpan->objSize);
+	newSpan->data = osAlloc(gc.spanTail == NULL ? NULL : &((uint8_t *)gc.spanTail->data)[newSpan->allocatedSize], newSpan->allocatedSize);
+	newSpan->numObjs = newSpan->allocatedSize / newSpan->objSize;
+
 	const size_t objBytes = newSpan->numObjs / 8;
 	newSpan->freeBits = DDP_ALLOCATE(uint8_t, objBytes);
 	memset(newSpan->freeBits, 0, objBytes);
@@ -377,17 +392,18 @@ static void UNUSED free_span(GCSpan *span, GCSpan *prev) {
 		prev->next = span->next;
 	}
 
-	DDP_FREE(uint8_t, span->freeBits);
-	DDP_FREE(uint8_t, span->markBits);
-	osFree(span->data, SPAN_SIZE);
+	const size_t objBytes = span->numObjs / 8;
+	DDP_FREE_ARRAY(uint8_t, span->freeBits, objBytes);
+	DDP_FREE_ARRAY(uint8_t, span->markBits, objBytes);
+	osFree(span->data, span->allocatedSize);
 	DDP_FREE(GCSpan, span);
 }
 
-static GCSpan *get_span_for_pointer(void *p) {
+static UNUSED GCSpan *get_span_for_pointer(void *p) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		DDP_DBGLOG("Checking span %p for %p", span->data, p);
 		// maybe change this. see https://devblogs.microsoft.com/oldnewthing/20170927-00/?p=97095
-		if ((uint8_t *)p >= (uint8_t *)span->data && (uint8_t *)p < ((uint8_t *)span->data + SPAN_SIZE)) {
+		if ((uint8_t *)p >= (uint8_t *)span->data && (uint8_t *)p < ((uint8_t *)span->data + span->allocatedSize)) {
 			return span;
 		}
 	}
@@ -401,7 +417,7 @@ static GCSpan *UNUSED find_span_for_object(GCTypeMeta objInfo, void **space) {
 			int free_slot = find_first_zero(span->freeBits, span->numObjs);
 			DDP_DBGLOG("Found free slot: %d", free_slot);
 			if (free_slot >= 0) {
-				*space = (void *)(((uint8_t *)span->data) + free_slot * span->objInfo.vtable->type_size);
+				*space = (void *)(((uint8_t *)span->data) + free_slot * span->objSize);
 				return span;
 			}
 		}
@@ -423,7 +439,7 @@ void ddp_register_gc_root(void *root) {
 	gc.global_roots[gc.len_global_roots++] = root;
 }
 
-void ddp_free_ref_type(void *ref UNUSED) {
+void ddp_free_gc_ref(void *ref UNUSED) {
 	DDP_DBGLOG("Freeing ref: %p, Span: %p", ref, get_span_for_pointer(ref));
 }
 
@@ -433,8 +449,8 @@ void *ddp_allocate_gc_ref(ddpvtable *vtable) {
 	void *space = NULL;
 	GCSpan *span = find_span_for_object(objInfo, &space);
 
-	unsigned index = (((uint8_t *)space) - ((uint8_t *)span->data)) / vtable->type_size;
-	set_bit(span->freeBits, index);
+	unsigned index = (((uint8_t *)space) - ((uint8_t *)span->data)) / span->objSize;
+	bitmap_set_bit(span->freeBits, index);
 
 	DDP_DBGLOG("allocated ref: %p", space);
 	return space;
@@ -449,6 +465,14 @@ void ddp_init_gc(void) {
 
 	read_stack_map(&gc.stackMap, __LLVM_StackMaps_External);
 	// dump_stackmap(&stackMap);
+	gc.global_roots = NULL;
+	gc.len_global_roots = 0;
+	gc.cap_global_roots = 0;
+
+	gc.spanHead = NULL;
+	gc.spanTail = NULL;
+
+	gc.PAGE_SIZE = get_page_size();
 
 	DDP_DBGLOG("done initializing gc");
 }
@@ -476,5 +500,5 @@ void ddp_gc(void) {
 
 void ddp_free_gc(void) {
 	free_stack_map(&gc.stackMap);
-	DDP_FREE(void *, gc.global_roots);
+	DDP_FREE_ARRAY(void *, gc.global_roots, gc.cap_global_roots);
 }

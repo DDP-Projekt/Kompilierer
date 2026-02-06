@@ -230,15 +230,15 @@ func mangledNameBase(name string, module *ast.Module) string {
 func (c *compiler) compare_values(lhs, rhs llvm.Value, typ ddpIrType) llvm.Value {
 	switch typ {
 	case c.ddpinttyp, c.ddpbytetyp, c.ddpbooltyp, c.ddpchartyp:
-		c.builder().latestReturn = c.builder().CreateICmp(llvm.IntEQ, lhs, rhs, "")
+		c.builder().latestReturn.irVal = c.builder().CreateICmp(llvm.IntEQ, lhs, rhs, "")
 	case c.ddpfloattyp:
-		c.builder().latestReturn = c.builder().CreateFCmp(llvm.FloatOEQ, lhs, rhs, "")
+		c.builder().latestReturn.irVal = c.builder().CreateFCmp(llvm.FloatOEQ, lhs, rhs, "")
 	default:
 		equalsFunc := typ.EqualsFunc()
-		c.builder().latestReturn = c.builder().createCall(equalsFunc, lhs, rhs)
+		c.builder().latestReturn.irVal = c.builder().createCall(equalsFunc, lhs, rhs)
 	}
-	c.builder().latestReturnType = c.ddpbooltyp
-	return c.builder().latestReturn
+	c.builder().latestReturn.typ = c.ddpbooltyp
+	return c.builder().latestReturn.irVal
 }
 
 // converts b to 1 or 0

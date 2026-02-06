@@ -16,11 +16,17 @@ void ddp_free_gc(void);
 static_assert(sizeof(void *) == 8, "Expecting pointer size to be 8 byte");
 
 // type metadata for the GC
+// TODO: account for arrays
 typedef struct GCTypeMeta {
   ddpvtable *vtable;
-  uint64_t ptrmask; // bit mask which quads are themselves roots -> limits object size to 8 * 64 byte;
+  // bit mask which quads are themselves roots -> limits
+  // object size to (8 * 64) byte;
+  uint64_t ptrmask;
+  ddpint arrlen; // if arrlen > 0 -> the Object is an array of length arrlen
 } GCTypeMeta;
 
 void ddp_register_gc_root(void *root);
+void ddp_free_gc_ref(void *ref);
+void *ddp_allocate_gc_ref(ddpvtable *vtable);
 
 #endif // DDP_GC_H
