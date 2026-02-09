@@ -215,6 +215,9 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 
 	listArr, listCap := c.loadStructField(listType.typ, list, list_arr_field_index), c.loadStructField(listType.typ, list, list_cap_field_index)
 	c.freeArr(listType.elementType.LLType(), listArr, listCap)
+	// force segfaults
+	arrFieldPtr := c.indexStruct(listType.typ, list, list_arr_field_index)
+	c.builder().CreateStore(c.Null, arrFieldPtr)
 
 	c.builder().CreateRet(llvm.Value{})
 

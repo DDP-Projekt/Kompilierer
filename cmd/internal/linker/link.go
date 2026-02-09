@@ -131,7 +131,7 @@ func LinkDDPFiles(options Options) ([]byte, error) {
 	if options.LinkInListDefs {
 		args = append(args, ddppath.DDP_List_Types_Defs_O)
 	}
-	args = append(args, "-lddpruntime", "-lm")
+	args = append(args, "-lddpruntime", "-lm", "-lunwind")
 	args = append(args, options.MainFile)
 	args = append(args, "-lpcre2-8")
 	args = append(args, "-larchive")

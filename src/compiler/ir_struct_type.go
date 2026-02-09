@@ -149,6 +149,12 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 	// free non-primitives
 	for i, field := range structTyp.fieldIrTypes {
 		c.freeNonPrimitive(c.indexStruct(structTyp.typ, structParam, i), field)
+
+		// force segfaults
+		if !field.TriviallyCopyable() {
+			fieldPtr := c.indexStruct(structTyp.typ, structParam, i)
+			c.builder().CreateStore(c.Null, fieldPtr)
+		}
 	}
 
 	c.builder().CreateRet(llvm.Value{})

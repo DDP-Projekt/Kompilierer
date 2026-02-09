@@ -27,6 +27,8 @@ void ddp_string_from_constant(ddpstring *ret, char *str) {
 void ddp_free_string(ddpstring *str) {
 	DDP_DBGLOG("free_string: %p", str);
 	DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
+	// force segfaults
+	str->str = NULL;
 }
 
 // allocate a new ddpstring as copy of str
@@ -89,6 +91,8 @@ void ddp_free_any(ddpany *any) {
 	// free the memory allocated for the value itself
 	if (!DDP_IS_SMALL_ANY(any) && any->value_ptr != NULL) {
 		ddp_reallocate(any->value_ptr, any->vtable_ptr->type_size, 0);
+		// force segfaults
+		any->value_ptr = NULL;
 	}
 }
 

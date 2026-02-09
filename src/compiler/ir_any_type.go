@@ -60,13 +60,13 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	ddpany.typ = c.llctx.StructType([]llvm.Type{c.ptr, llvm.ArrayType(c.i8, 16)}, false)
 
 	// frees the given any and it's value
-	ddpany.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_any", false, c.void, c.ptr)
+	ddpany.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_any", false, true, c.void, c.ptr)
 
 	// places a copy of any in ret
-	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", false, c.void, c.ptr, c.ptr)
+	ddpany.deepCopyIrFun = c.declareExternalRuntimeFunction("ddp_deep_copy_any", false, true, c.void, c.ptr, c.ptr)
 
 	// compares two any
-	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", false, c.ddpbool, c.ptr, c.ptr)
+	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", false, false, c.ddpbool, c.ptr, c.ptr)
 
 	ddpany.defaultValue = llvm.ConstNull(ddpany.typ)
 

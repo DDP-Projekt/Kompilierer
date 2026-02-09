@@ -24,7 +24,7 @@ else
 	EXPORTED_CGO_LDFLAGS = $(shell $(LLVM_CONFIG) --ldflags --libs --system-libs all)
 endif
 
-.PHONY: all clean kddp ddp-setup gc_strategy
+.PHONY: all clean kddp kddp-debug ddp-setup gc_strategy
 
 .DEFAULT_GOAL := all
 
@@ -33,13 +33,18 @@ LLVMVERSION := $(shell $(LLVM_CONFIG) --version)
 GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
 
-KDDP_LDFLAGS := "-s -w -X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'"
+KDDP_LDFLAGS := -s -w -X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'
+KDDP_LDFLAGS_DEBUG := $(KDDP_LDFLAGS) -X 'github.com/DDP-Projekt/Kompilierer/src/compiler.DDP_COMPILER_DEBUG=true'
 
 kddp: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
 kddp: export CGO_CXXFLAGS = $(shell $(LLVM_CONFIG) --cxxflags)
 kddp: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS) -L../../lib/gc_strategy -lddp-gc-strategy
 
-all: kddp ddp-setup
+kddp-debug: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
+kddp-debug: export CGO_CXXFLAGS = $(shell $(LLVM_CONFIG) --cxxflags)
+kddp-debug: export CGO_LDFLAGS = $(EXPORTED_CGO_LDFLAGS) -L../../lib/gc_strategy -lddp-gc-strategy
+
+all: kddp kddp-debug ddp-setup
 
 RM = rm -rf
 
@@ -48,7 +53,10 @@ clean:
 	$(RM) $(DDP_SETUP_DIR)$(DDP_SETUP_OUT_FILE_NAME)
 
 kddp: gc_strategy
-	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags $(KDDP_LDFLAGS)
+	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS)"
+
+kddp-debug: gc_strategy
+	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS_DEBUG)"
 
 gc_strategy:
 	'$(MAKE)' -C '../lib/gc_strategy/'

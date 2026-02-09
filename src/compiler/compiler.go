@@ -12,6 +12,11 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
+var (
+	DDP_COMPILER_DEBUG string = "undefined"
+	DEBUG              bool   = DDP_COMPILER_DEBUG == "true"
+)
+
 // compiles a mainModule and all it's imports
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
@@ -85,6 +90,7 @@ type llTypes struct {
 	ptr, ptr_gc, void, i8, i32, i64             llvm.Type
 	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
 	vtable_type                                 llvm.Type
+	token                                       llvm.Type
 }
 
 func newLLTypes(llctx llvm.Context) llTypes {
@@ -112,19 +118,22 @@ func newLLTypes(llctx llvm.Context) llTypes {
 			ptr,
 		}, false,
 		),
+		token: llctx.TokenType(),
 	}
 }
 
 type llConstants struct {
-	zero, zerof, zero8, one, all_ones, all_ones8, False, True, Null llvm.Value
+	zero, zero32, zerof, zero8, one, one32, all_ones, all_ones8, False, True, Null llvm.Value
 }
 
 func newLLConstants(types llTypes) llConstants {
 	return llConstants{
 		zero:      llvm.ConstInt(types.i64, 0, false),
+		zero32:    llvm.ConstInt(types.i32, 0, false),
 		zerof:     llvm.ConstFloat(types.ddpfloat, 0),
 		zero8:     llvm.ConstInt(types.i8, 0, false),
 		one:       llvm.ConstInt(types.i64, 1, false),
+		one32:     llvm.ConstInt(types.i32, 1, false),
 		all_ones:  llvm.ConstAllOnes(types.i64),
 		all_ones8: llvm.ConstAllOnes(types.i8),
 		False:     llvm.ConstInt(types.ddpbool, 0, false),
@@ -134,16 +143,28 @@ func newLLConstants(types llTypes) llConstants {
 }
 
 type llAttributes struct {
-	attr_nounwind llvm.Attribute
-	attr_nonnull  llvm.Attribute
-	attr_noalias  llvm.Attribute
+	attr_nounwind               llvm.Attribute
+	attr_nonnull                llvm.Attribute
+	attr_noalias                llvm.Attribute
+	attr_nocallback             llvm.Attribute
+	attr_nofree                 llvm.Attribute
+	attr_nosync                 llvm.Attribute
+	attr_willreturn             llvm.Attribute
+	attr_memory_none            llvm.Attribute
+	attr_elementtype_ptr_gc_ptr llvm.Attribute
 }
 
-func newLLAttributes(llctx llvm.Context) llAttributes {
+func newLLAttributes(llctx llvm.Context, types llTypes) llAttributes {
 	return llAttributes{
-		attr_nounwind: llctx.CreateEnumAttribute(llvm.AttributeKindID("nounwind"), 0),
-		attr_nonnull:  llctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0),
-		attr_noalias:  llctx.CreateEnumAttribute(llvm.AttributeKindID("noalias"), 0),
+		attr_nounwind:               llctx.CreateEnumAttribute(llvm.AttributeKindID("nounwind"), 0),
+		attr_nonnull:                llctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0),
+		attr_noalias:                llctx.CreateEnumAttribute(llvm.AttributeKindID("noalias"), 0),
+		attr_nocallback:             llctx.CreateEnumAttribute(llvm.AttributeKindID("nocallback"), 0),
+		attr_nofree:                 llctx.CreateEnumAttribute(llvm.AttributeKindID("nofree"), 0),
+		attr_nosync:                 llctx.CreateEnumAttribute(llvm.AttributeKindID("nosync"), 0),
+		attr_willreturn:             llctx.CreateEnumAttribute(llvm.AttributeKindID("willreturn"), 0),
+		attr_memory_none:            llctx.CreateEnumAttribute(llvm.AttributeKindID("memory(none)"), 0),
+		attr_elementtype_ptr_gc_ptr: llctx.CreateTypeAttribute(llvm.AttributeKindID("elementtype"), llvm.FunctionType(types.ptr_gc, []llvm.Type{types.ptr}, false)),
 	}
 }
 
@@ -197,7 +218,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 
 	types := newLLTypes(ctx.llctx)
 	constants := newLLConstants(types)
-	attributes := newLLAttributes(ctx.llctx)
+	attributes := newLLAttributes(ctx.llctx, types)
 
 	return &compiler{
 		llvmTargetContext: ctx,
@@ -410,7 +431,7 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 		if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
 			latest.irVal, latest.typ, latest.isImmediate = c.numericCast(latest.irVal, latest.typ, to), to, false
 		}
-		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, latest.typ.VTable())
+		ref := c.allocateGCRef(latest.typ.VTable())
 		// c.builder().CreateStore(latest.irVal, ref)
 		c.claimOrCopy(ref, latest)
 		return newNonImmediate(ref, c.getReferenceType(latest.typ))
@@ -526,14 +547,14 @@ func (c *compiler) setupModuleInitDispose() {
 // used in setup()
 func (c *compiler) setupOperators() {
 	// hoch operator for different type combinations
-	c.declareExternalRuntimeFunction("pow", false, c.ddpfloat, c.ddpfloat, c.ddpfloat)
+	c.declareExternalRuntimeFunction("pow", false, false, c.ddpfloat, c.ddpfloat, c.ddpfloat)
 
 	// logarithm
-	c.declareExternalRuntimeFunction("log10", false, c.ddpfloat, c.ddpfloat)
+	c.declareExternalRuntimeFunction("log10", false, false, c.ddpfloat, c.ddpfloat)
 
 	// ddpstring to type cast
-	c.declareExternalRuntimeFunction("ddp_string_to_int", false, c.ddpint, c.ptr)
-	c.declareExternalRuntimeFunction("ddp_string_to_float", false, c.ddpfloat, c.ptr)
+	c.declareExternalRuntimeFunction("ddp_string_to_int", false, false, c.ddpint, c.ptr)
+	c.declareExternalRuntimeFunction("ddp_string_to_float", false, false, c.ddpfloat, c.ptr)
 }
 
 // deep copies the value pointed to by src into dest
@@ -1952,7 +1973,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			return ast.VisitRecurse
 		}
 
-		ref := c.builder().createCall(ddp_allocate_gc_ref_irfun, lhs.typ.VTable())
+		ref := c.allocateGCRef(lhs.typ.VTable())
 		c.claimOrCopy(ref, lhs)
 		c.builder().latestReturn.irVal = ref
 		c.builder().latestReturn.isImmediate = false

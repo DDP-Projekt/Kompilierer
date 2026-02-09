@@ -7,7 +7,7 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 CC = gcc
 CCFLAGS = -c -Wall -Werror -Wextra -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
 DEBUGFLAGS = -DDDP_DEBUG
-INC = -I./include/
+INC = -I./include/ -I../../llvm-project/libunwind/include/
 
 AR = ar rcs
 RM = rm -f

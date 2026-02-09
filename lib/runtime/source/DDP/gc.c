@@ -6,7 +6,28 @@
 #include <stddef.h>
 #include <unistd.h>
 
+#define UNW_LOCAL_ONLY
+#include "libunwind.h"
+
 #define UNUSED __attribute__((unused))
+#define ALWAYS_INLINE __attribute__((always_inline))
+
+static void *ddp_reallocate_no_gc(void *pointer, size_t oldSize, size_t newSize);
+
+#define DDP_ALLOCATE_NO_GC(type, count) \
+	(type *)ddp_reallocate_no_gc(NULL, 0, sizeof(type) * (count))
+
+// helper macro to free any type (not arrays though)
+#define DDP_FREE_NO_GC(type, pointer) ddp_reallocate_no_gc(pointer, sizeof(type), 0)
+
+// helper macro to expand the capacity of an array
+#define DDP_GROW_ARRAY_NO_GC(type, pointer, oldCount, newCount)      \
+	(type *)ddp_reallocate_no_gc(pointer, sizeof(type) * (oldCount), \
+								 sizeof(type) * (newCount))
+
+// helper to free a whole array
+#define DDP_FREE_ARRAY_NO_GC(type, pointer, oldCount) \
+	ddp_reallocate_no_gc(pointer, sizeof(type) * (oldCount), 0)
 
 /*
  * Implements a Parser for the stack map.
@@ -208,7 +229,7 @@ static void read_stack_map(StackMap *stackMap, const uint8_t *section) {
 	stackMap->functions = (StackSizeRecord *)&section[FunctionListOffset];
 	stackMap->constants = (Constant *)&section[ConstantsListOffset];
 	stackMap->records_base = (RecordAccessor)&section[currentRecordOffset];
-	stackMap->record_offsets = DDP_ALLOCATE(unsigned, stackMap->numRecords);
+	stackMap->record_offsets = DDP_ALLOCATE_NO_GC(unsigned, stackMap->numRecords);
 
 	for (unsigned i = 0; i < stackMap->numRecords; i++) {
 		stackMap->record_offsets[i] = currentRecordOffset;
@@ -220,7 +241,7 @@ static void read_stack_map(StackMap *stackMap, const uint8_t *section) {
 }
 
 static void free_stack_map(StackMap *stackMap) {
-	DDP_FREE_ARRAY(unsigned, (void *)stackMap->record_offsets, stackMap->numRecords);
+	DDP_FREE_ARRAY_NO_GC(unsigned, (void *)stackMap->record_offsets, stackMap->numRecords);
 }
 
 static RecordAccessor UNUSED get_record(StackMap *stackMap, unsigned index) {
@@ -228,7 +249,16 @@ static RecordAccessor UNUSED get_record(StackMap *stackMap, unsigned index) {
 	return &stackMap->base[offset];
 }
 
-static void UNUSED dump_stackmap(StackMap *stackMap) {
+static LocationAccessor UNUSED get_location(RecordAccessor record, unsigned index) {
+	unsigned offset = LocationListOffset + index * LocationSize;
+	return (LocationAccessor)(record + offset);
+}
+
+static const Constant *get_constant(StackMap *stackMap, unsigned index) {
+	return stackMap->constants + index * ConstantSize;
+}
+
+static void dump_stackmap(StackMap *stackMap) {
 	DDP_DBGLOG("Functions:\n\n");
 	for (const StackSizeRecord *function = stackMap->functions; function < &stackMap->functions[stackMap->numFunctions]; function++) {
 		DDP_DBGLOG("Function: %llu %llu %llu\n", function->functionAddress, function->stackSize, function->recordCount);
@@ -243,6 +273,51 @@ static void UNUSED dump_stackmap(StackMap *stackMap) {
 	for (RecordAccessor record = stackMap->records_base; record != next_record_accessor(get_record(stackMap, stackMap->numRecords - 1)); record = next_record_accessor(record)) {
 		DDP_DBGLOG("Record Value: %llu %u %hu\n", record_patchpoint_id(record), record_instruction_offset(record), record_num_locations(record));
 	}
+}
+
+static const StackSizeRecord *find_function_for_pc(StackMap *stackMap, unw_word_t pc) {
+	for (unsigned i = 0; i < stackMap->numFunctions; i++) {
+		uint64_t start = stackMap->functions[i].functionAddress;
+		uint64_t end =
+			(i + 1 < stackMap->numFunctions) ? stackMap->functions[i + 1].functionAddress : UINT64_MAX; // last function
+		if (pc >= start && pc < end) {
+			return &stackMap->functions[i];
+		}
+	}
+	return NULL;
+}
+
+RecordAccessor first_record_for_function(StackMap *stackMap, const StackSizeRecord *f) {
+	unsigned index = 0;
+	for (const StackSizeRecord *function = stackMap->functions; function < f; function++) {
+		index += function->recordCount;
+	}
+
+	return get_record(stackMap, index);
+}
+
+static RecordAccessor UNUSED find_stackmap_record(StackMap *stackMap, unw_word_t pc) {
+	const StackSizeRecord *function = find_function_for_pc(stackMap, pc);
+	if (function == NULL) {
+		return NULL;
+	}
+
+	const uint64_t offset = pc - function->functionAddress;
+
+	RecordAccessor record = first_record_for_function(stackMap, function);
+
+	for (unsigned i = 0; i < function->recordCount; i++) {
+		uint32_t instOff = record_instruction_offset(record);
+
+		if (offset == instOff ||
+			offset == instOff + 1) { // tolerate PC-after-instruction
+			return record;
+		}
+
+		record = next_record_accessor(record);
+	}
+
+	return NULL;
 }
 
 // GC
@@ -293,22 +368,25 @@ static void bitmap_clear_bit(uint8_t *bitmap, size_t index) {
 }
 
 static int UNUSED bitmap_get_bit(uint8_t *bitmap, size_t index) {
-	return bitmap[index / 8] & (1 << (index % 8));
+	return (bitmap[index / 8] & (1 << (index % 8))) >> (index % 8);
 }
 
-// sets the bit at index and at index+1 to the bits specified in value&0x3
+// sets the two bits at index to the bits specified in value & 0x3
+// correct index calculation for a two-bit-pair bitmap is done here
 static void bitmap_set_two_bits(uint8_t *bitmap, size_t index, uint8_t value) {
-	bitmap[index / 8] |= (value & 0x3) << (index % 8);
-}
-//
-// sets the bit at index and at index+1 to the bits specified in value&0x3
-static void bitmap_clear_two_bits(uint8_t *bitmap, size_t index) {
-	bitmap[index / 8] &= ~(0x3 << (index % 8));
+	bitmap[index / 8] |= (value & 0x3) << ((index * 2) % 8);
 }
 
-// gets the bit at index and at index+1
+// sets the two bits at index to the bits specified in value & 0x3
+// correct index calculation for a two-bit-pair bitmap is done here
+static void bitmap_clear_two_bits(uint8_t *bitmap, size_t index) {
+	bitmap[index / 8] &= ~(0x3 << ((index * 2) % 8));
+}
+
+// gets the bits at index
+// correct index calculation for a two-bit-pair bitmap is done here
 static int UNUSED bitmap_get_two_bits(uint8_t *bitmap, size_t index) {
-	return bitmap[index / 8] & (0x3 << (index % 8));
+	return (bitmap[index / 8] & (uint8_t)(0x3 << ((index * 2) % 8))) >> ((index * 2) % 8);
 }
 
 // round up positive number to nearest multiple
@@ -381,6 +459,14 @@ static void osFree(void *p, size_t nbytes) {
 #endif
 }
 
+static void *ddp_reallocate_no_gc(void *pointer, size_t oldSize, size_t newSize) {
+	bool collecting = gc.collecting;
+	gc.collecting = true;
+	void *result = ddp_reallocate(pointer, oldSize, newSize);
+	gc.collecting = collecting;
+	return result;
+}
+
 static size_t calculate_span_size(size_t objSize) {
 	// const size_t perPage = gc.PAGE_SIZE / objSize;
 
@@ -399,7 +485,7 @@ static size_t calculate_span_size(size_t objSize) {
 static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 	DDP_DBGLOG("Allocating new span");
 
-	GCSpan *newSpan = DDP_ALLOCATE(GCSpan, 1);
+	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
 	newSpan->objInfo = objInfo;
 	newSpan->objSize = objInfo.vtable->type_size * (objInfo.arrlen > 0 ? objInfo.arrlen : 1);
 	newSpan->allocatedSize = calculate_span_size(newSpan->objSize);
@@ -408,9 +494,9 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 
 	const size_t freeBytes = NUM_FREE_BYTES(newSpan->numObjs);
 	const size_t markBytes = NUM_MARK_BYTES(newSpan->numObjs);
-	newSpan->freeBits = DDP_ALLOCATE(uint8_t, freeBytes);
+	newSpan->freeBits = DDP_ALLOCATE_NO_GC(uint8_t, freeBytes);
 	memset(newSpan->freeBits, 0, freeBytes);
-	newSpan->markBits = DDP_ALLOCATE(uint8_t, markBytes);
+	newSpan->markBits = DDP_ALLOCATE_NO_GC(uint8_t, markBytes);
 	memset(newSpan->markBits, 0, markBytes);
 	newSpan->next = NULL;
 
@@ -426,6 +512,8 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 }
 
 static void UNUSED free_span(GCSpan *span, GCSpan *prev) {
+	DDP_DBGLOG("freeing span %p", span);
+
 	GCSpan *next = span->next;
 	if (prev) {
 		prev->next = next;
@@ -436,13 +524,14 @@ static void UNUSED free_span(GCSpan *span, GCSpan *prev) {
 
 	const size_t freeBytes = NUM_FREE_BYTES(span->numObjs);
 	const size_t markBytes = NUM_MARK_BYTES(span->numObjs);
-	DDP_FREE_ARRAY(uint8_t, span->freeBits, freeBytes);
-	DDP_FREE_ARRAY(uint8_t, span->markBits, markBytes);
+	DDP_FREE_ARRAY_NO_GC(uint8_t, span->freeBits, freeBytes);
+	DDP_FREE_ARRAY_NO_GC(uint8_t, span->markBits, markBytes);
 	osFree(span->data, span->allocatedSize);
-	DDP_FREE(GCSpan, span);
+	DDP_FREE_NO_GC(GCSpan, span);
 }
 
 static void clear_free_spans(void) {
+	DDP_DBGLOG("clearing free spans");
 	GCSpan *prev = NULL;
 	for (GCSpan *span = gc.spanHead; span != NULL;) {
 		if (span->freeBits[0] == 0 && memcmp(span->freeBits, span->freeBits + 1, NUM_FREE_BYTES(span->numObjs) - 1) == 0) {
@@ -459,30 +548,28 @@ static void clear_free_spans(void) {
 // TODO: use a binary search lookup table
 static UNUSED GCSpan *get_span_for_pointer(void *p) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
-		DDP_DBGLOG("Checking span %p for %p", span->data, p);
 		// maybe change this. see https://devblogs.microsoft.com/oldnewthing/20170927-00/?p=97095
 		if ((uint8_t *)p >= (uint8_t *)span->data && (uint8_t *)p < ((uint8_t *)span->data + span->allocatedSize)) {
 			return span;
 		}
 	}
-	DDP_DBGLOG("No span found");
 	return NULL;
 }
 
-static void mark_node(void *ref, Color color) {
-	GCSpan *span = get_span_for_pointer(ref);
-	if (span == NULL) {
-		return;
-	}
-
+static void mark_node(void *ref, GCSpan *span, Color color) {
 	DDP_DBGLOG("marking node %p with color %d", ref, color);
 
-	unsigned index = (((((uint8_t *)ref) - ((uint8_t *)span->data)) / span->objSize)) * 2 + 1; // * 2 + 1 to account for two bits per object
-	if (color == 0) {
-		bitmap_clear_two_bits(span->markBits, index);
-	} else {
+	unsigned index = (((((uint8_t *)ref) - ((uint8_t *)span->data)) / span->objSize));
+	// always clear the bits
+	bitmap_clear_two_bits(span->markBits, index);
+	if (color != 0) {
 		bitmap_set_two_bits(span->markBits, index, color);
 	}
+}
+
+static Color get_color(void *ref, GCSpan *span) {
+	unsigned index = (((((uint8_t *)ref) - ((uint8_t *)span->data)) / span->objSize));
+	return bitmap_get_two_bits(span->markBits, index);
 }
 
 static GCSpan *find_or_allocate_span_for_object(GCTypeMeta objInfo, void **space_slot) {
@@ -507,10 +594,7 @@ void ddp_register_gc_root(void **root) {
 
 	if (gc.len_global_roots == gc.cap_global_roots) {
 		gc.cap_global_roots += 8;
-		bool c = gc.collecting;
-		gc.collecting = true;
-		gc.global_roots = DDP_GROW_ARRAY(void **, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
-		gc.collecting = c;
+		gc.global_roots = DDP_GROW_ARRAY_NO_GC(void **, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
 	}
 
 	gc.global_roots[gc.len_global_roots++] = root;
@@ -541,7 +625,7 @@ void ddp_init_gc(void) {
 	DDP_DBGLOG("initializing gc");
 
 	read_stack_map(&gc.stackMap, __LLVM_StackMaps_External);
-	// dump_stackmap(&stackMap);
+	dump_stackmap(&gc.stackMap);
 	gc.global_roots = NULL;
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
@@ -551,20 +635,193 @@ void ddp_init_gc(void) {
 
 	gc.PAGE_SIZE = get_page_size();
 
-	gc.collecting = false;
-
 	DDP_DBGLOG("done initializing gc");
 }
 
-void ddp_gc(void) {
-	if (gc.collecting) {
+static void trace_root(void *ref) {
+	if (ref == NULL) {
 		return;
 	}
-	gc.collecting = true;
+	DDP_DBGLOG("tracing root %p (%llx)", ref, *(uint64_t *)ref);
 
-	DDP_DBGLOG("GC start");
+	GCSpan *span = get_span_for_pointer(ref);
+	if (span == NULL) {
+		DDP_DBGLOG("No span found, not tracing");
+		return;
+	}
 
-	// mark global roots
+	if (get_color(ref, span) == BLACK) {
+		DDP_DBGLOG("not tracing already Black object");
+		return;
+	}
+
+	mark_node(ref, span, GREY);
+
+	// TODO: traverse object using ptrmask
+
+	mark_node(ref, span, BLACK);
+}
+
+static int UNUSED get_unw_reg_number(uint16_t dwarf_reg) {
+	switch (dwarf_reg) {
+	case 0:
+		return UNW_X86_64_RAX;
+	case 1:
+		return UNW_X86_64_RDX;
+	case 2:
+		return UNW_X86_64_RCX;
+	case 3:
+		return UNW_X86_64_RBX;
+	case 4:
+		return UNW_X86_64_RSI;
+	case 5:
+		return UNW_X86_64_RDI;
+	case 6:
+		return UNW_X86_64_RBP;
+	case 7:
+		return UNW_X86_64_RSP;
+	case 8:
+		return UNW_X86_64_R8;
+	case 9:
+		return UNW_X86_64_R9;
+	case 10:
+		return UNW_X86_64_R10;
+	case 11:
+		return UNW_X86_64_R11;
+	case 12:
+		return UNW_X86_64_R12;
+	case 13:
+		return UNW_X86_64_R13;
+	case 14:
+		return UNW_X86_64_R14;
+	case 15:
+		return UNW_X86_64_R15;
+	case 17:
+		return UNW_X86_64_XMM0;
+	case 18:
+		return UNW_X86_64_XMM1;
+	case 19:
+		return UNW_X86_64_XMM2;
+	case 20:
+		return UNW_X86_64_XMM3;
+	case 21:
+		return UNW_X86_64_XMM4;
+	case 22:
+		return UNW_X86_64_XMM5;
+	case 23:
+		return UNW_X86_64_XMM6;
+	case 24:
+		return UNW_X86_64_XMM7;
+	case 25:
+		return UNW_X86_64_XMM8;
+	case 26:
+		return UNW_X86_64_XMM9;
+	case 27:
+		return UNW_X86_64_XMM10;
+	case 28:
+		return UNW_X86_64_XMM11;
+	case 29:
+		return UNW_X86_64_XMM12;
+	case 30:
+		return UNW_X86_64_XMM13;
+	case 31:
+		return UNW_X86_64_XMM14;
+	case 32:
+		return UNW_X86_64_XMM15;
+		// etc
+	}
+	return -1;
+}
+
+static inline ALWAYS_INLINE void mark_stack_roots(void) {
+	DDP_DBGLOG("GC marking stack");
+	unw_cursor_t cursor;
+	unw_context_t context;
+
+	unw_getcontext(&context);
+	unw_init_local(&cursor, &context);
+
+	while (unw_step(&cursor) > 0) {
+		unw_word_t pc;
+		if (unw_get_reg(&cursor, UNW_REG_IP, &pc) != 0) {
+			DDP_DBGLOG("Could not read UNW_REG_IP");
+			continue;
+		}
+
+		RecordAccessor record = find_stackmap_record(&gc.stackMap, pc);
+		if (record == NULL) {
+			continue;
+		}
+
+		unsigned numLocations = record_num_locations(record);
+		for (unsigned i = 0; i < numLocations; i++) {
+			void *root = NULL;
+			LocationAccessor location = get_location(record, i);
+
+			switch (location_kind(location)) {
+			case LOC_REGISTER: {
+				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
+				unw_word_t reg;
+				if (unw_get_reg(&cursor, regnum, &reg) != 0) {
+					DDP_DBGLOG("Could not read register %d", regnum);
+				} else {
+					root = (void *)reg;
+				}
+				DDP_DBGLOG("found register root %p", root);
+				break;
+			}
+				// TODO: treat LOC_DIRECT and LOC_INDIRECT the same (same case)
+			case LOC_DIRECT: {
+				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
+				unw_word_t reg;
+				if (unw_get_reg(&cursor, regnum, &reg) != 0) {
+					DDP_DBGLOG("Could not read register %d", regnum);
+					break;
+				}
+
+				int32_t offset = location_offset(location);
+
+				void **addr = (void **)((uint8_t *)reg + offset);
+				root = *addr;
+				DDP_DBGLOG("found direct root %p %x %p", (void *)reg, offset, root);
+				break;
+			}
+			case LOC_INDIRECT: {
+				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
+				unw_word_t bp;
+				if (unw_get_reg(&cursor, regnum, &bp) != 0) {
+					DDP_DBGLOG("Could not read register %d", regnum);
+					break;
+				}
+
+				int32_t offset = location_offset(location);
+
+				void ***addr = (void ***)((uint8_t *)bp + offset);
+				DDP_DBGLOG("indirect *addr: %p", *addr);
+				root = *addr;
+
+				DDP_DBGLOG("found indirect root %p %x %p", (void *)bp, offset, root);
+				break;
+			} break;
+			case LOC_CONSTANT:
+				root = (void *)(int64_t)location_offset(location);
+				DDP_DBGLOG("found constant root %p", root);
+				break;
+			case LOC_CONST_INDEX: {
+				const Constant *constant = get_constant(&gc.stackMap, location_offset(location));
+				root = (void *)constant->largeConstant;
+				DDP_DBGLOG("found constant index root %p", root);
+				break;
+			}
+			}
+
+			trace_root(root);
+		}
+	}
+}
+
+static void mark_global_roots(void) {
+	DDP_DBGLOG("GC marking global");
 	for (void ***root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
 		if (*root != NULL) {
 			DDP_DBGLOG("Root %p in use (Ref value: %p) (Span: %p)", *root, **root, get_span_for_pointer(**root));
@@ -577,27 +834,34 @@ void ddp_gc(void) {
 			continue;
 		}
 
-		mark_node(**root, GREY);
-
-		// TODO: traverse object using ptrmask
-
-		mark_node(**root, BLACK);
+		trace_root(**root);
 	}
+}
 
-	// free unmarked objects
+static void free_unmarked_objects(void) {
+	DDP_DBGLOG("GC sweeping objects");
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		free_func_ptr free_func = span->objInfo.vtable->free_func;
 
 		// loop over and free every single white object
 		for (unsigned i = 0; i < NUM_FREE_BYTES(span->numObjs); i++) {
+			// byte-wise loop
 			uint8_t byte = span->freeBits[i];
+			// all 8 objects in this byte are free, so continue
 			if (byte == 0) {
 				continue;
 			}
 
+			// bit-wise loop
 			for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
-				if ((byte & (1 << oneIndex)) == 0) {
+				// all objects that are left in this byte are free, so break
+				if ((byte >> oneIndex) == 0) {
 					break;
+				}
+
+				// there are objects left that are free, but this particular one is not, so continue
+				if ((byte & (1 << oneIndex)) == 0) {
+					continue;
 				}
 
 				unsigned index = oneIndex + i * 8;
@@ -611,7 +875,6 @@ void ddp_gc(void) {
 
 				bitmap_clear_bit(span->freeBits, index);
 				byte &= ~(1 << (index % 8));
-				DDP_DBGLOG("i: %d, bitmask after clear: %hhx", i, byte);
 
 				// free the object
 				if (free_func != NULL) {
@@ -623,7 +886,23 @@ void ddp_gc(void) {
 		// mark all objects white before the next collection
 		memset(span->markBits, WHITE, NUM_MARK_BYTES(span->numObjs));
 	}
+}
 
+void ddp_gc(void) {
+	if (gc.collecting) {
+		return;
+	}
+	gc.collecting = true;
+
+	DDP_DBGLOG("GC start");
+
+	mark_stack_roots();
+
+	mark_global_roots();
+
+	free_unmarked_objects();
+
+	// TODO: don't always free all spans, reeuse them instead and only free at a certain limit
 	clear_free_spans();
 
 	gc.collecting = false;
@@ -631,13 +910,14 @@ void ddp_gc(void) {
 }
 
 void ddp_free_gc(void) {
-	DDP_FREE_ARRAY(void *, gc.global_roots, gc.cap_global_roots);
+	DDP_FREE_ARRAY_NO_GC(void *, gc.global_roots, gc.cap_global_roots);
 	gc.global_roots = NULL;
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
 	// gc one last time with cleaned roots
 	DDP_DBGLOG("last gc");
 	ddp_gc();
+	gc.collecting = true;
 
 	free_stack_map(&gc.stackMap);
 }

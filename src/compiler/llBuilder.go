@@ -66,7 +66,7 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 	builder.llFnType = funcType
 	builder.llFn = llvm.AddFunction(c.llmod, funcName, builder.llFnType)
 	builder.llFn.SetFunctionCallConv(llvm.CCallConv) // every function is called with the c calling convention to make interaction with inbuilt stuff easier
-	builder.llFn.AddFunctionAttr(c.attr_nounwind)
+	// builder.llFn.AddFunctionAttr(c.attr_nounwind)
 
 	if isGC {
 		builder.llFn.SetGC(DDP_GC_STRATEGY_NAME)

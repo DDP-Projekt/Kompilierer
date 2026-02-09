@@ -30,6 +30,7 @@ RUN_BIN_DEBUG = $(RUN_BIN:.a=debug.a)
 RUN_BIN_MAIN_DIR = $(RUN_DIR)source/
 RUN_BIN_MAIN = main.o
 RUN_BIN_MAIN_DEBUG = $(RUN_BIN_MAIN:.o=_debug.o)
+LIBUNWIND_BIN = libunwind.a
 DDP_LIST_DEFS_NAME = ddp_list_types_defs
 
 DDP_LIST_DEFS_OUTPUT_TYPES = --llvm-ir --object
@@ -58,6 +59,7 @@ LLVM_CMAKE_GENERATOR="MinGW Makefiles"
 LLVM_CMAKE_BUILD_TOOL=$(MAKE)
 LLVM_TARGETS="X86"
 LLVM_ADDITIONAL_CMAKE_VARIABLES= -DCMAKE_INSTALL_PREFIX=llvm_build/  -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_UNWIND_TABLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF
+LLVM_LIBUNWIND_CMAKE_VARIABLES= -DLLVM_ENABLE_RUNTIMES=libunwind -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_ENABLE_SHARED=OFF
 
 ifeq ($(OS),Windows_NT)
 	KDDP_BIN = kddp.exe
@@ -83,11 +85,11 @@ CMAKE = cmake
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-.PHONY: all debug kddp ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir format-stdlib format-runtime format checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations test-without-optimizations help
+.PHONY: all debug kddp kddp-debug ddp-setup stdlib-copies stdlib stdlib-debug runtime-copies runtime runtime-debug external-compile external external-headers clean-cmd clean-runtime clean-stdlib clean clean-outdir format-stdlib format-runtime format checkout-llvm llvm test-normal test-memory test-normal-memory test-sumtypes coverage test test-with-optimizations test-without-optimizations help
 
 all: kddp runtime stdlib ddp-setup $(OUT_DIR)LICENSE $(OUT_DIR)README.md ## compiles kdddp, the runtime, the stdlib and ddp-setup into the build/DDP/ directory 
 
-debug: kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
+debug: kddp-debug runtime-debug stdlib-debug ## same as all but the runtime and stdlib print debugging information
 
 %/:
 	$(MKDIR) $@
@@ -95,6 +97,12 @@ debug: kddp runtime-debug stdlib-debug ## same as all but the runtime and stdlib
 kddp: $(KDDP_DIR_OUT) $(LIB_DIR_OUT) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp"
 	'$(MAKE)' -C $(CMD_DIR) kddp
+	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
+	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
+
+kddp-debug: $(KDDP_DIR_OUT) $(LIB_DIR_OUT) ## compiles kddp into build/DDP/bin/
+	@echo "building kddp in debug mode"
+	'$(MAKE)' -C $(CMD_DIR) kddp-debug
 	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
 	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
@@ -122,11 +130,13 @@ runtime: runtime-copies $(LIB_DIR_OUT) ## compiles the runtime into build/DDP/li
 	'$(MAKE)' -C $(RUN_DIR)
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
+	$(CP) llvm_build/lib/$(LIBUNWIND_BIN) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
 
 runtime-debug: runtime-copies $(LIB_DIR_OUT) ## same as runtime but prints debugging information
 	'$(MAKE)' -C $(RUN_DIR) debug
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
+	$(CP) llvm_build/lib/$(LIBUNWIND_BIN) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
 
 external-compile:
 	@echo "building all external libraries"
@@ -179,10 +189,10 @@ checkout-llvm: ## clones the llvm-project submodule
 llvm: checkout-llvm ## compiles llvm
 # generate cmake build files
 	@echo "building llvm"
-	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES)
+	$(CMAKE) -S$(LLVM_SRC_DIR) -B$(LLVM_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(LLVM_BUILD_TYPE) -G$(LLVM_CMAKE_GENERATOR) -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) $(LLVM_ADDITIONAL_CMAKE_VARIABLES) $(LLVM_LIBUNWIND_CMAKE_VARIABLES)
 
 # build llvm
-	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config llvm-headers install-llvm-headers
+	cd $(LLVM_BUILD_DIR) ; MAKEFLAGS='$(MAKEFLAGS)' $(CMAKE) --build . --target llvm-libraries llvm-config llvm-headers install-llvm-headers unwind
 
 # will hold the directories to run in the tests
 # if empty, all directories are run
