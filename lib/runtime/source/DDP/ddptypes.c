@@ -67,6 +67,8 @@ extern ddpvtable ddpfloat_vtable;
 extern ddpvtable ddpbool_vtable;
 extern ddpvtable ddpchar_vtable;
 
+extern ddpvtable ddpany_vtable;
+
 static bool is_primitive_vtable(ddpvtable *table) {
 	return table != NULL && table->free_func == NULL;
 }

@@ -73,6 +73,10 @@ func (t *ddpIrStringType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
+func (t *ddpIrStringType) PtrMask() uint64 {
+	return 0
+}
+
 const (
 	string_str_field_index = 0
 	string_cap_field_index = 1
@@ -128,6 +132,7 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 		ddpstring.freeIrFun,
 		ddpstring.deepCopyIrFun,
 		ddpstring.equalsIrFun,
+		c.zero,
 	}))
 
 	ddpstring.vtable = vtable

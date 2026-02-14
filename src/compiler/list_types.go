@@ -78,6 +78,10 @@ func (t *ddpIrListType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
+func (t *ddpIrListType) PtrMask() uint64 {
+	return 0b100
+}
+
 // defines the struct of a list type
 // and all the necessery functions
 // from the given elementType and name
@@ -118,6 +122,7 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 			list.freeIrFun,
 			list.deepCopyIrFun,
 			list.equalsIrFun,
+			llvm.ConstInt(c.ddpint, list.PtrMask(), false),
 		}))
 	}
 

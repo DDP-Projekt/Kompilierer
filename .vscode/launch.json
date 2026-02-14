@@ -1,5 +1,13 @@
 {
 	"version": "0.2.0",
+	"inputs": [
+		{
+			"id": "programPath",
+			"type": "promptString",
+			"description": "the test program path",
+			"default": "${workspaceFolder}/build/test.ddp"
+		}
+	],
 	"configurations": [
 		{
 			"name": "Launch build/test.ddp",
@@ -9,7 +17,7 @@
 			"program": "${workspaceFolder}/cmd/kddp/",
 			"args": [
 				"kompiliere",
-				"${workspaceFolder}/build/test.ddp",
+				"${input:programPath}",
 				"-o",
 				"${workspaceFolder}/build/test.exe",
 				"--wortreich",

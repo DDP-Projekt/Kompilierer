@@ -18,6 +18,7 @@ type ddpIrStructType struct {
 	freeIrFun     llvm.Value // the free ir func
 	deepCopyIrFun llvm.Value // the deepCopy ir func
 	equalsIrFun   llvm.Value // the equals ir func
+	ptrmask       uint64
 	listType      *ddpIrListType
 }
 
@@ -57,6 +58,10 @@ func (t *ddpIrStructType) DeepCopyFunc() llvm.Value {
 
 func (t *ddpIrStructType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
+}
+
+func (t *ddpIrStructType) PtrMask() uint64 {
+	return t.ptrmask
 }
 
 func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
@@ -124,6 +129,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,
+			c.zero, // TODO: ptrmask
 		}))
 	}
 

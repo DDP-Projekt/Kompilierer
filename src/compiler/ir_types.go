@@ -21,6 +21,7 @@ type ddpIrType interface {
 	FreeFunc() llvm.Value     // returns the irFunc used to free this type, nil if IsPrimitive == true
 	DeepCopyFunc() llvm.Value // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
 	EqualsFunc() llvm.Value   // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
+	PtrMask() uint64          // returns the ptrmask used for GC
 }
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
@@ -71,6 +72,10 @@ func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
 	return t.funcNull
 }
 
+func (t *ddpIrPrimitiveType) PtrMask() uint64 {
+	return 0
+}
+
 func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defaultValue llvm.Value, name string) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		llType:       typ,
@@ -90,6 +95,7 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
+		c.zero,
 	}))
 
 	primitive.vtable = vtable
@@ -143,6 +149,10 @@ func (*ddpIrVoidType) DeepCopyFunc() llvm.Value {
 
 func (*ddpIrVoidType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
+}
+
+func (*ddpIrVoidType) PtrMask() uint64 {
+	return 0
 }
 
 func (c *compiler) defineVoidType() *ddpIrVoidType {

@@ -336,7 +336,7 @@ static size_t UNUSED get_page_size(void) {
 }
 
 static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
-	return a.vtable == b.vtable && a.ptrmask == b.ptrmask;
+	return a.vtable == b.vtable && a.arrlen == b.arrlen;
 }
 
 static int bitmap_find_first_zero(uint8_t *bitmap, size_t num_bits) {
@@ -487,7 +487,7 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 
 	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
 	newSpan->objInfo = objInfo;
-	newSpan->objSize = objInfo.vtable->type_size * (objInfo.arrlen > 0 ? objInfo.arrlen : 1);
+	newSpan->objSize = objInfo.vtable->type_size * objInfo.arrlen;
 	newSpan->allocatedSize = calculate_span_size(newSpan->objSize);
 	newSpan->data = osAlloc(gc.spanTail == NULL ? NULL : &((uint8_t *)gc.spanTail->data)[newSpan->allocatedSize], newSpan->allocatedSize);
 	newSpan->numObjs = newSpan->allocatedSize / newSpan->objSize;
@@ -604,9 +604,9 @@ void ddp_free_gc_ref(void *ref UNUSED) {
 	DDP_DBGLOG("Freeing ref: %p, Span: %p", ref, get_span_for_pointer(ref));
 }
 
-void *ddp_allocate_gc_ref(ddpvtable *vtable) {
+void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 	DDP_DBGLOG("Allocating GC ref from vtable: %p", vtable);
-	GCTypeMeta objInfo = {.vtable = vtable, .ptrmask = 0}; // TODO: get ptrmask
+	GCTypeMeta objInfo = {.vtable = vtable, .arrlen = arrlen};
 	void *space_slot = NULL;
 	GCSpan *span = find_or_allocate_span_for_object(objInfo, &space_slot);
 

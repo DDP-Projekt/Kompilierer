@@ -116,6 +116,7 @@ func newLLTypes(llctx llvm.Context) llTypes {
 			ptr,
 			ptr,
 			ptr,
+			i64,
 		}, false,
 		),
 		token: llctx.TokenType(),
@@ -123,7 +124,7 @@ func newLLTypes(llctx llvm.Context) llTypes {
 }
 
 type llConstants struct {
-	zero, zero32, zerof, zero8, one, one32, all_ones, all_ones8, False, True, Null llvm.Value
+	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null llvm.Value
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -133,7 +134,7 @@ func newLLConstants(types llTypes) llConstants {
 		zerof:     llvm.ConstFloat(types.ddpfloat, 0),
 		zero8:     llvm.ConstInt(types.i8, 0, false),
 		one:       llvm.ConstInt(types.i64, 1, false),
-		one32:     llvm.ConstInt(types.i32, 1, false),
+		two32:     llvm.ConstInt(types.i32, 2, false),
 		all_ones:  llvm.ConstAllOnes(types.i64),
 		all_ones8: llvm.ConstAllOnes(types.i8),
 		False:     llvm.ConstInt(types.ddpbool, 0, false),
@@ -2967,6 +2968,7 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl) {
 		ir_type.FreeFunc(),
 		ir_type.DeepCopyFunc(),
 		ir_type.EqualsFunc(),
+		c.zero, // TODO: ptrmask
 	}))
 
 	c.typeDefVTables[name] = vtable

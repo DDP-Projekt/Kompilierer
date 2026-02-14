@@ -48,6 +48,10 @@ func (t *ddpIrGenericListType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
+func (t *ddpIrGenericListType) PtrMask() uint64 {
+	return 0
+}
+
 func (c *compiler) createGenericListType() *ddpIrGenericListType {
 	list := &ddpIrGenericListType{}
 	list.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint, c.ddpint}, false)

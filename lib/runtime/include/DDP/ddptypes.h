@@ -54,6 +54,9 @@ typedef struct {
 	free_func_ptr free_func;
 	deep_copy_func_ptr deep_copy_func;
 	equal_func_ptr equal_func;
+	// bit mask which quads are themselves roots -> limits
+	// object size to (8 * 64) byte;
+	uint64_t ptrmask;
 } ddpvtable;
 
 #define DDP_SMALL_ANY_BUFF_SIZE 16

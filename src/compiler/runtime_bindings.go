@@ -131,7 +131,8 @@ func (c *compiler) initRuntimeFunctions() {
 		false,
 		true,
 		c.ptr_gc,
-		c.ptr, // vtable
+		c.ptr,    // vtable
+		c.ddpint, // arrlen
 	)
 
 	ddp_free_gc_ref_irfun = c.declareExternalRuntimeFunction(
@@ -219,7 +220,7 @@ func (c *compiler) memcmp(buf1, buf2, size llvm.Value) llvm.Value {
 }
 
 func (c *compiler) allocateGCRef(vtable llvm.Value) llvm.Value {
-	tok := c.builder().createCall(llvm_statepoint_p0, c.zero, c.zero32, ddp_allocate_gc_ref_irfun, c.one32, c.zero32, vtable, c.zero32, c.zero32)
+	tok := c.builder().createCall(llvm_statepoint_p0, c.zero, c.zero32, ddp_allocate_gc_ref_irfun, c.two32, c.zero32, vtable, c.one, c.zero32, c.zero32)
 	// TODO: add attribute correctly
 	tok.AddCallSiteAttribute(3, c.attr_elementtype_ptr_gc_ptr)
 

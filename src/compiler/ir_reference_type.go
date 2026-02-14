@@ -58,6 +58,10 @@ func (t *ddpIrReferenceType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
+func (t *ddpIrReferenceType) PtrMask() uint64 {
+	return 1
+}
+
 func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType) *ddpIrReferenceType {
 	if r, ok := c.refTypes[t]; ok {
 		return r
@@ -81,6 +85,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 		ddp_free_gc_ref_irfun,
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
+		c.one,
 	}))
 
 	refType.vtable = vtable
