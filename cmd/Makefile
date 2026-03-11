@@ -51,6 +51,7 @@ RM = rm -rf
 clean:
 	$(RM) $(KDDP_DIR)$(KDDP_OUT_FILE_NAME)
 	$(RM) $(DDP_SETUP_DIR)$(DDP_SETUP_OUT_FILE_NAME)
+	'$(MAKE)' -C '../lib/gc_strategy/' clean
 
 kddp: gc_strategy
 	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS)"

@@ -58,6 +58,18 @@ func (t *ddpIrReferenceType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
+func (t *ddpIrReferenceType) PtrMask() [32]uint8 {
+	return [32]uint8{1}
+}
+
+func (*ddpIrReferenceType) LoadLivesAndRestores(c *compiler, v llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return []llvm.Value{
+			c.builder().CreateLoad(c.ptr_gc, v, ""),
+		}, []llvm.Value{
+			v,
+		}
+}
+
 func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType) *ddpIrReferenceType {
 	if r, ok := c.refTypes[t]; ok {
 		return r
@@ -65,7 +77,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 
 	refType := &ddpIrReferenceType{
 		typ:          c.ptr_gc,
-		defaultValue: c.Null,
+		defaultValue: c.NullGC,
 		ddpType:      t,
 		underlying:   underlying,
 		name:         strings.ReplaceAll(underlying.Name()+"_Referenz", " ", "_"),
@@ -81,6 +93,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 		ddp_free_gc_ref_irfun,
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
+		c.refPtrMask,
 	}))
 
 	refType.vtable = vtable

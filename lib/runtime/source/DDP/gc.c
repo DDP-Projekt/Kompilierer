@@ -124,11 +124,11 @@ static uint16_t location_size(LocationAccessor location) {
 	return READ_AS(&location[LocationSizeOffset], uint16_t);
 }
 
-static uint8_t UNUSED location_kind(LocationAccessor location) {
+static uint8_t location_kind(LocationAccessor location) {
 	return READ_AS(&location[KindOffset], uint8_t);
 }
 
-static uint16_t UNUSED location_dwarf_regnum(LocationAccessor location) {
+static uint16_t location_dwarf_regnum(LocationAccessor location) {
 	return READ_AS(&location[LocationDwarfRegNumOffset], uint16_t);
 }
 
@@ -140,7 +140,7 @@ static uint32_t UNUSED location_constant_index(LocationAccessor location) {
 	return READ_AS(&location[SmallConstantOffset], uint32_t);
 }
 
-static int32_t UNUSED location_offset(LocationAccessor location) {
+static int32_t location_offset(LocationAccessor location) {
 	return READ_AS(&location[SmallConstantOffset], int32_t);
 }
 
@@ -178,7 +178,7 @@ static uint64_t UNUSED record_patchpoint_id(RecordAccessor record) {
 	return READ_AS(&record[PatchpointIDOffset], uint64_t);
 }
 
-static uint32_t UNUSED record_instruction_offset(RecordAccessor record) {
+static uint32_t record_instruction_offset(RecordAccessor record) {
 	return READ_AS(&record[InstructionOffsetOffset], uint32_t);
 }
 
@@ -244,12 +244,12 @@ static void free_stack_map(StackMap *stackMap) {
 	DDP_FREE_ARRAY_NO_GC(unsigned, (void *)stackMap->record_offsets, stackMap->numRecords);
 }
 
-static RecordAccessor UNUSED get_record(StackMap *stackMap, unsigned index) {
+static RecordAccessor get_record(StackMap *stackMap, unsigned index) {
 	unsigned offset = stackMap->record_offsets[index];
 	return &stackMap->base[offset];
 }
 
-static LocationAccessor UNUSED get_location(RecordAccessor record, unsigned index) {
+static LocationAccessor get_location(RecordAccessor record, unsigned index) {
 	unsigned offset = LocationListOffset + index * LocationSize;
 	return (LocationAccessor)(record + offset);
 }
@@ -258,7 +258,7 @@ static const Constant *get_constant(StackMap *stackMap, unsigned index) {
 	return stackMap->constants + index * ConstantSize;
 }
 
-static void dump_stackmap(StackMap *stackMap) {
+static void UNUSED dump_stackmap(StackMap *stackMap) {
 	DDP_DBGLOG("Functions:\n\n");
 	for (const StackSizeRecord *function = stackMap->functions; function < &stackMap->functions[stackMap->numFunctions]; function++) {
 		DDP_DBGLOG("Function: %llu %llu %llu\n", function->functionAddress, function->stackSize, function->recordCount);
@@ -296,7 +296,7 @@ RecordAccessor first_record_for_function(StackMap *stackMap, const StackSizeReco
 	return get_record(stackMap, index);
 }
 
-static RecordAccessor UNUSED find_stackmap_record(StackMap *stackMap, unw_word_t pc) {
+static RecordAccessor find_stackmap_record(StackMap *stackMap, unw_word_t pc) {
 	const StackSizeRecord *function = find_function_for_pc(stackMap, pc);
 	if (function == NULL) {
 		return NULL;
@@ -325,7 +325,7 @@ static RecordAccessor UNUSED find_stackmap_record(StackMap *stackMap, unw_word_t
 // TODO: incremental GC (tri-color marking)
 // TODO: mark intermediate values as roots
 
-static size_t UNUSED get_page_size(void) {
+static size_t get_page_size(void) {
 #ifdef DDPOS_WINDOWS
 	SYSTEM_INFO sysInfo;
 	GetSystemInfo(&sysInfo);
@@ -336,7 +336,7 @@ static size_t UNUSED get_page_size(void) {
 }
 
 static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
-	return a.vtable == b.vtable && a.ptrmask == b.ptrmask;
+	return a.vtable == b.vtable && a.arrlen == b.arrlen;
 }
 
 static int bitmap_find_first_zero(uint8_t *bitmap, size_t num_bits) {
@@ -385,7 +385,7 @@ static void bitmap_clear_two_bits(uint8_t *bitmap, size_t index) {
 
 // gets the bits at index
 // correct index calculation for a two-bit-pair bitmap is done here
-static int UNUSED bitmap_get_two_bits(uint8_t *bitmap, size_t index) {
+static int bitmap_get_two_bits(uint8_t *bitmap, size_t index) {
 	return (bitmap[index / 8] & (uint8_t)(0x3 << ((index * 2) % 8))) >> ((index * 2) % 8);
 }
 
@@ -482,12 +482,12 @@ static size_t calculate_span_size(size_t objSize) {
 #define NUM_MARK_BYTES(numObjs) ((size_t)ceil((double)(numObjs) / 4.0)) // 2 bits because we have 3 colors
 
 // TODO: use size classes
-static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
+static GCSpan *allocate_span(GCTypeMeta objInfo) {
 	DDP_DBGLOG("Allocating new span");
 
 	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
 	newSpan->objInfo = objInfo;
-	newSpan->objSize = objInfo.vtable->type_size * (objInfo.arrlen > 0 ? objInfo.arrlen : 1);
+	newSpan->objSize = objInfo.vtable->type_size * objInfo.arrlen;
 	newSpan->allocatedSize = calculate_span_size(newSpan->objSize);
 	newSpan->data = osAlloc(gc.spanTail == NULL ? NULL : &((uint8_t *)gc.spanTail->data)[newSpan->allocatedSize], newSpan->allocatedSize);
 	newSpan->numObjs = newSpan->allocatedSize / newSpan->objSize;
@@ -511,7 +511,7 @@ static GCSpan *UNUSED allocate_span(GCTypeMeta objInfo) {
 	return newSpan;
 }
 
-static void UNUSED free_span(GCSpan *span, GCSpan *prev) {
+static void free_span(GCSpan *span, GCSpan *prev) {
 	DDP_DBGLOG("freeing span %p", span);
 
 	GCSpan *next = span->next;
@@ -546,7 +546,7 @@ static void clear_free_spans(void) {
 }
 
 // TODO: use a binary search lookup table
-static UNUSED GCSpan *get_span_for_pointer(void *p) {
+static GCSpan *get_span_for_pointer(void *p) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		// maybe change this. see https://devblogs.microsoft.com/oldnewthing/20170927-00/?p=97095
 		if ((uint8_t *)p >= (uint8_t *)span->data && (uint8_t *)p < ((uint8_t *)span->data + span->allocatedSize)) {
@@ -554,6 +554,19 @@ static UNUSED GCSpan *get_span_for_pointer(void *p) {
 		}
 	}
 	return NULL;
+}
+
+// returns the base object for a ref that is possibly in an array
+static void *get_object_base_in_span(GCSpan *span, void *ref) {
+	if (span->objInfo.arrlen == 1) {
+		return ref;
+	}
+
+	ptrdiff_t base = (ptrdiff_t)span->data;
+	ptrdiff_t step = span->objSize;
+	ptrdiff_t val = (ptrdiff_t)ref;
+
+	return (void *)(val - (((ptrdiff_t)ref - base) % step));
 }
 
 static void mark_node(void *ref, GCSpan *span, Color color) {
@@ -572,6 +585,7 @@ static Color get_color(void *ref, GCSpan *span) {
 	return bitmap_get_two_bits(span->markBits, index);
 }
 
+// TODO: use a binary search lookup table
 static GCSpan *find_or_allocate_span_for_object(GCTypeMeta objInfo, void **space_slot) {
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		if (type_meta_equal(span->objInfo, objInfo)) {
@@ -601,12 +615,12 @@ void ddp_register_gc_root(void **root) {
 }
 
 void ddp_free_gc_ref(void *ref UNUSED) {
-	DDP_DBGLOG("Freeing ref: %p, Span: %p", ref, get_span_for_pointer(ref));
+	DDP_DBGLOG("Freeing ref: %p", ref);
 }
 
-void *ddp_allocate_gc_ref(ddpvtable *vtable) {
+void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 	DDP_DBGLOG("Allocating GC ref from vtable: %p", vtable);
-	GCTypeMeta objInfo = {.vtable = vtable, .ptrmask = 0}; // TODO: get ptrmask
+	GCTypeMeta objInfo = {.vtable = vtable, .arrlen = arrlen};
 	void *space_slot = NULL;
 	GCSpan *span = find_or_allocate_span_for_object(objInfo, &space_slot);
 
@@ -625,7 +639,7 @@ void ddp_init_gc(void) {
 	DDP_DBGLOG("initializing gc");
 
 	read_stack_map(&gc.stackMap, __LLVM_StackMaps_External);
-	dump_stackmap(&gc.stackMap);
+	// dump_stackmap(&gc.stackMap);
 	gc.global_roots = NULL;
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
@@ -638,17 +652,21 @@ void ddp_init_gc(void) {
 	DDP_DBGLOG("done initializing gc");
 }
 
+// TODO: arrays of references
 static void trace_root(void *ref) {
 	if (ref == NULL) {
 		return;
 	}
-	DDP_DBGLOG("tracing root %p (%llx)", ref, *(uint64_t *)ref);
+	DDP_DBGLOG("tracing root %p", ref);
 
 	GCSpan *span = get_span_for_pointer(ref);
 	if (span == NULL) {
 		DDP_DBGLOG("No span found, not tracing");
 		return;
 	}
+
+	ref = get_object_base_in_span(span, ref);
+	DDP_DBGLOG("base pointer for ref: %p", ref);
 
 	if (get_color(ref, span) == BLACK) {
 		DDP_DBGLOG("not tracing already Black object");
@@ -657,12 +675,44 @@ static void trace_root(void *ref) {
 
 	mark_node(ref, span, GREY);
 
-	// TODO: traverse object using ptrmask
+	const uint8_t *ptrmask = span->objInfo.vtable->ptrmask;
+
+	// TODO: arrays
+	for (unsigned byte_index = 0; byte_index < 32; byte_index++) {
+		// byte-wise loop
+		uint8_t byte = ptrmask[byte_index];
+		// all 8 objects in this byte are free, so continue
+		if (byte == 0) {
+			continue;
+		}
+
+		for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
+			// remaining bits in this byte are 0
+			if (byte == 0) {
+				break;
+			}
+
+			// this quad is not a pointer
+			if ((byte & 0x01) == 0) {
+				continue;
+			}
+
+			unsigned index = oneIndex + byte_index * 8;
+			void *nested_ref = ((void **)ref)[index];
+			DDP_DBGLOG("tracing nested root %p", nested_ref);
+			// TODO: take arrlen and list capacity into account like in free_unmarked_objects
+			for (void *object = nested_ref; object < (void *)&((uint8_t *)nested_ref)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
+				trace_root(object);
+			}
+
+			byte = byte >> 1;
+		}
+	}
 
 	mark_node(ref, span, BLACK);
 }
 
-static int UNUSED get_unw_reg_number(uint16_t dwarf_reg) {
+static int get_unw_reg_number(uint16_t dwarf_reg) {
 	switch (dwarf_reg) {
 	case 0:
 		return UNW_X86_64_RAX;
@@ -805,12 +855,12 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 			} break;
 			case LOC_CONSTANT:
 				root = (void *)(int64_t)location_offset(location);
-				DDP_DBGLOG("found constant root %p", root);
+				// DDP_DBGLOG("found constant root %p", root);
 				break;
 			case LOC_CONST_INDEX: {
 				const Constant *constant = get_constant(&gc.stackMap, location_offset(location));
 				root = (void *)constant->largeConstant;
-				DDP_DBGLOG("found constant index root %p", root);
+				// DDP_DBGLOG("found constant index root %p", root);
 				break;
 			}
 			}
@@ -844,42 +894,47 @@ static void free_unmarked_objects(void) {
 		free_func_ptr free_func = span->objInfo.vtable->free_func;
 
 		// loop over and free every single white object
-		for (unsigned i = 0; i < NUM_FREE_BYTES(span->numObjs); i++) {
+		for (unsigned byte_index = 0; byte_index < NUM_FREE_BYTES(span->numObjs); byte_index++) {
 			// byte-wise loop
-			uint8_t byte = span->freeBits[i];
+			uint8_t freeByte = span->freeBits[byte_index];
 			// all 8 objects in this byte are free, so continue
-			if (byte == 0) {
+			if (freeByte == 0) {
 				continue;
 			}
 
 			// bit-wise loop
 			for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
 				// all objects that are left in this byte are free, so break
-				if ((byte >> oneIndex) == 0) {
+				if (freeByte == 0) {
 					break;
 				}
 
-				// there are objects left that are free, but this particular one is not, so continue
-				if ((byte & (1 << oneIndex)) == 0) {
+				// there are objects left that are not free, but this particular one is, so continue
+				if ((freeByte & 0x01) == 0) {
+					freeByte = freeByte >> 1;
 					continue;
 				}
 
-				unsigned index = oneIndex + i * 8;
+				unsigned index = oneIndex + byte_index * 8;
 
 				DDP_DBGLOG("color of index %u is %d", index, bitmap_get_two_bits(span->markBits, index));
 				if (bitmap_get_two_bits(span->markBits, index) != WHITE) {
+					freeByte = freeByte >> 1;
 					continue;
 				}
 
 				DDP_DBGLOG("freeing gc ref %p", (void *)&((uint8_t *)span->data)[index * span->objSize]);
+				void *objectBase = (void *)&((uint8_t *)span->data)[index * span->objSize];
+				if (free_func != NULL) {
+					// TODO: for lists with unused capacity, this calls free for the unused slots as well, which should not happen
+					for (void *object = objectBase; object < (void *)&((uint8_t *)objectBase)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
+						// free the object
+						free_func(object);
+					}
+				}
 
 				bitmap_clear_bit(span->freeBits, index);
-				byte &= ~(1 << (index % 8));
-
-				// free the object
-				if (free_func != NULL) {
-					free_func((void *)&((uint8_t *)span->data)[index * span->objSize]);
-				}
+				freeByte = freeByte >> 1;
 			}
 		}
 
@@ -894,7 +949,7 @@ void ddp_gc(void) {
 	}
 	gc.collecting = true;
 
-	DDP_DBGLOG("GC start");
+	DDP_DBGLOG("GC start =================================");
 
 	mark_stack_roots();
 
@@ -906,7 +961,7 @@ void ddp_gc(void) {
 	clear_free_spans();
 
 	gc.collecting = false;
-	DDP_DBGLOG("GC end");
+	DDP_DBGLOG("GC end ---------------------------------");
 }
 
 void ddp_free_gc(void) {

@@ -48,6 +48,18 @@ func (t *ddpIrGenericListType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
+func (t *ddpIrGenericListType) PtrMask() [32]uint8 {
+	return [32]uint8{}
+}
+
+func (*ddpIrGenericListType) LoadLives(*compiler, llvm.Value) []llvm.Value {
+	return nil
+}
+
+func (*ddpIrGenericListType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
+}
+
 func (c *compiler) createGenericListType() *ddpIrGenericListType {
 	list := &ddpIrGenericListType{}
 	list.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint, c.ddpint}, false)

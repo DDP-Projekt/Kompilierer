@@ -12,15 +12,17 @@ import (
 // interface for the ir-representation of a ddptype
 // it exposes some information that all types share
 type ddpIrType interface {
-	LLType() llvm.Type        // returns the llvm type
-	DDPType() ddptypes.Type   // returns the ddp type this represents
-	Name() string             // name of the type
-	TriviallyCopyable() bool  // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
-	DefaultValue() llvm.Value // returns a default value for the type
-	VTable() llvm.Value       // returns a pointer to the vtable of this type
-	FreeFunc() llvm.Value     // returns the irFunc used to free this type, nil if IsPrimitive == true
-	DeepCopyFunc() llvm.Value // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
-	EqualsFunc() llvm.Value   // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
+	LLType() llvm.Type                                                       // returns the llvm type
+	DDPType() ddptypes.Type                                                  // returns the ddp type this represents
+	Name() string                                                            // name of the type
+	TriviallyCopyable() bool                                                 // wether the type is a primitive (ddpint, ddpfloat, ddpbool, ddpchar)
+	DefaultValue() llvm.Value                                                // returns a default value for the type
+	VTable() llvm.Value                                                      // returns a pointer to the vtable of this type
+	FreeFunc() llvm.Value                                                    // returns the irFunc used to free this type, nil if IsPrimitive == true
+	DeepCopyFunc() llvm.Value                                                // returns the irFunc used to create a deepCopy this type, nil if IsPrimitive == true
+	EqualsFunc() llvm.Value                                                  // returns the irFunc used to compare this type for equality, nil if IsPrimitive == true
+	PtrMask() [32]uint8                                                      // returns the ptrmask used for GC
+	LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) // loads all gc-managed pointers of the given value and returns them as well as values where relocated results need to be stored in
 }
 
 // holds the type of a primitive ddptype (ddpint, ddpfloat, ddpbool, ddpchar)
@@ -71,6 +73,14 @@ func (t *ddpIrPrimitiveType) EqualsFunc() llvm.Value {
 	return t.funcNull
 }
 
+func (t *ddpIrPrimitiveType) PtrMask() [32]uint8 {
+	return [32]uint8{}
+}
+
+func (t *ddpIrPrimitiveType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
+}
+
 func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defaultValue llvm.Value, name string) *ddpIrPrimitiveType {
 	primitive := &ddpIrPrimitiveType{
 		llType:       typ,
@@ -90,6 +100,7 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
+		c.zeroPtrMask,
 	}))
 
 	primitive.vtable = vtable
@@ -143,6 +154,14 @@ func (*ddpIrVoidType) DeepCopyFunc() llvm.Value {
 
 func (*ddpIrVoidType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
+}
+
+func (*ddpIrVoidType) PtrMask() [32]uint8 {
+	return [32]uint8{}
+}
+
+func (t *ddpIrVoidType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
 }
 
 func (c *compiler) defineVoidType() *ddpIrVoidType {

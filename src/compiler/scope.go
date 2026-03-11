@@ -7,9 +7,16 @@ import (
 
 // wraps a ir ir alloca + ir type for a variable
 type varwrapper struct {
-	val       llvm.Value // alloca or global-Def in the ir
-	typ       ddpIrType  // ir type of the variable
-	protected bool       // this variable should not be freed in exitScope() or similar, because it will be freed  by hand
+	val        llvm.Value // alloca or global-Def in the ir
+	typ        ddpIrType  // ir type of the variable
+	restoreLoc llvm.Value // restore location for manually added GC pointers
+	// protected temporaries or variables should not be freed in exitScope()
+	// either because they will be freed by hand (e.g. like in ForRangeStmt)
+	// or because they are only recored to be in the LiveValues list for GC
+	protected bool
+	// weak_protected is a special case for for-range temporaries, which should
+	// be freed on return statements, unlike GC LiveValues, which are never freed
+	weak_protected bool
 }
 
 // wraps local variables of a scope + the enclosing scope
@@ -56,10 +63,11 @@ func (scope *scope) addProtected(decl *ast.VarDecl, val llvm.Value, ty ddpIrType
 	return val
 }
 
-func (scope *scope) protectTemporary(val llvm.Value) {
+func (scope *scope) protectTemporary(val llvm.Value, weak bool) {
 	for i := len(scope.temporaries) - 1; i >= 0; i-- {
 		if scope.temporaries[i].val == val {
 			scope.temporaries[i].protected = true
+			scope.temporaries[i].weak_protected = weak
 			return
 		}
 	}
@@ -70,15 +78,44 @@ func (scope *scope) unprotectTemporary(val llvm.Value) {
 	for i := len(scope.temporaries) - 1; i >= 0; i-- {
 		if scope.temporaries[i].val == val {
 			scope.temporaries[i].protected = false
+			scope.temporaries[i].weak_protected = false
 			return
 		}
 	}
 	panic("attempted Value unprotection not found in scope.temporaries")
 }
 
+func (scope *scope) addRestoreLoc(val, restore llvm.Value) {
+	for i := len(scope.temporaries) - 1; i >= 0; i-- {
+		if scope.temporaries[i].val == val {
+			scope.temporaries[i].restoreLoc = restore
+			return
+		}
+	}
+	panic("attempted Value restoreLoc addition not found in scope.temporaries")
+}
+
 func (scope *scope) addTemporary(val llvm.Value, typ ddpIrType) ddpValue {
 	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: typ, protected: false})
 	return newImmediate(val, typ)
+}
+
+// mainly used for adding values that need to be recorded as live for the GC
+func (scope *scope) addProtectedTemporary(val llvm.Value, typ ddpIrType) ddpValue {
+	temp := scope.addTemporary(val, typ)
+	scope.protectTemporary(val, false)
+	return temp
+}
+
+func (scope *scope) addWeakProtectedTemporary(val llvm.Value, typ ddpIrType) ddpValue {
+	temp := scope.addTemporary(val, typ)
+	scope.protectTemporary(val, true)
+	return temp
+}
+
+func (scope *scope) addGCLiveValue(val, restore llvm.Value) llvm.Value {
+	scope.temporaries = append(scope.temporaries, varwrapper{val: val, typ: nil, restoreLoc: restore, protected: true})
+	return val
 }
 
 // removes the given value from scope.temporaries giving ownership to the caller

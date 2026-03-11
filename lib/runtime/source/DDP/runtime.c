@@ -77,8 +77,12 @@ void ddp_end_runtime(void) {
 	ddp_gc();
 	ddp_free_gc();
 
-	// free the cmd_args
-	ddp_free_ddpstringlist(&cmd_args);
+	// free the cmd_args (manually, because they are not gc-allocated like normal lists)
+	for (int i = 0; i < cmd_args.len; i++) {
+		ddp_free_string(&cmd_args.arr[i]);
+	}
+
+	DDP_FREE_ARRAY(ddpstring, cmd_args.arr, cmd_args.cap);
 }
 
 void Befehlszeilenargumente(ddpstringlist *ret) {

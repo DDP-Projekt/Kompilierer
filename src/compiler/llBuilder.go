@@ -22,6 +22,9 @@ type llBuilder struct {
 	cb       llvm.BasicBlock // current block
 	params   []funcParam
 
+	scp     *scope // current scope in the ast (not in the ir)
+	fnScope *scope
+
 	latestReturn ddpValue // return of the latest evaluated expression (in the ir)
 	currentNode  ast.Node // used for error reporting
 
@@ -50,17 +53,89 @@ func (b *llBuilder) withBlock(block llvm.BasicBlock, do func()) {
 	b.setBlock(cb)
 }
 
+// calculates all needed gc-live values and their re-store locations
+func (b *llBuilder) getLiveValues() ([]llvm.Value, []llvm.Value) {
+	// TODO: maybe remove this check and ensure a scope is always correct
+	// here, because when calling the module dispose function, the scp is nil
+	if b.scp == nil {
+		return nil, nil
+	}
+
+	liveValues := make([]llvm.Value, 0, len(b.scp.temporaries)+len(b.scp.variables))
+	restoreLocations := make([]llvm.Value, 0, len(b.scp.temporaries)+len(b.scp.variables))
+
+	getLiveValuesForScope := func(scp *scope) {
+		if scp == nil {
+			return
+		}
+
+		// globals are already tracked
+		if !scp.isGlobalScope() {
+			for _, Var := range scp.variables {
+				live, restores := Var.typ.LoadLivesAndRestores(b.c, Var.val)
+				liveValues = append(liveValues, live...)
+				restoreLocations = append(restoreLocations, restores...)
+			}
+		}
+
+		for _, temp := range scp.temporaries {
+			if temp.typ == nil {
+				liveValues = append(liveValues, temp.val)
+				restoreLocations = append(restoreLocations, temp.restoreLoc)
+			} else {
+				live, restores := temp.typ.LoadLivesAndRestores(b.c, temp.val)
+				liveValues = append(liveValues, live...)
+				restoreLocations = append(restoreLocations, restores...)
+			}
+		}
+	}
+
+	for scp := b.scp; scp != b.fnScope; scp = scp.enclosing {
+		getLiveValuesForScope(scp)
+	}
+	getLiveValuesForScope(b.fnScope)
+
+	return liveValues, restoreLocations
+}
+
 func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
+	if fn.GC() == DDP_GC_STRATEGY_NAME {
+		liveValues, restores := b.getLiveValues()
+		gcLive := llvm.CreateOperandBundle("gc-live", liveValues)
+		defer gcLive.Dispose()
+
+		// TODO: re-store or otherwise use the relocated values
+		call := b.createCallWithOperandBundles(fn, []llvm.OperandBundle{gcLive}, args...)
+
+		for i, relocated := range liveValues {
+			if restores[i] != (llvm.Value{}) {
+				b.CreateStore(relocated, restores[i])
+			}
+		}
+
+		return call
+	}
+
 	return b.CreateCall(fn.GlobalValueType(), fn, args, "")
+}
+
+func (b *llBuilder) createCallWithOperandBundles(fn llvm.Value, operandBundles []llvm.OperandBundle, args ...llvm.Value) llvm.Value {
+	return b.CreateCallWithOperandBundle(fn.GlobalValueType(), fn, args, operandBundles, "")
 }
 
 const DDP_GC_STRATEGY_NAME = "ddp-gc"
 
-func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, isGC bool, declarationOnly bool) *llBuilder {
+func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool) *llBuilder {
+	if scp == nil {
+		scp = newScope(nil) // separate "global" scope
+	}
+
 	builder := &llBuilder{
 		fnName:  funcName,
 		c:       c,
 		Builder: c.llctx.NewBuilder(),
+		scp:     scp,
+		fnScope: scp,
 	}
 
 	builder.llFnType = funcType
@@ -93,8 +168,8 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 	return builder
 }
 
-func (c *compiler) newBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, isGC bool, declarationOnly bool) *llBuilder {
-	builder := c.createBuilder(funcName, funcType, funcAttributes, paramNames, paramAttributes, isGC, declarationOnly)
+func (c *compiler) pushNewBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool) *llBuilder {
+	builder := c.createBuilder(funcName, funcType, funcAttributes, paramNames, paramAttributes, scp, isGC, declarationOnly)
 	c.builderStack = append(c.builderStack, builder)
 	return builder
 }

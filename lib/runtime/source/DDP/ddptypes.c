@@ -25,10 +25,11 @@ void ddp_string_from_constant(ddpstring *ret, char *str) {
 
 // free a ddpstring
 void ddp_free_string(ddpstring *str) {
-	DDP_DBGLOG("free_string: %p", str);
+	DDP_DBGLOG("free_string: %p (%s)", str, str->str == NULL ? "" : str->str);
 	DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
 	// force segfaults
 	str->str = NULL;
+	str->cap = 0;
 }
 
 // allocate a new ddpstring as copy of str
@@ -61,11 +62,6 @@ ddpint ddp_strlen(ddpstring *str) {
 	}
 	return strlen(str->str);
 }
-
-extern ddpvtable ddpint_vtable;
-extern ddpvtable ddpfloat_vtable;
-extern ddpvtable ddpbool_vtable;
-extern ddpvtable ddpchar_vtable;
 
 static bool is_primitive_vtable(ddpvtable *table) {
 	return table != NULL && table->free_func == NULL;

@@ -248,3 +248,11 @@ func boolToInt(b bool) int {
 	}
 	return 0
 }
+
+func (c *compiler) addr0(ptr llvm.Value) llvm.Value {
+	return c.builder().CreateAddrSpaceCast(ptr, c.ptr, "")
+}
+
+func (c *compiler) addr1(ptr llvm.Value) llvm.Value {
+	return c.builder().CreateAddrSpaceCast(ptr, c.ptr_gc, "")
+}

@@ -71,7 +71,7 @@ func (llctx *llvmTargetContext) newModule(name string) llvm.Module {
 	return mod
 }
 
-func newllvmModuleContext(moduleName string) (llctx llvmTargetContext, err error) {
+func newllvmContext() (llctx llvmTargetContext, err error) {
 	target, err := newllvmTarget()
 	if err != nil {
 		return llvmTargetContext{}, err
@@ -123,12 +123,18 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 	options.SetSLPVectorization(true)
 
 	defer options.Dispose()
-	// options.SetVerifyEach(true) // TODO: only do this in debug mode as it is expensive
+	if DEBUG {
+		options.SetVerifyEach(true)
+	}
 	return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
 }
 
 // compiles the module to w and returns w.Write
 func (llctx *llvmTargetContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
+	if DEBUG {
+		llvm.VerifyModule(mod, llvm.PrintMessageAction)
+	}
+
 	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(mod, fileType)
 	if err != nil {
 		return 0, fmt.Errorf("could not compile module to memory buffer: %w", err)

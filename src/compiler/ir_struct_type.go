@@ -18,6 +18,7 @@ type ddpIrStructType struct {
 	freeIrFun     llvm.Value // the free ir func
 	deepCopyIrFun llvm.Value // the deepCopy ir func
 	equalsIrFun   llvm.Value // the equals ir func
+	ptrmask       [32]uint8
 	listType      *ddpIrListType
 }
 
@@ -57,6 +58,15 @@ func (t *ddpIrStructType) DeepCopyFunc() llvm.Value {
 
 func (t *ddpIrStructType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
+}
+
+func (t *ddpIrStructType) PtrMask() [32]uint8 {
+	return t.ptrmask
+}
+
+// TODO: load struct fields recursively (maybe use ptrmask)
+func (t *ddpIrStructType) LoadLivesAndRestores(c *compiler, v llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
 }
 
 func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
@@ -111,8 +121,6 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	structType.deepCopyIrFun = c.createStructDeepCopy(structType, declarationOnly)
 	structType.equalsIrFun = c.createStructEquals(structType, declarationOnly)
 
-	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
-
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
@@ -124,6 +132,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,
+			c.zeroPtrMask, // TODO: compute ptrmask
 		}))
 	}
 
@@ -131,12 +140,14 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 
 	structType.defaultValue = llvm.ConstNull(structType.typ)
 
+	structType.listType = c.createListType("ddp"+structType.name+"list", structType, declarationOnly)
+
 	c.defineReferenceType(ddptypes.ReferenceType{Type: typ}, structType)
 	c.structTypes[typ] = structType
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), nil, []string{"v"}, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), nil, []string{"v"}, nil, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	if declarationOnly {
@@ -164,7 +175,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 }
 
 func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "v"}, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "v"}, nil, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	ret, structParam := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -192,7 +203,7 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 }
 
 func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.newBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"v1", "v2"}, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"v1", "v2"}, nil, nil, true, declarationOnly)
 	defer c.popBuilder()
 
 	struct1, struct2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val

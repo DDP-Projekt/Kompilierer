@@ -15,6 +15,7 @@ type ddpIrAnyType struct {
 	freeIrFun     llvm.Value // the free ir func
 	deepCopyIrFun llvm.Value // the deepCopy ir func
 	equalsIrFun   llvm.Value // the equals ir func
+	vtable        llvm.Value // null
 }
 
 var _ ddpIrType = (*ddpIrAnyType)(nil)
@@ -40,7 +41,7 @@ func (t *ddpIrAnyType) DefaultValue() llvm.Value {
 }
 
 func (t *ddpIrAnyType) VTable() llvm.Value {
-	return llvm.Value{}
+	return t.vtable
 }
 
 func (t *ddpIrAnyType) FreeFunc() llvm.Value {
@@ -53,6 +54,15 @@ func (t *ddpIrAnyType) DeepCopyFunc() llvm.Value {
 
 func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
+}
+
+func (t *ddpIrAnyType) PtrMask() [32]uint8 {
+	return [32]uint8{} // special case for any
+}
+
+// TODO: how to handle this if any may or may not contain a gc pointer?
+func (*ddpIrAnyType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
 }
 
 func (c *compiler) defineAnyType() *ddpIrAnyType {
@@ -69,6 +79,21 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	ddpany.equalsIrFun = c.declareExternalRuntimeFunction("ddp_any_equal", false, false, c.ddpbool, c.ptr, c.ptr)
 
 	ddpany.defaultValue = llvm.ConstNull(ddpany.typ)
+
+	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, "ddpany_vtable")
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
+	vtable.SetVisibility(llvm.DefaultVisibility)
+
+	vtable.SetGlobalConstant(true)
+	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
+		llvm.ConstInt(c.ddpint, c.getTypeSize(ddpany), false),
+		ddpany.freeIrFun,
+		ddpany.deepCopyIrFun,
+		ddpany.equalsIrFun,
+		c.zeroPtrMask,
+	}))
+
+	ddpany.vtable = vtable
 
 	c.defineReferenceType(ddptypes.ReferenceType{Type: ddptypes.VARIABLE}, ddpany)
 	return ddpany
@@ -149,7 +174,7 @@ func (c *compiler) castNonAnyToAny(val ddpValue, vtable llvm.Value) ddpValue {
 
 	// copy the value
 	c.claimOrCopy(c.loadAnyValuePtr(result, val.typ.LLType()), val)
-	result = c.scp.addTemporary(result, c.ddpany).irVal
+	result = c.builder().scp.addTemporary(result, c.ddpany).irVal
 
 	return newImmediate(result, c.ddpany)
 }

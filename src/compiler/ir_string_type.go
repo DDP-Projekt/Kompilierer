@@ -73,6 +73,14 @@ func (t *ddpIrStringType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
+func (t *ddpIrStringType) PtrMask() [32]uint8 {
+	return [32]uint8{}
+}
+
+func (t *ddpIrStringType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
+	return nil, nil
+}
+
 const (
 	string_str_field_index = 0
 	string_cap_field_index = 1
@@ -86,7 +94,7 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 	// declare all the external functions to work with strings
 
 	// allocates a buffer for ret and copies str into it
-	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, true, c.void, c.ptr_gc, c.ptr)
+	ddpstring.fromConstantsIrFun = c.declareExternalRuntimeFunction("ddp_string_from_constant", false, true, c.void, c.ptr, c.ptr)
 
 	// frees the given string
 	ddpstring.freeIrFun = c.declareExternalRuntimeFunction("ddp_free_string", false, true, c.void, c.ptr)
@@ -128,6 +136,7 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 		ddpstring.freeIrFun,
 		ddpstring.deepCopyIrFun,
 		ddpstring.equalsIrFun,
+		c.zeroPtrMask,
 	}))
 
 	ddpstring.vtable = vtable

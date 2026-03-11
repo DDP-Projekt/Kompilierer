@@ -67,6 +67,9 @@ type (
 	Attribute struct {
 		C C.LLVMAttributeRef
 	}
+	OperandBundle struct {
+		C C.LLVMOperandBundleRef
+	}
 	Opcode              C.LLVMOpcode
 	AtomicRMWBinOp      C.LLVMAtomicRMWBinOp
 	AtomicOrdering      C.LLVMAtomicOrdering
@@ -93,10 +96,15 @@ func (c PassManager) IsNil() bool    { return c.C == nil }
 func (c Use) IsNil() bool            { return c.C == nil }
 func (c Attribute) IsNil() bool      { return c.C == nil }
 func (c Metadata) IsNil() bool       { return c.C == nil }
+func (c OperandBundle) IsNil() bool  { return c.C == nil }
 
 // helpers
 func llvmTypeRefPtr(t *Type) *C.LLVMTypeRef    { return (*C.LLVMTypeRef)(unsafe.Pointer(t)) }
 func llvmValueRefPtr(t *Value) *C.LLVMValueRef { return (*C.LLVMValueRef)(unsafe.Pointer(t)) }
+func llvmOperandBundleRefPtr(t *OperandBundle) *C.LLVMOperandBundleRef {
+	return (*C.LLVMOperandBundleRef)(unsafe.Pointer(t))
+}
+
 func llvmMetadataRefPtr(t *Metadata) *C.LLVMMetadataRef {
 	return (*C.LLVMMetadataRef)(unsafe.Pointer(t))
 }
@@ -117,6 +125,24 @@ func llvmValueRefs(values []Value) (*C.LLVMValueRef, C.unsigned) {
 	ptlen := C.unsigned(len(values))
 	if ptlen > 0 {
 		pt = llvmValueRefPtr(&values[0])
+	}
+	return pt, ptlen
+}
+
+func llvmTypeRefs(types []Type) (*C.LLVMTypeRef, C.unsigned) {
+	var pt *C.LLVMTypeRef
+	ptlen := C.unsigned(len(types))
+	if ptlen > 0 {
+		pt = llvmTypeRefPtr(&types[0])
+	}
+	return pt, ptlen
+}
+
+func llvmOperandBundleRefs(values []OperandBundle) (*C.LLVMOperandBundleRef, C.unsigned) {
+	var pt *C.LLVMOperandBundleRef
+	ptlen := C.unsigned(len(values))
+	if ptlen > 0 {
+		pt = llvmOperandBundleRefPtr(&values[0])
 	}
 	return pt, ptlen
 }
@@ -453,6 +479,20 @@ func (a Attribute) IsEnum() bool {
 func (a Attribute) IsString() bool {
 	return C.LLVMIsStringAttribute(a.C) != 0
 }
+
+//-------------------------------------------------------------------------
+// llvm.OperandBundle
+//-------------------------------------------------------------------------
+
+func CreateOperandBundle(name string, args []Value) (o OperandBundle) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ptr, nvals := llvmValueRefs(args)
+	o.C = C.LLVMCreateOperandBundle(cname, C.size_t(len(name)), ptr, nvals)
+	return o
+}
+
+func (o OperandBundle) Dispose() { C.LLVMDisposeOperandBundle(o.C) }
 
 //-------------------------------------------------------------------------
 // llvm.Module
@@ -1981,6 +2021,13 @@ func (b Builder) CreatePointerCast(val Value, t Type, name string) (v Value) {
 	return
 }
 
+func (b Builder) CreateAddrSpaceCast(val Value, t Type, name string) (v Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	v.C = C.LLVMBuildAddrSpaceCast(b.C, val.C, t.C, cname)
+	return
+}
+
 func (b Builder) CreateIntCast(val Value, t Type, name string) (v Value) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -2023,6 +2070,15 @@ func (b Builder) CreateCall(t Type, fn Value, args []Value, name string) (v Valu
 	defer C.free(unsafe.Pointer(cname))
 	ptr, nvals := llvmValueRefs(args)
 	v.C = C.LLVMBuildCall2(b.C, t.C, fn.C, ptr, nvals, cname)
+	return
+}
+
+func (b Builder) CreateCallWithOperandBundle(t Type, fn Value, args []Value, bundles []OperandBundle, name string) (v Value) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ptr, nvals := llvmValueRefs(args)
+	bundle_ptr, bundle_nvals := llvmOperandBundleRefs(bundles)
+	v.C = C.LLVMBuildCallWithOperandBundles(b.C, t.C, fn.C, ptr, nvals, bundle_ptr, bundle_nvals, cname)
 	return
 }
 

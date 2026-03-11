@@ -27,17 +27,19 @@ var (
 	ddp_runtime_error_irfun   llvm.Value
 	utf8_string_to_char_irfun llvm.Value
 	_libc_memcpy_irfun        llvm.Value
-	_libc_memcmp_irfun        llvm.Value
-	_libc_memmove_irfun       llvm.Value
+	_libc_memcmp_gc_irfun     llvm.Value
+	_libc_memmove_gc_irfun    llvm.Value
 
 	// llvm intrinsics
 	llvm_statepoint_p0 llvm.Value
-	llvm_result_p1     llvm.Value
 
 	// reference functions
 	ddp_free_gc_ref_irfun     llvm.Value
 	ddp_allocate_gc_ref_irfun llvm.Value
 	ddp_register_gc_root      llvm.Value
+
+	ddp_do_nothing_ptr_gc llvm.Value
+	ddp_do_nothing_ptr    llvm.Value
 )
 
 // initializes external functions defined in the ddp-runtime
@@ -80,23 +82,23 @@ func (c *compiler) initRuntimeFunctions() {
 		c.i64,
 	)
 
-	_libc_memcmp_irfun = c.declareExternalRuntimeFunction(
+	_libc_memcmp_gc_irfun = c.declareExternalRuntimeFunction(
 		"memcmp",
 		false,
 		false,
 		c.ddpbool,
-		c.ptr,
-		c.ptr,
+		c.ptr_gc,
+		c.ptr_gc,
 		c.i64,
 	)
 
-	_libc_memmove_irfun = c.declareExternalRuntimeFunction(
+	_libc_memmove_gc_irfun = c.declareExternalRuntimeFunction(
 		"memmove",
 		false,
 		false,
-		c.ptr,
-		c.ptr,
-		c.ptr,
+		c.ptr_gc,
+		c.ptr_gc,
+		c.ptr_gc,
 		c.i64,
 	)
 
@@ -112,26 +114,13 @@ func (c *compiler) initRuntimeFunctions() {
 		c.i32,
 	)
 
-	llvm_result_p1 = c.declareExternalRuntimeFunction(
-		"llvm.experimental.gc.result.p1",
-		false,
-		false,
-		c.ptr_gc,
-		c.token,
-	)
-	llvm_result_p1.AddFunctionAttr(c.attr_nounwind)
-	llvm_result_p1.AddFunctionAttr(c.attr_nocallback)
-	llvm_result_p1.AddFunctionAttr(c.attr_nofree)
-	llvm_result_p1.AddFunctionAttr(c.attr_nosync)
-	llvm_result_p1.AddFunctionAttr(c.attr_willreturn)
-	llvm_result_p1.AddFunctionAttr(c.attr_memory_none)
-
 	ddp_allocate_gc_ref_irfun = c.declareExternalRuntimeFunction(
 		"ddp_allocate_gc_ref",
 		false,
 		true,
 		c.ptr_gc,
-		c.ptr, // vtable
+		c.ptr,    // vtable
+		c.ddpint, // arrlen
 	)
 
 	ddp_free_gc_ref_irfun = c.declareExternalRuntimeFunction(
@@ -149,6 +138,18 @@ func (c *compiler) initRuntimeFunctions() {
 		c.void,
 		c.ptr,
 	)
+
+	ddp_do_nothing_ptr_gc_builder := c.createBuilder("ddp_do_nothing_ptr_gc", llvm.FunctionType(c.void, []llvm.Type{c.ptr_gc}, false), nil, []string{"arg"}, nil, nil, true, false)
+	ddp_do_nothing_ptr_gc_builder.CreateRet(llvm.Value{})
+
+	ddp_do_nothing_ptr_gc = ddp_do_nothing_ptr_gc_builder.llFn
+	ddp_do_nothing_ptr_gc.SetLinkage(llvm.LinkOnceAnyLinkage)
+
+	ddp_do_nothing_ptr_builder := c.createBuilder("ddp_do_nothing_ptr", llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"arg"}, nil, nil, true, false)
+	ddp_do_nothing_ptr_builder.CreateRet(llvm.Value{})
+
+	ddp_do_nothing_ptr = ddp_do_nothing_ptr_builder.llFn
+	ddp_do_nothing_ptr.SetLinkage(llvm.LinkOnceAnyLinkage)
 }
 
 // helper functions to use the runtime-bindings
@@ -169,31 +170,10 @@ func (c *compiler) ddp_reallocate(pointer, oldSize, newSize llvm.Value) llvm.Val
 	return c.builder().createCall(ddp_reallocate_irfun, pointer, oldSize, newSize)
 }
 
-// allocates n elements of elementType
-func (c *compiler) allocateArr(elementType llvm.Type, n llvm.Value) llvm.Value {
-	size := c.builder().CreateMul(n, c.sizeof(elementType), "")
-	return c.ddp_reallocate(c.Null, c.zero, size)
-}
-
-// reallocates the pointer val which points to an array
-// of oldCount elements of type typ to the newCount
-func (c *compiler) growArr(elementType llvm.Type, ptr, oldCount, newCount llvm.Value) llvm.Value {
-	elementSize := c.sizeof(elementType)
-	oldSize := c.builder().CreateMul(oldCount, elementSize, "")
-	newSize := c.builder().CreateMul(newCount, elementSize, "")
-	return c.ddp_reallocate(ptr, oldSize, newSize)
-}
-
-// frees the pointer val which points to n elements
-func (c *compiler) freeArr(elementType llvm.Type, ptr, n llvm.Value) {
-	size := c.builder().CreateMul(n, c.sizeof(elementType), "")
-	c.ddp_reallocate(ptr, size, c.zero)
-}
-
 // wraps the memcpy function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
 func (c *compiler) memcpy(dest, src, n llvm.Value) llvm.Value {
-	return c.builder().createCall(_libc_memcpy_irfun, dest, src, n)
+	return c.builder().createCall(_libc_memcpy_irfun, c.addr0(dest), c.addr0(src), n)
 }
 
 // wraps memcpy for a array, where n is the length of the array in src
@@ -202,26 +182,56 @@ func (c *compiler) memcpyArr(elementType llvm.Type, dest, src, n llvm.Value) llv
 	return c.memcpy(dest, src, size)
 }
 
-// wraps the memmove function from libc
+// wraps the memmoveGC function from libc
 // dest and src must be pointer types, n is the size to copy in bytes
-func (c *compiler) memmove(dest, src, n llvm.Value) llvm.Value {
-	return c.builder().createCall(_libc_memmove_irfun, dest, src, n)
+func (c *compiler) memmoveGC(dest, src, n llvm.Value) llvm.Value {
+	return c.builder().createCall(_libc_memmove_gc_irfun, dest, src, n)
 }
 
 // wraps memmove for a array, where n is the length of the array in src
-func (c *compiler) memmoveArr(elementType llvm.Type, dest, src, n llvm.Value) llvm.Value {
+func (c *compiler) memmoveArrGC(elementType llvm.Type, dest, src, n llvm.Value) llvm.Value {
 	size := c.builder().CreateMul(n, c.sizeof(elementType), "")
-	return c.memmove(dest, src, size)
+	return c.memmoveGC(dest, src, size)
 }
 
-func (c *compiler) memcmp(buf1, buf2, size llvm.Value) llvm.Value {
-	return c.builder().createCall(_libc_memcmp_irfun, buf1, buf2, size)
+func (c *compiler) memcmpGC(buf1, buf2, size llvm.Value) llvm.Value {
+	return c.builder().createCall(_libc_memcmp_gc_irfun, buf1, buf2, size)
 }
 
 func (c *compiler) allocateGCRef(vtable llvm.Value) llvm.Value {
-	tok := c.builder().createCall(llvm_statepoint_p0, c.zero, c.zero32, ddp_allocate_gc_ref_irfun, c.one32, c.zero32, vtable, c.zero32, c.zero32)
-	// TODO: add attribute correctly
-	tok.AddCallSiteAttribute(3, c.attr_elementtype_ptr_gc_ptr)
+	return c.builder().createCall(ddp_allocate_gc_ref_irfun, vtable, c.one)
+}
 
-	return c.builder().createCall(llvm_result_p1, tok)
+func (c *compiler) allocateGCRefArray(vtable llvm.Value, n llvm.Value) llvm.Value {
+	return c.builder().createCall(ddp_allocate_gc_ref_irfun, vtable, n)
+}
+
+func (c *compiler) getFunctionElementTypeAttr(fn llvm.Value) llvm.Attribute {
+	return c.llctx.CreateTypeAttribute(llvm.AttributeKindID("elementtype"), fn.GlobalValueType())
+}
+
+func (c *compiler) getResultFunctionForReturnType(returnType llvm.Type) llvm.Value {
+	return c.llmod.GetIntrinsicDeclaration(c.resultIntrinsicID, []llvm.Type{returnType})
+}
+
+func (c *compiler) callAsStatepoint(callee llvm.Value, liveValues []llvm.Value, args ...llvm.Value) llvm.Value {
+	statepointArgs := make([]llvm.Value, 0, len(args)+7)
+	statepointArgs = append(statepointArgs, []llvm.Value{c.newInt(12345), c.zero32, callee, c.newIntT(c.i32, int64(len(args))), c.zero32}...)
+	statepointArgs = append(statepointArgs, args...)
+	statepointArgs = append(statepointArgs, c.zero32, c.zero32)
+
+	returnType := callee.GlobalValueType().ReturnType()
+
+	gcLive := llvm.CreateOperandBundle("gc-live", liveValues)
+	defer gcLive.Dispose()
+
+	tok := c.builder().createCallWithOperandBundles(llvm_statepoint_p0, []llvm.OperandBundle{gcLive}, statepointArgs...)
+	tok.AddCallSiteAttribute(3, c.getFunctionElementTypeAttr(callee))
+
+	if returnType == c.void {
+		return tok
+	}
+
+	resultFn := c.getResultFunctionForReturnType(returnType)
+	return c.builder().createCall(resultFn, tok)
 }

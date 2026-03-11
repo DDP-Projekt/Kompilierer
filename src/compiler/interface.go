@@ -134,7 +134,7 @@ func Compile(options Options) (result *Result, err error) {
 
 	options.Log("Kompiliere den Abstrakten Syntaxbaum zu LLVM ir")
 
-	llContext, err := newllvmModuleContext(ddp_main_module.FileName)
+	llContext, err := newllvmContext()
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim erstellen des LLVM Context: %w", err)
 	}
@@ -247,6 +247,14 @@ func Compile(options Options) (result *Result, err error) {
 	}
 	options.LogTook("Das Linken der Module", linkStart)
 
+	if options.OptimizationLevel >= 1 {
+		optimizeStart := time.Now()
+		if err := llContext.optimizeModule(ll_main_module); err != nil {
+			return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
+		}
+		options.LogTook("Das Optimieren", optimizeStart)
+	}
+
 	// if we output llvm ir we are finished here
 	if options.OutputType == OutputIR {
 		if _, err := io.WriteString(options.To, ll_main_module.String()); err != nil {
@@ -254,14 +262,6 @@ func Compile(options Options) (result *Result, err error) {
 		}
 
 		return &Result{Dependencies: dependencies}, nil
-	}
-
-	if options.OptimizationLevel >= 1 {
-		optimizeStart := time.Now()
-		if err := llContext.optimizeModule(ll_main_module); err != nil {
-			return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
-		}
-		options.LogTook("Das Optimieren", optimizeStart)
 	}
 
 	file_type := llvm.AssemblyFile
@@ -286,7 +286,7 @@ func Compile(options Options) (result *Result, err error) {
 func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperror.Handler, optimizationLevel uint) (err error) {
 	defer panic_wrapper(&err)
 
-	context, err := newllvmModuleContext(ddppath.LIST_DEFS_NAME)
+	context, err := newllvmContext()
 	if err != nil {
 		return fmt.Errorf("Fehler beim erstellen des LLVM Context: %w", err)
 	}

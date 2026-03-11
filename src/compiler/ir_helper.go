@@ -88,14 +88,16 @@ func (c *compiler) growCapacity(capa llvm.Value) llvm.Value {
 
 // uses the GetElementPtr instruction to index a pointer
 // returns a pointer to the value
+func (c *compiler) indexArrayGC(elementType llvm.Type, arr llvm.Value, index llvm.Value) llvm.Value {
+	gep := c.builder().CreateInBoundsGEP(elementType, arr, []llvm.Value{index}, "")
+	return c.builder().CreateBitCast(gep, c.ptr_gc, "")
+}
+
+// uses the GetElementPtr instruction to index a pointer
+// returns a pointer to the value
 func (c *compiler) indexArray(elementType llvm.Type, arr llvm.Value, index llvm.Value) llvm.Value {
 	gep := c.builder().CreateInBoundsGEP(elementType, arr, []llvm.Value{index}, "")
 	return c.builder().CreateBitCast(gep, c.ptr, "")
-}
-
-func (c *compiler) loadArrayElement(elementType llvm.Type, arr llvm.Value, index llvm.Value) llvm.Value {
-	elementPtr := c.indexArray(elementType, arr, index)
-	return c.builder().CreateLoad(elementType, elementPtr, "")
 }
 
 // uses the GetElementPtr instruction to index struct fields
