@@ -83,11 +83,10 @@ func (t *ddpIrListType) PtrMask() [32]uint8 {
 }
 
 func (t *ddpIrListType) LoadLivesAndRestores(c *compiler, list llvm.Value) ([]llvm.Value, []llvm.Value) {
-	arr_ptr := c.indexStruct(t.typ, list, list_arr_field_index)
 	return []llvm.Value{
-			c.builder().CreateLoad(c.ptr_gc, arr_ptr, ""),
+			list,
 		}, []llvm.Value{
-			arr_ptr,
+			{},
 		}
 }
 
@@ -107,7 +106,7 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	list := &ddpIrListType{}
 	list.name = name
 	list.elementType = elementType
-	list.typ = c.llctx.StructType([]llvm.Type{c.ptr_gc, c.ddpint, c.ddpint}, false)
+	list.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint, c.ddpint}, false)
 
 	list.fromConstantsIrFun = c.createListFromConstants(list, declarationOnly)
 	list.freeIrFun = c.createListFree(list, declarationOnly)
@@ -172,9 +171,9 @@ func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationO
 	cond := llFuncBuilder.CreateICmp(llvm.IntSGT, count, c.zero, "") // count > 0
 
 	// count > 0 ? allocate(sizeof(t) * count) : NULL
-	result := c.createTernary(c.ptr_gc, cond,
+	result := c.createTernary(c.ptr, cond,
 		func() llvm.Value { return c.allocateGCRefArray(listType.elementType.VTable(), count) },
-		func() llvm.Value { return c.NullGC },
+		func() llvm.Value { return c.Null },
 	)
 
 	// get pointers to the struct fields
@@ -223,8 +222,8 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 
 		c.createFor(c.zero, c.forDefaultCond(listLen),
 			func(index llvm.Value) {
-				val := c.indexArrayGC(listType.elementType.LLType(), listArr, index)
-				llFuncBuilder.createCall(listType.elementType.FreeFunc(), c.addr0(val))
+				val := c.indexArray(listType.elementType.LLType(), listArr, index)
+				llFuncBuilder.createCall(listType.elementType.FreeFunc(), val)
 			},
 		)
 	}
@@ -234,7 +233,7 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 	// c.freeArr(listType.elementType.LLType(), listArr, listCap)
 	// force segfaults
 	arrFieldPtr := c.indexStruct(listType.typ, list, list_arr_field_index)
-	c.builder().CreateStore(c.NullGC, arrFieldPtr)
+	c.builder().CreateStore(c.Null, arrFieldPtr)
 	lenFieldPtr := c.indexStruct(listType.typ, list, list_len_field_index)
 	c.builder().CreateStore(c.zero, lenFieldPtr)
 	capFieldPtr := c.indexStruct(listType.typ, list, list_cap_field_index)
@@ -270,7 +269,7 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 	arrFieldPtr, lenFieldPtr, capFieldPtr := c.indexStruct(listType.typ, ret, list_arr_field_index), c.indexStruct(listType.typ, ret, list_len_field_index), c.indexStruct(listType.typ, ret, list_cap_field_index)
 	origArr, origLen, origCap := c.loadStructField(listType.typ, list, list_arr_field_index), c.loadStructField(listType.typ, list, list_len_field_index), c.loadStructField(listType.typ, list, list_cap_field_index)
 
-	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, c.addr0(ret), c.addr0(list), "")
+	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, ret, list, "")
 	c.createIfElse(ptrs_equal, func() {
 		llFuncBuilder.CreateRet(llvm.Value{})
 	},
@@ -329,7 +328,7 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 	if listType.elementType.TriviallyCopyable() {
 		// return memcmp(list1->arr, list2->arr, sizeof(T) * list1->len) == 0;
 		size := llFuncBuilder.CreateMul(c.sizeof(listType.elementType.LLType()), list1_len, "")
-		memcmp := c.memcmpGC(c.loadStructField(listType.typ, list1, list_arr_field_index), c.loadStructField(listType.typ, list2, list_arr_field_index), size)
+		memcmp := c.memcmp(c.loadStructField(listType.typ, list1, list_arr_field_index), c.loadStructField(listType.typ, list2, list_arr_field_index), size)
 		llFuncBuilder.CreateRet(llFuncBuilder.CreateICmp(llvm.IntEQ, memcmp, c.False, ""))
 	} else { // non-primitive types need to be seperately compared
 		/*
@@ -341,8 +340,8 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 		c.createFor(c.zero, c.forDefaultCond(list1_len),
 			func(index llvm.Value) {
 				list1_arr, list2_arr := c.loadStructField(listType.typ, list1, list_arr_field_index), c.loadStructField(listType.typ, list2, list_arr_field_index)
-				list1_at_count, list2_at_count := c.indexArrayGC(listType.elementType.LLType(), list1_arr, index), c.indexArrayGC(listType.elementType.LLType(), list2_arr, index)
-				elements_unequal := llFuncBuilder.CreateXor(llFuncBuilder.createCall(listType.elementType.EqualsFunc(), c.addr0(list1_at_count), c.addr0(list2_at_count)), c.True, "")
+				list1_at_count, list2_at_count := c.indexArray(listType.elementType.LLType(), list1_arr, index), c.indexArray(listType.elementType.LLType(), list2_arr, index)
+				elements_unequal := llFuncBuilder.CreateXor(llFuncBuilder.createCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), c.True, "")
 
 				c.createIfElse(elements_unequal, func() {
 					llFuncBuilder.CreateRet(c.False)
@@ -380,7 +379,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	}
 
 	// empty the ret
-	llFuncBuilder.CreateStore(c.NullGC, c.indexStruct(listType.typ, ret, list_arr_field_index))
+	llFuncBuilder.CreateStore(c.Null, c.indexStruct(listType.typ, ret, list_arr_field_index))
 	llFuncBuilder.CreateStore(c.zero, c.indexStruct(listType.typ, ret, list_len_field_index))
 	llFuncBuilder.CreateStore(c.zero, c.indexStruct(listType.typ, ret, list_cap_field_index))
 
@@ -439,7 +438,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	if listType.elementType.TriviallyCopyable() {
 		// memcpy primitive types
-		c.memcpyArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_arr_field_index), c.indexArrayGC(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), index1), new_len)
+		c.memcpyArr(listType.elementType.LLType(), c.loadStructField(listType.typ, ret, list_arr_field_index), c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), index1), new_len)
 	} else {
 		/*
 			size_t j = 0;
@@ -462,9 +461,9 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 			func(index llvm.Value) {
 				listArr := c.loadStructField(listType.typ, list, list_arr_field_index)
 				jval := llFuncBuilder.CreateLoad(c.i64, j, "")
-				elementPtr := c.indexArrayGC(listType.elementType.LLType(), retArr, jval)
-				listElementPtr := c.indexArrayGC(listType.elementType.LLType(), listArr, index)
-				llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(elementPtr), c.addr0(listElementPtr))
+				elementPtr := c.indexArray(listType.elementType.LLType(), retArr, jval)
+				listElementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
+				llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), elementPtr, listElementPtr)
 				llFuncBuilder.CreateStore(llFuncBuilder.CreateAdd(jval, c.newInt(1), ""), j)
 			},
 		)
@@ -497,7 +496,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		list->arr = NULL;
 	*/
 	empty_list := func(list llvm.Value) {
-		c.builder().CreateStore(c.NullGC, c.indexStruct(listType.typ, list, list_arr_field_index))
+		c.builder().CreateStore(c.Null, c.indexStruct(listType.typ, list, list_arr_field_index))
 		c.builder().CreateStore(c.zero, c.indexStruct(listType.typ, list, list_len_field_index))
 		c.builder().CreateStore(c.zero, c.indexStruct(listType.typ, list, list_cap_field_index))
 	}
@@ -561,7 +560,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		if listType.elementType.TriviallyCopyable() {
 			// memcpy(&ret->arr[list1->len], list2->arr, sizeof(elementType) * list2->len)
-			c.memcpyArr(listType.elementType.LLType(), c.indexArrayGC(listType.elementType.LLType(), new_arr, c.loadStructField(listType.typ, list1, list_len_field_index)), c.loadStructField(listType.typ, list2, list_arr_field_index), c.loadStructField(listType.typ, list2, list_len_field_index))
+			c.memcpyArr(listType.elementType.LLType(), c.indexArray(listType.elementType.LLType(), new_arr, c.loadStructField(listType.typ, list1, list_len_field_index)), c.loadStructField(listType.typ, list2, list_arr_field_index), c.loadStructField(listType.typ, list2, list_len_field_index))
 		} else {
 			list1Len, list2Len := c.loadStructField(listType.typ, list1, list_len_field_index), c.loadStructField(listType.typ, list2, list_len_field_index)
 			list2Arr := c.loadStructField(listType.typ, list2, list_arr_field_index)
@@ -572,8 +571,8 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 			*/
 			c.createFor(c.zero, c.forDefaultCond(list2Len),
 				func(index llvm.Value) {
-					elementPtr := c.indexArrayGC(listType.elementType.LLType(), new_arr, llFuncBuilder.CreateAdd(list1Len, index, ""))
-					llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(elementPtr), c.addr0(c.indexArrayGC(listType.elementType.LLType(), list2Arr, index)))
+					elementPtr := c.indexArray(listType.elementType.LLType(), new_arr, llFuncBuilder.CreateAdd(list1Len, index, ""))
+					llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(listType.elementType.LLType(), list2Arr, index))
 				},
 			)
 		}
@@ -606,11 +605,11 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		listLen := c.loadStructField(listType.typ, list, list_len_field_index)
 		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[list->len] = scal
-			c.builder().CreateStore(scal, c.indexArrayGC(listType.elementType.LLType(), retArr, listLen))
+			c.builder().CreateStore(scal, c.indexArray(listType.elementType.LLType(), retArr, listLen))
 		} else {
 			// ddp_deep_copy_scal(&ret->arr[list->len], scal)
-			dst := c.indexArrayGC(listType.elementType.LLType(), retArr, listLen)
-			c.builder().createCall(listType.elementType.DeepCopyFunc(), c.addr0(dst), c.addr0(scal))
+			dst := c.indexArray(listType.elementType.LLType(), retArr, listLen)
+			c.builder().createCall(listType.elementType.DeepCopyFunc(), dst, scal)
 		}
 
 		empty_list(list)
@@ -642,7 +641,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		c.builder().CreateStore(c.allocateGCRefArray(listType.elementType.VTable(), c.builder().CreateLoad(c.ddpint, retCapPtr, "")), retArrPtr)
 
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
-		retArr0Ptr, retArr1Ptr := c.indexArrayGC(listType.elementType.LLType(), retArr, c.zero), c.indexArrayGC(listType.elementType.LLType(), retArr, c.newInt(1))
+		retArr0Ptr, retArr1Ptr := c.indexArray(listType.elementType.LLType(), retArr, c.zero), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1))
 		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[0] = scal1;
 			// ret->arr[1] = scal1;
@@ -651,8 +650,8 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		} else {
 			// ddp_deep_copy_scalar(&ret->arr[0], scal1);
 			// ddp_deep_copy_scalar(&ret->arr[1], scal2);
-			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(retArr0Ptr), c.addr0(scal1))
-			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(retArr1Ptr), c.addr0(scal2))
+			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), retArr0Ptr, scal1)
+			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), retArr1Ptr, scal2)
 		}
 
 		return finish()
@@ -679,14 +678,14 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		// memmove(&ret->arr[1], ret->arr, sizeof(elementType) * list->len);
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
-		c.memmoveArrGC(listType.elementType.LLType(), c.indexArrayGC(listType.elementType.LLType(), retArr, c.newInt(1)), retArr, c.loadStructField(listType.typ, list, list_len_field_index))
+		c.memmoveArr(listType.elementType.LLType(), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1)), retArr, c.loadStructField(listType.typ, list, list_len_field_index))
 
 		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[0] = scal;
 			c.builder().CreateStore(scal, retArr)
 		} else {
 			// ddp_deep_copy(&ret->arr[0], scal)
-			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(retArr), c.addr0(scal))
+			llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), retArr, scal)
 		}
 
 		empty_list(list)
@@ -714,8 +713,8 @@ func (c *compiler) allocateAndDeepCopyListArray(llFuncBuilder *llBuilder, listTy
 		*/
 		c.createFor(c.zero, c.forDefaultCond(arrLen),
 			func(index llvm.Value) {
-				elementPtr := c.indexArrayGC(listType.elementType.LLType(), arr, index)
-				llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), c.addr0(elementPtr), c.addr0(c.indexArrayGC(listType.elementType.LLType(), arrPtr, index)))
+				elementPtr := c.indexArray(listType.elementType.LLType(), arr, index)
+				llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(listType.elementType.LLType(), arrPtr, index))
 			},
 		)
 	}

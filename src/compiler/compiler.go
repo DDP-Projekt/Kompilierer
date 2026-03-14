@@ -87,7 +87,7 @@ type funcWrapper struct {
 }
 
 type llTypes struct {
-	ptr, ptr_gc, void, i8, i32, i64             llvm.Type
+	ptr /*ptr_gc,*/, void, i8, i32, i64         llvm.Type
 	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
 	vtable_type, ptrmask_type                   llvm.Type
 	token                                       llvm.Type
@@ -95,13 +95,13 @@ type llTypes struct {
 
 func newLLTypes(llctx llvm.Context) llTypes {
 	ptr := llctx.PointerType(0)
-	ptr_gc := llctx.PointerType(1)
+	// ptr_gc := llctx.PointerType(1)
 	i8 := llctx.Int8Type()
 	i32 := llctx.Int32Type()
 	i64 := llctx.Int64Type()
 	return llTypes{
-		ptr:      ptr,
-		ptr_gc:   ptr_gc,
+		ptr: ptr,
+		// ptr_gc:   ptr_gc,
 		void:     llctx.VoidType(),
 		i8:       i8,
 		i32:      i32,
@@ -124,8 +124,8 @@ func newLLTypes(llctx llvm.Context) llTypes {
 }
 
 type llConstants struct {
-	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, NullGC, zeroPtrMask, listPtrMask, refPtrMask llvm.Value
-	resultIntrinsicID                                                                                                            uint
+	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null /*NullGC,*/, zeroPtrMask, listPtrMask, refPtrMask llvm.Value
+	resultIntrinsicID                                                                                                                uint
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -142,7 +142,7 @@ func newLLConstants(types llTypes) llConstants {
 		False:     llvm.ConstInt(types.ddpbool, 0, false),
 		True:      llvm.ConstInt(types.ddpbool, 1, false),
 		Null:      llvm.ConstNull(types.ptr),
-		NullGC:    llvm.ConstNull(types.ptr_gc),
+		// NullGC:    llvm.ConstNull(types.ptr_gc),
 		zeroPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
@@ -166,28 +166,28 @@ func newLLConstants(types llTypes) llConstants {
 }
 
 type llAttributes struct {
-	attr_nounwind               llvm.Attribute
-	attr_nonnull                llvm.Attribute
-	attr_noalias                llvm.Attribute
-	attr_nocallback             llvm.Attribute
-	attr_nofree                 llvm.Attribute
-	attr_nosync                 llvm.Attribute
-	attr_willreturn             llvm.Attribute
-	attr_memory_none            llvm.Attribute
-	attr_elementtype_ptr_gc_ptr llvm.Attribute
+	attr_nounwind    llvm.Attribute
+	attr_nonnull     llvm.Attribute
+	attr_noalias     llvm.Attribute
+	attr_nocallback  llvm.Attribute
+	attr_nofree      llvm.Attribute
+	attr_nosync      llvm.Attribute
+	attr_willreturn  llvm.Attribute
+	attr_memory_none llvm.Attribute
+	// attr_elementtype_ptr_gc_ptr llvm.Attribute
 }
 
 func newLLAttributes(llctx llvm.Context, types llTypes) llAttributes {
 	return llAttributes{
-		attr_nounwind:               llctx.CreateEnumAttribute(llvm.AttributeKindID("nounwind"), 0),
-		attr_nonnull:                llctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0),
-		attr_noalias:                llctx.CreateEnumAttribute(llvm.AttributeKindID("noalias"), 0),
-		attr_nocallback:             llctx.CreateEnumAttribute(llvm.AttributeKindID("nocallback"), 0),
-		attr_nofree:                 llctx.CreateEnumAttribute(llvm.AttributeKindID("nofree"), 0),
-		attr_nosync:                 llctx.CreateEnumAttribute(llvm.AttributeKindID("nosync"), 0),
-		attr_willreturn:             llctx.CreateEnumAttribute(llvm.AttributeKindID("willreturn"), 0),
-		attr_memory_none:            llctx.CreateEnumAttribute(llvm.AttributeKindID("memory(none)"), 0),
-		attr_elementtype_ptr_gc_ptr: llctx.CreateTypeAttribute(llvm.AttributeKindID("elementtype"), llvm.FunctionType(types.ptr_gc, []llvm.Type{types.ptr, types.ddpint}, false)),
+		attr_nounwind:    llctx.CreateEnumAttribute(llvm.AttributeKindID("nounwind"), 0),
+		attr_nonnull:     llctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0),
+		attr_noalias:     llctx.CreateEnumAttribute(llvm.AttributeKindID("noalias"), 0),
+		attr_nocallback:  llctx.CreateEnumAttribute(llvm.AttributeKindID("nocallback"), 0),
+		attr_nofree:      llctx.CreateEnumAttribute(llvm.AttributeKindID("nofree"), 0),
+		attr_nosync:      llctx.CreateEnumAttribute(llvm.AttributeKindID("nosync"), 0),
+		attr_willreturn:  llctx.CreateEnumAttribute(llvm.AttributeKindID("willreturn"), 0),
+		attr_memory_none: llctx.CreateEnumAttribute(llvm.AttributeKindID("memory(none)"), 0),
+		// attr_elementtype_ptr_gc_ptr: llctx.CreateTypeAttribute(llvm.AttributeKindID("elementtype"), llvm.FunctionType(types.ptr_gc, []llvm.Type{types.ptr, types.ddpint}, false)),
 	}
 }
 
@@ -568,11 +568,11 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, c.builder().scp, true, false)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, c.builder().scp, true, false)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false)
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
@@ -593,7 +593,7 @@ func (c *compiler) setupOperators() {
 // deep copies the value pointed to by src into dest
 // and returns dest
 func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value {
-	c.builder().createCall(typ.DeepCopyFunc(), c.addr0(dest), c.addr0(src))
+	c.builder().createCall(typ.DeepCopyFunc(), dest, src)
 	return dest
 }
 
@@ -601,7 +601,7 @@ func (c *compiler) deepCopyInto(dest, src llvm.Value, typ ddpIrType) llvm.Value 
 // if typ.IsPrimitive() == false
 func (c *compiler) freeNonPrimitive(val llvm.Value, typ ddpIrType) {
 	if !typ.TriviallyCopyable() {
-		c.builder().createCall(typ.FreeFunc(), c.addr0(val))
+		c.builder().createCall(typ.FreeFunc(), val)
 	}
 }
 
@@ -776,7 +776,7 @@ func (c *compiler) getPossiblyGenericReturnType(decl *ast.FuncDecl) ddpIrType {
 
 func (c *compiler) getPossiblyGenericParamType(param *ast.ParameterInfo) (llvm.Type, ddpIrType) {
 	t := ddptypes.TrueUnderlying(param.Type)
-	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(t); isGeneric || ddptypes.IsReference(t) {
+	if _, isGeneric := ddptypes.CastDeeplyNestedGenerics(t); isGeneric {
 		return c.ptr, nil
 	}
 
@@ -883,6 +883,7 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 		if !irType.TriviallyCopyable() { // strings and lists need special handling
 			// add the local variable for the parameter
 			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
+
 			c.builder().CreateStore(c.builder().CreateLoad(irType.LLType(), params[i].val, ""), v) // store the copy in the local variable
 		} else { // primitive types don't need any special handling
 			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
@@ -1036,14 +1037,14 @@ func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
 		// evaluate every value and copy it into the array
 		for i, v := range e.Values {
 			val := c.evaluate(v)
-			elementPtr := c.indexArrayGC(listType.elementType.LLType(), listArr, c.newInt(int64(i)))
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, c.newInt(int64(i)))
 			c.claimOrCopy(elementPtr, val)
 		}
 	} else if e.Count != nil && e.Value != nil { // single Value multiple times
 		val := c.evaluate(e.Value) // if val is a temporary, it is freed automatically
 
 		c.createFor(c.zero, c.forDefaultCond(listLen.irVal), func(index llvm.Value) {
-			elementPtr := c.indexArrayGC(listType.elementType.LLType(), listArr, index)
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 			if listType.elementType.TriviallyCopyable() {
 				c.builder().CreateStore(val.irVal, elementPtr)
 			} else {
@@ -1511,7 +1512,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		cond := c.builder().CreateAnd(c.builder().CreateICmp(llvm.IntSLT, index, listLen, ""), c.builder().CreateICmp(llvm.IntSGE, index, c.zero, ""), "")
 		c.createIfElse(cond, func() {
 			listArr := c.loadStructField(listType.typ, lhs.irVal, list_arr_field_index)
-			elementPtr := c.indexArrayGC(listType.elementType.LLType(), listArr, index)
+			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 
 			if listType.elementType.TriviallyCopyable() && !isRefLhs {
 				c.builder().latestReturn.irVal, c.builder().latestReturn.typ = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
@@ -2034,7 +2035,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 		listType := c.getListType(lhs.typ)
 		list := c.NewAlloca(listType.typ)
 		c.builder().createCall(listType.fromConstantsIrFun, list, c.newInt(1))
-		elementPtr := c.indexArrayGC(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), c.zero)
+		elementPtr := c.indexArray(listType.elementType.LLType(), c.loadStructField(listType.typ, list, list_arr_field_index), c.zero)
 		c.claimOrCopy(elementPtr, lhs)
 		c.builder().latestReturn = c.builder().scp.addTemporary(list, listType)
 	} else {
@@ -2792,7 +2793,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 		iter_ptr_val := c.loadStructField(in.typ.LLType(), in.irVal, list_arr_field_index)
 		c.builder().CreateStore(iter_ptr_val, iter_ptr)
 		length = c.loadStructField(in.typ.LLType(), in.irVal, list_len_field_index)
-		end_ptr = c.indexArrayGC(in.typ.(*ddpIrListType).elementType.LLType(), iter_ptr_val, length)
+		end_ptr = c.indexArray(in.typ.(*ddpIrListType).elementType.LLType(), iter_ptr_val, length)
 	}
 
 	loopStart, condBlock, bodyBlock, incrementBlock, leaveBlock := c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock(), c.builder().newBlock()
@@ -2808,7 +2809,7 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.builder().CreateBr(condBlock)
 
 	c.builder().setBlock(condBlock)
-	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntNE, c.addr0(c.builder().CreateLoad(c.ptr, iter_ptr, "")), c.addr0(end_ptr), ""), bodyBlock, leaveBlock)
+	c.builder().CreateCondBr(c.builder().CreateICmp(llvm.IntNE, c.builder().CreateLoad(c.ptr, iter_ptr, ""), end_ptr, ""), bodyBlock, leaveBlock)
 
 	loopVar := c.builder().scp.lookupVar(s.Initializer)
 

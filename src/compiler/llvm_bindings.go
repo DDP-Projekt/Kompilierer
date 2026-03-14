@@ -126,7 +126,8 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 	if DEBUG {
 		options.SetVerifyEach(true)
 	}
-	return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
+	// return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
+	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
 }
 
 // compiles the module to w and returns w.Write

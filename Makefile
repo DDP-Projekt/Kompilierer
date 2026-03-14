@@ -49,7 +49,6 @@ TAR = tar
 
 define cp_if_exists
 	@if [ -f $(1) ]; then \
-		echo copying $(1) to $(2); \
 		$(CP) $(1) $(2); \
 	fi
 endef
@@ -104,7 +103,7 @@ kddp-debug: $(KDDP_DIR_OUT) $(LIB_DIR_OUT) ## compiles kddp into build/DDP/bin/
 	@echo "building kddp in debug mode"
 	'$(MAKE)' -C $(CMD_DIR) kddp-debug
 	$(CP) $(KDDP_DIR)$(KDDP_BIN) $(KDDP_DIR_OUT)$(KDDP_BIN)
-	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
+	$(KDDP_DIR_OUT)$(KDDP_BIN) dump-list-defs -O0 -o $(LIB_DIR_OUT)$(DDP_LIST_DEFS_NAME) $(DDP_LIST_DEFS_OUTPUT_TYPES)
 
 ddp-setup: $(DDP_SETUP_DIR_OUT) ## compiles ddp-setup into build/DDP/bin/
 	@echo "building ddp-setup"

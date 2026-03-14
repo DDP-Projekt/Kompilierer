@@ -64,7 +64,7 @@ func (t *ddpIrReferenceType) PtrMask() [32]uint8 {
 
 func (*ddpIrReferenceType) LoadLivesAndRestores(c *compiler, v llvm.Value) ([]llvm.Value, []llvm.Value) {
 	return []llvm.Value{
-			c.builder().CreateLoad(c.ptr_gc, v, ""),
+			c.builder().CreateLoad(c.ptr, v, ""),
 		}, []llvm.Value{
 			v,
 		}
@@ -76,8 +76,8 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	}
 
 	refType := &ddpIrReferenceType{
-		typ:          c.ptr_gc,
-		defaultValue: c.NullGC,
+		typ:          c.ptr,
+		defaultValue: c.Null,
 		ddpType:      t,
 		underlying:   underlying,
 		name:         strings.ReplaceAll(underlying.Name()+"_Referenz", " ", "_"),

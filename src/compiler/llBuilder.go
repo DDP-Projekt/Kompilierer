@@ -98,6 +98,36 @@ func (b *llBuilder) getLiveValues() ([]llvm.Value, []llvm.Value) {
 	return liveValues, restoreLocations
 }
 
+func (b *llBuilder) getFunctionElementTypeAttr(fn llvm.Value) llvm.Attribute {
+	return b.c.llctx.CreateTypeAttribute(llvm.AttributeKindID("elementtype"), fn.GlobalValueType())
+}
+
+func (b *llBuilder) getResultFunctionForReturnType(returnType llvm.Type) llvm.Value {
+	return b.c.llmod.GetIntrinsicDeclaration(b.c.resultIntrinsicID, []llvm.Type{returnType})
+}
+
+func (b *llBuilder) callAsStatepoint(callee llvm.Value, liveValues []llvm.Value, args ...llvm.Value) llvm.Value {
+	statepointArgs := make([]llvm.Value, 0, len(args)+7)
+	statepointArgs = append(statepointArgs, []llvm.Value{b.c.newInt(12345), b.c.zero32, callee, b.c.newIntT(b.c.i32, int64(len(args))), b.c.zero32}...)
+	statepointArgs = append(statepointArgs, args...)
+	statepointArgs = append(statepointArgs, b.c.zero32, b.c.zero32)
+
+	returnType := callee.GlobalValueType().ReturnType()
+
+	gcLive := llvm.CreateOperandBundle("deopt", liveValues)
+	defer gcLive.Dispose()
+
+	tok := b.createCallWithOperandBundles(llvm_statepoint_p0, []llvm.OperandBundle{gcLive}, statepointArgs...)
+	tok.AddCallSiteAttribute(3, b.getFunctionElementTypeAttr(callee))
+
+	if returnType == b.c.void {
+		return tok
+	}
+
+	resultFn := b.getResultFunctionForReturnType(returnType)
+	return b.CreateCall(resultFn.GlobalValueType(), resultFn, []llvm.Value{tok}, "")
+}
+
 func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 	if fn.GC() == DDP_GC_STRATEGY_NAME {
 		liveValues, restores := b.getLiveValues()
@@ -105,7 +135,8 @@ func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 		defer gcLive.Dispose()
 
 		// TODO: re-store or otherwise use the relocated values
-		call := b.createCallWithOperandBundles(fn, []llvm.OperandBundle{gcLive}, args...)
+		// call := b.createCallWithOperandBundles(fn, []llvm.OperandBundle{gcLive}, args...)
+		call := b.callAsStatepoint(fn, liveValues, args...)
 
 		for i, relocated := range liveValues {
 			if restores[i] != (llvm.Value{}) {

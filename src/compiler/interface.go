@@ -187,6 +187,7 @@ func Compile(options Options) (result *Result, err error) {
 				options.Log("Kompiliere llvm-ir zu Assembler")
 			}
 
+			// TODO: run RewriteStatepointsForGC even on O0
 			if options.OptimizationLevel >= 1 {
 				optimizeStart := time.Now()
 				if err := llContext.optimizeModule(comp_result.llMod); err != nil {
@@ -247,6 +248,7 @@ func Compile(options Options) (result *Result, err error) {
 	}
 	options.LogTook("Das Linken der Module", linkStart)
 
+	// TODO: run RewriteStatepointsForGC even on O0
 	if options.OptimizationLevel >= 1 {
 		optimizeStart := time.Now()
 		if err := llContext.optimizeModule(ll_main_module); err != nil {

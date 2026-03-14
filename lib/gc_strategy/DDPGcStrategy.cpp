@@ -9,9 +9,7 @@ class DDPGcStrategy : public GCStrategy {
 public:
   DDPGcStrategy() {
     UseStatepoints = true;
-    UseRS4GC = true;
-
-    NeededSafePoints = false;
+    UseRS4GC = false;
   }
 
   virtual std::optional<bool> isGCManagedPointer(const Type *Ty) const {
