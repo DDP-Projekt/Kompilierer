@@ -47,7 +47,7 @@ func (t *ddpIrReferenceType) VTable() llvm.Value {
 }
 
 func (t *ddpIrReferenceType) FreeFunc() llvm.Value {
-	return ddp_free_gc_ref_irfun
+	return llvm.Value{}
 }
 
 func (t *ddpIrReferenceType) DeepCopyFunc() llvm.Value {
@@ -90,7 +90,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	vtable.SetGlobalConstant(true)
 	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 		llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
-		ddp_free_gc_ref_irfun,
+		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		c.refPtrMask,

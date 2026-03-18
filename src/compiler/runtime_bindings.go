@@ -34,7 +34,6 @@ var (
 	llvm_statepoint_p0 llvm.Value
 
 	// reference functions
-	ddp_free_gc_ref_irfun     llvm.Value
 	ddp_allocate_gc_ref_irfun llvm.Value
 	ddp_register_gc_root      llvm.Value
 
@@ -121,14 +120,6 @@ func (c *compiler) initRuntimeFunctions() {
 		c.ptr,
 		c.ptr,    // vtable
 		c.ddpint, // arrlen
-	)
-
-	ddp_free_gc_ref_irfun = c.declareExternalRuntimeFunction(
-		"ddp_free_gc_ref",
-		false,
-		true,
-		c.void,
-		c.ptr,
 	)
 
 	ddp_register_gc_root = c.declareExternalRuntimeFunction(

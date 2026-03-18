@@ -483,7 +483,7 @@ static size_t calculate_span_size(size_t objSize) {
 
 // TODO: use size classes
 static GCSpan *allocate_span(GCTypeMeta objInfo) {
-	DDP_DBGLOG("Allocating new span");
+	DDP_DBGLOG("Allocating new span (GCTypeMeta: vtable %p, arrlen %d)", objInfo.vtable, objInfo.arrlen);
 
 	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
 	newSpan->objInfo = objInfo;
@@ -614,12 +614,14 @@ void ddp_register_gc_root(void **root) {
 	gc.global_roots[gc.len_global_roots++] = root;
 }
 
-void ddp_free_gc_ref(void *ref UNUSED) {
-	DDP_DBGLOG("Freeing ref: %p", ref);
-}
-
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
-	DDP_DBGLOG("Allocating GC ref from vtable: %p", vtable);
+	DDP_DBGLOG("Allocating GC ref from vtable: %p, arrlen: %d", vtable, arrlen);
+
+	if (arrlen <= 0 || vtable->type_size <= 0) {
+		DDP_DBGLOG("returning NULL for arrlen == 0 or type_size == 0 ref allocation");
+		return NULL;
+	}
+
 	GCTypeMeta objInfo = {.vtable = vtable, .arrlen = arrlen};
 	void *space_slot = NULL;
 	GCSpan *span = find_or_allocate_span_for_object(objInfo, &space_slot);
@@ -629,6 +631,27 @@ void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 
 	DDP_DBGLOG("allocated ref: %p", space_slot);
 	return space_slot;
+}
+
+// helper function which uses ddp_allocate_gc_ref to function similar to
+// ddp_reallocate
+void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
+							ddpint newArrLen) {
+	void *newRef = ddp_allocate_gc_ref(vtable, newArrLen);
+
+	if (newRef == NULL) {
+		return newRef;
+	}
+
+	if (is_primitive_vtable(vtable)) {
+		memcpy(newRef, ptr, vtable->type_size * oldArrLen);
+	} else {
+		for (ddpint i = 0; i < oldArrLen; i++) {
+			vtable->deep_copy_func(&((uint8_t *)newRef)[i * vtable->type_size], &((uint8_t *)ptr)[i * vtable->type_size]);
+		}
+	}
+
+	return newRef;
 }
 
 // pointer to the .llvm_stackmaps section

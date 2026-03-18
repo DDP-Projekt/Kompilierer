@@ -24,7 +24,10 @@ typedef struct GCTypeMeta {
 } GCTypeMeta;
 
 void ddp_register_gc_root(void **root);
-void ddp_free_gc_ref(void *ref);
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen);
+// helper function which uses ddp_allocate_gc_ref to function similar to
+// ddp_reallocate
+void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
+							ddpint newArrLen);
 
 #endif // DDP_GC_H

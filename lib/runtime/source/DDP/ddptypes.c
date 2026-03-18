@@ -63,12 +63,8 @@ ddpint ddp_strlen(ddpstring *str) {
 	return strlen(str->str);
 }
 
-static bool is_primitive_vtable(ddpvtable *table) {
+ddpbool is_primitive_vtable(ddpvtable *table) {
 	return table != NULL && table->free_func == NULL;
-}
-
-static bool is_reference_vtable(ddpvtable *table) {
-	return table != NULL && table->free_func != NULL && table->deep_copy_func == NULL;
 }
 
 // frees the given any
@@ -79,7 +75,7 @@ void ddp_free_any(ddpany *any) {
 		return;
 	}
 
-	if ((!is_primitive_vtable(any->vtable_ptr) || is_reference_vtable(any->vtable_ptr)) && any->value_ptr != NULL) {
+	if ((!is_primitive_vtable(any->vtable_ptr)) && any->value_ptr != NULL) {
 		// free the underlying value
 		any->vtable_ptr->free_func(DDP_ANY_VALUE_PTR(any));
 	}
@@ -111,7 +107,7 @@ void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 		DDP_DBGLOG("not allocating for small any");
 	}
 
-	if (is_primitive_vtable(ret->vtable_ptr) || is_reference_vtable(ret->vtable_ptr)) {
+	if (is_primitive_vtable(ret->vtable_ptr)) {
 		memcpy(&ret->value, &any->value, DDP_SMALL_ANY_BUFF_SIZE);
 	} else if (ret->vtable_ptr != NULL) {
 		// deep copy the underlying value
@@ -137,7 +133,7 @@ ddpbool ddp_any_equal(ddpany *any1, ddpany *any2) {
 		return false;
 	}
 
-	if (is_primitive_vtable(any1->vtable_ptr) || is_reference_vtable(any1->vtable_ptr)) {
+	if (is_primitive_vtable(any1->vtable_ptr)) {
 		return memcmp(&any1->value, &any2->value, any1->vtable_ptr->type_size) == 0;
 	}
 

@@ -1,15 +1,17 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
+#include "DDP/debug.h"
+#include "DDP/gc.h"
 #include "DDP/utf8/utf8.h"
 #include <string.h>
 
 #define DDP_MAX(a, b) ((a) > (b) ? (a) : (b))
 
-static void grow_if_needed(ddpgenericlistref list, ddpint elem_size, ddpint n) {
+static void grow_if_needed(ddpgenericlistref list, const ddpvtable *vtable, ddpint n) {
 	if (list->len + n >= list->cap) {
 		ddpint old_cap = list->cap;
 		list->cap = DDP_MAX(DDP_GROW_CAPACITY(list->cap), list->len + n);
-		list->arr = ddp_reallocate(list->arr, old_cap * elem_size, list->cap * elem_size);
+		list->arr = ddp_reallocate_gc_ref(list->arr, (ddpvtable *)vtable, old_cap, list->cap);
 	}
 }
 
@@ -20,9 +22,11 @@ static void claim_non_primitive(const ddpvtable *vtable, ddpgenericref elem, ddp
 }
 
 void efficient_list_append(ddpgenericlistref list, ddpgenericref elem, ddpanyref any) {
+	DDP_DBGLOG("efficient_list_append");
+
 	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-	grow_if_needed(list, vtable->type_size, 1);
+	grow_if_needed(list, vtable, 1);
 	memcpy(&((uint8_t *)list->arr)[list->len * vtable->type_size], elem, vtable->type_size);
 	list->len++;
 
@@ -32,7 +36,7 @@ void efficient_list_append(ddpgenericlistref list, ddpgenericref elem, ddpanyref
 void efficient_list_prepend(ddpgenericlistref list, ddpgenericref elem, ddpanyref any) {
 	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-	grow_if_needed(list, vtable->type_size, 1);
+	grow_if_needed(list, vtable, 1);
 	memmove(&((uint8_t *)list->arr)[vtable->type_size], list->arr, list->len * vtable->type_size);
 	memcpy(list->arr, elem, vtable->type_size);
 	list->len++;
@@ -43,7 +47,7 @@ void efficient_list_prepend(ddpgenericlistref list, ddpgenericref elem, ddpanyre
 void efficient_list_append_list(ddpgenericlistref list, ddpgenericlistref other, ddpanyref any) {
 	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-	grow_if_needed(list, vtable->type_size, other->len);
+	grow_if_needed(list, vtable, other->len);
 	memcpy(&((uint8_t *)list->arr)[list->len * vtable->type_size], other->arr, vtable->type_size * other->len);
 	list->len += other->len;
 
@@ -55,7 +59,7 @@ void efficient_list_append_list(ddpgenericlistref list, ddpgenericlistref other,
 void efficient_list_prepend_list(ddpgenericlistref list, ddpgenericlistref other, ddpanyref any) {
 	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-	grow_if_needed(list, vtable->type_size, other->len);
+	grow_if_needed(list, vtable, other->len);
 	memmove(&((uint8_t *)list->arr)[vtable->type_size * other->len], list->arr, list->len * vtable->type_size);
 	memcpy(list->arr, other->arr, vtable->type_size * other->len);
 	list->len += other->len;
@@ -103,7 +107,7 @@ void efficient_list_insert(ddpgenericlistref list, ddpint index, ddpgenericref e
 
 	const ddpvtable *vtable = ddp_get_generic_vtable(any);
 
-	grow_if_needed(list, vtable->type_size, 1);
+	grow_if_needed(list, vtable, 1);
 	memmove(&((uint8_t *)list->arr)[(index + 1) * vtable->type_size], &((uint8_t *)list->arr)[index * vtable->type_size], (list->len - index) * vtable->type_size);
 	memcpy(&((uint8_t *)list->arr)[index * vtable->type_size], elem, vtable->type_size);
 	list->len++;
@@ -123,7 +127,7 @@ void efficient_list_insert_range(ddpgenericlistref list, ddpint index, ddpgeneri
 	if (new_len > list->cap) {
 		ddpint old_cap = list->cap;
 		list->cap = DDP_GROW_CAPACITY(new_len);
-		list->arr = ddp_reallocate(list->arr, old_cap * vtable->type_size, list->cap * vtable->type_size);
+		list->arr = ddp_reallocate_gc_ref(list->arr, (ddpvtable *)vtable, old_cap, list->cap);
 	}
 
 	memmove(&((uint8_t *)list->arr)[(index + other->len) * vtable->type_size], &((uint8_t *)list->arr)[index * vtable->type_size], (list->len - index) * vtable->type_size);
