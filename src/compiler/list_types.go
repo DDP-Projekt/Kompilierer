@@ -84,7 +84,7 @@ func (t *ddpIrListType) PtrMask() [32]uint8 {
 
 func (t *ddpIrListType) LoadLivesAndRestores(c *compiler, list llvm.Value) ([]llvm.Value, []llvm.Value) {
 	return []llvm.Value{
-			list,
+			c.loadStructField(t.LLType(), list, list_arr_field_index),
 		}, []llvm.Value{
 			{},
 		}
@@ -261,6 +261,8 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 
 	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
 
+	c.builder().scp.addProtectedTemporary(list, listType)
+
 	if declarationOnly {
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 		return llFuncBuilder.llFn
@@ -306,6 +308,9 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 		return llFuncBuilder.llFn
 	}
+
+	c.builder().scp.addProtectedTemporary(list1, listType)
+	c.builder().scp.addProtectedTemporary(list2, listType)
 
 	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, list1, list2, "")
 	c.createIfElse(ptrs_equal, func() {
@@ -377,6 +382,8 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 		return llFuncBuilder.llFn
 	}
+
+	c.builder().scp.addProtectedTemporary(list, listType)
 
 	// empty the ret
 	llFuncBuilder.CreateStore(c.Null, c.indexStruct(listType.typ, ret, list_arr_field_index))
@@ -543,6 +550,9 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 		ret, list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
 
+		c.builder().scp.addProtectedTemporary(list1, listType)
+		c.builder().scp.addProtectedTemporary(list2, listType)
+
 		if declarationOnly {
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			return llFuncBuilder.llFn
@@ -592,6 +602,8 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			return llFuncBuilder.llFn
 		}
+
+		c.builder().scp.addProtectedTemporary(list, listType)
 
 		retLenPtr, retCapPtr := c.indexStruct(listType.typ, ret, list_len_field_index), c.indexStruct(listType.typ, ret, list_cap_field_index)
 		// ret->len = list->len + 1
@@ -667,6 +679,8 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 			llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			return llFuncBuilder.llFn
 		}
+
+		c.builder().scp.addProtectedTemporary(list, listType)
 
 		retLenPtr, retCapPtr := c.indexStruct(listType.typ, ret, list_len_field_index), c.indexStruct(listType.typ, ret, list_cap_field_index)
 		// ret->len = list->len + 1

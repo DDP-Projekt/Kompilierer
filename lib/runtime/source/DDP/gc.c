@@ -484,6 +484,10 @@ static size_t calculate_span_size(size_t objSize) {
 // TODO: use size classes
 static GCSpan *allocate_span(GCTypeMeta objInfo) {
 	DDP_DBGLOG("Allocating new span (GCTypeMeta: vtable %p, arrlen %d)", objInfo.vtable, objInfo.arrlen);
+	DDP_DBGLOG("current spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
+	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
+		DDP_DBGLOG("%p, %p -> %p", span->data, span, span->next);
+	}
 
 	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
 	newSpan->objInfo = objInfo;
@@ -504,9 +508,14 @@ static GCSpan *allocate_span(GCTypeMeta objInfo) {
 		gc.spanTail = gc.spanHead = newSpan;
 	} else {
 		gc.spanTail->next = newSpan;
+		gc.spanTail = newSpan;
 	}
 
 	DDP_DBGLOG("Allocated new span");
+	DDP_DBGLOG("new spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
+	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
+		DDP_DBGLOG("%p, %p -> %p", span->data, span, span->next);
+	}
 
 	return newSpan;
 }
@@ -520,6 +529,9 @@ static void free_span(GCSpan *span, GCSpan *prev) {
 	}
 	if (gc.spanHead == span) {
 		gc.spanHead = next;
+	}
+	if (gc.spanTail == span) {
+		gc.spanTail = prev;
 	}
 
 	const size_t freeBytes = NUM_FREE_BYTES(span->numObjs);
@@ -684,7 +696,7 @@ static void trace_root(void *ref) {
 
 	GCSpan *span = get_span_for_pointer(ref);
 	if (span == NULL) {
-		DDP_DBGLOG("No span found, not tracing");
+		DDP_DBGLOG("No span found, not tracing; spans:");
 		return;
 	}
 
@@ -883,7 +895,11 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 			case LOC_CONST_INDEX: {
 				const Constant *constant = get_constant(&gc.stackMap, location_offset(location));
 				root = (void *)constant->largeConstant;
-				// DDP_DBGLOG("found constant index root %p", root);
+				DDP_DBGLOG("found constant index root %p", root);
+				break;
+			}
+			default: {
+				DDP_DBGLOG("unknown location kind");
 				break;
 			}
 			}

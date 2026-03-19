@@ -834,7 +834,7 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 
 	// createBuilder NOT newBuilder, because defineFuncBody pushes it
 	// scp is nil, as it is set in defineFuncBody
-	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), nil, paramNames, paramAttributes, nil, !ast.IsExternFunc(decl), ast.IsExternFunc(decl))
+	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), nil, paramNames, paramAttributes, nil, true, ast.IsExternFunc(decl))
 
 	c.insertFunction(llFuncBuilder.fnName, decl, llFuncBuilder.llFn, llFuncBuilder)
 
@@ -2405,7 +2405,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, nil, paramNames, paramAttributes, nil, !ast.IsExternFunc(decl), true)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, nil, paramNames, paramAttributes, nil, true, true)
 	// declare it as extern function
 	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
@@ -2958,7 +2958,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		}
 
 		c.claimOrCopy(c.builder().params[0].val, val)
-		c.builder().scp.addProtectedTemporary(val.irVal, val.typ) // make sure the return does not get GCed during scope exit
+		c.builder().scp.addProtectedTemporary(c.builder().params[0].val, val.typ) // make sure the return does not get GCed during scope exit
 		c.builder().CreateRet(llvm.Value{})
 	}
 	exitScopeReturn()
