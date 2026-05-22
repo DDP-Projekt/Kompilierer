@@ -31,7 +31,7 @@ foo (h als Zahlen Referenz).
 Schreibe (h als Zahl) auf eine Zeile.
 
 Die Funktion bar mit den Parametern z und w vom Typ Zahlen Referenz und Zahl, gibt eine Zahl zurück, macht:
-	Speichere w in z.
+	Speichere w in dem Wert von z.
 	Gib z zurück.
 Und überlädt den "an der Stelle" Operator.
 

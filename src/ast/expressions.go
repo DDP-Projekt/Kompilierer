@@ -70,6 +70,7 @@ type (
 		// if Values, Count and Value are nil, the list is empty
 		Count Expression // for big list initializations
 		Value Expression // the default value for big list initializations
+		Typ   ddptypes.ListType
 	}
 
 	UnaryExpr struct {
@@ -79,6 +80,7 @@ type (
 		Operator     UnaryOperator
 		Rhs          Expression
 		OverloadedBy *OperatorOverload
+		Typ          ddptypes.Type
 	}
 
 	BinaryExpr struct {
@@ -89,6 +91,7 @@ type (
 		Operator     BinaryOperator
 		Rhs          Expression
 		OverloadedBy *OperatorOverload
+		Typ          ddptypes.Type
 	}
 
 	// currently only used for von bis
@@ -101,6 +104,7 @@ type (
 		Rhs          Expression
 		Operator     TernaryOperator
 		OverloadedBy *OperatorOverload
+		Typ          ddptypes.Type
 	}
 
 	// als Expressions cannot be unary
@@ -121,6 +125,7 @@ type (
 		Tok      token.Token
 		Operator TypeOperator
 		Rhs      ddptypes.Type
+		Typ      ddptypes.Type
 	}
 
 	// ein/eine, seperate from CastExpr as it should not be overloadable
@@ -137,6 +142,7 @@ type (
 		Range  token.Range
 		LParen token.Token // (
 		Expr   Expression
+		Typ    ddptypes.Type
 	}
 
 	FuncCall struct {
@@ -158,8 +164,8 @@ type (
 		// is set by the parser, or nil if the name was not found
 		Struct *StructDecl
 		// the actual struct type which may be instantiated from a generic
-		// and therefore different than Struct.Type
-		Type *ddptypes.StructType
+		// and therefore different than Struct.StructType
+		StructType *ddptypes.StructType
 		// the arguments passed to the literal
 		// this does not include all struct fields,
 		// only the ones needed by the alias used
@@ -257,6 +263,132 @@ func (expr *TypeCheck) Accept(v FullVisitor) VisitResult     { return v.VisitTyp
 func (expr *Grouping) Accept(v FullVisitor) VisitResult      { return v.VisitGrouping(expr) }
 func (expr *FuncCall) Accept(v FullVisitor) VisitResult      { return v.VisitFuncCall(expr) }
 func (expr *StructLiteral) Accept(v FullVisitor) VisitResult { return v.VisitStructLiteral(expr) }
+
+func (expr *BadExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return nil
+}
+
+func (expr *Ident) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	switch d := expr.Declaration.(type) {
+	case *ConstDecl:
+		return d.Type
+	case *VarDecl:
+		return d.Type
+	}
+	// TODO: function types when first-class functions are supported as a feature
+	return nil
+}
+
+func (expr *IntLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.ZAHL
+}
+
+func (expr *FloatLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.KOMMAZAHL
+}
+
+func (expr *BoolLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.WAHRHEITSWERT
+}
+
+func (expr *CharLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.BUCHSTABE
+}
+
+func (expr *StringLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.TEXT
+}
+
+func (expr *ListLit) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *UnaryExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *BinaryExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *TernaryExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *CastExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.TargetType
+}
+
+func (expr *TypeOpExpr) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *TypeCheck) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return ddptypes.WAHRHEITSWERT
+}
+
+func (expr *Grouping) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Typ
+}
+
+func (expr *FuncCall) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.Func.ReturnType
+}
+
+func (expr *StructLiteral) Type() ddptypes.Type {
+	if expr == nil {
+		return nil
+	}
+	return expr.StructType
+}
 
 func (expr *BadExpr) expressionNode()       {}
 func (expr *Ident) expressionNode()         {}

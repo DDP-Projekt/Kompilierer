@@ -122,11 +122,11 @@ func (p *parser) alias() ast.Expression {
 		}
 
 		return &ast.StructLiteral{
-			Range:  token.NewRange(&p.tokens[start], p.previous()),
-			Tok:    p.tokens[start],
-			Struct: stralias.Struct,
-			Type:   structType.(*ddptypes.StructType),
-			Args:   args,
+			Range:      token.NewRange(&p.tokens[start], p.previous()),
+			Tok:        p.tokens[start],
+			Struct:     stralias.Struct,
+			StructType: structType.(*ddptypes.StructType),
+			Args:       args,
 		}
 	}
 
@@ -325,26 +325,26 @@ func (p *parser) checkAlias(mAlias ast.Alias, typeSensitive bool, start int, cac
 					cached_arg.Type = p.typechecker.EvaluateSilent(cached_arg.Arg) // evaluate the argument
 				}
 
-				typ := cached_arg.Type
-				// we parsed an assigneable and implicitly cast it
-				// this acts as an implicit up-cast to reference
-				// if cached_arg_key.isReference && !ddptypes.IsReference(typ) {
-				// 	// TODO: should we do this?
-				// 	typ = ddptypes.ReferenceType{Type: typ}
-				// }
+				argType := cached_arg.Type
 
 				underlyingParamType := paramType
 				if ast.IsGeneric(mAlias.Decl()) {
-					underlyingParamType = ddptypes.UnifyGenericType(typ, paramType, genericTypes)
-
-					// account for the possibility of unifying param=T with arg=T Referenz
-					if refType, _, isRef := ddptypes.CastReference(typ); !ddptypes.EqualDeref(typ, underlyingParamType) && isRef {
-						underlyingParamType = ddptypes.UnifyGenericType(refType.Type, paramType, genericTypes)
+					// UnifyGenericType only works on types, not expressions, so we convert assigneable expressions to references if needed
+					if ddptypes.IsReference(paramType) && !ddptypes.IsReference(argType) && typechecker.IsAssignable(cached_arg.Arg) {
+						argType = ddptypes.ReferenceType{Type: argType}
 					}
+
+					underlyingParamType = ddptypes.UnifyGenericType(argType, paramType, genericTypes)
+
+					// account for the possibility of unifying param=(T) with arg=(T Referenz)
+					// TODO: are upcasts still legal?
+					// if refType, _, isRef := ddptypes.CastReference(argType); !ddptypes.EqualDeref(argType, underlyingParamType) && isRef {
+					// 	underlyingParamType = ddptypes.UnifyGenericType(refType.Type, paramType, genericTypes)
+					// }
 				}
 
-				// TODO: Equal or EqualDeref?
-				if !ddptypes.IsDereferencableTo(typ, underlyingParamType) {
+				// TODO: accurate matching inspite of numeric casts (i.e. Schreibe_Byte was chosen even though the parameter was ZAHL)
+				if !ddptypes.IsPasseableAsParam(argType, underlyingParamType, typechecker.IsAssignable(cached_arg.Arg)) {
 					return nil, nil, nil, reported_errors
 				}
 			}
@@ -531,7 +531,11 @@ func (p *parser) fillAndVerifyGenericStructInstantiationParams(structDecl *ast.S
 		}
 
 		if _, wasUnified := genericTypes[field.Type.String()]; !wasUnified {
-			genericTypes[field.Type.String()] = typechecker.TypeOfTypecheckedExpression(field.InitVal)
+			if field.InitVal == nil {
+				genericTypes[field.Type.String()] = nil
+			} else {
+				genericTypes[field.Type.String()] = field.InitVal.Type()
+			}
 		}
 	}
 

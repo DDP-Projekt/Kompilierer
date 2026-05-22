@@ -874,6 +874,77 @@ Ende`),
 	assert.Nil(funcInstantiation)
 	assert.Nil(structTypeInstantiation)
 	assert.IsType(&ast.IntLit{}, args["a"])
+
+	// with non-numeric type should match the reference version
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo ""`),
+	})
+	symbols = createSymbols("t", ddptypes.TEXT)
+	given.setScope(symbols)
+
+	Func = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.TEXT,
+			},
+		},
+	}
+
+	FuncRef = &ast.FuncDecl{
+		NameTok:    token.Token{Literal: "foo_ref"},
+		Mod:        given.module,
+		ReturnType: ddptypes.VoidType{},
+		Parameters: []ast.ParameterInfo{
+			{
+				Name: token.Token{Literal: "a"},
+				Type: ddptypes.ReferenceType{Type: ddptypes.TEXT},
+			},
+		},
+	}
+
+	g = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.TEXT,
+	})
+	g.(*ast.FuncAlias).Func = Func
+	given.aliases.Insert(g.GetKey(), g)
+
+	g_ref = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.TEXT},
+	})
+	g_ref.(*ast.FuncAlias).Func = FuncRef
+	given.aliases.Insert(g_ref.GetKey(), g_ref)
+
+	// should match the value version
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, funcInstantiation, structTypeInstantiation, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.Nil(funcInstantiation)
+	assert.Nil(structTypeInstantiation)
+	assert.IsType(&ast.StringLit{}, args["a"])
+
+	// test basic references
+
+	given = createParser(t, parser{
+		tokens: scanTokens(t, `foo i`),
+	})
+	symbols = createSymbols("i", ddptypes.ZAHL)
+	given.setScope(symbols)
+
+	g = scanAlias(t, `foo <a>`, map[string]ddptypes.Type{
+		"a": ddptypes.ReferenceType{Type: ddptypes.ZAHL},
+	})
+
+	cached_args = make(map[cachedArgKey]*cachedArg, 4)
+	args, _, _, errs = given.checkAlias(g, true, 0, cached_args)
+	assert.Empty(errs)
+	assert.NotEmpty(args)
+	assert.IsType(&ast.Ident{}, args["a"])
 }
 
 func TestGenericsFull(t *testing.T) {
@@ -908,4 +979,34 @@ Tausche kz und kz2.
 	call := given.alias().(*ast.FuncCall)
 	assert.False(given.errored)
 	assert.IsType(call, call)
+}
+
+func TestNumericCastsAliases(t *testing.T) {
+	assert := assert.New(t)
+
+	given := createParser(t, parser{
+		tokens: scanTokens(t, `
+Die Funktion foo_byte mit dem Parameter b vom Typ Byte, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <b>"
+
+Die Funktion foo_zahl mit dem Parameter z vom Typ Zahl, gibt nichts zurück, macht:
+Und kann so benutzt werden:
+	"foo <z>"
+
+Die Zahl z ist 2.
+foo z.
+		`),
+	})
+
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	foo_zahl := given.checkedDeclaration()
+	given.module.Ast.Statements = append(given.module.Ast.Statements, foo_zahl)
+	given.module.Ast.Statements = append(given.module.Ast.Statements, given.checkedDeclaration())
+	assert.False(given.errored)
+	assert.Equal(3, len(given.module.Ast.Statements))
+
+	call := given.alias().(*ast.FuncCall)
+	assert.False(given.errored)
+	assert.Same(foo_zahl.(*ast.DeclStmt).Decl.(*ast.FuncDecl), call.Func)
 }

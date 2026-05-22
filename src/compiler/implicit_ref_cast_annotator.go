@@ -9,13 +9,38 @@ import (
 )
 
 type ImplicitRefCastMeta struct {
-	FromRef bool // if false, the cast is to ref
+	// n > 0 -> needs n dereferences
+	// n < 0 -> needs abs(n) upcasts
+	// n == 0 -> needs no casts
+	n int
+}
+
+func (i ImplicitRefCastMeta) FromRef() bool {
+	return i.n > 0
+}
+
+func (i ImplicitRefCastMeta) ToRef() bool {
+	return i.n < 0
+}
+
+func (i ImplicitRefCastMeta) DerefLevel() uint {
+	if i.FromRef() {
+		return uint(i.n)
+	}
+	return 0
+}
+
+func (i ImplicitRefCastMeta) UpcastLevel() uint {
+	if i.ToRef() {
+		return uint(0 - i.n)
+	}
+	return 0
 }
 
 var _ ast.MetadataAttachment = ImplicitRefCastMeta{}
 
 func (m ImplicitRefCastMeta) String() string {
-	return fmt.Sprintf("ImplicitRefCastMeta(Deref: %v, Promote: %v)", m.FromRef, !m.FromRef)
+	return fmt.Sprintf("ImplicitRefCastMeta(%d)", m.n)
 }
 
 const ImplicitRefCastMetaKind ast.MetadataKind = "DDP_ImplicitRefCastMeta"
@@ -52,10 +77,6 @@ var (
 	_ ast.ReturnStmtVisitor   = (*ImplicitRefCastAnnotator)(nil)
 )
 
-func (a *ImplicitRefCastAnnotator) typeOf(expr ast.Expression) ddptypes.Type {
-	return typechecker.TypeOfTypecheckedExpression(expr)
-}
-
 func (a *ImplicitRefCastAnnotator) clearAnnotation(node ast.Node) {
 	if node == nil {
 		return
@@ -63,18 +84,19 @@ func (a *ImplicitRefCastAnnotator) clearAnnotation(node ast.Node) {
 	node.RemoveMetadataAttachment(ImplicitRefCastMetaKind)
 }
 
-func (a *ImplicitRefCastAnnotator) annotateFromRef(node ast.Node) {
+func (a *ImplicitRefCastAnnotator) annotateFromRef(node ast.Node, n uint) {
 	if node == nil {
 		return
 	}
-	node.SetMetadataAttachement(ImplicitRefCastMeta{FromRef: true})
+	node.SetMetadataAttachement(ImplicitRefCastMeta{n: int(n)})
 }
 
-func (a *ImplicitRefCastAnnotator) annotateToRef(node ast.Node) {
+func (a *ImplicitRefCastAnnotator) annotateToRef(node ast.Node, n uint) {
+	// commented out because we don't want implicit up-casts
 	if node == nil {
 		return
 	}
-	node.SetMetadataAttachement(ImplicitRefCastMeta{FromRef: false})
+	node.SetMetadataAttachement(ImplicitRefCastMeta{n: -int(n)})
 }
 
 func (a *ImplicitRefCastAnnotator) annotateDeref(expr ast.Expression) {
@@ -82,40 +104,43 @@ func (a *ImplicitRefCastAnnotator) annotateDeref(expr ast.Expression) {
 		return
 	}
 
-	if ddptypes.IsReference(a.typeOf(expr)) {
-		a.annotateFromRef(expr)
+	if _, _, level := ddptypes.CastReferenceLevel(expr.Type()); level > 0 {
+		a.annotateFromRef(expr, level)
 	}
 }
 
 func (a *ImplicitRefCastAnnotator) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	a.Visit(d.InitVal)
 	a.clearAnnotation(d.InitVal)
-	initDDPType := a.typeOf(d.InitVal)
-	if ddptypes.IsReferenceTo(d.Type, initDDPType) {
-		a.annotateToRef(d.InitVal)
-	} else if ddptypes.IsReferenceTo(initDDPType, d.Type) {
-		a.annotateFromRef(d.InitVal)
+	initDDPType := ddptypes.Type(nil)
+	if d.InitVal != nil {
+		initDDPType = d.InitVal.Type()
+	}
+	if level := ddptypes.IsReferenceToLevel(d.Type, initDDPType); level > 0 && d.InitVal != nil && !d.InitVal.HasMetadata(typechecker.AssigneableMetaKind) {
+		a.annotateToRef(d.InitVal, level)
+	} else if level := ddptypes.IsReferenceToLevel(initDDPType, d.Type); level > 0 {
+		a.annotateFromRef(d.InitVal, level)
 	}
 	return ast.VisitSkipChildren
 }
 
 func (a *ImplicitRefCastAnnotator) VisitIdent(e *ast.Ident) ast.VisitResult {
 	if varDecl, ok := e.Declaration.(*ast.VarDecl); ok && !ddptypes.IsReference(varDecl.Type) {
-		a.annotateFromRef(e)
+		a.annotateFromRef(e, 1)
 	}
 	return ast.VisitRecurse
 }
 
 // TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitListLit(e *ast.ListLit) ast.VisitResult {
-	elementType := a.typeOf(e).(ddptypes.ListType).ElementType
+	elementType := e.Type().(ddptypes.ListType).ElementType
 	if e.Values != nil {
 		for _, v := range e.Values {
-			t := a.typeOf(v)
-			if ddptypes.IsReferenceTo(elementType, t) {
-				a.annotateToRef(v)
-			} else if ddptypes.IsReferenceTo(t, elementType) {
-				a.annotateFromRef(v)
+			t := v.Type()
+			if level := ddptypes.IsReferenceToLevel(elementType, t); level > 0 {
+				// a.annotateToRef(v, level)
+			} else if level := ddptypes.IsReferenceToLevel(t, elementType); level > 0 {
+				a.annotateFromRef(v, level)
 			}
 		}
 	} else if e.Count != nil && e.Value != nil {
@@ -129,7 +154,9 @@ func (a *ImplicitRefCastAnnotator) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitRes
 		a.Visit(e.OverloadedBy.Call)
 		return ast.VisitSkipChildren
 	}
-	a.annotateDeref(e.Rhs)
+	if e.Operator != ast.UN_DEREF {
+		a.annotateDeref(e.Rhs)
+	}
 	return ast.VisitRecurse
 }
 
@@ -144,7 +171,7 @@ func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitR
 		a.Visit(e.Rhs)
 		a.annotateDeref(e.Rhs)
 		a.clearAnnotation(e.Lhs)
-		if !ddptypes.IsReference(a.typeOf(e.Lhs)) {
+		if !ddptypes.IsReference(e.Lhs.Type()) {
 			a.annotateDeref(e)
 		}
 		return ast.VisitSkipChildren
@@ -152,7 +179,7 @@ func (a *ImplicitRefCastAnnotator) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitR
 		a.Visit(e.Lhs)
 		a.Visit(e.Rhs)
 		a.clearAnnotation(e.Rhs)
-		if !ddptypes.IsReference(a.typeOf(e.Rhs)) {
+		if !ddptypes.IsReference(e.Rhs.Type()) {
 			a.annotateDeref(e)
 		}
 		return ast.VisitSkipChildren
@@ -180,7 +207,7 @@ func (a *ImplicitRefCastAnnotator) VisitCastExpr(e *ast.CastExpr) ast.VisitResul
 		return ast.VisitSkipChildren
 	}
 
-	if ddptypes.DeepEqual(a.typeOf(e.Lhs), e.TargetType) {
+	if ddptypes.DeepEqual(e.Lhs.Type(), e.TargetType) {
 		a.Visit(e.Lhs)
 		a.clearAnnotation(e.Lhs)
 		return ast.VisitSkipChildren
@@ -217,10 +244,10 @@ func (a *ImplicitRefCastAnnotator) VisitFuncCall(e *ast.FuncCall) ast.VisitResul
 			}
 		}
 
-		if ddptypes.IsReferenceTo(paramType, a.typeOf(expr)) {
-			a.annotateToRef(expr)
-		} else if ddptypes.IsReferenceTo(a.typeOf(expr), paramType) {
-			a.annotateFromRef(expr)
+		if level := ddptypes.IsReferenceToLevel(paramType, expr.Type()); level > 0 {
+			// a.annotateToRef(expr, level)
+		} else if level := ddptypes.IsReferenceToLevel(expr.Type(), paramType); level > 0 {
+			a.annotateFromRef(expr, level)
 		}
 	}
 	return ast.VisitSkipChildren
@@ -231,17 +258,17 @@ func (a *ImplicitRefCastAnnotator) VisitStructLiteral(e *ast.StructLiteral) ast.
 		a.Visit(expr)
 		a.clearAnnotation(expr)
 		var paramType ddptypes.Type
-		for _, field := range e.Type.Fields {
+		for _, field := range e.StructType.Fields {
 			if field.Name == k {
 				paramType = field.Type
 				break
 			}
 		}
 
-		if ddptypes.IsReferenceTo(paramType, a.typeOf(expr)) {
-			a.annotateToRef(expr)
-		} else if ddptypes.IsReferenceTo(a.typeOf(expr), paramType) {
-			a.annotateFromRef(expr)
+		if level := ddptypes.IsReferenceToLevel(paramType, expr.Type()); level > 0 {
+			// a.annotateToRef(expr, level)
+		} else if level := ddptypes.IsReferenceToLevel(expr.Type(), paramType); level > 0 {
+			a.annotateFromRef(expr, level)
 		}
 	}
 	return ast.VisitRecurse
@@ -252,18 +279,11 @@ func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitR
 	a.Visit(s.Rhs)
 	a.clearAnnotation(s.Var)
 	a.clearAnnotation(s.Rhs)
-	varType, rhsType := a.typeOf(s.Var), a.typeOf(s.Rhs)
+	varType, rhsType := s.Var.Type(), s.Rhs.Type()
 
-	// 	if ddptypes.IsDirectReferenceTo(varType, rhsType) {
-	// 		return ast.VisitSkipChildren
-	// 	}
-
-	_, varType, ok := ddptypes.CastReference(varType)
-	if !ok {
-		varType = ddptypes.Deref(varType)
-	}
-	if ddptypes.IsReferenceTo(rhsType, varType) {
-		a.annotateFromRef(s.Rhs)
+	// varType = ddptypes.Deref(varType)
+	if level := ddptypes.IsReferenceToLevel(rhsType, varType); level > 0 {
+		a.annotateFromRef(s.Rhs, level)
 	}
 	return ast.VisitSkipChildren
 }
@@ -291,11 +311,11 @@ func (a *ImplicitRefCastAnnotator) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Vi
 
 // TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
-	t := a.typeOf(s.Value)
-	if ddptypes.IsReferenceTo(s.Func.ReturnType, t) {
-		a.annotateToRef(s.Value)
-	} else if ddptypes.IsReferenceTo(t, s.Func.ReturnType) {
-		a.annotateFromRef(s.Value)
+	t := s.Value.Type()
+	if level := ddptypes.IsReferenceToLevel(s.Func.ReturnType, t); level > 0 {
+		a.annotateToRef(s.Value, level)
+	} else if level := ddptypes.IsReferenceToLevel(t, s.Func.ReturnType); level > 0 {
+		a.annotateFromRef(s.Value, level)
 	}
 	return ast.VisitRecurse
 }

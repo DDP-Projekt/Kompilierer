@@ -28,3 +28,6 @@ Welt
 3
 bar
 bar2
+foo
+nicht foo
+auch nicht foo

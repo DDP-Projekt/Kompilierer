@@ -234,8 +234,12 @@ func (c *compiler) compare_values(lhs, rhs llvm.Value, typ ddpIrType) llvm.Value
 	case c.ddpfloattyp:
 		c.builder().latestReturn.irVal = c.builder().CreateFCmp(llvm.FloatOEQ, lhs, rhs, "")
 	default:
-		equalsFunc := typ.EqualsFunc()
-		c.builder().latestReturn.irVal = c.builder().createCall(equalsFunc, lhs, rhs)
+		if _, isRef := typ.(*ddpIrReferenceType); isRef {
+			c.builder().latestReturn.irVal = c.builder().CreateICmp(llvm.IntEQ, lhs, rhs, "")
+		} else {
+			equalsFunc := typ.EqualsFunc()
+			c.builder().latestReturn.irVal = c.builder().createCall(equalsFunc, lhs, rhs)
+		}
 	}
 	c.builder().latestReturn.typ = c.ddpbooltyp
 	return c.builder().latestReturn.irVal

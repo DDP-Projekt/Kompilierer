@@ -170,27 +170,47 @@ func IsReference(t Type) bool {
 	return ok
 }
 
-func CastReference(t Type) (ReferenceType, Type, bool) {
-	reference, isRef := GetUnderlying(t).(ReferenceType)
-	for ref, ok := reference, isRef; ok; ref, ok = GetUnderlying(t).(ReferenceType) {
+func CastReferenceLevel(t Type) (ReferenceType, Type, uint) {
+	level := uint(0)
+	reference, isRef := TrueUnderlying(t).(ReferenceType)
+	for ref, ok := reference, isRef; ok; ref, ok = TrueUnderlying(t).(ReferenceType) {
+		level++
 		t = ref.Type
 	}
-	return reference, t, isRef
+	return reference, t, level
 }
 
-func RefDepth(t Type) (result int) {
-	r, _, isRef := CastReference(t)
-	for isRef {
-		result++
-		r, _, isRef = CastReference(r.Type)
+func CastReference(t Type) (ReferenceType, Type, bool) {
+	reference, t, level := CastReferenceLevel(t)
+	return reference, t, level > 0
+}
+
+func RefDepth(t Type) uint {
+	_, _, level := CastReferenceLevel(t)
+	return level
+}
+
+// how many levels of reference a is to b
+func IsReferenceToLevel(a, b Type) uint {
+	level := uint(0)
+	reference, isRef := GetUnderlying(a).(ReferenceType)
+	for ref, ok := reference, isRef; ok; ref, ok = GetUnderlying(a).(ReferenceType) {
+		level++
+		a = ref.Type
+		if Equal(a, b) {
+			return level
+		}
 	}
-	return result
+
+	if Equal(a, b) {
+		return level
+	}
+	return 0
 }
 
 // wether a is a reference to b
 func IsReferenceTo(a, b Type) bool {
-	_, aType, isARef := CastReference(a)
-	return isARef && Equal(aType, b)
+	return IsReferenceToLevel(a, b) > 0
 }
 
 func IsDirectReferenceTo(a, b Type) bool {
@@ -211,6 +231,19 @@ func IsDereferencableTo(a, b Type) bool {
 		aRef, _, isaRef = CastReference(aRef.Type)
 	}
 	return false
+}
+
+func IsAssigneableTo(t, target Type) bool {
+	numericCastPossible := IsNumericDeref(t) && IsNumericDeref(target)
+	return IsDereferencableTo(t, target) || IsDirectReferenceTo(target, t) || numericCastPossible || EqualDeref(target, VARIABLE)
+}
+
+func IsPasseableAsParam(argType, paramType Type, isArgAssigneable bool) bool {
+	passable := IsDereferencableTo(argType, paramType) || IsDirectReferenceTo(argType, paramType) || EqualDeref(paramType, VARIABLE)
+	if !passable && !IsReference(argType) && isArgAssigneable {
+		return IsPasseableAsParam(ReferenceType{Type: argType}, paramType, false)
+	}
+	return passable
 }
 
 // gets the underlying type for nested lists and References

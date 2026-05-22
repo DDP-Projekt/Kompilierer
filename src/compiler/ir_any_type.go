@@ -56,13 +56,9 @@ func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
-func (t *ddpIrAnyType) PtrMask() [32]uint8 {
-	return [32]uint8{} // special case for any
-}
-
 // TODO: how to handle this if any may or may not contain a gc pointer?
-func (*ddpIrAnyType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
-	return nil, nil
+func (*ddpIrAnyType) LoadLives(*compiler, llvm.Value) []llvm.Value {
+	return nil
 }
 
 func (c *compiler) defineAnyType() *ddpIrAnyType {

@@ -159,7 +159,8 @@ type (
 
 	Expression interface {
 		Node
-		expressionNode() // dummy function for the interface
+		expressionNode()     // dummy function for the interface
+		Type() ddptypes.Type // returns the expression Type if this node was already typechecked
 	}
 
 	Statement interface {

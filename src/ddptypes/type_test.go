@@ -569,8 +569,72 @@ func TestIsDereferencableTo(t *testing.T) {
 func TestRefDepth(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Equal(RefDepth(ZAHL), 0)
-	assert.Equal(RefDepth(ReferenceType{Type: ZAHL}), 1)
-	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ZAHL}}), 2)
-	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ListType{ElementType: ReferenceType{Type: ZAHL}}}}), 2)
+	assert.Equal(RefDepth(ZAHL), uint(0))
+	assert.Equal(RefDepth(ReferenceType{Type: ZAHL}), uint(1))
+	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ZAHL}}), uint(2))
+	assert.Equal(RefDepth(ReferenceType{ReferenceType{Type: ListType{ElementType: ReferenceType{Type: ZAHL}}}}), uint(2))
+	assert.Equal(RefDepth(ReferenceType{&TypeDef{Underlying: ReferenceType{Type: ListType{ElementType: ReferenceType{Type: ZAHL}}}}}), uint(2))
+}
+
+func TestIsReferenceTo(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.True(IsReferenceTo(ReferenceType{Type: ZAHL}, ZAHL))
+	assert.True(IsReferenceTo(ReferenceType{Type: ReferenceType{Type: ZAHL}}, ZAHL))
+	assert.True(IsReferenceTo(ReferenceType{Type: ReferenceType{Type: ZAHL}}, ReferenceType{Type: ZAHL}))
+
+	assert.False(IsReferenceTo(ReferenceType{Type: ZAHL}, TEXT))
+	assert.False(IsReferenceTo(ReferenceType{Type: ReferenceType{Type: TEXT}}, ZAHL))
+	assert.False(IsReferenceTo(ReferenceType{Type: ReferenceType{Type: TEXT}}, ReferenceType{Type: ZAHL}))
+}
+
+func TestIsAssigneableTo(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.True(IsAssigneableTo(ZAHL, ZAHL))
+	assert.True(IsAssigneableTo(ZAHL, ReferenceType{Type: ZAHL}))
+	assert.True(IsAssigneableTo(ReferenceType{ZAHL}, ReferenceType{Type: ZAHL}))
+	assert.True(IsAssigneableTo(ReferenceType{ZAHL}, ZAHL))
+	assert.True(IsAssigneableTo(ZAHL, VARIABLE))
+	assert.True(IsAssigneableTo(ZAHL, ReferenceType{Type: VARIABLE}))
+
+	// numeric casts
+	assert.True(IsAssigneableTo(ZAHL, KOMMAZAHL))
+	assert.True(IsAssigneableTo(ZAHL, BYTE))
+	assert.True(IsAssigneableTo(KOMMAZAHL, BYTE))
+
+	// errors
+	assert.False(IsAssigneableTo(ZAHL, TEXT))
+	assert.False(IsAssigneableTo(ZAHL, ReferenceType{Type: TEXT}))
+	assert.False(IsAssigneableTo(VARIABLE, ZAHL))
+}
+
+func TestIsPasseableAsParam(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.True(IsPasseableAsParam(ZAHL, ZAHL, false))
+	assert.True(IsPasseableAsParam(ReferenceType{Type: ZAHL}, ZAHL, false))
+	assert.True(IsPasseableAsParam(ReferenceType{ZAHL}, ReferenceType{Type: ZAHL}, false))
+	assert.True(IsPasseableAsParam(ZAHL, VARIABLE, false))
+	assert.True(IsPasseableAsParam(VARIABLE, VARIABLE, false))
+	assert.True(IsPasseableAsParam(ZAHL, ReferenceType{Type: VARIABLE}, false))
+	// assert.True(IsPasseableAsParam(ReferenceType{Type: VARIABLE}, ZAHL))
+
+	// TODO: commented out as there are matching issues with getting the most fitting function in alias()
+	// numeric casts
+	// assert.True(IsPasseableAsParam(ZAHL, KOMMAZAHL))
+	// assert.True(IsPasseableAsParam(ZAHL, BYTE))
+	// assert.True(IsPasseableAsParam(KOMMAZAHL, BYTE))
+	// assert.True(IsPasseableAsParam(KOMMAZAHL, ZAHL))
+	// assert.True(IsPasseableAsParam(BYTE, KOMMAZAHL))
+	// assert.True(IsPasseableAsParam(BYTE, ZAHL))
+
+	assert.False(IsPasseableAsParam(ZAHL, ReferenceType{Type: ZAHL}, false))
+	assert.True(IsPasseableAsParam(ZAHL, ReferenceType{Type: ZAHL}, true))
+
+	// errors
+	assert.False(IsPasseableAsParam(ZAHL, ReferenceType{Type: ZAHL}, false))
+	assert.False(IsPasseableAsParam(ZAHL, TEXT, false))
+	assert.False(IsPasseableAsParam(ZAHL, ReferenceType{Type: TEXT}, false))
+	assert.False(IsPasseableAsParam(VARIABLE, ZAHL, false))
 }

@@ -78,16 +78,8 @@ func (t *ddpIrListType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
-func (t *ddpIrListType) PtrMask() [32]uint8 {
-	return [32]uint8{0b100}
-}
-
-func (t *ddpIrListType) LoadLivesAndRestores(c *compiler, list llvm.Value) ([]llvm.Value, []llvm.Value) {
-	return []llvm.Value{
-			c.loadStructField(t.LLType(), list, list_arr_field_index),
-		}, []llvm.Value{
-			{},
-		}
+func (t *ddpIrListType) LoadLives(c *compiler, list llvm.Value) []llvm.Value {
+	return []llvm.Value{c.loadStructField(t.LLType(), list, list_arr_field_index)}
 }
 
 // defines the struct of a list type

@@ -14,38 +14,6 @@ type GenericInstantiator interface {
 	InstantiateGenericFunction(*ast.FuncDecl, map[string]ddptypes.Type) (*ast.FuncDecl, []ddperror.Error)
 }
 
-type TypeMeta struct {
-	t ddptypes.Type
-}
-
-func NewTypeMeta(t ddptypes.Type) TypeMeta {
-	return TypeMeta{t: t}
-}
-
-var _ ast.MetadataAttachment = TypeMeta{}
-
-func (t TypeMeta) String() string {
-	return fmt.Sprintf("TypeMeta(%s)", t.t)
-}
-
-const TypeMetaKind ast.MetadataKind = "DDP_TypeMeta"
-
-func (t TypeMeta) Kind() ast.MetadataKind {
-	return TypeMetaKind
-}
-
-// if expr was typechecked, returns the type of expr
-func TypeOfTypecheckedExpression(expr ast.Expression) ddptypes.Type {
-	if expr == nil {
-		return nil
-	}
-
-	if att, ok := expr.GetMetadataByKind(TypeMetaKind); ok {
-		return att.(TypeMeta).t
-	}
-	return nil
-}
-
 // holds state to check if the types of an AST are valid
 //
 // even though it is a visitor, it should not be used seperately from the parser
@@ -93,7 +61,6 @@ func (t *Typechecker) visit(node ast.Node) {
 // Evaluates the type of an expression
 func (t *Typechecker) Evaluate(expr ast.Expression) ddptypes.Type {
 	t.visit(expr)
-	expr.SetMetadataAttachement(TypeMeta{t: t.latestReturnedType})
 	return t.latestReturnedType
 }
 
@@ -161,14 +128,18 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 		initialType = t.Evaluate(decl.InitVal)
 	}
 
-	typesDontMatch := !ddptypes.IsGenericDeref(decl.Type) && !ddptypes.EqualDeref(initialType, decl.Type) && (!ddptypes.EqualDeref(decl.Type, ddptypes.VARIABLE) || ddptypes.EqualDeref(initialType, ddptypes.VoidType{}))
-	numericCastPossible := ddptypes.IsNumericDeref(decl.Type) && ddptypes.IsNumericDeref(initialType)
+	// typesDontMatch := !ddptypes.IsGenericDeref(decl.Type) && !ddptypes.EqualDeref(initialType, decl.Type) && (!ddptypes.EqualDeref(decl.Type, ddptypes.VARIABLE) || ddptypes.EqualDeref(initialType, ddptypes.VoidType{}))
+	// numericCastPossible := ddptypes.IsNumericDeref(decl.Type) && ddptypes.IsNumericDeref(initialType)
 
-	if typesDontMatch && !numericCastPossible {
+	if !ddptypes.IsAssigneableTo(initialType, decl.Type) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
 		)
+	}
+
+	if decl.InitVal != nil && ddptypes.IsReference(decl.Type) {
+		markAssigneable(decl.InitVal, initialType)
 	}
 
 	if decl.Public() && !IsPublicType(decl.Type, t.CurrentTable) {
@@ -250,9 +221,11 @@ func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
 	} else {
 		switch decl := decl.(type) {
 		case *ast.VarDecl:
-			t.latestReturnedType = ddptypes.ReferenceType{Type: decl.Type}
+			t.latestReturnedType = decl.Type
+			expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
 		case *ast.ConstDecl:
 			t.latestReturnedType = decl.Type
+			expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
 		default:
 			t.latestReturnedType = ddptypes.VoidType{}
 		}
@@ -286,7 +259,6 @@ func (t *Typechecker) VisitStringLit(expr *ast.StringLit) ast.VisitResult {
 }
 
 func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
-	listType := TypeOfTypecheckedExpression(expr)
 	if expr.Values != nil {
 		elementType := t.Evaluate(expr.Values[0])
 		for _, v := range expr.Values[1:] {
@@ -294,15 +266,15 @@ func (t *Typechecker) VisitListLit(expr *ast.ListLit) ast.VisitResult {
 				t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, v, "Falscher Typ (%s) in Listen Literal vom Typ %s", ty, elementType)
 			}
 		}
-		listType = ddptypes.ListType{ElementType: elementType}
+		expr.Typ = ddptypes.ListType{ElementType: elementType}
 	} else if expr.Count != nil && expr.Value != nil {
 		if count := t.Evaluate(expr.Count); !ddptypes.EqualDeref(count, ddptypes.ZAHL) && !ddptypes.EqualDeref(count, ddptypes.BYTE) {
 			t.errExpr(ddperror.TYP_BAD_LIST_LITERAL, expr, "Die Größe einer Liste muss als Zahl oder Byte angegeben werden, nicht als %s", count)
 		}
 
-		listType = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
+		expr.Typ = ddptypes.ListType{ElementType: t.Evaluate(expr.Value)}
 	}
-	t.latestReturnedType = listType
+	t.latestReturnedType = expr.Typ
 	return ast.VisitRecurse
 }
 
@@ -313,6 +285,7 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 	if overload := t.findOverload(expr, expr.Operator, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
 		t.latestReturnedType = overload.Call.Func.ReturnType
+		expr.Typ = t.latestReturnedType
 		return ast.VisitRecurse
 	}
 
@@ -341,9 +314,16 @@ func (t *Typechecker) VisitUnaryExpr(expr *ast.UnaryExpr) ast.VisitResult {
 		}
 
 		t.latestReturnedType = ddptypes.ZAHL
+	case ast.UN_DEREF:
+		if !ddptypes.IsReference(rhs) {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr, "Der %s Operator erwartet eine Referenz als Operanden, nicht %s", ast.UN_DEREF, rhs)
+		}
+
+		t.latestReturnedType = ddptypes.Deref(rhs)
 	default:
 		panic(fmt.Errorf("unbekannter unärer Operator '%s'", expr.Operator))
 	}
+	expr.Typ = t.latestReturnedType
 	return ast.VisitRecurse
 }
 
@@ -354,6 +334,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	if overload := t.findOverload(expr, expr.Operator, operand{lhs, expr.Lhs}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
 		t.latestReturnedType = overload.Call.Func.ReturnType
+		expr.Typ = t.latestReturnedType
 		return ast.VisitRecurse
 	}
 
@@ -401,7 +382,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 		if ddptypes.IsListDeref(lhs) {
 			t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
 			if ddptypes.IsReference(lhs) {
-				t.latestReturnedType = ddptypes.ReferenceType{Type: t.latestReturnedType}
+				t.latestReturnedType = ddptypes.ReferenceType{Type: t.latestReturnedType} // TODO
 			}
 		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
@@ -462,6 +443,7 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 	default:
 		panic(fmt.Errorf("unbekannter binärer Operator '%s'", expr.Operator))
 	}
+	expr.Typ = t.latestReturnedType
 	return ast.VisitRecurse
 }
 
@@ -473,6 +455,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	if overload := t.findOverload(expr, expr.Operator, operand{lhs, expr.Lhs}, operand{mid, expr.Mid}, operand{rhs, expr.Rhs}); overload != nil {
 		expr.OverloadedBy = overload
 		t.latestReturnedType = overload.Call.Func.ReturnType
+		expr.Typ = t.latestReturnedType
 		return ast.VisitRecurse
 	}
 
@@ -516,6 +499,7 @@ func (t *Typechecker) VisitTernaryExpr(expr *ast.TernaryExpr) ast.VisitResult {
 	default:
 		panic(fmt.Errorf("unbekannter ternärer Operator '%s'", expr.Operator))
 	}
+	expr.Typ = t.latestReturnedType
 	return ast.VisitRecurse
 }
 
@@ -626,6 +610,7 @@ func (t *Typechecker) VisitTypeOpExpr(expr *ast.TypeOpExpr) ast.VisitResult {
 	default:
 		panic(fmt.Errorf("unbekannter Typ-Operator '%s'", expr.Operator))
 	}
+	expr.Typ = t.latestReturnedType
 	return ast.VisitRecurse
 }
 
@@ -648,14 +633,15 @@ func (t *Typechecker) VisitTypeCheck(expr *ast.TypeCheck) ast.VisitResult {
 
 func (t *Typechecker) VisitGrouping(expr *ast.Grouping) ast.VisitResult {
 	t.Evaluate(expr.Expr)
+	expr.Typ = t.latestReturnedType
 	return ast.VisitRecurse
 }
 
 func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 	decl := callExpr.Func
 
-	for k, expr := range callExpr.Args {
-		argType := t.Evaluate(expr)
+	for k, arg := range callExpr.Args {
+		argType := t.Evaluate(arg)
 
 		var paramType ddptypes.Type
 		for _, param := range decl.Parameters {
@@ -665,14 +651,20 @@ func (t *Typechecker) VisitFuncCall(callExpr *ast.FuncCall) ast.VisitResult {
 			}
 		}
 
-		if !ddptypes.Equal(argType, paramType) && !ddptypes.IsDereferencableTo(argType, paramType) {
-			t.errExpr(ddperror.TYP_TYPE_MISMATCH, expr,
+		isAssigneable := IsAssignable(arg)
+
+		if !ddptypes.IsPasseableAsParam(argType, paramType, isAssigneable) {
+			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
 				"Die Funktion %s erwartet einen Wert vom Typ %s für den Parameter %s, aber hat %s bekommen",
 				callExpr.Name,
 				paramType,
 				k,
 				argType,
 			)
+		}
+
+		if isAssigneable && !ddptypes.IsReference(argType) && ddptypes.IsReference(paramType) {
+			markAssigneable(arg, argType)
 		}
 	}
 
@@ -685,14 +677,16 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 		argType := t.Evaluate(arg)
 
 		var paramType ddptypes.Type
-		for _, field := range expr.Type.Fields {
+		for _, field := range expr.StructType.Fields {
 			if field.Name == argName {
 				paramType = field.Type
 				break
 			}
 		}
 
-		if !ddptypes.Equal(ddptypes.Deref(argType), paramType) {
+		isAssigneable := IsAssignable(arg)
+
+		if !ddptypes.IsPasseableAsParam(argType, paramType, isAssigneable) {
 			t.errExpr(ddperror.TYP_TYPE_MISMATCH, arg,
 				"Die Struktur %s erwartet einen Wert vom Typ %s für das Feld %s, aber hat %s bekommen",
 				expr.Struct.Name(),
@@ -701,9 +695,13 @@ func (t *Typechecker) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResul
 				argType,
 			)
 		}
+
+		if isAssigneable && !ddptypes.IsReference(argType) && ddptypes.IsReference(paramType) {
+			markAssigneable(arg, argType)
+		}
 	}
 
-	t.latestReturnedType = expr.Type
+	t.latestReturnedType = expr.StructType
 	return ast.VisitRecurse
 }
 
@@ -731,33 +729,29 @@ func (t *Typechecker) VisitAssignStmt(stmt *ast.AssignStmt) ast.VisitResult {
 	target := t.Evaluate(stmt.Var)
 
 	isStringIndexing := false
-	if bin, isBin := stmt.Var.(*ast.BinaryExpr); isBin && bin.Operator == ast.BIN_INDEX && ddptypes.Equal(target, ddptypes.BUCHSTABE) && ddptypes.EqualDeref(TypeOfTypecheckedExpression(bin.Lhs), ddptypes.TEXT) {
+	if bin, isBin := stmt.Var.(*ast.BinaryExpr); isBin && bin.Operator == ast.BIN_INDEX && ddptypes.Equal(target, ddptypes.BUCHSTABE) && ddptypes.EqualDeref(bin.Lhs.Type(), ddptypes.TEXT) {
 		stmt.Var.SetMetadataAttachement(ast.StringIndexingMeta{}) // mark the string indexing
 		isStringIndexing = true
 	}
 
-	targetRef, _, isTargetRef := ddptypes.CastReference(target)
-	if !isTargetRef && !isStringIndexing {
-		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
-			"Ein Wert vom Typ %s kann keinem Wert vom Typ %s zugewiesen werden, da dieser kein Referenz Typ ist",
-			rhs,
-			target,
-		)
-		return ast.VisitRecurse
-	}
+	targetAssigneable := IsAssignable(stmt.Var)
 
-	numericCastPossible := ddptypes.IsNumericDeref(target) && ddptypes.IsNumericDeref(rhs)
 	if isStringIndexing {
 		if !ddptypes.EqualDeref(rhs, ddptypes.BUCHSTABE) {
 			t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs, "Ein Wert von Typ %s kann keinem Buchstaben eines Textes zugewiesen werden", rhs)
 		}
-		return ast.VisitRecurse
-	} else if !ddptypes.IsReferenceTo(target, rhs) && !(ddptypes.IsDereferencableTo(rhs, targetRef.Type)) && !numericCastPossible && !ddptypes.EqualDeref(target, ddptypes.VARIABLE) {
+	} else if !targetAssigneable {
+		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Var, "Diesem Ausdruck kann nichts zugewiesen werden")
+	} else if !ddptypes.IsAssigneableTo(rhs, target) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT, stmt.Rhs,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden",
 			rhs,
 			target,
 		)
+	}
+
+	if targetAssigneable {
+		markAssigneable(stmt.Var, rhs)
 	}
 
 	return ast.VisitRecurse
@@ -942,7 +936,7 @@ func (t *Typechecker) checkFieldAccess(Lhs *ast.Ident, originalType ddptypes.Typ
 		}
 	}
 
-	return ddptypes.ReferenceType{Type: fieldType}
+	return fieldType
 }
 
 // reports wether the given type from this module of the given table is public
@@ -1020,6 +1014,7 @@ overload_loop:
 
 		// early return for normal overloads
 		if !ast.IsGeneric(overload) {
+			t.VisitFuncCall(operator_overload.Call) // to also add assigneable metadata
 			return operator_overload
 		}
 
@@ -1030,6 +1025,7 @@ overload_loop:
 		}
 
 		operator_overload.Call.Func = instantiation
+		t.VisitFuncCall(operator_overload.Call) // to also add assigneable metadata
 		return operator_overload
 	}
 	return nil
@@ -1082,6 +1078,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 
 		// early return for normal overloads
 		if !ast.IsGeneric(overload) {
+			t.VisitFuncCall(operator_overload.Call) // to also add assigneable metadata
 			return operator_overload
 		}
 
@@ -1091,6 +1088,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 		}
 
 		operator_overload.Call.Func = instantiation
+		t.VisitFuncCall(operator_overload.Call) // to also add assigneable metadata
 		return operator_overload
 	}
 	return nil

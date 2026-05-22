@@ -11,8 +11,7 @@ import (
 // calculates the size of the given type
 // and returns it as i64
 func (c *compiler) sizeof(typ llvm.Type) llvm.Value {
-	size_ptr := c.builder().CreateGEP(typ, c.Null, []llvm.Value{c.newIntT(c.i32, 1)}, "")
-	return c.builder().CreatePtrToInt(size_ptr, c.i64, "")
+	return c.newInt(int64(c.llTargetData.TypeStoreSize(typ)))
 }
 
 func (c *compiler) floatOrByteAsInt(src llvm.Value, from ddpIrType) llvm.Value {

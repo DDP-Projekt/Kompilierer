@@ -31,6 +31,7 @@ type Annotator Visitor
 type MetadataAnnotated interface {
 	GetMetadata() Metadata
 	GetMetadataByKind(MetadataKind) (MetadataAttachment, bool)
+	HasMetadata(MetadataKind) bool
 	SetMetadataAttachement(MetadataAttachment)
 	RemoveMetadataAttachment(MetadataKind)
 }
@@ -45,6 +46,11 @@ func (md *Metadata) GetMetadataByKind(kind MetadataKind) (MetadataAttachment, bo
 	}
 	att, ok := md.Attachments[kind]
 	return att, ok
+}
+
+func (md *Metadata) HasMetadata(kind MetadataKind) bool {
+	_, ok := md.GetMetadataByKind(kind)
+	return ok
 }
 
 func (md *Metadata) SetMetadataAttachement(attachment MetadataAttachment) {

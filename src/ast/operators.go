@@ -45,6 +45,7 @@ const (
 	UN_NEGATE                  // -
 	UN_NOT                     // nicht
 	UN_LOGIC_NOT               // logisch nicht
+	UN_DEREF                   // Wert von
 	un_end                     // unexported constant to enable looping over all values
 )
 
@@ -60,6 +61,8 @@ func (op UnaryOperator) String() string {
 		return "nicht"
 	case UN_LOGIC_NOT:
 		return "logisch nicht"
+	case UN_DEREF:
+		return "Wert"
 	}
 	panic(fmt.Errorf("unbekannter unärer Operator %d", op))
 }

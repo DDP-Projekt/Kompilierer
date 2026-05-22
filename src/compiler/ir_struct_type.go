@@ -18,7 +18,6 @@ type ddpIrStructType struct {
 	freeIrFun     llvm.Value // the free ir func
 	deepCopyIrFun llvm.Value // the deepCopy ir func
 	equalsIrFun   llvm.Value // the equals ir func
-	ptrmask       [32]uint8
 	listType      *ddpIrListType
 }
 
@@ -60,13 +59,50 @@ func (t *ddpIrStructType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
-func (t *ddpIrStructType) PtrMask() [32]uint8 {
-	return t.ptrmask
+// TODO: load struct fields recursively
+func (t *ddpIrStructType) LoadLives(c *compiler, v llvm.Value) []llvm.Value {
+	lives := make([]llvm.Value, 0, min(len(t.fieldIrTypes), 4))
+
+	for i, field := range t.fieldIrTypes {
+		lives = append(lives, field.LoadLives(c, c.indexStruct(t.typ, v, i))...)
+	}
+
+	return lives
 }
 
-// TODO: load struct fields recursively (maybe use ptrmask)
-func (t *ddpIrStructType) LoadLivesAndRestores(c *compiler, v llvm.Value) ([]llvm.Value, []llvm.Value) {
-	return nil, nil
+// iterate struct fields recursively
+func (c *compiler) iterateFieldOffsets(t *ddpIrStructType, initialOffset uint64, f func(ddpIrType, uint64)) {
+	for i, field := range t.fieldIrTypes {
+		fieldOffset := c.llTargetData.ElementOffset(t.typ, i) + initialOffset
+		fieldDDPType := field.DDPType()
+		f(field, fieldOffset)
+
+		if ddptypes.IsStruct(fieldDDPType) {
+			c.iterateFieldOffsets(field.(*ddpIrStructType), fieldOffset, f)
+		}
+	}
+}
+
+func (c *compiler) computePtrMask(t *ddpIrStructType) llvm.Value {
+	bitmap_set_bit := func(bitmap []uint8, index int) {
+		bitmap[index/8] |= 1 << (index % 8)
+	}
+
+	ptrMask := make([]uint8, 32)
+
+	c.iterateFieldOffsets(t, 0, func(field ddpIrType, fieldOffset uint64) {
+		fieldDDPType := field.DDPType()
+		if ddptypes.IsReference(fieldDDPType) || ddptypes.IsList(fieldDDPType) {
+			bitmap_set_bit(ptrMask, int(fieldOffset)/8)
+		}
+	})
+
+	irPtrMask := make([]llvm.Value, 32)
+	for i, byte := range ptrMask {
+		irPtrMask[i] = c.newIntT(c.i8, int64(byte))
+	}
+
+	return llvm.ConstArray(c.i8, irPtrMask)
 }
 
 func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
@@ -100,6 +136,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	// we only declare it's functions as they are defined in it's own module
 	declarationOnly := c.typeMap[typ] != c.ddpModule
 
+	// ptrMask := [32]uint8{}
+
 	structType := &ddpIrStructType{}
 	structType.name = name
 	structType.ddpType = typ
@@ -108,6 +146,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 		if fieldStructType, isStruct := ddptypes.CastStruct(ddptypes.ListTrueUnderlying(field.Type)); isStruct {
 			c.defineOrDeclareStructType(fieldStructType)
 		}
+
+		// c.llTargetData.ElementOffset(structType.typ)
 
 		return c.toIrType(field.Type)
 	})
@@ -132,7 +172,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,
-			c.zeroPtrMask, // TODO: compute ptrmask
+			c.computePtrMask(structType), // TODO: compute ptrmask
 		}))
 	}
 

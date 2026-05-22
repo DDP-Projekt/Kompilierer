@@ -124,8 +124,8 @@ func newLLTypes(llctx llvm.Context) llTypes {
 }
 
 type llConstants struct {
-	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null /*NullGC,*/, zeroPtrMask, listPtrMask, refPtrMask llvm.Value
-	resultIntrinsicID                                                                                                                uint
+	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, zeroPtrMask, listPtrMask, refPtrMask llvm.Value
+	resultIntrinsicID                                                                                                    uint
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -429,11 +429,20 @@ func newImmediate(irVal llvm.Value, typ ddpIrType) ddpValue {
 	return ddpValue{irVal: irVal, typ: typ, isImmediate: true, isStackRef: false}
 }
 
-// helper to evaluate an expression and return its ir value and type
-// the  bool signals wether the returned value is a temporary value that can be claimed
-// or if it is a 'reference' to a variable that must be copied
-func (c *compiler) evaluate(expr ast.Expression) ddpValue {
-	return c.evaluateNumeric(expr, nil)
+// wether expr gets implicitly dereferenced as annotated
+func (c *compiler) isDereferencedImplicitly(expr ast.Expression) uint {
+	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
+		return att.(ImplicitRefCastMeta).DerefLevel()
+	}
+	return 0
+}
+
+// wether expr gets implicitly dereferenced as annotated
+func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) uint {
+	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
+		return att.(ImplicitRefCastMeta).UpcastLevel()
+	}
+	return 0
 }
 
 // helper to evaluate an expression and return its ir value and type
@@ -443,31 +452,37 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 	c.visitNode(expr)
 	latest := c.builder().latestReturn
 
-	if c.isDereferencedImplicitly(expr) {
-		if refType, ok := latest.typ.(*ddpIrReferenceType); ok {
-			latest.typ = c.toIrType(refType.ddpType.Type)
+	if level := c.isDereferencedImplicitly(expr); level > 0 {
+		for ; level > 0; level-- {
+			if refType, ok := latest.typ.(*ddpIrReferenceType); ok {
+				latest.typ = refType.underlying
 
-			if latest.typ.TriviallyCopyable() {
-				latest.irVal = c.builder().CreateLoad(latest.typ.LLType(), latest.irVal, "")
-			} else {
-				// just make sure the latest.irValue is treated as a temporary
-				latest.isImmediate = false
+				if latest.typ.TriviallyCopyable() || level > 1 {
+					latest.irVal = c.builder().CreateLoad(latest.typ.LLType(), latest.irVal, "")
+				} else {
+					// just make sure the latest.irValue is not treated as a temporary
+					latest.isImmediate = false
+				}
+
+				c.builder().latestReturn = latest
 			}
-
-			c.builder().latestReturn = latest
 		}
 		if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
 			return newNonImmediate(c.numericCast(latest.irVal, latest.typ, to), to)
 		}
 		return latest
-	} else if c.isPromotedToRefImplicitly(expr) {
-		if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
-			latest.irVal, latest.typ, latest.isImmediate = c.numericCast(latest.irVal, latest.typ, to), to, false
+	} else if level := c.isPromotedToRefImplicitly(expr); level > 0 {
+		for range level {
+			if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
+				latest.irVal, latest.typ, latest.isImmediate = c.numericCast(latest.irVal, latest.typ, to), to, false
+			}
+			ref := c.allocateGCRef(latest.typ.VTable())
+			// c.builder().CreateStore(latest.irVal, ref)
+			c.claimOrCopy(ref, latest)
+			latest.typ = c.getReferenceType(latest.typ)
+			latest.irVal = ref
 		}
-		ref := c.allocateGCRef(latest.typ.VTable())
-		// c.builder().CreateStore(latest.irVal, ref)
-		c.claimOrCopy(ref, latest)
-		return newNonImmediate(ref, c.getReferenceType(latest.typ))
+		return newNonImmediate(latest.irVal, latest.typ)
 	}
 
 	if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
@@ -476,20 +491,11 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 	return latest
 }
 
-// wether expr gets implicitly dereferenced as annotated
-func (c *compiler) isDereferencedImplicitly(expr ast.Expression) bool {
-	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
-		return att.(ImplicitRefCastMeta).FromRef
-	}
-	return false
-}
-
-// wether expr gets implicitly dereferenced as annotated
-func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) bool {
-	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
-		return !att.(ImplicitRefCastMeta).FromRef
-	}
-	return false
+// helper to evaluate an expression and return its ir value and type
+// the  bool signals wether the returned value is a temporary value that can be claimed
+// or if it is a 'reference' to a variable that must be copied
+func (c *compiler) evaluate(expr ast.Expression) ddpValue {
+	return c.evaluateNumeric(expr, nil)
 }
 
 // helper to insert a function into the global function map
@@ -677,6 +683,26 @@ func (c *compiler) VisitConstDecl(d *ast.ConstDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
+func (c *compiler) registerGlobalGCRoots(globalType ddpIrType, varLocation llvm.Value) {
+	ddpType := globalType.DDPType()
+	// arrays of lists are gc-managed and have to be registered as well
+	// they are the first field so &list == &list.arr
+	if ddptypes.IsReference(ddptypes.TrueUnderlying(ddpType)) || ddptypes.IsList(ddptypes.TrueUnderlying(ddpType)) {
+		c.builder().createCall(ddp_register_gc_root, varLocation)
+	}
+	// structs may have fields which need to be registered
+	if ddptypes.IsStruct(ddpType) {
+		c.iterateFieldOffsets(globalType.(*ddpIrStructType), 0, func(field ddpIrType, fieldOffset uint64) {
+			fieldDDPType := field.DDPType()
+			if ddptypes.IsReference(fieldDDPType) || ddptypes.IsList(fieldDDPType) {
+				loc := c.builder().CreateIntToPtr(c.builder().CreateAdd(c.builder().CreatePtrToInt(varLocation, c.ddpint, ""), c.newInt(int64(fieldOffset)), ""), c.ptr, "")
+
+				c.builder().createCall(ddp_register_gc_root, loc)
+			}
+		})
+	}
+}
+
 func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// allocate the variable on the function call frame
 	// all local variables are allocated in the first basic block of the function they are within
@@ -701,7 +727,10 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	addInitializer := func() {
 		var initVal ddpValue
 
-		initDDPType := typechecker.TypeOfTypecheckedExpression(d.InitVal)
+		initDDPType := ddptypes.Type(nil)
+		if d.InitVal != nil {
+			initDDPType = d.InitVal.Type()
+		}
 		// implicit numeric casts
 		if ddptypes.IsNumericDeref(d.Type) && ddptypes.IsNumericDeref(initDDPType) {
 			numericType := Typ
@@ -730,10 +759,8 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if c.builder().scp.isGlobalScope() { // module_init
 		c.pushBuilder(c.moduleInitBuilder)
 		current_temporaries_end := len(c.builder().scp.temporaries)
-		// arrays of lists are gc-managed and have to be registered as well
-		// they are the first field so &list == &list.arr
-		if d.IsGlobal && (ddptypes.IsReference(ddptypes.TrueUnderlying(d.Type)) || ddptypes.IsList(ddptypes.TrueUnderlying(d.Type))) {
-			c.builder().createCall(ddp_register_gc_root, varLocation)
+		if d.IsGlobal {
+			c.registerGlobalGCRoots(Typ, varLocation)
 		}
 		// addInitializer after register_root to not collect intermediate values
 		addInitializer() // initialize the variable in module_init
@@ -752,10 +779,8 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	// if those are nil, we are at the global scope but there is no ddp_main func
 	// meaning this module is being compiled as a non-main module
 	if c.builder().isDDPMain() {
-		// arrays of lists are gc-managed and have to be registered as well
-		// they are the first field so &list == &list.arr
-		if d.IsGlobal && (ddptypes.IsReference(ddptypes.TrueUnderlying(d.Type)) || ddptypes.IsList(ddptypes.TrueUnderlying(d.Type))) {
-			c.builder().createCall(ddp_register_gc_root, varLocation)
+		if d.IsGlobal {
+			c.registerGlobalGCRoots(Typ, varLocation)
 		}
 		// addInitializer after register_root to not collect intermediate values
 		addInitializer()
@@ -956,13 +981,18 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 	Var := c.builder().scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 
-	if _, isRef := Var.typ.(*ddpIrReferenceType); isRef { // primitives are simply loaded
+	isAssigneable := e.HasMetadata(typechecker.AssigneableMetaKind)
+	if Var.typ.TriviallyCopyable() && !isAssigneable { // primitives are simply loaded
 		c.builder().latestReturn.irVal = c.builder().CreateLoad(Var.typ.LLType(), Var.val, "")
 		c.builder().latestReturn.typ = Var.typ
 	} else { // non-primitives are used by pointer
 		c.builder().latestReturn.irVal = Var.val
-		c.builder().latestReturn.typ = c.getReferenceType(Var.typ)
-		c.builder().latestReturn.isStackRef = true
+		if isAssigneable {
+			c.builder().latestReturn.typ = c.getReferenceType(Var.typ)
+			c.builder().latestReturn.isStackRef = true
+		} else {
+			c.builder().latestReturn.typ = Var.typ
+		}
 	}
 	c.builder().latestReturn.isImmediate = false
 	return ast.VisitRecurse
@@ -1010,7 +1040,7 @@ func (c *compiler) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 }
 
 func (c *compiler) VisitListLit(e *ast.ListLit) ast.VisitResult {
-	listType := c.toIrType(typechecker.TypeOfTypecheckedExpression(e)).(*ddpIrListType)
+	listType := c.toIrType(e.Type()).(*ddpIrListType)
 	list := c.NewAlloca(listType.LLType())
 
 	// get the listLen as irValue
@@ -1124,6 +1154,23 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 			}
 		}
 		c.builder().latestReturn.typ = c.ddpinttyp
+	case ast.UN_DEREF:
+		latest := rhs
+		if latest.isStackRef {
+			latest.isStackRef = false
+		} else if refType, isRef := rhs.typ.(*ddpIrReferenceType); isRef {
+
+			latest.typ = refType.underlying
+
+			if refType.underlying.TriviallyCopyable() && !e.HasMetadata(typechecker.AssigneableMetaKind) {
+				latest.irVal = c.builder().CreateLoad(latest.typ.LLType(), latest.irVal, "")
+			} else {
+				// just make sure the latest.irValue is not treated as a temporary
+				latest.isImmediate = false
+			}
+		}
+
+		c.builder().latestReturn = latest
 	default:
 		c.err("Unbekannter Operator '%s'", e.Operator)
 	}
@@ -1135,7 +1182,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		return c.VisitFuncCall(e.OverloadedBy.Call)
 	}
 
-	if _, isStringIndexing := e.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
+	if e.HasMetadata(ast.StringIndexingMetaKind) {
 		c.evaluate(e.Lhs)
 		return ast.VisitRecurse
 	}
@@ -1202,13 +1249,15 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 		if fieldType.TriviallyCopyable() && !isRefRhs {
 			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
-		} else if !rhs.isImmediate {
+		} else if !rhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
 			c.builder().latestReturn = newNonImmediate(fieldPtr, c.getReferenceType(fieldType))
 			return ast.VisitRecurse
+
+		} else if fieldType.TriviallyCopyable() {
+			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 		} else {
 			dest := c.NewAlloca(fieldType.LLType())
 			c.builder().CreateStore(c.builder().CreateLoad(fieldType.LLType(), fieldPtr, ""), dest)
-			c.builder().CreateStore(fieldType.DefaultValue(), fieldPtr)
 			c.builder().latestReturn = c.builder().scp.addTemporary(dest, fieldType)
 		}
 		c.builder().latestReturn.typ = fieldType
@@ -1516,7 +1565,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 
 			if listType.elementType.TriviallyCopyable() && !isRefLhs {
 				c.builder().latestReturn.irVal, c.builder().latestReturn.typ = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
-			} else if !lhs.isImmediate {
+			} else if !lhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
 				c.builder().latestReturn = newNonImmediate(elementPtr, c.getReferenceType(listType.elementType))
 				return
 			} else {
@@ -2205,7 +2254,7 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 
 // helper for VisitAssignStmt
 func (c *compiler) evaluateAssignableOrReference(ass ast.Expression) (ddpValue, *ast.BinaryExpr) {
-	if _, isStringIndexing := ass.GetMetadataByKind(ast.StringIndexingMetaKind); isStringIndexing {
+	if ass.HasMetadata(ast.StringIndexingMetaKind) {
 		lhs := c.evaluate(ass)
 		return lhs, ass.(*ast.BinaryExpr)
 	}
@@ -2294,7 +2343,10 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 	result := c.NewAlloca(resultType.LLType())
 	for i, field := range structType.Fields {
 		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
-		initType := typechecker.TypeOfTypecheckedExpression(fieldDecl.InitVal)
+		initType := ddptypes.Type(nil)
+		if fieldDecl.InitVal != nil {
+			initType = fieldDecl.InitVal.Type()
+		}
 		argExpr := fieldDecl.InitVal
 		if fieldArg, hasArg := args[field.Name]; hasArg {
 			// the arg was passed so use that instead
@@ -2324,7 +2376,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 }
 
 func (c *compiler) VisitStructLiteral(expr *ast.StructLiteral) ast.VisitResult {
-	result, resultType := c.evaluateStructLiteral(expr.Type, expr.Args)
+	result, resultType := c.evaluateStructLiteral(expr.StructType, expr.Args)
 	c.builder().latestReturn = c.builder().scp.addTemporary(result, resultType)
 	return ast.VisitRecurse
 }
@@ -2494,7 +2546,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 	var rhs ddpValue
 
-	varDDPType, rhsDDPType := typechecker.TypeOfTypecheckedExpression(s.Var), typechecker.TypeOfTypecheckedExpression(s.Rhs)
+	varDDPType, rhsDDPType := s.Var.Type(), s.Rhs.Type()
 
 	// implicit numeric casts
 	if ddptypes.IsNumericDeref(varDDPType) && ddptypes.IsNumericDeref(rhsDDPType) {

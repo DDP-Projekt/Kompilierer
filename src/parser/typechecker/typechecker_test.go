@@ -142,6 +142,16 @@ func TestReferences(t *testing.T) {
 		},
 	}})
 
+	testExpr(&ast.StructLiteral{
+		Struct: &ast.StructDecl{
+			NameTok: token.Token{Literal: "Struktur"},
+		},
+		StructType: &ddptypes.StructType{Name: "Struktur", Fields: []ddptypes.StructField{{Name: "t", Type: ddptypes.ReferenceType{Type: ddptypes.TEXT}}}},
+		Args: map[string]ast.Expression{
+			"t": &ast.CastExpr{Lhs: &ast.StringLit{}, TargetType: ddptypes.ReferenceType{Type: ddptypes.TEXT}},
+		},
+	})
+
 	// TODO: more test cases
 }
 
@@ -156,6 +166,8 @@ func TestAssignStmt(t *testing.T) {
 		"vr", ddptypes.ReferenceType{Type: ddptypes.VARIABLE},
 		"b", ddptypes.BYTE,
 		"br", ddptypes.ReferenceType{Type: ddptypes.BYTE},
+		"t", ddptypes.TEXT,
+		"tr", ddptypes.ReferenceType{Type: ddptypes.TEXT},
 		"td", &td,
 		"tdr", ddptypes.ReferenceType{Type: &td},
 	)
@@ -177,6 +189,7 @@ func TestAssignStmt(t *testing.T) {
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "z"), Rhs: &ast.IntLit{}})
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "z"), Rhs: makeIdent(symbols, "z")})
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "zr"), Rhs: &ast.IntLit{}})
+	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "tr"), Rhs: &ast.StringLit{}})
 	testExpr(&ast.AssignStmt{Var: makeIdent(symbols, "zr"), Rhs: makeIdent(symbols, "z")})
 
 	testExprErr(&ast.AssignStmt{Var: &ast.IntLit{}, Rhs: makeIdent(symbols, "z")})
@@ -236,8 +249,42 @@ func TestCastExpr(t *testing.T) {
 	testExprErr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: ddptypes.TEXT}})
 
 	// reference side-casts
-	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ReferenceType{Type: ddptypes.ZAHL}})
+	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "td"), TargetType: ddptypes.ZAHL})
 
 	// struct references
 	testExpr(&ast.CastExpr{Lhs: makeIdent(symbols, "str"), TargetType: structType})
+}
+
+func TestAssigneableMarking(t *testing.T) {
+	assert := assert.New(t)
+
+	symbols := createSymbols("z", ddptypes.ZAHL)
+	ty := createTypechecker(t, Typechecker{CurrentTable: symbols, Module: &ast.Module{Ast: &ast.Ast{Symbols: symbols}}})
+
+	assign := &ast.Ident{Literal: token.Token{Literal: "z"}}
+	ty.TypecheckNode(&ast.AssignStmt{Var: assign, Rhs: &ast.IntLit{}})
+	assert.False(*ty.panicMode)
+	assert.True(assign.HasMetadata(AssigneableMetaKind))
+
+	assign = &ast.Ident{Literal: token.Token{Literal: "z"}}
+	ty.TypecheckNode(&ast.FuncCall{
+		Func: &ast.FuncDecl{ReturnType: ddptypes.ZAHL, Parameters: []ast.ParameterInfo{{Name: token.Token{Literal: "zr"}, Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL}}}},
+		Args: map[string]ast.Expression{
+			"zr": assign,
+		},
+	})
+	assert.False(*ty.panicMode)
+	assert.True(assign.HasMetadata(AssigneableMetaKind))
+
+	assign = &ast.Ident{Literal: token.Token{Literal: "z"}}
+	overload := &ast.FuncDecl{ReturnType: ddptypes.ZAHL, Parameters: []ast.ParameterInfo{{Name: token.Token{Literal: "zr"}, Type: ddptypes.ReferenceType{Type: ddptypes.ZAHL}}, {Name: token.Token{Literal: "z2"}, Type: ddptypes.ZAHL}}}
+	ty.Operators = ast.OperatorOverloadMap(map[ast.Operator][]*ast.FuncDecl{ast.BIN_INDEX: {overload}})
+
+	ty.TypecheckNode(&ast.BinaryExpr{
+		Lhs:      assign,
+		Rhs:      &ast.IntLit{},
+		Operator: ast.BIN_INDEX,
+	})
+	assert.False(*ty.panicMode)
+	assert.True(assign.HasMetadata(AssigneableMetaKind))
 }

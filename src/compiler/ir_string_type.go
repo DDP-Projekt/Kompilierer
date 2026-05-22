@@ -73,12 +73,8 @@ func (t *ddpIrStringType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
-func (t *ddpIrStringType) PtrMask() [32]uint8 {
-	return [32]uint8{}
-}
-
-func (t *ddpIrStringType) LoadLivesAndRestores(*compiler, llvm.Value) ([]llvm.Value, []llvm.Value) {
-	return nil, nil
+func (t *ddpIrStringType) LoadLives(*compiler, llvm.Value) []llvm.Value {
+	return nil
 }
 
 const (

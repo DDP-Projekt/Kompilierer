@@ -152,3 +152,22 @@ Und kann so benutzt werden:
 bar "test" (' ' als Buchstaben Liste).
 Die Buchstaben Liste b ist ' ' als Buchstaben Liste.
 bar "test" b.
+
+Wir nennen die Kombination aus
+	der Text Referenz foo,
+ein Bar, und erstellen sie so:
+	"ein neues Bar mit <foo>"
+
+Die Funktion bar_setzen mit den Parametern a und b vom Typ Bar Referenz und Text Referenz, gibt nichts zurück, macht:
+	Speichere b in foo von a.
+Und kann so benutzt werden:
+	"Setze <b> in <a>"
+
+Das Bar ein_bar ist ein neues Bar mit ("foo" als Text Referenz).
+Der Text ein_text ist "nicht foo".
+
+Schreibe (foo von ein_bar) auf eine Zeile.
+Setze ein_text in ein_bar.
+Schreibe (foo von ein_bar) auf eine Zeile.
+Speichere "auch nicht foo" in ein_text.
+Schreibe (foo von ein_bar) auf eine Zeile.

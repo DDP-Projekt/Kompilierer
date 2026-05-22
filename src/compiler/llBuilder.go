@@ -54,15 +54,14 @@ func (b *llBuilder) withBlock(block llvm.BasicBlock, do func()) {
 }
 
 // calculates all needed gc-live values and their re-store locations
-func (b *llBuilder) getLiveValues() ([]llvm.Value, []llvm.Value) {
+func (b *llBuilder) getLiveValues() []llvm.Value {
 	// TODO: maybe remove this check and ensure a scope is always correct
 	// here, because when calling the module dispose function, the scp is nil
 	if b.scp == nil {
-		return nil, nil
+		return nil
 	}
 
 	liveValues := make([]llvm.Value, 0, len(b.scp.temporaries)+len(b.scp.variables))
-	restoreLocations := make([]llvm.Value, 0, len(b.scp.temporaries)+len(b.scp.variables))
 
 	getLiveValuesForScope := func(scp *scope) {
 		if scp == nil {
@@ -72,20 +71,17 @@ func (b *llBuilder) getLiveValues() ([]llvm.Value, []llvm.Value) {
 		// globals are already tracked
 		if !scp.isGlobalScope() {
 			for _, Var := range scp.variables {
-				live, restores := Var.typ.LoadLivesAndRestores(b.c, Var.val)
+				live := Var.typ.LoadLives(b.c, Var.val)
 				liveValues = append(liveValues, live...)
-				restoreLocations = append(restoreLocations, restores...)
 			}
 		}
 
 		for _, temp := range scp.temporaries {
 			if temp.typ == nil {
 				liveValues = append(liveValues, temp.val)
-				restoreLocations = append(restoreLocations, temp.restoreLoc)
 			} else {
-				live, restores := temp.typ.LoadLivesAndRestores(b.c, temp.val)
+				live := temp.typ.LoadLives(b.c, temp.val)
 				liveValues = append(liveValues, live...)
-				restoreLocations = append(restoreLocations, restores...)
 			}
 		}
 	}
@@ -95,7 +91,7 @@ func (b *llBuilder) getLiveValues() ([]llvm.Value, []llvm.Value) {
 	}
 	getLiveValuesForScope(b.fnScope)
 
-	return liveValues, restoreLocations
+	return liveValues
 }
 
 func (b *llBuilder) getFunctionElementTypeAttr(fn llvm.Value) llvm.Attribute {
@@ -130,19 +126,13 @@ func (b *llBuilder) callAsStatepoint(callee llvm.Value, liveValues []llvm.Value,
 
 func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 	if fn.GC() == DDP_GC_STRATEGY_NAME {
-		liveValues, restores := b.getLiveValues()
+		liveValues := b.getLiveValues()
 		gcLive := llvm.CreateOperandBundle("gc-live", liveValues)
 		defer gcLive.Dispose()
 
 		// TODO: re-store or otherwise use the relocated values
 		// call := b.createCallWithOperandBundles(fn, []llvm.OperandBundle{gcLive}, args...)
 		call := b.callAsStatepoint(fn, liveValues, args...)
-
-		for i, relocated := range liveValues {
-			if restores[i] != (llvm.Value{}) {
-				b.CreateStore(relocated, restores[i])
-			}
-		}
 
 		return call
 	}

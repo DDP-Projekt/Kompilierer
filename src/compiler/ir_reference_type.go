@@ -58,16 +58,12 @@ func (t *ddpIrReferenceType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
-func (t *ddpIrReferenceType) PtrMask() [32]uint8 {
-	return [32]uint8{1}
-}
-
-func (t *ddpIrReferenceType) LoadLivesAndRestores(c *compiler, v llvm.Value) ([]llvm.Value, []llvm.Value) {
+func (t *ddpIrReferenceType) LoadLives(c *compiler, v llvm.Value) []llvm.Value {
 	ref := c.builder().CreateLoad(c.ptr, v, "")
 	// in case this is a stack reference, load the lives of the referenced value as well, as it couldn't be traced by the gc otherwise
-	lives, restores := t.underlying.LoadLivesAndRestores(c, ref)
-	lives, restores = append(lives, ref), append(restores, llvm.Value{})
-	return lives, restores
+	lives := t.underlying.LoadLives(c, ref)
+	lives = append(lives, ref)
+	return lives
 }
 
 func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType) *ddpIrReferenceType {

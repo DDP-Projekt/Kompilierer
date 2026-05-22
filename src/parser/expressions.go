@@ -14,7 +14,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
-	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -294,7 +293,8 @@ func (p *parser) comparison() ast.Expression {
 
 func (p *parser) bitShift() ast.Expression {
 	var expr ast.Expression
-	for p.matchSeq(token.DER, token.WERT) {
+	// peekN to not confuse it with UN_DEREF
+	for p.peekN(2).Type != token.VON && p.matchSeq(token.DER, token.WERT) {
 		expr = p.expression()
 		p.consumeSeq(token.UM)
 		rhs := p.expression()
@@ -383,7 +383,7 @@ func (p *parser) unary() ast.Expression {
 		return p.power(expr)
 	}
 	// match the correct unary operator
-	if p.matchAny(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.LOGISCH, token.DIE, token.DER, token.DEM, token.DEN) {
+	if p.matchAny(token.NICHT, token.BETRAG, token.GRÖßE, token.LÄNGE, token.STANDARDWERT, token.WERT, token.LOGISCH, token.DIE, token.DER, token.DEM, token.DEN) {
 		start := p.previous()
 
 		switch start.Type {
@@ -393,17 +393,17 @@ func (p *parser) unary() ast.Expression {
 				return p.negate()
 			}
 		case token.DER:
-			if !p.matchAny(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT) { // Betrag: nominativ, Größe/Länge: dativ
+			if !p.matchAny(token.GRÖßE, token.LÄNGE, token.BETRAG, token.STANDARDWERT, token.WERT) { // Betrag: nominativ, Größe/Länge: dativ
 				p.decrease() // DER does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.DEN:
-			if !p.matchAny(token.BETRAG, token.STANDARDWERT) { // dativ
+			if !p.matchAny(token.BETRAG, token.STANDARDWERT, token.WERT) { // dativ
 				p.decrease() // DEN does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
 		case token.DEM:
-			if !p.matchAny(token.BETRAG, token.STANDARDWERT) { // dativ
+			if !p.matchAny(token.BETRAG, token.STANDARDWERT, token.WERT) { // dativ
 				p.decrease() // DEM does not belong to a operator, so maybe it is a function call
 				return p.negate()
 			}
@@ -419,7 +419,7 @@ func (p *parser) unary() ast.Expression {
 		tok := p.previous()
 		operator := ast.UN_ABS
 		switch tok.Type {
-		case token.BETRAG, token.LÄNGE:
+		case token.BETRAG, token.LÄNGE, token.WERT:
 			p.consumeSeq(token.VON)
 		case token.GRÖßE, token.STANDARDWERT:
 			p.consumeSeq(token.VON)
@@ -457,6 +457,8 @@ func (p *parser) unary() ast.Expression {
 			})
 		case token.LÄNGE:
 			operator = ast.UN_LEN
+		case token.WERT:
+			operator = ast.UN_DEREF
 		}
 		rhs := p.unary()
 		return &ast.UnaryExpr{
@@ -730,8 +732,9 @@ func (p *parser) primary(lhs ast.Expression) ast.Expression {
 				Tok:    *begin,
 				Range:  token.NewRange(begin, p.previous()),
 				Values: nil,
+				Typ:    listType,
 			}
-			lhs.SetMetadataAttachement(typechecker.NewTypeMeta(listType))
+
 		} else {
 			p.consumeSeq(token.LISTE, token.COMMA, token.DIE, token.AUS)
 			values := append(make([]ast.Expression, 0, 2), p.expression())

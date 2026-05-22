@@ -48,10 +48,6 @@ func (t *ddpIrGenericListType) EqualsFunc() llvm.Value {
 	return llvm.Value{}
 }
 
-func (t *ddpIrGenericListType) PtrMask() [32]uint8 {
-	return [32]uint8{}
-}
-
 func (*ddpIrGenericListType) LoadLives(*compiler, llvm.Value) []llvm.Value {
 	return nil
 }
