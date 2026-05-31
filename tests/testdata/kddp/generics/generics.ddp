@@ -2,7 +2,7 @@ Binde "Duden/Ausgabe" ein.
 
 Die generische Funktion Tausche mit den Parametern a und b vom Typ T Referenz und T Referenz, gibt nichts zurück, macht:
 	Das T temp ist a.
-	Speichere b in a.
+	Speichere b in dem Wert von a.
 	Speichere temp in b.
 Und kann so benutzt werden:
 	"Tausche <a> und <b>"

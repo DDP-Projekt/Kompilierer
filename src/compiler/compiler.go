@@ -1257,7 +1257,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 		} else {
 			dest := c.NewAlloca(fieldType.LLType())
-			c.builder().CreateStore(c.builder().CreateLoad(fieldType.LLType(), fieldPtr, ""), dest)
+			c.claimOrCopy(dest, newNonImmediate(fieldPtr, fieldType)) // immediate or non immediate? Depends on rhs.typ?
 			c.builder().latestReturn = c.builder().scp.addTemporary(dest, fieldType)
 		}
 		c.builder().latestReturn.typ = fieldType
