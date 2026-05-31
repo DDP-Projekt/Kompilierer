@@ -37,7 +37,11 @@ func checkMarkAssigneable(expr ast.Expression, attachMeta, markTopLevel bool) bo
 			return ddptypes.IsReference(ass.OverloadedBy.Call.Func.ReturnType)
 		}
 
-		return checkMarkAssigneable(ass.Lhs, downstreamAttachMeta, false)
+		isAss := checkMarkAssigneable(ass.Lhs, downstreamAttachMeta, false)
+		if isAss && attachMeta {
+			ass.SetMetadataAttachement(AssigneableMeta{})
+		}
+		return isAss
 	case *ast.UnaryExpr:
 		if ass.OverloadedBy != nil {
 			return ddptypes.IsReference(ass.OverloadedBy.Call.Func.ReturnType)

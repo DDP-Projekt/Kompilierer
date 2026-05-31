@@ -335,8 +335,18 @@ static size_t get_page_size(void) {
 #endif
 }
 
+// the GC does not care wether two types are actually the same, just wether they can be stored on the same span
+// this only really matters for typedef-references if they are cast from/to their underlying type
+// but it still affects the span allocation of other types
+static bool vtable_gc_equal(ddpvtable *a, ddpvtable *b) {
+	return a == b ||
+		   (a->type_size == b->type_size &&
+			a->free_func == b->free_func &&
+			memcmp(a->ptrmask, b->ptrmask, sizeof(a->ptrmask)) == 0);
+}
+
 static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
-	return a.vtable == b.vtable && a.arrlen == b.arrlen;
+	return a.arrlen == b.arrlen && vtable_gc_equal(a.vtable, b.vtable);
 }
 
 static int bitmap_find_first_zero(uint8_t *bitmap, size_t num_bits) {

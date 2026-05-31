@@ -4,7 +4,7 @@ Wir definieren eine Hausnummer als eine Zahl.
 Wir definieren eine Buchstabenfolge als einen Text.
 
 Die Zahl zahl1 ist 1.
-Speichere 2 in zahl1 als Zahlen Referenz.
+Speichere 2 in zahl1 als Zahl.
 Schreibe zahl1 auf eine Zeile.
 
 Die Hausnummer hausnummer1 ist 1 als Hausnummer.
@@ -13,7 +13,7 @@ Sollte eigentlich
 	Speichere 2 als Hausnummer in hausnummer1.
 sein, aber für diesen Test nun mal so.
 ]
-Speichere 2 in hausnummer1 als Zahlen Referenz.
+Speichere 2 in hausnummer1 als Zahl.
 Schreibe (hausnummer1 als Zahl) auf eine Zeile.
 
 Die Funktion foo mit dem Parameter z vom Typ Zahlen Referenz, gibt nichts zurück, macht:
@@ -22,12 +22,12 @@ Und kann so benutzt werden:
 	"foo <z>"
 
 Die Zahl z ist 1.
-foo (z als Zahlen Referenz).
+foo (z als Zahl).
 Schreibe z auf eine Zeile.
 
 
 Die Hausnummer h ist 1 als Hausnummer.
-foo (h als Zahlen Referenz).
+foo (h als Zahl).
 Schreibe (h als Zahl) auf eine Zeile.
 
 Die Funktion bar mit den Parametern z und w vom Typ Zahlen Referenz und Zahl, gibt eine Zahl zurück, macht:
@@ -38,7 +38,7 @@ Und überlädt den "an der Stelle" Operator.
 Schreibe (z an der Stelle 5) auf eine Zeile.
 Schreibe z auf eine Zeile.
 
-Schreibe (h als Zahlen Referenz an der Stelle 5) auf eine Zeile.
+Schreibe (h als Zahl an der Stelle 5) auf eine Zeile.
 Schreibe (h als Zahl) auf eine Zeile.
 
 
@@ -50,11 +50,11 @@ Und kann so benutzt werden:
 	"foo2 <z>"
 
 Der Text t ist "hallo".
-foo2 (t als Text Referenz).
+foo2 (t als Text).
 Schreibe t auf eine Zeile.
 
 Die Buchstabenfolge b ist "hallo" als Buchstabenfolge.
-foo2 (b als Text Referenz).
+foo2 (b als Text).
 Schreibe (b als Text) auf eine Zeile.
 
 Die Funktion bar2 mit den Parametern z und w vom Typ Text Referenz und Text, gibt einen Text zurück, macht:
@@ -65,5 +65,7 @@ Und überlädt den "an der Stelle" Operator.
 Schreibe (t an der Stelle "test") auf eine Zeile.
 Schreibe t auf eine Zeile.
 
-Schreibe (b als Text Referenz an der Stelle "test") auf eine Zeile.
+Schreibe (b als Text an der Stelle "test") auf eine Zeile.
 Schreibe (b als Text) auf eine Zeile.
+
+

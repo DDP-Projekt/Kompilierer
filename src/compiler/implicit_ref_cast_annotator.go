@@ -311,6 +311,10 @@ func (a *ImplicitRefCastAnnotator) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Vi
 
 // TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
+	if s.Value == nil {
+		return ast.VisitRecurse
+	}
+
 	t := s.Value.Type()
 	if level := ddptypes.IsReferenceToLevel(s.Func.ReturnType, t); level > 0 {
 		a.annotateToRef(s.Value, level)

@@ -128,10 +128,7 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 		initialType = t.Evaluate(decl.InitVal)
 	}
 
-	// typesDontMatch := !ddptypes.IsGenericDeref(decl.Type) && !ddptypes.EqualDeref(initialType, decl.Type) && (!ddptypes.EqualDeref(decl.Type, ddptypes.VARIABLE) || ddptypes.EqualDeref(initialType, ddptypes.VoidType{}))
-	// numericCastPossible := ddptypes.IsNumericDeref(decl.Type) && ddptypes.IsNumericDeref(initialType)
-
-	if !ddptypes.IsAssigneableTo(initialType, decl.Type) {
+	if !ddptypes.IsAssigneableTo(initialType, decl.Type) && !ddptypes.IsGenericDeref(decl.Type) {
 		t.errExpr(ddperror.TYP_BAD_ASSIGNEMENT,
 			decl.InitVal,
 			"Ein Wert vom Typ %s kann keiner Variable vom Typ %s zugewiesen werden", initialType, decl.Type,
@@ -215,20 +212,26 @@ func (t *Typechecker) VisitBadExpr(expr *ast.BadExpr) ast.VisitResult {
 
 // TODO: this can be a ref, does this need changing?
 func (t *Typechecker) VisitIdent(expr *ast.Ident) ast.VisitResult {
-	decl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
-	if !ok || !isVar || decl == nil {
-		t.latestReturnedType = ddptypes.VoidType{}
-	} else {
-		switch decl := decl.(type) {
-		case *ast.VarDecl:
-			t.latestReturnedType = decl.Type
-			expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
-		case *ast.ConstDecl:
-			t.latestReturnedType = decl.Type
-			expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
-		default:
+	decl := expr.Declaration
+
+	if decl == nil { // if expr was already resolved (we are not in EvaluateSilent)
+		innerDecl, ok, isVar := t.CurrentTable.LookupDecl(expr.Literal.Literal)
+		if !ok || !isVar || innerDecl == nil {
 			t.latestReturnedType = ddptypes.VoidType{}
+			return ast.VisitRecurse
 		}
+		decl = innerDecl
+	}
+
+	switch decl := decl.(type) {
+	case *ast.VarDecl:
+		t.latestReturnedType = decl.Type
+		expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
+	case *ast.ConstDecl:
+		t.latestReturnedType = decl.Type
+		expr.Declaration = decl // assign the decl for isAssignable to work (usually done by the resolver, but this may be called in EvaluateSilent)
+	default:
+		t.latestReturnedType = ddptypes.VoidType{}
 	}
 	return ast.VisitRecurse
 }
@@ -1004,7 +1007,7 @@ overload_loop:
 				actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			}
 
-			if !ddptypes.EqualDeref(actualParamType, operand.typ) {
+			if !ddptypes.IsPasseableAsParam(operand.typ, actualParamType, IsAssignable(operand.expr)) {
 				continue overload_loop
 			}
 
@@ -1069,7 +1072,7 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 			}
 		}
 
-		if !ddptypes.EqualDeref(actualParamType, operand.typ) || !ddptypes.EqualDeref(returnType, expr.TargetType) {
+		if !ddptypes.IsPasseableAsParam(operand.typ, actualParamType, IsAssignable(operand.expr)) || !ddptypes.EqualDeref(returnType, expr.TargetType) {
 			continue
 		}
 

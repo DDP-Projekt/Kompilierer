@@ -1999,6 +1999,11 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	targetIrType := c.toIrType(targetType)
 	lhs := c.evaluate(e.Lhs)
 
+	if e.HasMetadata(typechecker.AssigneableMetaKind) {
+		lhs.typ = c.getReferenceType(targetIrType)
+		return ast.VisitRecurse
+	}
+
 	vtable := targetIrType.VTable()
 	if typeDef, isTypeDef := ddptypes.CastTypeDef(e.TargetType); isTypeDef {
 		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
