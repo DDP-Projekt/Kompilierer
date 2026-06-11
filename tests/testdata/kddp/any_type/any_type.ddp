@@ -1,4 +1,5 @@
 Binde "Duden/Ausgabe" ein.
+Binde "Duden/Laufzeit" ein.
 
 Wir nennen die Kombination aus
 	der Zahl z mit Standardwert 1,
@@ -125,8 +126,6 @@ Schreibe (x gleich y ist) auf eine Zeile.
 
 Schreibe '\n'.
 
-
-
 Die Variable v ist der Standardwert von einer Variable.
 Schreibe (v eine Zahl ist) auf eine Zeile.
 Schreibe (v eine Kommazahl ist) auf eine Zeile.
@@ -139,3 +138,48 @@ Schreibe (v eine Nummer ist) auf eine Zeile.
 Schreibe (v eine Struktur2 ist) auf eine Zeile.
 
 Wenn v gleich dem Standardwert von einer Variable ist, Schreibe "gleich var" auf eine Zeile.
+
+Die Variablen Referenz vr ist wahr.
+Schreibe (vr als Wahrheitswert) auf eine Zeile.
+Speichere vr in v.
+Schreibe (v als Wahrheitswert) auf eine Zeile.
+Speichere falsch in vr.
+Speichere den Wert von vr in v.
+Schreibe (v als Wahrheitswert) auf eine Zeile.
+
+[ Garbage Collection ]
+
+Die Variable hat_ref ist (2 als Zahlen Referenz).
+Schreibe (hat_ref eine Zahlen Referenz ist) auf eine Zeile.
+Schreibe (hat_ref als Zahlen Referenz als Zahl) auf eine Zeile.
+Hol die Müllabfuhr.
+Schreibe (hat_ref eine Zahlen Referenz ist) auf eine Zeile.
+Schreibe (hat_ref als Zahlen Referenz als Zahl) auf eine Zeile.
+:
+	Die Variable hat_ref ist (2 als Zahlen Referenz).
+	Schreibe (hat_ref eine Zahlen Referenz ist) auf eine Zeile.
+	Schreibe (hat_ref als Zahlen Referenz als Zahl) auf eine Zeile.
+	Hol die Müllabfuhr.
+	Schreibe (hat_ref eine Zahlen Referenz ist) auf eine Zeile.
+	Schreibe (hat_ref als Zahlen Referenz als Zahl) auf eine Zeile.
+
+Wir nennen die Kombination aus
+	der Zahlen Referenz z mit Standardwert 3,
+	dem Text t mit Standardwert "test text",
+eine GroßeStruktur, und erstellen sie so:
+	"eine große Struktur"
+
+Die Variable hat_ref_groß ist (eine große Struktur als GroßeStruktur Referenz).
+Schreibe (hat_ref_groß eine GroßeStruktur Referenz ist) auf eine Zeile.
+Schreibe ((z von (hat_ref_groß als GroßeStruktur Referenz)) als Zahl) auf eine Zeile.
+Hol die Müllabfuhr.
+Schreibe (hat_ref_groß eine GroßeStruktur Referenz ist) auf eine Zeile.
+Schreibe ((z von (hat_ref_groß als GroßeStruktur Referenz)) als Zahl) auf eine Zeile.
+
+:
+	Die Variable hat_ref_groß ist (eine große Struktur als GroßeStruktur Referenz).
+	Schreibe (hat_ref_groß eine GroßeStruktur Referenz ist) auf eine Zeile.
+	Schreibe ((z von (hat_ref_groß als GroßeStruktur Referenz)) als Zahl) auf eine Zeile.
+	Hol die Müllabfuhr.
+	Schreibe (hat_ref_groß eine GroßeStruktur Referenz ist) auf eine Zeile.
+	Schreibe ((z von (hat_ref_groß als GroßeStruktur Referenz)) als Zahl) auf eine Zeile.

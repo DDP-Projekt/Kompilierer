@@ -12,11 +12,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
-var (
-	DDP_COMPILER_DEBUG string = "undefined"
-	DEBUG              bool   = DDP_COMPILER_DEBUG == "true"
-)
-
 // compiles a mainModule and all it's imports
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
@@ -124,8 +119,8 @@ func newLLTypes(llctx llvm.Context) llTypes {
 }
 
 type llConstants struct {
-	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, zeroPtrMask, listPtrMask, refPtrMask llvm.Value
-	resultIntrinsicID                                                                                                    uint
+	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, zeroPtrMask, listPtrMask, refPtrMask, tag_bit llvm.Value
+	resultIntrinsicID                                                                                                             uint
 }
 
 func newLLConstants(types llTypes) llConstants {
@@ -150,17 +145,18 @@ func newLLConstants(types llTypes) llConstants {
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 		}),
 		listPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
-			llvm.ConstInt(types.i8, 0b100, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
+			llvm.ConstInt(types.i8, 1, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 		}),
 		refPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
-			llvm.ConstInt(types.i8, 0b100, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
+			llvm.ConstInt(types.i8, 1, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
 		}),
+		tag_bit:           llvm.ConstInt(types.i64, 1<<63, false),
 		resultIntrinsicID: llvm.LookupIntrinsicID("llvm.experimental.gc.result"),
 	}
 }
@@ -420,6 +416,9 @@ type ddpValue struct {
 	isImmediate bool
 	isStackRef  bool
 }
+
+// TODO: use newNonImmediate and newImmediate everywhere and rarely set c.builder().latestReturn.* separately
+//		 as there were bugs wher isStackRef was true from a previous VisitIdent even though the latest value had changed
 
 func newNonImmediate(irVal llvm.Value, typ ddpIrType) ddpValue {
 	return ddpValue{irVal: irVal, typ: typ, isImmediate: false, isStackRef: false}
@@ -701,6 +700,10 @@ func (c *compiler) registerGlobalGCRoots(globalType ddpIrType, varLocation llvm.
 			}
 		})
 	}
+	// anys have to be registered specially, so the gc can trace the correct vtable
+	if ddptypes.IsAny(ddpType) {
+		c.builder().createCall(ddp_register_gc_any_root, varLocation)
+	}
 }
 
 func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
@@ -743,7 +746,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		}
 
 		// implicit cast to any if required
-		_, t, _ := ddptypes.CastReference(d.Type)
+		_, t, refLevel := ddptypes.CastReferenceLevel(d.Type)
 		if ddptypes.DeepEqual(t, ddptypes.VARIABLE) && initVal.typ != c.ddpany {
 			vtable := initVal.typ.VTable()
 			if typeDef, isTypeDef := ddptypes.CastTypeDef(initDDPType); isTypeDef {
@@ -751,6 +754,13 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 			}
 
 			initVal = c.castNonAnyToAny(initVal, vtable)
+			for range refLevel {
+				ref := c.allocateGCRef(initVal.typ.VTable())
+				// c.builder().CreateStore(latest.irVal, ref)
+				c.claimOrCopy(ref, initVal)
+				initVal.typ = c.getReferenceType(initVal.typ)
+				initVal.irVal = ref
+			}
 		}
 
 		c.claimOrCopy(varLocation, initVal)
@@ -983,43 +993,36 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 	isAssigneable := e.HasMetadata(typechecker.AssigneableMetaKind)
 	if Var.typ.TriviallyCopyable() && !isAssigneable { // primitives are simply loaded
-		c.builder().latestReturn.irVal = c.builder().CreateLoad(Var.typ.LLType(), Var.val, "")
-		c.builder().latestReturn.typ = Var.typ
+		c.builder().latestReturn = newNonImmediate(c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ)
 	} else { // non-primitives are used by pointer
-		c.builder().latestReturn.irVal = Var.val
 		if isAssigneable {
-			c.builder().latestReturn.typ = c.getReferenceType(Var.typ)
+			c.builder().latestReturn = newNonImmediate(Var.val, c.getReferenceType(Var.typ))
 			c.builder().latestReturn.isStackRef = true
 		} else {
-			c.builder().latestReturn.typ = Var.typ
+			c.builder().latestReturn = newNonImmediate(Var.val, Var.typ)
 		}
 	}
-	c.builder().latestReturn.isImmediate = false
 	return ast.VisitRecurse
 }
 
 // literals are simple ir constants
 func (c *compiler) VisitIntLit(e *ast.IntLit) ast.VisitResult {
-	c.builder().latestReturn.irVal = c.newInt(e.Value)
-	c.builder().latestReturn.typ = c.ddpinttyp
+	c.builder().latestReturn = newNonImmediate(c.newInt(e.Value), c.ddpinttyp)
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
-	c.builder().latestReturn.irVal = llvm.ConstFloat(c.ddpfloat, e.Value)
-	c.builder().latestReturn.typ = c.ddpfloattyp
+	c.builder().latestReturn = newNonImmediate(llvm.ConstFloat(c.ddpfloat, e.Value), c.ddpfloattyp)
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitBoolLit(e *ast.BoolLit) ast.VisitResult {
-	c.builder().latestReturn.irVal = c.newIntT(c.ddpbool, int64(boolToInt(e.Value)))
-	c.builder().latestReturn.typ = c.ddpbooltyp
+	c.builder().latestReturn = newNonImmediate(c.newIntT(c.ddpbool, int64(boolToInt(e.Value))), c.ddpbooltyp)
 	return ast.VisitRecurse
 }
 
 func (c *compiler) VisitCharLit(e *ast.CharLit) ast.VisitResult {
-	c.builder().latestReturn.irVal = c.newIntT(c.ddpchar, int64(e.Value))
-	c.builder().latestReturn.typ = c.ddpchartyp
+	c.builder().latestReturn = newNonImmediate(c.newIntT(c.ddpchar, int64(e.Value)), c.ddpchartyp)
 	return ast.VisitRecurse
 }
 
@@ -1099,11 +1102,13 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		switch rhs.typ {
 		case c.ddpfloattyp:
 			// c.builder().latestReturn.irVal = rhs < 0 ? 0 - rhs : rhs;
-			c.builder().latestReturn.irVal = c.createTernary(c.ddpfloat, c.builder().CreateFCmp(llvm.FloatOLT, rhs.irVal, c.zerof, ""),
-				func() llvm.Value { return c.builder().CreateFSub(c.zerof, rhs.irVal, "") },
-				func() llvm.Value { return rhs.irVal },
+			c.builder().latestReturn = newImmediate(
+				c.createTernary(c.ddpfloat, c.builder().CreateFCmp(llvm.FloatOLT, rhs.irVal, c.zerof, ""),
+					func() llvm.Value { return c.builder().CreateFSub(c.zerof, rhs.irVal, "") },
+					func() llvm.Value { return rhs.irVal },
+				),
+				c.ddpfloattyp,
 			)
-			c.builder().latestReturn.typ = c.ddpfloattyp
 		case c.ddpinttyp:
 			// c.builder().latestReturn.irVal = rhs.irVal < 0 ? 0 - rhs.irVal : rhs.irVal;
 			c.builder().latestReturn.irVal = c.createTernary(c.ddpint, c.builder().CreateICmp(llvm.IntSLT, rhs.irVal, c.zero, ""),
@@ -1159,14 +1164,14 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		if latest.isStackRef {
 			latest.isStackRef = false
 		} else if refType, isRef := rhs.typ.(*ddpIrReferenceType); isRef {
-
 			latest.typ = refType.underlying
 
 			if refType.underlying.TriviallyCopyable() && !e.HasMetadata(typechecker.AssigneableMetaKind) {
 				latest.irVal = c.builder().CreateLoad(latest.typ.LLType(), latest.irVal, "")
-			} else {
-				// just make sure the latest.irValue is not treated as a temporary
-				latest.isImmediate = false
+			} else if !e.HasMetadata(typechecker.AssigneableMetaKind) {
+				dest := c.NewAlloca(latest.typ.LLType())
+				c.deepCopyInto(dest, rhs.irVal, latest.typ)
+				latest = c.builder().scp.addTemporary(dest, latest.typ)
 			}
 		}
 
@@ -1247,6 +1252,7 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		fieldType := structType.fieldIrTypes[fieldIndex]
 		fieldPtr := c.indexStruct(structType.typ, rhs.irVal, fieldIndex)
 
+		// TODO: refactor this to make more sense
 		if fieldType.TriviallyCopyable() && !isRefRhs {
 			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 		} else if !rhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
@@ -1563,11 +1569,14 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			listArr := c.loadStructField(listType.typ, lhs.irVal, list_arr_field_index)
 			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 
+			// TODO: refactor this to make more sense
 			if listType.elementType.TriviallyCopyable() && !isRefLhs {
 				c.builder().latestReturn.irVal, c.builder().latestReturn.typ = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
 			} else if !lhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
 				c.builder().latestReturn = newNonImmediate(elementPtr, c.getReferenceType(listType.elementType))
 				return
+			} else if listType.elementType.TriviallyCopyable() {
+				c.builder().latestReturn.irVal, c.builder().latestReturn.typ = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
 			} else {
 				dest := c.NewAlloca(listType.elementType.LLType())
 				c.builder().latestReturn = c.builder().scp.addTemporary(
@@ -2057,9 +2066,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 
 		ref := c.allocateGCRef(lhs.typ.VTable())
 		c.claimOrCopy(ref, lhs)
-		c.builder().latestReturn.irVal = ref
-		c.builder().latestReturn.isImmediate = false
-		c.builder().latestReturn.typ = targetIrType
+		c.builder().latestReturn = newImmediate(ref, targetIrType)
 		return ast.VisitRecurse
 	} else if isRefLhs && isRefTarget {
 		if lhsRefTyp == targetRefTyp {
@@ -2346,6 +2353,7 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 	structDecl := structDeclInterface.(*ast.StructDecl)
 	resultType := c.toIrType(structType)
 	result := c.NewAlloca(resultType.LLType())
+	fieldTemps := make([]ddpValue, len(structType.Fields))
 	for i, field := range structType.Fields {
 		fieldDecl := structDecl.Fields[i].(*ast.VarDecl)
 		initType := ddptypes.Type(nil)
@@ -2375,7 +2383,15 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 			arg = c.castNonAnyToAny(arg, vtable)
 		}
 
-		c.claimOrCopy(c.indexStruct(resultType.LLType(), result, i), arg)
+		fieldPtr := c.indexStruct(resultType.LLType(), result, i)
+		c.claimOrCopy(fieldPtr, arg)
+
+		// fields are kept in an array and then stored, so they are tracked by the GC during struct construction
+		fieldTemps[i] = c.builder().scp.addTemporary(fieldPtr, arg.typ)
+	}
+	// fields are kept in an array and then stored, so they are tracked by the GC during struct construction
+	for i := range fieldTemps {
+		c.builder().scp.claimTemporary(fieldTemps[i].irVal)
 	}
 	return result, resultType
 }
@@ -2578,12 +2594,23 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		}
 
 		// implicit cast to any if required
-		if ddptypes.IsAnyDeref(varDDPType) && rhs.typ != c.ddpany {
+		_, t, refLevel := ddptypes.CastReferenceLevel(varDDPType)
+		if ddptypes.IsAnyDeref(t) && rhs.typ != c.ddpany {
 			vtable := rhs.typ.VTable()
 			if typeDef, isTypeDef := ddptypes.CastTypeDef(rhsDDPType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
 			}
 			rhs = c.castNonAnyToAny(rhs, vtable)
+
+			if refLevel > 0 {
+				for range refLevel - 1 { // in VisitVarDecl we need to allocate a new ref, here we already have one, so refLevel-1
+					ref := c.allocateGCRef(rhs.typ.VTable())
+					// c.builder().CreateStore(latest.irVal, ref)
+					c.claimOrCopy(ref, rhs)
+					rhs.typ = c.getReferenceType(rhs.typ)
+					rhs.irVal = ref
+				}
+			}
 		}
 
 		c.claimOrCopy(lhs.irVal, rhs) // copy/claim the new value

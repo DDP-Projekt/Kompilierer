@@ -57,8 +57,8 @@ func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 }
 
 // TODO: how to handle this if any may or may not contain a gc pointer?
-func (*ddpIrAnyType) LoadLives(*compiler, llvm.Value) []llvm.Value {
-	return nil
+func (*ddpIrAnyType) LoadLives(c *compiler, any_ptr llvm.Value) []llvm.Value {
+	return []llvm.Value{c.tag_pointer(any_ptr)}
 }
 
 func (c *compiler) defineAnyType() *ddpIrAnyType {

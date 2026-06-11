@@ -49,6 +49,8 @@ typedef void (*free_func_ptr)(void *);
 typedef void (*deep_copy_func_ptr)(void *, void *);
 typedef ddpbool (*equal_func_ptr)(void *, void *);
 
+#define PTRMASK_BYTES 32
+
 typedef struct {
 	ddpint type_size;
 	free_func_ptr free_func;
@@ -56,7 +58,7 @@ typedef struct {
 	equal_func_ptr equal_func;
 	// bit mask which quads are themselves roots -> limits
 	// object size to (32 * 64) byte;
-	uint8_t ptrmask[32];
+	uint8_t ptrmask[PTRMASK_BYTES];
 } ddpvtable;
 
 ddpbool is_primitive_vtable(ddpvtable *table);

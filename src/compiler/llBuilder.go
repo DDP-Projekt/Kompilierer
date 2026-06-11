@@ -127,13 +127,7 @@ func (b *llBuilder) callAsStatepoint(callee llvm.Value, liveValues []llvm.Value,
 func (b *llBuilder) createCall(fn llvm.Value, args ...llvm.Value) llvm.Value {
 	if fn.GC() == DDP_GC_STRATEGY_NAME {
 		liveValues := b.getLiveValues()
-		gcLive := llvm.CreateOperandBundle("gc-live", liveValues)
-		defer gcLive.Dispose()
-
-		// TODO: re-store or otherwise use the relocated values
-		// call := b.createCallWithOperandBundles(fn, []llvm.OperandBundle{gcLive}, args...)
 		call := b.callAsStatepoint(fn, liveValues, args...)
-
 		return call
 	}
 

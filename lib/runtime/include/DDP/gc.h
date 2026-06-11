@@ -24,6 +24,8 @@ typedef struct GCTypeMeta {
 } GCTypeMeta;
 
 void ddp_register_gc_root(void **root);
+void ddp_register_gc_any_root(ddpany *root);
+// returns zeroed memory
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen);
 // helper function which uses ddp_allocate_gc_ref to function similar to
 // ddp_reallocate

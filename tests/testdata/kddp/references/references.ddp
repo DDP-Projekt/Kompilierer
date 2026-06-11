@@ -171,3 +171,12 @@ Setze ein_text in ein_bar.
 Schreibe (foo von ein_bar) auf eine Zeile.
 Speichere "auch nicht foo" in ein_text.
 Schreibe (foo von ein_bar) auf eine Zeile.
+
+Die Funktion return_stack_ref gibt eine Text Referenz zurück, macht:
+	Der Text t ist "Hallo".
+	Gib t zurück.
+Und kann so benutzt werden:
+	"eine Text Referenz"
+
+Die Text Referenz stack ist eine Text Referenz.
+Schreibe stack auf eine Zeile.

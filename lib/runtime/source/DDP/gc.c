@@ -3,6 +3,7 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddpwindows.h"
 #include "DDP/debug.h"
+#include <stdalign.h>
 #include <stddef.h>
 #include <unistd.h>
 
@@ -413,6 +414,27 @@ static int round_up_to_multiple(size_t numToRound, size_t multiple) {
 	return numToRound + multiple - remainder;
 }
 
+#if defined(__x86_64__) || defined(_M_X64)
+#define TAG_BIT ((uintptr_t)1 << 63)
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#error "TBI needs to be enabled before using high-bit pointer tagging on ARM"
+#else
+#error "Unsupported architecture for high-bit pointer tagging"
+#endif
+
+static inline void *with_tag(void *ptr, int flag) {
+	uintptr_t addr = (uintptr_t)ptr;
+	return flag ? (void *)(addr | TAG_BIT) : (void *)(addr & ~TAG_BIT);
+}
+
+static inline int get_tag(const void *ptr) {
+	return (int)(((uintptr_t)ptr & TAG_BIT) != 0);
+}
+
+static inline void *without_tag(const void *ptr) {
+	return (void *)((uintptr_t)ptr & ~TAG_BIT);
+}
+
 typedef enum Color {
 	WHITE = 0,
 	GREY = 1,
@@ -636,6 +658,20 @@ void ddp_register_gc_root(void **root) {
 	gc.global_roots[gc.len_global_roots++] = root;
 }
 
+void ddp_register_gc_any_root(ddpany *root) {
+	DDP_DBGLOG("Registering any root %p", root);
+
+	if (gc.len_global_roots == gc.cap_global_roots) {
+		gc.cap_global_roots += 8;
+		gc.global_roots = DDP_GROW_ARRAY_NO_GC(void **, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
+	}
+
+	void **tagged_pointer = with_tag((void *)root, 1);
+
+	gc.global_roots[gc.len_global_roots++] = tagged_pointer;
+}
+
+// returns zeroed memory
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 	DDP_DBGLOG("Allocating GC ref from vtable: %p, arrlen: %d", vtable, arrlen);
 
@@ -650,6 +686,9 @@ void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 
 	unsigned index = (((uint8_t *)space_slot) - ((uint8_t *)span->data)) / span->objSize;
 	bitmap_set_bit(span->freeBits, index);
+
+	// zero the memory so that newly allocated spaces don't crash when being traced
+	memset(space_slot, 0, span->objSize);
 
 	DDP_DBGLOG("allocated ref: %p", space_slot);
 	return space_slot;
@@ -697,12 +736,62 @@ void ddp_init_gc(void) {
 	DDP_DBGLOG("done initializing gc");
 }
 
+static bool is_any_vtable(ddpvtable *vtable) {
+	return vtable != NULL && vtable->free_func == (free_func_ptr)ddp_free_any;
+}
+
+static void trace_root(void *ref);
+static void trace_any(ddpany *any) {
+	DDP_DBGLOG("tracing any root %p", any);
+	if (any->vtable_ptr == NULL) {
+		return;
+	}
+
+	const uint8_t *ptrmask = any->vtable_ptr->ptrmask;
+	const void *ref = DDP_ANY_VALUE_PTR(any);
+
+	DDP_DBGLOG("ptrmask: %hhu", ptrmask[0]);
+
+	for (unsigned byte_index = 0; byte_index < PTRMASK_BYTES; byte_index++) {
+		// byte-wise loop
+		uint8_t byte = ptrmask[byte_index];
+		// all 8 objects in this byte are free, so continue
+		if (byte == 0) {
+			continue;
+		}
+
+		for (int oneIndex = 0; oneIndex < 8; oneIndex++, byte = byte >> 1) {
+			// remaining bits in this byte are 0
+			if (byte == 0) {
+				break;
+			}
+
+			// this quad is not a pointer
+			if ((byte & 0x01) == 0) {
+				continue;
+			}
+
+			unsigned index = oneIndex + byte_index * 8;
+			void *nested_ref = ((void **)ref)[index];
+			DDP_DBGLOG("tracing nested root %p", nested_ref);
+
+			trace_root(nested_ref);
+		}
+	}
+}
+
 // TODO: arrays of references
 static void trace_root(void *ref) {
 	if (ref == NULL) {
 		return;
 	}
 	DDP_DBGLOG("tracing root %p", ref);
+
+	if (get_tag(ref) == 1) {
+		DDP_DBGLOG("root is tagged, tracing any %p", without_tag(ref));
+		trace_any((ddpany *)without_tag(ref));
+		return;
+	}
 
 	GCSpan *span = get_span_for_pointer(ref);
 	if (span == NULL) {
@@ -720,37 +809,43 @@ static void trace_root(void *ref) {
 
 	mark_node(ref, span, GREY);
 
-	const uint8_t *ptrmask = span->objInfo.vtable->ptrmask;
-
-	// TODO: arrays
-	for (unsigned byte_index = 0; byte_index < 32; byte_index++) {
-		// byte-wise loop
-		uint8_t byte = ptrmask[byte_index];
-		// all 8 objects in this byte are free, so continue
-		if (byte == 0) {
-			continue;
+	if (is_any_vtable(span->objInfo.vtable)) {
+		DDP_DBGLOG("tracing ddpany");
+		// TODO: take arrlen and list capacity into account like in free_unmarked_objects
+		for (ddpany *object = ref; object < (ddpany *)&((uint8_t *)ref)[span->objSize]; object = (ddpany *)&((uint8_t *)object)[span->objInfo.vtable->type_size]) {
+			trace_any(object);
 		}
+	} else {
+		const uint8_t *ptrmask = span->objInfo.vtable->ptrmask;
 
-		for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
-			// remaining bits in this byte are 0
+		for (unsigned byte_index = 0; byte_index < PTRMASK_BYTES; byte_index++) {
+			// byte-wise loop
+			uint8_t byte = ptrmask[byte_index];
+			// all 8 objects in this byte are free, so continue
 			if (byte == 0) {
-				break;
-			}
-
-			// this quad is not a pointer
-			if ((byte & 0x01) == 0) {
 				continue;
 			}
 
-			unsigned index = oneIndex + byte_index * 8;
-			void *nested_ref = ((void **)ref)[index];
-			DDP_DBGLOG("tracing nested root %p", nested_ref);
-			// TODO: take arrlen and list capacity into account like in free_unmarked_objects
-			for (void *object = nested_ref; object < (void *)&((uint8_t *)nested_ref)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
-				trace_root(object);
-			}
+			for (int oneIndex = 0; oneIndex < 8; oneIndex++, byte = byte >> 1) {
+				// remaining bits in this byte are 0
+				if (byte == 0) {
+					break;
+				}
 
-			byte = byte >> 1;
+				// this quad is not a pointer
+				if ((byte & 0x01) == 0) {
+					continue;
+				}
+
+				unsigned index = oneIndex + byte_index * 8;
+				void *nested_ref = ((void **)ref)[index];
+				DDP_DBGLOG("tracing nested root %p", nested_ref);
+				// TODO: take arrlen and list capacity into account like in free_unmarked_objects
+				// This for loop trace the root at this byte in the ptrmask for every object in its array if the span consists of arrays
+				for (void *object = nested_ref; object < (void *)&((uint8_t *)nested_ref)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
+					trace_root(object);
+				}
+			}
 		}
 	}
 
@@ -922,6 +1017,12 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 static void mark_global_roots(void) {
 	DDP_DBGLOG("GC marking global");
 	for (void ***root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
+		if (get_tag(*root) == 1) {
+			ddpany *any_root = (ddpany *)(without_tag(*root));
+			trace_any(any_root);
+			continue;
+		}
+
 		if (*root != NULL) {
 			DDP_DBGLOG("Root %p in use (Ref value: %p) (Span: %p)", *root, **root, get_span_for_pointer(**root));
 		} else {
@@ -952,7 +1053,7 @@ static void free_unmarked_objects(void) {
 			}
 
 			// bit-wise loop
-			for (int oneIndex = 0; oneIndex < 8; oneIndex++) {
+			for (int oneIndex = 0; oneIndex < 8; oneIndex++, freeByte = freeByte >> 1) {
 				// all objects that are left in this byte are free, so break
 				if (freeByte == 0) {
 					break;
@@ -960,7 +1061,6 @@ static void free_unmarked_objects(void) {
 
 				// there are objects left that are not free, but this particular one is, so continue
 				if ((freeByte & 0x01) == 0) {
-					freeByte = freeByte >> 1;
 					continue;
 				}
 
@@ -968,7 +1068,6 @@ static void free_unmarked_objects(void) {
 
 				DDP_DBGLOG("color of index %u is %d", index, bitmap_get_two_bits(span->markBits, index));
 				if (bitmap_get_two_bits(span->markBits, index) != WHITE) {
-					freeByte = freeByte >> 1;
 					continue;
 				}
 
@@ -981,9 +1080,16 @@ static void free_unmarked_objects(void) {
 						free_func(object);
 					}
 				}
+#ifdef DDP_GC_STRESS
+				if (free_func == NULL) {
+					for (void *object = objectBase; object < (void *)&((uint8_t *)objectBase)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
+						// free the object
+						memset(object, 0, span->objInfo.vtable->type_size);
+					}
+				}
+#endif // DDP_GC_STRESS
 
 				bitmap_clear_bit(span->freeBits, index);
-				freeByte = freeByte >> 1;
 			}
 		}
 

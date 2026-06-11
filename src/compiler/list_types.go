@@ -434,6 +434,7 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 	llFuncBuilder.CreateStore(new_len, retLenPtr)
 	llFuncBuilder.CreateStore(c.growCapacity(new_len), retCapPtr)
 	llFuncBuilder.CreateStore(c.allocateGCRefArray(listType.elementType.VTable(), c.loadStructField(listType.typ, ret, list_cap_field_index)), retArrPtr)
+	c.builder().scp.addProtectedTemporary(ret, listType)
 
 	if listType.elementType.TriviallyCopyable() {
 		// memcpy primitive types

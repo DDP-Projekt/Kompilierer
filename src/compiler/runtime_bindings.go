@@ -36,6 +36,7 @@ var (
 	// reference functions
 	ddp_allocate_gc_ref_irfun llvm.Value
 	ddp_register_gc_root      llvm.Value
+	ddp_register_gc_any_root  llvm.Value
 
 	ddp_do_nothing_ptr_gc llvm.Value
 	ddp_do_nothing_ptr    llvm.Value
@@ -124,6 +125,14 @@ func (c *compiler) initRuntimeFunctions() {
 
 	ddp_register_gc_root = c.declareExternalRuntimeFunction(
 		"ddp_register_gc_root",
+		false,
+		false,
+		c.void,
+		c.ptr,
+	)
+
+	ddp_register_gc_any_root = c.declareExternalRuntimeFunction(
+		"ddp_register_gc_any_root",
 		false,
 		false,
 		c.void,

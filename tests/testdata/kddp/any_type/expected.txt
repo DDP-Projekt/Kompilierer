@@ -39,3 +39,22 @@ falsch
 falsch
 falsch
 gleich var
+wahr
+wahr
+falsch
+wahr
+2
+wahr
+2
+wahr
+2
+wahr
+2
+wahr
+3
+wahr
+3
+wahr
+3
+wahr
+3

@@ -384,9 +384,6 @@ func (t *Typechecker) VisitBinaryExpr(expr *ast.BinaryExpr) ast.VisitResult {
 
 		if ddptypes.IsListDeref(lhs) {
 			t.latestReturnedType = ddptypes.GetListElementTypeDeref(lhs)
-			if ddptypes.IsReference(lhs) {
-				t.latestReturnedType = ddptypes.ReferenceType{Type: t.latestReturnedType} // TODO
-			}
 		} else if ddptypes.EqualDeref(lhs, ddptypes.TEXT) {
 			t.latestReturnedType = ddptypes.BUCHSTABE // later on the list element type
 		}
@@ -867,6 +864,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
+	// TODO: handle casting of assigneables to reference return types
 	if !ddptypes.EqualDeref(stmt.Func.ReturnType, returnType) &&
 		(!ddptypes.EqualDeref(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.EqualDeref(returnType, ddptypes.VoidType{})) {
 		errRange := stmt.Range
@@ -1003,11 +1001,18 @@ overload_loop:
 
 		for i, operand := range operands {
 			actualParamType := overload.Parameters[i].Type
+			isOperandAssignable := IsAssignable(operand.expr)
+			argType := operand.typ
 			if ast.IsGeneric(overload) {
-				actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
+				// UnifyGenericType only works on types, not expressions, so we convert assigneable expressions to references if needed
+				if ddptypes.IsReference(actualParamType) && !ddptypes.IsReference(argType) && isOperandAssignable {
+					argType = ddptypes.ReferenceType{Type: argType}
+				}
+
+				actualParamType = ddptypes.UnifyGenericType(argType, actualParamType, genericTypes)
 			}
 
-			if !ddptypes.IsPasseableAsParam(operand.typ, actualParamType, IsAssignable(operand.expr)) {
+			if !ddptypes.IsPasseableAsParam(argType, actualParamType, isOperandAssignable) {
 				continue overload_loop
 			}
 
@@ -1065,14 +1070,23 @@ func (t *Typechecker) findOverloadCast(expr *ast.CastExpr, operand operand) *ast
 
 		actualParamType := overload.Parameters[0].Type
 		returnType := overload.ReturnType
+		argType := operand.typ
+		isOperandAssignable := IsAssignable(operand.expr)
 		if ast.IsGeneric(overload) {
+			// UnifyGenericType only works on types, not expressions, so we convert assigneable expressions to references if needed
+			if ddptypes.IsReference(actualParamType) && !ddptypes.IsReference(argType) && isOperandAssignable {
+				argType = ddptypes.ReferenceType{Type: argType}
+			}
+
+			actualParamType = ddptypes.UnifyGenericType(argType, actualParamType, genericTypes)
+
 			actualParamType = ddptypes.UnifyGenericType(operand.typ, actualParamType, genericTypes)
 			if generic, isGeneric := ddptypes.CastGeneric(returnType); isGeneric {
 				returnType = genericTypes[generic.Name]
 			}
 		}
 
-		if !ddptypes.IsPasseableAsParam(operand.typ, actualParamType, IsAssignable(operand.expr)) || !ddptypes.EqualDeref(returnType, expr.TargetType) {
+		if !ddptypes.IsPasseableAsParam(argType, actualParamType, isOperandAssignable) || !ddptypes.EqualDeref(returnType, expr.TargetType) {
 			continue
 		}
 

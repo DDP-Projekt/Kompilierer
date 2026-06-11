@@ -3,6 +3,7 @@ Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Laufzeit" ein.
+Binde "Duden/Ausgabe" ein.
 
 [
     Eine Befehlszeilen option mit langem Namen, kurzem Namen und Standardwert.
@@ -126,7 +127,7 @@ Wir nennen die öffentliche Kombination aus
     [ Parametername (Text) -> OptionsIndex ]
     der Tabelle langschreibweisen mit Standardwert der Standardwert von einer Tabelle,
     [ Werte der Optionn ]
-    der Variablen Liste optionWerte mit Standardwert  eine leere Variablen Liste,
+    der Variablen Liste optionWerte mit Standardwert eine leere Variablen Liste,
     [ Positions Argumente ]
     der öffentlichen Text Liste argumente mit Standardwert eine leere Text Liste,
     [ Liste der Unterbefehle in der Befehlszeile ]
@@ -305,7 +306,7 @@ Die Funktion Option_Wert_Setzen mit den Parametern optionen, ergebnis, lang, kur
 	Speichere wert in optionWerte von ergebnis an der Stelle index von optionsIndex.
 
 	Speichere wahr in vomNutzerGesetzt von optionsIndex.
-	Die Variable index ist optionsIndex als Variable.
+	Die Variable index ist optionsIndex.
     Setze den Wert von (lang von o) in (langschreibweisen von ergebnis) auf index.
     Setze den Wert von ((kurz von o) als Text) in (kurzschreibweisen von ergebnis) auf index.
 Und kann so benutzt werden:
@@ -368,10 +369,10 @@ Die öffentliche Funktion Analysiere_Befehlszeile mit den Parametern argumente u
 	[ Schlüssel von Optionn löschen, die entweder nur eine Lang- oder Kurzschreibweise haben ]
     Lösche den Wert für " " aus (kurzschreibweisen von ergebnis).
     Lösche den Wert für "" aus (langschreibweisen von ergebnis).
+
     Gib ergebnis zurück.
 Und kann so benutzt werden:
     "<argumente> mit <befehl> analysiert"
-
 
 [ Der globale Befehl, der für das Programm selbst bestimmt ist ]
 Der öffentliche Befehl HauptBefehl ist ein Befehl mit Namen (die Befehlszeilenargumente an der Stelle 1).

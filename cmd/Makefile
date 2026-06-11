@@ -34,8 +34,6 @@ GCCVERSION := $(shell gcc -dumpfullversion)
 GCCVERSIONFULL := $(shell gcc --version | head -n1)
 
 KDDP_LDFLAGS := -s -w -X main.DDPVERSION=$(DDPVERSION) -X main.LLVMVERSION=$(LLVMVERSION) -X main.GCCVERSION=$(GCCVERSION) -X 'main.GCCVERSIONFULL=$(GCCVERSIONFULL)'
-# TODO: use build tags instead of -X
-KDDP_LDFLAGS_DEBUG := $(KDDP_LDFLAGS) -X 'github.com/DDP-Projekt/Kompilierer/src/compiler.DDP_COMPILER_DEBUG=true'
 
 kddp: export CGO_CPPFLAGS = $(shell $(LLVM_CONFIG) --cppflags)
 kddp: export CGO_CXXFLAGS = $(shell $(LLVM_CONFIG) --cxxflags)
@@ -58,7 +56,7 @@ kddp: gc_strategy
 	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS)"
 
 kddp-debug: gc_strategy
-	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS_DEBUG)"
+	cd $(KDDP_DIR) ; go build -o $(KDDP_OUT_FILE_NAME) -ldflags "$(KDDP_LDFLAGS)" -tags=ddpdebug
 
 gc_strategy:
 	'$(MAKE)' -C '../lib/gc_strategy/'
