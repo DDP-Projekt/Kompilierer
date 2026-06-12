@@ -135,7 +135,7 @@ func (t *Typechecker) VisitVarDecl(decl *ast.VarDecl) ast.VisitResult {
 		)
 	}
 
-	if decl.InitVal != nil && ddptypes.IsReference(decl.Type) {
+	if decl.InitVal != nil && !ddptypes.IsReference(initialType) && ddptypes.IsReference(decl.Type) {
 		markAssigneable(decl.InitVal, initialType)
 	}
 
@@ -864,9 +864,7 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	// TODO: handle casting of assigneables to reference return types
-	if !ddptypes.EqualDeref(stmt.Func.ReturnType, returnType) &&
-		(!ddptypes.EqualDeref(stmt.Func.ReturnType, ddptypes.VARIABLE) || ddptypes.EqualDeref(returnType, ddptypes.VoidType{})) {
+	if !ddptypes.IsAssigneableTo(returnType, stmt.Func.ReturnType) && !ddptypes.IsGenericDeref(stmt.Func.ReturnType) {
 		errRange := stmt.Range
 		if stmt.Value != nil {
 			errRange = stmt.Value.GetRange()
@@ -878,6 +876,11 @@ func (t *Typechecker) VisitReturnStmt(stmt *ast.ReturnStmt) ast.VisitResult {
 				returnType),
 		)
 	}
+
+	if stmt.Value != nil && !ddptypes.IsReference(returnType) && ddptypes.IsReference(stmt.Func.ReturnType) {
+		markAssigneable(stmt.Value, returnType)
+	}
+
 	return ast.VisitRecurse
 }
 

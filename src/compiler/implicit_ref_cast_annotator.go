@@ -309,17 +309,19 @@ func (a *ImplicitRefCastAnnotator) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Vi
 	return ast.VisitRecurse
 }
 
-// TODO: visit children manually and clear annotations
 func (a *ImplicitRefCastAnnotator) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 	if s.Value == nil {
 		return ast.VisitRecurse
 	}
 
+	a.Visit(s.Value)
+	a.clearAnnotation(s.Value)
+
 	t := s.Value.Type()
-	if level := ddptypes.IsReferenceToLevel(s.Func.ReturnType, t); level > 0 {
+	if level := ddptypes.IsReferenceToLevel(s.Func.ReturnType, t); level > 0 && !s.Value.HasMetadata(typechecker.AssigneableMetaKind) {
 		a.annotateToRef(s.Value, level)
 	} else if level := ddptypes.IsReferenceToLevel(t, s.Func.ReturnType); level > 0 {
 		a.annotateFromRef(s.Value, level)
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }

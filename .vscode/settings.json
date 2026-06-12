@@ -1,6 +1,5 @@
 {
 	"C_Cpp.formatting": "clangFormat",
-	"go.lintTool": "staticcheck",
 	"gopls": {
 		"formatting.gofumpt": true,
 		"build.buildFlags": [
