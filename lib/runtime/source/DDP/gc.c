@@ -5,7 +5,12 @@
 #include "DDP/debug.h"
 #include <stdalign.h>
 #include <stddef.h>
+#include <string.h>
 #include <unistd.h>
+
+#ifdef DDPOS_LINUX
+#include <sys/mman.h>
+#endif
 
 #define UNW_LOCAL_ONLY
 #include "libunwind.h"
@@ -333,6 +338,11 @@ static size_t get_page_size(void) {
 
 	return sysInfo.dwPageSize;
 #else
+	long pagesize = sysconf(_SC_PAGESIZE);
+	if (pagesize <= 0) {
+		return (1 << 12); // Fallback to 4kb
+	}
+	return pagesize;
 #endif
 }
 
@@ -472,22 +482,35 @@ typedef struct GC {
 
 static GC gc;
 
+// TODO: error handling
 static void *osAlloc(void *hint UNUSED, size_t nbytes) {
 #ifdef DDPOS_WINDOWS
 	// TODO: use hint
 	void *result = VirtualAlloc(NULL, nbytes, MEM_COMMIT, PAGE_READWRITE);
+	if (result == NULL) {
+		ddp_runtime_error(1, VirtualAlloc fehlgeschlagen : % d, GetLastError());
+	}
 #else
-	// TODO: use mmap
+	// TODO: use hint
+	void *result = mmap(NULL, nbytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+	if (result == MAP_FAILED) {
+		ddp_runtime_error(1, "mmap fehlgeschlagen: %s", strerror(errno));
+	}
 #endif
 	DDP_DBGLOG("Allocated %p from OS", result);
 	return result;
 }
 
+// TODO: error handling
 static void osFree(void *p, size_t nbytes) {
 #ifdef DDPOS_WINDOWS
-	VirtualFree(p, nbytes, MEM_RELEASE);
+	if (VirtualFree(p, nbytes, MEM_RELEASE) == 0) {
+		ddp_runtime_error(1, "VirtualFree fehlgeschlagen: %d", GetLastError());
+	}
 #else
-	// TODO: use munmap
+	if (munmap(p, nbytes) < 0) {
+		ddp_runtime_error(1, "munmap fehlgeschlagen: %s", strerror(errno));
+	}
 #endif
 }
 
