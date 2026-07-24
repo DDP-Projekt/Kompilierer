@@ -52,6 +52,10 @@ func (*ddpIrGenericListType) LoadLives(*compiler, llvm.Value) []llvm.Value {
 	return nil
 }
 
+func (*ddpIrGenericListType) PtrmaskInfo(c *compiler) (llvm.Value, llvm.Value) {
+	return c.zero, c.Null
+}
+
 func (c *compiler) createGenericListType() *ddpIrGenericListType {
 	list := &ddpIrGenericListType{}
 	list.typ = c.llctx.StructType([]llvm.Type{c.ptr, c.ddpint, c.ddpint}, false)

@@ -56,6 +56,10 @@ func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 	return t.equalsIrFun
 }
 
+func (t *ddpIrAnyType) PtrmaskInfo(c *compiler) (llvm.Value, llvm.Value) {
+	return c.zero, c.Null
+}
+
 // TODO: how to handle this if any may or may not contain a gc pointer?
 func (*ddpIrAnyType) LoadLives(c *compiler, any_ptr llvm.Value) []llvm.Value {
 	// c.debug_log("Tagging any %p", any_ptr)
@@ -81,14 +85,17 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
+	ptrmask_size, ptrmask := ddpany.PtrmaskInfo(c)
+
 	vtable.SetGlobalConstant(true)
 	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 		llvm.ConstInt(c.ddpint, c.getTypeSize(ddpany), false),
 		ddpany.freeIrFun,
 		ddpany.deepCopyIrFun,
 		ddpany.equalsIrFun,
-		c.zeroPtrMask,
 		c.createConstantString(ddptypes.VARIABLE.String()),
+		ptrmask_size,
+		ptrmask,
 	}))
 
 	ddpany.vtable = vtable
@@ -183,7 +190,7 @@ func (c *compiler) compareAnyType(val llvm.Value, vtable llvm.Value) llvm.Value 
 	return c.builder().CreateICmp(llvm.IntEQ, c.loadStructField(c.ddpany.typ, val, any_vtable_ptr_index), vtable, "")
 }
 
-const vtable_typename_index = 5
+const vtable_typename_index = 4
 
 func (c *compiler) getAnyTypeName(val llvm.Value) llvm.Value {
 	return c.loadStructField(c.vtable_type, c.loadStructField(c.ddpany.typ, val, any_vtable_ptr_index), vtable_typename_index)

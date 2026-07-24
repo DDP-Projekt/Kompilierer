@@ -66,6 +66,10 @@ func (t *ddpIrReferenceType) LoadLives(c *compiler, v llvm.Value) []llvm.Value {
 	return lives
 }
 
+func (t *ddpIrReferenceType) PtrmaskInfo(c *compiler) (llvm.Value, llvm.Value) {
+	return c.one, c.refPtrMask
+}
+
 func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpIrType) *ddpIrReferenceType {
 	if r, ok := c.refTypes[t]; ok {
 		return r
@@ -83,14 +87,17 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
+	ptrmask_size, ptrmask := refType.PtrmaskInfo(c)
+
 	vtable.SetGlobalConstant(true)
 	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 		llvm.ConstInt(c.ddpint, c.getTypeSize(refType), false),
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
-		c.refPtrMask,
 		c.createConstantString(t.String()),
+		ptrmask_size,
+		ptrmask,
 	}))
 
 	refType.vtable = vtable

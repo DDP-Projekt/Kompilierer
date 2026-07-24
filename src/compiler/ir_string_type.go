@@ -77,6 +77,10 @@ func (t *ddpIrStringType) LoadLives(*compiler, llvm.Value) []llvm.Value {
 	return nil
 }
 
+func (t *ddpIrStringType) PtrmaskInfo(c *compiler) (llvm.Value, llvm.Value) {
+	return c.zero, c.Null
+}
+
 const (
 	string_str_field_index = 0
 	string_cap_field_index = 1
@@ -126,14 +130,17 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
+	ptrmask_size, ptrmask := ddpstring.PtrmaskInfo(c)
+
 	vtable.SetGlobalConstant(true)
 	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 		llvm.ConstInt(c.ddpint, c.getTypeSize(ddpstring), false),
 		ddpstring.freeIrFun,
 		ddpstring.deepCopyIrFun,
 		ddpstring.equalsIrFun,
-		c.zeroPtrMask,
 		c.createConstantString(ddptypes.TEXT.String()),
+		ptrmask_size,
+		ptrmask,
 	}))
 
 	ddpstring.vtable = vtable

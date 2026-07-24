@@ -1,5 +1,4 @@
 ---
-Language: C
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Right

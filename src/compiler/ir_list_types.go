@@ -82,6 +82,10 @@ func (t *ddpIrListType) LoadLives(c *compiler, list llvm.Value) []llvm.Value {
 	return []llvm.Value{c.loadStructField(t.LLType(), list, list_arr_field_index)}
 }
 
+func (t *ddpIrListType) PtrmaskInfo(c *compiler) (llvm.Value, llvm.Value) {
+	return c.one, c.listPtrMask
+}
+
 // defines the struct of a list type
 // and all the necessery functions
 // from the given elementType and name
@@ -116,14 +120,17 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
 	if !declarationOnly {
+		ptrmask_size, ptrmask := list.PtrmaskInfo(c)
+
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 			llvm.ConstInt(c.ddpint, c.getTypeSize(list), false),
 			list.freeIrFun,
 			list.deepCopyIrFun,
 			list.equalsIrFun,
-			c.listPtrMask,
 			c.createConstantString(list.DDPType().String()),
+			ptrmask_size,
+			ptrmask,
 		}))
 	}
 

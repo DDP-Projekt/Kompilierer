@@ -84,19 +84,17 @@ type funcWrapper struct {
 type llTypes struct {
 	ptr /*ptr_gc,*/, void, i8, i32, i64         llvm.Type
 	ddpint, ddpfloat, ddpbyte, ddpbool, ddpchar llvm.Type
-	vtable_type, ptrmask_type                   llvm.Type
+	vtable_type                                 llvm.Type
 	token                                       llvm.Type
 }
 
 func newLLTypes(llctx llvm.Context) llTypes {
 	ptr := llctx.PointerType(0)
-	// ptr_gc := llctx.PointerType(1)
 	i8 := llctx.Int8Type()
 	i32 := llctx.Int32Type()
 	i64 := llctx.Int64Type()
 	return llTypes{
-		ptr: ptr,
-		// ptr_gc:   ptr_gc,
+		ptr:      ptr,
 		void:     llctx.VoidType(),
 		i8:       i8,
 		i32:      i32,
@@ -111,52 +109,33 @@ func newLLTypes(llctx llvm.Context) llTypes {
 			ptr,
 			ptr,
 			ptr,
-			llvm.ArrayType(i8, 32),
+			ptr,
+			i64,
 			ptr,
 		}, false),
-		ptrmask_type: llvm.ArrayType(i8, 32),
-		token:        llctx.TokenType(),
+		token: llctx.TokenType(),
 	}
 }
 
 type llConstants struct {
-	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, zeroPtrMask, listPtrMask, refPtrMask, tag_bit llvm.Value
-	resultIntrinsicID                                                                                                             uint
+	zero, zero32, zerof, zero8, one, two32, all_ones, all_ones8, False, True, Null, listPtrMask, refPtrMask, tag_bit llvm.Value
+	resultIntrinsicID                                                                                                uint
 }
 
 func newLLConstants(types llTypes) llConstants {
 	zero8 := llvm.ConstInt(types.i8, 0, false)
 	return llConstants{
-		zero:      llvm.ConstInt(types.i64, 0, false),
-		zero32:    llvm.ConstInt(types.i32, 0, false),
-		zerof:     llvm.ConstFloat(types.ddpfloat, 0),
-		zero8:     zero8,
-		one:       llvm.ConstInt(types.i64, 1, false),
-		two32:     llvm.ConstInt(types.i32, 2, false),
-		all_ones:  llvm.ConstAllOnes(types.i64),
-		all_ones8: llvm.ConstAllOnes(types.i8),
-		False:     llvm.ConstInt(types.ddpbool, 0, false),
-		True:      llvm.ConstInt(types.ddpbool, 1, false),
-		Null:      llvm.ConstNull(types.ptr),
-		// NullGC:    llvm.ConstNull(types.ptr_gc),
-		zeroPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-		}),
-		listPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
-			llvm.ConstInt(types.i8, 1, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-		}),
-		refPtrMask: llvm.ConstArray(types.i8, []llvm.Value{
-			llvm.ConstInt(types.i8, 1, false), zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-			zero8, zero8, zero8, zero8, zero8, zero8, zero8, zero8,
-		}),
+		zero:              llvm.ConstInt(types.i64, 0, false),
+		zero32:            llvm.ConstInt(types.i32, 0, false),
+		zerof:             llvm.ConstFloat(types.ddpfloat, 0),
+		zero8:             zero8,
+		one:               llvm.ConstInt(types.i64, 1, false),
+		two32:             llvm.ConstInt(types.i32, 2, false),
+		all_ones:          llvm.ConstAllOnes(types.i64),
+		all_ones8:         llvm.ConstAllOnes(types.i8),
+		False:             llvm.ConstInt(types.ddpbool, 0, false),
+		True:              llvm.ConstInt(types.ddpbool, 1, false),
+		Null:              llvm.ConstNull(types.ptr),
 		tag_bit:           llvm.ConstInt(types.i64, 1<<63, false),
 		resultIntrinsicID: llvm.LookupIntrinsicID("llvm.experimental.gc.result"),
 	}
@@ -360,6 +339,9 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 	})
 
 	c.setupErrorStrings()
+
+	c.setupConstantPtrmasks()
+
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
@@ -514,6 +496,8 @@ func (c *compiler) insertFunction(name string, funcDecl *ast.FuncDecl, llFunc ll
 func (c *compiler) setup() {
 	c.setupErrorStrings()
 
+	c.setupConstantPtrmasks()
+
 	// the order of these function calls is important
 	// because the primitive types need to be setup
 	// before the list types
@@ -539,7 +523,6 @@ func (c *compiler) createConstantString(msg string) llvm.Value {
 	error_string.SetLinkage(llvm.InternalLinkage)
 	error_string.SetVisibility(llvm.DefaultVisibility)
 	error_string.SetGlobalConstant(true)
-	error_string.SetLinkage(llvm.PrivateLinkage)
 	error_string.SetUnnamedAddr(true)
 	error_string.SetAlignment(1)
 	error_string.SetInitializer(str)
@@ -554,6 +537,15 @@ func (c *compiler) setupErrorStrings() {
 	c.todo_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Dieser Teil des Programms wurde noch nicht implementiert\n")
 	c.bad_cast_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Falsche Typumwandlung (Tatsächlicher Typ: %s)")
 	c.invalid_utf8_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Invalider UTF8 Wert im Text")
+}
+
+func (c *compiler) setupConstantPtrmasks() {
+	ptrmask := c.newPtrmaskArray(llvm.ConstArray(c.i8, []llvm.Value{
+		llvm.ConstInt(c.i8, PTRMASK_REF, false),
+	}), llvm.ArrayType(c.i8, 1))
+
+	c.listPtrMask = ptrmask
+	c.refPtrMask = ptrmask
 }
 
 // used in setup()
@@ -3085,14 +3077,17 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl) {
 	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
+	ptrmask_size, ptrmask := ir_type.PtrmaskInfo(c)
+
 	vtable.SetGlobalConstant(true)
 	vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
 		llvm.ConstInt(c.ddpint, c.getTypeSize(ir_type), false),
 		ir_type.FreeFunc(),
 		ir_type.DeepCopyFunc(),
 		ir_type.EqualsFunc(),
-		c.zero, // TODO: ptrmask
 		c.createConstantString(d.Type.String()),
+		ptrmask_size,
+		ptrmask,
 	}))
 
 	c.typeDefVTables[name] = vtable

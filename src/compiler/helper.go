@@ -47,6 +47,15 @@ func (c *compiler) NewAlloca(elemType llvm.Type) llvm.Value {
 	return alloca
 }
 
+func (c *compiler) newPtrmaskArray(v llvm.Value, t llvm.Type) llvm.Value {
+	global := llvm.AddGlobal(c.llmod, t, "")
+	global.SetLinkage(llvm.InternalLinkage)
+	global.SetVisibility(llvm.DefaultVisibility)
+	global.SetGlobalConstant(true)
+	global.SetInitializer(v)
+	return global
+}
+
 // turn a ddptypes.Type into the corresponding llvm type
 func (c *compiler) toIrType(ddpType ddptypes.Type) ddpIrType {
 	ddpType = ddptypes.TrueUnderlying(ddpType)

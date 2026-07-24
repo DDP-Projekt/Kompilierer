@@ -19,6 +19,8 @@ type ddpIrStructType struct {
 	deepCopyIrFun llvm.Value // the deepCopy ir func
 	equalsIrFun   llvm.Value // the equals ir func
 	listType      *ddpIrListType
+	ptrmask_size  llvm.Value
+	ptrmask       llvm.Value
 }
 
 var _ ddpIrType = (*ddpIrStructType)(nil)
@@ -70,6 +72,10 @@ func (t *ddpIrStructType) LoadLives(c *compiler, v llvm.Value) []llvm.Value {
 	return lives
 }
 
+func (t *ddpIrStructType) PtrmaskInfo(*compiler) (llvm.Value, llvm.Value) {
+	return t.ptrmask_size, t.ptrmask
+}
+
 // iterate struct fields recursively
 func (c *compiler) iterateFieldOffsets(t *ddpIrStructType, initialOffset uint64, f func(ddpIrType, uint64)) {
 	for i, field := range t.fieldIrTypes {
@@ -83,27 +89,49 @@ func (c *compiler) iterateFieldOffsets(t *ddpIrStructType, initialOffset uint64,
 	}
 }
 
-func (c *compiler) computePtrMask(t *ddpIrStructType) llvm.Value {
-	bitmap_set_bit := func(bitmap []uint8, index int) {
-		bitmap[index/8] |= 1 << (index % 8)
+const (
+	PTRMASK_REF = 1
+	PTRMASK_ANY = 2
+)
+
+func (c *compiler) computePtrMask(t *ddpIrStructType) (llvm.Value, llvm.Value) {
+	// sets the two bits belonging to the given 8-byte slot to the bits specified in value & 0x3
+	// each byte holds 4 slots (2 bits each), so the byte index is slot/4
+	// and the bit offset within that byte is (slot%4)*2
+	bitmap_set_two_bits := func(bitmap []uint8, slot int, value uint8) {
+		bitmap[slot/4] |= (value & 0x3) << ((slot % 4) * 2)
 	}
 
-	ptrMask := make([]uint8, 32)
+	ptrMask := make([]uint8, 0)
 
 	c.iterateFieldOffsets(t, 0, func(field ddpIrType, fieldOffset uint64) {
 		fieldDDPType := field.DDPType()
-		// TODO: handle ddpany fields
-		if ddptypes.IsReference(fieldDDPType) || ddptypes.IsList(fieldDDPType) {
-			bitmap_set_bit(ptrMask, int(fieldOffset)/8)
+
+		var value uint8
+		switch {
+		case ddptypes.IsReference(fieldDDPType) || ddptypes.IsList(fieldDDPType):
+			value = PTRMASK_REF
+		case ddptypes.IsAny(fieldDDPType):
+			value = PTRMASK_ANY
+		default:
+			return
 		}
+
+		slot := int(fieldOffset) / 8
+		byteIndex := slot / 4
+		for len(ptrMask) <= byteIndex {
+			ptrMask = append(ptrMask, 0)
+		}
+
+		bitmap_set_two_bits(ptrMask, slot, value)
 	})
 
-	irPtrMask := make([]llvm.Value, 32)
+	irPtrMask := make([]llvm.Value, len(ptrMask))
 	for i, byte := range ptrMask {
 		irPtrMask[i] = c.newIntT(c.i8, int64(byte))
 	}
 
-	return llvm.ConstArray(c.i8, irPtrMask)
+	return c.newInt(int64(len(ptrMask))), c.newPtrmaskArray(llvm.ConstArray(c.i8, irPtrMask), llvm.ArrayType(c.i8, len(ptrMask)))
 }
 
 func (c *compiler) defineOrDeclareAllDeclTypes(decl *ast.StructDecl) {
@@ -166,6 +194,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 	vtable.SetLinkage(llvm.ExternalLinkage)
 	vtable.SetVisibility(llvm.DefaultVisibility)
 
+	structType.ptrmask_size, structType.ptrmask = c.computePtrMask(structType)
+
 	if !declarationOnly {
 		vtable.SetGlobalConstant(true)
 		vtable.SetInitializer(llvm.ConstNamedStruct(c.vtable_type, []llvm.Value{
@@ -173,8 +203,9 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 			structType.freeIrFun,
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,
-			c.computePtrMask(structType), // TODO: compute ptrmask
 			c.createConstantString(typ.String()),
+			structType.ptrmask_size,
+			structType.ptrmask,
 		}))
 	}
 

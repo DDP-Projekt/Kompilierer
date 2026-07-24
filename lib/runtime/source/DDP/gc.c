@@ -353,7 +353,8 @@ static bool vtable_gc_equal(ddpvtable *a, ddpvtable *b) {
 	return a == b ||
 		   (a->type_size == b->type_size &&
 			a->free_func == b->free_func &&
-			memcmp(a->ptrmask, b->ptrmask, sizeof(a->ptrmask)) == 0);
+			a->ptrmask_size == b->ptrmask_size &&
+			memcmp(a->ptrmask, b->ptrmask, a->ptrmask_size) == 0);
 }
 
 static bool type_meta_equal(GCTypeMeta a, GCTypeMeta b) {
@@ -388,26 +389,26 @@ static void bitmap_clear_bit(uint8_t *bitmap, size_t index) {
 	bitmap[index / 8] &= ~(1 << (index % 8));
 }
 
-static int UNUSED bitmap_get_bit(uint8_t *bitmap, size_t index) {
+static int UNUSED bitmap_get_bit(const uint8_t *bitmap, size_t index) {
 	return (bitmap[index / 8] & (1 << (index % 8))) >> (index % 8);
 }
 
 // sets the two bits at index to the bits specified in value & 0x3
-// correct index calculation for a two-bit-pair bitmap is done here
+// each byte holds 4 two-bit slots, so the byte is index/4 and the shift is (index%4)*2
 static void bitmap_set_two_bits(uint8_t *bitmap, size_t index, uint8_t value) {
-	bitmap[index / 8] |= (value & 0x3) << ((index * 2) % 8);
+	bitmap[index / 4] |= (value & 0x3) << ((index % 4) * 2);
 }
 
-// sets the two bits at index to the bits specified in value & 0x3
-// correct index calculation for a two-bit-pair bitmap is done here
+// clears the two bits at index
+// each byte holds 4 two-bit slots, so the byte is index/4 and the shift is (index%4)*2
 static void bitmap_clear_two_bits(uint8_t *bitmap, size_t index) {
-	bitmap[index / 8] &= ~(0x3 << ((index * 2) % 8));
+	bitmap[index / 4] &= ~(0x3 << ((index % 4) * 2));
 }
 
 // gets the bits at index
-// correct index calculation for a two-bit-pair bitmap is done here
-static int bitmap_get_two_bits(uint8_t *bitmap, size_t index) {
-	return (bitmap[index / 8] & (uint8_t)(0x3 << ((index * 2) % 8))) >> ((index * 2) % 8);
+// each byte holds 4 two-bit slots, so the byte is index/4 and the shift is (index%4)*2
+static int bitmap_get_two_bits(const uint8_t *bitmap, size_t index) {
+	return (bitmap[index / 4] & (uint8_t)(0x3 << ((index % 4) * 2))) >> ((index % 4) * 2);
 }
 
 // round up positive number to nearest multiple
@@ -444,6 +445,12 @@ static inline int get_tag(const void *ptr) {
 static inline void *without_tag(const void *ptr) {
 	return (void *)((uintptr_t)ptr & ~TAG_BIT);
 }
+
+typedef enum RootType {
+	PTRMASK_NONE = 0,
+	PTRMASK_REF = 1,
+	PTRMASK_ANY = 2
+} RootType;
 
 typedef enum Color {
 	WHITE = 0,
@@ -785,39 +792,23 @@ static void trace_any(ddpany *any) {
 		return;
 	}
 
-	DDP_DBGLOG("any->vtable_ptr: %p", any->vtable_ptr);
-	DDP_DBGLOG("any->vtable_ptr->ptrmask: %p", any->vtable_ptr->ptrmask);
-	DDP_DBGLOG("any->vtable_ptr->type_size: %p", any->vtable_ptr->type_size);
-
 	const uint8_t *ptrmask = any->vtable_ptr->ptrmask;
 	const void *ref = DDP_ANY_VALUE_PTR(any);
 
-	DDP_DBGLOG("ptrmask: %hhu", ptrmask[0]);
-
-	for (unsigned byte_index = 0; byte_index < PTRMASK_BYTES; byte_index++) {
-		// byte-wise loop
-		uint8_t byte = ptrmask[byte_index];
-		// all 8 objects in this byte are free, so continue
-		if (byte == 0) {
-			continue;
-		}
-
-		for (int oneIndex = 0; oneIndex < 8; oneIndex++, byte = byte >> 1) {
-			// remaining bits in this byte are 0
-			if (byte == 0) {
-				break;
-			}
-
-			// this quad is not a pointer
-			if ((byte & 0x01) == 0) {
-				continue;
-			}
-
-			unsigned index = oneIndex + byte_index * 8;
-			void *nested_ref = ((void **)ref)[index];
+	for (unsigned i = 0; i < (any->vtable_ptr->ptrmask_size * 4); i++) {
+		switch (bitmap_get_two_bits(ptrmask, i)) {
+		case PTRMASK_REF: {
+			void *nested_ref = ((void **)ref)[i];
 			DDP_DBGLOG("tracing nested root %p", nested_ref);
-
 			trace_root(nested_ref);
+			break;
+		}
+		case PTRMASK_ANY: {
+			void *nested_any = (ddpany *)&((uint8_t *)ref)[i * 8];
+			DDP_DBGLOG("tracing nested any %p", nested_any);
+			trace_any(nested_any);
+			break;
+		}
 		}
 	}
 }
@@ -860,32 +851,27 @@ static void trace_root(void *ref) {
 	} else {
 		const uint8_t *ptrmask = span->objInfo.vtable->ptrmask;
 
-		for (unsigned byte_index = 0; byte_index < PTRMASK_BYTES; byte_index++) {
-			// byte-wise loop
-			uint8_t byte = ptrmask[byte_index];
-			// all 8 objects in this byte are free, so continue
-			if (byte == 0) {
+		for (unsigned i = 0; i < (span->objInfo.vtable->ptrmask_size * 4); i++) {
+			const RootType rt = bitmap_get_two_bits(ptrmask, i);
+
+			if (rt == PTRMASK_NONE) {
 				continue;
 			}
 
-			for (int oneIndex = 0; oneIndex < 8; oneIndex++, byte = byte >> 1) {
-				// remaining bits in this byte are 0
-				if (byte == 0) {
+			// TODO: take arrlen and list capacity into account like in free_unmarked_objects
+			// This for loop trace the root at this byte in the ptrmask for every object in its array if the span consists of arrays
+			for (uint8_t *object = (uint8_t *)ref; object < (uint8_t *)ref + span->objSize; object += span->objInfo.vtable->type_size) {
+				switch (rt) {
+				case PTRMASK_REF:
+					DDP_DBGLOG("tracing nested root %p", object);
+					trace_root(((void **)object)[i]);
 					break;
-				}
-
-				// this quad is not a pointer
-				if ((byte & 0x01) == 0) {
-					continue;
-				}
-
-				unsigned index = oneIndex + byte_index * 8;
-				void *nested_ref = ((void **)ref)[index];
-				DDP_DBGLOG("tracing nested root %p", nested_ref);
-				// TODO: take arrlen and list capacity into account like in free_unmarked_objects
-				// This for loop trace the root at this byte in the ptrmask for every object in its array if the span consists of arrays
-				for (void *object = nested_ref; object < (void *)&((uint8_t *)nested_ref)[span->objSize]; object = &((uint8_t *)object)[span->objInfo.vtable->type_size]) {
-					trace_root(object);
+				case PTRMASK_ANY:
+					DDP_DBGLOG("tracing nested any %p", object);
+					trace_any((ddpany *)&(object[i * 8]));
+					break;
+				default:
+					break;
 				}
 			}
 		}
