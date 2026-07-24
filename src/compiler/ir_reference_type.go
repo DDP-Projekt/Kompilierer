@@ -90,6 +90,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		c.refPtrMask,
+		c.createConstantString(t.String()),
 	}))
 
 	refType.vtable = vtable

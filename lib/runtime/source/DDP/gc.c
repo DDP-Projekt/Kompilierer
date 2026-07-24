@@ -743,9 +743,14 @@ static bool is_any_vtable(ddpvtable *vtable) {
 static void trace_root(void *ref);
 static void trace_any(ddpany *any) {
 	DDP_DBGLOG("tracing any root %p", any);
-	if (any->vtable_ptr == NULL) {
+	// don't trace NULL or Standardwert any
+	if (any == NULL || any->vtable_ptr == NULL) {
 		return;
 	}
+
+	DDP_DBGLOG("any->vtable_ptr: %p", any->vtable_ptr);
+	DDP_DBGLOG("any->vtable_ptr->ptrmask: %p", any->vtable_ptr->ptrmask);
+	DDP_DBGLOG("any->vtable_ptr->type_size: %p", any->vtable_ptr->type_size);
 
 	const uint8_t *ptrmask = any->vtable_ptr->ptrmask;
 	const void *ref = DDP_ANY_VALUE_PTR(any);
@@ -788,14 +793,14 @@ static void trace_root(void *ref) {
 	DDP_DBGLOG("tracing root %p", ref);
 
 	if (get_tag(ref) == 1) {
-		DDP_DBGLOG("root is tagged, tracing any %p", without_tag(ref));
+		DDP_DBGLOG("root is tagged, tracing any %p", ref);
 		trace_any((ddpany *)without_tag(ref));
 		return;
 	}
 
 	GCSpan *span = get_span_for_pointer(ref);
 	if (span == NULL) {
-		DDP_DBGLOG("No span found, not tracing; spans:");
+		DDP_DBGLOG("No span found, not tracing");
 		return;
 	}
 
@@ -932,6 +937,8 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 	unw_init_local(&cursor, &context);
 
 	while (unw_step(&cursor) > 0) {
+		DDP_DBGLOG("Called unw_step");
+
 		unw_word_t pc;
 		if (unw_get_reg(&cursor, UNW_REG_IP, &pc) != 0) {
 			DDP_DBGLOG("Could not read UNW_REG_IP");

@@ -96,6 +96,7 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 		llvm.ConstNull(c.ptr),
 		llvm.ConstNull(c.ptr),
 		c.zeroPtrMask,
+		c.createConstantString(ddptyp.String()),
 	}))
 
 	primitive.vtable = vtable

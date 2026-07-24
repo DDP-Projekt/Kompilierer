@@ -25,6 +25,7 @@ func (c *compiler) declareExternalRuntimeFunction(name string, variadic bool, gc
 var (
 	ddp_reallocate_irfun      llvm.Value
 	ddp_runtime_error_irfun   llvm.Value
+	ddp_debug_log_irfun       llvm.Value
 	utf8_string_to_char_irfun llvm.Value
 	_libc_memcpy_irfun        llvm.Value
 	_libc_memcmp_irfun        llvm.Value
@@ -60,6 +61,14 @@ func (c *compiler) initRuntimeFunctions() {
 		false,
 		c.void,
 		c.ddpint,
+		c.ptr,
+	)
+
+	ddp_debug_log_irfun = c.declareExternalRuntimeFunction(
+		"ddp_debug_log",
+		true,
+		false,
+		c.void,
 		c.ptr,
 	)
 
@@ -159,6 +168,13 @@ func (c *compiler) runtime_error(exit_code int, fmt llvm.Value, args ...llvm.Val
 	args = append([]llvm.Value{c.newInt(int64(exit_code)), c.builder().CreateBitCast(strPtr, c.ptr, "")}, args...)
 	c.builder().createCall(ddp_runtime_error_irfun, args...)
 	c.builder().CreateUnreachable()
+}
+
+func (c *compiler) debug_log(fmt string, args ...llvm.Value) {
+	if DEBUG {
+		strPtr := c.createConstantString(fmt)
+		c.builder().createCall(ddp_debug_log_irfun, append([]llvm.Value{c.builder().CreateBitCast(strPtr, c.ptr, "")}, args...)...)
+	}
 }
 
 func (c *compiler) out_of_bounds_error(line, column, index, len llvm.Value) {

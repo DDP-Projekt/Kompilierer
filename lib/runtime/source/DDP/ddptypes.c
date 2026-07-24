@@ -86,6 +86,8 @@ void ddp_free_any(ddpany *any) {
 		// force segfaults
 		any->value_ptr = NULL;
 	}
+
+	any->vtable_ptr = NULL;
 }
 
 // places a copy of any in ret

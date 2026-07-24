@@ -59,6 +59,7 @@ typedef struct {
 	// bit mask which quads are themselves roots -> limits
 	// object size to (32 * 64) byte;
 	uint8_t ptrmask[PTRMASK_BYTES];
+	const char *typeName;
 } ddpvtable;
 
 ddpbool is_primitive_vtable(ddpvtable *table);

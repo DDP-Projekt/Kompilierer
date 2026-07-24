@@ -112,6 +112,7 @@ func newLLTypes(llctx llvm.Context) llTypes {
 			ptr,
 			ptr,
 			llvm.ArrayType(i8, 32),
+			ptr,
 		}, false),
 		ptrmask_type: llvm.ArrayType(i8, 32),
 		token:        llctx.TokenType(),
@@ -203,6 +204,7 @@ type compiler struct {
 	refTypes        map[ddptypes.ReferenceType]*ddpIrReferenceType
 	importedModules map[*ast.Module]struct{} // all the modules that have already been imported
 	typeDefVTables  map[string]llvm.Value
+	stringConstants map[string]llvm.Value
 
 	moduleInitBuilder          *llBuilder // the module_init func of this module
 	moduleDisposeBuilder       *llBuilder
@@ -254,6 +256,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		refTypes:        make(map[ddptypes.ReferenceType]*ddpIrReferenceType),
 		importedModules: make(map[*ast.Module]struct{}),
 		typeDefVTables:  make(map[string]llvm.Value),
+		stringConstants: make(map[string]llvm.Value),
 
 		llTypes:      types,
 		llConstants:  constants,
@@ -526,26 +529,31 @@ func (c *compiler) setup() {
 	c.setupOperators()
 }
 
-// used in setup()
-func (c *compiler) setupErrorStrings() {
-	createErrorString := func(msg string) llvm.Value {
-		str := llvm.ConstString(msg, true)
-		error_string := llvm.AddGlobal(c.llmod, str.Type(), "")
-		error_string.SetLinkage(llvm.InternalLinkage)
-		error_string.SetVisibility(llvm.DefaultVisibility)
-		error_string.SetGlobalConstant(true)
-		error_string.SetLinkage(llvm.PrivateLinkage)
-		error_string.SetUnnamedAddr(true)
-		error_string.SetAlignment(1)
-		error_string.SetInitializer(str)
-		return error_string
+func (c *compiler) createConstantString(msg string) llvm.Value {
+	if val, ok := c.stringConstants[msg]; ok {
+		return val
 	}
 
-	c.out_of_bounds_error_string = createErrorString("Zeile %lld, Spalte %lld: Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n")
-	c.slice_error_string = createErrorString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n")
-	c.todo_error_string = createErrorString("Zeile %lld, Spalte %lld: Dieser Teil des Programms wurde noch nicht implementiert\n")
-	c.bad_cast_error_string = createErrorString("Zeile %lld, Spalte %lld: Falsche Typumwandlung")
-	c.invalid_utf8_error_string = createErrorString("Zeile %lld, Spalte %lld: Invalider UTF8 Wert im Text")
+	str := llvm.ConstString(msg, true)
+	error_string := llvm.AddGlobal(c.llmod, str.Type(), "")
+	error_string.SetLinkage(llvm.InternalLinkage)
+	error_string.SetVisibility(llvm.DefaultVisibility)
+	error_string.SetGlobalConstant(true)
+	error_string.SetLinkage(llvm.PrivateLinkage)
+	error_string.SetUnnamedAddr(true)
+	error_string.SetAlignment(1)
+	error_string.SetInitializer(str)
+	c.stringConstants[msg] = error_string
+	return error_string
+}
+
+// used in setup()
+func (c *compiler) setupErrorStrings() {
+	c.out_of_bounds_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Index außerhalb der Listen Länge (Index war %ld, Listen Länge war %ld)\n")
+	c.slice_error_string = c.createConstantString("Invalide Indexe (Index 1 war %ld, Index 2 war %ld)\n")
+	c.todo_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Dieser Teil des Programms wurde noch nicht implementiert\n")
+	c.bad_cast_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Falsche Typumwandlung (Tatsächlicher Typ: %s)")
+	c.invalid_utf8_error_string = c.createConstantString("Zeile %lld, Spalte %lld: Invalider UTF8 Wert im Text")
 }
 
 // used in setup()
@@ -2040,7 +2048,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.builder().latestReturn = c.builder().scp.addTemporary(dest, nonPrimTyp)
 		}, func() {
 			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
+			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column), c.getAnyTypeName(lhs.irVal))
 		})
 	}
 
@@ -2050,7 +2058,7 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 			c.builder().latestReturn = newImmediate(c.loadSmallAnyValue(lhs.irVal, primTyp.LLType()), primTyp)
 		}, func() {
 			line, column := int64(e.Token().Range.Start.Line), int64(e.Token().Range.Start.Column)
-			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column))
+			c.runtime_error(1, c.bad_cast_error_string, c.newInt(line), c.newInt(column), c.getAnyTypeName(lhs.irVal))
 		})
 	}
 
@@ -2885,7 +2893,10 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 
 	c.builder().setBlock(loopStart)
 	irType := c.toIrType(s.Initializer.Type)
-	c.builder().scp.addProtected(s.Initializer, c.NewAlloca(irType.LLType()), irType)
+	initializerAlloca := c.NewAlloca(irType.LLType())
+	c.builder().CreateStore(irType.DefaultValue(), initializerAlloca) // zero-init loop-var so that the gc does not wrongly trace garbage data
+	c.builder().scp.addProtected(s.Initializer, initializerAlloca, irType)
+
 	if s.Index != nil {
 		c.builder().scp.addVar(s.Index, index, c.ddpinttyp)
 		c.builder().CreateStore(c.newInt(1), index)
@@ -3081,6 +3092,7 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl) {
 		ir_type.DeepCopyFunc(),
 		ir_type.EqualsFunc(),
 		c.zero, // TODO: ptrmask
+		c.createConstantString(d.Type.String()),
 	}))
 
 	c.typeDefVTables[name] = vtable

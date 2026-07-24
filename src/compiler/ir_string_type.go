@@ -133,6 +133,7 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 		ddpstring.deepCopyIrFun,
 		ddpstring.equalsIrFun,
 		c.zeroPtrMask,
+		c.createConstantString(ddptypes.TEXT.String()),
 	}))
 
 	ddpstring.vtable = vtable

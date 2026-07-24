@@ -123,6 +123,7 @@ func (c *compiler) createListType(name string, elementType ddpIrType, declaratio
 			list.deepCopyIrFun,
 			list.equalsIrFun,
 			c.listPtrMask,
+			c.createConstantString(list.DDPType().String()),
 		}))
 	}
 

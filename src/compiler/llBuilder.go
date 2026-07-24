@@ -37,6 +37,11 @@ func (b *llBuilder) newBlock() llvm.BasicBlock {
 	return b.c.llctx.AddBasicBlock(b.llFn, "")
 }
 
+// func (b *llBuilder) CreateStore(val llvm.Value, p llvm.Value) (v llvm.Value) {
+// 	b.c.debug_log("Storing value into %p", p)
+// 	return b.Builder.CreateStore(val, p)
+// }
+
 func (b *llBuilder) setBlock(bb llvm.BasicBlock) {
 	b.cb = bb
 	b.SetInsertPointAtEnd(bb)
@@ -54,6 +59,7 @@ func (b *llBuilder) withBlock(block llvm.BasicBlock, do func()) {
 }
 
 // calculates all needed gc-live values and their re-store locations
+// TODO: optimize it to keep track of already computed values to not generate too many instructions
 func (b *llBuilder) getLiveValues() []llvm.Value {
 	// TODO: maybe remove this check and ensure a scope is always correct
 	// here, because when calling the module dispose function, the scp is nil

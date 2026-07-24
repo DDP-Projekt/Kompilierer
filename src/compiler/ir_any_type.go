@@ -58,6 +58,7 @@ func (t *ddpIrAnyType) EqualsFunc() llvm.Value {
 
 // TODO: how to handle this if any may or may not contain a gc pointer?
 func (*ddpIrAnyType) LoadLives(c *compiler, any_ptr llvm.Value) []llvm.Value {
+	// c.debug_log("Tagging any %p", any_ptr)
 	return []llvm.Value{c.tag_pointer(any_ptr)}
 }
 
@@ -87,6 +88,7 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 		ddpany.deepCopyIrFun,
 		ddpany.equalsIrFun,
 		c.zeroPtrMask,
+		c.createConstantString(ddptypes.VARIABLE.String()),
 	}))
 
 	ddpany.vtable = vtable
@@ -154,6 +156,7 @@ func (c *compiler) castNonAnyToAny(val ddpValue, vtable llvm.Value) ddpValue {
 	}
 
 	result := c.NewAlloca(c.ddpany.LLType())
+	c.builder().CreateStore(c.ddpany.DefaultValue(), result)
 
 	result_vtable_ptr_ptr := c.indexStruct(c.ddpany.typ, result, any_vtable_ptr_index)
 
@@ -178,4 +181,10 @@ func (c *compiler) castNonAnyToAny(val ddpValue, vtable llvm.Value) ddpValue {
 // checks if val (c.ddpany) holds a targetType
 func (c *compiler) compareAnyType(val llvm.Value, vtable llvm.Value) llvm.Value {
 	return c.builder().CreateICmp(llvm.IntEQ, c.loadStructField(c.ddpany.typ, val, any_vtable_ptr_index), vtable, "")
+}
+
+const vtable_typename_index = 5
+
+func (c *compiler) getAnyTypeName(val llvm.Value) llvm.Value {
+	return c.loadStructField(c.vtable_type, c.loadStructField(c.ddpany.typ, val, any_vtable_ptr_index), vtable_typename_index)
 }

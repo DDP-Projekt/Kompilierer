@@ -3,7 +3,6 @@ Binde "Duden/Fehlerbehandlung" ein.
 Binde "Duden/Listen" ein.
 Binde "Duden/Texte" ein.
 Binde "Duden/Laufzeit" ein.
-Binde "Duden/Ausgabe" ein.
 
 [
     Eine Befehlszeilen option mit langem Namen, kurzem Namen und Standardwert.

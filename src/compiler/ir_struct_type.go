@@ -92,6 +92,7 @@ func (c *compiler) computePtrMask(t *ddpIrStructType) llvm.Value {
 
 	c.iterateFieldOffsets(t, 0, func(field ddpIrType, fieldOffset uint64) {
 		fieldDDPType := field.DDPType()
+		// TODO: handle ddpany fields
 		if ddptypes.IsReference(fieldDDPType) || ddptypes.IsList(fieldDDPType) {
 			bitmap_set_bit(ptrMask, int(fieldOffset)/8)
 		}
@@ -173,6 +174,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 			structType.deepCopyIrFun,
 			structType.equalsIrFun,
 			c.computePtrMask(structType), // TODO: compute ptrmask
+			c.createConstantString(typ.String()),
 		}))
 	}
 
