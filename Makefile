@@ -63,9 +63,11 @@ LLVM_LIBUNWIND_CMAKE_VARIABLES= -DLLVM_ENABLE_RUNTIMES=libunwind -DLIBUNWIND_ENA
 ifeq ($(OS),Windows_NT)
 	KDDP_BIN = kddp.exe
 	DDP_SETUP_BIN = ddp-setup.exe
+	LIBUNWIND_PATH = llvm_build/lib/$(LIBUNWIND_BIN)
 else
 	KDDP_BIN = kddp
 	DDP_SETUP_BIN = ddp-setup
+	LIBUNWIND_PATH = llvm_build/lib/x86_64-unknown-linux-gnu/$(LIBUNWIND_BIN)
 	LLVM_CMAKE_GENERATOR="Unix Makefiles"
 endif
 
@@ -129,13 +131,13 @@ runtime: runtime-copies $(LIB_DIR_OUT) ## compiles the runtime into build/DDP/li
 	'$(MAKE)' -C $(RUN_DIR)
 	$(CP) $(RUN_DIR)$(RUN_BIN) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) llvm_build/lib/$(LIBUNWIND_BIN) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
+	$(CP) $(LIBUNWIND_PATH) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
 
 runtime-debug: runtime-copies $(LIB_DIR_OUT) ## same as runtime but prints debugging information
 	'$(MAKE)' -C $(RUN_DIR) debug
 	$(CP) $(RUN_DIR)$(RUN_BIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN)
 	$(CP) $(RUN_BIN_MAIN_DIR)$(RUN_BIN_MAIN_DEBUG) $(LIB_DIR_OUT)$(RUN_BIN_MAIN)
-	$(CP) llvm_build/lib/$(LIBUNWIND_BIN) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
+	$(CP) $(LIBUNWIND_PATH) $(LIB_DIR_OUT)$(LIBUNWIND_BIN)
 
 external-compile:
 	@echo "building all external libraries"
