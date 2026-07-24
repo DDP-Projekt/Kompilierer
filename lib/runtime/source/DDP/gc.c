@@ -482,13 +482,27 @@ typedef struct GC {
 
 static GC gc;
 
+#ifdef DDPOS_WINDOWS
+// wrapper to get an error message for GetLastError()
+// expects fmt to be of format "<message>%s"
+static void runtime_error_getlasterror(int exit_code, const char *fmt) {
+	char error_buffer[1024];
+	DWORD error_code = GetLastError();
+	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+						NULL, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error_buffer, sizeof(error_buffer), NULL)) {
+		sprintf(error_buffer, "WinAPI Error Code %d (FormatMessageA failed with code %d)", error_code, GetLastError());
+	}
+	ddp_runtime_error(exit_code, fmt, error_buffer);
+}
+#endif // DDPOS_WINDOWS
+
 // TODO: error handling
 static void *osAlloc(void *hint UNUSED, size_t nbytes) {
 #ifdef DDPOS_WINDOWS
 	// TODO: use hint
 	void *result = VirtualAlloc(NULL, nbytes, MEM_COMMIT, PAGE_READWRITE);
 	if (result == NULL) {
-		ddp_runtime_error(1, VirtualAlloc fehlgeschlagen : % d, GetLastError());
+		runtime_error_getlasterror(1, "VirtualAlloc fehlgeschlagen: %s");
 	}
 #else
 	// TODO: use hint
@@ -502,10 +516,10 @@ static void *osAlloc(void *hint UNUSED, size_t nbytes) {
 }
 
 // TODO: error handling
-static void osFree(void *p, size_t nbytes) {
+static void osFree(void *p, UNUSED size_t nbytes) {
 #ifdef DDPOS_WINDOWS
-	if (VirtualFree(p, nbytes, MEM_RELEASE) == 0) {
-		ddp_runtime_error(1, "VirtualFree fehlgeschlagen: %d", GetLastError());
+	if (VirtualFree(p, 0, MEM_RELEASE) == 0) {
+		runtime_error_getlasterror(1, "VirtualFree fehlgeschlagen: %s");
 	}
 #else
 	if (munmap(p, nbytes) < 0) {
