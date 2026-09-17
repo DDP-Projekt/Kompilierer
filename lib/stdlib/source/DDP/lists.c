@@ -74,6 +74,8 @@ void efficient_list_prepend_list(ddpgenericlistref list, ddpgenericlistref other
 // the range is inclusive [start, end]
 // the indices are 0-based (like in C, not like in DDP)
 void efficient_list_delete_range(ddpgenericlistref list, ddpint start, ddpint end, ddpanyref any) {
+	DDP_DBGLOG("efficient_list_delete_range");
+
 	if (list->len <= 0) {
 		return;
 	}
@@ -94,8 +96,19 @@ void efficient_list_delete_range(ddpgenericlistref list, ddpint start, ddpint en
 		}
 	}
 
-	ddpint new_len = list->len - (end - start + 1);
-	memmove(&((uint8_t *)list->arr)[start * vtable->type_size], &((uint8_t *)list->arr)[(end + 1) * vtable->type_size], (list->len - end - 1) * vtable->type_size);
+	const int n_deleted = (end - start + 1);
+
+	ddpint new_len = list->len - n_deleted;
+	void *first_deleted_element = &((uint8_t *)list->arr)[start * vtable->type_size];
+	void *first_moved_element = &((uint8_t *)list->arr)[(end + 1) * vtable->type_size];
+	const size_t moved_bytes = (list->len - end - 1) * vtable->type_size;
+
+	memmove(first_deleted_element, first_moved_element, moved_bytes); // shallow-copy elements after deleted range
+
+	void *one_after_new_list_end = (((uint8_t *)list->arr) + (new_len * vtable->type_size));
+
+	DDP_DBGLOG("memset(%p, 0, %d)", one_after_new_list_end, n_deleted * vtable->type_size)
+	memset(one_after_new_list_end, 0, n_deleted * vtable->type_size); // zero unused space at end of list
 	list->len = new_len;
 }
 

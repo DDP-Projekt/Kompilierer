@@ -59,6 +59,8 @@ typedef struct {
 	uint8_t *ptrmask;
 } ddpvtable;
 
+#define DDP_VTABLE_TYPENAME(vtable_ptr) (((vtable_ptr) == NULL ? "<null vtable>" : (vtable_ptr)->typeName))
+
 ddpbool is_primitive_vtable(ddpvtable *table);
 
 #define DDP_SMALL_ANY_BUFF_SIZE 16

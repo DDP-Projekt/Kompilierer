@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define DDP_DBGLOG_GC(...) DDP_DBGLOG("\t" __VA_ARGS__)
+
 #ifdef DDPOS_LINUX
 #include <sys/mman.h>
 #endif
@@ -227,7 +229,7 @@ static void read_stack_map(StackMap *stackMap, const uint8_t *section) {
 	stackMap->numConstants = READ_AS(&section[NumConstantsOffset], uint32_t);
 	stackMap->numRecords = READ_AS(&section[NumRecordsOffset], uint32_t);
 
-	DDP_DBGLOG("StackMap: %u %u %u", stackMap->numFunctions, stackMap->numConstants, stackMap->numRecords);
+	DDP_DBGLOG_GC("StackMap: %u %u %u", stackMap->numFunctions, stackMap->numConstants, stackMap->numRecords);
 
 	const int ConstantsListOffset = FunctionListOffset + stackMap->numFunctions * FunctionSize;
 	unsigned currentRecordOffset = ConstantsListOffset + stackMap->numConstants * ConstantSize;
@@ -243,7 +245,7 @@ static void read_stack_map(StackMap *stackMap, const uint8_t *section) {
 		currentRecordOffset += size;
 	}
 
-	DDP_DBGLOG("Done reading Stack Map");
+	DDP_DBGLOG_GC("Done reading Stack Map");
 }
 
 static void free_stack_map(StackMap *stackMap) {
@@ -265,19 +267,19 @@ static const Constant *get_constant(StackMap *stackMap, unsigned index) {
 }
 
 static void UNUSED dump_stackmap(StackMap *stackMap) {
-	DDP_DBGLOG("Functions:\n\n");
+	DDP_DBGLOG_GC("Functions:\n\n");
 	for (const StackSizeRecord *function = stackMap->functions; function < &stackMap->functions[stackMap->numFunctions]; function++) {
-		DDP_DBGLOG("Function: %llu %llu %llu\n", function->functionAddress, function->stackSize, function->recordCount);
+		DDP_DBGLOG_GC("Function: %llu %llu %llu\n", function->functionAddress, function->stackSize, function->recordCount);
 	}
 
-	DDP_DBGLOG("\nConstants:\n\n");
+	DDP_DBGLOG_GC("\nConstants:\n\n");
 	for (const Constant *constant = stackMap->constants; constant < &stackMap->constants[stackMap->numConstants]; constant++) {
-		DDP_DBGLOG("Constant: %llu\n", constant->largeConstant);
+		DDP_DBGLOG_GC("Constant: %llu\n", constant->largeConstant);
 	}
 
-	DDP_DBGLOG("\nRecords:\n\n");
+	DDP_DBGLOG_GC("\nRecords:\n\n");
 	for (RecordAccessor record = stackMap->records_base; record != next_record_accessor(get_record(stackMap, stackMap->numRecords - 1)); record = next_record_accessor(record)) {
-		DDP_DBGLOG("Record Value: %llu %u %hu\n", record_patchpoint_id(record), record_instruction_offset(record), record_num_locations(record));
+		DDP_DBGLOG_GC("Record Value: %llu %u %hu\n", record_patchpoint_id(record), record_instruction_offset(record), record_num_locations(record));
 	}
 }
 
@@ -518,7 +520,7 @@ static void *osAlloc(void *hint UNUSED, size_t nbytes) {
 		ddp_runtime_error(1, "mmap fehlgeschlagen: %s", strerror(errno));
 	}
 #endif
-	DDP_DBGLOG("Allocated %p from OS", result);
+	DDP_DBGLOG_GC("Allocated %p from OS", result);
 	return result;
 }
 
@@ -559,10 +561,10 @@ static size_t calculate_span_size(size_t objSize) {
 
 // TODO: use size classes
 static GCSpan *allocate_span(GCTypeMeta objInfo) {
-	DDP_DBGLOG("Allocating new span (GCTypeMeta: vtable %p, arrlen %d)", objInfo.vtable, objInfo.arrlen);
-	DDP_DBGLOG("current spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
+	DDP_DBGLOG_GC("Allocating new span (GCTypeMeta: vtable %p (%s), arrlen %d)", objInfo.vtable, DDP_VTABLE_TYPENAME(objInfo.vtable), objInfo.arrlen);
+	DDP_DBGLOG_GC("current spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
-		DDP_DBGLOG("%p, %p -> %p", span->data, span, span->next);
+		DDP_DBGLOG_GC("%p, %p -> %p", span->data, span, span->next);
 	}
 
 	GCSpan *newSpan = DDP_ALLOCATE_NO_GC(GCSpan, 1);
@@ -587,17 +589,17 @@ static GCSpan *allocate_span(GCTypeMeta objInfo) {
 		gc.spanTail = newSpan;
 	}
 
-	DDP_DBGLOG("Allocated new span");
-	DDP_DBGLOG("new spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
+	DDP_DBGLOG_GC("Allocated new span");
+	DDP_DBGLOG_GC("new spans (head: %p, tail: %p):", gc.spanHead, gc.spanTail);
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
-		DDP_DBGLOG("%p, %p -> %p", span->data, span, span->next);
+		DDP_DBGLOG_GC("%p, %p -> %p", span->data, span, span->next);
 	}
 
 	return newSpan;
 }
 
 static void free_span(GCSpan *span, GCSpan *prev) {
-	DDP_DBGLOG("freeing span %p", span);
+	DDP_DBGLOG_GC("freeing span %p", span);
 
 	GCSpan *next = span->next;
 	if (prev) {
@@ -619,7 +621,7 @@ static void free_span(GCSpan *span, GCSpan *prev) {
 }
 
 static void clear_free_spans(void) {
-	DDP_DBGLOG("clearing free spans");
+	DDP_DBGLOG_GC("clearing free spans");
 	GCSpan *prev = NULL;
 	for (GCSpan *span = gc.spanHead; span != NULL;) {
 		if (span->freeBits[0] == 0 && memcmp(span->freeBits, span->freeBits + 1, NUM_FREE_BYTES(span->numObjs) - 1) == 0) {
@@ -658,7 +660,7 @@ static void *get_object_base_in_span(GCSpan *span, void *ref) {
 }
 
 static void mark_node(void *ref, GCSpan *span, Color color) {
-	DDP_DBGLOG("marking node %p with color %d", ref, color);
+	DDP_DBGLOG_GC("marking node %p with color %d", ref, color);
 
 	unsigned index = (((((uint8_t *)ref) - ((uint8_t *)span->data)) / span->objSize));
 	// always clear the bits
@@ -678,7 +680,7 @@ static GCSpan *find_or_allocate_span_for_object(GCTypeMeta objInfo, void **space
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		if (type_meta_equal(span->objInfo, objInfo)) {
 			int free_slot = bitmap_find_first_zero(span->freeBits, span->numObjs);
-			DDP_DBGLOG("Found free slot: %d", free_slot);
+			DDP_DBGLOG_GC("Found free slot: %d", free_slot);
 			if (free_slot >= 0) {
 				*space_slot = (void *)(((uint8_t *)span->data) + free_slot * span->objSize);
 				return span;
@@ -692,7 +694,7 @@ static GCSpan *find_or_allocate_span_for_object(GCTypeMeta objInfo, void **space
 }
 
 void ddp_register_gc_root(void **root) {
-	DDP_DBGLOG("Registering root %p", root);
+	DDP_DBGLOG_GC("Registering root %p", root);
 
 	if (gc.len_global_roots == gc.cap_global_roots) {
 		gc.cap_global_roots += 8;
@@ -703,7 +705,7 @@ void ddp_register_gc_root(void **root) {
 }
 
 void ddp_register_gc_any_root(ddpany *root) {
-	DDP_DBGLOG("Registering any root %p", root);
+	DDP_DBGLOG_GC("Registering any root %p", root);
 
 	if (gc.len_global_roots == gc.cap_global_roots) {
 		gc.cap_global_roots += 8;
@@ -715,12 +717,24 @@ void ddp_register_gc_any_root(ddpany *root) {
 	gc.global_roots[gc.len_global_roots++] = tagged_pointer;
 }
 
+static void ddp_temp_push_gc_root(void **root) {
+	DDP_DBGLOG_GC("temporarily registering root %p", root);
+	ddp_register_gc_root(root);
+}
+
+static void **ddp_pop_temp_gc_root(void) {
+	DDP_DBGLOG_GC("popping temporarily registered root");
+	void **root = gc.global_roots[gc.len_global_roots - 1];
+	gc.len_global_roots--;
+	return root;
+}
+
 // returns zeroed memory
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
-	DDP_DBGLOG("Allocating GC ref from vtable: %p, arrlen: %d", vtable, arrlen);
+	DDP_DBGLOG_GC("Allocating GC ref from vtable: %p (%s), arrlen: %d", vtable, DDP_VTABLE_TYPENAME(vtable), arrlen);
 
 	if (arrlen <= 0 || vtable->type_size <= 0) {
-		DDP_DBGLOG("returning NULL for arrlen == 0 or type_size == 0 ref allocation");
+		DDP_DBGLOG_GC("returning NULL for arrlen == 0 or type_size == 0 ref allocation");
 		return NULL;
 	}
 
@@ -734,7 +748,7 @@ void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen) {
 	// zero the memory so that newly allocated spaces don't crash when being traced
 	memset(space_slot, 0, span->objSize);
 
-	DDP_DBGLOG("allocated ref: %p", space_slot);
+	DDP_DBGLOG_GC("allocated ref: %p", space_slot);
 	return space_slot;
 }
 
@@ -747,6 +761,7 @@ void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
 	if (newRef == NULL) {
 		return newRef;
 	}
+	ddp_temp_push_gc_root(&newRef);
 
 	if (is_primitive_vtable(vtable)) {
 		memcpy(newRef, ptr, vtable->type_size * oldArrLen);
@@ -756,6 +771,7 @@ void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
 		}
 	}
 
+	assert(ddp_pop_temp_gc_root() == &newRef);
 	return newRef;
 }
 
@@ -764,7 +780,7 @@ void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
 extern const uint8_t *__LLVM_StackMaps_External;
 
 void ddp_init_gc(void) {
-	DDP_DBGLOG("initializing gc");
+	DDP_DBGLOG_GC("initializing gc");
 
 	read_stack_map(&gc.stackMap, __LLVM_StackMaps_External);
 	// dump_stackmap(&gc.stackMap);
@@ -777,7 +793,7 @@ void ddp_init_gc(void) {
 
 	gc.PAGE_SIZE = get_page_size();
 
-	DDP_DBGLOG("done initializing gc");
+	DDP_DBGLOG_GC("done initializing gc");
 }
 
 static bool is_any_vtable(ddpvtable *vtable) {
@@ -786,7 +802,7 @@ static bool is_any_vtable(ddpvtable *vtable) {
 
 static void trace_root(void *ref);
 static void trace_any(ddpany *any) {
-	DDP_DBGLOG("tracing any root %p", any);
+	DDP_DBGLOG_GC("tracing any root %p", any);
 	// don't trace NULL or Standardwert any
 	if (any == NULL || any->vtable_ptr == NULL) {
 		return;
@@ -799,13 +815,13 @@ static void trace_any(ddpany *any) {
 		switch (bitmap_get_two_bits(ptrmask, i)) {
 		case PTRMASK_REF: {
 			void *nested_ref = ((void **)ref)[i];
-			DDP_DBGLOG("tracing nested root %p", nested_ref);
+			DDP_DBGLOG_GC("tracing nested root %p", nested_ref);
 			trace_root(nested_ref);
 			break;
 		}
 		case PTRMASK_ANY: {
 			void *nested_any = (ddpany *)&((uint8_t *)ref)[i * 8];
-			DDP_DBGLOG("tracing nested any %p", nested_any);
+			DDP_DBGLOG_GC("tracing nested any %p", nested_any);
 			trace_any(nested_any);
 			break;
 		}
@@ -816,34 +832,35 @@ static void trace_any(ddpany *any) {
 // TODO: arrays of references
 static void trace_root(void *ref) {
 	if (ref == NULL) {
+		DDP_DBGLOG_GC("not tracing NULL tracing root");
 		return;
 	}
-	DDP_DBGLOG("tracing root %p", ref);
+	DDP_DBGLOG_GC("tracing root %p", ref);
 
 	if (get_tag(ref) == 1) {
-		DDP_DBGLOG("root is tagged, tracing any %p", ref);
+		DDP_DBGLOG_GC("root is tagged, tracing any %p", ref);
 		trace_any((ddpany *)without_tag(ref));
 		return;
 	}
 
 	GCSpan *span = get_span_for_pointer(ref);
 	if (span == NULL) {
-		DDP_DBGLOG("No span found, not tracing");
+		DDP_DBGLOG_GC("No span found, not tracing");
 		return;
 	}
 
 	ref = get_object_base_in_span(span, ref);
-	DDP_DBGLOG("base pointer for ref: %p", ref);
+	DDP_DBGLOG_GC("base pointer for ref: %p", ref);
 
 	if (get_color(ref, span) == BLACK) {
-		DDP_DBGLOG("not tracing already Black object");
+		DDP_DBGLOG_GC("not tracing already Black object");
 		return;
 	}
 
 	mark_node(ref, span, GREY);
 
 	if (is_any_vtable(span->objInfo.vtable)) {
-		DDP_DBGLOG("tracing ddpany");
+		DDP_DBGLOG_GC("tracing ddpany");
 		// TODO: take arrlen and list capacity into account like in free_unmarked_objects
 		for (ddpany *object = ref; object < (ddpany *)&((uint8_t *)ref)[span->objSize]; object = (ddpany *)&((uint8_t *)object)[span->objInfo.vtable->type_size]) {
 			trace_any(object);
@@ -863,11 +880,11 @@ static void trace_root(void *ref) {
 			for (uint8_t *object = (uint8_t *)ref; object < (uint8_t *)ref + span->objSize; object += span->objInfo.vtable->type_size) {
 				switch (rt) {
 				case PTRMASK_REF:
-					DDP_DBGLOG("tracing nested root %p", object);
+					DDP_DBGLOG_GC("tracing nested root %p", object);
 					trace_root(((void **)object)[i]);
 					break;
 				case PTRMASK_ANY:
-					DDP_DBGLOG("tracing nested any %p", object);
+					DDP_DBGLOG_GC("tracing nested any %p", object);
 					trace_any((ddpany *)&(object[i * 8]));
 					break;
 				default:
@@ -952,7 +969,7 @@ static int get_unw_reg_number(uint16_t dwarf_reg) {
 }
 
 static inline ALWAYS_INLINE void mark_stack_roots(void) {
-	DDP_DBGLOG("GC marking stack");
+	DDP_DBGLOG_GC("GC marking stack");
 	unw_cursor_t cursor;
 	unw_context_t context;
 
@@ -960,11 +977,11 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 	unw_init_local(&cursor, &context);
 
 	while (unw_step(&cursor) > 0) {
-		DDP_DBGLOG("Called unw_step");
+		DDP_DBGLOG_GC("Called unw_step");
 
 		unw_word_t pc;
 		if (unw_get_reg(&cursor, UNW_REG_IP, &pc) != 0) {
-			DDP_DBGLOG("Could not read UNW_REG_IP");
+			DDP_DBGLOG_GC("Could not read UNW_REG_IP");
 			continue;
 		}
 
@@ -983,11 +1000,11 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
 				unw_word_t reg;
 				if (unw_get_reg(&cursor, regnum, &reg) != 0) {
-					DDP_DBGLOG("Could not read register %d", regnum);
+					DDP_DBGLOG_GC("Could not read register %d", regnum);
 				} else {
 					root = (void *)reg;
 				}
-				DDP_DBGLOG("found register root %p", root);
+				DDP_DBGLOG_GC("found register root %p", root);
 				break;
 			}
 				// TODO: treat LOC_DIRECT and LOC_INDIRECT the same (same case)
@@ -995,7 +1012,7 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
 				unw_word_t reg;
 				if (unw_get_reg(&cursor, regnum, &reg) != 0) {
-					DDP_DBGLOG("Could not read register %d", regnum);
+					DDP_DBGLOG_GC("Could not read register %d", regnum);
 					break;
 				}
 
@@ -1003,38 +1020,38 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 
 				void **addr = (void **)((uint8_t *)reg + offset);
 				root = *addr;
-				DDP_DBGLOG("found direct root %p %x %p", (void *)reg, offset, root);
+				DDP_DBGLOG_GC("found direct root %p %x %p", (void *)reg, offset, root);
 				break;
 			}
 			case LOC_INDIRECT: {
 				int regnum = get_unw_reg_number(location_dwarf_regnum(location));
 				unw_word_t bp;
 				if (unw_get_reg(&cursor, regnum, &bp) != 0) {
-					DDP_DBGLOG("Could not read register %d", regnum);
+					DDP_DBGLOG_GC("Could not read register %d", regnum);
 					break;
 				}
 
 				int32_t offset = location_offset(location);
 
 				void ***addr = (void ***)((uint8_t *)bp + offset);
-				DDP_DBGLOG("indirect *addr: %p", *addr);
+				DDP_DBGLOG_GC("indirect *addr: %p", *addr);
 				root = *addr;
 
-				DDP_DBGLOG("found indirect root %p %x %p", (void *)bp, offset, root);
+				DDP_DBGLOG_GC("found indirect root %p %x %p", (void *)bp, offset, root);
 				break;
 			} break;
 			case LOC_CONSTANT:
 				root = (void *)(int64_t)location_offset(location);
-				// DDP_DBGLOG("found constant root %p", root);
+				// DDP_DBGLOG_GC("found constant root %p", root);
 				break;
 			case LOC_CONST_INDEX: {
 				const Constant *constant = get_constant(&gc.stackMap, location_offset(location));
 				root = (void *)constant->largeConstant;
-				DDP_DBGLOG("found constant index root %p", root);
+				DDP_DBGLOG_GC("found constant index root %p", root);
 				break;
 			}
 			default: {
-				DDP_DBGLOG("unknown location kind");
+				DDP_DBGLOG_GC("unknown location kind");
 				break;
 			}
 			}
@@ -1045,7 +1062,7 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 }
 
 static void mark_global_roots(void) {
-	DDP_DBGLOG("GC marking global");
+	DDP_DBGLOG_GC("GC marking global");
 	for (void ***root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
 		if (get_tag(*root) == 1) {
 			ddpany *any_root = (ddpany *)(without_tag(*root));
@@ -1054,9 +1071,9 @@ static void mark_global_roots(void) {
 		}
 
 		if (*root != NULL) {
-			DDP_DBGLOG("Root %p in use (Ref value: %p) (Span: %p)", *root, **root, get_span_for_pointer(**root));
+			DDP_DBGLOG_GC("Root %p in use (Ref value: %p) (Span: %p)", *root, **root, get_span_for_pointer(**root));
 		} else {
-			DDP_DBGLOG("Root %p not in use", *root);
+			DDP_DBGLOG_GC("Root %p not in use", *root);
 		}
 
 		// ignore null refs
@@ -1069,7 +1086,7 @@ static void mark_global_roots(void) {
 }
 
 static void free_unmarked_objects(void) {
-	DDP_DBGLOG("GC sweeping objects");
+	DDP_DBGLOG_GC("GC sweeping objects");
 	for (GCSpan *span = gc.spanHead; span != NULL; span = span->next) {
 		free_func_ptr free_func = span->objInfo.vtable->free_func;
 
@@ -1096,12 +1113,12 @@ static void free_unmarked_objects(void) {
 
 				unsigned index = oneIndex + byte_index * 8;
 
-				DDP_DBGLOG("color of index %u is %d", index, bitmap_get_two_bits(span->markBits, index));
+				DDP_DBGLOG_GC("color of index %u is %d", index, bitmap_get_two_bits(span->markBits, index));
 				if (bitmap_get_two_bits(span->markBits, index) != WHITE) {
 					continue;
 				}
 
-				DDP_DBGLOG("freeing gc ref %p", (void *)&((uint8_t *)span->data)[index * span->objSize]);
+				DDP_DBGLOG_GC("freeing gc ref %p (%s arrlen=%d)", (void *)&((uint8_t *)span->data)[index * span->objSize], DDP_VTABLE_TYPENAME(span->objInfo.vtable), span->objInfo.arrlen);
 				void *objectBase = (void *)&((uint8_t *)span->data)[index * span->objSize];
 				if (free_func != NULL) {
 					// TODO: for lists with unused capacity, this calls free for the unused slots as well, which should not happen
@@ -1134,7 +1151,7 @@ void ddp_gc(void) {
 	}
 	gc.collecting = true;
 
-	DDP_DBGLOG("GC start =================================");
+	DDP_DBGLOG_GC("GC start =================================");
 
 	mark_stack_roots();
 
@@ -1146,7 +1163,7 @@ void ddp_gc(void) {
 	clear_free_spans();
 
 	gc.collecting = false;
-	DDP_DBGLOG("GC end ---------------------------------");
+	DDP_DBGLOG_GC("GC end ---------------------------------");
 }
 
 void ddp_free_gc(void) {
@@ -1155,7 +1172,7 @@ void ddp_free_gc(void) {
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
 	// gc one last time with cleaned roots
-	DDP_DBGLOG("last gc");
+	DDP_DBGLOG_GC("last gc");
 	ddp_gc();
 	gc.collecting = true;
 
