@@ -2,6 +2,7 @@
 #include "DDP/ddptypes.h"
 #include "DDP/ddpwindows.h"
 #include "DDP/error.h"
+#include "DDP/gc.h"
 #include <assert.h>
 #include <string.h>
 
@@ -270,14 +271,17 @@ ddpint Socket_Senden(const ddpsocket *sock, const ddpbytelistref data) {
 	return result;
 }
 
+extern ddpvtable ddpbyte_vtable;
+
 void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
 	DDP_MIGHT_ERROR;
 	DDP_NETWORK_MIGHT_TIMEOUT;
-	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
+	*ret = DDP_EMPTY_LIST(ddpbytelist);
+	ddpbyte *buf = ddp_allocate_gc_ref(&ddpbyte_vtable, max);
+	ddp_push_temp_gc_root((void **)&buf);
 	ddpint got = (ddpint)recv(sock->fd, (char *)buf, max, 0);
 	if (got < 0) {
-		*ret = DDP_EMPTY_LIST(ddpbytelist);
-		DDP_FREE_ARRAY(ddpbyte, buf, max);
+		ddp_pop_temp_gc_root(); // free buf
 #ifdef DDPOS_WINDOWS
 		int err = WSAGetLastError();
 		if (err == WSAEWOULDBLOCK || err == WSAETIMEDOUT) {
@@ -298,14 +302,14 @@ void Socket_Empfangen(ddpbytelist *ret, ddpsocket *sock, const ddpint max) {
 	}
 
 	if (got == 0) {
-		*ret = DDP_EMPTY_LIST(ddpbytelist);
-		DDP_FREE_ARRAY(ddpbyte, buf, max);
+		ddp_pop_temp_gc_root(); // free buf
 		return;
 	}
 
 	ret->cap = got;
 	ret->len = got;
-	ret->arr = ddp_reallocate(buf, max, ret->len);
+	ret->arr = ddp_reallocate_gc_ref(buf, &ddpbyte_vtable, max, ret->len);
+	ddp_pop_temp_gc_root(); // free buf
 }
 
 ddpint Socket_Senden_An_Klient(const ddpsocket *sock, const ddpbytelistref data, const ddpsockaddr_storage *client) {
@@ -345,12 +349,14 @@ ddpint Socket_Senden_An(const ddpsocket *sock, const ddpbytelistref data, const 
 void Socket_Empfangen_Von(ddpbytelist *ret, ddpsocket *sock, ddpint max, ddpsockaddr_storage *client_addr) {
 	DDP_MIGHT_ERROR;
 	DDP_NETWORK_MIGHT_TIMEOUT;
-	ddpbyte *buf = DDP_ALLOCATE(ddpbyte, max);
+	*ret = DDP_EMPTY_LIST(ddpbytelist);
+	ddpbyte *buf = ddp_allocate_gc_ref(&ddpbyte_vtable, max);
+	ddp_push_temp_gc_root((void **)&buf);
 	client_addr->size = sizeof(client_addr->storage);
 	ddpint got = (ddpint)recvfrom(sock->fd, (char *)buf, max, 0, (struct sockaddr *)&client_addr->storage, &client_addr->size);
 	if (got < 0) {
 		*ret = DDP_EMPTY_LIST(ddpbytelist);
-		DDP_FREE_ARRAY(char, buf, max);
+		ddp_pop_temp_gc_root(); // free buf
 #ifdef DDPOS_WINDOWS
 		int err = WSAGetLastError();
 		if (err == WSAEWOULDBLOCK || err == WSAETIMEDOUT) {
@@ -371,7 +377,8 @@ void Socket_Empfangen_Von(ddpbytelist *ret, ddpsocket *sock, ddpint max, ddpsock
 	}
 	ret->cap = got;
 	ret->len = got;
-	ret->arr = ddp_reallocate(buf, max, ret->len);
+	ret->arr = ddp_reallocate_gc_ref(buf, &ddpbyte_vtable, max, ret->len);
+	ddp_pop_temp_gc_root(); // free buf
 }
 
 void Socket_Timeout_Setzen(ddpsocket *sock, ddpint timeout, ddpbool send) {

@@ -1103,7 +1103,8 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		case c.ddpfloattyp:
 			// c.builder().latestReturn.irVal = rhs < 0 ? 0 - rhs : rhs;
 			c.builder().latestReturn = newImmediate(
-				c.createTernary(c.ddpfloat, c.builder().CreateFCmp(llvm.FloatOLT, rhs.irVal, c.zerof, ""),
+				c.createTernary(
+					c.ddpfloat, c.builder().CreateFCmp(llvm.FloatOLT, rhs.irVal, c.zerof, ""),
 					func() llvm.Value { return c.builder().CreateFSub(c.zerof, rhs.irVal, "") },
 					func() llvm.Value { return rhs.irVal },
 				),
@@ -1111,7 +1112,8 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 			)
 		case c.ddpinttyp:
 			// c.builder().latestReturn.irVal = rhs.irVal < 0 ? 0 - rhs.irVal : rhs.irVal;
-			c.builder().latestReturn.irVal = c.createTernary(c.ddpint, c.builder().CreateICmp(llvm.IntSLT, rhs.irVal, c.zero, ""),
+			c.builder().latestReturn.irVal = c.createTernary(
+				c.ddpint, c.builder().CreateICmp(llvm.IntSLT, rhs.irVal, c.zero, ""),
 				func() llvm.Value { return c.builder().CreateSub(c.zero, rhs.irVal, "") },
 				func() llvm.Value { return rhs.irVal },
 			)
@@ -2908,7 +2910,8 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	c.builder().setBlock(bodyBlock)
 	var num_bytes llvm.Value
 	if in.typ == c.ddpstring {
-		num_bytes = c.builder().createCall(utf8_string_to_char_irfun,
+		num_bytes = c.builder().createCall(
+			utf8_string_to_char_irfun,
 			c.builder().CreateLoad(c.ptr, iter_ptr, ""),
 			loopVar.val,
 		)

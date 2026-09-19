@@ -25,11 +25,17 @@ typedef struct GCTypeMeta {
 
 void ddp_register_gc_root(void **root);
 void ddp_register_gc_any_root(ddpany *root);
+void ddp_push_temp_gc_root(void **root);
+void ddp_push_temp_gc_root_any(ddpany *root);
+void **ddp_pop_temp_gc_root(void);
 // returns zeroed memory
 void *ddp_allocate_gc_ref(ddpvtable *vtable, ddpint arrlen);
 // helper function which uses ddp_allocate_gc_ref to function similar to
 // ddp_reallocate
 void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
 							ddpint newArrLen);
+
+#define DDP_GROW_GC_ARRAY(type, vtable, pointer, oldCount, newCount) \
+	(type *)ddp_reallocate_gc_ref(pointer, vtable, oldCount, newCount)
 
 #endif // DDP_GC_H

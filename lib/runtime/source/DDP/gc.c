@@ -481,6 +481,10 @@ typedef struct GC {
 	unsigned len_global_roots;
 	unsigned cap_global_roots;
 
+	void ***temp_roots;
+	unsigned len_temp_roots;
+	unsigned cap_temp_roots;
+
 	GCSpan *spanHead;
 	GCSpan *spanTail;
 
@@ -706,26 +710,29 @@ void ddp_register_gc_root(void **root) {
 
 void ddp_register_gc_any_root(ddpany *root) {
 	DDP_DBGLOG_GC("Registering any root %p", root);
+	ddp_register_gc_root(with_tag((void *)root, 1));
+}
 
-	if (gc.len_global_roots == gc.cap_global_roots) {
-		gc.cap_global_roots += 8;
-		gc.global_roots = DDP_GROW_ARRAY_NO_GC(void **, gc.global_roots, gc.len_global_roots, gc.cap_global_roots);
+void ddp_push_temp_gc_root(void **root) {
+	DDP_DBGLOG_GC("temporarily registering root %p", root);
+
+	if (gc.len_temp_roots == gc.cap_temp_roots) {
+		gc.cap_temp_roots += 8;
+		gc.temp_roots = DDP_GROW_ARRAY_NO_GC(void **, gc.temp_roots, gc.len_temp_roots, gc.cap_temp_roots);
 	}
 
-	void **tagged_pointer = with_tag((void *)root, 1);
-
-	gc.global_roots[gc.len_global_roots++] = tagged_pointer;
+	gc.temp_roots[gc.len_temp_roots++] = root;
 }
 
-static void ddp_temp_push_gc_root(void **root) {
-	DDP_DBGLOG_GC("temporarily registering root %p", root);
-	ddp_register_gc_root(root);
+void ddp_push_temp_gc_root_any(ddpany *root) {
+	DDP_DBGLOG_GC("temporarily registering any root %p", root);
+	ddp_push_temp_gc_root(with_tag((void *)root, 1));
 }
 
-static void **ddp_pop_temp_gc_root(void) {
+void **ddp_pop_temp_gc_root(void) {
 	DDP_DBGLOG_GC("popping temporarily registered root");
-	void **root = gc.global_roots[gc.len_global_roots - 1];
-	gc.len_global_roots--;
+	void **root = gc.temp_roots[gc.len_temp_roots - 1];
+	gc.len_temp_roots--;
 	return root;
 }
 
@@ -761,7 +768,7 @@ void *ddp_reallocate_gc_ref(void *ptr, ddpvtable *vtable, ddpint oldArrLen,
 	if (newRef == NULL) {
 		return newRef;
 	}
-	ddp_temp_push_gc_root(&newRef);
+	ddp_push_temp_gc_root(&newRef);
 
 	if (is_primitive_vtable(vtable)) {
 		memcpy(newRef, ptr, vtable->type_size * oldArrLen);
@@ -787,6 +794,10 @@ void ddp_init_gc(void) {
 	gc.global_roots = NULL;
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
+
+	gc.temp_roots = NULL;
+	gc.len_temp_roots = 0;
+	gc.cap_temp_roots = 0;
 
 	gc.spanHead = NULL;
 	gc.spanTail = NULL;
@@ -832,7 +843,7 @@ static void trace_any(ddpany *any) {
 // TODO: arrays of references
 static void trace_root(void *ref) {
 	if (ref == NULL) {
-		DDP_DBGLOG_GC("not tracing NULL tracing root");
+		DDP_DBGLOG_GC("not tracing NULL root");
 		return;
 	}
 	DDP_DBGLOG_GC("tracing root %p", ref);
@@ -1061,9 +1072,9 @@ static inline ALWAYS_INLINE void mark_stack_roots(void) {
 	}
 }
 
-static void mark_global_roots(void) {
+static void mark_root_list(void ***roots, unsigned roots_len) {
 	DDP_DBGLOG_GC("GC marking global");
-	for (void ***root = gc.global_roots; root != &gc.global_roots[gc.len_global_roots]; root++) {
+	for (void ***root = roots; root != &roots[roots_len]; root++) {
 		if (get_tag(*root) == 1) {
 			ddpany *any_root = (ddpany *)(without_tag(*root));
 			trace_any(any_root);
@@ -1155,7 +1166,8 @@ void ddp_gc(void) {
 
 	mark_stack_roots();
 
-	mark_global_roots();
+	mark_root_list(gc.global_roots, gc.len_global_roots);
+	mark_root_list(gc.temp_roots, gc.len_temp_roots);
 
 	free_unmarked_objects();
 
@@ -1171,6 +1183,10 @@ void ddp_free_gc(void) {
 	gc.global_roots = NULL;
 	gc.len_global_roots = 0;
 	gc.cap_global_roots = 0;
+	DDP_FREE_ARRAY_NO_GC(void *, gc.temp_roots, gc.cap_temp_roots);
+	gc.temp_roots = NULL;
+	gc.len_temp_roots = 0;
+	gc.cap_temp_roots = 0;
 	// gc one last time with cleaned roots
 	DDP_DBGLOG_GC("last gc");
 	ddp_gc();

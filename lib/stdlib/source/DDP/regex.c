@@ -2,7 +2,9 @@
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include "DDP/ddpmemory.h"
+#include "DDP/debug.h"
 #include "DDP/error.h"
+#include "DDP/gc.h"
 #include "DDP/utf8/utf8.h"
 #include <pcre2.h>
 #include <stdio.h>
@@ -12,6 +14,14 @@ typedef struct Treffer {
 	ddpstring text;
 	ddpstringlist gruppen;
 } Treffer;
+
+static ddpvtable *treffer_vtable_ptr = NULL;
+ddpbool Initialisiere_Treffer_VTable(ddpany *v) {
+	treffer_vtable_ptr = v->vtable_ptr;
+	return true;
+}
+
+extern ddpvtable ddpstring_vtable;
 
 typedef struct TrefferList {
 	Treffer *arr;
@@ -25,6 +35,7 @@ typedef struct Regex {
 } Regex;
 
 static pcre2_code *compile_regex(PCRE2_SPTR pattern) {
+	DDP_DBGLOG("compile_regex");
 	if (pattern == NULL) {
 		ddp_error("Regex-Fehler: Muster war NULL", false);
 		return NULL;
@@ -90,9 +101,10 @@ static void make_Treffer(Treffer *tr, pcre2_match_data *match_data, int capture_
 }
 
 void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) {
+	DDP_DBGLOG("regex_first_match");
 	if (re == NULL) {
 		ret->text = DDP_EMPTY_STRING;
-		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
+		ret->gruppen = DDP_EMPTY_LIST(ddpstringlist);
 		return;
 	}
 
@@ -100,7 +112,7 @@ void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) 
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 	if (match_data == NULL) {
 		ret->text = DDP_EMPTY_STRING;
-		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
+		ret->gruppen = DDP_EMPTY_LIST(ddpstringlist);
 		return;
 	}
 
@@ -124,7 +136,7 @@ void regex_first_match(Treffer *ret, pcre2_code *re, char *pattern, char *text) 
 		}
 
 		ret->text = DDP_EMPTY_STRING;
-		ddp_ddpstringlist_from_constants(&ret->gruppen, 0);
+		ret->gruppen = DDP_EMPTY_LIST(ddpstringlist);
 	} else {
 		make_Treffer(ret, match_data, rc);
 	}
@@ -176,7 +188,7 @@ void regex_n_match(TrefferList *ret, pcre2_code *re, char *pattern, char *text, 
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
 			ret->cap = DDP_GROW_CAPACITY(ret->cap);
-			ret->arr = DDP_GROW_ARRAY(Treffer, ret->arr, old_cap, ret->cap);
+			ret->arr = DDP_GROW_GC_ARRAY(Treffer, treffer_vtable_ptr, ret->arr, old_cap, ret->cap); // TODO: gc functions
 		}
 
 		// append new element
@@ -236,7 +248,7 @@ static void substitute(ddpstring *ret, pcre2_code *re, char *pattern, char *text
 
 void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) {
 	// Initialize an empty list into ret
-	ddp_ddpstringlist_from_constants(ret, 0);
+	*ret = DDP_EMPTY_LIST(ddpstringlist);
 
 	if (re == NULL) {
 		return;
@@ -284,7 +296,7 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 		if (ret->len == ret->cap) {
 			ddpint old_cap = ret->cap;
 			ret->cap = DDP_GROW_CAPACITY(ret->cap);
-			ret->arr = DDP_GROW_ARRAY(ddpstring, ret->arr, old_cap, ret->cap);
+			ret->arr = DDP_GROW_GC_ARRAY(ddpstring, &ddpstring_vtable, ret->arr, old_cap, ret->cap);
 		}
 
 		// append new element
@@ -298,7 +310,7 @@ void regex_split(ddpstringlist *ret, pcre2_code *re, char *pattern, char *text) 
 	if (ret->len == ret->cap) {
 		ddpint old_cap = ret->cap;
 		ret->cap = DDP_GROW_CAPACITY(ret->cap);
-		ret->arr = DDP_GROW_ARRAY(ddpstring, ret->arr, old_cap, ret->cap);
+		ret->arr = DDP_GROW_GC_ARRAY(ddpstring, &ddpstring_vtable, ret->arr, old_cap, ret->cap);
 	}
 
 	const ddpint text_len = strlen(text);
@@ -333,18 +345,22 @@ ddpbool Ist_Regex(ddpstring *muster) {
 
 void Regex_Erster_Treffer(Treffer *ret, ddpstring *muster, ddpstring *text) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->gruppen.arr);
 
 	pcre2_code *re = compile_regex((PCRE2_SPTR)muster->str);
 	regex_first_match(ret, re, muster->str, text->str);
 	pcre2_code_free(re);
+	ddp_pop_temp_gc_root();
 }
 
 void Regex_N_Treffer(TrefferList *ret, ddpstring *muster, ddpstring *text, ddpint n) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->arr);
 
 	pcre2_code *re = compile_regex((PCRE2_SPTR)muster->str);
 	regex_n_match(ret, re, muster->str, text->str, n);
 	pcre2_code_free(re);
+	ddp_pop_temp_gc_root();
 }
 
 void Regex_Erster_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *text, ddpstring *ersatz) {
@@ -365,10 +381,12 @@ void Regex_Alle_Treffer_Ersetzen(ddpstring *ret, ddpstring *muster, ddpstring *t
 
 void Regex_Spalten(ddpstringlist *ret, ddpstring *muster, ddpstring *text) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->arr);
 
 	pcre2_code *re = compile_regex((PCRE2_SPTR)muster->str);
 	regex_split(ret, re, muster->str, text->str);
 	pcre2_code_free(re);
+	ddp_pop_temp_gc_root();
 }
 
 // Kompiliert
@@ -386,12 +404,16 @@ void Regex_Kompiliert_Free(Regex *regex) {
 
 void Regex_Kompiliert_Erster_Treffer(Treffer *ret, Regex *regex, ddpstring *text) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->gruppen.arr);
 	regex_first_match(ret, regex->obj, regex->ausdruck.str, text->str);
+	ddp_pop_temp_gc_root();
 }
 
 void Regex_Kompiliert_N_Treffer(TrefferList *ret, Regex *regex, ddpstring *text, ddpint n) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->arr);
 	regex_n_match(ret, regex->obj, regex->ausdruck.str, text->str, n);
+	ddp_pop_temp_gc_root();
 }
 
 void Regex_Kompiliert_Erster_Treffer_Ersetzen(ddpstring *ret, Regex *regex, ddpstring *text, ddpstring *ersatz) {
@@ -406,5 +428,7 @@ void Regex_Kompiliert_Alle_Treffer_Ersetzen(ddpstring *ret, Regex *regex, ddpstr
 
 void Regex_Kompiliert_Spalten(ddpstringlist *ret, Regex *regex, ddpstring *text) {
 	DDP_MIGHT_ERROR;
+	ddp_push_temp_gc_root((void **)&ret->arr);
 	regex_split(ret, regex->obj, regex->ausdruck.str, text->str);
+	ddp_pop_temp_gc_root();
 }

@@ -6,7 +6,15 @@ Wir nennen die öffentliche Kombination aus
 	der öffentlichen Text Liste gruppen mit Standardwert einer leeren Text Liste,
 einen Treffer,
 und erstellen sie so:
-	"einen Treffer mit dem Text <text>"
+	"einen Treffer mit dem Text <text>",
+	"ein Treffer mit dem Text <text>"
+
+Die Funktion Initialisiere_Treffer_VTable mit dem Parameter v vom Typ Variable, gibt einen Wahrheitswert zurück,
+ist in "libddpstdlib.a" definiert
+und kann so benutzt werden:
+	"die Treffer vtable mit <v> initialisiert wurde"
+
+Der Wahrheitswert init ist wahr, wenn die Treffer vtable mit ((ein Treffer mit dem Text "") als Variable) initialisiert wurde.
 
 Die öffentliche Funktion Ist_Regex mit dem Parameter muster vom Typ Text, gibt einen Wahrheitswert zurück,
 ist in "libddpstdlib.a" definiert

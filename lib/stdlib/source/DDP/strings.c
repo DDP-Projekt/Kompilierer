@@ -1,6 +1,9 @@
 #include "DDP/ddpmemory.h"
 #include "DDP/ddptypes.h"
+#include "DDP/gc.h"
 #include <string.h>
+
+extern ddpvtable ddpbyte_vtable;
 
 void Text_Zu_ByteListe(ddpbytelist *ret, ddpstringref t) {
 	if (ddp_string_empty(t)) {
@@ -9,7 +12,7 @@ void Text_Zu_ByteListe(ddpbytelist *ret, ddpstringref t) {
 	}
 	ret->cap = t->cap - 1;
 	ret->len = ret->cap;
-	ret->arr = DDP_ALLOCATE(ddpbyte, ret->len);
+	ret->arr = ddp_allocate_gc_ref(&ddpbyte_vtable, ret->len);
 	memcpy(ret->arr, t->str, ret->len);
 }
 
