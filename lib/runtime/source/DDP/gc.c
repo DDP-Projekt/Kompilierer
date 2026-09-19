@@ -816,21 +816,34 @@ static void trace_any(ddpany *any) {
 	DDP_DBGLOG_GC("tracing any root %p", any);
 	// don't trace NULL or Standardwert any
 	if (any == NULL || any->vtable_ptr == NULL) {
+		DDP_DBGLOG_GC("not tracing null or default any");
 		return;
+	}
+
+	DDP_DBGLOG_GC("any->vtable=%p (%s)", any->vtable_ptr, DDP_VTABLE_TYPENAME(any->vtable_ptr));
+	if (any->vtable_ptr != NULL) {
+		DDP_DBGLOG_GC("any->vtable->ptrmask=%p type_size=%d", any->vtable_ptr->ptrmask, any->vtable_ptr->type_size);
 	}
 
 	const uint8_t *ptrmask = any->vtable_ptr->ptrmask;
 	const void *ref = DDP_ANY_VALUE_PTR(any);
 
+	if (ref == NULL) {
+		DDP_DBGLOG("not tracing any with NULL value_ptr");
+		return;
+	}
+
 	for (unsigned i = 0; i < (any->vtable_ptr->ptrmask_size * 4); i++) {
 		switch (bitmap_get_two_bits(ptrmask, i)) {
 		case PTRMASK_REF: {
+			DDP_DBGLOG_GC("acessing nested root %p[%d]", ref, i);
 			void *nested_ref = ((void **)ref)[i];
 			DDP_DBGLOG_GC("tracing nested root %p", nested_ref);
 			trace_root(nested_ref);
 			break;
 		}
 		case PTRMASK_ANY: {
+			DDP_DBGLOG_GC("acessing nested any %p[%d]", ((uint8_t *)ref), i * 8);
 			void *nested_any = (ddpany *)&((uint8_t *)ref)[i * 8];
 			DDP_DBGLOG_GC("tracing nested any %p", nested_any);
 			trace_any(nested_any);
