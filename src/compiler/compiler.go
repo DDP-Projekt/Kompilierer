@@ -2324,6 +2324,8 @@ func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if irReturnType.TriviallyCopyable() {
 		c.builder().latestReturn.irVal = c.builder().createCall(fun.irFunc, args...)
 	} else {
+		// TODO: if this is an extern function, maybe the push/pop of the return value to the gc-temp-root stack
+		// can be done automatically here instead of by hand in the C code
 		c.builder().createCall(fun.irFunc, args...)
 		c.builder().latestReturn = c.builder().scp.addTemporary(ret, irReturnType)
 	}
