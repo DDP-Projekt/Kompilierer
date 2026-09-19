@@ -127,8 +127,7 @@ func (c *compiler) defineStringType() *ddpIrStringType {
 	ddpstring.char_to_string_IrFun = c.declareExternalRuntimeFunction("ddp_char_to_string", false, true, c.void, c.ptr, c.ddpchar)
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, "ddpstring_vtable")
-	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
-	vtable.SetVisibility(llvm.DefaultVisibility)
+	c.setVTableLinkage(vtable, "ddpstring_vtable")
 
 	ptrmask_size, ptrmask := ddpstring.PtrmaskInfo(c)
 

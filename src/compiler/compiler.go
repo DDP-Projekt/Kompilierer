@@ -3079,8 +3079,7 @@ func (c *compiler) addTypdefVTable(d *ast.TypeDefDecl) {
 	ir_type := c.toIrType(d.Type)
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
-	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
-	vtable.SetVisibility(llvm.DefaultVisibility)
+	c.setVTableLinkage(vtable, name+"_vtable")
 
 	ptrmask_size, ptrmask := ir_type.PtrmaskInfo(c)
 

@@ -82,8 +82,7 @@ func (c *compiler) defineAnyType() *ddpIrAnyType {
 	ddpany.defaultValue = llvm.ConstNull(ddpany.typ)
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, "ddpany_vtable")
-	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
-	vtable.SetVisibility(llvm.DefaultVisibility)
+	c.setVTableLinkage(vtable, "ddpany_vtable")
 
 	ptrmask_size, ptrmask := ddpany.PtrmaskInfo(c)
 

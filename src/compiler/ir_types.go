@@ -5,9 +5,24 @@ with the llir representation of ddptypes
 package compiler
 
 import (
+	"runtime"
+
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 )
+
+// set linkage of vtables to weak_odr
+// for windows (COFF), special handling is needed
+func (c *compiler) setVTableLinkage(vtable llvm.Value, name string) {
+	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
+	vtable.SetVisibility(llvm.DefaultVisibility)
+
+	if runtime.GOOS == "windows" {
+		comdat := c.llmod.Comdat(name)
+		comdat.SetSelectionKind(llvm.AnyComdatSelectionKind)
+		vtable.SetComdat(comdat)
+	}
+}
 
 // interface for the ir-representation of a ddptype
 // it exposes some information that all types share
@@ -91,8 +106,7 @@ func (c *compiler) definePrimitiveType(ddptyp ddptypes.Type, typ llvm.Type, defa
 	}
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, name+"_vtable")
-	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
-	vtable.SetVisibility(llvm.DefaultVisibility)
+	c.setVTableLinkage(vtable, name+"_vtable")
 
 	ptrmask_size, ptrmask := primitive.PtrmaskInfo(c)
 

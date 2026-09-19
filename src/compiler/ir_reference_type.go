@@ -84,8 +84,7 @@ func (c *compiler) defineReferenceType(t ddptypes.ReferenceType, underlying ddpI
 	}
 
 	vtable := llvm.AddGlobal(c.llmod, c.vtable_type, refType.name+"_vtable")
-	vtable.SetLinkage(llvm.WeakODRLinkage) // weak_odr to combine vtables, which are equivalent in all modules, see https://llvm.org/docs/LangRef.html#linkage
-	vtable.SetVisibility(llvm.DefaultVisibility)
+	c.setVTableLinkage(vtable, refType.name+"_vtable")
 
 	ptrmask_size, ptrmask := refType.PtrmaskInfo(c)
 
