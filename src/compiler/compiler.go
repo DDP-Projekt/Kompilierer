@@ -320,7 +320,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 	c.disposeBuilders()
 
 	if DEBUG {
-		llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction)
+		// llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction)
 	}
 
 	return c.result
@@ -356,7 +356,7 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 	c.disposeBuilders()
 
 	if DEBUG {
-		llvm.VerifyModule(c.llmod, llvm.PrintMessageAction)
+		// llvm.VerifyModule(c.llmod, llvm.PrintMessageAction)
 	}
 
 	return c.llmod

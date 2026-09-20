@@ -187,10 +187,7 @@ Und kann so benutzt werden:
 	"das Speichern von <schlüssel> mit Wert <wert> in <tabelle> einen neuen Schlüssel hinzugefügt hat"
 
 Die öffentliche generische Funktion Tabellen_Wert_Lesen mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen W zurück, macht:
-	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
-		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
-		Passe die Kapazität von tabelle auf neue_kapazität an.
-
+	Wenn die Kapazität von tabelle gleich 0 ist, gib den Standardwert von einem W zurück.
 
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:
@@ -199,9 +196,7 @@ Die öffentliche generische Funktion Tabellen_Wert_Lesen mit den Parametern tabe
 Und überlädt den "an der Stelle" Operator.
 
 Die öffentliche generische Funktion Tabelle_Hat_Schlüssel mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen Wahrheitswert zurück, macht:
-	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
-		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
-		Passe die Kapazität von tabelle auf neue_kapazität an.
+	Wenn die Kapazität von tabelle gleich 0 ist, gib falsch zurück.
 
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 	Gib falsch, wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, zurück.
@@ -210,11 +205,7 @@ Und kann so benutzt werden:
 	"<tabelle> <schlüssel> <!nicht> enthält"
 
 Die öffentliche generische Funktion Tabellen_Wert_Löschen mit den Parametern tabelle und schlüssel vom Typ S-W-HashTabelle Referenz und S, gibt einen W zurück, macht:
-	Wenn länge von tabelle plus 1 größer als die Kapazität von tabelle mal MAXIMALER_LADUNGS_FAKTOR ist oder die Kapazität von tabelle gleich 0 ist, dann:
-		Die Zahl neue_kapazität ist (die Kapazität von tabelle mal 2), falls die Kapazität von tabelle groesser als 0 ist, ansonsten 16.
-		Passe die Kapazität von tabelle auf neue_kapazität an.
-
-
+	Wenn die Kapazität von tabelle gleich 0 ist, gib den Standardwert von einem W zurück.
 	Die Zahl eintrag_index ist der Index für schlüssel in tabelle.
 
 	Wenn (einträge von tabelle an der Stelle eintrag_index) leer oder ein Grabstein ist, dann:

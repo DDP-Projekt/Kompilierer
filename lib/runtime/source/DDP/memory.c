@@ -3,6 +3,7 @@
 #include "DDP/debug.h"
 #include "DDP/gc.h"
 #include <stdlib.h>
+#include <string.h>
 
 // general purpose allocator
 // used for allocation/reallocation and freeing of memory

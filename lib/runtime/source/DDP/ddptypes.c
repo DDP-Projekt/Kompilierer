@@ -105,6 +105,7 @@ void ddp_deep_copy_any(ddpany *ret, ddpany *any) {
 	if (!DDP_IS_SMALL_ANY(any)) {
 		DDP_DBGLOG("allocating space for any: %lld", ret->vtable_ptr->type_size);
 		ret->value_ptr = ddp_reallocate(NULL, 0, ret->vtable_ptr->type_size);
+		memset(ret->value_ptr, 0, ret->vtable_ptr->type_size);
 	} else {
 		DDP_DBGLOG("not allocating for small any");
 	}

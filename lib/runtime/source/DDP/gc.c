@@ -820,9 +820,12 @@ static void trace_any(ddpany *any) {
 		return;
 	}
 
-	DDP_DBGLOG_GC("any->vtable=%p (%s)", any->vtable_ptr, DDP_VTABLE_TYPENAME(any->vtable_ptr));
+	DDP_DBGLOG_GC("any->vtable=%p", any->vtable_ptr);
 	if (any->vtable_ptr != NULL) {
-		DDP_DBGLOG_GC("any->vtable->ptrmask=%p type_size=%d", any->vtable_ptr->ptrmask, any->vtable_ptr->type_size);
+		DDP_DBGLOG_GC("any vtable is not null");
+		DDP_DBGLOG_GC("type_size=%d", any->vtable_ptr->type_size);
+		DDP_DBGLOG_GC("ptrmask=%p", any->vtable_ptr->ptrmask);
+		DDP_DBGLOG_GC("type=%s", DDP_VTABLE_TYPENAME(any->vtable_ptr));
 	}
 
 	const uint8_t *ptrmask = any->vtable_ptr->ptrmask;

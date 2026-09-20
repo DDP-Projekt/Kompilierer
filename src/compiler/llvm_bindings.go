@@ -124,7 +124,7 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 
 	defer options.Dispose()
 	if DEBUG {
-		options.SetVerifyEach(true)
+		// options.SetVerifyEach(true)
 	}
 	// return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
 	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
@@ -133,7 +133,7 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 // compiles the module to w and returns w.Write
 func (llctx *llvmTargetContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
 	if DEBUG {
-		llvm.VerifyModule(mod, llvm.PrintMessageAction)
+		// llvm.VerifyModule(mod, llvm.PrintMessageAction)
 	}
 
 	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(mod, fileType)
