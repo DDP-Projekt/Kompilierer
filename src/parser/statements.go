@@ -164,8 +164,10 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 
 	if !p.matchAny(token.COUNT_MAL) {
 		count_tok := count.Token()
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
-			fmt.Sprintf("%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
+		p.err(
+			ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
+			fmt.Sprintf(
+				"%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
 				ddperror.MsgGotExpected(p.previous(), token.COUNT_MAL), &count_tok,
 			),
 		)
@@ -237,9 +239,9 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consumeSeq(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		assign_token := tok
-		tok = p.previous()
+		dirTok := p.previous()
 		operator := ast.BIN_LEFT_SHIFT
-		if tok.Type == token.RECHTS {
+		if dirTok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
 		p.consumeSeq(token.DOT)
@@ -448,7 +450,7 @@ func (p *parser) repeatStmt() ast.Statement {
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(repeat),
-			End:   body.GetRange().End,
+			End:   token.NewEndPos(p.previous()),
 		},
 		While:     *repeat,
 		Condition: count,

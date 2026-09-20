@@ -499,7 +499,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: numerus.GetRange().Start,
+					Start: token.NewStartPos(tok),
 					End:   rhs.GetRange().End,
 				},
 				Tok:      *tok,
@@ -508,6 +508,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 			}
 		} else {
+			artikel := p.previous()
 			lhs = p.unary()
 			p.consumeSeq(token.DOT, token.WURZEL)
 			tok := p.previous()
@@ -517,8 +518,8 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: expr.GetRange().Start,
-					End:   lhs.GetRange().End,
+					Start: token.NewStartPos(artikel),
+					End:   expr.GetRange().End,
 				},
 				Tok:      *tok,
 				Lhs:      expr,
@@ -584,6 +585,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				return lhs
 			}
 			rhs := p.expression()
+			p.consumeSeq(token.DOT, token.ELEMENT)
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: lhs.GetRange().Start,
@@ -594,11 +596,11 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_TO,
 			}
-			p.consumeSeq(token.DOT, token.ELEMENT)
 			// t ab dem n. Element
 		case token.AB:
 			p.consumeSeq(token.DEM)
 			rhs := p.expression()
+			p.consumeSeq(token.DOT, token.ELEMENT)
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: lhs.GetRange().Start,
@@ -609,7 +611,6 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_FROM,
 			}
-			p.consumeSeq(token.DOT, token.ELEMENT)
 		}
 	}
 	return lhs
@@ -787,12 +788,13 @@ func (p *parser) assigneable() ast.Assigneable {
 		var ass ast.Assigneable = ident
 
 		for p.matchAny(token.ALS) {
+			targetType := p.parseType(false)
 			ass = &ast.CastAssigneable{
 				Range: token.Range{
 					Start: ass.GetRange().Start,
 					End:   token.NewEndPos(p.previous()),
 				},
-				TargetType: p.parseType(false),
+				TargetType: targetType,
 				Lhs:        ass,
 			}
 		}

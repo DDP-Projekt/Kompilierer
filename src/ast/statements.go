@@ -148,9 +148,13 @@ func (stmt *BreakContinueStmt) Token() token.Token { return stmt.Tok }
 func (stmt *ReturnStmt) Token() token.Token        { return stmt.Return }
 func (stmt *TodoStmt) Token() token.Token          { return stmt.Tok }
 
-func (stmt *BadStmt) GetRange() token.Range           { return stmt.Err.Range }
-func (stmt *DeclStmt) GetRange() token.Range          { return stmt.Decl.GetRange() }
-func (stmt *ExprStmt) GetRange() token.Range          { return stmt.Expr.GetRange() }
+func (stmt *BadStmt) GetRange() token.Range  { return stmt.Err.Range }
+func (stmt *DeclStmt) GetRange() token.Range { return stmt.Decl.GetRange() }
+func (stmt *ExprStmt) GetRange() token.Range {
+	// Include dot into range
+	exprRange := stmt.Expr.GetRange()
+	return token.Range{Start: exprRange.Start, End: token.Position{Line: exprRange.End.Line, Column: exprRange.End.Column + 1}}
+}
 func (stmt *ImportStmt) GetRange() token.Range        { return stmt.Range }
 func (stmt *AssignStmt) GetRange() token.Range        { return stmt.Range }
 func (stmt *BlockStmt) GetRange() token.Range         { return stmt.Range }

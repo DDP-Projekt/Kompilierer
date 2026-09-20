@@ -31,6 +31,9 @@ func (listType ListType) String() string {
 	} else if _, isVoid := listType.ElementType.(VoidType); isVoid {
 		panic("void list type")
 	}
+	if listType.ElementType == VARIABLE {
+		return "Variablen Liste"
+	}
 	return listType.ElementType.String() + " Liste" // no 100% correct yet
 }
 

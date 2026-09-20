@@ -371,7 +371,8 @@ func (p *parser) parseFunctionParameters(perr func(ddperror.Code, token.Range, s
 			token.NewRange(&params[0].Name, p.previous()),
 			fmt.Sprintf("Die Anzahl von Parametern stimmt nicht mit der Anzahl von Parameter-Typen überein (%d Parameter aber %d Typen)",
 				len(params),
-				invalidTypeIndex))
+				invalidTypeIndex),
+		)
 	}
 
 	return params
@@ -408,7 +409,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 		didError := false
 		errHandleWrapper := func(err ddperror.Error) { didError = true; p.errorHandler(err) }
 
-		scanAndValidate := func(t token.Token, negated bool) {
+		scanAndValidate := func(t token.Token, orig token.Token, negated bool) {
 			alias, err := scanner.ScanAlias(t, errHandleWrapper)
 			if err != nil && didError {
 				return
@@ -420,7 +421,7 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 				if ok, isFun, existingAlias, pTokens := p.aliasExists(alias); ok {
 					p.err(ddperror.SEM_ALIAS_ALREADY_TAKEN, v.Range, ddperror.MsgAliasAlreadyExists(v.Literal, existingAlias.Decl().Name(), isFun))
 				} else {
-					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: t, Func: nil, Args: paramTypesMap, Negated: negated})
+					funcAliases = append(funcAliases, &ast.FuncAlias{Tokens: alias, Original: orig, Func: nil, Args: paramTypesMap, Negated: negated})
 					funcAliasTokens = append(funcAliasTokens, pTokens)
 				}
 			} else {
@@ -451,12 +452,12 @@ func (p *parser) parseFunctionAliases(params []ast.ParameterInfo, validate func(
 			negatedV := *v
 			negatedV.Literal = original[:negMarkerStart] + original[negMarkerStart+2:negMarkerEnd-1] + original[negMarkerEnd:]
 
-			scanAndValidate(negatedV, true)
+			scanAndValidate(negatedV, *v, true)
 
-			v.Literal = original[:negMarkerStart] + original[negMarkerEnd:]
+			v.Literal = original[:negMarkerStart] + strings.TrimPrefix(original[negMarkerEnd:], " ")
 		}
 
-		scanAndValidate(*v, false)
+		scanAndValidate(*v, *v, false)
 	}
 
 	return funcAliases, funcAliasTokens
@@ -737,7 +738,8 @@ func (p *parser) parseFunctionBody(decl *ast.FuncDecl) *ast.BlockStmt {
 			name = "$" + name
 		}
 
-		bodyTable.InsertDecl(name,
+		bodyTable.InsertDecl(
+			name,
 			&ast.VarDecl{
 				NameTok:    decl.Parameters[i].Name,
 				IsPublic:   false,
@@ -823,7 +825,8 @@ func isIllegalToken(t token.Token) bool { return t.Type == token.ILLEGAL }      
 func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.ParameterInfo) *ddperror.Error {
 	// validate that the alias contains as many parameters as the function
 	if count := countElements(aliasTokens, isAliasParam); count != len(params) {
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+		err := ddperror.New(
+			ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias braucht %d Parameter aber hat %d", len(params), count),
 			p.module.FileName,
@@ -860,7 +863,8 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 		if _, ok := nameSet[k]; !ok {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.New(
+				ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Die Funktion hat keinen Parameter mit Namen %s", k),
 				p.module.FileName,
@@ -872,7 +876,8 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 			aliasTokens[i].AliasInfo = &argTyp
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.New(
+				ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
@@ -890,7 +895,8 @@ func (p *parser) validateFunctionAlias(aliasTokens []token.Token, params []ast.P
 func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.VarDecl) (*ddperror.Error, map[string]ddptypes.Type) {
 	// validate that the alias contains no more parameters than the struct
 	if count := countElements(aliasTokens, isAliasParam); count > len(fields) {
-		err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+		err := ddperror.New(
+			ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 			token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 			fmt.Sprintf("Der Alias erwartet Maximal %d Parameter aber hat %d", len(fields), count),
 			p.module.FileName,
@@ -935,7 +941,8 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 		k := strings.Trim(v.Literal, "<>") // remove the <> from <argname>
 		if _, ok := args[k]; !ok {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.New(
+				ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Die Struktur hat kein Feld mit Namen %s", k),
 				p.module.FileName,
@@ -953,7 +960,8 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 			delete(nameTypeMap, k)
 		} else {
-			err := ddperror.New(ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
+			err := ddperror.New(
+				ddperror.SEM_ALIAS_BAD_ARGS, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Der Alias enthält den Parameter %s mehrmals", k),
 				p.module.FileName,
@@ -964,7 +972,8 @@ func (p *parser) validateStructAlias(aliasTokens []token.Token, fields []*ast.Va
 
 	for typ, wasUnified := range genericUnifiedMap {
 		if !wasUnified {
-			err := ddperror.New(ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, ddperror.LEVEL_ERROR,
+			err := ddperror.New(
+				ddperror.SEM_UNABLE_TO_UNIFY_FIELD_TYPES, ddperror.LEVEL_ERROR,
 				token.NewRange(&aliasTokens[len(aliasTokens)-1], &aliasTokens[len(aliasTokens)-1]),
 				fmt.Sprintf("Der generische Typ %s konnte nicht unifiziert werden", typ),
 				p.module.FileName,
@@ -1092,7 +1101,7 @@ func (p *parser) structDeclaration() ast.Declaration {
 
 	if isGeneric {
 		structType = &ddptypes.GenericStructType{
-			StructType:     *(structType.(*ddptypes.StructType)),
+			StructType:     *structType.(*ddptypes.StructType),
 			GenericTypes:   genericTypes,
 			Instantiations: nil,
 		}
