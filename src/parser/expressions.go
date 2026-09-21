@@ -517,11 +517,12 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 			// root is implemented as pow(degree, 1/radicant)
 			expr := p.unary()
 
+			r := token.Range{
+				Start: token.NewStartPos(artikel),
+				End:   expr.GetRange().End,
+			}
 			lhs = &ast.BinaryExpr{
-				Range: token.Range{
-					Start: token.NewStartPos(artikel),
-					End:   expr.GetRange().End,
-				},
+				Range:    r,
 				Tok:      *tok,
 				Lhs:      expr,
 				Operator: ast.BIN_POW,
@@ -531,6 +532,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 						Value:   1,
 					},
 					Tok:      *tok,
+					Range:    r,
 					Operator: ast.BIN_DIV,
 					Rhs:      lhs,
 				},
