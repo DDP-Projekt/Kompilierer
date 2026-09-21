@@ -1246,6 +1246,7 @@ func (p *parser) aliasDecl() ast.Statement {
 	if begin.Type != token.DER {
 		p.err(ddperror.SYN_GENDER_MISMATCH, begin.Range, fmt.Sprintf("Falscher Artikel, meintest du %s?", token.DER))
 	}
+	p.advance()
 	p.consumeSeq(token.STRING)
 	aliasTok := p.previous()
 	p.consumeSeq(token.STEHT, token.FÜR, token.DIE, token.FUNKTION, token.IDENTIFIER)

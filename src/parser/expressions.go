@@ -246,6 +246,7 @@ func (p *parser) comparison() ast.Expression {
 
 			// expr > mid && expr < rhs
 			expr = &ast.TernaryExpr{
+				Tok: *tok,
 				Range: token.Range{
 					Start: expr.GetRange().Start,
 					End:   rhs.GetRange().End,
@@ -308,17 +309,17 @@ func (p *parser) bitShift() ast.Expression {
 		if tok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
+		p.consumeSeq(token.VERSCHOBEN)
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
+				End:   token.NewEndPos(p.previous()),
 			},
 			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consumeSeq(token.VERSCHOBEN)
 	}
 	return expr
 }
@@ -490,6 +491,7 @@ func (p *parser) negate() ast.Expression {
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
 	if lhs == nil && p.matchAny(token.DIE, token.DER) {
+		artikel := p.previous()
 		if p.matchAny(token.LOGARITHMUS) {
 			tok := p.previous()
 			p.consumeSeq(token.VON)
@@ -499,7 +501,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: token.NewStartPos(tok),
+					Start: token.NewStartPos(artikel),
 					End:   rhs.GetRange().End,
 				},
 				Tok:      *tok,
@@ -508,7 +510,6 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 			}
 		} else {
-			artikel := p.previous()
 			lhs = p.unary()
 			p.consumeSeq(token.DOT, token.WURZEL)
 			tok := p.previous()

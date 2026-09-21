@@ -188,7 +188,6 @@ func (p *parser) declaration() ast.Statement {
 
 		switch t := p.peek().Type; t {
 		case token.ALIAS:
-			p.advance()
 			return p.aliasDecl()
 		case token.GENERISCHE:
 			decl_start_depth -= 1

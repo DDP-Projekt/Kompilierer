@@ -208,23 +208,28 @@ func (p *parser) compoundAssignement() ast.Statement {
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
-		p.consumeSeq(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
 		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			operator = ast.UN_NOT
 		}
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.UnaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Operator: operator,
 				Rhs:      varName,
 			},
-		}
+		})
 	}
 
 	if tok.Type == token.TEILE {
@@ -244,33 +249,42 @@ func (p *parser) compoundAssignement() ast.Statement {
 		if dirTok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
-		p.consumeSeq(token.DOT)
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *assign_token,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
-		}
+		})
 	} else {
-		p.consumeSeq(token.DOT)
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
-		}
+		})
 	}
 }
 
@@ -286,9 +300,13 @@ func (p *parser) assignLiteral() ast.Statement {
 		}
 	}
 	ident_tok := ident.Token()
+	end := p.previous()
+	if p.peek().Type == token.DOT {
+		end = p.peek()
+	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(&ident_tok, p.peek()),
+			Range: token.NewRange(&ident_tok, end),
 			Tok:   ident.Token(),
 			Var:   ident,
 			Rhs:   expr,
@@ -303,9 +321,13 @@ func (p *parser) assignNoLiteral() ast.Statement {
 	p.consumeSeq(token.IN)
 	p.consumeAny(token.IDENTIFIER, token.LPAREN)
 	name := p.assigneable() // name of the variable is the just consumed identifier
+	end := p.previous()
+	if p.peek().Type == token.DOT {
+		end = p.peek()
+	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(speichere, p.peek()),
+			Range: token.NewRange(speichere, end),
 			Tok:   *speichere,
 			Var:   name,
 			Rhs:   expr,
@@ -709,5 +731,11 @@ func (p *parser) todoStmt() ast.Statement {
 }
 
 func (p *parser) expressionStatement() ast.Statement {
-	return p.finishStatement(&ast.ExprStmt{Expr: p.expression()})
+	expr := p.expression()
+	r := expr.GetRange()
+	if p.peek().Type == token.DOT {
+		r.End = token.NewEndPos(p.peek())
+	}
+
+	return p.finishStatement(&ast.ExprStmt{Expr: expr, Range: r})
 }
