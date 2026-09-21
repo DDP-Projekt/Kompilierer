@@ -25,16 +25,15 @@ var formatCmd = &cobra.Command{
 			return fmt.Errorf("Die Eingabedatei '%s' ist keine .ddp Datei", filePath)
 		}
 
-		file, err := os.OpenFile(filePath, os.O_RDONLY, os.ModePerm)
-		defer file.Close()
-
+		srcFile, err := os.OpenFile(filePath, os.O_RDONLY, os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("Ausgabedatei konnte nicht geöffnet werden: %w", err)
+			return fmt.Errorf("Die Eingabedatei konnte nicht geöffnet werden: %w", err)
 		}
+		defer srcFile.Close()
 
-		src, err := io.ReadAll(file)
+		src, err := io.ReadAll(srcFile)
 		if err != nil {
-			return fmt.Errorf("Ausgabedatei konnte nicht gelesen werden: %w", err)
+			return fmt.Errorf("Die Eingabedatei konnte nicht gelesen werden: %w", err)
 		}
 
 		module, err := parser.Parse(parser.Options{
@@ -49,16 +48,18 @@ var formatCmd = &cobra.Command{
 			return fmt.Errorf("Fehler beim Parsen: %w", err)
 		}
 
-		file.Close()
-		if file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, os.ModePerm); err != nil {
-			return fmt.Errorf("Fehler beim Öffnen: %w", err)
-		} else {
-			err = formatierer.WriteFormattedDocument(file, string(src), module, formatierer.FormattingOptions{
-				InsertSpaces: spaces,
-			})
-			if err != nil {
-				return fmt.Errorf("Fehler beim Formatieren: %w", err)
-			}
+		srcFile.Close()
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("Die Ausgabedatei konnte nicht geöffnet werden: %w", err)
+		}
+		defer dstFile.Close()
+
+		err = formatierer.WriteFormattedDocument(dstFile, string(src), module, formatierer.FormattingOptions{
+			InsertSpaces: spaces,
+		})
+		if err != nil {
+			return fmt.Errorf("Fehler beim Formatieren: %w", err)
 		}
 
 		return nil
