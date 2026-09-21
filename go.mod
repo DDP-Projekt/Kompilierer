@@ -1,8 +1,9 @@
 module github.com/DDP-Projekt/Kompilierer
 
-go 1.24.0
+go 1.26.8
 
 require (
+	github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291
 	github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11
 	github.com/google/go-github/v55 v55.0.0
 	github.com/jwalton/go-supportscolor v1.2.0
