@@ -529,13 +529,14 @@ func (p *parser) forStatement() ast.Statement {
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
+			start := p.peek()
 			p.setScope(bodyTable)
 			stmt := p.checkedDeclaration()
 			p.exitScope()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
-					Start: token.NewStartPos(Colon),
+					Start: token.NewStartPos(start),
 					End:   stmt.GetRange().End,
 				},
 				Colon:      *Colon,
