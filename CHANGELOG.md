@@ -11,6 +11,9 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] Spezielle Zuweisungen können nun teil einer einzeiligen Schleife sein (Erhöhe x um 1 5 Mal)
+- [Fix] Die Quellcode-Bereichsangaben einiger AST-Nodes korrigiert
+- [Fix] Nachträgliche Aliase werfen keinen Artikelfehler mehr
 - [Neu] in Duden/Netzwerk:
     - Gab_Zeitüberschreitung
     - Socket_Timeout_Setzen_Senden/Empfangen
