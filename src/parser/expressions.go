@@ -301,7 +301,7 @@ func (p *parser) bitShift() ast.Expression {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
 			return &ast.BadExpr{
 				Err: p.lastError,
-				Tok: expr.Token(),
+				Tok: *p.peek(),
 			}
 		}
 		tok := p.previous()
