@@ -158,8 +158,9 @@ type (
 		Name  string      // name of the function
 		// the function declaration this call refers to
 		// is set by the parser, or nil if the name was not found
-		Func *FuncDecl
-		Args map[string]Expression
+		Func  *FuncDecl
+		Args  map[string]Expression
+		Alias *FuncAlias // called alias of the function, nil if it was an overload
 	}
 
 	StructLiteral struct {
@@ -174,7 +175,8 @@ type (
 		// the arguments passed to the literal
 		// this does not include all struct fields,
 		// only the ones needed by the alias used
-		Args map[string]Expression
+		Args  map[string]Expression
+		Alias *StructAlias // called alias of the struct
 	}
 )
 

@@ -164,8 +164,10 @@ func (p *parser) finishStatement(stmt ast.Statement) ast.Statement {
 
 	if !p.matchAny(token.COUNT_MAL) {
 		count_tok := count.Token()
-		p.err(ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
-			fmt.Sprintf("%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
+		p.err(
+			ddperror.SYN_UNEXPECTED_TOKEN, count.GetRange(),
+			fmt.Sprintf(
+				"%s\nWolltest du vor %s vielleicht einen Punkt setzten?",
 				ddperror.MsgGotExpected(p.previous(), token.COUNT_MAL), &count_tok,
 			),
 		)
@@ -206,23 +208,28 @@ func (p *parser) compoundAssignement() ast.Statement {
 
 	// early return for negate as it does not need a second operand
 	if tok.Type == token.NEGIERE {
-		p.consumeSeq(token.DOT)
 		typ := p.typechecker.EvaluateSilent(varName)
 		operator := ast.UN_NEGATE
 		if ddptypes.Equal(typ, ddptypes.WAHRHEITSWERT) {
 			operator = ast.UN_NOT
 		}
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.UnaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Operator: operator,
 				Rhs:      varName,
 			},
-		}
+		})
 	}
 
 	if tok.Type == token.TEILE {
@@ -237,38 +244,47 @@ func (p *parser) compoundAssignement() ast.Statement {
 		p.consumeSeq(token.BIT, token.NACH)
 		p.consumeAny(token.LINKS, token.RECHTS)
 		assign_token := tok
-		tok = p.previous()
+		dirTok := p.previous()
 		operator := ast.BIN_LEFT_SHIFT
-		if tok.Type == token.RECHTS {
+		if dirTok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
-		p.consumeSeq(token.DOT)
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *assign_token,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
-		}
+		})
 	} else {
-		p.consumeSeq(token.DOT)
-		return &ast.AssignStmt{
-			Range: token.NewRange(tok, p.previous()),
+		end := p.previous()
+		stmtEnd := end
+		if p.peek().Type == token.DOT {
+			stmtEnd = p.peek()
+		}
+		return p.finishStatement(&ast.AssignStmt{
+			Range: token.NewRange(tok, stmtEnd),
 			Tok:   *tok,
 			Var:   varName,
 			Rhs: &ast.BinaryExpr{
-				Range:    token.NewRange(tok, p.previous()),
+				Range:    token.NewRange(tok, end),
 				Tok:      *tok,
 				Lhs:      varName,
 				Operator: operator,
 				Rhs:      operand,
 			},
-		}
+		})
 	}
 }
 
@@ -284,9 +300,13 @@ func (p *parser) assignLiteral() ast.Statement {
 		}
 	}
 	ident_tok := ident.Token()
+	end := p.previous()
+	if p.peek().Type == token.DOT {
+		end = p.peek()
+	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(&ident_tok, p.peek()),
+			Range: token.NewRange(&ident_tok, end),
 			Tok:   ident.Token(),
 			Var:   ident,
 			Rhs:   expr,
@@ -301,9 +321,13 @@ func (p *parser) assignNoLiteral() ast.Statement {
 	p.consumeSeq(token.IN)
 	p.consumeAny(token.IDENTIFIER, token.LPAREN)
 	name := p.assigneable() // name of the variable is the just consumed identifier
+	end := p.previous()
+	if p.peek().Type == token.DOT {
+		end = p.peek()
+	}
 	return p.finishStatement(
 		&ast.AssignStmt{
-			Range: token.NewRange(speichere, p.peek()),
+			Range: token.NewRange(speichere, end),
 			Tok:   *speichere,
 			Var:   name,
 			Rhs:   expr,
@@ -448,7 +472,7 @@ func (p *parser) repeatStmt() ast.Statement {
 	return &ast.WhileStmt{
 		Range: token.Range{
 			Start: token.NewStartPos(repeat),
-			End:   body.GetRange().End,
+			End:   token.NewEndPos(p.previous()),
 		},
 		While:     *repeat,
 		Condition: count,
@@ -505,13 +529,14 @@ func (p *parser) forStatement() ast.Statement {
 			Body = p.blockStatement(bodyTable).(*ast.BlockStmt)
 		} else { // body is a single statement
 			Colon := p.previous()
+			start := p.peek()
 			p.setScope(bodyTable)
 			stmt := p.checkedDeclaration()
 			p.exitScope()
 			// wrap the single statement in a block for variable-scoping of the counter variable in the resolver and typechecker
 			Body = &ast.BlockStmt{
 				Range: token.Range{
-					Start: token.NewStartPos(Colon),
+					Start: token.NewStartPos(start),
 					End:   stmt.GetRange().End,
 				},
 				Colon:      *Colon,
@@ -707,5 +732,11 @@ func (p *parser) todoStmt() ast.Statement {
 }
 
 func (p *parser) expressionStatement() ast.Statement {
-	return p.finishStatement(&ast.ExprStmt{Expr: p.expression()})
+	expr := p.expression()
+	r := expr.GetRange()
+	if p.peek().Type == token.DOT {
+		r.End = token.NewEndPos(p.peek())
+	}
+
+	return p.finishStatement(&ast.ExprStmt{Expr: expr, Range: r})
 }

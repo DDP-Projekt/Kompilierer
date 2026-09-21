@@ -246,6 +246,7 @@ func (p *parser) comparison() ast.Expression {
 
 			// expr > mid && expr < rhs
 			expr = &ast.TernaryExpr{
+				Tok: *tok,
 				Range: token.Range{
 					Start: expr.GetRange().Start,
 					End:   rhs.GetRange().End,
@@ -300,7 +301,7 @@ func (p *parser) bitShift() ast.Expression {
 			p.err(ddperror.SYN_UNEXPECTED_TOKEN, p.peek().Range, ddperror.MsgGotExpected(p.peek().Literal, "Links", "Rechts"))
 			return &ast.BadExpr{
 				Err: p.lastError,
-				Tok: expr.Token(),
+				Tok: *p.peek(),
 			}
 		}
 		tok := p.previous()
@@ -308,17 +309,17 @@ func (p *parser) bitShift() ast.Expression {
 		if tok.Type == token.RECHTS {
 			operator = ast.BIN_RIGHT_SHIFT
 		}
+		p.consumeSeq(token.VERSCHOBEN)
 		expr = &ast.BinaryExpr{
 			Range: token.Range{
 				Start: expr.GetRange().Start,
-				End:   rhs.GetRange().End,
+				End:   token.NewEndPos(p.previous()),
 			},
 			Tok:      *tok,
 			Lhs:      expr,
 			Operator: operator,
 			Rhs:      rhs,
 		}
-		p.consumeSeq(token.VERSCHOBEN)
 	}
 	return expr
 }
@@ -490,6 +491,7 @@ func (p *parser) negate() ast.Expression {
 func (p *parser) power(lhs ast.Expression) ast.Expression {
 	// TODO: grammar
 	if lhs == nil && p.matchAny(token.DIE, token.DER) {
+		artikel := p.previous()
 		if p.matchAny(token.LOGARITHMUS) {
 			tok := p.previous()
 			p.consumeSeq(token.VON)
@@ -499,7 +501,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
-					Start: numerus.GetRange().Start,
+					Start: token.NewStartPos(artikel),
 					End:   rhs.GetRange().End,
 				},
 				Tok:      *tok,
@@ -515,11 +517,12 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 			// root is implemented as pow(degree, 1/radicant)
 			expr := p.unary()
 
+			r := token.Range{
+				Start: token.NewStartPos(artikel),
+				End:   expr.GetRange().End,
+			}
 			lhs = &ast.BinaryExpr{
-				Range: token.Range{
-					Start: expr.GetRange().Start,
-					End:   lhs.GetRange().End,
-				},
+				Range:    r,
 				Tok:      *tok,
 				Lhs:      expr,
 				Operator: ast.BIN_POW,
@@ -529,6 +532,7 @@ func (p *parser) power(lhs ast.Expression) ast.Expression {
 						Value:   1,
 					},
 					Tok:      *tok,
+					Range:    r,
 					Operator: ast.BIN_DIV,
 					Rhs:      lhs,
 				},
@@ -584,6 +588,7 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				return lhs
 			}
 			rhs := p.expression()
+			p.consumeSeq(token.DOT, token.ELEMENT)
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: lhs.GetRange().Start,
@@ -594,11 +599,11 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_TO,
 			}
-			p.consumeSeq(token.DOT, token.ELEMENT)
 			// t ab dem n. Element
 		case token.AB:
 			p.consumeSeq(token.DEM)
 			rhs := p.expression()
+			p.consumeSeq(token.DOT, token.ELEMENT)
 			lhs = &ast.BinaryExpr{
 				Range: token.Range{
 					Start: lhs.GetRange().Start,
@@ -609,7 +614,6 @@ func (p *parser) slicing(lhs ast.Expression) ast.Expression {
 				Rhs:      rhs,
 				Operator: ast.BIN_SLICE_FROM,
 			}
-			p.consumeSeq(token.DOT, token.ELEMENT)
 		}
 	}
 	return lhs
@@ -787,12 +791,13 @@ func (p *parser) assigneable() ast.Assigneable {
 		var ass ast.Assigneable = ident
 
 		for p.matchAny(token.ALS) {
+			targetType := p.parseType(false)
 			ass = &ast.CastAssigneable{
 				Range: token.Range{
 					Start: ass.GetRange().Start,
 					End:   token.NewEndPos(p.previous()),
 				},
-				TargetType: p.parseType(false),
+				TargetType: targetType,
 				Lhs:        ass,
 			}
 		}

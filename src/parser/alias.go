@@ -100,6 +100,7 @@ func (p *parser) alias() ast.Expression {
 				Name:  fnalias.Func.Name(),
 				Func:  fun,
 				Args:  args,
+				Alias: fnalias,
 			}
 
 			if fnalias.Negated {
@@ -127,6 +128,7 @@ func (p *parser) alias() ast.Expression {
 			Struct: stralias.Struct,
 			Type:   structType.(*ddptypes.StructType),
 			Args:   args,
+			Alias:  stralias,
 		}
 	}
 
@@ -497,7 +499,8 @@ func (p *parser) generateGenericContext(fun ast.GenericContext, params []ast.Par
 			name = "$" + name
 		}
 
-		symbols.InsertDecl(name,
+		symbols.InsertDecl(
+			name,
 			&ast.VarDecl{
 				NameTok:    params[i].Name,
 				IsPublic:   false,
