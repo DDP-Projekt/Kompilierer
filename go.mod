@@ -1,6 +1,6 @@
 module github.com/DDP-Projekt/Kompilierer
 
-go 1.26.8
+go 1.27.1
 
 require (
 	github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291
