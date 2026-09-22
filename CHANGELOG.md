@@ -11,6 +11,7 @@ Der Changelog von DDP. Sortiert nach Release.
 
 ## In Entwicklung
 
+- [Neu] Neuer `kddp formatiere` Befehl hinzugefügt
 - [Neu] Spezielle Zuweisungen können nun teil einer einzeiligen Schleife sein (Erhöhe x um 1 5 Mal)
 - [Fix] Die Quellcode-Bereichsangaben einiger AST-Nodes korrigiert
 - [Fix] Nachträgliche Aliase werfen keinen Artikelfehler mehr

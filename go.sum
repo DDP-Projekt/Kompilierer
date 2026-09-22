@@ -1,8 +1,12 @@
 aead.dev/minisign v0.2.0/go.mod h1:zdq6LdSd9TbuSxchxwhpA9zEb9YXcVGoE8JakuiGaIQ=
 aead.dev/minisign v0.3.0 h1:8Xafzy5PEVZqYDNP60yJHARlW1eOQtsKNp/Ph2c0vRA=
 aead.dev/minisign v0.3.0/go.mod h1:NLvG3Uoq3skkRMDuc3YHpWUTMTrSExqm+Ij73W13F6Y=
+github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291 h1:qwymeR02OzvayaUzf10GnemFZDhLwIeHtjGX7lVeOl0=
+github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291/go.mod h1:VXQ77FX/dUwXMW7Zfaeul03iQ2QG+qeK/HsjZjbQpoI=
 github.com/ProtonMail/go-crypto v1.0.0 h1:LRuvITjQWX+WIfr930YHG2HNfjR1uOfyf5vE0kC2U78=
 github.com/ProtonMail/go-crypto v1.0.0/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
+github.com/aymanbagabas/go-udiff v0.4.1 h1:OEIrQ8maEeDBXQDoGCbbTTXYJMYRCRO1fnodZ12Gv5o=
+github.com/aymanbagabas/go-udiff v0.4.1/go.mod h1:0L9PGwj20lrtmEMeyw4WKJ/TMyDtvAoK9bf2u/mNo3w=
 github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11 h1:mHFGX+f2A1RbzXZGoP8+Ols07GH7p67MowDeJqBQWwY=
 github.com/badgerodon/penv v0.0.0-20151004123538-7a4c6d64fa11/go.mod h1:VH2OewlcVKqR07Snhs1i8wyyRL+9DJH4djx7jNknI+M=
 github.com/bwesterb/go-ristretto v1.2.3/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
