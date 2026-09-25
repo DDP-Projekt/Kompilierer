@@ -13,15 +13,45 @@
 #include "DDP/debug.h"
 #include "DDP/gc.h"
 
+#define UNW_LOCAL_ONLY
+#include "libunwind.h"
+
 // should not be needed in production
 // mainly for debugging
 void SignalHandler(int signal) {
 	if (signal == SIGSEGV) {
 		DDP_DBGLOG("caught SIGSEGV");
+		print_backtrace();
 		ddp_end_runtime();
 		ddp_runtime_error(1, "Segmentation fault\n");
 	}
 }
+
+#ifdef DDPOS_WINDOWS
+// installed via SetUnhandledExceptionFilter instead of signal(SIGSEGV, ...)
+// so we get the real EXCEPTION_RECORD: the exact faulting instruction and,
+// for an access violation, the exact memory address that was read/written.
+// signal(SIGSEGV, ...) is only a CRT emulation over the same SEH mechanism
+// and throws that information away before SignalHandler ever sees it.
+static LONG WINAPI CrashFilter(EXCEPTION_POINTERS *info) {
+	EXCEPTION_RECORD *rec = info->ExceptionRecord;
+
+	fprintf(stderr, "--- crash ---\n");
+	fprintf(stderr, "exception code: 0x%lx\n", rec->ExceptionCode);
+	fprintf(stderr, "faulting IP:    0x%llx\n", (unsigned long long)(uintptr_t)rec->ExceptionAddress);
+	if (rec->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && rec->NumberParameters >= 2) {
+		fprintf(stderr, "access type:    %s\n", rec->ExceptionInformation[0] == 1 ? "write" : "read");
+		fprintf(stderr, "faulting addr:  0x%llx\n", (unsigned long long)rec->ExceptionInformation[1]);
+	}
+	fflush(stderr);
+
+	print_backtrace();
+
+	ddp_end_runtime();
+	ddp_runtime_error(1, "Segmentation fault\n");
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif // DDPOS_WINDOWS
 
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 
@@ -58,7 +88,11 @@ void ddp_init_runtime(int argc, char **argv) {
 
 	ddp_init_gc();
 
+#ifdef DDPOS_WINDOWS
+	SetUnhandledExceptionFilter(CrashFilter); // "catch" segfaults, with the real EXCEPTION_RECORD
+#else
 	signal(SIGSEGV, SignalHandler); // "catch" segfaults
+#endif // DDPOS_WINDOWS
 
 	handle_args(argc, argv);		// turn the commandline args into a ddpstringlist
 }

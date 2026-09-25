@@ -28,6 +28,8 @@ type llBuilder struct {
 	latestReturn ddpValue // return of the latest evaluated expression (in the ir)
 	currentNode  ast.Node // used for error reporting
 
+	diSubprogram llvm.Metadata // debug info scope for this function, zero-value if debug info is disabled
+
 	curLeaveBlock    llvm.BasicBlock // leave block of the current loop
 	curContinueBlock llvm.BasicBlock // block where a continue should jump to
 	curLoopScope     *scope          // scope of the current loop for break/continue to free to
@@ -181,6 +183,37 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 	if !declarationOnly {
 		builder.cb = builder.newBlock()
 		builder.SetInsertPointAtEnd(builder.cb)
+
+		// attach a DISubprogram so every instruction emitted for this
+		// function (starting with the parameter-copy allocas below) can be
+		// given a !dbg location
+		if c.diBuilder != nil {
+			var line uint
+			// c.builder() is still the caller's builder here, this builder
+			// is only pushed onto the stack by the caller afterwards
+			// the stack can be empty here (e.g. ddp_ddpmain is created right
+			// after the global builder was popped), so guard against that
+			if len(c.builderStack) > 0 {
+				if node := c.builder().currentNode; node != nil {
+					line = node.GetRange().Start.Line
+				}
+			}
+
+			diFnType := c.diBuilder.CreateSubroutineType(llvm.DISubroutineType{File: c.diFile})
+			builder.diSubprogram = c.diBuilder.CreateFunction(c.diFile, llvm.DIFunction{
+				Name:         funcName,
+				LinkageName:  funcName,
+				File:         c.diFile,
+				Line:         int(line),
+				Type:         diFnType,
+				LocalToUnit:  true,
+				IsDefinition: true,
+				ScopeLine:    int(line),
+				Optimized:    c.optimizationLevel >= 1,
+			})
+			builder.llFn.SetSubprogram(builder.diSubprogram)
+			builder.SetCurrentDebugLocation(line, 0, builder.diSubprogram, llvm.Metadata{})
+		}
 	}
 	for i, param := range builder.llFn.Params() {
 		builder.params = append(builder.params, funcParam{name: paramNames[i], typ: param.Type(), val: param})

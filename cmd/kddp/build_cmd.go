@@ -152,6 +152,7 @@ var buildCmd = &cobra.Command{
 			LinkInModules:           buildLinkModules,
 			LinkInListDefs:          buildLinkListDefs,
 			OptimizationLevel:       buildOptimizationLevel,
+			EmitDebugInfo:           buildDebugInfo,
 		})
 		if err != nil {
 			return fmt.Errorf("Fehler beim Kompilieren: %w", err)
@@ -194,6 +195,7 @@ var (
 	buildGCCExecutable     string // flag for kompiliere
 	buildOptimizationLevel uint   // flag for kompiliere
 	buildPanicOnFirstErr   bool   // flag for kompiliere
+	buildDebugInfo         bool   // flag for kompiliere
 )
 
 func init() {
@@ -207,6 +209,7 @@ func init() {
 	buildCmd.Flags().StringVar(&buildGCCExecutable, "gcc-executable", gcc.Cmd(), "Pfad zur gcc executable, die genutzt werden soll")
 	buildCmd.Flags().UintVarP(&buildOptimizationLevel, "optimierungs-stufe", "O", 1, "Menge und Art der Optimierungen, die angewandt werden")
 	buildCmd.Flags().BoolVar(&buildPanicOnFirstErr, "panic-on-error", false, "For Developers")
+	buildCmd.Flags().BoolVar(&buildDebugInfo, "debug-informationen", false, "Ob DWARF Debug-Informationen (Zeilennummern, Funktionsnamen) in die Ausgabe eingebettet werden sollen")
 }
 
 // helper function

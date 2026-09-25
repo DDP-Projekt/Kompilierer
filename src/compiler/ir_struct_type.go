@@ -228,7 +228,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 		return llFuncBuilder.llFn
 	}
 
-	structParam := llFuncBuilder.params[0].val
+	structParam := c.builder().scp.addTemporary(llFuncBuilder.params[0].val, structTyp).irVal
 
 	// free non-primitives
 	for i, field := range structTyp.fieldIrTypes {
@@ -240,6 +240,8 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 			c.builder().CreateStore(c.Null, fieldPtr)
 		}
 	}
+
+	c.builder().scp.claimTemporary(structParam)
 
 	c.builder().CreateRet(llvm.Value{})
 
@@ -257,6 +259,17 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 		llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 		return llFuncBuilder.llFn
 	}
+
+	// zero ret before copying fields in one at a time: if ret is already
+	// reachable (e.g. the destination of a Variable/Any box being built by
+	// castNonAnyToAny) and a GC cycle fires while an early field is still
+	// being copied, not-yet-copied fields must read as safely-skippable
+	// zero values instead of raw allocator garbage (see ddp_deep_copy_any's
+	// matching memset for the same hazard).
+	// structTyp.DefaultValue() is not usable here: this function is built
+	// before defineOrDeclareStructType sets structType.defaultValue, so it
+	// would still be the Go zero-value llvm.Value{} at this point.
+	llFuncBuilder.CreateStore(llvm.ConstNull(structTyp.typ), ret)
 
 	// deep-copy non-primitives
 	for i, field := range structTyp.fieldIrTypes {

@@ -60,6 +60,10 @@ type Options struct {
 	//	-  1: only LLVM optimizations
 	//	- >2: all optimizations
 	OptimizationLevel uint
+	// wether DWARF debug info (DISubprogram/DILocation) should be emitted
+	// opt-in, since it interacts with the optimization pipeline and should
+	// be validated at -O0 first
+	EmitDebugInfo bool
 }
 
 func (options *Options) ToParserOptions() parser.Options {
@@ -141,7 +145,7 @@ func Compile(options Options) (result *Result, err error) {
 
 	if !options.LinkInModules {
 		compileStart := time.Now()
-		compiler, err := newCompiler(ddp_main_module.FileName, ddp_main_module, llContext, options.ErrorHandler, options.OptimizationLevel)
+		compiler, err := newCompiler(ddp_main_module.FileName, ddp_main_module, llContext, options.ErrorHandler, options.OptimizationLevel, options.EmitDebugInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -190,14 +194,14 @@ func Compile(options Options) (result *Result, err error) {
 			// TODO: run RewriteStatepointsForGC even on O0
 			if options.OptimizationLevel >= 1 {
 				optimizeStart := time.Now()
-				if err := llContext.optimizeModule(comp_result.llMod); err != nil {
+				if err := llContext.optimizeModule(comp_result.llMod, options.EmitDebugInfo); err != nil {
 					return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
 				}
 				options.LogTook("Das Optimieren", optimizeStart)
 			}
 
 			outputStart := time.Now()
-			if _, err := llContext.compileModule(comp_result.llMod, file_type, options.To); err != nil {
+			if _, err := llContext.compileModule(comp_result.llMod, file_type, options.To, options.EmitDebugInfo); err != nil {
 				return nil, fmt.Errorf("Fehler beim Kompilieren von llvm-ir: %w", err)
 			}
 			options.LogTook("Das Kompilieren zum Ausgabe Format", outputStart)
@@ -212,7 +216,7 @@ func Compile(options Options) (result *Result, err error) {
 	compileStart := time.Now()
 	results, dependencies, err := compileWithImports(ddp_main_module, func(m *ast.Module) (llvmTargetContext, error) {
 		return llContext, nil
-	}, options.ErrorHandler, options.OptimizationLevel)
+	}, options.ErrorHandler, options.OptimizationLevel, options.EmitDebugInfo)
 	options.LogTook("Das Kompilieren", compileStart)
 	if err != nil {
 		return nil, err
@@ -251,7 +255,7 @@ func Compile(options Options) (result *Result, err error) {
 	// TODO: run RewriteStatepointsForGC even on O0
 	if options.OptimizationLevel >= 1 {
 		optimizeStart := time.Now()
-		if err := llContext.optimizeModule(ll_main_module); err != nil {
+		if err := llContext.optimizeModule(ll_main_module, options.EmitDebugInfo); err != nil {
 			return nil, fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
 		}
 		options.LogTook("Das Optimieren", optimizeStart)
@@ -275,7 +279,7 @@ func Compile(options Options) (result *Result, err error) {
 	}
 
 	outputStart := time.Now()
-	if _, err := llContext.compileModule(ll_main_module, file_type, options.To); err != nil {
+	if _, err := llContext.compileModule(ll_main_module, file_type, options.To, options.EmitDebugInfo); err != nil {
 		return nil, err
 	}
 	options.LogTook("Das Kompilieren zum Ausgabe Format", outputStart)
@@ -293,7 +297,7 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 		return fmt.Errorf("Fehler beim erstellen des LLVM Context: %w", err)
 	}
 
-	compiler, err := newCompiler(ddppath.LIST_DEFS_NAME, nil, context, errorHandler, optimizationLevel)
+	compiler, err := newCompiler(ddppath.LIST_DEFS_NAME, nil, context, errorHandler, optimizationLevel, false)
 	if err != nil {
 		return err
 	}
@@ -301,7 +305,7 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 	defer list_defs.Dispose()
 
 	if optimizationLevel >= 1 {
-		if err := context.optimizeModule(list_defs); err != nil {
+		if err := context.optimizeModule(list_defs, false); err != nil {
 			return fmt.Errorf("Fehler beim Optimieren des Modules: %w", err)
 		}
 	}
@@ -316,10 +320,10 @@ func DumpListDefinitions(w io.Writer, outputType OutputType, errorHandler ddperr
 		_, err := w.Write(buff.Bytes())
 		return err
 	case OutputAsm:
-		_, err := context.compileModule(list_defs, llvm.AssemblyFile, w)
+		_, err := context.compileModule(list_defs, llvm.AssemblyFile, w, false)
 		return err
 	case OutputObj:
-		_, err := context.compileModule(list_defs, llvm.ObjectFile, w)
+		_, err := context.compileModule(list_defs, llvm.ObjectFile, w, false)
 		return err
 	}
 	return errors.New("invalid compiler.OutputType")

@@ -16,16 +16,16 @@ import (
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
 func compileWithImports(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
-	errHndl ddperror.Handler, optimizationLevel uint,
+	errHndl ddperror.Handler, optimizationLevel uint, emitDebugInfo bool,
 ) (map[*ast.Module]Result, map[string]struct{}, error) {
 	compiledMods := map[*ast.Module]Result{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, contextCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
+	return compileWithImportsRec(mod, contextCreator, compiledMods, dependencies, true, errHndl, optimizationLevel, emitDebugInfo)
 }
 
 func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
 	compiledMods map[*ast.Module]Result, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint, emitDebugInfo bool,
 ) (map[*ast.Module]Result, map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -56,7 +56,7 @@ func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (ll
 	}
 
 	// compile this module
-	compiler, err := newCompiler(mod.FileName, mod, context, errHndl, optimizationLevel)
+	compiler, err := newCompiler(mod.FileName, mod, context, errHndl, optimizationLevel, emitDebugInfo)
 	if err != nil {
 		return compiledMods, dependencies, err
 	}
@@ -65,7 +65,7 @@ func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (ll
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if r, d, err := compileWithImportsRec(imprtMod, contextCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+			if r, d, err := compileWithImportsRec(imprtMod, contextCreator, compiledMods, dependencies, false, errHndl, optimizationLevel, emitDebugInfo); err != nil {
 				return r, d, err
 			}
 		}
@@ -193,6 +193,11 @@ type compiler struct {
 	bad_cast_error_string      llvm.Value
 	invalid_utf8_error_string  llvm.Value
 
+	// debug info, nil unless Options.EmitDebugInfo was set
+	diBuilder     *llvm.DIBuilder
+	diCompileUnit llvm.Metadata
+	diFile        llvm.Metadata
+
 	// raw llvm types and constants
 	llTypes
 	llConstants
@@ -207,7 +212,7 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
+func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHandler ddperror.Handler, optimizationLevel uint, emitDebugInfo bool) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -218,7 +223,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 	constants := newLLConstants(types)
 	attributes := newLLAttributes(ctx.llctx, types)
 
-	return &compiler{
+	c := &compiler{
 		llvmTargetContext: ctx,
 		llmod:             llmod,
 		ddpModule:         module,
@@ -240,7 +245,33 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		llTypes:      types,
 		llConstants:  constants,
 		llAttributes: attributes,
-	}, nil
+	}
+
+	if emitDebugInfo && module != nil {
+		c.setupDebugInfo()
+	}
+
+	return c, nil
+}
+
+// sets up the module-level debug info metadata (module flag, DIBuilder,
+// DICompileUnit, DIFile), called once per compiler/module when
+// Options.EmitDebugInfo is set
+func (c *compiler) setupDebugInfo() {
+	// without this flag LLVM silently strips all debug metadata
+	c.llmod.AddModuleFlag(llvm.ModuleFlagBehaviorWarning, "Debug Info Version", 3)
+
+	c.diBuilder = llvm.NewDIBuilder(c.llmod)
+
+	dir, file := filepath.Split(c.ddpModule.FileName)
+	c.diCompileUnit = c.diBuilder.CreateCompileUnit(llvm.DICompileUnit{
+		Language:  llvm.DW_LANG_C99,
+		File:      file,
+		Dir:       dir,
+		Producer:  "kddp (DDP Compiler)",
+		Optimized: c.optimizationLevel >= 1,
+	})
+	c.diFile = c.diBuilder.CreateFile(file, dir)
 }
 
 // compile the AST contained in c
@@ -317,10 +348,20 @@ func (c *compiler) compile(isMainModule bool) Result {
 	c.moduleInitBuilder.CreateRet(llvm.Value{})    // terminate the module_init func
 	c.moduleDisposeBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
 
+	if c.diBuilder != nil {
+		c.diBuilder.Finalize()
+	}
+
 	c.disposeBuilders()
 
-	if DEBUG {
-		// llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction)
+	if c.diBuilder != nil {
+		c.diBuilder.Destroy()
+	}
+
+	if DEBUG && c.diBuilder != nil {
+		if err := llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction); err != nil {
+			panic(err)
+		}
 	}
 
 	return c.result
@@ -389,10 +430,19 @@ var Comments_Enabled = true
 
 // helper to visit a single node
 func (c *compiler) visitNode(node ast.Node) {
-	oldNode := c.builder().currentNode
-	c.builder().currentNode = node
+	b := c.builder()
+	oldNode := b.currentNode
+	b.currentNode = node
+	if b.diSubprogram.C != nil {
+		r := node.GetRange()
+		b.SetCurrentDebugLocation(r.Start.Line, r.Start.Column, b.diSubprogram, llvm.Metadata{})
+	}
 	node.Accept(c)
-	c.builder().currentNode = oldNode
+	b.currentNode = oldNode
+	if b.diSubprogram.C != nil && oldNode != nil {
+		r := oldNode.GetRange()
+		b.SetCurrentDebugLocation(r.Start.Line, r.Start.Column, b.diSubprogram, llvm.Metadata{})
+	}
 }
 
 type ddpValue struct {

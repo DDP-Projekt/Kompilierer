@@ -8,7 +8,7 @@ LIBAR_DIR = ../external/libarchive/libarchive/
 
 CC = gcc
 CCFLAGS = -c -Wall -Werror -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
-DEBUGFLAGS = -DDDP_DEBUG
+DEBUGFLAGS = -DDDP_DEBUG -g
 INC = -I./include/ -I../runtime/include/ -I$(PCRE2_DIR) -I$(LIBAR_DIR)
 
 AR = ar rcs

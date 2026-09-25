@@ -62,6 +62,10 @@ type DwarfLang uint32
 const (
 	// http://dwarfstd.org/ShowIssue.php?issue=101014.1&type=open
 	DW_LANG_Go DwarfLang = 0x0016
+	// DDP has no registered DWARF producer language, so we reuse the C99
+	// language code as a stand-in - it doesn't need to be a "real" DDP
+	// language for GDB/LLDB/llvm-symbolizer to consume the debug info.
+	DW_LANG_C99 DwarfLang = 0x0c
 )
 
 type DwarfTypeEncoding uint32
