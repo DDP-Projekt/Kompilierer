@@ -42,16 +42,12 @@ static void bt_error_callback(void *data, const char *msg, int errnum) {
 	DDP_DBGLOG("libbacktrace error (%d): %s", errnum, msg);
 }
 
-// data passed through backtrace_pcinfo() to bt_pcinfo_callback()
 struct bt_pcinfo_data {
 	int frame;
 	uintptr_t pc;
 	bool found;
 };
 
-// called once per (possibly inlined) frame backtrace_pcinfo() resolves for a
-// given pc; prints directly instead of collecting into a struct first, so an
-// inlined call chain (multiple calls for a single pc) is printed in full
 static int bt_pcinfo_callback(void *data, uintptr_t pc, const char *filename, int lineno, const char *function) {
 	(void)pc;
 	struct bt_pcinfo_data *info = data;

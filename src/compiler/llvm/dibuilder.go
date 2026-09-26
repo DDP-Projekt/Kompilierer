@@ -59,23 +59,9 @@ const (
 
 type DwarfLang uint32
 
-// NOTE: LLVMDWARFSourceLanguage (llvm-c/DebugInfo.h) is a plain sequential
-// enum (C89=0, C=1, ..., C99=11, Ada95=12, ...), NOT the raw DWARF spec
-// DW_LANG_* codes (C99=0x0c, Ada95=0x0d, ...) - LLVMDIBuilderCreateCompileUnit
-// maps the enum value back to the real DWARF code internally
-// (map_from_llvmDWARFsourcelanguage in llvm/lib/IR/DebugInfo.cpp). Passing a
-// raw DW_LANG_* code here selects the WRONG language (e.g. raw 0x0c, meant
-// for C99, actually selects the enum member at ordinal 12, which is Ada95) -
-// GDB then applies Ada's naming/lookup conventions, breaking plain
-// "break FunctionName" for non-Ada-shaped names. Referencing the C enum
-// constants directly (instead of hand-picked ordinals) keeps this correct
-// regardless of how the enum is ordered in a given LLVM version.
 const (
 	// http://dwarfstd.org/ShowIssue.php?issue=101014.1&type=open
-	DW_LANG_Go DwarfLang = C.LLVMDWARFSourceLanguageGo
-	// DDP has no registered DWARF producer language, so we reuse the C99
-	// language code as a stand-in - it doesn't need to be a "real" DDP
-	// language for GDB/LLDB/llvm-symbolizer to consume the debug info.
+	DW_LANG_Go  DwarfLang = C.LLVMDWARFSourceLanguageGo
 	DW_LANG_C99 DwarfLang = C.LLVMDWARFSourceLanguageC99
 )
 
@@ -629,7 +615,8 @@ func (d *DIBuilder) CreateExpression(addr []uint64) Metadata {
 // specified basic block for the given value and associated debug metadata.
 func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) {
 	loc := C.LLVMDIBuilderCreateDebugLocation(
-		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C)
+		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C,
+	)
 	C.LLVMGoDIBuilderInsertDbgValueRecordAtEnd(d.ref, v.C, diVarInfo.C, expr.C, loc, bb.C)
 }
 
@@ -638,7 +625,8 @@ func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugL
 // address storage holds the variable described by diVarInfo.
 func (d *DIBuilder) InsertDeclareAtEnd(storage Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) {
 	loc := C.LLVMDIBuilderCreateDebugLocation(
-		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C)
+		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C,
+	)
 	C.LLVMGoDIBuilderInsertDeclareRecordAtEnd(d.ref, storage.C, diVarInfo.C, expr.C, loc, bb.C)
 }
 
@@ -727,7 +715,7 @@ func (md Metadata) FileDirectory() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // FileFilename returns the filename of a DIFile metadata node, or the empty
@@ -738,7 +726,7 @@ func (md Metadata) FileFilename() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // FileSource returns the source of a DIFile metadata node.
@@ -748,7 +736,7 @@ func (md Metadata) FileSource() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // LocationLine returns the line number of a DILocation.
