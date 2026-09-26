@@ -5,9 +5,9 @@ OUT_FILE_NAME_DEBUG = $(OUT_FILE_NAME:.a=debug.a)
 .DEFAULT_GOAL = all
 
 CC = gcc
-CCFLAGS = -c -Wall -Werror -Wextra -Wno-format -O2 -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
-DEBUGFLAGS = -DDDP_DEBUG
-INC = -I./include/ -I../../llvm-project/libunwind/include/
+CCFLAGS = -c -Wall -Werror -Wextra -Wno-format -O2 -g -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
+DEBUGFLAGS = -DDDP_DEBUG -g
+INC = -I./include/ -I../../llvm-project/libunwind/include/ -I../external/backtrace/
 
 AR = ar rcs
 RM = rm -f

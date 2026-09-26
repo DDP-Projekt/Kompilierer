@@ -16,6 +16,7 @@
 		printf("\n\t");      \
 		printf(__VA_ARGS__); \
 		printf("\n");        \
+		fflush(stdout);      \
 	}
 #else
 #define DDP_DBGLOG(...)

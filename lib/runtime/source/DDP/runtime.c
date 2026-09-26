@@ -13,11 +13,15 @@
 #include "DDP/debug.h"
 #include "DDP/gc.h"
 
+#define UNW_LOCAL_ONLY
+#include "libunwind.h"
+
 // should not be needed in production
 // mainly for debugging
 void SignalHandler(int signal) {
 	if (signal == SIGSEGV) {
 		DDP_DBGLOG("caught SIGSEGV");
+		print_backtrace();
 		ddp_end_runtime();
 		ddp_runtime_error(1, "Segmentation fault\n");
 	}

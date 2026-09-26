@@ -1,4 +1,4 @@
-.PHONY: all clean checkout-submodules clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4
+.PHONY: all clean checkout-submodules clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4 clean-backtrace
 .DEFAULT_GOAL = all
 
 RM = rm -f
@@ -23,6 +23,9 @@ LZ4_NAME = liblz4.a
 
 LIBAR_OUT_FILE_NAME = libarchive.a
 LIBAR_DIR = ./libarchive_build/
+
+BACKTRACE_OUT_FILE_NAME = libbacktrace.a
+BACKTRACE_DIR = ./backtrace_build/
 LIBAR_CMAKE_OPTIONS = -DCMAKE_COLOR_MAKEFILE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TEST=OFF -DENABLE_INSTALL=OFF \
 	-DENABLE_LIBXML2=OFF -DENABLE_OPENSSL=OFF -DENABLE_CNG=OFF -DENABLE_ZSTD=OFF -DHAVE_LIBXML_XMLREADER_H=0 -DHAVE_LIBXML_XMLWRITER_H=0 \
 	-DENABLE_ACL=OFF
@@ -38,7 +41,7 @@ else
 	CMAKE_GENERATOR="Unix Makefiles"
 endif
 
-SUBMODULES = pcre2 libarchive zlib xz bzip2 lz4
+SUBMODULES = pcre2 libarchive zlib xz bzip2 lz4 backtrace
 
 checkout-submodules:
 	git submodule update --init $(SUBMODULES)
@@ -84,7 +87,17 @@ $(LIBAR_OUT_FILE_NAME): $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME) $(PCRE2_
 	'$(MAKE)' -C $(LIBAR_DIR) archive_static
 	cp $(LIBAR_DIR)libarchive/$(LIBAR_OUT_FILE_NAME) .
 
-all: checkout-submodules $(LIBAR_OUT_FILE_NAME)
+# libbacktrace uses autotools instead of cmake, so it is configured/built
+# out-of-tree in $(BACKTRACE_DIR) directly instead of going through
+# $(CMAKE_OPTIONS)
+$(BACKTRACE_OUT_FILE_NAME): | checkout-submodules
+	@echo "building libbacktrace"
+	$(MKDIR) $(BACKTRACE_DIR)
+	cd $(BACKTRACE_DIR) && ../backtrace/configure CC=$(CC) --disable-shared --enable-static
+	'$(MAKE)' -C $(BACKTRACE_DIR)
+	cp $(BACKTRACE_DIR).libs/$(BACKTRACE_OUT_FILE_NAME) .
+
+all: checkout-submodules $(LIBAR_OUT_FILE_NAME) $(BACKTRACE_OUT_FILE_NAME)
 
 clean-pcre2:
 	'$(MAKE)' -C $(PCRE2_DIR) clean
@@ -98,6 +111,8 @@ clean-bz2:
 	'$(MAKE)' -C ./bzip2/ clean
 clean-lz4:
 	'$(MAKE)' -C ./lz4/ clean
+clean-backtrace:
+	'$(MAKE)' -C $(BACKTRACE_DIR) clean
 
-clean: clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4
-	$(RM) $(PCRE2_OUT_FILE_NAME) $(LIBAR_OUT_FILE_NAME) $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME)
+clean: clean-pcre2 clean-libarchive clean-xz cleanlibz clean-bz2 clean-lz4 clean-backtrace
+	$(RM) $(PCRE2_OUT_FILE_NAME) $(LIBAR_OUT_FILE_NAME) $(LIBZ_NAME) $(XZ_NAME) $(BZ2_NAME) $(LZ4_NAME) $(BACKTRACE_OUT_FILE_NAME)

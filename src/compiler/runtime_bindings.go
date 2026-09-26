@@ -148,13 +148,13 @@ func (c *compiler) initRuntimeFunctions() {
 		c.ptr,
 	)
 
-	ddp_do_nothing_ptr_gc_builder := c.createBuilder("ddp_do_nothing_ptr_gc", llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"arg"}, nil, nil, true, false)
+	ddp_do_nothing_ptr_gc_builder := c.createBuilder("ddp_do_nothing_ptr_gc", llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"arg"}, nil, nil, true, false, diFuncInfo{})
 	ddp_do_nothing_ptr_gc_builder.CreateRet(llvm.Value{})
 
 	ddp_do_nothing_ptr_gc = ddp_do_nothing_ptr_gc_builder.llFn
 	ddp_do_nothing_ptr_gc.SetLinkage(llvm.LinkOnceAnyLinkage)
 
-	ddp_do_nothing_ptr_builder := c.createBuilder("ddp_do_nothing_ptr", llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"arg"}, nil, nil, true, false)
+	ddp_do_nothing_ptr_builder := c.createBuilder("ddp_do_nothing_ptr", llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"arg"}, nil, nil, true, false, diFuncInfo{})
 	ddp_do_nothing_ptr_builder.CreateRet(llvm.Value{})
 
 	ddp_do_nothing_ptr = ddp_do_nothing_ptr_builder.llFn

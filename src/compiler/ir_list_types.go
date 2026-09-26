@@ -158,7 +158,7 @@ signature:
 c.void.IrType() ddp_x_from_constants(x* ret, ddpint count)
 */
 func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false), nil, []string{"ret", "count"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_from_constants", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ddpint}, false), nil, []string{"ret", "count"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	ret, count := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -171,7 +171,8 @@ func (c *compiler) createListFromConstants(listType *ddpIrListType, declarationO
 	cond := llFuncBuilder.CreateICmp(llvm.IntSGT, count, c.zero, "") // count > 0
 
 	// count > 0 ? allocate(sizeof(t) * count) : NULL
-	result := c.createTernary(c.ptr, cond,
+	result := c.createTernary(
+		c.ptr, cond,
 		func() llvm.Value { return c.allocateGCRefArray(listType.elementType.VTable(), count) },
 		func() llvm.Value { return c.Null },
 	)
@@ -201,7 +202,7 @@ signature:
 c.void.IrType() ddp_free_x(x* list)
 */
 func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"p"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_free_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr}, false), nil, []string{"p"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	list := llFuncBuilder.params[0].val
@@ -220,7 +221,8 @@ func (c *compiler) createListFree(listType *ddpIrListType, declarationOnly bool)
 		listArr, listLen := c.loadStructField(listType.typ, list, list_arr_field_index), c.loadStructField(listType.typ, list, list_len_field_index)
 		c.builder().scp.addProtectedTemporary(listArr, nil)
 
-		c.createFor(c.zero, c.forDefaultCond(listLen),
+		c.createFor(
+			c.zero, c.forDefaultCond(listLen),
 			func(index llvm.Value) {
 				val := c.indexArray(listType.elementType.LLType(), listArr, index)
 				llFuncBuilder.createCall(listType.elementType.FreeFunc(), val)
@@ -256,7 +258,7 @@ signature:
 c.void.IrType() ddp_deep_copy_x(x* ret, x* list)
 */
 func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "p"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_deep_copy_"+listType.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "p"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -272,9 +274,10 @@ func (c *compiler) createListDeepCopy(listType *ddpIrListType, declarationOnly b
 	origArr, origLen, origCap := c.loadStructField(listType.typ, list, list_arr_field_index), c.loadStructField(listType.typ, list, list_len_field_index), c.loadStructField(listType.typ, list, list_cap_field_index)
 
 	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, ret, list, "")
-	c.createIfElse(ptrs_equal, func() {
-		llFuncBuilder.CreateRet(llvm.Value{})
-	},
+	c.createIfElse(
+		ptrs_equal, func() {
+			llFuncBuilder.CreateRet(llvm.Value{})
+		},
 		nil,
 	)
 
@@ -299,7 +302,7 @@ signature:
 bool ddp_x_equal(x* list1, x* list2)
 */
 func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"l1", "l2"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"l1", "l2"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -313,18 +316,20 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 	c.builder().scp.addProtectedTemporary(list2, listType)
 
 	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, list1, list2, "")
-	c.createIfElse(ptrs_equal, func() {
-		llFuncBuilder.CreateRet(c.True)
-	},
+	c.createIfElse(
+		ptrs_equal, func() {
+			llFuncBuilder.CreateRet(c.True)
+		},
 		nil,
 	)
 
 	// if (list1->len != list2->len) return false;
 	list1_len := c.loadStructField(listType.typ, list1, list_len_field_index)
 	len_unequal := llFuncBuilder.CreateICmp(llvm.IntNE, list1_len, c.loadStructField(listType.typ, list2, list_len_field_index), "")
-	c.createIfElse(len_unequal, func() {
-		llFuncBuilder.CreateRet(c.False)
-	},
+	c.createIfElse(
+		len_unequal, func() {
+			llFuncBuilder.CreateRet(c.False)
+		},
 		nil,
 	)
 
@@ -342,15 +347,17 @@ func (c *compiler) createListEquals(listType *ddpIrListType, declarationOnly boo
 					return false;
 			}
 		*/
-		c.createFor(c.zero, c.forDefaultCond(list1_len),
+		c.createFor(
+			c.zero, c.forDefaultCond(list1_len),
 			func(index llvm.Value) {
 				list1_arr, list2_arr := c.loadStructField(listType.typ, list1, list_arr_field_index), c.loadStructField(listType.typ, list2, list_arr_field_index)
 				list1_at_count, list2_at_count := c.indexArray(listType.elementType.LLType(), list1_arr, index), c.indexArray(listType.elementType.LLType(), list2_arr, index)
 				elements_unequal := llFuncBuilder.CreateXor(llFuncBuilder.createCall(listType.elementType.EqualsFunc(), list1_at_count, list2_at_count), c.True, "")
 
-				c.createIfElse(elements_unequal, func() {
-					llFuncBuilder.CreateRet(c.False)
-				},
+				c.createIfElse(
+					elements_unequal, func() {
+						llFuncBuilder.CreateRet(c.False)
+					},
 					nil,
 				)
 			},
@@ -372,7 +379,7 @@ signature:
 void ddp_x_slice(x* ret, x* list, ddpint index1, ddpint index2)
 */
 func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false), nil, []string{"ret", "l", "i1", "i2"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_"+listType.name+"_slice", llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ddpint, c.ddpint}, false), nil, []string{"ret", "l", "i1", "i2"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	ret, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -394,20 +401,23 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	// if (list->len <= 0) return;
 	list_empty := llFuncBuilder.CreateICmp(llvm.IntSLE, listLen, c.zero, "")
-	c.createIfElse(list_empty, func() {
-		llFuncBuilder.CreateRet(llvm.Value{})
-	},
+	c.createIfElse(
+		list_empty, func() {
+			llFuncBuilder.CreateRet(llvm.Value{})
+		},
 		nil,
 	)
 
 	// helper for the clamp function (does what its name suggests)
 	clamp := func(val, min, max llvm.Value) llvm.Value {
-		temp := c.createTernary(c.ddpint,
+		temp := c.createTernary(
+			c.ddpint,
 			llFuncBuilder.CreateICmp(llvm.IntSLT, val, min, ""),
 			func() llvm.Value { return min },
 			func() llvm.Value { return val },
 		)
-		return c.createTernary(c.ddpint,
+		return c.createTernary(
+			c.ddpint,
 			llFuncBuilder.CreateICmp(llvm.IntSGT, temp, max, ""),
 			func() llvm.Value { return max },
 			func() llvm.Value { return temp },
@@ -420,7 +430,8 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 
 	// validate that the indices are valid
 	i2_less_i1 := llFuncBuilder.CreateICmp(llvm.IntSLT, index2, index1, "")
-	c.createIfElse(i2_less_i1,
+	c.createIfElse(
+		i2_less_i1,
 		func() {
 			c.runtime_error(1, c.slice_error_string, index1, index2)
 		},
@@ -458,7 +469,8 @@ func (c *compiler) createListSlice(listType *ddpIrListType, declarationOnly bool
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
 		j := c.NewAlloca(c.i64) // the j index variable
 		llFuncBuilder.CreateStore(c.zero, j)
-		c.createFor(index1,
+		c.createFor(
+			index1,
 			// i <= index2 && i < list->len
 			func(i llvm.Value) llvm.Value {
 				cond1 := llFuncBuilder.CreateICmp(llvm.IntSLE, i, index2, "")
@@ -546,7 +558,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 
 	// defines the list_list_verkettet function
 	list_list_concat := func() llvm.Value {
-		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false), nil, []string{"ret", "list1", "list2"}, nil, nil, true, declarationOnly)
+		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, c.ptr}, false), nil, []string{"ret", "list1", "list2"}, nil, nil, true, declarationOnly, diFuncInfo{})
 		defer c.popBuilder()
 
 		ret, list1, list2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -580,7 +592,8 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 					ddp_deep_copy(&ret->arr[i+list1->len], &list2->arr[i])
 				}
 			*/
-			c.createFor(c.zero, c.forDefaultCond(list2Len),
+			c.createFor(
+				c.zero, c.forDefaultCond(list2Len),
 				func(index llvm.Value) {
 					elementPtr := c.indexArray(listType.elementType.LLType(), new_arr, llFuncBuilder.CreateAdd(list1Len, index, ""))
 					llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(listType.elementType.LLType(), list2Arr, index))
@@ -594,7 +607,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	list_scalar_concat := func() llvm.Value {
-		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false), nil, []string{"ret", "list", "scal"}, nil, nil, true, declarationOnly)
+		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.name, listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr, scal_param_type}, false), nil, []string{"ret", "list", "scal"}, nil, nil, true, declarationOnly, diFuncInfo{})
 		defer c.popBuilder()
 
 		ret, list, scal := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -636,7 +649,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 			return llvm.Value{}
 		}
 
-		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false), nil, []string{"ret", "scal1", "scal2"}, nil, nil, true, declarationOnly)
+		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.elementType.Name()), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, scal_param_type}, false), nil, []string{"ret", "scal1", "scal2"}, nil, nil, true, declarationOnly, diFuncInfo{})
 		defer c.popBuilder()
 
 		ret, scal1, scal2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -654,6 +667,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 		c.builder().CreateStore(c.allocateGCRefArray(listType.elementType.VTable(), c.builder().CreateLoad(c.ddpint, retCapPtr, "")), retArrPtr)
 
 		retArr := c.loadStructField(listType.typ, ret, list_arr_field_index)
+		c.builder().scp.addProtectedTemporary(retArr, nil)
 		retArr0Ptr, retArr1Ptr := c.indexArray(listType.elementType.LLType(), retArr, c.zero), c.indexArray(listType.elementType.LLType(), retArr, c.newInt(1))
 		if listType.elementType.TriviallyCopyable() {
 			// ret->arr[0] = scal1;
@@ -671,7 +685,7 @@ func (c *compiler) createListConcats(listType *ddpIrListType, declarationOnly bo
 	}
 
 	scalar_list_concat := func() llvm.Value {
-		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false), nil, []string{"ret", "scal", "list"}, nil, nil, true, declarationOnly)
+		llFuncBuilder := c.pushNewBuilder(fmt.Sprintf("ddp_%s_%s_verkettet", listType.elementType.Name(), listType.name), llvm.FunctionType(c.void, []llvm.Type{c.ptr, scal_param_type, c.ptr}, false), nil, []string{"ret", "scal", "list"}, nil, nil, true, declarationOnly, diFuncInfo{})
 		defer c.popBuilder()
 
 		ret, scal, list := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val, llFuncBuilder.params[2].val
@@ -726,7 +740,8 @@ func (c *compiler) allocateAndDeepCopyListArray(llFuncBuilder *llBuilder, listTy
 				ddp_deep_copy(&ret->arr[i], &list->arr[i])
 			}
 		*/
-		c.createFor(c.zero, c.forDefaultCond(arrLen),
+		c.createFor(
+			c.zero, c.forDefaultCond(arrLen),
 			func(index llvm.Value) {
 				elementPtr := c.indexArray(listType.elementType.LLType(), arr, index)
 				llFuncBuilder.createCall(listType.elementType.DeepCopyFunc(), elementPtr, c.indexArray(listType.elementType.LLType(), arrPtr, index))

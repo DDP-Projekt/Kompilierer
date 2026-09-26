@@ -566,6 +566,30 @@ func (m Module) AddNamedMetadataOperand(name string, operand Metadata) {
 	C.LLVMAddNamedMetadataOperand2(m.C, cname, operand.C)
 }
 
+// ModuleFlagBehavior describes how conflicting module flags should be
+// resolved, see LLVMModuleFlagBehavior.
+type ModuleFlagBehavior uint32
+
+const (
+	ModuleFlagBehaviorError         ModuleFlagBehavior = C.LLVMModuleFlagBehaviorError
+	ModuleFlagBehaviorWarning       ModuleFlagBehavior = C.LLVMModuleFlagBehaviorWarning
+	ModuleFlagBehaviorRequire       ModuleFlagBehavior = C.LLVMModuleFlagBehaviorRequire
+	ModuleFlagBehaviorOverride      ModuleFlagBehavior = C.LLVMModuleFlagBehaviorOverride
+	ModuleFlagBehaviorAppend        ModuleFlagBehavior = C.LLVMModuleFlagBehaviorAppend
+	ModuleFlagBehaviorAppendUnique  ModuleFlagBehavior = C.LLVMModuleFlagBehaviorAppendUnique
+)
+
+// AddModuleFlag adds a module-level flag to the module-level flags
+// metadata, see Module::addModuleFlag. value is wrapped as a constant i32
+// metadata node, which is what "Debug Info Version" and similar flags need.
+func (m Module) AddModuleFlag(behavior ModuleFlagBehavior, key string, value uint32) {
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+	val := ConstInt(m.Context().Int32Type(), uint64(value), false)
+	md := val.ConstantAsMetadata()
+	C.LLVMAddModuleFlag(m.C, C.LLVMModuleFlagBehavior(behavior), ckey, C.size_t(len(key)), md.C)
+}
+
 func (m Module) Context() (c Context) {
 	c.C = C.LLVMGetModuleContext(m.C)
 	return

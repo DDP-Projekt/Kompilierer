@@ -24,6 +24,11 @@ type scope struct {
 	enclosing   *scope                      // enclosing scope, nil if it is the global scope
 	variables   map[*ast.VarDecl]varwrapper // variables in this scope
 	temporaries []varwrapper                // intermediate values that need to be freed when the scope ends
+
+	// lexical-block debug info scope for this scope, lazily created the first
+	// time a variable is declared in it (see compiler.diScopeForVar), zero
+	// value if debug info is disabled or no variable was declared here yet
+	diScope llvm.Metadata
 }
 
 // create a new scope in the enclosing scope

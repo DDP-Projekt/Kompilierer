@@ -40,3 +40,11 @@
 	shallow = true
 	ignore = dirty
 
+[submodule "lib/external/backtrace"]
+	path = lib/external/backtrace
+	url = https://github.com/ianlancetaylor/libbacktrace.git
+	shallow = true
+	ignore = dirty
+[submodule "lib/external/libbacktrace"]
+	path = lib/external/libbacktrace
+	url = https://github.com/ianlancetaylor/libbacktrace.git

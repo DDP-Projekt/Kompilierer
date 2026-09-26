@@ -25,9 +25,9 @@ void ddp_string_from_constant(ddpstring *ret, char *str) {
 
 // free a ddpstring
 void ddp_free_string(ddpstring *str) {
+	DDP_DBGLOG("ddp_free_string: str=%p\n", (void *)str);
 	DDP_DBGLOG("free_string: %p (%s)", str, str->str == NULL ? "" : str->str);
-	DDP_FREE_ARRAY(char, str->str, str->cap); // free the character array
-	// force segfaults
+	DDP_FREE_ARRAY(char, str->str, str->cap);
 	str->str = NULL;
 	str->cap = 0;
 }

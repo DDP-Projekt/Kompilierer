@@ -16,16 +16,16 @@ import (
 // every module is written to a io.Writer created
 // by calling destCreator with the given module
 func compileWithImports(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
-	errHndl ddperror.Handler, optimizationLevel uint,
+	errHndl ddperror.Handler, optimizationLevel uint, emitDebugInfo bool,
 ) (map[*ast.Module]Result, map[string]struct{}, error) {
 	compiledMods := map[*ast.Module]Result{}
 	dependencies := map[string]struct{}{}
-	return compileWithImportsRec(mod, contextCreator, compiledMods, dependencies, true, errHndl, optimizationLevel)
+	return compileWithImportsRec(mod, contextCreator, compiledMods, dependencies, true, errHndl, optimizationLevel, emitDebugInfo)
 }
 
 func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (llvmTargetContext, error),
 	compiledMods map[*ast.Module]Result, dependencies map[string]struct{},
-	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint,
+	isMainModule bool, errHndl ddperror.Handler, optimizationLevel uint, emitDebugInfo bool,
 ) (map[*ast.Module]Result, map[string]struct{}, error) {
 	// the ast must be valid (and should have been resolved and typechecked beforehand)
 	if mod.Ast.Faulty {
@@ -56,7 +56,7 @@ func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (ll
 	}
 
 	// compile this module
-	compiler, err := newCompiler(mod.FileName, mod, context, errHndl, optimizationLevel)
+	compiler, err := newCompiler(mod.FileName, mod, context, errHndl, optimizationLevel, emitDebugInfo)
 	if err != nil {
 		return compiledMods, dependencies, err
 	}
@@ -65,7 +65,7 @@ func compileWithImportsRec(mod *ast.Module, contextCreator func(*ast.Module) (ll
 	// recursively compile the other dependencies
 	for _, imprt := range mod.Imports {
 		for _, imprtMod := range imprt.Modules {
-			if r, d, err := compileWithImportsRec(imprtMod, contextCreator, compiledMods, dependencies, false, errHndl, optimizationLevel); err != nil {
+			if r, d, err := compileWithImportsRec(imprtMod, contextCreator, compiledMods, dependencies, false, errHndl, optimizationLevel, emitDebugInfo); err != nil {
 				return r, d, err
 			}
 		}
@@ -193,6 +193,12 @@ type compiler struct {
 	bad_cast_error_string      llvm.Value
 	invalid_utf8_error_string  llvm.Value
 
+	// debug info, nil unless Options.EmitDebugInfo was set
+	diBuilder     *llvm.DIBuilder
+	diCompileUnit llvm.Metadata
+	diFile        llvm.Metadata
+	diTypeCache   map[ddpIrType]llvm.Metadata // caches toDIType results, keyed by the already-deduplicated ddpIrType
+
 	// raw llvm types and constants
 	llTypes
 	llConstants
@@ -207,7 +213,7 @@ type compiler struct {
 }
 
 // create a new Compiler to compile the passed AST
-func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHandler ddperror.Handler, optimizationLevel uint) (*compiler, error) {
+func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHandler ddperror.Handler, optimizationLevel uint, emitDebugInfo bool) (*compiler, error) {
 	if errorHandler == nil { // default error handler does nothing
 		errorHandler = ddperror.EmptyHandler
 	}
@@ -218,7 +224,7 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 	constants := newLLConstants(types)
 	attributes := newLLAttributes(ctx.llctx, types)
 
-	return &compiler{
+	c := &compiler{
 		llvmTargetContext: ctx,
 		llmod:             llmod,
 		ddpModule:         module,
@@ -240,7 +246,31 @@ func newCompiler(name string, module *ast.Module, ctx llvmTargetContext, errorHa
 		llTypes:      types,
 		llConstants:  constants,
 		llAttributes: attributes,
-	}, nil
+	}
+
+	if emitDebugInfo && module != nil {
+		c.setupDebugInfo()
+	}
+
+	return c, nil
+}
+
+func (c *compiler) setupDebugInfo() {
+	// without this flag LLVM silently strips all debug metadata
+	c.llmod.AddModuleFlag(llvm.ModuleFlagBehaviorWarning, "Debug Info Version", 3)
+
+	c.diBuilder = llvm.NewDIBuilder(c.llmod)
+	c.diTypeCache = make(map[ddpIrType]llvm.Metadata)
+
+	dir, file := filepath.Split(c.ddpModule.FileName)
+	c.diCompileUnit = c.diBuilder.CreateCompileUnit(llvm.DICompileUnit{
+		Language:  llvm.DW_LANG_C99,
+		File:      file,
+		Dir:       dir,
+		Producer:  "kddp (DDP Compiler)",
+		Optimized: c.optimizationLevel >= 1,
+	})
+	c.diFile = c.diBuilder.CreateFile(file, dir)
 }
 
 // compile the AST contained in c
@@ -267,7 +297,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 
 	if isMainModule {
 		c.disposeAndPop()
-		c.pushNewBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, nil, nil, globalScope, true, false)
+		c.pushNewBuilder("ddp_ddpmain", llvm.FunctionType(c.ddpint, nil, false), nil, nil, nil, globalScope, true, false, diFuncInfo{})
 		// called from the ddp-c-runtime after initialization
 		c.insertFunction(
 			"ddp_ddpmain",
@@ -317,10 +347,20 @@ func (c *compiler) compile(isMainModule bool) Result {
 	c.moduleInitBuilder.CreateRet(llvm.Value{})    // terminate the module_init func
 	c.moduleDisposeBuilder.CreateRet(llvm.Value{}) // terminate the module_init func
 
+	if c.diBuilder != nil {
+		c.diBuilder.Finalize()
+	}
+
 	c.disposeBuilders()
 
-	if DEBUG {
-		// llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction)
+	if c.diBuilder != nil {
+		c.diBuilder.Destroy()
+	}
+
+	if DEBUG && c.diBuilder != nil {
+		if err := llvm.VerifyModule(c.result.llMod, llvm.PrintMessageAction); err != nil {
+			panic(err)
+		}
 	}
 
 	return c.result
@@ -355,10 +395,6 @@ func (c *compiler) dumpListDefinitions() llvm.Module {
 
 	c.disposeBuilders()
 
-	if DEBUG {
-		// llvm.VerifyModule(c.llmod, llvm.PrintMessageAction)
-	}
-
 	return c.llmod
 }
 
@@ -389,10 +425,19 @@ var Comments_Enabled = true
 
 // helper to visit a single node
 func (c *compiler) visitNode(node ast.Node) {
-	oldNode := c.builder().currentNode
-	c.builder().currentNode = node
+	b := c.builder()
+	oldNode := b.currentNode
+	b.currentNode = node
+	if b.diSubprogram.C != nil {
+		r := node.GetRange()
+		b.SetCurrentDebugLocation(r.Start.Line, r.Start.Column, b.currentDIScope(), llvm.Metadata{})
+	}
 	node.Accept(c)
-	c.builder().currentNode = oldNode
+	b.currentNode = oldNode
+	if b.diSubprogram.C != nil && oldNode != nil {
+		r := oldNode.GetRange()
+		b.SetCurrentDebugLocation(r.Start.Line, r.Start.Column, b.currentDIScope(), llvm.Metadata{})
+	}
 }
 
 type ddpValue struct {
@@ -573,11 +618,11 @@ func (c *compiler) setupListTypes(declarationOnly bool) {
 // creates a function that can be called to initialize the global state of this module
 func (c *compiler) setupModuleInitDispose() {
 	init_name, dispose_name := getModuleInitDisposeName(c.ddpModule)
-	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false)
+	c.moduleInitBuilder = c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false, diFuncInfo{})
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(init_name, nil, c.moduleInitBuilder.llFn, c.moduleInitBuilder)
 
-	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false)
+	c.moduleDisposeBuilder = c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, newScope(c.builder().scp), true, false, diFuncInfo{})
 	c.moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 	c.insertFunction(dispose_name, nil, c.moduleDisposeBuilder.llFn, c.moduleDisposeBuilder)
 }
@@ -797,6 +842,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	}
 
 	c.builder().scp.addVar(d, varLocation, Typ)
+	c.emitVarDebugInfo(c.builder().scp, d, varLocation, 0)
 	return ast.VisitRecurse
 }
 
@@ -867,9 +913,20 @@ func (c *compiler) VisitFuncDecl(decl *ast.FuncDecl) ast.VisitResult {
 		paramAttributes = append(paramAttributes, attributes)
 	}
 
+	diInfo := diFuncInfo{}
+	if c.diBuilder != nil {
+		diParams := make([]llvm.Metadata, 0, len(decl.Parameters)+1)
+		diParams = append(diParams, c.toDITypeFromIr(retType)) // return type at index 0
+		for i := range decl.Parameters {
+			_, irType := c.getPossiblyGenericParamType(&decl.Parameters[i])
+			diParams = append(diParams, c.toDITypeFromIr(irType)) // zero Metadata for unresolved generics
+		}
+		diInfo = diFuncInfo{sourceName: decl.Name(), parameters: diParams}
+	}
+
 	// createBuilder NOT newBuilder, because defineFuncBody pushes it
 	// scp is nil, as it is set in defineFuncBody
-	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), nil, paramNames, paramAttributes, nil, true, ast.IsExternFunc(decl))
+	llFuncBuilder := c.createBuilder(c.mangledNameDecl(decl), llvm.FunctionType(retTypeIr, params, false), nil, paramNames, paramAttributes, nil, true, ast.IsExternFunc(decl), diInfo)
 
 	c.insertFunction(llFuncBuilder.fnName, decl, llFuncBuilder.llFn, llFuncBuilder)
 
@@ -920,9 +977,11 @@ func (c *compiler) defineFuncBody(llFuncBuilder *llBuilder, hasReturnParam bool,
 			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
 
 			c.builder().CreateStore(c.builder().CreateLoad(irType.LLType(), params[i].val, ""), v) // store the copy in the local variable
+			c.emitVarDebugInfo(c.builder().scp, paramDecl, v, i+1)
 		} else { // primitive types don't need any special handling
 			v := c.builder().scp.addVar(paramDecl, c.NewAlloca(irType.LLType()), irType)
 			c.builder().CreateStore(params[i].val, v)
+			c.emitVarDebugInfo(c.builder().scp, paramDecl, v, i+1)
 		}
 	}
 
@@ -2482,7 +2541,7 @@ func (c *compiler) declareImportedFuncDecl(decl *ast.FuncDecl) {
 
 	llFuncTyp := llvm.FunctionType(retTypeIr, params, false)
 
-	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, nil, paramNames, paramAttributes, nil, true, true)
+	llFuncBuilder := c.createBuilder(mangledName, llFuncTyp, nil, paramNames, paramAttributes, nil, true, true, diFuncInfo{})
 	// declare it as extern function
 	llFuncBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 	llFuncBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
@@ -2547,7 +2606,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 
 			init_name, dispose_name := getModuleInitDisposeName(module)
 
-			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, nil, true, true)
+			moduleInitBuilder := c.createBuilder(init_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, nil, true, true, diFuncInfo{})
 			moduleInitBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleInitBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2556,7 +2615,7 @@ func (c *compiler) VisitImportStmt(s *ast.ImportStmt) ast.VisitResult {
 				c.builder().createCall(moduleInitBuilder.llFn) // only call this in main modules
 			}
 
-			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, nil, true, true)
+			moduleDisposeBuilder := c.createBuilder(dispose_name, llvm.FunctionType(c.void, nil, false), nil, nil, nil, nil, true, true, diFuncInfo{})
 			moduleDisposeBuilder.llFn.SetLinkage(llvm.ExternalLinkage)
 			moduleDisposeBuilder.llFn.SetVisibility(llvm.DefaultVisibility)
 
@@ -2892,9 +2951,11 @@ func (c *compiler) VisitForRangeStmt(s *ast.ForRangeStmt) ast.VisitResult {
 	initializerAlloca := c.NewAlloca(irType.LLType())
 	c.builder().CreateStore(irType.DefaultValue(), initializerAlloca) // zero-init loop-var so that the gc does not wrongly trace garbage data
 	c.builder().scp.addProtected(s.Initializer, initializerAlloca, irType)
+	c.emitVarDebugInfo(c.builder().scp, s.Initializer, initializerAlloca, 0)
 
 	if s.Index != nil {
 		c.builder().scp.addVar(s.Index, index, c.ddpinttyp)
+		c.emitVarDebugInfo(c.builder().scp, s.Index, index, 0)
 		c.builder().CreateStore(c.newInt(1), index)
 	}
 	c.builder().CreateBr(condBlock)

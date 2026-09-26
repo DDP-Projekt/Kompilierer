@@ -61,7 +61,8 @@ type DwarfLang uint32
 
 const (
 	// http://dwarfstd.org/ShowIssue.php?issue=101014.1&type=open
-	DW_LANG_Go DwarfLang = 0x0016
+	DW_LANG_Go  DwarfLang = C.LLVMDWARFSourceLanguageGo
+	DW_LANG_C99 DwarfLang = C.LLVMDWARFSourceLanguageC99
 )
 
 type DwarfTypeEncoding uint32
@@ -614,8 +615,19 @@ func (d *DIBuilder) CreateExpression(addr []uint64) Metadata {
 // specified basic block for the given value and associated debug metadata.
 func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) {
 	loc := C.LLVMDIBuilderCreateDebugLocation(
-		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C)
+		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C,
+	)
 	C.LLVMGoDIBuilderInsertDbgValueRecordAtEnd(d.ref, v.C, diVarInfo.C, expr.C, loc, bb.C)
+}
+
+// InsertDeclareAtEnd inserts a call to llvm.dbg.declare at the end of the
+// specified basic block (before its terminator, if any) describing that the
+// address storage holds the variable described by diVarInfo.
+func (d *DIBuilder) InsertDeclareAtEnd(storage Value, diVarInfo, expr Metadata, l DebugLoc, bb BasicBlock) {
+	loc := C.LLVMDIBuilderCreateDebugLocation(
+		d.m.Context().C, C.uint(l.Line), C.uint(l.Col), l.Scope.C, l.InlinedAt.C,
+	)
+	C.LLVMGoDIBuilderInsertDeclareRecordAtEnd(d.ref, storage.C, diVarInfo.C, expr.C, loc, bb.C)
 }
 
 func (v Value) SetSubprogram(sp Metadata) {
@@ -703,7 +715,7 @@ func (md Metadata) FileDirectory() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // FileFilename returns the filename of a DIFile metadata node, or the empty
@@ -714,7 +726,7 @@ func (md Metadata) FileFilename() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // FileSource returns the source of a DIFile metadata node.
@@ -724,7 +736,7 @@ func (md Metadata) FileSource() string {
 	if ptr == nil {
 		return ""
 	}
-	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+	return string((*[1 << 20]byte)(unsafe.Pointer(ptr))[:length:length])
 }
 
 // LocationLine returns the line number of a DILocation.

@@ -113,7 +113,10 @@ func parseListDefsIntoContext(llctx *llvmTargetContext) (llvm.Module, error) {
 }
 
 // optimizes the given module and returns any error
-func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
+// if verify is true (and this is a DEBUG build), the pass pipeline verifies
+// the module (including debug info) after every pass, to catch malformed
+// metadata as a clear error instead of an opaque backend crash
+func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module, verify bool) error {
 	options := llvm.NewPassBuilderOptions()
 	options.SetCallGraphProfile(true)
 	options.SetMergeFunctions(true)
@@ -123,17 +126,21 @@ func (llctx *llvmTargetContext) optimizeModule(mod llvm.Module) error {
 	options.SetSLPVectorization(true)
 
 	defer options.Dispose()
-	if DEBUG {
-		// options.SetVerifyEach(true)
+	if DEBUG && verify {
+		options.SetVerifyEach(true)
 	}
 	// return mod.RunPasses("default<O2>,place-safepoints,rewrite-statepoints-for-gc", llctx.llTargetMachine, options)
 	return mod.RunPasses("default<O2>", llctx.llTargetMachine, options)
 }
 
 // compiles the module to w and returns w.Write
-func (llctx *llvmTargetContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer) (int, error) {
-	if DEBUG {
-		// llvm.VerifyModule(mod, llvm.PrintMessageAction)
+// if verify is true (and this is a DEBUG build), the module is verified
+// before code generation, to catch malformed debug info metadata early
+func (llctx *llvmTargetContext) compileModule(mod llvm.Module, fileType llvm.CodeGenFileType, w io.Writer, verify bool) (int, error) {
+	if DEBUG && verify {
+		if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+			return 0, fmt.Errorf("Modul-Verifizierung fehlgeschlagen: %w", err)
+		}
 	}
 
 	memBuffer, err := llctx.llTargetMachine.EmitToMemoryBuffer(mod, fileType)
