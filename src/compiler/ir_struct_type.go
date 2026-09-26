@@ -184,7 +184,8 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 
 	structType.typ = c.llctx.StructType(
 		mapSlice(structType.fieldIrTypes, func(t ddpIrType) llvm.Type { return t.LLType() }),
-		false)
+		false,
+	)
 
 	structType.freeIrFun = c.createStructFree(structType, declarationOnly)
 	structType.deepCopyIrFun = c.createStructDeepCopy(structType, declarationOnly)
@@ -220,7 +221,7 @@ func (c *compiler) defineOrDeclareStructType(typ *ddptypes.StructType) {
 }
 
 func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), nil, []string{"v"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_free_"+structTyp.name, llvm.FunctionType(c.voidtyp.LLType(), []llvm.Type{c.ptr}, false), nil, []string{"v"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	if declarationOnly {
@@ -250,7 +251,7 @@ func (c *compiler) createStructFree(structTyp *ddpIrStructType, declarationOnly 
 }
 
 func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "v"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_deep_copy_"+structTyp.name, llvm.FunctionType(c.void, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"ret", "v"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	ret, structParam := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -260,27 +261,24 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 		return llFuncBuilder.llFn
 	}
 
-	// zero ret before copying fields in one at a time: if ret is already
-	// reachable (e.g. the destination of a Variable/Any box being built by
-	// castNonAnyToAny) and a GC cycle fires while an early field is still
-	// being copied, not-yet-copied fields must read as safely-skippable
-	// zero values instead of raw allocator garbage (see ddp_deep_copy_any's
-	// matching memset for the same hazard).
-	// structTyp.DefaultValue() is not usable here: this function is built
-	// before defineOrDeclareStructType sets structType.defaultValue, so it
-	// would still be the Go zero-value llvm.Value{} at this point.
 	llFuncBuilder.CreateStore(llvm.ConstNull(structTyp.typ), ret)
+
+	retTemp := c.builder().scp.addTemporary(ret, structTyp).irVal
+	srcTemp := c.builder().scp.addTemporary(structParam, structTyp).irVal
 
 	// deep-copy non-primitives
 	for i, field := range structTyp.fieldIrTypes {
-		dstPtr := c.indexStruct(structTyp.typ, ret, i)
+		dstPtr := c.indexStruct(structTyp.typ, retTemp, i)
 		if !field.TriviallyCopyable() {
-			srcPtr := c.indexStruct(structTyp.typ, structParam, i)
+			srcPtr := c.indexStruct(structTyp.typ, srcTemp, i)
 			c.deepCopyInto(dstPtr, srcPtr, field)
 		} else {
-			llFuncBuilder.CreateStore(c.loadStructField(structTyp.typ, structParam, i), dstPtr)
+			llFuncBuilder.CreateStore(c.loadStructField(structTyp.typ, srcTemp, i), dstPtr)
 		}
 	}
+
+	c.builder().scp.claimTemporary(retTemp)
+	c.builder().scp.claimTemporary(srcTemp)
 
 	llFuncBuilder.CreateRet(llvm.Value{})
 
@@ -289,7 +287,7 @@ func (c *compiler) createStructDeepCopy(structTyp *ddpIrStructType, declarationO
 }
 
 func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnly bool) llvm.Value {
-	llFuncBuilder := c.pushNewBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"v1", "v2"}, nil, nil, true, declarationOnly)
+	llFuncBuilder := c.pushNewBuilder("ddp_"+structTyp.name+"_equal", llvm.FunctionType(c.ddpbool, []llvm.Type{c.ptr, c.ptr}, false), nil, []string{"v1", "v2"}, nil, nil, true, declarationOnly, diFuncInfo{})
 	defer c.popBuilder()
 
 	struct1, struct2 := llFuncBuilder.params[0].val, llFuncBuilder.params[1].val
@@ -300,9 +298,10 @@ func (c *compiler) createStructEquals(structTyp *ddpIrStructType, declarationOnl
 
 	// if (struct1 == struct2) return true;
 	ptrs_equal := llFuncBuilder.CreateICmp(llvm.IntEQ, struct1, struct2, "")
-	c.createIfElse(ptrs_equal, func() {
-		c.builder().CreateRet(c.True)
-	},
+	c.createIfElse(
+		ptrs_equal, func() {
+			c.builder().CreateRet(c.True)
+		},
 		nil,
 	)
 

@@ -62,3 +62,14 @@ void LLVMGoDIBuilderInsertDbgValueRecordAtEnd(
   LLVMDIBuilderInsertDbgValueAtEnd(Builder, Val, VarInfo, Expr, DebugLoc, Block);
 #endif
 }
+
+void LLVMGoDIBuilderInsertDeclareRecordAtEnd(
+    LLVMDIBuilderRef Builder, LLVMValueRef Storage, LLVMMetadataRef VarInfo,
+    LLVMMetadataRef Expr, LLVMMetadataRef DebugLoc, LLVMBasicBlockRef Block) {
+#if LLVM_VERSION_MAJOR >= 19
+  LLVMDIBuilderInsertDeclareRecordAtEnd(Builder, Storage, VarInfo, Expr, DebugLoc, Block);
+#else
+  // Old llvm.dbg.* API.
+  LLVMDIBuilderInsertDeclareAtEnd(Builder, Storage, VarInfo, Expr, DebugLoc, Block);
+#endif
+}

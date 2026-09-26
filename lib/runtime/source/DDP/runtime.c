@@ -51,7 +51,7 @@ static LONG WINAPI CrashFilter(EXCEPTION_POINTERS *info) {
 	ddp_runtime_error(1, "Segmentation fault\n");
 	return EXCEPTION_EXECUTE_HANDLER;
 }
-#endif // DDPOS_WINDOWS
+#endif						   // DDPOS_WINDOWS
 
 static ddpstringlist cmd_args; // holds the command line arguments as ddptype
 
@@ -92,9 +92,9 @@ void ddp_init_runtime(int argc, char **argv) {
 	SetUnhandledExceptionFilter(CrashFilter); // "catch" segfaults, with the real EXCEPTION_RECORD
 #else
 	signal(SIGSEGV, SignalHandler); // "catch" segfaults
-#endif // DDPOS_WINDOWS
+#endif										  // DDPOS_WINDOWS
 
-	handle_args(argc, argv);		// turn the commandline args into a ddpstringlist
+	handle_args(argc, argv);				  // turn the commandline args into a ddpstringlist
 }
 
 // end the runtime

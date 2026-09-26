@@ -196,7 +196,10 @@ const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 #define DDP_GROW_CAPACITY(capacity) \
 	(capacity < DDP_BASE_CAPACITY ? DDP_BASE_CAPACITY : (ddpint)ceil(capacity * DDP_GROWTH_FACTOR))
 
-#define DDP_EMPTY_STRING (ddpstring){NULL, 0}
+#define DDP_EMPTY_STRING \
+	(ddpstring) {        \
+		NULL, 0          \
+	}
 
 #define DDP_EMPTY_ANY \
 	(ddpany) {        \
@@ -205,7 +208,10 @@ const ddpvtable *ddp_get_generic_vtable(const ddpany *any);
 		}             \
 	}
 
-#define DDP_EMPTY_LIST(type) (type){NULL, 0, 0}
+#define DDP_EMPTY_LIST(type) \
+	(type) {                 \
+		NULL, 0, 0           \
+	}
 
 // useful typedefs to use when interfacing with ddp code
 

@@ -60,9 +60,7 @@ type Options struct {
 	//	-  1: only LLVM optimizations
 	//	- >2: all optimizations
 	OptimizationLevel uint
-	// wether DWARF debug info (DISubprogram/DILocation) should be emitted
-	// opt-in, since it interacts with the optimization pipeline and should
-	// be validated at -O0 first
+	// wether DWARF debug info should be emitted
 	EmitDebugInfo bool
 }
 

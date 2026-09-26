@@ -39,6 +39,22 @@ func (b *llBuilder) newBlock() llvm.BasicBlock {
 	return b.c.llctx.AddBasicBlock(b.llFn, "")
 }
 
+func (b *llBuilder) diScopeFor(scp *scope) llvm.Metadata {
+	for s := scp; s != nil; s = s.enclosing {
+		if s.diScope.C != nil {
+			return s.diScope
+		}
+		if s == b.fnScope {
+			break
+		}
+	}
+	return b.diSubprogram
+}
+
+func (b *llBuilder) currentDIScope() llvm.Metadata {
+	return b.diScopeFor(b.scp)
+}
+
 // func (b *llBuilder) CreateStore(val llvm.Value, p llvm.Value) (v llvm.Value) {
 // 	b.c.debug_log("Storing value into %p", p)
 // 	return b.Builder.CreateStore(val, p)
@@ -148,7 +164,12 @@ func (b *llBuilder) createCallWithOperandBundles(fn llvm.Value, operandBundles [
 
 const DDP_GC_STRATEGY_NAME = "ddp-gc"
 
-func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool) *llBuilder {
+type diFuncInfo struct {
+	sourceName string          // DDP source name or funcName when empty
+	parameters []llvm.Metadata // return type at index 0, nil means "unspecified"
+}
+
+func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool, diInfo diFuncInfo) *llBuilder {
 	if scp == nil {
 		scp = newScope(nil) // separate "global" scope
 	}
@@ -184,9 +205,6 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 		builder.cb = builder.newBlock()
 		builder.SetInsertPointAtEnd(builder.cb)
 
-		// attach a DISubprogram so every instruction emitted for this
-		// function (starting with the parameter-copy allocas below) can be
-		// given a !dbg location
 		if c.diBuilder != nil {
 			var line uint
 			// c.builder() is still the caller's builder here, this builder
@@ -199,9 +217,13 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 				}
 			}
 
-			diFnType := c.diBuilder.CreateSubroutineType(llvm.DISubroutineType{File: c.diFile})
+			diFnType := c.diBuilder.CreateSubroutineType(llvm.DISubroutineType{File: c.diFile, Parameters: diInfo.parameters})
+			sourceName := diInfo.sourceName
+			if sourceName == "" {
+				sourceName = funcName
+			}
 			builder.diSubprogram = c.diBuilder.CreateFunction(c.diFile, llvm.DIFunction{
-				Name:         funcName,
+				Name:         sourceName,
 				LinkageName:  funcName,
 				File:         c.diFile,
 				Line:         int(line),
@@ -222,8 +244,8 @@ func (c *compiler) createBuilder(funcName string, funcType llvm.Type, funcAttrib
 	return builder
 }
 
-func (c *compiler) pushNewBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool) *llBuilder {
-	builder := c.createBuilder(funcName, funcType, funcAttributes, paramNames, paramAttributes, scp, isGC, declarationOnly)
+func (c *compiler) pushNewBuilder(funcName string, funcType llvm.Type, funcAttributes []llvm.Attribute, paramNames []string, paramAttributes [][]llvm.Attribute, scp *scope, isGC bool, declarationOnly bool, diInfo diFuncInfo) *llBuilder {
+	builder := c.createBuilder(funcName, funcType, funcAttributes, paramNames, paramAttributes, scp, isGC, declarationOnly, diInfo)
 	c.builderStack = append(c.builderStack, builder)
 	return builder
 }
