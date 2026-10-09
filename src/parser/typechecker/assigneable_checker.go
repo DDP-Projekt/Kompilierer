@@ -49,7 +49,9 @@ func checkMarkAssigneable(expr ast.Expression, attachMeta, markTopLevel bool) bo
 
 		switch ass.Operator {
 		case ast.UN_DEREF:
-			ass.SetMetadataAttachement(AssigneableMeta{})
+			if attachMeta {
+				ass.SetMetadataAttachement(AssigneableMeta{})
+			}
 			return checkMarkAssigneable(ass.Rhs, downstreamAttachMeta, false)
 		}
 	}

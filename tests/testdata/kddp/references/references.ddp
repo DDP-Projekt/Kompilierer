@@ -180,3 +180,19 @@ Und kann so benutzt werden:
 
 Die Text Referenz stack ist eine Text Referenz.
 Schreibe stack auf eine Zeile.
+[ 'der Wert von' as argument for a value parameter must pass the value, not the pointer ]
+Die Funktion zeige_zahl mit dem Parameter z vom Typ Zahl, gibt nichts zurück, macht:
+	Schreibe z auf eine Zeile.
+Und kann so benutzt werden:
+	"Zeige den Zahlwert <z>"
+
+Die Zahl wert_zahl ist 42.
+Die Zahlen Referenz wert_ref ist wert_zahl.
+Zeige den Zahlwert (der Wert von wert_ref).
+
+[ a variable passed to a reference field of a struct literal must be referenced, not copied ]
+Der Text bar_text ist "bar text".
+Das Bar bar_mit_ref ist ein neues Bar mit bar_text.
+Schreibe (foo von bar_mit_ref) auf eine Zeile.
+Speichere "bar text geändert" in bar_text.
+Schreibe (foo von bar_mit_ref) auf eine Zeile.

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/compiler"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
+	"github.com/DDP-Projekt/Kompilierer/src/refops"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +36,7 @@ var parseCmd = &cobra.Command{
 			Source:       src,
 			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
 			Annotators: []ast.Annotator{
-				&compiler.ImplicitRefCastAnnotator{},
+				&refops.ImplicitRefCastAnnotator{},
 			},
 		})
 		if err != nil {

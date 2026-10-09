@@ -9,6 +9,7 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
+	"github.com/DDP-Projekt/Kompilierer/src/refops"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
 
@@ -281,7 +282,7 @@ func (c *compiler) compile(isMainModule bool) Result {
 	defer compiler_panic_wrapper(c)
 
 	// annotate with implicit ref cast metadata
-	ast.VisitModuleRec(c.ddpModule, &ImplicitRefCastAnnotator{})
+	ast.VisitModuleRec(c.ddpModule, &refops.ImplicitRefCastAnnotator{})
 
 	c.addExternalDependencies()
 
@@ -460,16 +461,16 @@ func newImmediate(irVal llvm.Value, typ ddpIrType) ddpValue {
 
 // wether expr gets implicitly dereferenced as annotated
 func (c *compiler) isDereferencedImplicitly(expr ast.Expression) uint {
-	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
-		return att.(ImplicitRefCastMeta).DerefLevel()
+	if att, ok := expr.GetMetadataByKind(refops.ImplicitRefCastMetaKind); ok {
+		return att.(refops.ImplicitRefCastMeta).DerefLevel()
 	}
 	return 0
 }
 
 // wether expr gets implicitly dereferenced as annotated
 func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) uint {
-	if att, ok := expr.GetMetadataByKind(ImplicitRefCastMetaKind); ok {
-		return att.(ImplicitRefCastMeta).UpcastLevel()
+	if att, ok := expr.GetMetadataByKind(refops.ImplicitRefCastMetaKind); ok {
+		return att.(refops.ImplicitRefCastMeta).UpcastLevel()
 	}
 	return 0
 }

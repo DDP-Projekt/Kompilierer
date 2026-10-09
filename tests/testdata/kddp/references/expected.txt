@@ -32,3 +32,6 @@ foo
 nicht foo
 auch nicht foo
 Hallo
+42
+bar text
+bar text geändert

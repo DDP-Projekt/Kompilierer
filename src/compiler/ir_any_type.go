@@ -173,7 +173,7 @@ func (c *compiler) castNonAnyToAny(val ddpValue, vtable llvm.Value) ddpValue {
 	c.createIfElse(is_small_any, func() {
 	}, func() {
 		type_size := c.newInt(int64(c.getTypeSize(val.typ)))
-		value_ptr := c.ddp_reallocate(c.Null, c.zero, type_size)
+		value_ptr := c.ddp_reallocate(c.Null, c.zero, type_size) // TODO: does this need to be gc allocated?
 		c.builder().CreateStore(value_ptr, c.indexBigAnyValuePtr(result))
 	})
 

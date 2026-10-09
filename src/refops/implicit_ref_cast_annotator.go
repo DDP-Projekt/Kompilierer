@@ -1,4 +1,4 @@
-package compiler
+package refops
 
 import (
 	"fmt"
@@ -271,7 +271,7 @@ func (a *ImplicitRefCastAnnotator) VisitStructLiteral(e *ast.StructLiteral) ast.
 			a.annotateFromRef(expr, level)
 		}
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
 func (a *ImplicitRefCastAnnotator) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
