@@ -37,6 +37,7 @@ var parseCmd = &cobra.Command{
 			ErrorHandler: ddperror.MakeBasicHandler(os.Stderr),
 			Annotators: []ast.Annotator{
 				&refops.ImplicitRefCastAnnotator{},
+				&refops.RefOpsAnnotator{},
 			},
 		})
 		if err != nil {

@@ -421,6 +421,14 @@ func unwrapGrouping(e ast.Expression) ast.Expression {
 	}
 }
 
+// returns the RefOpsMeta of an expression that simply yields its value without any implicit casts
+// used for expressions that are synthesized after the annotator ran (e.g. by the compiler)
+func ValueRefOps(e ast.Expression) RefOpsMeta {
+	m := valueOf(e)
+	m.updateLevel()
+	return m
+}
+
 // the RefOpsMeta of a node that yields its value
 func valueOf(e ast.Expression) RefOpsMeta {
 	return RefOpsMeta{Op: OpValue, BaseLevel: refDepth(e.Type())}

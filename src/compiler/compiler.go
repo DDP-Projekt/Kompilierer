@@ -8,7 +8,6 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/src/compiler/llvm"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
-	"github.com/DDP-Projekt/Kompilierer/src/parser/typechecker"
 	"github.com/DDP-Projekt/Kompilierer/src/refops"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 )
@@ -283,6 +282,8 @@ func (c *compiler) compile(isMainModule bool) Result {
 
 	// annotate with implicit ref cast metadata
 	ast.VisitModuleRec(c.ddpModule, &refops.ImplicitRefCastAnnotator{})
+	// normalize the reference operations into RefOpsMeta/AssignTargetMeta, which are used during codegen
+	ast.VisitModuleRec(c.ddpModule, &refops.RefOpsAnnotator{})
 
 	c.addExternalDependencies()
 
@@ -445,34 +446,25 @@ type ddpValue struct {
 	irVal       llvm.Value
 	typ         ddpIrType
 	isImmediate bool
-	isStackRef  bool
 }
 
 // TODO: use newNonImmediate and newImmediate everywhere and rarely set c.builder().latestReturn.* separately
-//		 as there were bugs wher isStackRef was true from a previous VisitIdent even though the latest value had changed
 
 func newNonImmediate(irVal llvm.Value, typ ddpIrType) ddpValue {
-	return ddpValue{irVal: irVal, typ: typ, isImmediate: false, isStackRef: false}
+	return ddpValue{irVal: irVal, typ: typ, isImmediate: false}
 }
 
 func newImmediate(irVal llvm.Value, typ ddpIrType) ddpValue {
-	return ddpValue{irVal: irVal, typ: typ, isImmediate: true, isStackRef: false}
+	return ddpValue{irVal: irVal, typ: typ, isImmediate: true}
 }
 
-// wether expr gets implicitly dereferenced as annotated
-func (c *compiler) isDereferencedImplicitly(expr ast.Expression) uint {
-	if att, ok := expr.GetMetadataByKind(refops.ImplicitRefCastMetaKind); ok {
-		return att.(refops.ImplicitRefCastMeta).DerefLevel()
+// returns the reference operations of expr as annotated by the refops.RefOpsAnnotator
+func (c *compiler) refOps(expr ast.Expression) refops.RefOpsMeta {
+	m, ok := refops.GetRefOps(expr)
+	if !ok {
+		c.err("Ausdruck %s (%s) hat keine RefOpsMeta", expr, expr.GetRange())
 	}
-	return 0
-}
-
-// wether expr gets implicitly dereferenced as annotated
-func (c *compiler) isPromotedToRefImplicitly(expr ast.Expression) uint {
-	if att, ok := expr.GetMetadataByKind(refops.ImplicitRefCastMetaKind); ok {
-		return att.(refops.ImplicitRefCastMeta).UpcastLevel()
-	}
-	return 0
+	return m
 }
 
 // helper to evaluate an expression and return its ir value and type
@@ -482,7 +474,8 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 	c.visitNode(expr)
 	latest := c.builder().latestReturn
 
-	if level := c.isDereferencedImplicitly(expr); level > 0 {
+	refOps := c.refOps(expr)
+	if level := refOps.Derefs; level > 0 {
 		for ; level > 0; level-- {
 			if refType, ok := latest.typ.(*ddpIrReferenceType); ok {
 				latest.typ = refType.underlying
@@ -501,7 +494,7 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 			return newNonImmediate(c.numericCast(latest.irVal, latest.typ, to), to)
 		}
 		return latest
-	} else if level := c.isPromotedToRefImplicitly(expr); level > 0 {
+	} else if level := refOps.Promotions; level > 0 {
 		for range level {
 			if _, ok := latest.typ.(*ddpIrPrimitiveType); to != nil && ok {
 				latest.irVal, latest.typ, latest.isImmediate = c.numericCast(latest.irVal, latest.typ, to), to, false
@@ -519,6 +512,30 @@ func (c *compiler) evaluateNumeric(expr ast.Expression, to ddpIrType) ddpValue {
 		return newNonImmediate(c.numericCast(latest.irVal, latest.typ, to), to)
 	}
 	return latest
+}
+
+// performs the implicit cast to any (and the following promotions) annotated in the RefOpsMeta of expr
+// val must be the evaluated value of expr
+// if vtableType is a TypeDef, its vtable is used for the any
+func (c *compiler) boxAnyIfAnnotated(expr ast.Expression, val ddpValue, vtableType ddptypes.Type) ddpValue {
+	refOps := c.refOps(expr)
+	if !refOps.BoxAny {
+		return val
+	}
+
+	vtable := val.typ.VTable()
+	if typeDef, isTypeDef := ddptypes.CastTypeDef(vtableType); isTypeDef {
+		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
+	}
+
+	val = c.castNonAnyToAny(val, vtable)
+	for range refOps.BoxPromotions {
+		ref := c.allocateGCRef(val.typ.VTable())
+		c.claimOrCopy(ref, val)
+		val.typ = c.getReferenceType(val.typ)
+		val.irVal = ref
+	}
+	return val
 }
 
 // helper to evaluate an expression and return its ir value and type
@@ -792,22 +809,7 @@ func (c *compiler) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		}
 
 		// implicit cast to any if required
-		_, t, refLevel := ddptypes.CastReferenceLevel(d.Type)
-		if ddptypes.DeepEqual(t, ddptypes.VARIABLE) && initVal.typ != c.ddpany {
-			vtable := initVal.typ.VTable()
-			if typeDef, isTypeDef := ddptypes.CastTypeDef(initDDPType); isTypeDef {
-				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
-			}
-
-			initVal = c.castNonAnyToAny(initVal, vtable)
-			for range refLevel {
-				ref := c.allocateGCRef(initVal.typ.VTable())
-				// c.builder().CreateStore(latest.irVal, ref)
-				c.claimOrCopy(ref, initVal)
-				initVal.typ = c.getReferenceType(initVal.typ)
-				initVal.irVal = ref
-			}
-		}
+		initVal = c.boxAnyIfAnnotated(d.InitVal, initVal, initDDPType)
 
 		c.claimOrCopy(varLocation, initVal)
 	}
@@ -1051,13 +1053,12 @@ func (c *compiler) VisitIdent(e *ast.Ident) ast.VisitResult {
 
 	Var := c.builder().scp.lookupVar(e.Declaration.(*ast.VarDecl)) // get the alloca in the ir
 
-	isAssigneable := e.HasMetadata(typechecker.AssigneableMetaKind)
-	if Var.typ.TriviallyCopyable() && !isAssigneable { // primitives are simply loaded
+	addrOf := c.refOps(e).AddrOf()
+	if Var.typ.TriviallyCopyable() && !addrOf { // primitives are simply loaded
 		c.builder().latestReturn = newNonImmediate(c.builder().CreateLoad(Var.typ.LLType(), Var.val, ""), Var.typ)
 	} else { // non-primitives are used by pointer
-		if isAssigneable {
+		if addrOf {
 			c.builder().latestReturn = newNonImmediate(Var.val, c.getReferenceType(Var.typ))
-			c.builder().latestReturn.isStackRef = true
 		} else {
 			c.builder().latestReturn = newNonImmediate(Var.val, Var.typ)
 		}
@@ -1223,14 +1224,13 @@ func (c *compiler) VisitUnaryExpr(e *ast.UnaryExpr) ast.VisitResult {
 		c.builder().latestReturn.typ = c.ddpinttyp
 	case ast.UN_DEREF:
 		latest := rhs
-		if latest.isStackRef {
-			latest.isStackRef = false
-		} else if refType, isRef := rhs.typ.(*ddpIrReferenceType); isRef {
+		// an addressed 'Wert von' yields the address of the referenced value: &*r = r
+		if refType, isRef := rhs.typ.(*ddpIrReferenceType); isRef && !c.refOps(e).AddrOf() {
 			latest.typ = refType.underlying
 
-			if refType.underlying.TriviallyCopyable() && !e.HasMetadata(typechecker.AssigneableMetaKind) {
+			if refType.underlying.TriviallyCopyable() {
 				latest.irVal = c.builder().CreateLoad(latest.typ.LLType(), latest.irVal, "")
-			} else if !e.HasMetadata(typechecker.AssigneableMetaKind) {
+			} else {
 				dest := c.NewAlloca(latest.typ.LLType())
 				c.deepCopyInto(dest, rhs.irVal, latest.typ)
 				latest = c.builder().scp.addTemporary(dest, latest.typ)
@@ -1314,13 +1314,10 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 		fieldType := structType.fieldIrTypes[fieldIndex]
 		fieldPtr := c.indexStruct(structType.typ, rhs.irVal, fieldIndex)
 
-		// TODO: refactor this to make more sense
-		if fieldType.TriviallyCopyable() && !isRefRhs {
-			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
-		} else if !rhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
+		// the address of the field is only taken if the struct is accessed through a pointer
+		if c.refOps(e).AddrOf() && isRefRhs {
 			c.builder().latestReturn = newNonImmediate(fieldPtr, c.getReferenceType(fieldType))
 			return ast.VisitRecurse
-
 		} else if fieldType.TriviallyCopyable() {
 			c.builder().latestReturn.irVal = c.builder().CreateLoad(fieldType.LLType(), fieldPtr, "")
 		} else {
@@ -1631,10 +1628,8 @@ func (c *compiler) VisitBinaryExpr(e *ast.BinaryExpr) ast.VisitResult {
 			listArr := c.loadStructField(listType.typ, lhs.irVal, list_arr_field_index)
 			elementPtr := c.indexArray(listType.elementType.LLType(), listArr, index)
 
-			// TODO: refactor this to make more sense
-			if listType.elementType.TriviallyCopyable() && !isRefLhs {
-				c.builder().latestReturn.irVal, c.builder().latestReturn.typ = c.builder().CreateLoad(listType.elementType.LLType(), elementPtr, ""), listType.elementType
-			} else if !lhs.isImmediate && e.HasMetadata(typechecker.AssigneableMetaKind) {
+			// the address of the element is only taken if the list is accessed through a pointer
+			if c.refOps(e).AddrOf() && isRefLhs {
 				c.builder().latestReturn = newNonImmediate(elementPtr, c.getReferenceType(listType.elementType))
 				return
 			} else if listType.elementType.TriviallyCopyable() {
@@ -2070,8 +2065,17 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	targetIrType := c.toIrType(targetType)
 	lhs := c.evaluate(e.Lhs)
 
-	if e.HasMetadata(typechecker.AssigneableMetaKind) {
-		lhs.typ = c.getReferenceType(targetIrType)
+	refOps := c.refOps(e)
+	switch refOps.Op {
+	case refops.OpAddr:
+		// an addressed cast only reinterprets the address of its operand
+		c.builder().latestReturn = lhs
+		return ast.VisitRecurse
+	case refops.OpPromote:
+		// copy the value into a new reference cell
+		ref := c.allocateGCRef(lhs.typ.VTable())
+		c.claimOrCopy(ref, lhs)
+		c.builder().latestReturn = newImmediate(ref, targetIrType)
 		return ast.VisitRecurse
 	}
 
@@ -2119,16 +2123,12 @@ func (c *compiler) VisitCastExpr(e *ast.CastExpr) ast.VisitResult {
 	lhsRefTyp, isRefLhs := lhs.typ.(*ddpIrReferenceType)
 	targetRefTyp, isRefTarget := targetIrType.(*ddpIrReferenceType)
 
-	// cast to ref
+	// cast to ref from a non-ref value that is not promoted (see above), so only anys are unboxed here
 	if !isRefLhs && ddptypes.IsReference(targetType) {
-		if lhs.typ == c.ddpany {
-			primitiveAnyCast(targetIrType)
-			return ast.VisitRecurse
+		if lhs.typ != c.ddpany {
+			c.err("Ein Wert vom Typ %s kann nicht ohne Promotion zu %s umgewandelt werden", lhs.typ.Name(), targetIrType.Name())
 		}
-
-		ref := c.allocateGCRef(lhs.typ.VTable())
-		c.claimOrCopy(ref, lhs)
-		c.builder().latestReturn = newImmediate(ref, targetIrType)
+		primitiveAnyCast(targetIrType)
 		return ast.VisitRecurse
 	} else if isRefLhs && isRefTarget {
 		if lhsRefTyp == targetRefTyp {
@@ -2326,16 +2326,6 @@ func (c *compiler) VisitGrouping(e *ast.Grouping) ast.VisitResult {
 	return ast.VisitRecurse
 }
 
-// helper for VisitAssignStmt
-func (c *compiler) evaluateAssignableOrReference(ass ast.Expression) (ddpValue, *ast.BinaryExpr) {
-	if ass.HasMetadata(ast.StringIndexingMetaKind) {
-		lhs := c.evaluate(ass)
-		return lhs, ass.(*ast.BinaryExpr)
-	}
-
-	return c.evaluate(ass), nil
-}
-
 func (c *compiler) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	mangledName := c.mangledNameDecl(e.Func)
 	_, alreadyPresent := c.functions[mangledName] // retreive the function (the resolver took care that it is present)
@@ -2425,20 +2415,26 @@ func (c *compiler) evaluateStructLiteral(structType *ddptypes.StructType, args m
 			initType = fieldDecl.InitVal.Type()
 		}
 		argExpr := fieldDecl.InitVal
-		if fieldArg, hasArg := args[field.Name]; hasArg {
+		fieldArg, hasArg := args[field.Name]
+		if hasArg {
 			// the arg was passed so use that instead
 			argExpr = fieldArg
 		}
 
 		// if no default value was given
 		if argExpr == nil {
-			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Range: c.builder().currentNode.GetRange()}
+			argExpr = &ast.TypeOpExpr{Operator: ast.TYPE_DEFAULT, Rhs: field.Type, Typ: field.Type, Range: c.builder().currentNode.GetRange()}
+			argExpr.SetMetadataAttachement(refops.ValueRefOps(argExpr))
 		}
 
 		arg := c.evaluate(argExpr)
 
 		// implicit cast to any if required
-		if ddptypes.DeepEqual(field.Type, ddptypes.VARIABLE) && arg.typ != c.ddpany {
+		if hasArg {
+			arg = c.boxAnyIfAnnotated(argExpr, arg, initType)
+		} else if ddptypes.DeepEqual(field.Type, ddptypes.VARIABLE) && arg.typ != c.ddpany {
+			// default values are shared by all instantiations of a generic struct,
+			// so whether they need to be boxed depends on the instantiated field type
 			vtable := arg.typ.VTable()
 			if typeDef, isTypeDef := ddptypes.CastTypeDef(initType); isTypeDef {
 				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
@@ -2644,41 +2640,35 @@ func (c *compiler) VisitAssignStmt(s *ast.AssignStmt) ast.VisitResult {
 		rhs = c.evaluate(s.Rhs) // evaluate the initial value
 	}
 
-	lhs, lhsStringIndexing := c.evaluateAssignableOrReference(s.Var)
+	target, ok := refops.GetAssignTarget(s)
+	if !ok {
+		c.err("Zuweisung (%s) hat keine AssignTargetMeta", s.GetRange())
+	}
 
-	if lhsStringIndexing != nil {
+	if target.Target == refops.AssignStringIndexing {
+		lhsStringIndexing := s.Var.(*ast.BinaryExpr)
+		lhs := c.evaluate(lhsStringIndexing)
 		index := c.evaluate(lhsStringIndexing.Rhs)
 		index.irVal = c.floatOrByteAsInt(index.irVal, index.typ)
 		c.builder().createCall(c.ddpstring.replaceCharIrFun, lhs.irVal, rhs.irVal, index.irVal)
-	} else {
-		if lhs.isStackRef {
-			c.freeNonPrimitive(lhs.irVal, lhs.typ.(*ddpIrReferenceType).underlying) // free the old value in the variable/list
-		} else {
-			c.freeNonPrimitive(lhs.irVal, lhs.typ) // free the old value in the variable/list
-		}
-
-		// implicit cast to any if required
-		_, t, refLevel := ddptypes.CastReferenceLevel(varDDPType)
-		if ddptypes.IsAnyDeref(t) && rhs.typ != c.ddpany {
-			vtable := rhs.typ.VTable()
-			if typeDef, isTypeDef := ddptypes.CastTypeDef(rhsDDPType); isTypeDef {
-				vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
-			}
-			rhs = c.castNonAnyToAny(rhs, vtable)
-
-			if refLevel > 0 {
-				for range refLevel - 1 { // in VisitVarDecl we need to allocate a new ref, here we already have one, so refLevel-1
-					ref := c.allocateGCRef(rhs.typ.VTable())
-					// c.builder().CreateStore(latest.irVal, ref)
-					c.claimOrCopy(ref, rhs)
-					rhs.typ = c.getReferenceType(rhs.typ)
-					rhs.irVal = ref
-				}
-			}
-		}
-
-		c.claimOrCopy(lhs.irVal, rhs) // copy/claim the new value
+		return ast.VisitRecurse
 	}
+
+	// for every other target, lhs is a pointer to the storage that is assigned,
+	// either because the target was addressed (variables, fields, list elements, ...)
+	// or because it is a reference that is stored through
+	lhs := c.evaluate(s.Var)
+	lhsRefType, isRef := lhs.typ.(*ddpIrReferenceType)
+	if !isRef {
+		c.err("Das Ziel einer Zuweisung (%s, %s) ist keine Referenz, sondern %s", s.GetRange(), target.Target, lhs.typ.Name())
+	}
+
+	c.freeNonPrimitive(lhs.irVal, lhsRefType.underlying) // free the old value in the variable/list
+
+	// implicit cast to any if required
+	rhs = c.boxAnyIfAnnotated(s.Rhs, rhs, rhsDDPType)
+
+	c.claimOrCopy(lhs.irVal, rhs) // copy/claim the new value
 	return ast.VisitRecurse
 }
 
@@ -3090,15 +3080,11 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 	val := c.evaluate(s.Value)
-	vtable := val.typ.VTable()
-	if typeDef, isTypeDef := ddptypes.CastTypeDef(s.Func.ReturnType); isTypeDef {
-		vtable = c.typeDefVTables[c.mangledNameType(typeDef)]
-	}
+	isBoxed := c.refOps(s.Value).BoxAny
 	if val.typ.TriviallyCopyable() {
 		// implicit cast to any if required
-		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && val.typ != c.ddpany {
-
-			val = c.castNonAnyToAny(val, vtable)
+		if isBoxed {
+			val = c.boxAnyIfAnnotated(s.Value, val, s.Func.ReturnType)
 			c.claimOrCopy(c.builder().params[0].val, val)
 			c.builder().CreateRet(llvm.Value{})
 		} else {
@@ -3107,9 +3093,7 @@ func (c *compiler) VisitReturnStmt(s *ast.ReturnStmt) ast.VisitResult {
 		}
 	} else {
 		// implicit cast to any if required
-		if ddptypes.DeepEqual(s.Func.ReturnType, ddptypes.VARIABLE) && val.typ != c.ddpany {
-			val = c.castNonAnyToAny(val, vtable)
-		}
+		val = c.boxAnyIfAnnotated(s.Value, val, s.Func.ReturnType)
 
 		c.claimOrCopy(c.builder().params[0].val, val)
 		c.builder().scp.addProtectedTemporary(c.builder().params[0].val, val.typ) // make sure the return does not get GCed during scope exit
